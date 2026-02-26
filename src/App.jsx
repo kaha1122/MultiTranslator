@@ -1,27 +1,41 @@
 import React, { useState, useEffect } from 'react';
-import { Languages, Sparkles, Settings, ArrowLeft, CheckCircle2, LogOut, User } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User } from 'lucide-react';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
 
 // Firebase & Auth
-import { auth } from './firebase/config';
+import { auth, db } from './firebase/config';
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
+import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 
 // Supported Language List
 const SUPPORTED_LANGUAGES = [
-  { code: 'ko', name: '한국어', tts: 'ko-KR' },
-  { code: 'en', name: 'English', tts: 'en-US' },
-  { code: 'ja', name: '日本語', tts: 'ja-JP' },
-  { code: 'zh-CN', name: '中文', tts: 'zh-CN' },
-  { code: 'vi', name: 'Tiếng Việt', tts: 'vi-VN' },
-  { code: 'fr', name: 'Français', tts: 'fr-FR' },
-  { code: 'de', name: 'Deutsch', tts: 'de-DE' },
-  { code: 'es', name: 'Español', tts: 'es-ES' },
+  { code: 'ko', name: '한국어', tts: 'ko-KR', color: '#f0fdf4', textColor: '#166534' },
+  { code: 'en', name: 'English', tts: 'en-US', color: '#e0e7ff', textColor: '#4338ca' },
+  { code: 'ja', name: '日本語', tts: 'ja-JP', color: '#fef2f2', textColor: '#b91c1c' },
+  { code: 'zh-CN', name: '中文', tts: 'zh-CN', color: '#fff7ed', textColor: '#9a3412' },
+  { code: 'vi', name: 'Tiếng Việt', tts: 'vi-VN', color: '#f0fdf4', textColor: '#166534' },
+  { code: 'fr', name: 'Français', tts: 'fr-FR', color: '#f1f5f9', textColor: '#475569' },
+  { code: 'de', name: 'Deutsch', tts: 'de-DE', color: '#f1f5f9', textColor: '#475569' },
+  { code: 'es', name: 'Español', tts: 'es-ES', color: '#f1f5f9', textColor: '#475569' },
 ];
+
+const languageNames = {
+  ko: '한국어',
+  en: 'English',
+  ja: '日本語',
+  'zh-CN': 'Chinese',
+  vi: 'Vietnamese',
+  fr: 'French',
+  de: 'German',
+  es: 'Spanish'
+};
 
 function App() {
   const { user, profile } = useAuth();
@@ -103,6 +117,11 @@ function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
 
+  // --- [신규] 보관함 저장 및 선택 모드 전역 상태 ---
+  const [selectedCards, setSelectedCards] = useState(new Set()); // 선택된 언어 코드들
+  const [isInSelectionMode, setIsInSelectionMode] = useState(false); // 선택 모드 활성화 여부
+  const [isSavingCards, setIsSavingCards] = useState(false); // Firebase 저장 중 로딩 상태
+
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
   // 상태(데이터)가 바뀔 때마다 자동으로 브라우저 저장소에 저장해주는 마법 같은 함수입니다.
   useEffect(() => {
@@ -144,9 +163,9 @@ function App() {
             `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sLang}|${tLang}`
           );
           const data = await response.json();
-          return data?.responseData?.translatedText || `[번역 오류: ${tLang}]`;
+          return data?.responseData?.translatedText || `[Translation error: ${tLang}]`;
         } catch (e) {
-          return `[서비스 점검 중: ${tLang}]`;
+          return `[Service under maintenance: ${tLang}]`;
         }
       };
 
@@ -166,7 +185,7 @@ function App() {
         // API 키가 없으면 안내 문구를 띄웁니다.
         const fallbackTips = {};
         targetLangs.forEach(lang => {
-          fallbackTips[lang] = ["설정에서 Gemini API 키를 입력하면 AI 학습 팁을 볼 수 있어요!"];
+          fallbackTips[lang] = ["Enter Gemini API Key in settings to see AI learning tips!"];
         });
         setLearningTips(fallbackTips);
         setIsGeneratingTips(false);
@@ -174,7 +193,7 @@ function App() {
 
     } catch (error) {
       console.error("번역 실패:", error);
-      alert("번역 과정에서 문제가 발생했습니다. 다시 시도해주세요.");
+      alert("An error occurred during translation. Please try again.");
       setIsGeneratingTips(false);
     } finally {
       setIsTranslating(false); // 번역 완료
@@ -193,33 +212,43 @@ function App() {
       const targetCodes = targetLangs.join(', ');
       const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
 
-      // AI에게 보내는 상세 지시서 (프롬프트)
+      // AI에게 보내는 상세 지시서 (프롬프트 고도화)
       const prompt = `
-        You are a professional multilingual language tutor. Provide detailed learning tips and pronunciation guides for the following translations.
-
+        You are a professional multilingual language tutor. Provide detailed learning tips and pronunciation guides.
+        
         [Target Application Context]
         - The user's primary language for this session is "${sourceLangName}".
-        - All explanations and tips MUST be written in "${sourceLangName}".
+        - CRITICAL RULE: All explanations and tips MUST be written entirely in "${sourceLangName}". Do not use English unless you are explaining an English word.
 
         [Data]
         - Source Text (Input): "${original}"
-        - Translations to analyze:
+        - Current Translations:
         ${targetLangsInfo}
 
-        [Requirements]
-        1. **Explanation Language (CRITICAL)**: Write every tip and explanation in the "tips" section using ONLY "${sourceLangName}". Do not use the target language for explanations.
-        2. **Pedagogical Tips**: Provide 2-3 detailed tips per language, focusing on grammar, nuances, and usage patterns.
-        3. **Pronunciation**:
-           - en: IPA / ja: Hiragana / zh-CN: Pinyin with tones / Others: Romanization.
+        [Requirement 1: Input Type]
+        - Determine if "${original}" is a single "word" (or short idiom) or a full "sentence".
+
+        [Requirement 2: Educational Tips]
+        - If "sentence": Provide 2-3 tips about grammar, nuance, or usage. Write these tips in "${sourceLangName}".
+        - If "word": Provide dictionary-style tips: 
+          1. Meaning and Part of Speech evaluated and translated in "${sourceLangName}".
+          2. Common synonyms/antonyms.
+          3. A practical example sentence using the word with its translation in "${sourceLangName}".
+          Make sure all explanations are written in "${sourceLangName}".
+
+        [Requirement 3: Pronunciation]
+        - en: IPA / ja: Hiragana / zh-CN: Pinyin with tones / Others: Romanization.
 
         [Output Format]
-        - Return ONLY raw JSON without markdown markers.
+        - Return ONLY valid JSON format.
         {
-          "tips": {
-            ${targetLangs.map(code => `"${code}": ["Detailed pedagogical tip in ${sourceLangName}", "Grammar or nuance tip in ${sourceLangName}"]`).join(',\n            ')}
-          },
-          "pronunciations": {
-            ${targetLangs.map(code => `"${code}": "pronunciation guide"`).join(',\n            ')}
+          "type": "word" or "sentence",
+          "data": {
+            ${targetLangs.map(code => `
+            "${code}": {
+              "tips": ["Tip 1 in ${sourceLangName}", "Tip 2 in ${sourceLangName}", "Tip 3 in ${sourceLangName}"],
+              "pronunciation": "Pronunciation text"
+            }`).join(',')}
           }
         }
       `;
@@ -230,7 +259,15 @@ function App() {
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] })
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: prompt }] }],
+            // 초보자 설명(주석): 
+            // Gemini 2.0 Flash를 사용할 때 답변이 JSON 형식이 아닌 일반 텍스트로 나와서 버그가 생기는 것을 막기 위해
+            // 강제로 JSON 형식으로만 응답하도록 'responseMimeType' 옵션을 추가했습니다.
+            generationConfig: {
+              responseMimeType: "application/json"
+            }
+          })
         }
       );
 
@@ -240,7 +277,7 @@ function App() {
           await new Promise(resolve => setTimeout(resolve, 2000));
           return generateGeminiTips(original, translatedMap, retryCount + 1);
         }
-        throw new Error(`AI 서비스 연결 오류 (${response.status})`);
+        throw new Error(`AI service connection error (${response.status})`);
       }
 
       const data = await response.json();
@@ -249,15 +286,100 @@ function App() {
       const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       const result = JSON.parse(jsonString);
 
-      setLearningTips(result.tips); // 학습 팁 저장
-      setPronunciations(result.pronunciations); // 발음 가이드 저장
+      // 개별 언어별로 팁과 발음을 분리하여 저장합니다.
+      const newTips = {};
+      const newProns = {};
+      if (result.data) {
+        targetLangs.forEach(langCode => {
+          if (result.data[langCode]) {
+            newTips[langCode] = result.data[langCode].tips;
+            newProns[langCode] = result.data[langCode].pronunciation;
+          }
+        });
+      }
+
+      setLearningTips(newTips);
+      setPronunciations(newProns);
     } catch (error) {
       console.error("Gemini 분석 오류:", error);
       const errorTips = {};
-      targetLangs.forEach(lang => errorTips[lang] = ["AI 분석을 가져오지 못했습니다. 키가 정확한지 확인해 주세요."]);
+      targetLangs.forEach(lang => errorTips[lang] = ["Failed to load AI analysis. Please check your API key."]);
       setLearningTips(errorTips);
     } finally {
       setIsGeneratingTips(false); // 분석 완료
+    }
+  };
+
+  // --- [신규] 보관함 저장 및 제스처 로직 ---
+
+  // 1. 카드 선택 토글 로직 (롱프레스 또는 클릭 시)
+  const toggleSelectCard = (langCode) => {
+    setSelectedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(langCode)) {
+        newSet.delete(langCode);
+      } else {
+        newSet.add(langCode);
+      }
+      // 선택된 것이 하나라도 있으면 선택 모드 유지, 없으면 해제
+      setIsInSelectionMode(newSet.size > 0);
+      return newSet;
+    });
+  };
+
+  // 2. Firebase Firestore에 실제 데이터를 저장하는 공통 함수
+  const saveToFirebase = async (langCode) => {
+    if (!user) { // userAuthState에서 가져온 user 객체 사용
+      alert("Login required to use library.");
+      return false;
+    }
+
+    try {
+      const cardData = {
+        userId: user.uid,
+        userEmail: user.email,
+        language: SUPPORTED_LANGUAGES.find(l => l.code === langCode)?.name || langCode,
+        langCode: langCode,
+        sourceText: inputText,
+        sourceLang: sourceLang,
+        translatedText: translations[langCode],
+        learningTip: learningTips[langCode] || [],
+        pronunciation: pronunciations[langCode] || "",
+        createdAt: serverTimestamp()
+      };
+
+      await addDoc(collection(db, "savedCards"), cardData);
+      return true;
+    } catch (error) {
+      console.error("저장 중 오류 발생:", error);
+      return false;
+    }
+  };
+
+  // 3. 선택한 카드들을 한꺼번에 저장하는 함수
+  const handleSaveSelected = async () => {
+    if (selectedCards.size === 0) return;
+
+    setIsSavingCards(true);
+    let successCount = 0;
+
+    // 선택된 모든 언어 코드에 대해 순차적으로 저장 진행
+    for (const langCode of selectedCards) {
+      const success = await saveToFirebase(langCode);
+      if (success) successCount++;
+    }
+
+    alert(`Success! Saved ${successCount} translation cards to library. ✨`);
+    setSelectedCards(new Set());
+    setIsInSelectionMode(false);
+    setIsSavingCards(false);
+  };
+
+  // 4. 스와이프 제스처 시 호출되는 자동 저장 함수
+  const handleSwipeSave = async (langCode) => {
+    const success = await saveToFirebase(langCode);
+    if (success) {
+      console.log(`${langCode} card sent to library.`);
     }
   };
 
@@ -289,7 +411,7 @@ function App() {
     } else {
       // 새로 선택하는 경우, 최대 3개까지만 가능하도록 제한합니다.
       if (targetLangs.length >= 3) {
-        alert("번역될 언어는 최대 3개까지 선택할 수 있어요.");
+        alert("You can select up to 3 target languages.");
         return;
       }
       setTargetLangs([...targetLangs, code]);
@@ -324,79 +446,85 @@ function App() {
             <div className="primary-sentence-container">
               <span className="primary-label">
                 {/* 설정된 출발 언어의 이름을 가져와서 라벨로 보여줍니다. */}
-                {(SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || 'Unknown')} 문장
+                {(SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || 'Unknown')} Sentence
               </span>
               <input
                 type="text"
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
-                placeholder="번역할 내용을 입력하세요..."
+                placeholder="Enter text to translate..."
                 className="text-input"
               />
               <div className="translate-btn-container">
                 <button
                   className="translate-btn"
                   onClick={handleTranslate}
-                  // 번역 중이거나 언어 선택이 안 되어있으면 버튼을 비활성화합니다.
-                  disabled={isTranslating || isGeneratingTips || targetLangs.length === 0}
+                  disabled={isTranslating || !inputText.trim()}
                 >
-                  {isTranslating || isGeneratingTips ? (
-                    '번역 및 분석 중...'
-                  ) : (
+                  {isTranslating ? 'Translating...' : (
                     <>
-                      <Sparkles size={18} />
-                      번역하기
+                      <Sparkles size={20} />
+                      Translate
                     </>
                   )}
                 </button>
               </div>
-
-              {/* 환경 변수에 API 키가 없는 경우에만 사용자가 직접 입력할 수 있는 칸을 보여줍니다. */}
-              {!envApiKey && (
-                <div className="api-key-section">
-                  <input
-                    type="password"
-                    placeholder="Gemini API Key를 입력하세요"
-                    value={geminiApiKey}
-                    onChange={(e) => setGeminiApiKey(e.target.value)}
-                    className="api-key-input"
-                  />
-                </div>
-              )}
             </div>
 
             {/* 번역 결과 카드들이 나오는 영역 */}
             <div className="cards-grid">
               {targetLangs.map((langCode) => {
-                const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-                if (!langInfo) return null;
-
+                const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
                 return (
-                  // 개별 번역 카드를 그리는 컴포넌트
                   <TranslationCard
                     key={langCode}
+                    language={lang?.name}
                     langCode={langCode}
                     sourceLangCode={sourceLang}
-                    language={langInfo.name}
                     text={translations[langCode]}
-                    fullLanguage={langInfo.name}
                     pronunciation={pronunciations[langCode]}
                     learningTip={learningTips[langCode]}
-                    // 언어별로 카드의 뱃지 색상을 다르게 설정합니다.
-                    badgeColor={langCode === 'en' ? 'var(--badge-en-bg)' : langCode === 'ja' ? 'var(--badge-ja-bg)' : 'var(--badge-zh-bg)'}
-                    badgeTextColor={langCode === 'en' ? 'var(--badge-en-text)' : langCode === 'ja' ? 'var(--badge-ja-text)' : 'var(--badge-zh-text)'}
+                    badgeColor={lang?.color}
+                    badgeTextColor={lang?.textColor}
                     onSpeak={() => handleSpeak(translations[langCode], langCode)}
+                    isSelected={selectedCards.has(langCode)}
+                    onToggleSelect={() => toggleSelectCard(langCode)}
+                    onSwipeSave={() => handleSwipeSave(langCode)}
+                    isInSelectionMode={isInSelectionMode}
                   />
                 );
               })}
               {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
               {targetLangs.length === 0 && (
                 <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                  설정 탭에서 번역할 대상 언어를 먼저 선택해주세요!
+                  Please select at least 1 target language.
                 </p>
               )}
             </div>
+
+            {/* 선택 모드일 때 나타나는 일괄 저장 플로팅 버튼 */}
+            {isInSelectionMode && (
+              <div className="selection-fab-container">
+                <button
+                  className={`save-fab ${isSavingCards ? 'loading' : ''}`}
+                  onClick={handleSaveSelected}
+                  disabled={isSavingCards}
+                >
+                  {isSavingCards ? "Saving..." : `Save ${selectedCards.size} cards ✨`}
+                </button>
+                <button className="cancel-fab" onClick={() => { setSelectedCards(new Set()); setIsInSelectionMode(false); }}>
+                  Cancel
+                </button>
+              </div>
+            )}
           </>
+        ) : viewMode === 'library' ? (
+          /* [신규] 보관함 모드일 때 보여주는 화면 */
+          <Library
+            user={user}
+            sourceLang={sourceLang}
+            onSpeak={handleSpeak}
+          />
         ) : (
           /* 설정 모드(settings)일 때 보여주는 화면 */
           <div className="settings-container">
@@ -408,19 +536,19 @@ function App() {
                 <div className="user-details">
                   <p className="user-email">{profile?.displayName || user.email}</p>
                   {profile?.displayName && <p className="user-email-secondary">{user.email}</p>}
-                  <p className="user-status">{profile?.membership || 'Free'} 멤버</p>
+                  <p className="user-status">{profile?.membership || 'Free'} Member</p>
                 </div>
               </div>
               <button className="logout-btn" onClick={handleLogout}>
                 <LogOut size={18} />
-                로그아웃
+                Logout
               </button>
             </div>
 
             {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
             <div className="settings-group">
               <label className="settings-label">
-                <ArrowLeft size={18} /> 출발 언어 선택
+                <ArrowLeft size={18} /> Select Source Language
               </label>
               <div className="lang-grid">
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -439,9 +567,9 @@ function App() {
             {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
             <div className="settings-group">
               <label className="settings-label">
-                번역될 언어 선택 (최대 3개)
+                Select Target Languages (Max 3)
               </label>
-              <p className="target-limit-msg">현재 {targetLangs.length}/3 선택됨</p>
+              <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
               <div className="lang-grid">
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <div
@@ -456,8 +584,21 @@ function App() {
               </div>
             </div>
 
+            <div className="settings-group">
+              <label className="settings-label">AI Learning Tip Settings</label>
+              <div className="api-key-section">
+                <input
+                  type="password"
+                  value={geminiApiKey}
+                  onChange={(e) => setGeminiApiKey(e.target.value)}
+                  placeholder="Enter Gemini API Key"
+                  className="api-key-input"
+                />
+              </div>
+            </div>
+
             <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={() => setViewMode('translation')}>
-              설정 저장하고 돌아가기
+              Save Settings & Return
             </button>
           </div>
         )}
@@ -467,17 +608,24 @@ function App() {
       <nav className="app-nav">
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
-          onClick={() => setViewMode('translation')}
+          onClick={() => { setViewMode('translation'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
         >
           <Languages size={24} />
-          <span>번역 학습</span>
+          <span>Language Card</span>
+        </button>
+        <button
+          className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
+          onClick={() => { setViewMode('library'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+        >
+          <Sparkles size={24} />
+          <span>Library</span>
         </button>
         <button
           className={`nav-item ${viewMode === 'settings' ? 'active' : ''}`}
-          onClick={() => setViewMode('settings')}
+          onClick={() => { setViewMode('settings'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
         >
-          <Settings size={24} />
-          <span>설정</span>
+          <SettingsIcon size={24} />
+          <span>Settings</span>
         </button>
       </nav>
     </div>

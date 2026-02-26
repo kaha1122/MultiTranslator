@@ -1,6 +1,6 @@
-import React, { useState, useRef } from 'react';
-import { Play, Mic, MicOff, RotateCcw, Volume2, Award } from 'lucide-react';
-import axios from 'axios';
+import React, { useState, useRef, useEffect } from 'react';
+import { Play, Mic, MicOff, RotateCcw, Volume2, Award, CheckCircle, AlertCircle } from 'lucide-react';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import './TranslationCard.css';
 
 const TranslationCard = ({
@@ -13,89 +13,122 @@ const TranslationCard = ({
     learningTip,   // AI가 만든 학습 팁
     badgeColor,    // 카드 상단 뱃지 배경색
     badgeTextColor,// 카드 상단 뱃지 글자색
-    onSpeak        // 문장 읽어주기 함수
+    onSpeak,       // 문장 읽어주기 함수
+    isSelected,    // 현재 카드가 선택되었는지 여부
+    onToggleSelect,// 카드 선택 상태를 반전시키는 함수
+    onSwipeSave,   // 스와이프 시 저장을 실행하는 함수
+    isInSelectionMode // 현재 앱이 선택 모드인지 여부
 }) => {
-    // --- 1. 상태 관리 (Coaching State) ---
-    // 발음 연습 기능을 위한 데이터 저장 바구니들입니다.
-    const [isRecording, setIsRecording] = useState(false);     // 현재 녹음 중인지 여부
-    const [isAnalyzing, setIsAnalyzing] = useState(false);     // AI가 내 목소리를 분석 중인지 여부
-    const [assessmentResult, setAssessmentResult] = useState(null); // 분석 결과 (점수 등) 저장
-    const [coachTip, setCoachTip] = useState(null);           // AI 코치가 주는 맞춤 조언
-    const [coachAudio, setCoachAudio] = useState(null);         // AI 코치의 가이드 목소리 데이터
+    // --- 1. 상태 관리 (Coaching & Gestures) ---
+    // 오디오 관련 복잡한 로직(녹음, 분석 요청 등)을 커스텀 훅으로 분리했습니다.
+    // 이렇게 하면 TranslationCard 컴포넌트는 UI를 예쁘게 보여주는 역할에만 충실해집니다.
+    const {
+        isRecording,
+        isAnalyzing,
+        assessmentResult,
+        coachTip,
+        coachAudio,
+        errorMsg, // 에러 메시지(마이크 권한 획득 실패 등) 상태도 함께 가져옵니다.
+        startRecording,
+        stopRecording,
+        playCoachVoice,
+        resetAssessment
+    } = useAudioRecorder(text);
 
-    const mediaRecorder = useRef(null); // 녹음기 객체를 저장
-    const audioChunks = useRef([]);    // 녹음된 오디오 데이터를 조각조각 저장
+    // 제스처 관련 상태
+    const [swipeX, setSwipeX] = useState(0); // 스와이프 거리 저장
+    const [isSaving, setIsSaving] = useState(false); // 스와이프 저장 도중 애니메이션 상태
 
-    // --- 2. 녹음 및 분석 로직 ---
+    // useRef(mediaRecorder) 및 audioChunks는 useAudioRecorder.js 내부로 이동되었습니다.
 
-    // 2-1. 녹음 시작 함수
-    const startRecording = async () => {
-        try {
-            // 사용자의 마이크 권한을 요청합니다.
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder.current = new MediaRecorder(stream);
-            audioChunks.current = []; // 데이터 조각 초기화
+    // 롱프레스 및 스와이프 감지를 위한 Ref
+    const longPressTimer = useRef(null);
+    const touchStartPos = useRef({ x: 0, y: 0 });
+    const isSwiping = useRef(false);
 
-            // 녹음되는 동안 데이터를 조각조각 모읍니다.
-            mediaRecorder.current.ondataavailable = (e) => {
-                audioChunks.current.push(e.data);
-            };
+    // --- 2. 제스처 핸들러 (Long Press & Swipe) ---
 
-            // 녹음이 멈추면 모은 데이터로 분석을 요청합니다.
-            mediaRecorder.current.onstop = async () => {
-                const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
-                analyzeFullPronunciation(audioBlob); // 분석 요청 함수 실행
-            };
+    // 2-1. 터치 시작 (롱프레스 타이머 시작 및 좌표 기록)
+    const handleTouchStart = (e) => {
+        const touch = e.touches[0];
+        touchStartPos.current = { x: touch.clientX, y: touch.clientY };
+        isSwiping.current = false;
 
-            mediaRecorder.current.start();
-            setIsRecording(true); // "녹음 중" 표시
-            setAssessmentResult(null); // 이전 결과 지우기
-            setCoachTip(null);
-        } catch (err) {
-            console.error("마이크 접근 오류:", err);
-            alert("마이크 접근 권한이 필요합니다.");
+        // 0.5초 이상 누르면 선택 모드 진입
+        longPressTimer.current = setTimeout(() => {
+            if (!isSwiping.current) {
+                if ("vibrate" in navigator) navigator.vibrate(50); // 햅틱 진동
+                onToggleSelect(); // 선택 상태 변경 (이것이 첫 선택이면 앱 전체가 선택 모드가 됨)
+            }
+        }, 500);
+    };
+
+    // 2-2. 터치 이동 (스와이프 거리 계산)
+    const handleTouchMove = (e) => {
+        const touch = e.touches[0];
+        const deltaX = touch.clientX - touchStartPos.current.x;
+        const deltaY = touch.clientY - touchStartPos.current.y;
+
+        // 가로 이동이 크면 스와이프로 간주
+        if (Math.abs(deltaX) > 10) {
+            isSwiping.current = true;
+            clearTimeout(longPressTimer.current); // 스와이프 중엔 롱프레스 취소
+
+            // 선택 모드가 아닐 때만 개별 스와이프 애니메이션 허용
+            if (!isInSelectionMode) {
+                setSwipeX(deltaX);
+            }
+        }
+
+        // 세로 스크롤 방해 방지
+        if (Math.abs(deltaY) > 30) {
+            clearTimeout(longPressTimer.current);
         }
     };
 
-    // 2-2. 녹음 중지 함수
-    const stopRecording = () => {
-        if (mediaRecorder.current && isRecording) {
-            mediaRecorder.current.stop();
-            setIsRecording(false);
+    // 2-3. 터치 종료 (스와이프 성공 여부 판단 및 애니메이션 실행)
+    const handleTouchEnd = () => {
+        clearTimeout(longPressTimer.current);
+
+        // 스와이프 거리가 120px 이상이면 저장 실행
+        if (Math.abs(swipeX) > 120 && !isInSelectionMode) {
+            setIsSaving(true); // 빨려 들어가는 애니메이션 시작
+            setTimeout(() => {
+                onSwipeSave(); // 실제 저장 로직 호출
+                setSwipeX(0);
+                setIsSaving(false);
+            }, 500);
+        } else {
+            setSwipeX(0); // 원위치
         }
     };
 
-    // 2-3. AI 서버에 내 목소리 분석 요청하기
-    const analyzeFullPronunciation = async (blob) => {
-        setIsAnalyzing(true); // "분석 중..." 상태 표시
-        const formData = new FormData();
-        formData.append('audio', blob, 'recording.wav'); // 내 목소리 파일 담기
-        formData.append('text', text);                   // 비교할 기준 문장 담기
-
-        try {
-            // 백엔드 서버(localhost:5000)에 데이터 전송
-            const response = await axios.post('http://localhost:5000/analyze', formData);
-            setAssessmentResult(response.data.assessment); // 상세 점수 저장
-            setCoachTip(response.data.coaching.tip);       // 코치 조언 저장
-            setCoachAudio(response.data.coaching.audio);   // 코치 음성 저장
-        } catch (err) {
-            console.error("분석 실패:", err);
-            alert("분석 서버가 꺼져있거나 오류가 발생했습니다. (백엔드 확인 필요)");
-        } finally {
-            setIsAnalyzing(false); // 분석 완료
+    // 단순 클릭(탭) 처리
+    const handleClick = () => {
+        if (isInSelectionMode) {
+            onToggleSelect();
         }
     };
 
-    // 2-4. AI 코치의 가이드 음성 듣기 함수
-    const playCoachVoice = () => {
-        if (coachAudio) {
-            const audio = new Audio(`data:audio/mp3;base64,${coachAudio}`);
-            audio.play();
-        }
-    };
+    // --- 3. 오디오 및 분석 로직 ---
+    // 모든 녹음 및 분석(서버 통신) 로직들은 useAudioRecorder 훅에서 가져다 씁니다!
 
     return (
-        <div className="translation-card">
+        <div
+            className={`translation-card ${isSelected ? 'selected' : ''} ${isSaving ? 'saving-vacuum' : ''}`}
+            style={{ transform: `translateX(${swipeX}px)` }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            onClick={handleClick}
+        >
+            {/* 선택 모드일 때 나타나는 체크박스 */}
+            {isInSelectionMode && (
+                <div className={`selection-checkbox ${isSelected ? 'checked' : ''}`}>
+                    <CheckCircle size={24} fill={isSelected ? "#6366f1" : "white"} color={isSelected ? "white" : "#d1d5db"} />
+                </div>
+            )}
+
             {/* 카드 상단: 언어 정보와 읽기 버튼 */}
             <div className="card-header">
                 <span
@@ -105,7 +138,7 @@ const TranslationCard = ({
                     {fullLanguage || language}
                 </span>
 
-                <button className="speak-button" onClick={onSpeak} title="발음 듣기">
+                <button className={`speak-button ${isInSelectionMode ? 'disabled' : ''}`} onClick={(e) => { e.stopPropagation(); onSpeak(); }} disabled={isInSelectionMode} title="Listen">
                     <Play size={22} fill="white" stroke="white" />
                 </button>
             </div>
@@ -124,78 +157,75 @@ const TranslationCard = ({
 
             <div className="section-divider"></div>
 
-            {/* 발음 연습 (PRONUNCIATION) 섹션 */}
-            <div className="practice-section">
-                <div className="section-header">
-                    <span className="section-label">PRONUNCIATION</span>
-                    {/* 분석 점수가 있을 때만 뱃지로 보여줍니다. */}
-                    {assessmentResult && (
-                        <div className="score-badge">
-                            <Award size={14} />
-                            {assessmentResult.pronunciationScore}점
-                        </div>
-                    )}
-                </div>
-
-                <div className="practice-content">
-                    {/* 상태별 메시지 표시 (연습 전 / 녹음 중 / 분석 중) */}
-                    {!assessmentResult && !isAnalyzing && !isRecording && (
-                        <p className="practice-placeholder">버튼을 눌러 발음을 연습해보세요!</p>
-                    )}
-
-                    {isRecording && <p className="recording-status">말씀해주세요... 🎙️</p>}
-
-                    {isAnalyzing && <p className="analyzing-status">AI 코치가 분석 중입니다... ✨</p>}
-
-                    {/* 발음 정확도를 단어별 색상으로 보여주는 영역 */}
-                    {assessmentResult && (
-                        <div className="assessment-display">
-                            {assessmentResult.words.map((w, i) => (
-                                <span
-                                    key={i}
-                                    className={`assessment-word ${w.accuracyScore > 80 ? 'good' : w.accuracyScore > 50 ? 'average' : 'poor'}`}
-                                    title={`Accuracy: ${w.accuracyScore}%`}
-                                >
-                                    {w.word}
-                                </span>
-                            ))}
-                        </div>
-                    )}
-
-                    {/* 녹음 버튼 및 초기화 버튼 */}
-                    <div className="practice-actions">
-                        <button
-                            className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-                            onClick={isRecording ? stopRecording : startRecording}
-                            disabled={isAnalyzing}
-                            title="발음 연습하기"
-                        >
-                            {isAnalyzing ? (
-                                <RotateCcw size={20} className="spin" />
-                            ) : isRecording ? (
-                                <MicOff size={20} />
-                            ) : (
-                                <Mic size={20} />
-                            )}
-                        </button>
-
+            {/* 발음 연습 (PRONUNCIATION) 섹션 - 선택 모드에선 가리기 */}
+            {!isInSelectionMode && (
+                <div className="practice-section">
+                    <div className="section-header">
+                        <span className="section-label">PRONUNCIATION</span>
                         {assessmentResult && (
-                            <button className="reset-button circle-small" onClick={() => { setAssessmentResult(null); setCoachTip(null); }} title="다시하기">
-                                <RotateCcw size={18} />
-                            </button>
+                            <div className="score-badge">
+                                <Award size={14} />
+                                {assessmentResult.pronunciationScore}점
+                            </div>
                         )}
                     </div>
-                </div>
-            </div>
 
-            {/* AI 코치 피드백 영역: 내 발음의 문제점을 정확히 짚어줍니다. */}
-            {coachTip && (
+                    <div className="practice-content">
+                        {!assessmentResult && !isAnalyzing && !isRecording && (
+                            <p className="practice-placeholder">Press the button to practice pronunciation!</p>
+                        )}
+                        {isRecording && <p className="recording-status">Speak now... 🎙️</p>}
+                        {isAnalyzing && <p className="analyzing-status">AI Coach is analyzing... ✨</p>}
+
+                        {/* 에러가 발생한 경우 부드러운 UI 텍스트로 사용자에게 안내합니다. alert() 창 대체 */}
+                        {errorMsg && (
+                            <div className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center' }}>
+                                <AlertCircle size={14} />
+                                {errorMsg}
+                            </div>
+                        )}
+
+                        {assessmentResult && (
+                            <div className="assessment-display">
+                                {assessmentResult.words.map((w, i) => (
+                                    <span
+                                        key={i}
+                                        className={`assessment-word ${w.accuracyScore > 80 ? 'good' : w.accuracyScore > 50 ? 'average' : 'poor'}`}
+                                        title={`Accuracy: ${w.accuracyScore}%`}
+                                    >
+                                        {w.word}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+
+                        <div className="practice-actions">
+                            <button
+                                className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
+                                disabled={isAnalyzing}
+                                title="Practice pronunciation"
+                            >
+                                {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+                            </button>
+                            {assessmentResult && (
+                                <button className="reset-button circle-small" onClick={(e) => { e.stopPropagation(); resetAssessment(); }} title="Retry">
+                                    <RotateCcw size={18} />
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* AI 코치 피드백 영역 */}
+            {coachTip && !isInSelectionMode && (
                 <div className="coach-feedback-area">
                     <div className="coach-header">
                         <span className="coach-label">AI PRO COACH</span>
                         {coachAudio && (
-                            <button className="coach-audio-btn" onClick={playCoachVoice}>
-                                <Volume2 size={16} /> 가이드 듣기
+                            <button className="coach-audio-btn" onClick={(e) => { e.stopPropagation(); playCoachVoice(); }}>
+                                <Volume2 size={16} /> Listen to Guide
                             </button>
                         )}
                     </div>
@@ -203,11 +233,10 @@ const TranslationCard = ({
                 </div>
             )}
 
-            {/* 카드 하단: AI가 분석한 언어별 학습 팁 영역 */}
+            {/* 카드 하단: 학습 팁 영역 */}
             <div className="card-footer">
                 <span className="tip-label">LEARNING TIP</span>
                 <div className="tip-content-wrapper">
-                    {/* 팁이 하나인 경우와 여러 개인 경우를 모두 처리합니다. */}
                     {typeof learningTip === 'string' ? (
                         <p className={`tip-content font-${sourceLangCode}`}>{learningTip}</p>
                     ) : Array.isArray(learningTip) ? (
@@ -217,7 +246,7 @@ const TranslationCard = ({
                             </p>
                         ))
                     ) : (
-                        <p className="tip-content">AI가 문장을 분석하고 있어요...</p>
+                        <p className="tip-content">AI is analyzing the sentence...</p>
                     )}
                 </div>
             </div>

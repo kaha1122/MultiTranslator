@@ -404,3 +404,169 @@ body {
   font-weight: 700;
   margin-top: -10px;
 }
+
+/* ==========================================================================
+   Selection Mode & Library UI Styles (신규 추가)
+   ========================================================================== */
+
+/* 일괄 저장 플로팅 버튼 컨테이너 */
+.selection-fab-container {
+  position: fixed;
+  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 90%;
+  max-width: 400px;
+  z-index: 100;
+  animation: fabPopUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes fabPopUp {
+  0% {
+    transform: translateX(-50%) translateY(50px);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translateX(-50%) translateY(0);
+    opacity: 1;
+  }
+}
+
+.save-fab {
+  background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+  color: white;
+  border: none;
+  padding: 16px;
+  border-radius: 20px;
+  font-size: 1rem;
+  font-weight: 800;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.4);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.save-fab:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+.save-fab.loading {
+  opacity: 0.8;
+  cursor: wait;
+}
+
+.cancel-fab {
+  background: white;
+  color: #64748b;
+  border: 1px solid #e2e8f0;
+  padding: 10px;
+  border-radius: 16px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+}
+
+/* 보관함 (Library) 탭 전용 스타일 */
+.library-container {
+  padding: 0 1rem 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  animation: fadeIn 0.4s ease;
+}
+
+.filter-tabs {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 4px;
+  margin-bottom: 0.5rem;
+  scrollbar-width: none;
+  /* Firefox */
+}
+
+.filter-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+/* Chrome/Safari */
+
+.filter-tab {
+  padding: 8px 20px;
+  background: white;
+  border: 1px solid #f1f5f9;
+  border-radius: 12px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #64748b;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s;
+}
+
+.filter-tab.active {
+  background: #6366f1;
+  color: white;
+  border-color: #6366f1;
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+}
+
+.empty-library {
+  text-align: center;
+  padding: 4rem 2rem;
+  color: #94a3b8;
+}
+
+.library-card-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.delete-card-btn {
+  position: absolute;
+  top: 10px;
+  right: -5px;
+  background: white;
+  color: #ef4444;
+  border: 1px solid #fee2e2;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 40;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s;
+}
+
+.delete-card-btn:hover {
+  background: #ef4444;
+  color: white;
+  transform: scale(1.1);
+}
+
+.loading-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 4rem;
+  color: var(--primary-color);
+  font-weight: 700;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
