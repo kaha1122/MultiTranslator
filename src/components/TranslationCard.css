@@ -1,0 +1,382 @@
+/* 
+  [TranslationCard 스타일 시트]
+  이 파일은 번역 카드의 입체적인 디자인(3D)과 애니메이션 효과를 담당합니다.
+  초보자도 이해하기 쉽게 주요 스타일 마다 설명을 추가했습니다.
+*/
+
+.translation-card {
+    background: linear-gradient(145deg, #ffffff, #f9fafb);
+    /* 세련된 흰색 그라데이션 */
+    border-radius: 24px;
+    padding: 28px;
+    display: flex;
+    flex-direction: column;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* 현실적인 깊이감을 주기 위한 중첩 그림자 효과 */
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.05),
+        0 8px 10px -6px rgba(0, 0, 0, 0.05),
+        inset 0 -2px 4px rgba(0, 0, 0, 0.02);
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    height: 100%;
+    box-sizing: border-box;
+    position: relative;
+    overflow: hidden;
+}
+
+.translation-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.translation-card:hover {
+    transform: translateY(-8px) scale(1.02);
+    box-shadow:
+        0 20px 35px -10px rgba(0, 0, 0, 0.12),
+        0 12px 15px -8px rgba(0, 0, 0, 0.08);
+}
+
+.speak-button {
+    position: absolute;
+    top: 24px;
+    right: 24px;
+    background: #6366f1;
+    border: none;
+    border-radius: 50%;
+    width: 38px;
+    height: 38px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: white;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+    z-index: 20;
+    padding: 0;
+}
+
+.speak-button svg {
+    width: 20px;
+    height: 20px;
+    stroke: white;
+    fill: white;
+    /* Force white color and fill */
+}
+
+.speak-button:hover {
+    transform: scale(1.1);
+    background: #4f46e5;
+}
+
+.card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.language-badge {
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 4px 10px;
+    border-radius: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.score-badge {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fef2f2;
+    color: #ef4444;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border: 1px solid #fee2e2;
+}
+
+.card-body {
+    margin-bottom: 24px;
+    flex-grow: 1;
+}
+
+.translated-text {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #111827;
+    line-height: 1.4;
+    margin: 0;
+    margin-bottom: 8px;
+    word-break: break-word;
+}
+
+/* Assessment View */
+.assessment-display {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+    margin-bottom: 8px;
+}
+
+.assessment-word {
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding-bottom: 2px;
+    cursor: help;
+}
+
+.assessment-word.good {
+    color: #10b981;
+    border-bottom: 3px solid #10b981;
+}
+
+.assessment-word.average {
+    color: #f59e0b;
+    border-bottom: 3px solid #f59e0b;
+}
+
+.assessment-word.poor {
+    color: #ef4444;
+    border-bottom: 3px solid #ef4444;
+}
+
+.section-divider {
+    height: 1px;
+    background: #f1f5f9;
+    margin: 0 -28px 24px -28px;
+}
+
+/* PRONUNCIATION Section - Reduced size to 80% to give more space to tips */
+.practice-section {
+    margin-bottom: 12px;
+    transform: scale(0.95);
+    transform-origin: top center;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.section-label {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.practice-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.practice-placeholder {
+    font-size: 0.9rem;
+    color: #94a3b8;
+    margin: 0;
+}
+
+.recording-status {
+    font-size: 0.95rem;
+    color: #ef4444;
+    font-weight: 600;
+    margin: 0;
+    animation: pulse 1.5s infinite;
+}
+
+.analyzing-status {
+    font-size: 0.95rem;
+    color: #6366f1;
+    font-weight: 600;
+    margin: 0;
+}
+
+.practice-actions {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+/* AI Coach Feedback Area */
+.coach-feedback-area {
+    background: #f0fdf4;
+    border-radius: 16px;
+    padding: 16px;
+    margin-bottom: 20px;
+    border: 1px solid #dcfce7;
+}
+
+.coach-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.coach-label {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #166534;
+    background: #bbf7d0;
+    padding: 2px 8px;
+    border-radius: 4px;
+}
+
+.coach-audio-btn {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #16a34a;
+    color: white;
+    border: none;
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.7rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.coach-tip-text {
+    font-size: 0.95rem;
+    color: #166534;
+    margin: 0;
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.card-footer {
+    border-top: 1px solid #f3f4f6;
+    padding-top: 16px;
+    flex-shrink: 0;
+    /* Prevent shrinking */
+}
+
+.tip-label {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #9ca3af;
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+}
+
+.tip-content {
+    font-size: 0.9rem;
+    color: #4b5563;
+    line-height: 1.7;
+    margin: 0;
+    margin-bottom: 8px;
+}
+
+/* Action Buttons Container */
+.card-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    margin-bottom: 24px;
+    /* Added spacing below the main actions */
+}
+
+.circle {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: white;
+    padding: 0;
+}
+
+.circle-small {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    cursor: pointer;
+    background: #f1f5f9;
+    color: #64748b;
+}
+
+.record-button {
+    background: #10b981;
+    box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+}
+
+.record-button:hover {
+    background: #059669;
+    transform: scale(1.1);
+}
+
+.record-button.recording {
+    background: #ef4444;
+    animation: pulse 1.5s infinite;
+}
+
+.record-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.reset-button {
+    background: #94a3b8;
+    color: white;
+}
+
+.reset-button:hover {
+    background: #e2e8f0;
+    color: #1e293b;
+}
+
+@keyframes pulse {
+    0% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.05);
+        opacity: 0.8;
+    }
+
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
