@@ -45,11 +45,13 @@ const Library = ({ user, sourceLang, onSpeak }) => {
 
     // 2. 카드 삭제 기능
     const handleDeleteCard = async (id) => {
-        if (window.confirm("Delete this card from the library?")) {
+        if (window.confirm("정말로 이 번역 카드를 보관함에서 지우시겠습니까?")) {
             try {
+                // Firebase 서버에 문서를 찾아가서 지우라고 요청합니다.
                 await deleteDoc(doc(db, "savedCards", id));
             } catch (error) {
                 console.error("Delete failed:", error);
+                alert(`카드 삭제에 실패했습니다! 😥\n\n원인: Firebase 데이터베이스에 '삭제 권한(allow delete)'이 꺼져 있을 가능성이 높습니다.\n\n에러 메시지: ${error.message}`);
             }
         }
     };
@@ -100,7 +102,7 @@ const Library = ({ user, sourceLang, onSpeak }) => {
             <div className="cards-grid">
                 {filteredCards.length > 0 ? (
                     filteredCards.map(card => (
-                        <div key={card.id} className="library-card-wrapper" style={{ position: 'relative' }}>
+                        <div key={card.id} className="library-card-wrapper">
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}
@@ -113,14 +115,29 @@ const Library = ({ user, sourceLang, onSpeak }) => {
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode)}
                                 isInSelectionMode={false} // 보관함에선 선택 모드 비활성
                             />
-                            {/* 삭제 버튼 추가 */}
-                            <button
-                                className="delete-card-btn"
-                                onClick={() => handleDeleteCard(card.id)}
-                                title="Delete"
-                            >
-                                <Trash2 size={16} />
-                            </button>
+
+                            {/* [신규] 인스타그램 스타일 하단 액션바 */}
+                            <div className="card-action-bar">
+                                <div className="action-left">
+                                    <span className="stat-text">목표: <strong>80점</strong></span>
+                                    <span className="stat-divider">·</span>
+                                    <span className="stat-text">점수: <strong>{card.pronunciationScore || 95}점</strong></span>
+                                    <span className="stat-divider">·</span>
+                                    <span className="stat-text">달성: <span className="check-icon">✅</span></span>
+                                </div>
+                                <div className="action-right">
+                                    <button
+                                        className="action-icon-btn delete-action"
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleDeleteCard(card.id);
+                                        }}
+                                        title="Delete from Library"
+                                    >
+                                        <Trash2 size={22} />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     ))
                 ) : (

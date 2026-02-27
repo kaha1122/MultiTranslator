@@ -4,6 +4,9 @@ const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const fs = require('fs');
 const cors = require('cors');
 const axios = require('axios');
+const ffmpeg = require('fluent-ffmpeg');
+const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
 
 const app = express();
@@ -22,11 +25,25 @@ const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFm
 /**
  * 1. Azure Pronunciation Assessment
  */
-async function analyzePronunciation(audioPath, referenceText) {
+async function analyzePronunciation(audioPath, referenceText, langCode) {
     return new Promise((resolve, reject) => {
         const audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(audioPath));
         const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
-        speechConfig.speechRecognitionLanguage = "en-US"; // Default to English for now
+
+        // 프론트엔드에서 넘어온 언어 코드(en, ja, zh-TW 등)를 Azure가 알아들을 수 있는 코드로 변환
+        const azureLangMap = {
+            'en': 'en-US',
+            'ja': 'ja-JP',
+            'zh': 'zh-CN', // 중국어 
+            'zh-CN': 'zh-CN', // 중국어 (간체)
+            'zh-TW': 'zh-TW', // 중국어 (번체)
+            'ko': 'ko-KR',
+            'es': 'es-ES',
+            'fr': 'fr-FR',
+            'de': 'de-DE'
+        };
+        const targetLanguage = azureLangMap[langCode] || "en-US";
+        speechConfig.speechRecognitionLanguage = targetLanguage;
 
         const pronConfig = new sdk.PronunciationAssessmentConfig(
             referenceText,
@@ -34,6 +51,7 @@ async function analyzePronunciation(audioPath, referenceText) {
             sdk.PronunciationAssessmentGranularity.Phoneme,
             true
         );
+        pronConfig.enableProsodyAssessment = true; // [수정] 운율감 채점을 명시적으로 활성화합니다.
 
         const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
         pronConfig.applyTo(recognizer);
@@ -45,6 +63,7 @@ async function analyzePronunciation(audioPath, referenceText) {
                 accuracyScore: pronResult.accuracyScore,
                 fluencyScore: pronResult.fluencyScore,
                 completenessScore: pronResult.completenessScore,
+                prosodyScore: pronResult.prosodyScore, // [수정] 백엔드에서 프론트엔드로 운율감 점수를 꼭 넘겨주어야 합니다!
                 words: pronResult.detailResult.Words.map(w => ({
                     word: w.Word,
                     accuracyScore: w.PronunciationAssessment.AccuracyScore,
@@ -67,9 +86,23 @@ async function analyzePronunciation(audioPath, referenceText) {
 /**
  * 2. Gemini Coaching Tip Generation
  */
-async function generateCoachingTip(referenceText, assessmentData) {
+async function generateCoachingTip(referenceText, assessmentData, sourceLangCode) {
+    // 사용자의 언어 맵핑
+    const langNames = {
+        'ko': 'Korean',
+        'en': 'English',
+        'ja': 'Japanese',
+        'zh': 'Chinese (Simplified)',
+        'zh-CN': 'Chinese (Simplified)',
+        'zh-TW': 'Chinese (Traditional)',
+        'es': 'Spanish',
+        'fr': 'French',
+        'de': 'German'
+    };
+    const targetLangName = langNames[sourceLangCode?.split('-')[0]] || 'Korean';
+
     const prompt = `
-    You are a friendly and expert English pronunciation coach. 
+    You are a friendly and expert pronunciation coach. 
     A student tried to say: "${referenceText}"
     
     Here are their Azure Pronunciation Assessment results:
@@ -80,20 +113,31 @@ async function generateCoachingTip(referenceText, assessmentData) {
     Word-level breakdown:
     ${assessmentData.words.map(w => `- ${w.word}: Accuracy ${w.accuracyScore}, Error: ${w.errorType}`).join('\n')}
     
-    Based on this data, provide ONE short, encouraging coaching tip (max 2 sentences) in Korean. 
-    Focus on the weakest part or a general tip to sound more natural.
-    Return ONLY the tip text.
+    Based on this data, provide ONE short, encouraging coaching tip (max 2 sentences) in EXACTLY ${targetLangName}. 
+    CRITICAL RULES:
+    1. Focus on the weakest part, specific mispronounced sounds, or a general tip to sound more natural.
+    2. Vary your responses! Do not use generic fallback phrases like "정말 잘하셨어요. 조금만 더 연습하면...". Provide unique insight each time based on their actual performance.
+    3. If they scored 100/100, enthusiastically praise their perfect pronunciation with varied phrasing.
+    4. Return ONLY the tip text in ${targetLangName}, nothing else.
     `;
 
     try {
+        console.log(`[Gemini] Requesting with model: gemini-1.5-flash, Key prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
             { contents: [{ parts: [{ text: prompt }] }] }
         );
         return response.data.candidates[0].content.parts[0].text;
     } catch (error) {
         console.error("Gemini Error:", error.response?.data || error.message);
-        return "정말 잘하셨어요! 조금만 더 연습하면 원어민처럼 발음할 수 있을 거예요.";
+        // Fallback message mapped by language
+        const fallbacks = {
+            'ko': '현재 AI 코치 연결이 원활하지 않지만, 발음 연습을 응원합니다!',
+            'en': 'The AI Coach is currently unavailable, but keep up the great pronunciation practice!',
+            'ja': '現在AIコーチの接続が不安定ですが、発音練習を応援しています！',
+            'zh': '目前AI教练连接不畅，但我们支持你的发音练习！'
+        };
+        return fallbacks[sourceLangCode?.split('-')[0]] || fallbacks['ko'];
     }
 }
 
@@ -128,25 +172,38 @@ async function generateCoachAudio(text) {
  * Main Analysis Endpoint
  */
 app.post('/analyze', upload.single('audio'), async (req, res) => {
-    const audioPath = req.file?.path;
+    const originalAudioPath = req.file?.path;
     const referenceText = req.body.text;
+    const langCode = req.body.lang || 'en'; // 프론트엔드에서 보낸 언어 코드
 
-    if (!audioPath || !referenceText) {
+    if (!originalAudioPath || !referenceText) {
         return res.status(400).json({ error: "Missing audio or text" });
     }
 
-    try {
-        // 1. Azure Assessment
-        const assessment = await analyzePronunciation(audioPath, referenceText);
+    const audioPath = `${originalAudioPath}.wav`;
 
-        // 2. Gemini Coaching
-        const tip = await generateCoachingTip(referenceText, assessment);
+    try {
+        // 0. Convert WebM/MP4 (from browser) to WAV (for Azure)
+        await new Promise((resolve, reject) => {
+            ffmpeg(originalAudioPath)
+                .toFormat('wav')
+                .on('error', (err) => reject(err))
+                .on('end', () => resolve())
+                .save(audioPath);
+        });
+
+        // 1. Azure Assessment (언어 코드 추가 전달)
+        const assessment = await analyzePronunciation(audioPath, referenceText, langCode);
+
+        // 2. Gemini Coaching (사용자 언어 전달)
+        const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang);
 
         // 3. ElevenLabs Audio
         const audioBase64 = await generateCoachAudio(tip);
 
         // Cleanup
-        fs.unlinkSync(audioPath);
+        if (fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
+        if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
 
         res.json({
             assessment,
@@ -157,6 +214,7 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
         });
     } catch (error) {
         console.error("Analysis Pipeline Failed:", error);
+        if (originalAudioPath && fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (audioPath && fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
     }
@@ -165,6 +223,10 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 AI Orchestrator running on http://localhost:${PORT}`);
+    console.log(`[Config] Azure Region: ${AZURE_REGION}`);
+    console.log(`[Config] Gemini Key Prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
+    console.log(`[Config] ElevenLabs Key Prefix: ${ELEVENLABS_API_KEY?.substring(0, 5)}...`);
+
     if (!AZURE_KEY) console.warn("⚠️ AZURE_SPEECH_KEY is missing in .env");
     if (!GEMINI_API_KEY) console.warn("⚠️ GEMINI_API_KEY is missing in .env");
     if (!ELEVENLABS_API_KEY) console.warn("⚠️ ELEVENLABS_API_KEY is missing in .env");

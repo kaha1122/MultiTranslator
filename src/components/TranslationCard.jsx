@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Play, Mic, MicOff, RotateCcw, Volume2, Award, CheckCircle, AlertCircle } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import PronunciationAssessment from './PronunciationAssessment'; // [신규] 발음 시각화 전담 컴포넌트 추가
 import './TranslationCard.css';
 
 const TranslationCard = ({
@@ -29,11 +30,12 @@ const TranslationCard = ({
         coachTip,
         coachAudio,
         errorMsg, // 에러 메시지(마이크 권한 획득 실패 등) 상태도 함께 가져옵니다.
+        saveMessage, // [신규] 저장 성공/실패 메시지
         startRecording,
         stopRecording,
         playCoachVoice,
         resetAssessment
-    } = useAudioRecorder(text);
+    } = useAudioRecorder(text, langCode, sourceLangCode); // [수정] 출발 언어 정보도 함께 넘겨줍니다.
 
     // 제스처 관련 상태
     const [swipeX, setSwipeX] = useState(0); // 스와이프 거리 저장
@@ -186,19 +188,16 @@ const TranslationCard = ({
                             </div>
                         )}
 
-                        {assessmentResult && (
-                            <div className="assessment-display">
-                                {assessmentResult.words.map((w, i) => (
-                                    <span
-                                        key={i}
-                                        className={`assessment-word ${w.accuracyScore > 80 ? 'good' : w.accuracyScore > 50 ? 'average' : 'poor'}`}
-                                        title={`Accuracy: ${w.accuracyScore}%`}
-                                    >
-                                        {w.word}
-                                    </span>
-                                ))}
+                        {/* [신규] 저장이 성공적으로 완료되었음을 알려주는 메시지 */}
+                        {saveMessage && !isAnalyzing && (
+                            <div className="save-message" style={{ color: '#10b981', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center', fontWeight: 'bold' }}>
+                                <CheckCircle size={14} />
+                                {saveMessage}
                             </div>
                         )}
+
+                        {/* 새로 구현한 발음 평가 시각화 UI 컴포넌트입니다 */}
+                        <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLangCode} />
 
                         <div className="practice-actions">
                             <button

@@ -1,0 +1,224 @@
+/* 
+  [PronunciationAssessment 스타일 시트]
+  이 파일은 발음 평가 컴포넌트 전용 CSS 입니다.
+*/
+
+.pronunciation-assessment-container {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    width: 100%;
+    margin-top: 10px;
+}
+
+/* =========================================
+   영역 A: "오늘의 성적표" (게이지 애니메이션)
+   ========================================= */
+.score-dashboard {
+    display: flex;
+    justify-content: space-around;
+    background: #f8fafc;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.02);
+}
+
+.score-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+/* 
+  초보자를 위한 CSS 팁: 'conic-gradient'를 사용하면 
+  CSS 변수(--score) 값에 따라 원형 게이지가 채워지는 효과를 만들 수 있습니다. 
+*/
+.score-circle {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 1rem;
+    color: var(--color);
+    background: radial-gradient(closest-side, #f8fafc 79%, transparent 80% 100%),
+        conic-gradient(var(--color) calc(var(--score) * 1%), #e2e8f0 0);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+}
+
+.score-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #475569;
+}
+
+/* =========================================
+   영역 B: "단어별 신호등" (인터랙션 포함)
+   ========================================= */
+.words-traffic-light {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 14px;
+    justify-content: center;
+    padding: 10px;
+}
+
+.word-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    cursor: pointer;
+    position: relative;
+    transition: transform 0.2s;
+}
+
+/* 터치/마우스 오버 시 단어가 살짝 위로 떠오르는 인터랙션 */
+.word-item:hover {
+    transform: translateY(-2px);
+}
+
+.word-text {
+    font-size: 1.2rem;
+    font-weight: 700;
+    padding-bottom: 2px;
+}
+
+/* 밑줄 색상 분기 */
+.word-item.good .word-text {
+    color: #10b981;
+    border-bottom: 3px solid #10b981;
+}
+
+.word-item.average .word-text {
+    color: #f59e0b;
+    border-bottom: 3px solid #f59e0b;
+}
+
+.word-item.poor .word-text {
+    color: #ef4444;
+    border-bottom: 3px solid #ef4444;
+}
+
+/* 틀린 종류를 명시하는 꼬리표 (Mispronunciation 등) */
+.error-badge {
+    position: absolute;
+    top: -20px;
+    font-size: 0.6rem;
+    background: #ef4444;
+    color: white;
+    padding: 3px 6px;
+    border-radius: 6px;
+    white-space: nowrap;
+    font-weight: 800;
+    box-shadow: 0 2px 4px rgba(239, 68, 68, 0.3);
+    z-index: 2;
+}
+
+/* =========================================
+   영역 C: "발음 현미경" (상세 팝업)
+   ========================================= */
+.phoneme-microscope {
+    background: #ffffff;
+    border-radius: 12px;
+    padding: 16px;
+    border: 1px solid #e2e8f0;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    /* 팝업이 아래에서 쓰윽 올라오는 애니메이션 */
+    animation: slideUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(15px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.phoneme-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 8px;
+}
+
+.phoneme-header h4 {
+    margin: 0;
+    font-size: 0.95rem;
+    color: #334155;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+}
+
+.close-btn:hover {
+    color: #ef4444;
+}
+
+.phoneme-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.phoneme-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* 발음 기호 텍스트 */
+.phoneme-symbol {
+    width: 45px;
+    font-weight: 700;
+    color: #475569;
+    font-size: 0.9rem;
+    text-align: right;
+}
+
+/* 빈 게이지 막대 바탕 */
+.phoneme-score-bar {
+    flex-grow: 1;
+    height: 8px;
+    background: #f1f5f9;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+/* 실제 점수만큼 채워지는 색상 바 */
+.phoneme-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.phoneme-score-text {
+    width: 30px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #64748b;
+    text-align: left;
+}
+
+.no-phoneme-data {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    text-align: center;
+    margin: 0;
+}
