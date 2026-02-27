@@ -217,24 +217,25 @@ function App() {
         You are a professional multilingual language tutor. Provide detailed learning tips and pronunciation guides.
         
         [Target Application Context]
-        - The user's primary language for this session is "${sourceLangName}".
-        - CRITICAL RULE: All explanations and tips MUST be written entirely in "${sourceLangName}". Do not use English unless you are explaining an English word.
+        - The user's primary language for this session is "${sourceLangName}". This is the language the user understands.
+        - CRITICAL RULE: ALL explanations, tips, and dictionary definitions MUST be written in the user's primary language: "${sourceLangName}". 
+        - ABSOLUTELY DO NOT write the explanations in the target language being learned. For example, if you are explaining a Korean translation to a Chinese user, the explanation must be in Chinese, NOT Korean.
 
         [Data]
-        - Source Text (Input): "${original}"
-        - Current Translations:
+        - Source Text (Input in ${sourceLangName}): "${original}"
+        - Current Translations to learn:
         ${targetLangsInfo}
 
         [Requirement 1: Input Type]
         - Determine if "${original}" is a single "word" (or short idiom) or a full "sentence".
 
         [Requirement 2: Educational Tips]
-        - If "sentence": Provide 2-3 tips about grammar, nuance, or usage. Write these tips in "${sourceLangName}".
+        - If "sentence": Provide 2-3 tips about grammar, nuance, or usage. The tips MUST be translated and written in "${sourceLangName}".
         - If "word": Provide dictionary-style tips: 
-          1. Meaning and Part of Speech evaluated and translated in "${sourceLangName}".
+          1. Meaning and Part of Speech. (Must be explained in "${sourceLangName}")
           2. Common synonyms/antonyms.
-          3. A practical example sentence using the word with its translation in "${sourceLangName}".
-          Make sure all explanations are written in "${sourceLangName}".
+          3. A practical example sentence using the target word, with its translation in "${sourceLangName}".
+          Make sure all explanations are strictly written in "${sourceLangName}".
 
         [Requirement 3: Pronunciation]
         - en: IPA / ja: Hiragana / zh-CN: Pinyin with tones / Others: Romanization.
@@ -246,7 +247,7 @@ function App() {
           "data": {
             ${targetLangs.map(code => `
             "${code}": {
-              "tips": ["Tip 1 in ${sourceLangName}", "Tip 2 in ${sourceLangName}", "Tip 3 in ${sourceLangName}"],
+              "tips": ["Tip 1 written entirely in ${sourceLangName}", "Tip 2 written entirely in ${sourceLangName}", "Tip 3 written entirely in ${sourceLangName}"],
               "pronunciation": "Pronunciation text"
             }`).join(',')}
           }

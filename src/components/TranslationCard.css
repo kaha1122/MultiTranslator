@@ -117,6 +117,8 @@
     margin: 0;
     margin-bottom: 8px;
     word-break: break-word;
+    /* [버그 수정]: 매우 긴 텍스트(주소 등)가 화면 밖으로 나가는 현상 방지 */
+    overflow-wrap: anywhere;
 }
 
 /* Assessment View */
@@ -282,6 +284,9 @@
     line-height: 1.7;
     margin: 0;
     margin-bottom: 8px;
+    /* [버그 수정]: 긴 코멘트 텍스트 줄바꿈 허용 */
+    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 /* Action Buttons Container */
@@ -441,5 +446,24 @@
 
     to {
         transform: rotate(360deg);
+    }
+}
+
+/* ==========================================================================
+   Mobile Responsive Styles (긴급 패치 반영)
+   - 모바일 핸드폰 뷰에서 왼쪽/오른쪽 여백이 좁아지는 현상과
+   - 글자 표시 공간을 충분히 확보하기 위해 패딩을 조정합니다.
+   ========================================================================== */
+@media (max-width: 600px) {
+    .translation-card {
+        padding: 20px; /* 원래 28px -> 화면이 작은폰에서는 20px로 줄여 날씬하게 */
+    }
+
+    .section-divider {
+        margin: 0 -20px 24px -20px; /* 줄어든 패딩에 맞춰 가로선 길이도 다시 맞춤 */
+    }
+
+    .translated-text {
+        font-size: 1.25rem; /* 글씨 크기도 약간만 부드럽게 줄이기 */
     }
 }

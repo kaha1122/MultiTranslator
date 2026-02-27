@@ -120,6 +120,7 @@ const TranslationCard = ({
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onTouchCancel={handleTouchEnd} // [버그 수정]: 스크롤 중 터치 끊김 시 멈춤 방지
             onClick={handleClick}
         >
             {/* 선택 모드일 때 나타나는 체크박스 */}

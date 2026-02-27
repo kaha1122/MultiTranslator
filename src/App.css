@@ -115,15 +115,17 @@ body {
   background: var(--primary-color);
   color: white;
   border: none;
-  padding: 12px 32px;
-  border-radius: 12px;
-  font-size: 1.1rem;
+  padding: 10px 24px;
+  /* 높이, 너비 축소 */
+  border-radius: 10px;
+  font-size: 0.9rem;
+  /* 글씨 크기 축소 */
   font-weight: 700;
   cursor: pointer;
   transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   box-shadow: 0 4px 6px -1px rgba(0, 168, 132, 0.3);
 }
 
@@ -292,15 +294,17 @@ body {
 }
 
 .nav-item {
-  padding: 12px 32px;
-  border-radius: 16px;
+  padding: 8px 20px;
+  /* 패딩 축소시켜 컴팩트하게 */
+  border-radius: 12px;
   font-weight: 700;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   color: var(--text-secondary);
   border: none;
   background: transparent;
-  font-size: 1rem;
+  font-size: 0.85rem;
+  /* 글씨 작게 */
   display: flex;
   align-items: center;
 }
@@ -568,5 +572,62 @@ body {
 
   to {
     opacity: 1;
+  }
+}
+
+/* ==========================================================================
+   Mobile Responsive Navigation Styles
+   - 모바일 핸드폰 뷰에서 하단 탭 영역(메뉴바)의 크기가 너무 큰 것을 방지하기 위해
+   - 아이콘과 글자를 수직 배열하고, 폰트와 여백을 크게 줄여줍니다.
+   ========================================================================== */
+@media (max-width: 600px) {
+  .app-nav {
+    gap: 0.4rem;
+    padding: 8px;
+    width: 94%;
+    max-width: 400px;
+    justify-content: space-around;
+    /* 만약 메뉴가 바닥에 고정되게 하려면 아래 주석을 풉니다
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 100;
+    */
+  }
+
+  .nav-item {
+    padding: 8px 4px;
+    font-size: 0.7rem;
+    flex-direction: column;
+    gap: 4px;
+    border-radius: 12px;
+    flex: 1;
+    text-align: center;
+    justify-content: center;
+
+    /* --- [버튼 입체감 추가]: 화면에서 튀어나온 느낌 --- */
+    background: linear-gradient(145deg, #ffffff, #f1f5f9);
+    box-shadow: 3px 3px 10px rgba(0, 0, 0, 0.05), -3px -3px 10px #ffffff;
+    border: 1px solid rgba(255, 255, 255, 0.8);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .nav-item.active {
+    /* --- [선택 시 눌린 듯한 입체감] --- */
+    background: var(--primary-color);
+    box-shadow: inset 3px 3px 8px rgba(0, 0, 0, 0.2), inset -2px -2px 6px rgba(255, 255, 255, 0.1);
+    border-color: transparent;
+    /* 테두리 숨김 */
+    transform: translateY(2px);
+    /* 살짝 아래로 눌린 효과 */
+    color: white;
+  }
+
+  .nav-item svg {
+    /* 아이콘 크기도 약간 더 작게 축소 */
+    width: 18px;
+    height: 18px;
+    margin: 0 auto;
   }
 }
