@@ -63,7 +63,8 @@ async function analyzePronunciation(audioPath, referenceText, langCode) {
                 accuracyScore: pronResult.accuracyScore,
                 fluencyScore: pronResult.fluencyScore,
                 completenessScore: pronResult.completenessScore,
-                prosodyScore: pronResult.prosodyScore, // [수정] 백엔드에서 프론트엔드로 운율감 점수를 꼭 넘겨주어야 합니다!
+                // [수정] Azure API가 운율감(prosody)을 지원하지 않는 언어(0 리턴)일 경우, 유창성과 정확성을 바탕으로 추정값을 제공합니다.
+                prosodyScore: pronResult.prosodyScore > 0 ? pronResult.prosodyScore : Math.round((pronResult.fluencyScore + pronResult.accuracyScore) / 2),
                 words: pronResult.detailResult.Words.map(w => ({
                     word: w.Word,
                     accuracyScore: w.PronunciationAssessment.AccuracyScore,

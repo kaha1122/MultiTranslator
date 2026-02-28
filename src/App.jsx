@@ -6,13 +6,14 @@ import './App.css';
 
 // Firebase & Auth
 import { auth, db } from './firebase/config';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
+import { getUiTranslation } from './utils/uiTranslations';
 
 // Supported Language List
 const SUPPORTED_LANGUAGES = [
@@ -41,9 +42,15 @@ function App() {
   const { user, profile } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
 
-  // Gemini API Key from environment variables
-  const envApiKey = import.meta.env.VITE_GEMINI_API_KEY;
-  const [geminiApiKey, setGeminiApiKey] = useState(envApiKey || '');
+  // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
+  const [languageGoals, setLanguageGoals] = useState(() => {
+    try {
+      const saved = localStorage.getItem('languageGoals');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
 
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
@@ -121,6 +128,16 @@ function App() {
   const [selectedCards, setSelectedCards] = useState(new Set()); // 선택된 언어 코드들
   const [isInSelectionMode, setIsInSelectionMode] = useState(false); // 선택 모드 활성화 여부
   const [isSavingCards, setIsSavingCards] = useState(false); // Firebase 저장 중 로딩 상태
+  const [practiceResults, setPracticeResults] = useState({}); // [신규] 발음 연습 기록 상태
+  const [saveMessages, setSaveMessages] = useState({}); // [신규] 보관함 저장 상태 알림 메시지
+
+  // 발음 연습 결과가 나올 때마다 호출되는 함수
+  const handlePracticeResult = (langCode, result) => {
+    setPracticeResults(prev => ({
+      ...prev,
+      [langCode]: result
+    }));
+  };
 
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
   // 상태(데이터)가 바뀔 때마다 자동으로 브라우저 저장소에 저장해주는 마법 같은 함수입니다.
@@ -132,6 +149,7 @@ function App() {
       localStorage.setItem('translations', JSON.stringify(translations));
       localStorage.setItem('learningTips', JSON.stringify(learningTips));
       localStorage.setItem('pronunciations', JSON.stringify(pronunciations));
+      localStorage.setItem('languageGoals', JSON.stringify(languageGoals)); // [신규] 언어 목표 점수 자동 저장
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
@@ -154,6 +172,7 @@ function App() {
     // 새로운 번역을 위해 기존 팁과 발음 정보를 비웁니다.
     setLearningTips({});
     setPronunciations({});
+    setPracticeResults({}); // [신규] 새로운 번역 시 이전 연습 결과 지우기
 
     try {
       // 3-1. 여러 언어로 동시에 번역 요청 (외부 API 활용)
@@ -178,18 +197,8 @@ function App() {
 
       setTranslations(newTranslations); // 번역 결과 저장
 
-      // 3-2. AI 학습 팁 생성 요청 (Gemini API 활용)
-      if (geminiApiKey) {
-        generateGeminiTips(inputText, newTranslations);
-      } else {
-        // API 키가 없으면 안내 문구를 띄웁니다.
-        const fallbackTips = {};
-        targetLangs.forEach(lang => {
-          fallbackTips[lang] = ["Enter Gemini API Key in settings to see AI learning tips!"];
-        });
-        setLearningTips(fallbackTips);
-        setIsGeneratingTips(false);
-      }
+      // 3-2. API KEY 필요없이 앱이 동작하도록 우선 임시 메시지 또는 제한적 팁 제공 (API 키를 서버에서 관리하거나 기본 기능을 우회한다고 가정)
+      generateGeminiTips(inputText, newTranslations);
 
     } catch (error) {
       console.error("번역 실패:", error);
@@ -254,9 +263,11 @@ function App() {
         }
       `;
 
-      // 구글의 최신 AI(Gemini 2.0 Flash)에게 질문을 보냅니다.
+      // 프론트엔드 환경변수나 백엔드를 통해 안전하게 호출한다고 가정합니다.
+      // (기존의 geminiApiKey 변수를 더이상 화면에서 받지 않으므로, VITE_GEMINI_API_KEY를 직접 사용)
+      const apiKeyToUse = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSy_YOUR_API_KEY';
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiApiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -332,10 +343,25 @@ function App() {
   const saveToFirebase = async (langCode) => {
     if (!user) { // userAuthState에서 가져온 user 객체 사용
       alert("Login required to use library.");
-      return false;
+      return { status: "error" };
     }
 
     try {
+      // 1. 중복 데이터 검사 쿼리
+      const q = query(
+        collection(db, "savedCards"),
+        where("userId", "==", user.uid),
+        where("langCode", "==", langCode),
+        where("sourceText", "==", inputText)
+      );
+
+      const querySnapshot = await getDocs(q);
+      if (!querySnapshot.empty) {
+        // 이미 동일한 조건의 카드가 존재함
+        return { status: "duplicate" };
+      }
+
+      // 2. 중복이 없을 경우 새로 저장
       const cardData = {
         userId: user.uid,
         userEmail: user.email,
@@ -346,14 +372,16 @@ function App() {
         translatedText: translations[langCode],
         learningTip: learningTips[langCode] || [],
         pronunciation: pronunciations[langCode] || "",
+        pronunciationScore: practiceResults[langCode]?.pronunciationScore || null,
+        pronunciationAudioUrl: practiceResults[langCode]?.audioUrl || null,
         createdAt: serverTimestamp()
       };
 
       await addDoc(collection(db, "savedCards"), cardData);
-      return true;
+      return { status: "success" };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
-      return false;
+      return { status: "error" };
     }
   };
 
@@ -366,22 +394,41 @@ function App() {
 
     // 선택된 모든 언어 코드에 대해 순차적으로 저장 진행
     for (const langCode of selectedCards) {
-      const success = await saveToFirebase(langCode);
-      if (success) successCount++;
+      const result = await saveToFirebase(langCode);
+      if (result.status === "success") {
+        successCount++;
+        setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getUiTranslation(sourceLang, 'savedSuccess')}` }));
+      } else if (result.status === "duplicate") {
+        setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getUiTranslation(sourceLang, 'alreadyInLibrary')}` }));
+      }
     }
 
-    alert(`Success! Saved ${successCount} translation cards to library. ✨`);
-    setSelectedCards(new Set());
-    setIsInSelectionMode(false);
     setIsSavingCards(false);
+
+    if (successCount > 0) {
+      // 선택 모드 해제
+      setIsInSelectionMode(false);
+      setSelectedCards(new Set());
+    }
   };
 
-  // 4. 스와이프 제스처 시 호출되는 자동 저장 함수
+  // 4. 개별 저장 함수 (스와이프 제스처용)
   const handleSwipeSave = async (langCode) => {
-    const success = await saveToFirebase(langCode);
-    if (success) {
-      console.log(`${langCode} card sent to library.`);
+    const result = await saveToFirebase(langCode);
+    if (result.status === "success") {
+      setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getUiTranslation(sourceLang, 'savedToLibrary')}` }));
+    } else if (result.status === "duplicate") {
+      setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getUiTranslation(sourceLang, 'alreadyInLibrary')}` }));
     }
+
+    // 3초 후 메시지 제거
+    setTimeout(() => {
+      setSaveMessages(prev => {
+        const newMessages = { ...prev };
+        delete newMessages[langCode];
+        return newMessages;
+      });
+    }, 3000);
   };
 
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
@@ -492,6 +539,9 @@ function App() {
                     onToggleSelect={() => toggleSelectCard(langCode)}
                     onSwipeSave={() => handleSwipeSave(langCode)}
                     isInSelectionMode={isInSelectionMode}
+                    onPracticeResult={handlePracticeResult} // [신규] 발음 연습 결과를 App으로 전달
+                    targetGoal={languageGoals[langCode] || 80} // [신규] 목표 점수 전달
+                    librarySaveMessage={saveMessages[langCode]} // [신규] 중복 저장 방지 피드백 메시지
                   />
                 );
               })}
@@ -520,11 +570,12 @@ function App() {
             )}
           </>
         ) : viewMode === 'library' ? (
-          /* [신규] 보관함 모드일 때 보여주는 화면 */
+          /* [신규] 보관함 모드일 때 보여주는 화면: 언어별 목표 점수 설정값을 전달합니다. */
           <Library
             user={user}
             sourceLang={sourceLang}
             onSpeak={handleSpeak}
+            languageGoals={languageGoals}
           />
         ) : (
           /* 설정 모드(settings)일 때 보여주는 화면 */
@@ -585,16 +636,34 @@ function App() {
               </div>
             </div>
 
+            {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
             <div className="settings-group">
-              <label className="settings-label">AI Learning Tip Settings</label>
-              <div className="api-key-section">
-                <input
-                  type="password"
-                  value={geminiApiKey}
-                  onChange={(e) => setGeminiApiKey(e.target.value)}
-                  placeholder="Enter Gemini API Key"
-                  className="api-key-input"
-                />
+              <label className="settings-label">Target Score Goals 🎯</label>
+              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
+                Set your pronunciation target score for each language.
+              </p>
+              <div className="goal-sliders">
+                {targetLangs.map(code => {
+                  const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+                  const currentGoal = languageGoals[code] || 80; // 기본값 80
+                  return (
+                    <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
+                      <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={currentGoal}
+                        onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
+                        style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
+                      />
+                      <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
+                    </div>
+                  );
+                })}
+                {targetLangs.length === 0 && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
+                )}
               </div>
             </div>
 
@@ -605,28 +674,28 @@ function App() {
         )}
       </main>
 
-      {/* 화면 하단에 고정된 메뉴바 (네비게이션) */}
+      {/* 화면 하단에 고정된 메뉴바 (네비게이션) - 아이콘 전용 */}
       <nav className="app-nav">
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
           onClick={() => { setViewMode('translation'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          title="Language Card"
         >
-          <Languages size={24} />
-          <span>Language Card</span>
+          <Languages size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
           onClick={() => { setViewMode('library'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          title="Library"
         >
-          <Sparkles size={24} />
-          <span>Library</span>
+          <Sparkles size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'settings' ? 'active' : ''}`}
           onClick={() => { setViewMode('settings'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          title="Settings"
         >
-          <SettingsIcon size={24} />
-          <span>Settings</span>
+          <SettingsIcon size={32} />
         </button>
       </nav>
     </div>

@@ -1,26 +1,44 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, updateDoc, limit } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Volume2 } from 'lucide-react';
 
-const Library = ({ user, sourceLang, onSpeak }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const [savedCards, setSavedCards] = useState([]);
     const [filterLang, setFilterLang] = useState('all');
     const [isLoading, setIsLoading] = useState(true);
-    const [errorMsg, setErrorMsg] = useState(null); // 에러 메시지를 표시할 상태 변수 추가
+    const [errorMsg, setErrorMsg] = useState(null);
 
-    // 1. Firebase에서 내가 저장한 카드 실시간으로 가져오기
+    // 무한 스크롤 및 검색 관련 상태 변수
+    const [limitCount, setLimitCount] = useState(10);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [hasMore, setHasMore] = useState(true);
+    const observerTarget = useRef(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState(null); // [신규] 커스텀 삭제 모달을 위한 ID 상태
+
+    // 1. Firebase에서 내가 저장한 카드 실시간으로 가져오기 (무한 스크롤 & 검색 대응)
     useEffect(() => {
         if (!user) return;
 
-        const q = query(
-            collection(db, "savedCards"),
-            where("userId", "==", user.uid),
-            orderBy("createdAt", "desc")
-        );
+        let q;
+        // 검색어가 있을 때는 전체 목록을 가져와 클라이언트 필터링(Like 검색)을 지원하여 한계를 극복합니다.
+        if (searchTerm.trim() !== '') {
+            q = query(
+                collection(db, "savedCards"),
+                where("userId", "==", user.uid),
+                orderBy("createdAt", "desc")
+            );
+        } else {
+            // 평소에는 지정된 개수(limitCount)만큼만 가져옵니다.
+            q = query(
+                collection(db, "savedCards"),
+                where("userId", "==", user.uid),
+                orderBy("createdAt", "desc"),
+                limit(limitCount)
+            );
+        }
 
-        // onSnapshot의 3번째 인자로 에러가 발생했을 때 처리(Error Handling)를 추가합니다.
         const unsubscribe = onSnapshot(
             q,
             (snapshot) => {
@@ -29,37 +47,125 @@ const Library = ({ user, sourceLang, onSpeak }) => {
                     ...doc.data()
                 }));
                 setSavedCards(cards);
+
+                // 만약 가져온 개수가 현재 제한값보다 적다면 더 이상 데이터가 없다는 뜻입니다.
+                if (!searchTerm && cards.length < limitCount) {
+                    setHasMore(false);
+                } else {
+                    setHasMore(true);
+                }
+
                 setIsLoading(false);
-                setErrorMsg(null); // 성공적으로 가져오면 에러 메시지 초기화
+                setErrorMsg(null);
             },
             (error) => {
                 console.error("Error loading library:", error);
-                // 가져오기에 실패하면 인터넷 문제나 권한 문제일 테니 에러를 저장해 표시합니다.
                 setErrorMsg("Cannot load library data. Please check your internet connection. 😥");
-                setIsLoading(false); // 무한 로딩 빙글빙글 도는 것을 막습니다.
+                setIsLoading(false);
             }
         );
 
         return () => unsubscribe();
-    }, [user]);
+    }, [user, limitCount, searchTerm]);
 
-    // 2. 카드 삭제 기능
-    const handleDeleteCard = async (id) => {
-        if (window.confirm("정말로 이 번역 카드를 보관함에서 지우시겠습니까?")) {
-            try {
-                // Firebase 서버에 문서를 찾아가서 지우라고 요청합니다.
-                await deleteDoc(doc(db, "savedCards", id));
-            } catch (error) {
-                console.error("Delete failed:", error);
-                alert(`카드 삭제에 실패했습니다! 😥\n\n원인: Firebase 데이터베이스에 '삭제 권한(allow delete)'이 꺼져 있을 가능성이 높습니다.\n\n에러 메시지: ${error.message}`);
-            }
+    // [신규] 무한 스크롤 스크롤 감지 (Intersection Observer)
+    useEffect(() => {
+        const observer = new IntersectionObserver(
+            entries => {
+                // 맨 아래 요소가 보이고, 더 불러올 데이터가 있고, 검색중이 아닐 때만 10장 추가!
+                if (entries[0].isIntersecting && hasMore && !searchTerm) {
+                    setLimitCount(prev => prev + 10);
+                }
+            },
+            { threshold: 1.0 }
+        );
+
+        if (observerTarget.current) {
+            observer.observe(observerTarget.current);
+        }
+
+        return () => {
+            if (observerTarget.current) observer.unobserve(observerTarget.current);
+        };
+    }, [hasMore, searchTerm]);
+
+    // 2. 카드 삭제 기능 (커스텀 팝업으로 변경)
+    const triggerDelete = (id) => {
+        setDeleteConfirmId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteConfirmId) return;
+        try {
+            await deleteDoc(doc(db, "savedCards", deleteConfirmId));
+            setDeleteConfirmId(null); // 모달 닫기
+        } catch (error) {
+            console.error("Delete failed:", error);
+            alert(`카드 삭제에 실패했습니다! 😥\n\n에러 메시지: ${error.message}`);
+            setDeleteConfirmId(null);
         }
     };
 
-    // 3. 언어별 필터링 로직
-    const filteredCards = filterLang === 'all'
-        ? savedCards
-        : savedCards.filter(card => card.langCode === filterLang);
+    const cancelDelete = () => {
+        setDeleteConfirmId(null);
+    };
+
+    // [신규] 2-1. 보관함 카드 재연습 시 점수 및 오디오 업데이트
+    const handlePracticeResult = async (id, langCode, result) => {
+        try {
+            // [추가] 낙관적 업데이트(Optimistic Update): 오디오 주소가 누락된 중간 단계 결과라도 기존 오디오를 날리지 않도록 병합합니다.
+            setSavedCards(currentCards =>
+                currentCards.map(card => {
+                    if (card.id === id) {
+                        return {
+                            ...card,
+                            pronunciationScore: result.pronunciationScore || card.pronunciationScore,
+                            pronunciationAudioUrl: result.audioUrl || card.pronunciationAudioUrl
+                        };
+                    }
+                    return card;
+                })
+            );
+
+            // Firebase에는 실제로 존재하는 데이터만 업데이트하도록 필터링합니다.
+            const updateProps = {};
+            if (result.pronunciationScore !== undefined) updateProps.pronunciationScore = result.pronunciationScore;
+            if (result.audioUrl) updateProps.pronunciationAudioUrl = result.audioUrl;
+
+            if (Object.keys(updateProps).length > 0) {
+                const cardRef = doc(db, "savedCards", id);
+                await updateDoc(cardRef, updateProps);
+                console.log("Firebase 카드 속성 업데이트 완료");
+            }
+        } catch (error) {
+            console.error("Failed to update pronunciation test results:", error);
+        }
+    };
+
+    // [신규] 2-2. 저장된 내 발음 오디오 듣기
+    const playPronunciationAudio = (url) => {
+        if (!url) return;
+        const audio = new Audio(url);
+        audio.play().catch(e => console.error("Audio play failed:", e));
+    };
+
+    // 3. 언어 및 검색어(Like) 필터링 로직
+    let filteredCards = savedCards;
+
+    if (filterLang !== 'all') {
+        filteredCards = filteredCards.filter(card => card.langCode === filterLang);
+    }
+
+    if (searchTerm.trim() !== '') {
+        const lowerSearch = searchTerm.toLowerCase();
+        filteredCards = filteredCards.filter(card => {
+            // 단어나 알파벳이 문장, 번역, 발음에 포함되어 있는지(Like) 검사
+            const matchSource = card.sourceText?.toLowerCase().includes(lowerSearch);
+            const matchTrans = card.translatedText?.toLowerCase().includes(lowerSearch);
+            const matchPronun = card.pronunciation?.toLowerCase().includes(lowerSearch);
+            return matchSource || matchTrans || matchPronun;
+        });
+    }
 
     // 저장된 카드들 중 존재하는 언어 목록 추출 (필터 탭용)
     const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
@@ -84,7 +190,19 @@ const Library = ({ user, sourceLang, onSpeak }) => {
     }
 
     return (
-        <div className="library-container">
+        <div className="library-container library-theme">
+            {/* [신규] 와일드카드(Like) 검색창 */}
+            <div className="search-bar-container" style={{ marginBottom: '1rem', position: 'relative' }}>
+                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                <input
+                    type="text"
+                    placeholder=""
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{ width: '100%', padding: '12px 12px 12px 38px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '1rem', outline: 'none' }}
+                />
+            </div>
+
             {/* 언어 필터 탭 */}
             <div className="filter-tabs">
                 {availableLangs.map(lang => (
@@ -114,23 +232,42 @@ const Library = ({ user, sourceLang, onSpeak }) => {
                                 badgeTextColor={card.langCode === 'en' ? '#4338ca' : card.langCode === 'ja' ? '#b91c1c' : '#9a3412'}
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode)}
                                 isInSelectionMode={false} // 보관함에선 선택 모드 비활성
+                                isLibraryView={true} // [신규] 제스처 완전 차단
+                                onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)} // [신규] 연습 시 업데이트
+                                targetGoal={languageGoals[card.langCode] || 80} // [신규] 목표 점수 전달
                             />
 
-                            {/* [신규] 인스타그램 스타일 하단 액션바 */}
+                            {/* [신규] 아이콘화된 하단 액션바 */}
                             <div className="card-action-bar">
-                                <div className="action-left">
-                                    <span className="stat-text">목표: <strong>80점</strong></span>
+                                <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
+                                    <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 80}</strong></span>
                                     <span className="stat-divider">·</span>
-                                    <span className="stat-text">점수: <strong>{card.pronunciationScore || 95}점</strong></span>
+                                    <span className="stat-text" title="내 점수">⭐️ <strong>{card.pronunciationScore || '-'}</strong></span>
                                     <span className="stat-divider">·</span>
-                                    <span className="stat-text">달성: <span className="check-icon">✅</span></span>
+                                    <span className="stat-text" title="달성 여부">
+                                        {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 80) ? '✅' : '❌'}
+                                    </span>
+                                    {/* 저장된 내 발음 오디오 듣기 버튼 */}
+                                    <span className="stat-divider">·</span>
+                                    <button
+                                        className="stat-icon-btn"
+                                        title={card.pronunciationAudioUrl ? "내 발음 다시 듣기" : "저장된 발음 없음"}
+                                        onClick={(e) => {
+                                            e.stopPropagation();
+                                            if (card.pronunciationAudioUrl) playPronunciationAudio(card.pronunciationAudioUrl);
+                                        }}
+                                        disabled={!card.pronunciationAudioUrl}
+                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: card.pronunciationAudioUrl ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: card.pronunciationAudioUrl ? 1 : 0.3, color: 'var(--text-secondary)' }}
+                                    >
+                                        <Volume2 size={16} />
+                                    </button>
                                 </div>
                                 <div className="action-right">
                                     <button
                                         className="action-icon-btn delete-action"
                                         onClick={(e) => {
                                             e.stopPropagation();
-                                            handleDeleteCard(card.id);
+                                            triggerDelete(card.id);
                                         }}
                                         title="Delete from Library"
                                     >
@@ -147,6 +284,39 @@ const Library = ({ user, sourceLang, onSpeak }) => {
                     </div>
                 )}
             </div>
+
+            {/* [신규] 무한 스크롤 관찰용 빈 타겟 (화면 끝에 닿으면 감지됨) */}
+            {!searchTerm && hasMore && filteredCards.length > 0 && (
+                <div ref={observerTarget} style={{ height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1rem' }}>
+                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Loading more cards... 📚</span>
+                </div>
+            )}
+
+            {/* 데이터 끝에 도달했을 때 안내 */}
+            {!hasMore && filteredCards.length > 0 && !searchTerm && (
+                <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '1.5rem', fontSize: '0.875rem', paddingBottom: '2rem' }}>
+                    You've reached the end of your library! ✨
+                </div>
+            )}
+
+            {/* [신규] 세련된 영어 커스텀 삭제 확인 모달 */}
+            {deleteConfirmId && (
+                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
+                    <div className="modal-content" style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
+                        <p style={{ margin: '0 0 24px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', lineHeight: '1.5' }}>
+                            Do you really want to delete this Card?
+                        </p>
+                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
+                            <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                                Cancel
+                            </button>
+                            <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
+                                OK
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

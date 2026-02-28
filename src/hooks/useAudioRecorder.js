@@ -4,6 +4,7 @@ import { storage, db } from '../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
+import { getUiTranslation } from '../utils/uiTranslations';
 
 // 초보자 설명(주석):
 // 환경 변수(.env) 파일에서 API 서버 주소를 읽어옵니다.
@@ -140,7 +141,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 try {
                     const downloadUrl = await uploadWithTimeout;
                     setAssessmentResult(prev => ({ ...prev, audioUrl: downloadUrl }));
-                    setSaveMessage("발음 기록과 오디오가 성공적으로 저장되었습니다! ✅");
+                    setSaveMessage(`${getUiTranslation(sourceLangCode, 'audioSaved')} ✅`);
                 } catch (dbErr) {
                     console.error("Firebase 저장 실패:", dbErr);
                     // 에러 메시지를 화면에 띄워 디버깅을 돕습니다.

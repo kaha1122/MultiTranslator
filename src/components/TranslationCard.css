@@ -355,6 +355,12 @@
     color: #1e293b;
 }
 
+.reset-button svg {
+    stroke: white !important;
+    stroke-width: 2.5 !important;
+    fill: none !important;
+}
+
 /* [Selection & Gestures] 제스처 관련 스타일 추가 */
 
 /* 선택된 카드의 스타일: 테두리가 강조되고 입체감이 변합니다. */
@@ -387,25 +393,20 @@
     }
 }
 
-/* 스와이프 저장 애니메이션 (보관함으로 빨려 들어가는 효과) */
-.translation-card.saving-vacuum {
-    animation: vacuum 0.5s forwards ease-in;
+/* 스와이프 저장 애니메이션 (왼쪽으로 날아가는 쓱! 효과) */
+.translation-card.saving-swipe-left {
+    animation: swipeLeftOut 0.3s forwards ease-out;
     pointer-events: none;
 }
 
-@keyframes vacuum {
+@keyframes swipeLeftOut {
     0% {
-        transform: scale(1) translateX(var(--swipe-x, 0));
+        transform: scale(1) translateX(var(--swipe-x, 0px));
         opacity: 1;
     }
 
-    50% {
-        transform: scale(0.5) translateY(100px) rotate(15deg);
-        opacity: 0.5;
-    }
-
     100% {
-        transform: scale(0) translateY(300px);
+        transform: scale(0.95) translateX(-150%);
         opacity: 0;
     }
 }
@@ -456,14 +457,17 @@
    ========================================================================== */
 @media (max-width: 600px) {
     .translation-card {
-        padding: 20px; /* 원래 28px -> 화면이 작은폰에서는 20px로 줄여 날씬하게 */
+        padding: 20px;
+        /* 원래 28px -> 화면이 작은폰에서는 20px로 줄여 날씬하게 */
     }
 
     .section-divider {
-        margin: 0 -20px 24px -20px; /* 줄어든 패딩에 맞춰 가로선 길이도 다시 맞춤 */
+        margin: 0 -20px 24px -20px;
+        /* 줄어든 패딩에 맞춰 가로선 길이도 다시 맞춤 */
     }
 
     .translated-text {
-        font-size: 1.25rem; /* 글씨 크기도 약간만 부드럽게 줄이기 */
+        font-size: 1.25rem;
+        /* 글씨 크기도 약간만 부드럽게 줄이기 */
     }
 }
