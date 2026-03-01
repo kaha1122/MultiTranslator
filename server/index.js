@@ -127,9 +127,9 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     `;
 
     try {
-        console.log(`[Gemini] Requesting with model: gemini-1.5-flash, Key prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
+        console.log(`[Gemini] Requesting with model: gemini-2.0-flash, Key prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
             { contents: [{ parts: [{ text: prompt }] }] }
         );
         return response.data.candidates[0].content.parts[0].text;
