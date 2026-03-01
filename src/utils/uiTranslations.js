@@ -1,4 +1,4 @@
-export const uiTranslations = {
+글export const uiTranslations = {
     ko: {
         savedSuccess: "저장 완료!",
         savedToLibrary: "보관함에 저장되었습니다!",

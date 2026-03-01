@@ -13,7 +13,11 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-const upload = multer({ dest: 'uploads/' });
+const UPLOADS_DIR = 'uploads/';
+if (!fs.existsSync(UPLOADS_DIR)) {
+    fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+const upload = multer({ dest: UPLOADS_DIR });
 
 // API Keys (To be set in .env)
 const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
