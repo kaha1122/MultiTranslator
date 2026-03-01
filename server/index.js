@@ -189,9 +189,16 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 
     try {
         // 0. Convert WebM/MP4 (from browser) to WAV (for Azure)
+        // [수정] Azure Speech가 요구하는 아주 깐깐한 오디오 성향에 100% 맞춰줍니다.
+        // - 오디오 채널을 1개(모노)로 만듭니다. 스테레오면 점수가 안 나오거나 오류가 납니다.
+        // - 사람 목소리에 적합한 16000Hz 주파수로 맞춥니다.
+        // - 완벽한 pcm_s16le 방식의 WAV 포맷으로 코딩합니다.
         await new Promise((resolve, reject) => {
             ffmpeg(originalAudioPath)
                 .toFormat('wav')
+                .audioChannels(1)       // 모노 채널
+                .audioFrequency(16000)  // 16kHz
+                .audioCodec('pcm_s16le') // 16-bit PCM 포맷 코덱
                 .on('error', (err) => reject(err))
                 .on('end', () => resolve())
                 .save(audioPath);

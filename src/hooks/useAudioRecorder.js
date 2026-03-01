@@ -51,9 +51,18 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         setErrorMsg(null); // 녹음을 시작할 때마다 기존 에러 메시지를 지웁니다.
         setSaveMessage(null); // 저장 메시지도 초기화
         try {
-            // 마이크 권한 요청
+            // 기기가 지원하는 오디오 형식을 먼저 확인합니다.
+            // 아이폰(사파리/크롬)은 무조건 mp4 계열을 좋아하므로 audio/mp4를 우선순위로 두고, 
+            // 그 외(안드로이드/PC 크롬)은 기본적으로 가장 널리 쓰이는 audio/webm을 찾습니다.
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+                ? 'audio/webm'
+                : MediaRecorder.isTypeSupported('audio/mp4')
+                    ? 'audio/mp4'
+                    : ''; // 둘 다 지원 안 하면 브라우저 기본값에 맡김
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder.current = new MediaRecorder(stream);
+            // 찾아낸 파일 형식(mimeType)을 녹음기(MediaRecorder)에 알려줍니다.
+            mediaRecorder.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunks.current = [];
 
             // 녹음 데이터가 들어올 때마다 배열에 저장합니다.
@@ -61,8 +70,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
             // 녹음이 중지되면 분석을 시작합니다.
             mediaRecorder.current.onstop = async () => {
-                const audioBlob = new Blob(audioChunks.current, { type: 'audio/wav' });
-                analyzeFullPronunciation(audioBlob);
+                // 저장할 때, 고정된 'audio/wav'가 아니라, 기기가 만든 진짜 타입으로 덩어리(Blob)를 만듭니다.
+                const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
+                analyzeFullPronunciation(audioBlob, mediaRecorder.current.mimeType); // mimeType도 같이 넘겨줍니다.
             };
 
             mediaRecorder.current.start();
@@ -85,10 +95,15 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
     };
 
     // 3. 발음 분석 서버로 전송하는 함수
-    const analyzeFullPronunciation = async (blob) => {
+    const analyzeFullPronunciation = async (blob, mimeType) => {
         setIsAnalyzing(true);
         const formData = new FormData();
-        formData.append('audio', blob, 'recording.wav');
+
+        // 브라우저에서 받아온 mimeType을 보고 진짜 확장자를 결정합니다.
+        // mp4 형식이면 .mp4, webm 형식이면 .webm, 그 외엔 기본적으로 .webm으로 간주합니다.
+        const fileExtension = mimeType && mimeType.includes('mp4') ? 'mp4' : 'webm';
+        formData.append('audio', blob, `recording.${fileExtension}`);
+
         formData.append('text', text);
         formData.append('lang', langCode || 'en'); // [신규] 백엔드 서버에게 평가(목표) 언어 코드를 함께 보냅니다.
         formData.append('sourceLang', sourceLangCode || 'ko'); // [신규] 피드백을 전달할 사용자의 언어(출발 언어)를 알려줍니다.
