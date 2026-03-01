@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -45,6 +45,9 @@ function App() {
 
   // [신규] 온보딩 팝업 표시 여부
   const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // [신규] 인앱 브라우저 안내 팝업
+  const [showInAppWarning, setShowInAppWarning] = useState(false);
 
   // [신규] 닉네임 수정 모드 및 임시 텍스트 상태
   const [isEditingNickname, setIsEditingNickname] = useState(false);
@@ -243,12 +246,12 @@ function App() {
     const isAppBrowser = /KAKAOTALK|Instagram|NAVER|Line|FBAN|FBAV/i.test(ua);
 
     if (isAppBrowser) {
-      // 인앱 브라우저로 들어온 경우 마이크 문제에 대해 두 가지 언어로 경고
-      alert("🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 'Safari(또는 다른 기본 브라우저)로 열기'를 선택해 주세요!\n\n🎙️ To fully use the microphone, please tap the menu button and select 'Open in Safari (or default browser)'!");
+      // 인앱 브라우저인 경우, 사용자에게 친절한 모달 팝업을 띄움 (화면 이동은 하지 않음)
+      setShowInAppWarning(true);
+    } else {
+      // 일반 브라우저인 경우 바로 홈 화면(번역 모드)으로 이동
+      setViewMode('translation');
     }
-
-    // 2. 홈 화면(번역 모드)으로 이동
-    setViewMode('translation');
   };
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
@@ -750,9 +753,9 @@ function App() {
                 {/* [신규] 온보딩 팝업 */}
                 {showOnboarding && (
                   <div className="onboarding-overlay" style={{
-                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(255,255,255,0.95)', zIndex: 100,
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '16px',
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.95)', zIndex: 9999,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '0',
                     backdropFilter: 'blur(5px)'
                   }}>
                     <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>Welcome to PronunFit! 🎉</h2>
@@ -762,6 +765,63 @@ function App() {
                     <button className="translate-btn" onClick={handleCompleteOnboarding}>
                       Go to Settings 🚀
                     </button>
+                  </div>
+                )}
+
+                {/* [신규] 인앱 브라우저 안내 커스텀 팝업 */}
+                {showInAppWarning && (
+                  <div className="onboarding-overlay" style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px'
+                  }}>
+                    <div style={{
+                      background: 'white', borderRadius: '20px', padding: '20px',
+                      width: '100%', maxWidth: '380px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+                      display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '90vh', overflowY: 'auto'
+                    }}>
+                      <style>{`
+                        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+                        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+                      `}</style>
+
+                      <div style={{ display: 'flex', justifyContent: 'center', color: '#eab308' }}>
+                        <AlertCircle size={40} />
+                      </div>
+
+                      <h3 style={{ textAlign: 'center', color: '#1e293b', margin: 0 }}>브라우저 변경 안내</h3>
+
+                      <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
+                        <p style={{ margin: '0 0 10px 0' }}>🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 <b>'다른 브라우저로 열기'(Chrome/Edge/Safari)</b>를 선택해 주세요!</p>
+                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>To fully use the microphone, please tap the menu button and select <b>'Open in another browser' (Chrome/Edge/Safari)</b>.</p>
+                      </div>
+
+                      {/* 이미지 가이드 영역 */}
+                      <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9' }}>
+                        <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', display: 'block' }} />
+                        {/* 우측 상단 카카오톡 아이콘 강조 (노란색 동그라미) */}
+                        <div style={{
+                          position: 'absolute', top: '15px', right: '55px',
+                          width: '40px', height: '40px', borderRadius: '50%',
+                          border: '4px solid #eab308',
+                          animation: 'pulse-yellow 2s infinite'
+                        }}></div>
+                        {/* 우측 하단 메뉴 버튼 강조 (빨간색 동그라미) */}
+                        <div style={{
+                          position: 'absolute', bottom: '15px', right: '15px',
+                          width: '50px', height: '50px', borderRadius: '50%',
+                          border: '4px solid #ef4444',
+                          animation: 'pulse-red 2s infinite', animationDelay: '1s'
+                        }}></div>
+                      </div>
+
+                      <button
+                        style={{ marginTop: '5px', padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+                        onClick={() => { setShowInAppWarning(false); setViewMode('translation'); }}
+                      >
+                        알겠습니다 (Got it)
+                      </button>
+                    </div>
                   </div>
                 )}
 
