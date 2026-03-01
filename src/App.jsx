@@ -804,6 +804,8 @@ function App() {
                           position: 'absolute', top: '15px', right: '55px',
                           width: '40px', height: '40px', borderRadius: '50%',
                           border: '4px solid #eab308',
+                          backgroundColor: 'transparent',
+                          pointerEvents: 'none',
                           animation: 'pulse-yellow 2s infinite'
                         }}></div>
                         {/* 우측 하단 메뉴 버튼 강조 (빨간색 동그라미) */}
@@ -811,6 +813,8 @@ function App() {
                           position: 'absolute', bottom: '15px', right: '15px',
                           width: '50px', height: '50px', borderRadius: '50%',
                           border: '4px solid #ef4444',
+                          backgroundColor: 'transparent',
+                          pointerEvents: 'none',
                           animation: 'pulse-red 2s infinite', animationDelay: '1s'
                         }}></div>
                       </div>
