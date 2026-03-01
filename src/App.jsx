@@ -801,7 +801,7 @@ function App() {
                         <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', display: 'block' }} />
                         {/* 우측 상단 카카오톡 아이콘 강조 (노란색 동그라미) */}
                         <div style={{
-                          position: 'absolute', top: '15px', right: '55px',
+                          position: 'absolute', top: '15px', right: '28px',
                           width: '40px', height: '40px', borderRadius: '50%',
                           border: '4px solid #eab308',
                           backgroundColor: 'transparent',
@@ -810,8 +810,8 @@ function App() {
                         }}></div>
                         {/* 우측 하단 메뉴 버튼 강조 (빨간색 동그라미) */}
                         <div style={{
-                          position: 'absolute', bottom: '15px', right: '15px',
-                          width: '50px', height: '50px', borderRadius: '50%',
+                          position: 'absolute', bottom: '45px', right: '15px',
+                          width: '45px', height: '45px', borderRadius: '50%',
                           border: '4px solid #ef4444',
                           backgroundColor: 'transparent',
                           pointerEvents: 'none',
