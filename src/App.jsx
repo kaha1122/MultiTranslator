@@ -235,6 +235,22 @@ function App() {
     }
   };
 
+  // [신규] 설정 저장 (홈 화면으로 돌아가기) 및 인앱 브라우저 감지 경고 띄우기
+  const handleSaveSettings = () => {
+    // 1. 접속한 브라우저의 고유 서명(User Agent) 확인
+    const ua = navigator.userAgent || navigator.vendor || window.opera;
+    // 카카오톡, 인스타그램, 네이버, 라인, 페이스북 등의 키워드 감지
+    const isAppBrowser = /KAKAOTALK|Instagram|NAVER|Line|FBAN|FBAV/i.test(ua);
+
+    if (isAppBrowser) {
+      // 인앱 브라우저로 들어온 경우 마이크 문제에 대해 두 가지 언어로 경고
+      alert("🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 'Safari(또는 다른 기본 브라우저)로 열기'를 선택해 주세요!\n\n🎙️ To fully use the microphone, please tap the menu button and select 'Open in Safari (or default browser)'!");
+    }
+
+    // 2. 홈 화면(번역 모드)으로 이동
+    setViewMode('translation');
+  };
+
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
   // '번역' 버튼을 눌렀을 때 실행되는 메인 함수
@@ -852,7 +868,7 @@ function App() {
                   </div>
                 </div>
 
-                <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={() => setViewMode('translation')}>
+                <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
                   Save Settings & Return
                 </button>
               </div>
