@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { auth, googleProvider } from '../../firebase/config';
-import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth, db, googleProvider } from '../../firebase/config';
+import { signInWithEmailAndPassword, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { LogIn, Mail, Lock, AlertCircle } from 'lucide-react';
 import './Auth.css';
 
@@ -29,7 +30,29 @@ function Login({ onSwitchToSignup }) {
         setIsLoading(true);
         setError('');
         try {
-            await signInWithPopup(auth, googleProvider);
+            const userCredential = await signInWithPopup(auth, googleProvider);
+            const user = userCredential.user;
+            const additionalInfo = getAdditionalUserInfo(userCredential);
+
+            // 구글 가입 기본 정보 세팅
+            const profileData = {
+                uid: user.uid,
+                email: user.email,
+                displayName: user.displayName || 'Google User',
+                membership: 'Free',
+                updatedAt: serverTimestamp()
+            };
+
+            // 만약 Firebase의 Auth에서 '완전 처음 가입(isNewUser)'으로 인식했다면 (계정 지우고 다시 가입한 경우 등)
+            // 찌꺼기 데이터를 무시하고 온보딩(팝업)을 강제로 띄우도록 설정
+            if (additionalInfo && additionalInfo.isNewUser) {
+                profileData.hasCompletedOnboarding = false;
+                profileData.createdAt = serverTimestamp();
+            }
+
+            // DB에 정보 업데이트
+            await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+
         } catch (err) {
             console.error(err);
             if (err.code !== 'auth/popup-closed-by-user') {

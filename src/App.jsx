@@ -40,8 +40,15 @@ const languageNames = {
 };
 
 function App() {
-  const { user, profile } = useAuth();
+  const { user, profile, updateUserProfile } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+
+  // [신규] 온보딩 팝업 표시 여부
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // [신규] 닉네임 수정 모드 및 임시 텍스트 상태
+  const [isEditingNickname, setIsEditingNickname] = useState(false);
+  const [editNicknameValue, setEditNicknameValue] = useState('');
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
   const [languageGoals, setLanguageGoals] = useState(() => {
@@ -93,13 +100,13 @@ function App() {
   const [targetLangs, setTargetLangs] = useState(() => {
     try {
       const saved = localStorage.getItem('targetLangs');
-      if (!saved) return ['en', 'ja', 'zh-CN']; // 기본값: 영어, 일본어, 중국어
+      if (!saved) return ['en']; // 기본값: 영어 하나로 변경
       const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return ['en', 'ja', 'zh-CN'];
+      if (!Array.isArray(parsed)) return ['en'];
       // 지원되는 언어 코드만 필터링해서 가져옵니다.
       return parsed.filter(code => SUPPORTED_LANGUAGES.some(l => l.code === code));
     } catch (e) {
-      return ['en', 'ja', 'zh-CN'];
+      return ['en'];
     }
   });
 
@@ -188,6 +195,45 @@ function App() {
   useEffect(() => {
     window.scrollTo(0, 0);
   }, [viewMode]);
+
+  // [신규] 첫 로그인 감지 (온보딩 유도)
+  useEffect(() => {
+    // 사용자가 로그인했고(profile 로드 됨), 아직 온보딩(초기 설정)을 안 끝냈다면, 설정 화면으로 이동시킴
+    if (user && profile && profile.hasCompletedOnboarding !== true) {
+      setViewMode('settings');
+      setShowOnboarding(true);
+      // [수정] 내 브라우저(캐시)에 과거에 골라둔 언어 3개가 남아있을 수 있으므로 강제로 '영어'로 리셋!
+      setTargetLangs(['en']);
+    }
+  }, [user, profile]);
+
+  // [신규] 온보딩 [확인] 버튼을 눌렀을 때
+  const handleCompleteOnboarding = async () => {
+    try {
+      await updateUserProfile({ hasCompletedOnboarding: true });
+      setShowOnboarding(false);
+    } catch (e) {
+      console.error("Failed to complete onboarding:", e);
+      setShowOnboarding(false); // 실패하더라도 팝업은 닫아줌
+    }
+  };
+
+  // [신규] 닉네임 수정 모드로 전환
+  const handleEditNickname = () => {
+    setEditNicknameValue(profile?.displayName || user?.displayName || 'Google User');
+    setIsEditingNickname(true);
+  };
+
+  // [신규] 닉네임 저장
+  const handleSaveNickname = async () => {
+    if (!editNicknameValue.trim()) return;
+    try {
+      await updateUserProfile({ displayName: editNicknameValue });
+      setIsEditingNickname(false);
+    } catch (e) {
+      alert("Failed to update nickname. Please try again.");
+    }
+  };
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
@@ -684,14 +730,48 @@ function App() {
               />
             ) : (
               /* 설정 모드(settings)일 때 보여주는 화면 */
-              <div className="settings-container">
+              <div className="settings-container" style={{ position: 'relative' }}>
+                {/* [신규] 온보딩 팝업 */}
+                {showOnboarding && (
+                  <div className="onboarding-overlay" style={{
+                    position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(255,255,255,0.95)', zIndex: 100,
+                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '16px',
+                    backdropFilter: 'blur(5px)'
+                  }}>
+                    <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>Welcome to PronunFit! 🎉</h2>
+                    <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#475569', lineHeight: '1.5' }}>
+                      To get started, please select your <b>primary language</b> (Source Language) and the language you want to learn (<b>Target Language</b>).
+                    </p>
+                    <button className="translate-btn" onClick={handleCompleteOnboarding}>
+                      Go to Settings 🚀
+                    </button>
+                  </div>
+                )}
+
                 <div className="user-profile-section">
                   <div className="user-info">
                     <div className="user-avatar">
                       <User size={24} color="var(--primary-color)" />
                     </div>
                     <div className="user-details">
-                      <p className="user-email">{profile?.displayName || user.email}</p>
+                      {isEditingNickname ? (
+                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
+                          <input
+                            type="text"
+                            value={editNicknameValue}
+                            onChange={(e) => setEditNicknameValue(e.target.value)}
+                            style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', width: '150px' }}
+                            autoFocus
+                          />
+                          <button onClick={handleSaveNickname} style={{ padding: '6px 12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Save</button>
+                        </div>
+                      ) : (
+                        <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          {profile?.displayName || user.email}
+                          <span onClick={handleEditNickname} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
+                        </p>
+                      )}
                       {profile?.displayName && <p className="user-email-secondary">{user.email}</p>}
                       <p className="user-status">{profile?.membership || 'Free'} Member</p>
                     </div>

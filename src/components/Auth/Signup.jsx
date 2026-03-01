@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, db, googleProvider } from '../../firebase/config';
-import { createUserWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserPlus, Mail, Lock, AlertCircle, User, Phone, MapPin } from 'lucide-react';
 import './Auth.css';
@@ -59,15 +59,26 @@ function Signup({ onSwitchToLogin }) {
         try {
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
+            const additionalInfo = getAdditionalUserInfo(userCredential);
 
-            // For Google Login, we also create a basic Firestore record if it doesn't exist
-            await setDoc(doc(db, 'users', user.uid), {
+            // 구글 가입 기본 정보 세팅
+            const profileData = {
                 uid: user.uid,
                 email: user.email,
                 displayName: user.displayName || 'Google User',
                 membership: 'Free',
                 updatedAt: serverTimestamp()
-            }, { merge: true });
+            };
+
+            // [핵심] 만약 Firebase의 Auth에서 '완전 처음 가입(isNewUser)'으로 인식했다면,
+            // 과거에 찌꺼기 데이터가 남아 있어도, 온보딩(팝업)을 다시 보게끔 강제로 리셋해 줍니다.
+            if (additionalInfo && additionalInfo.isNewUser) {
+                profileData.hasCompletedOnboarding = false;
+                profileData.createdAt = serverTimestamp();
+            }
+
+            // DB에 정보 업데이트 (존재하면 덮어쓰고, 없으면 새로 생성)
+            await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
 
         } catch (err) {
             console.error(err);

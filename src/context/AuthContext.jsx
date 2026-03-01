@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -11,34 +11,59 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const unsubscribe = onAuthStateChanged(auth, async (authenticatedUser) => {
+        let unsubscribeProfile;
+
+        const unsubscribeAuth = onAuthStateChanged(auth, (authenticatedUser) => {
             if (authenticatedUser) {
                 setUser(authenticatedUser);
-                // Fetch extended profile from Firestore
-                try {
-                    const docRef = doc(db, 'users', authenticatedUser.uid);
-                    const docSnap = await getDoc(docRef);
+
+                // Firestore에서 프로필 정보를 실시간으로 구독(onSnapshot)합니다.
+                // 이렇게 하면 구글 가입 직후 데이터가 생겨나는 것도 즉시 감지하여 App.jsx로 전달합니다.
+                const docRef = doc(db, 'users', authenticatedUser.uid);
+                unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
                         setProfile(null);
                     }
-                } catch (error) {
+                    setLoading(false);
+                }, (error) => {
                     console.error("Error fetching user profile:", error);
                     setProfile(null);
-                }
+                    setLoading(false);
+                });
+
             } else {
                 setUser(null);
                 setProfile(null);
+                if (unsubscribeProfile) {
+                    unsubscribeProfile();
+                }
+                setLoading(false);
             }
-            setLoading(false);
         });
 
-        return () => unsubscribe();
+        return () => {
+            unsubscribeAuth();
+            if (unsubscribeProfile) unsubscribeProfile();
+        };
     }, []);
 
+    // 사용자 프로필 정보를 업데이트하는 함수
+    const updateUserProfile = async (updates) => {
+        if (!user) return;
+        try {
+            const docRef = doc(db, 'users', user.uid);
+            await updateDoc(docRef, updates);
+            // onSnapshot이 활성화되어 있으므로 setProfile을 수동으로 호출할 필요가 없습니다.
+        } catch (error) {
+            console.error("Error updating profile:", error);
+            throw error; // 에러 처리를 위해 던짐
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, profile, loading }}>
+        <AuthContext.Provider value={{ user, profile, loading, updateUserProfile }}>
             {!loading && children}
         </AuthContext.Provider>
     );
