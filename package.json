@@ -13,6 +13,7 @@
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.13.5",
     "firebase": "^12.9.0",
+    "framer-motion": "^12.34.3",
     "lucide-react": "^0.574.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",

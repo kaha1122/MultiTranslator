@@ -7,6 +7,8 @@ import { Search, Trash2, Volume2 } from 'lucide-react';
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const [savedCards, setSavedCards] = useState([]);
     const [filterLang, setFilterLang] = useState('all');
+    // [신규] 'W' (단어), 'S' (문장) 다중 선택 필터 상태 (디폴트 둘 다 켬)
+    const [filterTypes, setFilterTypes] = useState(new Set(['W', 'S']));
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
 
@@ -156,6 +158,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         filteredCards = filteredCards.filter(card => card.langCode === filterLang);
     }
 
+    // [신규] 단어(W) / 문장(S) 타입 다중 필터 적용
+    if (filterTypes.size === 0) {
+        // 둘 다 체크 해제된 상태라면 목록은 비워야 합니다.
+        filteredCards = [];
+    } else if (filterTypes.size === 1) {
+        // 둘 중 하나만 체크되었다면 해당 타입만 보여줍니다. (과거 버전의 데이터는 기본적으로 'S'로 취급)
+        filteredCards = filteredCards.filter(card => filterTypes.has(card.inputType || 'S'));
+    }
+
     if (searchTerm.trim() !== '') {
         const lowerSearch = searchTerm.toLowerCase();
         filteredCards = filteredCards.filter(card => {
@@ -214,6 +225,34 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                         {lang === 'all' ? 'All' : lang.toUpperCase()}
                     </button>
                 ))}
+            </div>
+
+            {/* [신규] 단어(Word) / 문장(Sentence) 멀티 필터 버튼 그룹 */}
+            <div className="type-filter-group" style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', padding: '0 4px' }}>
+                <button
+                    className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
+                    onClick={() => {
+                        const newSet = new Set(filterTypes);
+                        if (newSet.has('W')) newSet.delete('W');
+                        else newSet.add('W');
+                        setFilterTypes(newSet);
+                    }}
+                    style={{ background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
+                >
+                    # Word
+                </button>
+                <button
+                    className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
+                    onClick={() => {
+                        const newSet = new Set(filterTypes);
+                        if (newSet.has('S')) newSet.delete('S');
+                        else newSet.add('S');
+                        setFilterTypes(newSet);
+                    }}
+                    style={{ background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
+                >
+                    # Sentence
+                </button>
             </div>
 
             {/* 카드 목록 정렬 */}

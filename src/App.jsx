@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
@@ -68,11 +69,20 @@ function App() {
     }
   });
 
-  // 번역의 기준이 되는 언어 (출발어)
+  // 번역의 기준이 되는 언어 (출발어, 모국어)
   const [sourceLang, setSourceLang] = useState(() => {
     try {
       const saved = localStorage.getItem('sourceLang');
-      // 저장된 언어가 있고, 우리 앱이 지원하는 언어일 때만 사용합니다. 기본값은 '한국어(ko)'입니다.
+      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : 'ko';
+    } catch (e) {
+      return 'ko';
+    }
+  });
+
+  // [신규] 실제로 입력하는 텍스트의 언어 (기본은 sourceLang과 동일)
+  const [inputLang, setInputLang] = useState(() => {
+    try {
+      const saved = localStorage.getItem('inputLang');
       return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : 'ko';
     } catch (e) {
       return 'ko';
@@ -131,6 +141,15 @@ function App() {
   const [practiceResults, setPracticeResults] = useState({}); // [신규] 발음 연습 기록 상태
   const [saveMessages, setSaveMessages] = useState({}); // [신규] 보관함 저장 상태 알림 메시지
 
+  // [신규] 현재 번역한 텍스트가 단어(Word)인지 문장(Sentence)인지 판별한 결과 ('W' or 'S')
+  const [inputType, setInputType] = useState(() => {
+    try {
+      return localStorage.getItem('inputType') || 'S';
+    } catch (e) {
+      return 'S';
+    }
+  });
+
   // 발음 연습 결과가 나올 때마다 호출되는 함수
   const handlePracticeResult = (langCode, result) => {
     setPracticeResults(prev => ({
@@ -145,6 +164,8 @@ function App() {
     try {
       localStorage.setItem('inputText', inputText);
       localStorage.setItem('sourceLang', sourceLang);
+      localStorage.setItem('inputLang', inputLang);
+      localStorage.setItem('inputType', inputType); // [신규] 타입 저장
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('translations', JSON.stringify(translations));
       localStorage.setItem('learningTips', JSON.stringify(learningTips));
@@ -153,7 +174,15 @@ function App() {
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, targetLangs, translations, learningTips, pronunciations]);
+  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations]);
+
+  // [신규] sourceLang이나 targetLangs가 바뀔 때, inputLang이 사용 가능한 언어 조합에 없다면 기본값(sourceLang)으로 되돌립니다.
+  useEffect(() => {
+    const availableLangs = [sourceLang, ...targetLangs];
+    if (!availableLangs.includes(inputLang)) {
+      setInputLang(sourceLang);
+    }
+  }, [sourceLang, targetLangs, inputLang]);
 
   // 화면이 바뀔 때 스크롤을 맨 위로 올려주는 효과
   useEffect(() => {
@@ -191,8 +220,14 @@ function App() {
       const newTranslations = {};
       // 선택한 모든 도착 언어에 대해 번역을 수행합니다.
       await Promise.all(targetLangs.map(async (langCode) => {
-        const result = await fetchTranslation(inputText, sourceLang, langCode);
-        newTranslations[langCode] = result;
+        // [로직 변경] sourceLang 대신 사용자가 선택한 inputLang을 번역 출발어로 간주합니다.
+        if (inputLang === langCode) {
+          // 입력 언어와 목적 언어가 같다면 번역 생략하고 원문 그대로 사용 (사용자 요청 사항 반영)
+          newTranslations[langCode] = inputText;
+        } else {
+          const result = await fetchTranslation(inputText, inputLang, langCode);
+          newTranslations[langCode] = result;
+        }
       }));
 
       setTranslations(newTranslations); // 번역 결과 저장
@@ -220,6 +255,7 @@ function App() {
 
       const targetCodes = targetLangs.join(', ');
       const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
+      const inputLangName = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name || inputLang;
 
       // AI에게 보내는 상세 지시서 (프롬프트 고도화)
       const prompt = `
@@ -227,11 +263,12 @@ function App() {
         
         [Target Application Context]
         - The user's primary language for this session is "${sourceLangName}". This is the language the user understands.
+        - The input text provided by the user is written in "${inputLangName}".
         - CRITICAL RULE: ALL explanations, tips, and dictionary definitions MUST be written in the user's primary language: "${sourceLangName}". 
         - ABSOLUTELY DO NOT write the explanations in the target language being learned. For example, if you are explaining a Korean translation to a Chinese user, the explanation must be in Chinese, NOT Korean.
 
         [Data]
-        - Source Text (Input in ${sourceLangName}): "${original}"
+        - Source Text (Input in ${inputLangName}): "${original}"
         - Current Translations to learn:
         ${targetLangsInfo}
 
@@ -297,6 +334,11 @@ function App() {
       // 응답에서 순수한 데이터(JSON)만 뽑아서 저장합니다.
       const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       const result = JSON.parse(jsonString);
+
+      // [신규] AI가 판별한 결과에 따라 단어(W)인지 문장(S)인지 상태에 저장합니다.
+      if (result.type) {
+        setInputType(result.type.toLowerCase() === 'word' ? 'W' : 'S');
+      }
 
       // 개별 언어별로 팁과 발음을 분리하여 저장합니다.
       const newTips = {};
@@ -368,7 +410,9 @@ function App() {
         language: SUPPORTED_LANGUAGES.find(l => l.code === langCode)?.name || langCode,
         langCode: langCode,
         sourceText: inputText,
-        sourceLang: sourceLang,
+        sourceLang: sourceLang, // 모국어 (UI 기준 언어)
+        inputLang: inputLang,   // 실제 텍스트가 입력된 언어
+        inputType: inputType,   // [신규] 'W' (Word) 또는 'S' (Sentence)
         translatedText: translations[langCode],
         learningTip: learningTips[langCode] || [],
         pronunciation: pronunciations[langCode] || "",
@@ -484,194 +528,257 @@ function App() {
       <Analytics />
 
       <header className="app-header">
-        <h1 className="main-logo-badge">My Polyglot Tutor</h1>
+        {/* [디자인 변경]: 앱 이름을 PronunFit으로 변경하고, framer-motion을 활용해 타이핑 애니메이션과 입체 3D 효과를 줍니다. */}
+        <motion.h1
+          className="main-logo-3d"
+          initial="hidden"
+          animate="visible"
+          variants={{
+            hidden: { opacity: 1 },
+            visible: {
+              opacity: 1,
+              transition: {
+                staggerChildren: 0.15, // 한 글자씩 나타나는 딜레이 (타이핑 효과)
+              }
+            }
+          }}
+        >
+          {"PronunFit".split("").map((char, index) => (
+            <motion.span
+              key={index}
+              variants={{
+                hidden: { opacity: 0, y: 20, scale: 0.8 }, // 시작할 때 투명하고 약간 아래에 위치
+                visible: { opacity: 1, y: 0, scale: 1 }    // 나타날 때 원래 위치로 고정되며 완성됨
+              }}
+              style={{ display: "inline-block" }}
+            >
+              {char}
+            </motion.span>
+          ))}
+        </motion.h1>
       </header>
 
       <main className="app-main-content">
-        {/* 번역 모드(translation)일 때 보여주는 화면 */}
-        {viewMode === 'translation' ? (
-          <>
-            <div className="primary-sentence-container">
-              <span className="primary-label">
-                {/* 설정된 출발 언어의 이름을 가져와서 라벨로 보여줍니다. */}
-                {(SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || 'Unknown')} Sentence
-              </span>
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Enter text to translate..."
-                className="text-input"
-              />
-              <div className="translate-btn-container">
-                <button
-                  className="translate-btn"
-                  onClick={handleTranslate}
-                  disabled={isTranslating || !inputText.trim()}
-                >
-                  {isTranslating ? 'Translating...' : (
-                    <>
-                      <Sparkles size={20} />
-                      Translate
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-
-            {/* 번역 결과 카드들이 나오는 영역 */}
-            <div className="cards-grid">
-              {targetLangs.map((langCode) => {
-                const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-                return (
-                  <TranslationCard
-                    key={langCode}
-                    language={lang?.name}
-                    langCode={langCode}
-                    sourceLangCode={sourceLang}
-                    text={translations[langCode]}
-                    pronunciation={pronunciations[langCode]}
-                    learningTip={learningTips[langCode]}
-                    badgeColor={lang?.color}
-                    badgeTextColor={lang?.textColor}
-                    onSpeak={() => handleSpeak(translations[langCode], langCode)}
-                    isSelected={selectedCards.has(langCode)}
-                    onToggleSelect={() => toggleSelectCard(langCode)}
-                    onSwipeSave={() => handleSwipeSave(langCode)}
-                    isInSelectionMode={isInSelectionMode}
-                    onPracticeResult={handlePracticeResult} // [신규] 발음 연습 결과를 App으로 전달
-                    targetGoal={languageGoals[langCode] || 80} // [신규] 목표 점수 전달
-                    librarySaveMessage={saveMessages[langCode]} // [신규] 중복 저장 방지 피드백 메시지
+        <AnimatePresence mode="wait">
+          <motion.div
+            key={viewMode} // viewMode가 바뀔 때마다 새로운 화면으로 인식하여 애니메이션 실행
+            initial={{ opacity: 0, y: 20 }} // 화면이 약간 아래에서 투명하게 시작
+            animate={{ opacity: 1, y: 0 }}  // 제자리로 오면서 선명해짐
+            exit={{ opacity: 0, y: -20 }}   // 화면이 바뀔 때 위로 스르륵 사라짐
+            transition={{ duration: 0.3 }}  // 0.3초 동안 부드럽게 전환
+            style={{ width: '100%' }}
+          >
+            {/* 번역 모드(translation)일 때 보여주는 화면 */}
+            {viewMode === 'translation' ? (
+              <>
+                <div className="primary-sentence-container">
+                  <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                    {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
+                    {[sourceLang, ...targetLangs].filter((value, index, self) => self.indexOf(value) === index).map((langCode) => {
+                      const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                      if (!lang) return null;
+                      const isSelected = inputLang === langCode;
+                      return (
+                        <button
+                          key={langCode}
+                          onClick={() => setInputLang(langCode)}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: '16px',
+                            border: isSelected ? 'none' : '1px solid #e2e8f0',
+                            background: isSelected ? lang.color : 'white',
+                            color: isSelected ? lang.textColor : '#64748b',
+                            fontWeight: '700',
+                            fontSize: '0.8rem',
+                            cursor: 'pointer',
+                            whiteSpace: 'nowrap',
+                            boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+                            transition: 'all 0.2s'
+                          }}
+                        >
+                          {lang.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <input
+                    type="text"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    placeholder="Enter text to translate..."
+                    className="text-input"
                   />
-                );
-              })}
-              {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
-              {targetLangs.length === 0 && (
-                <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                  Please select at least 1 target language.
-                </p>
-              )}
-            </div>
+                  <div className="translate-btn-container">
+                    <button
+                      className="translate-btn"
+                      onClick={handleTranslate}
+                      disabled={isTranslating || !inputText.trim()}
+                    >
+                      {isTranslating ? 'Translating...' : (
+                        <>
+                          <Sparkles size={20} />
+                          Translate
+                        </>
+                      )}
+                    </button>
+                  </div>
+                </div>
 
-            {/* 선택 모드일 때 나타나는 일괄 저장 플로팅 버튼 */}
-            {isInSelectionMode && (
-              <div className="selection-fab-container">
-                <button
-                  className={`save-fab ${isSavingCards ? 'loading' : ''}`}
-                  onClick={handleSaveSelected}
-                  disabled={isSavingCards}
-                >
-                  {isSavingCards ? "Saving..." : `Save ${selectedCards.size} cards ✨`}
-                </button>
-                <button className="cancel-fab" onClick={() => { setSelectedCards(new Set()); setIsInSelectionMode(false); }}>
-                  Cancel
+                {/* 번역 결과 카드들이 나오는 영역 */}
+                <div className="cards-grid">
+                  {targetLangs.map((langCode) => {
+                    const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                    return (
+                      <TranslationCard
+                        key={langCode}
+                        language={lang?.name}
+                        langCode={langCode}
+                        sourceLangCode={sourceLang}
+                        text={translations[langCode]}
+                        pronunciation={pronunciations[langCode]}
+                        learningTip={learningTips[langCode]}
+                        badgeColor={lang?.color}
+                        badgeTextColor={lang?.textColor}
+                        onSpeak={() => handleSpeak(translations[langCode], langCode)}
+                        isSelected={selectedCards.has(langCode)}
+                        onToggleSelect={() => toggleSelectCard(langCode)}
+                        onSwipeSave={() => handleSwipeSave(langCode)}
+                        isInSelectionMode={isInSelectionMode}
+                        onPracticeResult={handlePracticeResult} // [신규] 발음 연습 결과를 App으로 전달
+                        targetGoal={languageGoals[langCode] || 80} // [신규] 목표 점수 전달
+                        librarySaveMessage={saveMessages[langCode]} // [신규] 중복 저장 방지 피드백 메시지
+                      />
+                    );
+                  })}
+                  {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
+                  {targetLangs.length === 0 && (
+                    <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                      Please select at least 1 target language.
+                    </p>
+                  )}
+                </div>
+
+                {/* 선택 모드일 때 나타나는 일괄 저장 플로팅 버튼 */}
+                {isInSelectionMode && (
+                  <div className="selection-fab-container">
+                    <button
+                      className={`save-fab ${isSavingCards ? 'loading' : ''}`}
+                      onClick={handleSaveSelected}
+                      disabled={isSavingCards}
+                    >
+                      {isSavingCards ? "Saving..." : `Save ${selectedCards.size} cards ✨`}
+                    </button>
+                    <button className="cancel-fab" onClick={() => { setSelectedCards(new Set()); setIsInSelectionMode(false); }}>
+                      Cancel
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : viewMode === 'library' ? (
+              /* [신규] 보관함 모드일 때 보여주는 화면: 언어별 목표 점수 설정값을 전달합니다. */
+              <Library
+                user={user}
+                sourceLang={sourceLang}
+                onSpeak={handleSpeak}
+                languageGoals={languageGoals}
+              />
+            ) : (
+              /* 설정 모드(settings)일 때 보여주는 화면 */
+              <div className="settings-container">
+                <div className="user-profile-section">
+                  <div className="user-info">
+                    <div className="user-avatar">
+                      <User size={24} color="var(--primary-color)" />
+                    </div>
+                    <div className="user-details">
+                      <p className="user-email">{profile?.displayName || user.email}</p>
+                      {profile?.displayName && <p className="user-email-secondary">{user.email}</p>}
+                      <p className="user-status">{profile?.membership || 'Free'} Member</p>
+                    </div>
+                  </div>
+                  <button className="logout-btn" onClick={handleLogout}>
+                    <LogOut size={18} />
+                    Logout
+                  </button>
+                </div>
+
+                {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
+                <div className="settings-group">
+                  <label className="settings-label">
+                    <ArrowLeft size={18} /> Select Source Language
+                  </label>
+                  <div className="lang-grid">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <div
+                        key={lang.code}
+                        className={`lang-option ${sourceLang === lang.code ? 'selected' : ''}`}
+                        onClick={() => setSourceLang(lang.code)}
+                      >
+                        {sourceLang === lang.code && <CheckCircle2 size={16} />}
+                        {lang.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
+                <div className="settings-group">
+                  <label className="settings-label">
+                    Select Target Languages (Max 3)
+                  </label>
+                  <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
+                  <div className="lang-grid">
+                    {SUPPORTED_LANGUAGES.map((lang) => (
+                      <div
+                        key={lang.code}
+                        className={`lang-option ${targetLangs.includes(lang.code) ? 'selected' : ''} ${!targetLangs.includes(lang.code) && targetLangs.length >= 3 ? 'disabled' : ''}`}
+                        onClick={() => toggleTargetLang(lang.code)}
+                      >
+                        {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
+                        {lang.name}
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
+                <div className="settings-group">
+                  <label className="settings-label">Target Score Goals 🎯</label>
+                  <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
+                    Set your pronunciation target score for each language.
+                  </p>
+                  <div className="goal-sliders">
+                    {targetLangs.map(code => {
+                      const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+                      const currentGoal = languageGoals[code] || 80; // 기본값 80
+                      return (
+                        <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
+                          <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
+                          <input
+                            type="range"
+                            min="0"
+                            max="100"
+                            value={currentGoal}
+                            onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
+                            style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
+                          />
+                          <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
+                        </div>
+                      );
+                    })}
+                    {targetLangs.length === 0 && (
+                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
+                    )}
+                  </div>
+                </div>
+
+                <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={() => setViewMode('translation')}>
+                  Save Settings & Return
                 </button>
               </div>
             )}
-          </>
-        ) : viewMode === 'library' ? (
-          /* [신규] 보관함 모드일 때 보여주는 화면: 언어별 목표 점수 설정값을 전달합니다. */
-          <Library
-            user={user}
-            sourceLang={sourceLang}
-            onSpeak={handleSpeak}
-            languageGoals={languageGoals}
-          />
-        ) : (
-          /* 설정 모드(settings)일 때 보여주는 화면 */
-          <div className="settings-container">
-            <div className="user-profile-section">
-              <div className="user-info">
-                <div className="user-avatar">
-                  <User size={24} color="var(--primary-color)" />
-                </div>
-                <div className="user-details">
-                  <p className="user-email">{profile?.displayName || user.email}</p>
-                  {profile?.displayName && <p className="user-email-secondary">{user.email}</p>}
-                  <p className="user-status">{profile?.membership || 'Free'} Member</p>
-                </div>
-              </div>
-              <button className="logout-btn" onClick={handleLogout}>
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
-
-            {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
-            <div className="settings-group">
-              <label className="settings-label">
-                <ArrowLeft size={18} /> Select Source Language
-              </label>
-              <div className="lang-grid">
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <div
-                    key={lang.code}
-                    className={`lang-option ${sourceLang === lang.code ? 'selected' : ''}`}
-                    onClick={() => setSourceLang(lang.code)}
-                  >
-                    {sourceLang === lang.code && <CheckCircle2 size={16} />}
-                    {lang.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
-            <div className="settings-group">
-              <label className="settings-label">
-                Select Target Languages (Max 3)
-              </label>
-              <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
-              <div className="lang-grid">
-                {SUPPORTED_LANGUAGES.map((lang) => (
-                  <div
-                    key={lang.code}
-                    className={`lang-option ${targetLangs.includes(lang.code) ? 'selected' : ''} ${!targetLangs.includes(lang.code) && targetLangs.length >= 3 ? 'disabled' : ''}`}
-                    onClick={() => toggleTargetLang(lang.code)}
-                  >
-                    {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
-                    {lang.name}
-                  </div>
-                ))}
-              </div>
-            </div>
-
-            {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
-            <div className="settings-group">
-              <label className="settings-label">Target Score Goals 🎯</label>
-              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
-                Set your pronunciation target score for each language.
-              </p>
-              <div className="goal-sliders">
-                {targetLangs.map(code => {
-                  const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-                  const currentGoal = languageGoals[code] || 80; // 기본값 80
-                  return (
-                    <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
-                      <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
-                      <input
-                        type="range"
-                        min="0"
-                        max="100"
-                        value={currentGoal}
-                        onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
-                        style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
-                      />
-                      <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
-                    </div>
-                  );
-                })}
-                {targetLangs.length === 0 && (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
-                )}
-              </div>
-            </div>
-
-            <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={() => setViewMode('translation')}>
-              Save Settings & Return
-            </button>
-          </div>
-        )}
+          </motion.div>
+        </AnimatePresence>
       </main>
 
       {/* 화면 하단에 고정된 메뉴바 (네비게이션) - 아이콘 전용 */}
