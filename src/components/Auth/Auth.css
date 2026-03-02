@@ -12,20 +12,24 @@
     background: rgba(255, 255, 255, 0.95);
     backdrop-filter: blur(10px);
     width: 100%;
-    max-width: 450px;
-    padding: 40px 30px;
+    max-width: 420px;
+    /* 전체 너비 살짝 축소 */
+    padding: 30px 24px;
+    /* 높이가 줄어든 것에 맞춰 카드 내부 위아래 패딩도 축소 */
     border-radius: 32px;
     box-shadow: 0 20px 50px rgba(0, 0, 0, 0.15);
     text-align: center;
 }
 
 .auth-header {
-    margin-bottom: 30px;
+    margin-bottom: 20px;
+    /* 헤더 아래 여백 축소 */
 }
 
 .auth-icon-circle {
-    width: 60px;
-    height: 60px;
+    width: 50px;
+    /* 아이콘 원 크기 축소 */
+    height: 50px;
     background: var(--primary-color);
     border-radius: 50%;
     display: flex;
@@ -55,7 +59,31 @@
 .auth-form {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 10px;
+    /* 입력창과 입력창 사이 간격을 더 타이트하게 10px로 줄임 */
+}
+
+/* [신규] 입력창 위 라벨과 입력창을 묶는 래퍼 */
+.input-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    text-align: left;
+}
+
+/* [신규] 좌측 상단 라벨 텍스트 */
+.input-label {
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: #4b5563;
+    margin-left: 6px;
+}
+
+/* [신규] 필수 항목 빨간 별표 */
+.required-star {
+    color: #ef4444;
+    margin-left: 3px;
+    font-size: 0.9rem;
 }
 
 .input-group {
@@ -72,11 +100,12 @@
 
 .input-group input {
     width: 100%;
-    padding: 14px 15px 14px 45px;
-    border-radius: 16px;
+    padding: 10px 14px 10px 42px;
+    /* [수정] 위아래 패딩을 14px에서 10px로 줄여 높이를 70% 수준으로 축소 */
+    border-radius: 12px;
     border: 2px solid #f1f5f9;
     background: #f8fafc;
-    font-size: 1rem;
+    font-size: 0.95rem;
     transition: all 0.2s;
     outline: none;
     font-family: inherit;

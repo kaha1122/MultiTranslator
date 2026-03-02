@@ -82,29 +82,35 @@ function Login({ onSwitchToSignup }) {
                 )}
 
                 <form onSubmit={handleLogin} className="auth-form">
-                    <div className="input-group">
-                        <Mail size={18} className="input-icon" />
-                        <input
-                            type="email"
-                            placeholder="Email address"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Email address <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <Mail size={18} className="input-icon" />
+                            <input
+                                type="email"
+                                placeholder="hello@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <Lock size={18} className="input-icon" />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Password <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                                type="password"
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                    <button type="submit" className="auth-submit-btn" disabled={isLoading} style={{ marginTop: '10px' }}>
                         {isLoading ? 'Processing...' : 'Log In'}
                     </button>
                 </form>

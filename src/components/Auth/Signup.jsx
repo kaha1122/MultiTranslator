@@ -109,71 +109,89 @@ function Signup({ onSwitchToLogin }) {
                 )}
 
                 <form onSubmit={handleSignup} className="auth-form">
-                    <div className="input-group">
-                        <User size={18} className="input-icon" />
-                        <input
-                            type="text"
-                            placeholder="Nickname (Required)"
-                            value={nickname}
-                            onChange={(e) => setNickname(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Nickname <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <User size={18} className="input-icon" />
+                            <input
+                                type="text"
+                                placeholder="홍길동"
+                                value={nickname}
+                                onChange={(e) => setNickname(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <Mail size={18} className="input-icon" />
-                        <input
-                            type="email"
-                            placeholder="Email address (Required)"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Email address <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <Mail size={18} className="input-icon" />
+                            <input
+                                type="email"
+                                placeholder="hello@example.com"
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <Phone size={18} className="input-icon" />
-                        <input
-                            type="tel"
-                            placeholder="Phone (Optional)"
-                            value={phone}
-                            onChange={(e) => setPhone(e.target.value)}
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Phone</label>
+                        <div className="input-group">
+                            <Phone size={18} className="input-icon" />
+                            <input
+                                type="tel"
+                                placeholder="010-0000-0000"
+                                value={phone}
+                                onChange={(e) => setPhone(e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <MapPin size={18} className="input-icon" />
-                        <input
-                            type="text"
-                            placeholder="Address (Optional)"
-                            value={address}
-                            onChange={(e) => setAddress(e.target.value)}
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Address</label>
+                        <div className="input-group">
+                            <MapPin size={18} className="input-icon" />
+                            <input
+                                type="text"
+                                placeholder="Seoul, Korea"
+                                value={address}
+                                onChange={(e) => setAddress(e.target.value)}
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <Lock size={18} className="input-icon" />
-                        <input
-                            type="password"
-                            placeholder="Password"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Password <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                                type="password"
+                                placeholder="Enter your password"
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <div className="input-group">
-                        <Lock size={18} className="input-icon" />
-                        <input
-                            type="password"
-                            placeholder="Confirm Password"
-                            value={confirmPassword}
-                            onChange={(e) => setConfirmPassword(e.target.value)}
-                            required
-                        />
+                    <div className="input-wrapper">
+                        <label className="input-label">Confirm Password <span className="required-star">*</span></label>
+                        <div className="input-group">
+                            <Lock size={18} className="input-icon" />
+                            <input
+                                type="password"
+                                placeholder="Confirm your password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                required
+                            />
+                        </div>
                     </div>
 
-                    <button type="submit" className="auth-submit-btn" disabled={isLoading}>
+                    <button type="submit" className="auth-submit-btn" disabled={isLoading} style={{ marginTop: '10px' }}>
                         {isLoading ? 'Processing...' : 'Sign Up'}
                     </button>
                 </form>
