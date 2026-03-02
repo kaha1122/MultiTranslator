@@ -799,23 +799,14 @@ function App() {
                       {/* 이미지 가이드 영역 */}
                       <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9' }}>
                         <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', display: 'block' }} />
-                        {/* 우측 상단 카카오톡 아이콘 강조 (노란색 동그라미) */}
+                        {/* 우측 하단 3점 메뉴 버튼 강조 (투명한 빨간색) */}
                         <div style={{
-                          position: 'absolute', top: '15px', right: '28px',
-                          width: '40px', height: '40px', borderRadius: '50%',
-                          border: '4px solid #eab308',
-                          backgroundColor: 'transparent',
-                          pointerEvents: 'none',
-                          animation: 'pulse-yellow 2s infinite'
-                        }}></div>
-                        {/* 우측 하단 메뉴 버튼 강조 (빨간색 동그라미) */}
-                        <div style={{
-                          position: 'absolute', bottom: '45px', right: '15px',
+                          position: 'absolute', bottom: '6px', right: '12px',
                           width: '45px', height: '45px', borderRadius: '50%',
-                          border: '4px solid #ef4444',
-                          backgroundColor: 'transparent',
+                          backgroundColor: 'rgba(239, 68, 68, 0.3)', // 투명한 빨간색 채우기
+                          border: '2px solid rgba(239, 68, 68, 0.8)', // 진한 붉은색 테두리
                           pointerEvents: 'none',
-                          animation: 'pulse-red 2s infinite', animationDelay: '1s'
+                          animation: 'pulse-red 2s infinite'
                         }}></div>
                       </div>
 
