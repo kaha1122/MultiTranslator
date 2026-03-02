@@ -6,11 +6,28 @@ import { Search, Trash2, Volume2 } from 'lucide-react';
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const [savedCards, setSavedCards] = useState([]);
-    const [filterLang, setFilterLang] = useState('all');
-    // [신규] 'W' (단어), 'S' (문장) 다중 선택 필터 상태 (디폴트 둘 다 켬)
-    const [filterTypes, setFilterTypes] = useState(new Set(['W', 'S']));
+    // 상태 초기값을 브라우저 저장소(localStorage)에서 먼저 찾아보고 없으면 기본값을 씁니다.
+    const [filterLang, setFilterLang] = useState(() => {
+        return localStorage.getItem('library_filterLang') || 'all';
+    });
+    // [신규] 'W' (단어), 'S' (문장) 다중 선택 필터 상태 (배열을 Set으로 변환)
+    const [filterTypes, setFilterTypes] = useState(() => {
+        const saved = localStorage.getItem('library_filterTypes');
+        return saved ? new Set(JSON.parse(saved)) : new Set(['W', 'S']);
+    });
+    // [신규] 목표 점수 미달 카드만 보기 필터 상태
+    const [filterTargetMissed, setFilterTargetMissed] = useState(() => {
+        return localStorage.getItem('library_filterTargetMissed') === 'true';
+    });
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
+
+    // [신규] 필터 상태가 바뀔 때마다 브라우저 로컬 스토리지에 자동 저장하여 다음 접속 시 기억하게 합니다.
+    useEffect(() => {
+        localStorage.setItem('library_filterLang', filterLang);
+        localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
+        localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
+    }, [filterLang, filterTypes, filterTargetMissed]);
 
     // 무한 스크롤 및 검색 관련 상태 변수
     const [limitCount, setLimitCount] = useState(10);
@@ -178,6 +195,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         });
     }
 
+    // [신규] 목표 점수 미달 필터 적용 (체크된 경우)
+    if (filterTargetMissed) {
+        filteredCards = filteredCards.filter(card => {
+            const targetGoal = languageGoals[card.langCode] || 80; // 기본 목표는 80점
+            // 평가 점수가 아예 없거나(한 번도 안 함), 목표 점수 미만인 경우만 남김
+            return !card.pronunciationScore || card.pronunciationScore < targetGoal;
+        });
+    }
+
     // 저장된 카드들 중 존재하는 언어 목록 추출 (필터 탭용)
     const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
 
@@ -214,45 +240,89 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                 />
             </div>
 
-            {/* 언어 필터 탭 */}
-            <div className="filter-tabs">
-                {availableLangs.map(lang => (
-                    <button
-                        key={lang}
-                        className={`filter-tab ${filterLang === lang ? 'active' : ''}`}
-                        onClick={() => setFilterLang(lang)}
-                    >
-                        {lang === 'all' ? 'All' : lang.toUpperCase()}
-                    </button>
-                ))}
-            </div>
+            {/* [신규] 사진처럼 필터들을 하나의 예쁜 뒷배경 박스로 묶어줍니다 */}
+            <div className="filters-container" style={{
+                background: 'rgba(203, 213, 225, 0.4)', // 사진과 유사하게 살짝 톤다운된 블루그레이 배경
+                backdropFilter: 'blur(10px)',
+                borderRadius: '16px',
+                padding: '16px',
+                marginBottom: '1.5rem',
+                border: '1px solid rgba(255, 255, 255, 0.6)',
+                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px' // 1층과 2층 사이의 간격을 타이트하게(12px) 고정합니다.
+            }}>
+                {/* 1층: 언어 필터 탭 */}
+                <div className="filter-tabs" style={{ margin: 0, padding: 0 }}>
+                    {availableLangs.map(lang => (
+                        <button
+                            key={lang}
+                            className={`filter-tab ${filterLang === lang ? 'active' : ''}`}
+                            onClick={() => setFilterLang(lang)}
+                            style={{ margin: 0 }} // 외부 마진 제거
+                        >
+                            {lang === 'all' ? 'All' : lang.toUpperCase()}
+                        </button>
+                    ))}
+                </div>
 
-            {/* [신규] 단어(Word) / 문장(Sentence) 멀티 필터 버튼 그룹 */}
-            <div className="type-filter-group" style={{ display: 'flex', gap: '8px', marginBottom: '1.5rem', padding: '0 4px' }}>
-                <button
-                    className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
-                    onClick={() => {
-                        const newSet = new Set(filterTypes);
-                        if (newSet.has('W')) newSet.delete('W');
-                        else newSet.add('W');
-                        setFilterTypes(newSet);
-                    }}
-                    style={{ background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
-                >
-                    # Word
-                </button>
-                <button
-                    className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
-                    onClick={() => {
-                        const newSet = new Set(filterTypes);
-                        if (newSet.has('S')) newSet.delete('S');
-                        else newSet.add('S');
-                        setFilterTypes(newSet);
-                    }}
-                    style={{ background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
-                >
-                    # Sentence
-                </button>
+                {/* 2층: 단어/문장 필터 버튼 그룹 + 목표 미달 체크박스 */}
+                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
+                    <div className="type-filter-group" style={{ display: 'flex', gap: '8px', margin: 0, padding: 0 }}>
+                        <button
+                            className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
+                            onClick={() => {
+                                const newSet = new Set(filterTypes);
+                                if (newSet.has('W')) newSet.delete('W');
+                                else newSet.add('W');
+                                setFilterTypes(newSet);
+                            }}
+                            style={{ background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
+                        >
+                            # Word
+                        </button>
+                        <button
+                            className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
+                            onClick={() => {
+                                const newSet = new Set(filterTypes);
+                                if (newSet.has('S')) newSet.delete('S');
+                                else newSet.add('S');
+                                setFilterTypes(newSet);
+                            }}
+                            style={{ background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
+                        >
+                            # Sentence
+                        </button>
+                    </div>
+
+                    {/* [신규] 목표 미달(과락) 카드 필터 UI */}
+                    <label style={{
+                        marginLeft: 'auto', // 우측 끝으로 자연스럽게 밀어냅니다.
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '6px',
+                        cursor: 'pointer',
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: filterTargetMissed ? '#ef4444' : '#64748b',
+                        padding: '6px 12px',
+                        backgroundColor: filterTargetMissed ? '#fef2f2' : 'white',
+                        border: `1px solid ${filterTargetMissed ? '#fca5a5' : '#e2e8f0'}`,
+                        borderRadius: '20px',
+                        transition: 'all 0.2s',
+                        userSelect: 'none',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                    }}>
+                        <input
+                            type="checkbox"
+                            checked={filterTargetMissed}
+                            onChange={(e) => setFilterTargetMissed(e.target.checked)}
+                            style={{ cursor: 'pointer', accentColor: '#ef4444', width: '16px', height: '16px' }}
+                        />
+                        <span>⚠️ 목표 미달</span>
+                    </label>
+                </div>
             </div>
 
             {/* 카드 목록 정렬 */}
