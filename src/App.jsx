@@ -168,12 +168,34 @@ function App() {
     }));
   };
 
-  // [신규] 앱이 처음 켜질 때 브라우저의 TTS(음성 합성 엔진)를 미리 깨워서 예열(Warm-up)시킵니다.
-  // 이 한 줄 덕분에 사용자가 처음 'Play' 버튼을 눌렀을 때 1~2초간 멈칫하는 지연(Delay) 현상이 완전히 사라집니다!
+  // [신규] 앱이 처음 켜질 때 2가지 준비 운동(Warm-up)을 실시합니다!
+  // 1. 브라우저의 TTS(음성 합성 엔진)를 미리 깨워서 첫 재생 지연 방지
+  // 2. 백엔드 서버(Render)에 "Ping"을 보내 잠들어 있던 서버를 깨워서 첫 분석 지연 방지
   useEffect(() => {
+    // 1. TTS 예열
     if (typeof window !== 'undefined' && window.speechSynthesis) {
       window.speechSynthesis.getVoices();
     }
+
+    // 2. 백엔드 서버 예열 (Cold Start 방지)
+    const wakeupServer = async () => {
+      try {
+        let apiUrl = 'http://localhost:5000'; // 기본값 (로컬 환경)
+        if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+          apiUrl = import.meta.env.VITE_API_URL; // Vercel 배포 환경
+        } else if (typeof window !== 'undefined') {
+          apiUrl = `http://${window.location.hostname}:5000`; // 모바일 로컬 테스트 환경
+        }
+
+        // 아무것도 기대하지 않고 가볍게 "똑똑" 문만 두드리는 요청입니다.
+        await axios.get(`${apiUrl}/ping`);
+        console.log("백엔드 서버 예열(Warm-up) 완료! 🚀");
+      } catch (err) {
+        console.log("백엔드 서버 예열 중 (서버가 아직 준비 중이거나 로컬입니다).");
+      }
+    };
+
+    wakeupServer();
   }, []);
 
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
