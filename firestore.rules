@@ -1,0 +1,33 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 1. 기본적으로 모든 읽기/쓰기를 거부합니다. (보안의 기본 원칙: 화이트리스트 방식)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // 2. 사용자가 저장한 번역 카드 (savedCards 컬렉션)
+    match /savedCards/{cardId} {
+      // 읽기 허용: 접속한 사람(request.auth)이 존재하고, 그 사람의 uid가 문서의 userId와 같을 때
+      allow read: if request.auth != null && request.auth.uid == resource.data.userId;
+      
+      // 쓰기(생성) 허용: 접속한 사람이 존재하고, 새로 만들려는 문서 내용(request.resource.data)의 userId가 본인의 uid일 때
+      allow create: if request.auth != null && request.auth.uid == request.resource.data.userId;
+      
+      // 수정 및 삭제 허용: 접속한 본인의 문서(resource)인 경우에만 
+      allow update, delete: if request.auth != null && request.auth.uid == resource.data.userId;
+    }
+
+    // 3. 사용자 개별 보관함 데이터 (users/{userId}/library 하위 문서용 - App.jsx의 fetchLibrary 함수 지원)
+    match /users/{userId}/library/{document=**} {
+      // 접근하려는 대상 경로의 userId가 현재 로그인한 본인의 uid일 때만 허용
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // 4. 사용자 기본 프로필 데이터 (users 컬렉션 직접 접근 시)
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+  }
+}

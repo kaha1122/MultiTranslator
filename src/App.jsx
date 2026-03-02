@@ -464,25 +464,19 @@ function App() {
         }
       `;
 
-      // 프론트엔드 환경변수나 백엔드를 통해 안전하게 호출한다고 가정합니다.
-      // (기존의 geminiApiKey 변수를 더이상 화면에서 받지 않으므로, VITE_GEMINI_API_KEY를 직접 사용)
-      const apiKeyToUse = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSy_YOUR_API_KEY';
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            // 초보자 설명(주석): 
-            // Gemini 2.0 Flash를 사용할 때 답변이 JSON 형식이 아닌 일반 텍스트로 나와서 버그가 생기는 것을 막기 위해
-            // 강제로 JSON 형식으로만 응답하도록 'responseMimeType' 옵션을 추가했습니다.
-            generationConfig: {
-              responseMimeType: "application/json"
-            }
-          })
-        }
-      );
+      // [보안 수정] 프론트엔드에서 직접 API 키를 들고 구글 서버로 가지 않고, 우리의 안전한 백엔드로 요청을 보냅니다.
+      let apiUrl = 'http://localhost:5000/api/generate-tips';
+      if (typeof import.meta !== 'undefined' && import.meta.env && import.meta.env.VITE_API_URL) {
+        apiUrl = `${import.meta.env.VITE_API_URL}/api/generate-tips`;
+      } else if (typeof window !== 'undefined' && window.location.hostname !== 'localhost') {
+        apiUrl = `http://${window.location.hostname}:5000/api/generate-tips`;
+      }
+
+      const response = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prompt: prompt })
+      });
 
       if (!response.ok) {
         // 너무 자주 요청했을 때(429) 한 번 더 시도해줍니다.
