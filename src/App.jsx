@@ -15,6 +15,8 @@ import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getUiTranslation } from './utils/uiTranslations';
+import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
+
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
 import OnboardingModal from './components/OnboardingModal';
 
@@ -191,7 +193,7 @@ function App() {
         }
 
         // 아무것도 기대하지 않고 가볍게 "똑똑" 문만 두드리는 요청입니다.
-        // await axios.get(`${apiUrl}/ping`); // axios import가 없으므로 주석 처리
+        await axios.get(`${apiUrl}/ping`);
         console.log("백엔드 서버 예열(Warm-up) 완료! 🚀");
       } catch (err) {
         console.log("백엔드 서버 예열 중 (서버가 아직 준비 중이거나 로컬입니다).");
