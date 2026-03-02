@@ -8,7 +8,9 @@ import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 A
 
 // Firebase & Auth
 import { auth, db } from './firebase/config';
-import { collection, addDoc, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, where } from 'firebase/firestore';
+// ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
+//   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './context/AuthContext';
