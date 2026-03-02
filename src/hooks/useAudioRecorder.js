@@ -210,7 +210,12 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             setCoachTip(coaching?.tip || null);
             setCoachAudio(coaching?.audio || null);
 
+            // [성능 혁신] 서버에서 분석 결과를 받자마자! 빙글빙글 도는 스피너를 즉시 멈춥니다.
+            // 사용자는 점수를 바로 볼 수 있고, 3번의 Firebase 클라우드 저장은 티 나지 않게 백그라운드에서 조용히 진행됩니다.
+            setIsAnalyzing(false);
+
             // 3. Firebase 저장 로직 (로그인한 경우만)
+            // (이 단계는 1~3초가 걸릴 수 있지만, 화면은 이미 멈춰있고 점수가 뜬 상태입니다)
             if (user) {
                 // Firebase Storage 버킷 설정이 안 되어 있거나 오류로 인해 무한정 로딩(빙글빙글) 도는 것을 
                 // 방지하기 위해 10초 제한 시간을 주는 타임아웃 래퍼(Wrapper) 
@@ -257,8 +262,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         } catch (err) {
             console.error("Analysis failed:", err);
             setErrorMsg("Cannot connect to analysis server. Please try again later. 🥺");
-        } finally {
-            // 무조건 버튼 빙글빙글 도는 것을 멈춤!
+            // 에러가 났을 때 확실하게 스피너를 멈춰줍니다.
             setIsAnalyzing(false);
         }
     };
