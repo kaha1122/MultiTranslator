@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, updateDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -49,12 +49,12 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    // 사용자 프로필 정보를 업데이트하는 함수
+    // 사용자 프로필 정보를 업데이트하는 함수 (중복 문서 생성 방지 및 완벽한 병합)
     const updateUserProfile = async (updates) => {
         if (!user) return;
         try {
             const docRef = doc(db, 'users', user.uid);
-            await updateDoc(docRef, updates);
+            await setDoc(docRef, updates, { merge: true });
             // onSnapshot이 활성화되어 있으므로 setProfile을 수동으로 호출할 필요가 없습니다.
         } catch (error) {
             console.error("Error updating profile:", error);

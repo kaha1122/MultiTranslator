@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import './App.css';
+import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
 
 // Firebase & Auth
 import { auth, db } from './firebase/config';
@@ -53,9 +54,13 @@ function App() {
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
 
-  // [신규] 닉네임 수정 모드 및 임시 텍스트 상태
-  const [isEditingNickname, setIsEditingNickname] = useState(false);
-  const [editNicknameValue, setEditNicknameValue] = useState('');
+  // [신규] 닉네임 등 프로필 수정 모달 상태
+  const [showProfileModal, setShowProfileModal] = useState(false);
+  const [profileFormData, setProfileFormData] = useState({
+    nickname: '',
+    phone: '',
+    address: ''
+  });
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
   const [languageGoals, setLanguageGoals] = useState(() => {
@@ -256,20 +261,30 @@ function App() {
     }
   };
 
-  // [신규] 닉네임 수정 모드로 전환
-  const handleEditNickname = () => {
-    setEditNicknameValue(profile?.displayName || user?.displayName || 'Google User');
-    setIsEditingNickname(true);
+  // [신규] 프로필 수정 모달 열기
+  const handleEditProfile = () => {
+    setProfileFormData({
+      nickname: profile?.displayName || user?.displayName || 'Google User',
+      phone: profile?.phoneNumber || '',
+      address: profile?.address || ''
+    });
+    setShowProfileModal(true);
   };
 
-  // [신규] 닉네임 저장
-  const handleSaveNickname = async () => {
-    if (!editNicknameValue.trim()) return;
+  // [신규] 프로필 저장 (setDoc 사용으로 병합 처리됨)
+  const handleSaveProfile = async (e) => {
+    e.preventDefault();
+    if (!profileFormData.nickname.trim()) return;
     try {
-      await updateUserProfile({ displayName: editNicknameValue });
-      setIsEditingNickname(false);
+      await updateUserProfile({
+        displayName: profileFormData.nickname,
+        phoneNumber: profileFormData.phone,
+        address: profileFormData.address,
+        updatedAt: serverTimestamp()
+      });
+      setShowProfileModal(false);
     } catch (e) {
-      alert("Failed to update nickname. Please try again.");
+      alert("Failed to update profile. Please try again.");
     }
   };
 
@@ -888,24 +903,11 @@ function App() {
                       <User size={24} color="var(--primary-color)" />
                     </div>
                     <div className="user-details">
-                      {isEditingNickname ? (
-                        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', marginBottom: '4px' }}>
-                          <input
-                            type="text"
-                            value={editNicknameValue}
-                            onChange={(e) => setEditNicknameValue(e.target.value)}
-                            style={{ padding: '6px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '1rem', width: '150px' }}
-                            autoFocus
-                          />
-                          <button onClick={handleSaveNickname} style={{ padding: '6px 12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}>Save</button>
-                        </div>
-                      ) : (
-                        <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          {profile?.displayName || user.email}
-                          <span onClick={handleEditNickname} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
-                        </p>
-                      )}
-                      {profile?.displayName && <p className="user-email-secondary">{user.email}</p>}
+                      <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {profile?.displayName || user?.displayName || 'Google User'}
+                        <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
+                      </p>
+                      <p className="user-email-secondary">{user.email}</p>
                       <p className="user-status">{profile?.membership || 'Free'} Member</p>
                     </div>
                   </div>
@@ -914,6 +916,107 @@ function App() {
                     Logout
                   </button>
                 </div>
+
+                {/* --- [신규] 프로필 수정 모달 (Signup 디자인 적용) --- */}
+                <AnimatePresence>
+                  {showProfileModal && (
+                    <motion.div
+                      className="modal-overlay"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      onClick={() => setShowProfileModal(false)}
+                      style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                        padding: '20px' // 화면 작은 폰에서 짤리지 않게 패딩 추가
+                      }}
+                    >
+                      <motion.div
+                        className="auth-card"
+                        initial={{ scale: 0.9, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.9, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
+                      >
+                        <button
+                          onClick={() => setShowProfileModal(false)}
+                          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                        >
+                          <X size={24} />
+                        </button>
+
+                        <div className="auth-header">
+                          <div className="auth-icon-circle signup-icon">
+                            <User size={24} color="white" />
+                          </div>
+                          <h2>Edit Profile</h2>
+                          <p>Update your information</p>
+                        </div>
+
+                        <form onSubmit={handleSaveProfile} className="auth-form">
+                          <div className="input-wrapper">
+                            <label className="input-label">Email address</label>
+                            <div className="input-group">
+                              <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
+                              <input
+                                type="email"
+                                value={user.email || ''}
+                                disabled
+                                style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="input-wrapper">
+                            <label className="input-label">Nickname <span className="required-star">*</span></label>
+                            <div className="input-group">
+                              <User size={18} className="input-icon" />
+                              <input
+                                type="text"
+                                placeholder="Nickname"
+                                value={profileFormData.nickname}
+                                onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
+                                required
+                              />
+                            </div>
+                          </div>
+
+                          <div className="input-wrapper">
+                            <label className="input-label">Phone</label>
+                            <div className="input-group">
+                              <Phone size={18} className="input-icon" />
+                              <input
+                                type="tel"
+                                placeholder="010-0000-0000"
+                                value={profileFormData.phone}
+                                onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <div className="input-wrapper">
+                            <label className="input-label">Address</label>
+                            <div className="input-group">
+                              <MapPin size={18} className="input-icon" />
+                              <input
+                                type="text"
+                                placeholder="Seoul, Korea"
+                                value={profileFormData.address}
+                                onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
+                              />
+                            </div>
+                          </div>
+
+                          <button type="submit" className="auth-submit-btn" style={{ marginTop: '10px' }}>
+                            Save Changes
+                          </button>
+                        </form>
+                      </motion.div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
                 {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
                 <div className="settings-group">
