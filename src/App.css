@@ -497,10 +497,11 @@ body {
 }
 
 .library-container {
-  padding: 0 1rem 2rem;
+  padding: 1rem 1rem 2rem;
+  /* 위쪽 패딩을 1rem으로 주어 PronunFit 로고와의 간격 확보 */
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  /* gap 속성 제거: Library.jsx 내부 요소들이 각자 marginBottom: 1rem을 가지므로 gap이 있으면 여백이 2배가 됨 */
   animation: fadeIn 0.4s ease;
 }
 
