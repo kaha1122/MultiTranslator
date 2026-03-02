@@ -170,7 +170,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
     // 2. 녹음 종료 함수 (버튼 직접 터치 또는 위에서 2초 침묵 감지 시 호출됨)
     const stopRecording = () => {
-        if (mediaRecorder.current && isRecording) {
+        // [버그 수정] isRecording 상태값은 클로저(Closure)에 의해 예전 값(false)으로 기억될 수 있습니다.
+        // 그러므로 무조건 최신 상태를 가지고 있는 mediaRecorder.current.state를 직접 확인하여 멈춰줍니다!
+        if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
             mediaRecorder.current.stop();
             setIsRecording(false);
         }
