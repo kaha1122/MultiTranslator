@@ -45,6 +45,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
+    // [신규] 침묵 감지(Silence Detection)를 위한 보조 메모리(Ref) 공간
+    const audioContextRef = useRef(null);
+    const silenceAnimationFrameRef = useRef(null);
 
     // 1. 녹음 시작 함수
     const startRecording = async () => {
@@ -65,6 +68,70 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             mediaRecorder.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunks.current = [];
 
+            // --- [신규] 실시간 볼륨 분석기(침묵 감지 조수) 설정 ---
+            try {
+                // 웹 브라우저에서 제공하는 오디오 분석 도구를 꺼냅니다.
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioContextRef.current = new AudioContext();
+                const source = audioContextRef.current.createMediaStreamSource(stream);
+                const analyser = audioContextRef.current.createAnalyser();
+
+                // 소리를 얼마나 세밀하게 쪼개서 볼지 결정합니다 (빠른 처리를 위해 256 조각으로 설정).
+                analyser.fftSize = 256;
+                source.connect(analyser); // 마이크 소리를 분석기랑 연결!
+
+                const bufferLength = analyser.frequencyBinCount;
+                const dataArray = new Uint8Array(bufferLength);
+
+                let silenceStartTime = null;
+                // 💡 설정값: 2000밀리초(2초) 동안 소리가 없으면 자동으로 멈춥니다!
+                const SILENCE_THRESHOLD = 2000;
+                // 💡 설정값: 배경 소음(숨소리 등)을 무시할 최소 볼륨 크기입니다. (0~255 사이)
+                const VOLUME_THRESHOLD = 15;
+
+                const checkSilence = () => {
+                    // 녹음 중이 아니면 감지를 멈춥니다.
+                    if (!mediaRecorder.current || mediaRecorder.current.state === 'inactive') return;
+
+                    // 현재 들어오고 있는 마이크 소리 크기를 배열(dataArray)에 담습니다.
+                    analyser.getByteFrequencyData(dataArray);
+
+                    // 여러 주파수의 평균 소리 크기를 계산합니다.
+                    let sum = 0;
+                    for (let i = 0; i < bufferLength; i++) {
+                        sum += dataArray[i];
+                    }
+                    const averageVolume = sum / bufferLength;
+
+                    // 평균 소리가 우리가 정한 기준치(VOLUME_THRESHOLD)보다 작다 = '조용하다(침묵)'고 판단!
+                    if (averageVolume < VOLUME_THRESHOLD) {
+                        // 처음 조용해진 순간의 시간을 기록합니다.
+                        if (silenceStartTime === null) {
+                            silenceStartTime = Date.now();
+                        } else if (Date.now() - silenceStartTime > SILENCE_THRESHOLD) {
+                            // 앗, 조용한 상태가 2초(SILENCE_THRESHOLD) 이상 지속되었어요!
+                            console.log("침묵 2초 감지: 자동으로 녹음을 종료합니다!");
+                            stopRecording(); // 🌟 핵심: 여기서 자동으로 멈춤 함수를 불러줍니다!
+                            return; // 더 이상 감지하지 않고 끝냅니다.
+                        }
+                    } else {
+                        // 소리가 기준치보다 크게 들어왔다 = 사용자가 다시 말을 시작했다!
+                        // 그러므로 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
+                        silenceStartTime = null;
+                    }
+
+                    // 브라우저 화면이 한 프레임 그려질 때마다(약 1초에 60번) 이 함수를 계속 부르도록 예약합니다.
+                    silenceAnimationFrameRef.current = requestAnimationFrame(checkSilence);
+                };
+
+                checkSilence(); // 🚀 침묵 감지 시작!
+            } catch (analyserError) {
+                console.warn("오디오 분석기 설정 실패(자동 종료 미작동):", analyserError);
+                // 혹시 마이크 권한 문제나 구형 브라우저 등의 이유로 이 기능이 실패해도, 
+                // 수동 녹음은 정상적으로 되어야 하므로 그냥 넘어갑니다.
+            }
+            // --- [신규 끝] ---
+
             // 녹음 데이터가 들어올 때마다 배열에 저장합니다.
             mediaRecorder.current.ondataavailable = (e) => audioChunks.current.push(e.data);
 
@@ -73,6 +140,18 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 // 저장할 때, 고정된 'audio/wav'가 아니라, 기기가 만든 진짜 타입으로 덩어리(Blob)를 만듭니다.
                 const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
                 analyzeFullPronunciation(audioBlob, mediaRecorder.current.mimeType); // mimeType도 같이 넘겨줍니다.
+
+                // --- [신규] 분석이 끝났거나 녹음이 멈추면 침묵 감지 조수도 청소(정리)시켜줍니다. ---
+                if (silenceAnimationFrameRef.current) {
+                    cancelAnimationFrame(silenceAnimationFrameRef.current);
+                    silenceAnimationFrameRef.current = null;
+                }
+                if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                    audioContextRef.current.close().catch(console.error);
+                }
+                // 마이크가 켜져 있는 상태로 아이콘이 남지 않도록 깨끗하게 꺼줍니다.
+                stream.getTracks().forEach(track => track.stop());
+                // --- [신규 끝] ---
             };
 
             mediaRecorder.current.start();
@@ -86,7 +165,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         }
     };
 
-    // 2. 녹음 종료 함수
+    // 2. 녹음 종료 함수 (버튼 직접 터치 또는 위에서 2초 침묵 감지 시 호출됨)
     const stopRecording = () => {
         if (mediaRecorder.current && isRecording) {
             mediaRecorder.current.stop();
