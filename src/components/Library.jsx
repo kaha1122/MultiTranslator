@@ -402,7 +402,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
 
             {/* 데이터 끝에 도달했을 때 안내 */}
             {!hasMore && filteredCards.length > 0 && !searchTerm && (
-                <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '1.5rem', fontSize: '0.875rem', paddingBottom: '2rem' }}>
+                <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '1rem', fontSize: '0.875rem', paddingBottom: '1rem' }}>
                     You've reached the end of your library! ✨
                 </div>
             )}
