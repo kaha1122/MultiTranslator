@@ -797,17 +797,8 @@ function App() {
                       </div>
 
                       {/* 이미지 가이드 영역 */}
-                      <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9' }}>
-                        <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', display: 'block' }} />
-                        {/* 우측 하단 3점 메뉴 버튼 강조 (투명한 빨간색) */}
-                        <div style={{
-                          position: 'absolute', bottom: '6px', right: '12px',
-                          width: '45px', height: '45px', borderRadius: '50%',
-                          backgroundColor: 'rgba(239, 68, 68, 0.3)', // 투명한 빨간색 채우기
-                          border: '2px solid rgba(239, 68, 68, 0.8)', // 진한 붉은색 테두리
-                          pointerEvents: 'none',
-                          animation: 'pulse-red 2s infinite'
-                        }}></div>
+                      <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
+                        <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} />
                       </div>
 
                       <button
