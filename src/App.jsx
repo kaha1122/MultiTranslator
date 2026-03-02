@@ -23,6 +23,9 @@ import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이�
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
 import OnboardingModal from './components/OnboardingModal';
 
+// [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
+import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
+
 // Supported Language List
 const SUPPORTED_LANGUAGES = [
   { code: 'ko', name: '한국어', tts: 'ko-KR', color: '#f0fdf4', textColor: '#166534' },
@@ -665,6 +668,12 @@ function App() {
 
   // --- 4. 화면 렌더링 (UI Rendering) ---
 
+  // ── Legal 페이지는 로그인 여부에 관계없이 항상 접근 가능해야 합니다 ──────────────
+  // AdSense 심사관이 로그인 없이도 Privacy Policy / Contact 등을 볼 수 있어야 하기 때문입니다.
+  if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
+  if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
+  if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
+
   // 로그인이 되어있지 않으면 로그인/회원가입 화면을 먼저 보여줍니다.
   if (!user) {
     return authMode === 'login' ? (
@@ -1093,6 +1102,44 @@ function App() {
                 <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
                   Save Settings & Return
                 </button>
+
+                {/* ── Legal 링크 Footer ──────────────────────────────────────────────
+                    AdSense 심사를 위해 Privacy Policy / Terms / Contact 링크가
+                    앱 안에서 눈에 잘 띄는 곳에 있어야 합니다.
+                    Settings 화면 하단에 항상 표시합니다.
+                ──────────────────────────────────────────────────────────────────── */}
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'center',
+                  gap: '16px',
+                  paddingTop: '8px',
+                  borderTop: '1px solid #f1f5f9',
+                  flexWrap: 'wrap'
+                }}>
+                  {[
+                    { label: '개인정보처리방침', mode: 'privacy' },
+                    { label: '이용약관', mode: 'terms' },
+                    { label: '연락처', mode: 'contact' },
+                  ].map(({ label, mode }) => (
+                    <button
+                      key={mode}
+                      onClick={() => setViewMode(mode)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        color: '#94a3b8',
+                        fontSize: '0.78rem',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        padding: '4px 0',
+                        textDecoration: 'underline',
+                        textDecorationColor: '#cbd5e1'
+                      }}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
               </div>
             )}
           </motion.div>

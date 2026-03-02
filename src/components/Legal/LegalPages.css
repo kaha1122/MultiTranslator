@@ -1,0 +1,241 @@
+/* ==========================================================================
+   LegalPages.css
+   목적: Privacy Policy / Terms of Service / Contact 등 법적 페이지 공통 스타일
+   ========================================================================== */
+
+/* ── 전체 컨테이너 ─────────────────────────────────────────────────────────── */
+.legal-container {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    background: #f8fafc;
+    width: 100%;
+}
+
+/* ── 상단 헤더 (뒤로가기 버튼 + 제목) ────────────────────────────────────── */
+.legal-header {
+    background: white;
+    padding: 1rem 1.2rem 1rem;
+    border-bottom: 1px solid #f1f5f9;
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    position: sticky;        /* 스크롤해도 헤더가 상단에 고정됩니다 */
+    top: 0;
+    z-index: 10;
+}
+
+.legal-back-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: #64748b;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    padding: 0;
+    transition: color 0.2s;
+    width: fit-content;
+}
+
+.legal-back-btn:hover {
+    color: #00a884;             /* 브랜드 컬러로 hover */
+}
+
+.legal-title-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.legal-title-icon {
+    color: #00a884;
+}
+
+.legal-title {
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0;
+}
+
+/* ── 본문 영역 ──────────────────────────────────────────────────────────────── */
+.legal-body {
+    flex: 1;                    /* 남은 공간을 전부 차지하게 (footer를 하단에 밀기 위함) */
+    padding: 1.5rem 1.2rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0;
+}
+
+.legal-date {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0 0 1.5rem 0;
+}
+
+/* ── 각 섹션 (조항 덩어리) 스타일 ─────────────────────────────────────────── */
+.legal-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #f1f5f9;  /* 섹션 구분선 */
+}
+
+.legal-section:last-child {
+    border-bottom: none;        /* 마지막 섹션은 구분선 없음 */
+}
+
+.legal-section h2 {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #111827;
+    margin: 0 0 0.6rem 0;
+    padding-left: 10px;
+    border-left: 3px solid #00a884;   /* 왼쪽 포인트 선 */
+}
+
+.legal-section p {
+    font-size: 0.88rem;
+    color: #4b5563;
+    line-height: 1.7;
+    margin: 0 0 0.5rem 0;
+}
+
+.legal-section ul {
+    padding-left: 1.2rem;
+    margin: 0;
+}
+
+.legal-section ul li {
+    font-size: 0.88rem;
+    color: #4b5563;
+    line-height: 1.7;
+    margin-bottom: 0.3rem;
+}
+
+.legal-section a {
+    color: #00a884;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+.legal-section a:hover {
+    text-decoration: underline;
+}
+
+/* ── 하단 푸터 ─────────────────────────────────────────────────────────────── */
+.legal-footer {
+    padding: 1.2rem;
+    text-align: center;
+    font-size: 0.8rem;
+    color: #94a3b8;
+    border-top: 1px solid #f1f5f9;
+    background: white;
+    /* 하단 홈바 영역(iOS 등)에 걸리지 않도록 여유 공간 확보 */
+    padding-bottom: calc(1.2rem + env(safe-area-inset-bottom));
+}
+
+.legal-footer a {
+    color: #00a884;
+    text-decoration: none;
+    font-weight: 600;
+}
+
+/* ── Contact 페이지 전용 스타일 ────────────────────────────────────────────── */
+
+/* 이메일 주소와 앱 설명이 담긴 메인 카드 */
+.contact-card {
+    background: white;
+    border-radius: 20px;
+    padding: 2rem 1.5rem;
+    text-align: center;
+    border: 1px solid #f1f5f9;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+    margin-bottom: 1.2rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.contact-icon-wrap {
+    width: 64px;
+    height: 64px;
+    background: #f0fdf4;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.contact-app-name {
+    font-size: 1.4rem;
+    font-weight: 900;
+    color: #00a884;
+    margin: 0;
+}
+
+.contact-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    line-height: 1.7;
+    margin: 0;
+}
+
+/* 이메일 버튼 - 누르면 메일 앱이 열립니다 */
+.contact-email-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #00a884;
+    color: white;
+    border-radius: 14px;
+    padding: 12px 24px;
+    font-size: 0.9rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+    box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
+    margin-top: 0.4rem;
+}
+
+.contact-email-btn:hover {
+    background: #008f72;
+    transform: translateY(-2px);
+    box-shadow: 0 6px 16px rgba(0, 168, 132, 0.4);
+}
+
+/* 부가 정보 목록 (서비스명, 응답시간 등) */
+.contact-info-grid {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #f1f5f9;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.contact-info-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f8fafc;
+}
+
+.contact-info-item:last-child {
+    border-bottom: none;
+}
+
+.contact-info-label {
+    font-size: 0.85rem;
+    color: #94a3b8;
+    font-weight: 600;
+}
+
+.contact-info-value {
+    font-size: 0.85rem;
+    color: #111827;
+    font-weight: 700;
+}
