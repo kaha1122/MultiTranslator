@@ -59,6 +59,13 @@ function App() {
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
 
+  // ── PWA 홈 화면 설치 유도 배너 상태 ──────────────────────────────────────
+  // deferredPrompt: 브라우저가 "설치 가능" 이벤트를 던져주면 여기에 보관해둡니다.
+  //   나중에 사용자가 [설치] 버튼을 눌렀을 때 이것을 실행해서 팝업을 띄웁니다.
+  const [deferredPrompt, setDeferredPrompt] = useState(null);
+  // showInstallBanner: 배너를 화면에 보여줄지 여부
+  const [showInstallBanner, setShowInstallBanner] = useState(false);
+
   // [신규] 닉네임 등 프로필 수정 모달 상태
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileFormData, setProfileFormData] = useState({
@@ -183,7 +190,44 @@ function App() {
     }));
   };
 
-  // [신규] 앱이 처음 켜질 때 2가지 준비 운동(Warm-up)을 실시합니다!
+  // ── PWA 설치 이벤트 감지 ──────────────────────────────────────────────────
+  // 브라우저가 앱 설치가 가능하다고 판단하면 'beforeinstallprompt' 이벤트를 발생시킵니다.
+  // 우리는 이 이벤트를 가로채서 저장해두었다가, 사용자가 [설치] 버튼을 눌렀을 때 실행합니다.
+  useEffect(() => {
+    const handleBeforeInstall = (e) => {
+      e.preventDefault(); // 브라우저 기본 팝업은 막고
+      setDeferredPrompt(e); // 이벤트 객체를 보관
+      setShowInstallBanner(true); // 우리 배너를 표시
+    };
+
+    // 이미 설치된 경우에는 배너를 숨깁니다
+    const handleAppInstalled = () => {
+      setShowInstallBanner(false);
+      setDeferredPrompt(null);
+      console.log('[PWA] 앱이 설치되었습니다!');
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    // 컴포넌트가 사라질 때 이벤트 리스너를 정리합니다 (메모리 누수 방지)
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, []);
+
+  // [설치] 버튼을 눌렀을 때 실행
+  const handleInstallClick = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt(); // 브라우저 설치 팝업 실행
+    const { outcome } = await deferredPrompt.userChoice;
+    console.log('[PWA] 사용자 선택:', outcome); // 'accepted' or 'dismissed'
+    setDeferredPrompt(null);
+    setShowInstallBanner(false);
+  };
+
+
   // 1. 브라우저의 TTS(음성 합성 엔진)를 미리 깨워서 첫 재생 지연 방지
   // 2. 백엔드 서버(Render)에 "Ping"을 보내 잠들어 있던 서버를 깨워서 첫 분석 지연 방지
   useEffect(() => {
@@ -1146,8 +1190,56 @@ function App() {
         </AnimatePresence>
       </main>
 
+      {/* ── PWA 홈 화면 설치 유도 배너 ──────────────────────────────────────
+          showInstallBanner가 true일 때만 네비게이션 바 바로 위에 나타납니다.
+          Chrome / Edge 계열 브라우저가 설치 가능 상태라고 판단해야 뜹니다.
+          iOS Safari는 이 팝업이 지원되지 않아 자동으로 안 뜹니다.
+      ──────────────────────────────────────────────────────────────────── */}
+      {showInstallBanner && (
+        <div style={{
+          position: 'fixed',
+          bottom: '80px',   // 하단 네비게이션 바 위에 위치
+          left: '50%',
+          transform: 'translateX(-50%)',
+          width: 'calc(100% - 32px)',
+          maxWidth: '440px',
+          background: 'white',
+          borderRadius: '16px',
+          padding: '14px 16px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: '12px',
+          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+          border: '1px solid #e2e8f0',
+          zIndex: 999,
+        }}>
+          {/* 앱 아이콘 미리보기 */}
+          <img src="/icon-192.png" alt="PronunFit" style={{ width: 40, height: 40, borderRadius: '10px' }} />
+          <div style={{ flex: 1 }}>
+            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#111827' }}>홈 화면에 추가</div>
+            <div style={{ fontSize: '0.78rem', color: '#64748b' }}>PronunFit을 앱처럼 사용하세요!</div>
+          </div>
+          {/* 설치 버튼 */}
+          <button
+            onClick={handleInstallClick}
+            style={{
+              background: '#00a884', color: 'white', border: 'none',
+              borderRadius: '10px', padding: '8px 14px',
+              fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+              flexShrink: 0
+            }}
+          >설치</button>
+          {/* 닫기 버튼 */}
+          <button
+            onClick={() => setShowInstallBanner(false)}
+            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
+          >✕</button>
+        </div>
+      )}
+
       {/* 화면 하단에 고정된 메뉴바 (네비게이션) - 아이콘 전용 */}
       <nav className="app-nav">
+
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
           onClick={() => { setViewMode('translation'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
