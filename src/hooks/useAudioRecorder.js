@@ -86,13 +86,16 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 let silenceStartTime = null;
                 // 💡 설정값: 2000밀리초(2초) 동안 소리가 없으면 자동으로 멈춥니다!
                 const SILENCE_THRESHOLD = 2000;
-                // 💡 설정값: 소음(숨소리, 잡음)을 무시할 최소 파동 에너지(RMS) 크기입니다.
-                // 완전히 조용할 땐 약 0.005, 말을 하면 0.05 이상으로 튑니다.
-                const VOLUME_THRESHOLD = 0.02;
+                // 💡 설정값: 소음(숨소리, PC 팬 잡음 등)을 무시할 최소 파동 에너지(RMS) 크기입니다.
+                // 0.02에서 0.05로 2.5배 높여서 약간 시끄러운 환경에서도 확실히 멈추도록 개선했습니다.
+                const VOLUME_THRESHOLD = 0.05;
 
                 const checkSilence = () => {
                     // 녹음 중이 아니면 감지를 멈춥니다.
-                    if (!mediaRecorder.current || mediaRecorder.current.state === 'inactive') return;
+                    if (!mediaRecorder.current || mediaRecorder.current.state !== 'recording') {
+                        clearInterval(silenceAnimationFrameRef.current);
+                        return;
+                    }
 
                     // 주파수 전체의 평균이 아닌, [시간에 따른 실제 파동(파형) 데이터]를 가져옵니다 (정확도 대폭 상승)
                     analyser.getByteTimeDomainData(dataArray);
@@ -113,8 +116,12 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                             silenceStartTime = Date.now();
                         } else if (Date.now() - silenceStartTime > SILENCE_THRESHOLD) {
                             // 앗, 조용한 상태가 2초(SILENCE_THRESHOLD) 이상 지속되었어요!
-                            console.log(`침묵 2초 감지: 자동으로 녹음을 종료합니다! (현재 소리 크기: ${rms.toFixed(4)})`);
-                            stopRecording(); // 🌟 핵심: 여기서 자동으로 멈춤 함수를 불러줍니다!
+                            console.log(`침묵 2초 감지: 자동으로 녹음을 종료합니다! (최종 소음 크기: ${rms.toFixed(4)})`);
+                            clearInterval(silenceAnimationFrameRef.current);
+                            if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+                                mediaRecorder.current.stop();
+                                setIsRecording(false);
+                            }
                             return; // 더 이상 감지하지 않고 끝냅니다.
                         }
                     } else {
@@ -122,12 +129,11 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                         // 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
                         silenceStartTime = null;
                     }
-
-                    // 브라우저 화면이 한 프레임 그려질 때마다 이 함수를 계속 부르도록 예약합니다.
-                    silenceAnimationFrameRef.current = requestAnimationFrame(checkSilence);
                 };
 
-                checkSilence(); // 🚀 침묵 감지 시작!
+                // requestAnimationFrame 대신 setInterval을 사용하여 컴퓨터 성능 부하를 최소화하고, 
+                // 브라우저 탭이 백그라운드에 있어도 안정적으로 0.1초마다 체크하게 변경했습니다.
+                silenceAnimationFrameRef.current = setInterval(checkSilence, 100);
             } catch (analyserError) {
                 console.warn("오디오 분석기 설정 실패(자동 종료 미작동):", analyserError);
                 // 혹시 마이크 권한 문제나 구형 브라우저 등의 이유로 이 기능이 실패해도, 
@@ -146,7 +152,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
                 // --- [신규] 분석이 끝났거나 녹음이 멈추면 침묵 감지 조수도 청소(정리)시켜줍니다. ---
                 if (silenceAnimationFrameRef.current) {
-                    cancelAnimationFrame(silenceAnimationFrameRef.current);
+                    clearInterval(silenceAnimationFrameRef.current);
                     silenceAnimationFrameRef.current = null;
                 }
                 if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
