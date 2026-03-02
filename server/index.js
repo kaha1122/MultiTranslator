@@ -3,7 +3,6 @@ const multer = require('multer');
 const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const fs = require('fs');
 const cors = require('cors');
-const rateLimit = require('express-rate-limit'); // [신규] API 요청 횟수 제한 라이브러리
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
@@ -11,36 +10,8 @@ ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
 
 const app = express();
-
-// [보안 수정 1] CORS 화이트리스트 설정 (아무 사이트나 우리 백엔드를 쓰지 못하게 방어)
-const allowedOrigins = [
-    'http://localhost:5173', // 로컬 개발(React-Vite) 환경
-    'https://pronunfit.vercel.app', // 실제 배포될 운영 환경 도메인
-    // 로컬 모바일 기기 테스트를 위한 IP 대역 허용 (예: 192.168.x.x:5173)
-];
-
-app.use(cors({
-    origin: function (origin, callback) {
-        // origin이 undefined인 경우는 서버 내부 통신이나 포스트맨 같은 툴일 때를 위해 일단 허용해둡니다.
-        if (!origin || allowedOrigins.includes(origin) || origin.startsWith('http://192.168.')) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    }
-}));
-
+app.use(cors());
 app.use(express.json());
-
-// [보안 수정 2] 무차별 API 요청 공격(DDoS/과금 폭탄) 방지를 위한 요금소(Rate Limit) 설치
-const apiLimiter = rateLimit({
-    windowMs: 1 * 60 * 1000, // 1분 (60초)
-    max: 15, // 1분 동안 같은 컴퓨터(IP)에서 최대 15번까지만 요청 가능!
-    message: {
-        error: "Too many requests. Please try again after a minute.",
-        details: "1분 동안 허용된 번역/평가 횟수를 초과했습니다."
-    }
-});
 
 const UPLOADS_DIR = 'uploads/';
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -205,8 +176,7 @@ async function generateCoachAudio(text) {
 /**
  * Main Analysis Endpoint
  */
-// [수정] apiLimiter를 추가하여 분당 15회까지만 분석 실행 가능
-app.post('/analyze', apiLimiter, upload.single('audio'), async (req, res) => {
+app.post('/analyze', upload.single('audio'), async (req, res) => {
     const originalAudioPath = req.file?.path;
     const referenceText = req.body.text;
     const langCode = req.body.lang || 'en'; // 프론트엔드에서 보낸 언어 코드
@@ -259,38 +229,6 @@ app.post('/analyze', apiLimiter, upload.single('audio'), async (req, res) => {
         if (originalAudioPath && fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (audioPath && fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
-    }
-});
-
-// [신규] 프론트엔드에서 API 키 노출 없이 안전하게 학습 팁을 생성하기 위한 API 엔드포인트
-// [수정] 여기에도 무한 요청 공격 방지를 위해 apiLimiter 장착!
-app.post('/api/generate-tips', apiLimiter, async (req, res) => {
-    const { prompt } = req.body;
-
-    if (!prompt) {
-        return res.status(400).json({ error: "Missing prompt data" });
-    }
-
-    try {
-        console.log(`[Gemini] App requested tips with model: gemini-2.0-flash, Key prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
-        const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                // Gemini 2.0 Flash가 확실히 JSON 응답만 하도록 설정
-                generationConfig: {
-                    responseMimeType: "application/json"
-                }
-            },
-            {
-                headers: { 'Content-Type': 'application/json' }
-            }
-        );
-
-        res.json(response.data);
-    } catch (error) {
-        console.error("Gemini Tips Generation Error:", error.response?.data || error.message);
-        res.status(500).json({ error: "Failed to generate tips", details: error.message });
     }
 });
 
