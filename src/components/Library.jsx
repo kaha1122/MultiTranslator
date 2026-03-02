@@ -229,7 +229,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     return (
         <div className="library-container library-theme">
             {/* [신규] 와일드카드(Like) 검색창 */}
-            <div className="search-bar-container" style={{ marginBottom: '1rem', position: 'relative' }}>
+            <div className="search-bar-container" style={{ marginBottom: '0.5rem', position: 'relative' }}>
                 <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
                 <input
                     type="text"
@@ -244,8 +244,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
             <div className="filters-container" style={{
                 background: '#ffffff', // 사용자가 요청한 하얀색 바탕
                 borderRadius: '16px',
-                padding: '16px',
-                marginBottom: '1.5rem',
+                padding: '12px 16px', // 상하 여백을 16px에서 12px로 줄임
+                marginBottom: '0.75rem', // 1.5rem의 절반인 0.75rem으로 줄임
                 border: '1px solid rgba(0, 0, 0, 0.05)', // 테두리를 아주 연하게 변경
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                 display: 'flex',
