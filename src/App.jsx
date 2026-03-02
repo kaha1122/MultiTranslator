@@ -7,7 +7,7 @@ import './App.css';
 
 // Firebase & Auth
 import { auth, db } from './firebase/config';
-import { collection, addDoc, serverTimestamp, query, where, getDocs } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, orderBy, getDocs } from 'firebase/firestore';
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut } from 'firebase/auth';
 import { useAuth } from './context/AuthContext';
