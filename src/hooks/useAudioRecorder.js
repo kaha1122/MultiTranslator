@@ -76,8 +76,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 const source = audioContextRef.current.createMediaStreamSource(stream);
                 const analyser = audioContextRef.current.createAnalyser();
 
-                // 소리를 얼마나 세밀하게 쪼개서 볼지 결정합니다 (빠른 처리를 위해 256 조각으로 설정).
-                analyser.fftSize = 256;
+                // 소리를 얼마나 세밀하게 쪼개서 볼지 결정합니다
+                analyser.fftSize = 512;
                 source.connect(analyser); // 마이크 소리를 분석기랑 연결!
 
                 const bufferLength = analyser.frequencyBinCount;
@@ -86,41 +86,44 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 let silenceStartTime = null;
                 // 💡 설정값: 2000밀리초(2초) 동안 소리가 없으면 자동으로 멈춥니다!
                 const SILENCE_THRESHOLD = 2000;
-                // 💡 설정값: 배경 소음(숨소리 등)을 무시할 최소 볼륨 크기입니다. (0~255 사이)
-                const VOLUME_THRESHOLD = 15;
+                // 💡 설정값: 소음(숨소리, 잡음)을 무시할 최소 파동 에너지(RMS) 크기입니다.
+                // 완전히 조용할 땐 약 0.005, 말을 하면 0.05 이상으로 튑니다.
+                const VOLUME_THRESHOLD = 0.02;
 
                 const checkSilence = () => {
                     // 녹음 중이 아니면 감지를 멈춥니다.
                     if (!mediaRecorder.current || mediaRecorder.current.state === 'inactive') return;
 
-                    // 현재 들어오고 있는 마이크 소리 크기를 배열(dataArray)에 담습니다.
-                    analyser.getByteFrequencyData(dataArray);
+                    // 주파수 전체의 평균이 아닌, [시간에 따른 실제 파동(파형) 데이터]를 가져옵니다 (정확도 대폭 상승)
+                    analyser.getByteTimeDomainData(dataArray);
 
-                    // 여러 주파수의 평균 소리 크기를 계산합니다.
-                    let sum = 0;
+                    let sumSquares = 0.0;
                     for (let i = 0; i < bufferLength; i++) {
-                        sum += dataArray[i];
+                        // 기본값 128을 중심(0)으로 두고, -1.0 ~ 1.0 사이의 파도로 변환합니다.
+                        const normSample = (dataArray[i] / 128.0) - 1.0;
+                        sumSquares += normSample * normSample;
                     }
-                    const averageVolume = sum / bufferLength;
+                    // 파동 에너지의 평균 제곱근(RMS: 진짜 소리의 '힘'을 나타냄)을 계산합니다.
+                    const rms = Math.sqrt(sumSquares / bufferLength);
 
-                    // 평균 소리가 우리가 정한 기준치(VOLUME_THRESHOLD)보다 작다 = '조용하다(침묵)'고 판단!
-                    if (averageVolume < VOLUME_THRESHOLD) {
+                    // 파동 에너지가 우리가 정한 기준치(VOLUME_THRESHOLD)보다 작다 = '조용하다(침묵)'고 판단!
+                    if (rms < VOLUME_THRESHOLD) {
                         // 처음 조용해진 순간의 시간을 기록합니다.
                         if (silenceStartTime === null) {
                             silenceStartTime = Date.now();
                         } else if (Date.now() - silenceStartTime > SILENCE_THRESHOLD) {
                             // 앗, 조용한 상태가 2초(SILENCE_THRESHOLD) 이상 지속되었어요!
-                            console.log("침묵 2초 감지: 자동으로 녹음을 종료합니다!");
+                            console.log(`침묵 2초 감지: 자동으로 녹음을 종료합니다! (현재 소리 크기: ${rms.toFixed(4)})`);
                             stopRecording(); // 🌟 핵심: 여기서 자동으로 멈춤 함수를 불러줍니다!
                             return; // 더 이상 감지하지 않고 끝냅니다.
                         }
                     } else {
-                        // 소리가 기준치보다 크게 들어왔다 = 사용자가 다시 말을 시작했다!
-                        // 그러므로 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
+                        // 소리가 컸다 = 사용자가 다시 말을 시작했다!
+                        // 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
                         silenceStartTime = null;
                     }
 
-                    // 브라우저 화면이 한 프레임 그려질 때마다(약 1초에 60번) 이 함수를 계속 부르도록 예약합니다.
+                    // 브라우저 화면이 한 프레임 그려질 때마다 이 함수를 계속 부르도록 예약합니다.
                     silenceAnimationFrameRef.current = requestAnimationFrame(checkSilence);
                 };
 
