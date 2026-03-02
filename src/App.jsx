@@ -168,6 +168,14 @@ function App() {
     }));
   };
 
+  // [신규] 앱이 처음 켜질 때 브라우저의 TTS(음성 합성 엔진)를 미리 깨워서 예열(Warm-up)시킵니다.
+  // 이 한 줄 덕분에 사용자가 처음 'Play' 버튼을 눌렀을 때 1~2초간 멈칫하는 지연(Delay) 현상이 완전히 사라집니다!
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      window.speechSynthesis.getVoices();
+    }
+  }, []);
+
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
   // 상태(데이터)가 바뀔 때마다 자동으로 브라우저 저장소에 저장해주는 마법 같은 함수입니다.
   useEffect(() => {

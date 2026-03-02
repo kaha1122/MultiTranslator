@@ -205,6 +205,12 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             const assessment = response.data.assessment;
             const coaching = response.data.coaching;
 
+            // [UX 성능 혁신 🚀] Firebase 업로드를 멍하니 기다리거나 재다운로드를 하지 않습니다!
+            // 방금 녹음한 내 휴대폰/PC 안의 따끈따끈한 원본 파일(blob)을 이용해 '임시 로컬 주소'를 만듭니다.
+            // 이렇게 하면 "내 목소리 재생" 버튼을 눌렀을 때 0.001초의 네트워크 지연(버퍼링)도 없이 즉시 흘러나옵니다.
+            const localAudioUrl = URL.createObjectURL(blob);
+            assessment.audioUrl = localAudioUrl;
+
             // 2. 상태 업데이트 (여기서 점수가 보입니다)
             setAssessmentResult(assessment);
             setCoachTip(coaching?.tip || null);
@@ -250,7 +256,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
                 try {
                     const downloadUrl = await uploadWithTimeout;
-                    setAssessmentResult(prev => ({ ...prev, audioUrl: downloadUrl }));
+                    // 이미 위에서 로컬 오디오 주소(localAudioUrl)를 화면에 띄워 완벽하게 듣고 있으므로, 
+                    // 굳이 또 화면을 새로고침하면서 Firebase 링크로 바꿀 필요가 없습니다. 조용히 백그라운드만 넘어갑니다!
+                    // (다음번 보관함에서 꺼내 볼 때 알아서 downloadUrl이 쓰이게 됩니다)
                     setSaveMessage(`${getUiTranslation(sourceLangCode, 'audioSaved')} ✅`);
                 } catch (dbErr) {
                     console.error("Firebase 저장 실패:", dbErr);
