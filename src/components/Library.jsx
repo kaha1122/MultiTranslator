@@ -242,12 +242,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
 
             {/* [신규] 사진처럼 필터들을 하나의 예쁜 뒷배경 박스로 묶어줍니다 */}
             <div className="filters-container" style={{
-                background: 'rgba(203, 213, 225, 0.4)', // 사진과 유사하게 살짝 톤다운된 블루그레이 배경
-                backdropFilter: 'blur(10px)',
+                background: '#ffffff', // 사용자가 요청한 하얀색 바탕
                 borderRadius: '16px',
                 padding: '16px',
                 marginBottom: '1.5rem',
-                border: '1px solid rgba(255, 255, 255, 0.6)',
+                border: '1px solid rgba(0, 0, 0, 0.05)', // 테두리를 아주 연하게 변경
                 boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
                 display: 'flex',
                 flexDirection: 'column',
@@ -320,7 +319,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                             onChange={(e) => setFilterTargetMissed(e.target.checked)}
                             style={{ cursor: 'pointer', accentColor: '#ef4444', width: '16px', height: '16px' }}
                         />
-                        <span>⚠️ 목표 미달</span>
+                        <span style={{ color: filterTargetMissed ? '#ef4444' : '#fca5a5', fontWeight: '900', fontSize: '1.1rem', lineHeight: '1' }}>X</span>
                     </label>
                 </div>
             </div>
