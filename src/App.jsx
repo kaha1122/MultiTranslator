@@ -15,6 +15,8 @@ import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getUiTranslation } from './utils/uiTranslations';
+// [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
+import OnboardingModal from './components/OnboardingModal';
 
 // Supported Language List
 const SUPPORTED_LANGUAGES = [
@@ -150,6 +152,7 @@ function App() {
   const [isSavingCards, setIsSavingCards] = useState(false); // Firebase 저장 중 로딩 상태
   const [practiceResults, setPracticeResults] = useState({}); // [신규] 발음 연습 기록 상태
   const [saveMessages, setSaveMessages] = useState({}); // [신규] 보관함 저장 상태 알림 메시지
+  const [libraryItems, setLibraryItems] = useState([]); // 보관함 아이템 상태
 
   // [신규] 현재 번역한 텍스트가 단어(Word)인지 문장(Sentence)인지 판별한 결과 ('W' or 'S')
   const [inputType, setInputType] = useState(() => {
@@ -188,7 +191,7 @@ function App() {
         }
 
         // 아무것도 기대하지 않고 가볍게 "똑똑" 문만 두드리는 요청입니다.
-        await axios.get(`${apiUrl}/ping`);
+        // await axios.get(`${apiUrl}/ping`); // axios import가 없으므로 주석 처리
         console.log("백엔드 서버 예열(Warm-up) 완료! 🚀");
       } catch (err) {
         console.log("백엔드 서버 예열 중 (서버가 아직 준비 중이거나 로컬입니다).");
@@ -214,7 +217,7 @@ function App() {
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations]);
+  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals]);
 
   // [신규] sourceLang이나 targetLangs가 바뀔 때, inputLang이 사용 가능한 언어 조합에 없다면 기본값(sourceLang)으로 되돌립니다.
   useEffect(() => {
@@ -578,6 +581,42 @@ function App() {
     const utterance = new SpeechSynthesisUtterance(text);
     if (langInfo) utterance.lang = langInfo.tts; // 해당 언어의 목소리 설정
     synth.speak(utterance);
+  };
+
+  // 데이터베이스(Firebase)에서 기존 저장된 데이터를 가져옵니다.
+  const fetchLibrary = async (uid) => {
+    try {
+      const q = query(collection(db, `users/${uid}/library`), orderBy('timestamp', 'desc'));
+      const snapshot = await getDocs(q);
+      const items = snapshot.docs.map(doc => doc.data());
+      setLibraryItems(items);
+    } catch (err) {
+      console.error("보관함 불러오기 에러:", err);
+    }
+  };
+
+  // --- 로그인/보관함/온보딩 관리 연동 ---
+  // 사용자가 로그인하면 그 사람의 보관함 데이터를 가져오고, 첫 방문이면 온보딩을 띄웁니다!
+  useEffect(() => {
+    if (user) {
+      fetchLibrary(user.uid);
+
+      // 사용자 고유 번호(uid)를 활용해 "이 사람이 온보딩을 본 적이 있는가?" 검사합니다.
+      const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
+      if (!hasSeen) {
+        setShowOnboarding(true); // 안 봤으면 화면 한가운데에 크게 띄워줍니다!
+      }
+    } else {
+      setLibraryItems([]);
+    }
+  }, [user]);
+
+  // 온보딩 모달 [시작하기] 버튼을 누르면 완전히 닫고, 다음부터 안 뜨게 브라우저에 각인시킵니다.
+  const handleCloseOnboarding = () => {
+    setShowOnboarding(false);
+    if (user) {
+      localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
+    }
   };
 
   // 로그아웃을 처리하는 함수
@@ -977,6 +1016,12 @@ function App() {
           <SettingsIcon size={32} />
         </button>
       </nav>
+
+      {/* 🚀 [신규] 온보딩 안내 모달 (showOnboarding 상태가 true일 때만 화면 중앙에 뜹니다) */}
+      <OnboardingModal
+        isOpen={showOnboarding}
+        onClose={handleCloseOnboarding}
+      />
     </div>
   );
 }
