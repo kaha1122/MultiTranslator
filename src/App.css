@@ -492,7 +492,8 @@ body {
   /* [수정] 배경색을 더 어둡게 변경 (기존 #f1f5f9) */
   border-radius: 24px;
   box-shadow: inset 0 4px 20px rgba(0, 0, 0, 0.05);
-  padding-top: 1rem;
+  padding-top: 0;
+  /* PronunFit과 Search 바의 간격을 1rem으로 맞추기 위해 1rem -> 0 변경 */
 }
 
 .library-container {
@@ -506,6 +507,8 @@ body {
 /* [신규] 보관함 내부의 카드 섹션은 기존 Learning Card 섹션이 가진 패딩과 중복되지 않도록 제거 */
 .library-container .cards-grid {
   padding: 0;
+  gap: 1rem;
+  /* 카드 간격을 1rem으로 고정하여 번역창 수준의 밀도 형성 */
 }
 
 .filter-tabs {
@@ -557,7 +560,8 @@ body {
   background: white;
   border-radius: 20px;
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.03);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0;
+  /* 기존 1.5rem 제거 (gap으로만 띄우기 위함) */
   overflow: hidden;
   /* 자식 요소가 모서리를 튀어나오지 못하게 */
   border: 1px solid #f1f5f9;
