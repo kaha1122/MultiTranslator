@@ -232,6 +232,12 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
     }
 });
 
+// [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
+// 클라우드 서비스(Render 등)는 접속이 없으면 잠들어버리는데, 앱 접속 시 이 주소를 몰래 찔러서 깨웁니다.
+app.get('/ping', (req, res) => {
+    res.status(200).json({ status: 'ok', message: 'Server is awake!' });
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     console.log(`🚀 AI Orchestrator running on http://localhost:${PORT}`);
