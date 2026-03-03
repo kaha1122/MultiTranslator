@@ -415,116 +415,59 @@ function App() {
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
   // '번역' 버튼을 눌렀을 때 실행되는 메인 함수
-  const handleTranslate = async () => {
+  // MyMemory 대신 Gemini가 번역 + 팁 + 발음을 한 번에 처리합니다.
+  const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
 
     setIsTranslating(true);
     setIsGeneratingTips(true);
-
-    // 새로운 번역을 위해 기존 팁과 발음 정보를 비웁니다.
     setLearningTips({});
     setPronunciations({});
-    setPracticeResults({}); // [신규] 새로운 번역 시 이전 연습 결과 지우기
+    setPracticeResults({});
 
     try {
-      // 3-1. 여러 언어로 동시에 번역 요청 (외부 API 활용)
-      const fetchTranslation = async (text, sLang, tLang) => {
-        try {
-          const response = await fetch(
-            `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=${sLang}|${tLang}`
-          );
-          const data = await response.json();
-          return data?.responseData?.translatedText || `[Translation error: ${tLang}]`;
-        } catch (e) {
-          return `[Service under maintenance: ${tLang}]`;
-        }
-      };
+      const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
+      const inputLangName  = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name  || inputLang;
 
-      const newTranslations = {};
-      // 선택한 모든 도착 언어에 대해 번역을 수행합니다.
-      await Promise.all(targetLangs.map(async (langCode) => {
-        // [로직 변경] sourceLang 대신 사용자가 선택한 inputLang을 번역 출발어로 간주합니다.
-        if (inputLang === langCode) {
-          // 입력 언어와 목적 언어가 같다면 번역 생략하고 원문 그대로 사용 (사용자 요청 사항 반영)
-          newTranslations[langCode] = inputText;
-        } else {
-          const result = await fetchTranslation(inputText, inputLang, langCode);
-          newTranslations[langCode] = result;
-        }
-      }));
-
-      setTranslations(newTranslations);
-      incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
-      generateGeminiTips(inputText, newTranslations);
-
-    } catch (error) {
-      console.error("번역 실패:", error);
-      alert("An error occurred during translation. Please try again.");
-      setIsGeneratingTips(false);
-    } finally {
-      setIsTranslating(false); // 번역 완료
-    }
-  };
-
-  // Gemini AI에게 번역 결과에 대한 상세 팁을 물어보는 함수
-  const generateGeminiTips = async (original, translatedMap, retryCount = 0) => {
-    try {
-      // AI가 이해할 수 있도록 번역 데이터를 정리합니다.
-      const targetLangsInfo = targetLangs.map(code => {
+      const targetLangsDetail = targetLangs.map(code => {
         const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-        return `${lang?.name || code} (${code}): "${translatedMap[code]}"`;
+        return `- ${lang?.name || code} (code: "${code}")`;
       }).join('\n');
 
-      const targetCodes = targetLangs.join(', ');
-      const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
-      const inputLangName = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name || inputLang;
-
-      // AI에게 보내는 상세 지시서 (프롬프트 고도화)
       const prompt = `
-        You are a professional multilingual language tutor. Provide detailed learning tips and pronunciation guides.
-        
-        [Target Application Context]
-        - The user's primary language for this session is "${sourceLangName}". This is the language the user understands.
-        - The input text provided by the user is written in "${inputLangName}".
-        - CRITICAL RULE: ALL explanations, tips, and dictionary definitions MUST be written in the user's primary language: "${sourceLangName}". 
-        - ABSOLUTELY DO NOT write the explanations in the target language being learned. For example, if you are explaining a Korean translation to a Chinese user, the explanation must be in Chinese, NOT Korean.
+        You are a professional multilingual translator and language tutor.
 
-        [Data]
-        - Source Text (Input in ${inputLangName}): "${original}"
-        - Current Translations to learn:
-        ${targetLangsInfo}
+        [Context]
+        - The user's primary language (for all explanations): "${sourceLangName}"
+        - The input text language: "${inputLangName}"
+        - Source text: "${inputText}"
+        - Target languages to translate into:
+        ${targetLangsDetail}
 
-        [Requirement 1: Input Type]
-        - Determine if "${original}" is a single "word" (or short idiom) or a full "sentence".
+        [Task 1: Translation]
+        - Translate the source text naturally and accurately into each target language.
+        - If the input language matches a target language, copy the original text as-is.
 
-        [Requirement 2: Educational Tips]
-        - If "sentence": Provide 2-3 tips about grammar, nuance, or usage. The tips MUST be translated and written in "${sourceLangName}".
-        - If "word": Provide dictionary-style tips: 
-          1. Meaning and Part of Speech. (Must be explained in "${sourceLangName}")
-          2. Common synonyms/antonyms.
-          3. A practical example sentence using the target word, with its translation in "${sourceLangName}".
-          Make sure all explanations are strictly written in "${sourceLangName}".
+        [Task 2: Input Type]
+        - Determine if the source text is a single "word" (or short idiom) or a full "sentence".
 
-        [Requirement 3: Pronunciation]
-        - en: IPA / ja: Hiragana / zh-CN: Pinyin with tones / Others: Romanization.
+        [Task 3: Educational Tips — written ENTIRELY in "${sourceLangName}"]
+        - "sentence": 2-3 tips on grammar, nuance, or usage.
+        - "word": (1) Meaning & Part of Speech, (2) Synonyms/Antonyms, (3) Example sentence with translation.
+        - NEVER write tips in the target language. Always use "${sourceLangName}".
 
-        [Output Format]
-        - Return ONLY valid JSON format.
+        [Task 4: Pronunciation]
+        - en: IPA notation / ja: Hiragana / zh-CN: Pinyin with tone marks / others: Romanization.
+
+        [Output — return ONLY valid JSON, no markdown]
         {
-          "type": "word" or "sentence",
+          "type": "word" | "sentence",
           "data": {
-            ${targetLangs.map(code => `
-            "${code}": {
-              "tips": ["Tip 1 written entirely in ${sourceLangName}", "Tip 2 written entirely in ${sourceLangName}", "Tip 3 written entirely in ${sourceLangName}"],
-              "pronunciation": "Pronunciation text"
-            }`).join(',')}
+            ${targetLangs.map(code => `"${code}": { "translation": "...", "tips": ["...", "..."], "pronunciation": "..." }`).join(',\n            ')}
           }
         }
       `;
 
-      // Vercel 환경변수 VITE_GEMINI_API_KEY 를 사용합니다.
-      // 이 값은 .env 파일 또는 Vercel 대시보드 Environment Variables에 저장된 안전한 값입니다.
-      // 코드 자체에는 실제 API 키가 없습니다. (보안 원칙 준수)
       const apiKeyToUse = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
@@ -533,57 +476,53 @@ function App() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
-            // 초보자 설명(주석): 
-            // Gemini 2.0 Flash를 사용할 때 답변이 JSON 형식이 아닌 일반 텍스트로 나와서 버그가 생기는 것을 막기 위해
-            // 강제로 JSON 형식으로만 응답하도록 'responseMimeType' 옵션을 추가했습니다.
-            generationConfig: {
-              responseMimeType: "application/json"
-            }
+            generationConfig: { responseMimeType: "application/json" }
           })
         }
       );
 
       if (!response.ok) {
-        // 너무 자주 요청했을 때(429) 한 번 더 시도해줍니다.
         if (response.status === 429 && retryCount < 1) {
           await new Promise(resolve => setTimeout(resolve, 2000));
-          return generateGeminiTips(original, translatedMap, retryCount + 1);
+          return handleTranslate(retryCount + 1);
         }
         throw new Error(`AI service connection error (${response.status})`);
       }
 
       const data = await response.json();
       const textResponse = data.candidates[0].content.parts[0].text;
-      // 응답에서 순수한 데이터(JSON)만 뽑아서 저장합니다.
       const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
       const result = JSON.parse(jsonString);
 
-      // [신규] AI가 판별한 결과에 따라 단어(W)인지 문장(S)인지 상태에 저장합니다.
       if (result.type) {
         setInputType(result.type.toLowerCase() === 'word' ? 'W' : 'S');
       }
 
-      // 개별 언어별로 팁과 발음을 분리하여 저장합니다.
+      const newTranslations = {};
       const newTips = {};
       const newProns = {};
       if (result.data) {
         targetLangs.forEach(langCode => {
-          if (result.data[langCode]) {
-            newTips[langCode] = result.data[langCode].tips;
-            newProns[langCode] = result.data[langCode].pronunciation;
+          const entry = result.data[langCode];
+          if (entry) {
+            newTranslations[langCode] = entry.translation || inputText;
+            newTips[langCode]         = entry.tips;
+            newProns[langCode]        = entry.pronunciation;
           }
         });
       }
 
+      setTranslations(newTranslations);
       setLearningTips(newTips);
       setPronunciations(newProns);
+      incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
+
     } catch (error) {
-      console.error("Gemini 분석 오류:", error);
-      const errorTips = {};
-      targetLangs.forEach(lang => errorTips[lang] = ["Failed to load AI analysis. Please check your API key."]);
-      setLearningTips(errorTips);
+      console.error("번역 실패:", error);
+      alert("An error occurred during translation. Please try again.");
     } finally {
-      setIsGeneratingTips(false); // 분석 완료
+      setIsTranslating(false);
+      setIsGeneratingTips(false);
     }
   };
 
