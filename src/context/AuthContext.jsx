@@ -63,20 +63,10 @@ export const AuthProvider = ({ children }) => {
 
     // ── Tier / Trial 관리 ─────────────────────────────────────────────────────
     const tier = profile?.tier || 'trial';
-    const trialCardCount = profile?.trialCardCount || 0;
     const trialPronCount = profile?.trialPronCount || 0;
     const TRIAL_CARD_LIMIT = 10;
     const TRIAL_PRON_LIMIT = 30;
-    const isTrialCardLimitReached = tier === 'trial' && trialCardCount >= TRIAL_CARD_LIMIT;
-    const isTrialPronLimitReached  = tier === 'trial' && trialPronCount  >= TRIAL_PRON_LIMIT;
-
-    // Trial 카운터 증가 (Firestore atomic increment 사용)
-    const incrementTrialCard = async () => {
-        if (!user || tier !== 'trial') return;
-        try {
-            await updateDoc(doc(db, 'users', user.uid), { trialCardCount: increment(1) });
-        } catch (e) { console.error("incrementTrialCard failed:", e); }
-    };
+    const isTrialPronLimitReached = tier === 'trial' && trialPronCount >= TRIAL_PRON_LIMIT;
 
     const incrementTrialPron = async () => {
         if (!user || tier !== 'trial') return;
@@ -104,10 +94,10 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={{
             user, profile, loading, updateUserProfile,
-            tier, trialCardCount, trialPronCount,
+            tier, trialPronCount,
             TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
-            isTrialCardLimitReached, isTrialPronLimitReached,
-            incrementTrialCard, incrementTrialPron,
+            isTrialPronLimitReached,
+            incrementTrialPron,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
         }}>

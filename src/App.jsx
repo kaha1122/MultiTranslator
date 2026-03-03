@@ -77,8 +77,7 @@ function App() {
 
   const {
     user, profile, updateUserProfile,
-    tier, trialCardCount, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
-    isTrialCardLimitReached, incrementTrialCard,
+    tier, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
     byokGeminiKey,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
@@ -92,6 +91,7 @@ function App() {
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
+  const [trialCardCurrentCount, setTrialCardCurrentCount] = useState(0);
 
   // ── PWA 홈 화면 설치 유도 배너 상태 ──────────────────────────────────────
   // deferredPrompt: 브라우저가 "설치 가능" 이벤트를 던져주면 여기에 보관해둡니다.
@@ -415,12 +415,6 @@ function App() {
   const handleTranslate = async () => {
     if (!inputText.trim()) return;
 
-    // Trial 카드 한도 체크
-    if (isTrialCardLimitReached) {
-      setShowTrialLimitModal(true);
-      return;
-    }
-
     setIsTranslating(true);
     setIsGeneratingTips(true);
 
@@ -457,10 +451,6 @@ function App() {
       }));
 
       setTranslations(newTranslations);
-
-      // Trial 카드 카운터 증가 (tier === 'trial'인 경우만 내부에서 처리)
-      incrementTrialCard();
-
       generateGeminiTips(inputText, newTranslations);
 
     } catch (error) {
@@ -618,7 +608,17 @@ function App() {
     }
 
     try {
-      // 1. 중복 데이터 검사 쿼리
+      // 1. Trial 카드 저장 한도 체크 (현재 저장된 카드 수 기준, 삭제 시 복원)
+      if (tier === 'trial') {
+        const countSnap = await getDocs(query(collection(db, "savedCards"), where("userId", "==", user.uid)));
+        if (countSnap.size >= TRIAL_CARD_LIMIT) {
+          setTrialCardCurrentCount(countSnap.size);
+          setShowTrialLimitModal(true);
+          return { status: "trial_limit" };
+        }
+      }
+
+      // 2. 중복 데이터 검사 쿼리
       const q = query(
         collection(db, "savedCards"),
         where("userId", "==", user.uid),
@@ -1230,7 +1230,7 @@ function App() {
                   }}>
                     <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
                       {{
-                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (${trialCardCount}/${TRIAL_CARD_LIMIT} · 🎤${trialPronCount}/${TRIAL_PRON_LIMIT})`,
+                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 max ${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
                         byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
                         silver:   `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
                         pro:      `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
@@ -1376,6 +1376,7 @@ function App() {
       {showTrialLimitModal && (
         <TrialLimitModal
           sourceLang={sourceLang}
+          cardCount={trialCardCurrentCount}
           onClose={() => setShowTrialLimitModal(false)}
           onSetupByok={() => { setShowTrialLimitModal(false); setShowApiKeyWizard(true); }}
         />
