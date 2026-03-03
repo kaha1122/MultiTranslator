@@ -493,9 +493,10 @@ function App() {
         }
       `;
 
-      // 프론트엔드 환경변수나 백엔드를 통해 안전하게 호출한다고 가정합니다.
-      // (기존의 geminiApiKey 변수를 더이상 화면에서 받지 않으므로, VITE_GEMINI_API_KEY를 직접 사용)
-      const apiKeyToUse = import.meta.env.VITE_GEMINI_API_KEY || 'AIzaSy_YOUR_API_KEY';
+      // Vercel 환경변수 VITE_GEMINI_API_KEY 를 사용합니다.
+      // 이 값은 .env 파일 또는 Vercel 대시보드 Environment Variables에 저장된 안전한 값입니다.
+      // 코드 자체에는 실제 API 키가 없습니다. (보안 원칙 준수)
+      const apiKeyToUse = import.meta.env.VITE_GEMINI_API_KEY;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
         {
