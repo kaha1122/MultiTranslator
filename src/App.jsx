@@ -319,12 +319,20 @@ function App() {
     }
   };
 
-  // [신규] 프로필 수정 모달 열기
+  // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
+    // ❗ [Bug 수정] profile이 아직 로딩 중이면 모달을 열지 않습니다.
+    //   이전에는 profile이 null일 때 모달을 열면 Google 원본 이름(user.displayName)으로
+    //   폼이 채워졌고, 모르고 저장하면 커스텀 닉네임이 덮어씨지는 버그가 발생했습니다.
+    if (!profile) {
+      alert('Profile is loading. Please try again in a moment.');
+      return;
+    }
     setProfileFormData({
-      nickname: profile?.displayName || user?.displayName || 'Google User',
-      phone: profile?.phoneNumber || '',
-      address: profile?.address || ''
+      // profile이 반드시 존재하는 시점에만 만드니 -> profile.displayName 우선
+      nickname: profile.displayName || user?.displayName || 'Google User',
+      phone: profile.phoneNumber || '',
+      address: profile.address || ''
     });
     setShowProfileModal(true);
   };
@@ -346,8 +354,20 @@ function App() {
     }
   };
 
-  // [신규] 설정 저장 (홈 화면으로 돌아가기) 및 인앱 브라우저 감지 경고 띄우기
+  // [수정] 설정 저장 (홈 화면으로 돌아가기) 및 인앱 브라우저 감지 경고 띄우기
   const handleSaveSettings = () => {
+    // ❗ [Bug 수정] 언어 설정을 localStorage에 저장합니다.
+    //   이전에는 저장을 하지 않아서 로그아웃 후 재접속하면
+    //   sourceLang·targetLangs·inputLang이 기본값(한국어+영어)으로 초기화됐습니다.
+    try {
+      localStorage.setItem('sourceLang', sourceLang);
+      localStorage.setItem('inputLang', inputLang);
+      localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
+      localStorage.setItem('languageGoals', JSON.stringify(languageGoals));
+    } catch (e) {
+      console.warn('언어 설정 로컬 저장 실패:', e);
+    }
+
     // 1. 접속한 브라우저의 고유 서명(User Agent) 확인
     const ua = navigator.userAgent || navigator.vendor || window.opera;
     // 카카오톡, 인스타그램, 네이버, 라인, 페이스북 등의 키워드 감지
