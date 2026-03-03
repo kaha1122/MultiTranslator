@@ -22,6 +22,7 @@ const TranslationCard = ({
     onSwipeSave,
     isInSelectionMode,
     onPracticeResult,
+    onTrialLimitReached,
     isLibraryView,
     targetGoal = 80,
     librarySaveMessage
@@ -37,7 +38,7 @@ const TranslationCard = ({
         saveMessage,
         startRecording,
         stopRecording,
-    } = useAudioRecorder(text, langCode, sourceLangCode);
+    } = useAudioRecorder(text, langCode, sourceLangCode, onTrialLimitReached);
 
     const [swipeX, setSwipeX] = useState(0);
     const [isSaving, setIsSaving] = useState(false);

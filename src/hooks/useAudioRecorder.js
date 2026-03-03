@@ -32,14 +32,14 @@ const getApiUrl = () => {
 // 텍스트를 고유한 ID(숫자)로 변환하는 간단한 해시 함수 (파일 이름 생성용)
 const hashCode = (s) => Math.abs(s.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0)).toString();
 
-export const useAudioRecorder = (text, langCode, sourceLangCode) => {
-    const { user } = useAuth(); // 로그인한 사용자 정보 가져오기
+export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitReached) => {
+    const { user, tier, isTrialPronLimitReached, incrementTrialPron, byokAzureKey, byokAzureRegion } = useAuth();
     const [isRecording, setIsRecording] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [assessmentResult, setAssessmentResult] = useState(null);
     const [coachTip, setCoachTip] = useState(null);
-    const [errorMsg, setErrorMsg] = useState(null); // 에러를 화면에 띄우기 위한 상태 변수 추가
-    const [saveMessage, setSaveMessage] = useState(null); // 저장 성공/에러 메시지
+    const [errorMsg, setErrorMsg] = useState(null);
+    const [saveMessage, setSaveMessage] = useState(null);
 
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
@@ -49,8 +49,15 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
     // 1. 녹음 시작 함수
     const startRecording = async () => {
-        setErrorMsg(null); // 녹음을 시작할 때마다 기존 에러 메시지를 지웁니다.
-        setSaveMessage(null); // 저장 메시지도 초기화
+        setErrorMsg(null);
+        setSaveMessage(null);
+
+        // Trial 발음 횟수 제한 체크
+        if (isTrialPronLimitReached) {
+            onTrialLimitReached?.();
+            return;
+        }
+
         try {
             // 기기가 지원하는 오디오 형식을 먼저 확인합니다.
             // 아이폰(사파리/크롬)은 무조건 mp4 계열을 좋아하므로 audio/mp4를 우선순위로 두고, 
@@ -193,8 +200,13 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         formData.append('audio', blob, `recording.${fileExtension}`);
 
         formData.append('text', text);
-        formData.append('lang', langCode || 'en'); // [신규] 백엔드 서버에게 평가(목표) 언어 코드를 함께 보냅니다.
-        formData.append('sourceLang', sourceLangCode || 'ko'); // [신규] 피드백을 전달할 사용자의 언어(출발 언어)를 알려줍니다.
+        formData.append('lang', langCode || 'en');
+        formData.append('sourceLang', sourceLangCode || 'ko');
+        // BYOK: 사용자 본인의 Azure 키가 있으면 서버에 함께 전달
+        if (byokAzureKey) {
+            formData.append('userAzureKey', byokAzureKey);
+            formData.append('userAzureRegion', byokAzureRegion || 'eastasia');
+        }
 
         try {
             // 1. 발음 평가 서버 요청
@@ -212,6 +224,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             // 2. 상태 업데이트 (여기서 점수가 보입니다)
             setAssessmentResult(assessment);
             setCoachTip(coaching?.tip || null);
+
+            // Trial 카운터 증가 (tier === 'trial'인 경우만 내부에서 처리)
+            incrementTrialPron();
 
             // [성능 혁신] 서버에서 분석 결과를 받자마자! 빙글빙글 도는 스피너를 즉시 멈춥니다.
             // 사용자는 점수를 바로 볼 수 있고, 3번의 Firebase 클라우드 저장은 티 나지 않게 백그라운드에서 조용히 진행됩니다.

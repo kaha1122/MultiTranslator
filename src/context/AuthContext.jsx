@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, increment } from 'firebase/firestore';
 
 const AuthContext = createContext();
 
@@ -49,21 +49,68 @@ export const AuthProvider = ({ children }) => {
         };
     }, []);
 
-    // 사용자 프로필 정보를 업데이트하는 함수 (중복 문서 생성 방지 및 완벽한 병합)
+    // 사용자 프로필 정보를 업데이트하는 함수
     const updateUserProfile = async (updates) => {
         if (!user) return;
         try {
             const docRef = doc(db, 'users', user.uid);
             await setDoc(docRef, updates, { merge: true });
-            // onSnapshot이 활성화되어 있으므로 setProfile을 수동으로 호출할 필요가 없습니다.
         } catch (error) {
             console.error("Error updating profile:", error);
-            throw error; // 에러 처리를 위해 던짐
+            throw error;
         }
     };
 
+    // ── Tier / Trial 관리 ─────────────────────────────────────────────────────
+    const tier = profile?.tier || 'trial';
+    const trialCardCount = profile?.trialCardCount || 0;
+    const trialPronCount = profile?.trialPronCount || 0;
+    const TRIAL_CARD_LIMIT = 10;
+    const TRIAL_PRON_LIMIT = 30;
+    const isTrialCardLimitReached = tier === 'trial' && trialCardCount >= TRIAL_CARD_LIMIT;
+    const isTrialPronLimitReached  = tier === 'trial' && trialPronCount  >= TRIAL_PRON_LIMIT;
+
+    // Trial 카운터 증가 (Firestore atomic increment 사용)
+    const incrementTrialCard = async () => {
+        if (!user || tier !== 'trial') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { trialCardCount: increment(1) });
+        } catch (e) { console.error("incrementTrialCard failed:", e); }
+    };
+
+    const incrementTrialPron = async () => {
+        if (!user || tier !== 'trial') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { trialPronCount: increment(1) });
+        } catch (e) { console.error("incrementTrialPron failed:", e); }
+    };
+
+    // BYOK 키 저장 + tier를 'byok_free'로 전환
+    const saveByokKeys = async (geminiKey, azureKey, azureRegion) => {
+        if (!user) return;
+        await updateUserProfile({
+            byokGeminiKey: geminiKey,
+            byokAzureKey: azureKey,
+            byokAzureRegion: azureRegion || 'eastasia',
+            tier: 'byok_free',
+        });
+    };
+
+    // BYOK 키 읽기
+    const byokGeminiKey  = profile?.byokGeminiKey  || null;
+    const byokAzureKey   = profile?.byokAzureKey   || null;
+    const byokAzureRegion = profile?.byokAzureRegion || 'eastasia';
+
     return (
-        <AuthContext.Provider value={{ user, profile, loading, updateUserProfile }}>
+        <AuthContext.Provider value={{
+            user, profile, loading, updateUserProfile,
+            tier, trialCardCount, trialPronCount,
+            TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+            isTrialCardLimitReached, isTrialPronLimitReached,
+            incrementTrialCard, incrementTrialPron,
+            saveByokKeys,
+            byokGeminiKey, byokAzureKey, byokAzureRegion,
+        }}>
             {!loading && children}
         </AuthContext.Provider>
     );

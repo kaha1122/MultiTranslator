@@ -22,6 +22,8 @@ import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이�
 
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
 import OnboardingModal from './components/OnboardingModal';
+import TrialLimitModal from './components/TrialLimitModal';
+import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -73,7 +75,12 @@ function App() {
   // useCallback: SplashScreen에 넘겨줄 onFinish 함수가 매 렌더링마다 새로 생성되지 않도록 최적화
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
-  const { user, profile, updateUserProfile } = useAuth();
+  const {
+    user, profile, updateUserProfile,
+    tier, trialCardCount, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+    isTrialCardLimitReached, incrementTrialCard,
+    byokGeminiKey,
+  } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
 
   // [신규] 온보딩 팝업 표시 여부
@@ -81,6 +88,10 @@ function App() {
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
+
+  // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
+  const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
+  const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
 
   // ── PWA 홈 화면 설치 유도 배너 상태 ──────────────────────────────────────
   // deferredPrompt: 브라우저가 "설치 가능" 이벤트를 던져주면 여기에 보관해둡니다.
@@ -402,10 +413,16 @@ function App() {
 
   // '번역' 버튼을 눌렀을 때 실행되는 메인 함수
   const handleTranslate = async () => {
-    if (!inputText.trim()) return; // 입력한 글자가 없으면 아무것도 안 함
+    if (!inputText.trim()) return;
 
-    setIsTranslating(true); // "번역 중..." 상태 시작
-    setIsGeneratingTips(true); // "AI 분석 중..." 상태 시작
+    // Trial 카드 한도 체크
+    if (isTrialCardLimitReached) {
+      setShowTrialLimitModal(true);
+      return;
+    }
+
+    setIsTranslating(true);
+    setIsGeneratingTips(true);
 
     // 새로운 번역을 위해 기존 팁과 발음 정보를 비웁니다.
     setLearningTips({});
@@ -439,9 +456,11 @@ function App() {
         }
       }));
 
-      setTranslations(newTranslations); // 번역 결과 저장
+      setTranslations(newTranslations);
 
-      // 3-2. API KEY 필요없이 앱이 동작하도록 우선 임시 메시지 또는 제한적 팁 제공 (API 키를 서버에서 관리하거나 기본 기능을 우회한다고 가정)
+      // Trial 카드 카운터 증가 (tier === 'trial'인 경우만 내부에서 처리)
+      incrementTrialCard();
+
       generateGeminiTips(inputText, newTranslations);
 
     } catch (error) {
@@ -512,7 +531,7 @@ function App() {
       // Vercel 환경변수 VITE_GEMINI_API_KEY 를 사용합니다.
       // 이 값은 .env 파일 또는 Vercel 대시보드 Environment Variables에 저장된 안전한 값입니다.
       // 코드 자체에는 실제 API 키가 없습니다. (보안 원칙 준수)
-      const apiKeyToUse = import.meta.env.VITE_GEMINI_API_KEY;
+      const apiKeyToUse = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
         {
@@ -902,9 +921,10 @@ function App() {
                         onToggleSelect={() => toggleSelectCard(langCode)}
                         onSwipeSave={() => handleSwipeSave(langCode)}
                         isInSelectionMode={isInSelectionMode}
-                        onPracticeResult={handlePracticeResult} // [신규] 발음 연습 결과를 App으로 전달
-                        targetGoal={languageGoals[langCode] || 80} // [신규] 목표 점수 전달
-                        librarySaveMessage={saveMessages[langCode]} // [신규] 중복 저장 방지 피드백 메시지
+                        onPracticeResult={handlePracticeResult}
+                        onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                        targetGoal={languageGoals[langCode] || 80}
+                        librarySaveMessage={saveMessages[langCode]}
                       />
                     );
                   })}
@@ -1199,6 +1219,37 @@ function App() {
                   Save Settings & Return
                 </button>
 
+                {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
+                <div className="settings-group" style={{ marginTop: '8px' }}>
+                  <label className="settings-label">
+                    <Lock size={16} /> {getT(sourceLang, 'settings.apiKeys')} · {getT(sourceLang, 'settings.myTier')}
+                  </label>
+                  <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: '#f8fafc', borderRadius: '12px', padding: '12px 16px'
+                  }}>
+                    <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
+                      {{
+                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (${trialCardCount}/${TRIAL_CARD_LIMIT} · 🎤${trialPronCount}/${TRIAL_PRON_LIMIT})`,
+                        byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
+                        silver:   `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
+                        pro:      `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
+                        premium:  `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
+                      }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
+                    </span>
+                    <button
+                      onClick={() => setShowApiKeyWizard(true)}
+                      style={{
+                        padding: '8px 14px', background: '#6366f1', color: 'white',
+                        border: 'none', borderRadius: '8px', fontWeight: 'bold',
+                        cursor: 'pointer', fontSize: '0.82rem'
+                      }}
+                    >
+                      🔑 {getT(sourceLang, 'settings.apiKeys')}
+                    </button>
+                  </div>
+                </div>
+
                 {/* ── Legal 링크 Footer ──────────────────────────────────────────────
                     AdSense 심사를 위해 Privacy Policy / Terms / Contact 링크가
                     앱 안에서 눈에 잘 띄는 곳에 있어야 합니다.
@@ -1315,11 +1366,29 @@ function App() {
         </button>
       </nav>
 
-      {/* 🚀 [신규] 온보딩 안내 모달 (showOnboarding 상태가 true일 때만 화면 중앙에 뜹니다) */}
+      {/* 🚀 [신규] 온보딩 안내 모달 */}
       <OnboardingModal
         isOpen={showOnboarding}
         onClose={handleCloseOnboarding}
       />
+
+      {/* Trial 한도 도달 모달 */}
+      {showTrialLimitModal && (
+        <TrialLimitModal
+          sourceLang={sourceLang}
+          onClose={() => setShowTrialLimitModal(false)}
+          onSetupByok={() => { setShowTrialLimitModal(false); setShowApiKeyWizard(true); }}
+        />
+      )}
+
+      {/* BYOK API 키 설정 마법사 */}
+      {showApiKeyWizard && (
+        <ApiKeySetupWizard
+          sourceLang={sourceLang}
+          onClose={() => setShowApiKeyWizard(false)}
+          onComplete={() => setShowApiKeyWizard(false)}
+        />
+      )}
     </div>
   );
 }

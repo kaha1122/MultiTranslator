@@ -27,10 +27,10 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 /**
  * 1. Azure Pronunciation Assessment
  */
-async function analyzePronunciation(audioPath, referenceText, langCode) {
+async function analyzePronunciation(audioPath, referenceText, langCode, azureKey = AZURE_KEY, azureRegion = AZURE_REGION) {
     return new Promise((resolve, reject) => {
         const audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(audioPath));
-        const speechConfig = sdk.SpeechConfig.fromSubscription(AZURE_KEY, AZURE_REGION);
+        const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
 
         // 프론트엔드에서 넘어온 언어 코드(en, ja, zh-TW 등)를 Azure가 알아들을 수 있는 코드로 변환
         const azureLangMap = {
@@ -89,7 +89,7 @@ async function analyzePronunciation(audioPath, referenceText, langCode) {
 /**
  * 2. Gemini Coaching Tip Generation
  */
-async function generateCoachingTip(referenceText, assessmentData, sourceLangCode) {
+async function generateCoachingTip(referenceText, assessmentData, sourceLangCode, geminiKey = GEMINI_API_KEY) {
     // 사용자의 언어 맵핑
     const langNames = {
         'ko': 'Korean',
@@ -125,9 +125,9 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     `;
 
     try {
-        console.log(`[Gemini] Requesting with model: gemini-2.0-flash, Key prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
+        console.log(`[Gemini] Requesting with model: gemini-2.0-flash, Key prefix: ${geminiKey?.substring(0, 5)}...`);
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${GEMINI_API_KEY}`,
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
             { contents: [{ parts: [{ text: prompt }] }] }
         );
         return response.data.candidates[0].content.parts[0].text;
@@ -176,11 +176,16 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
                 .save(audioPath);
         });
 
+        // BYOK: 사용자가 직접 제공한 키가 있으면 우선 사용, 없으면 서버 환경 변수 사용
+        const azureKeyToUse    = req.body.userAzureKey    || AZURE_KEY;
+        const azureRegionToUse = req.body.userAzureRegion || AZURE_REGION;
+        const geminiKeyToUse   = req.body.userGeminiKey   || GEMINI_API_KEY;
+
         // 1. Azure Assessment (언어 코드 추가 전달)
-        const assessment = await analyzePronunciation(audioPath, referenceText, langCode);
+        const assessment = await analyzePronunciation(audioPath, referenceText, langCode, azureKeyToUse, azureRegionToUse);
 
         // 2. Gemini Coaching (사용자 언어 전달)
-        const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang);
+        const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang, geminiKeyToUse);
 
         // Cleanup
         if (fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
