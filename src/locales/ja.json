@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "マイクへのアクセスが必要です。ブラウザの設定で許可してください。 🎤",
+    "serverConnect": "分析サーバーに接続できません。しばらくしてからもう一度お試しください。 🥺",
+    "libraryLoad": "ライブラリデータを読み込めません。インターネット接続をご確認ください。 😥",
+    "byokAzureFail": "Azureキーの接続に失敗しました。キーとリージョンをご確認ください。",
+    "byokGeminiFail": "Geminiキーの接続に失敗しました。キーをご確認ください。",
+    "apiKeyMissing": "APIキーが見つかりません。設定でキーを登録してください。"
+  },
+  "card": {
+    "practicePrompt": "ボタンを押して発音練習を始めましょう！",
+    "recording": "話してください... 🎙️",
+    "analyzing": "AIコーチが分析中です... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 正確さ",
+    "fluency": "🌊 流暢さ",
+    "prosody": "🎭 抑揚",
+    "listenMyVoice": "🎧 自分の声を聞く",
+    "anatomy": "発音の解剖図",
+    "noPhonemeData": "この単語の詳細な音素データはありません。",
+    "errOmission": "省略",
+    "errInsertion": "追加",
+    "errMispronunciation": "誤発音"
+  },
+  "library": {
+    "empty": "ライブラリが空です。\n重要なカードをスワイプして保存しましょう！",
+    "loading": "ライブラリを開いています... 📚",
+    "loadError": "ライブラリを読み込めません。インターネット接続をご確認ください。 😥",
+    "refresh": "更新",
+    "deleteConfirm": "このカードを本当に削除しますか？",
+    "deleteCancel": "キャンセル",
+    "deleteOk": "削除",
+    "loadingMore": "さらに読み込み中... 📚",
+    "reachedEnd": "ライブラリの最後に達しました！ ✨"
+  },
+  "save": {
+    "savedSuccess": "保存完了！",
+    "savedToLibrary": "ライブラリに保存されました！",
+    "alreadyInLibrary": "すでにライブラリにあります！",
+    "audioSaved": "発音記録が正常に保存されました！ ✅"
+  },
+  "trial": {
+    "limitTitle": "体験制限に達しました！",
+    "limitDesc": "カード10枚・発音30回の体験が完了しました。",
+    "optionProTitle": "Proサブスクリプション",
+    "optionProPrice": "₩4,900 / 月",
+    "optionProFeature1": "APIコール500回 / 月",
+    "optionProFeature2": "広告あり",
+    "optionProBtn": "今すぐ始める",
+    "optionByokTitle": "自分のAPIキーで無料使用",
+    "optionByokDesc": "Azure + Geminiキーを登録",
+    "optionByokFeature": "完全無料 · 5分セットアップガイド",
+    "optionByokBtn": "APIキーを設定する"
+  },
+  "apiSetup": {
+    "title": "APIキーの設定",
+    "step1Title": "ステップ1: Gemini APIキー",
+    "step1Desc": "Googleアカウントで無料発行（約5分）",
+    "step2Title": "ステップ2: Azure Speechキー",
+    "step2Desc": "発音評価用キー（約10分、クレジットカード必要）",
+    "step2AltTip": "設定が難しい場合は、Proサブスクリプションが便利です。",
+    "inputPlaceholder": "キーをここに貼り付けてください",
+    "regionPlaceholder": "例: eastasia",
+    "testBtn": "接続テスト",
+    "testSuccess": "接続成功！ ✅",
+    "testFail": "接続失敗。キーをご確認ください。",
+    "completeBtn": "無料で使い始める"
+  },
+  "settings": {
+    "apiKeys": "APIキー",
+    "myTier": "プラン",
+    "tierTrial": "無料トライアル",
+    "tierByokFree": "無料（自分のAPI）",
+    "tierSilver": "シルバー",
+    "tierPro": "プロ",
+    "tierPremium": "プレミアム"
+  }
+}

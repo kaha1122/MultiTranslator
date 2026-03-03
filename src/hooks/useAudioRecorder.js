@@ -2,9 +2,9 @@ import { useState, useRef } from 'react';
 import axios from 'axios';
 import { storage, db } from '../firebase/config';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { collection, doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
-import { getUiTranslation } from '../utils/uiTranslations';
+import { getT } from '../utils/i18n';
 
 // 초보자 설명(주석):
 // 환경 변수(.env) 파일에서 API 서버 주소를 읽어옵니다.
@@ -71,7 +71,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             // --- [신규] 실시간 볼륨 분석기(침묵 감지 조수) 설정 ---
             try {
                 // 웹 브라우저에서 제공하는 오디오 분석 도구를 꺼냅니다.
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const AudioContext = window.AudioContext || window['webkitAudioContext'];
                 audioContextRef.current = new AudioContext();
                 const source = audioContextRef.current.createMediaStreamSource(stream);
                 const analyser = audioContextRef.current.createAnalyser();
@@ -170,7 +170,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         } catch (err) {
             console.error("Mic access error:", err);
             // alert() 대신에 상태 변수에 에러 텍스트를 담아, 부드러운 UI 텍스트로 보여주게 합니다.
-            setErrorMsg("Mic access required. Please allow microphone in browser settings. 🎤");
+            setErrorMsg(getT(sourceLangCode, 'errors.micAccess'));
         }
     };
 
@@ -255,11 +255,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
                 });
 
                 try {
-                    const downloadUrl = await uploadWithTimeout;
-                    // 이미 위에서 로컬 오디오 주소(localAudioUrl)를 화면에 띄워 완벽하게 듣고 있으므로, 
-                    // 굳이 또 화면을 새로고침하면서 Firebase 링크로 바꿀 필요가 없습니다. 조용히 백그라운드만 넘어갑니다!
-                    // (다음번 보관함에서 꺼내 볼 때 알아서 downloadUrl이 쓰이게 됩니다)
-                    setSaveMessage(`${getUiTranslation(sourceLangCode, 'audioSaved')} ✅`);
+                    await uploadWithTimeout;
+                    setSaveMessage(getT(sourceLangCode, 'save.audioSaved'));
                 } catch (dbErr) {
                     console.error("Firebase 저장 실패:", dbErr);
                     // 에러 메시지를 화면에 띄워 디버깅을 돕습니다.
@@ -269,7 +266,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
 
         } catch (err) {
             console.error("Analysis failed:", err);
-            setErrorMsg("Cannot connect to analysis server. Please try again later. 🥺");
+            setErrorMsg(getT(sourceLangCode, 'errors.serverConnect'));
             // 에러가 났을 때 확실하게 스피너를 멈춰줍니다.
             setIsAnalyzing(false);
         }

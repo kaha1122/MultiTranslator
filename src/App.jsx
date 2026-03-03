@@ -17,7 +17,7 @@ import { useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
-import { getUiTranslation } from './utils/uiTranslations';
+import { getT } from './utils/i18n';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
@@ -40,6 +40,20 @@ const SUPPORTED_LANGUAGES = [
   { code: 'de', name: 'Deutsch', tts: 'de-DE', color: '#f1f5f9', textColor: '#475569' },
   { code: 'es', name: 'Español', tts: 'es-ES', color: '#f1f5f9', textColor: '#475569' },
 ];
+
+// 브라우저/기기 언어를 감지하여 지원 언어 코드로 변환
+const detectBrowserSourceLang = () => {
+  try {
+    const browserLang = (navigator.language || navigator.userLanguage || 'ko').toLowerCase();
+    if (browserLang.startsWith('zh')) return 'zh-CN';
+    const matched = SUPPORTED_LANGUAGES.find(l => browserLang.startsWith(l.code.toLowerCase()));
+    return matched?.code || 'ko';
+  } catch (e) { return 'ko'; }
+};
+
+// source 언어에 따른 스마트 기본 target 설정
+// 영어권 → 한국어 학습, 나머지 → 영어 학습
+const getDefaultTargetLangs = (src) => src === 'en' ? ['ko'] : ['en'];
 
 const languageNames = {
   ko: '한국어',
@@ -113,9 +127,10 @@ function App() {
   const [sourceLang, setSourceLang] = useState(() => {
     try {
       const saved = localStorage.getItem('sourceLang');
-      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : 'ko';
+      const detected = detectBrowserSourceLang();
+      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : detected;
     } catch (e) {
-      return 'ko';
+      return detectBrowserSourceLang();
     }
   });
 
@@ -123,9 +138,10 @@ function App() {
   const [inputLang, setInputLang] = useState(() => {
     try {
       const saved = localStorage.getItem('inputLang');
-      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : 'ko';
+      const detected = detectBrowserSourceLang();
+      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : detected;
     } catch (e) {
-      return 'ko';
+      return detectBrowserSourceLang();
     }
   });
 
@@ -133,13 +149,13 @@ function App() {
   const [targetLangs, setTargetLangs] = useState(() => {
     try {
       const saved = localStorage.getItem('targetLangs');
-      if (!saved) return ['en']; // 기본값: 영어 하나로 변경
+      if (!saved) return getDefaultTargetLangs(detectBrowserSourceLang());
       const parsed = JSON.parse(saved);
-      if (!Array.isArray(parsed)) return ['en'];
+      if (!Array.isArray(parsed)) return getDefaultTargetLangs(detectBrowserSourceLang());
       // 지원되는 언어 코드만 필터링해서 가져옵니다.
       return parsed.filter(code => SUPPORTED_LANGUAGES.some(l => l.code === code));
     } catch (e) {
-      return ['en'];
+      return getDefaultTargetLangs(detectBrowserSourceLang());
     }
   });
 
@@ -635,9 +651,9 @@ function App() {
       const result = await saveToFirebase(langCode);
       if (result.status === "success") {
         successCount++;
-        setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getUiTranslation(sourceLang, 'savedSuccess')}` }));
+        setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getT(sourceLang, 'save.savedSuccess')}` }));
       } else if (result.status === "duplicate") {
-        setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getUiTranslation(sourceLang, 'alreadyInLibrary')}` }));
+        setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getT(sourceLang, 'save.alreadyInLibrary')}` }));
       }
     }
 
@@ -654,9 +670,9 @@ function App() {
   const handleSwipeSave = async (langCode) => {
     const result = await saveToFirebase(langCode);
     if (result.status === "success") {
-      setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getUiTranslation(sourceLang, 'savedToLibrary')}` }));
+      setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getT(sourceLang, 'save.savedToLibrary')}` }));
     } else if (result.status === "duplicate") {
-      setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getUiTranslation(sourceLang, 'alreadyInLibrary')}` }));
+      setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getT(sourceLang, 'save.alreadyInLibrary')}` }));
     }
 
     // 3초 후 메시지 제거

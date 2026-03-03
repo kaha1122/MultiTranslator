@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "마이크 권한이 필요합니다. 브라우저 설정에서 허용해 주세요. 🎤",
+    "serverConnect": "분석 서버에 연결할 수 없습니다. 잠시 후 다시 시도해 주세요. 🥺",
+    "libraryLoad": "보관함 데이터를 불러올 수 없습니다. 인터넷 연결을 확인해 주세요. 😥",
+    "byokAzureFail": "Azure 키 연결에 실패했습니다. 키와 지역을 다시 확인해 주세요.",
+    "byokGeminiFail": "Gemini 키 연결에 실패했습니다. 키를 다시 확인해 주세요.",
+    "apiKeyMissing": "API 키가 없습니다. 설정에서 키를 등록해 주세요."
+  },
+  "card": {
+    "practicePrompt": "버튼을 눌러 발음 연습을 시작하세요!",
+    "recording": "말씀하세요... 🎙️",
+    "analyzing": "AI 코치가 분석 중입니다... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 정확도",
+    "fluency": "🌊 유창성",
+    "prosody": "🎭 운율감",
+    "listenMyVoice": "🎧 내 목소리 다시 듣기",
+    "anatomy": "발음 해부도",
+    "noPhonemeData": "이 단어는 세부 음소 데이터가 없습니다.",
+    "errOmission": "생략됨",
+    "errInsertion": "추가됨",
+    "errMispronunciation": "오발음"
+  },
+  "library": {
+    "empty": "보관함이 비어있습니다.\n중요한 카드를 스와이프해서 저장해보세요!",
+    "loading": "보관함을 여는 중... 📚",
+    "loadError": "보관함을 불러올 수 없습니다. 인터넷 연결을 확인해 주세요. 😥",
+    "refresh": "화면 새로고침",
+    "deleteConfirm": "이 카드를 정말 삭제하시겠습니까?",
+    "deleteCancel": "취소",
+    "deleteOk": "삭제",
+    "loadingMore": "더 불러오는 중... 📚",
+    "reachedEnd": "모든 카드를 확인했습니다! ✨"
+  },
+  "save": {
+    "savedSuccess": "저장 완료!",
+    "savedToLibrary": "보관함에 저장되었습니다!",
+    "alreadyInLibrary": "이미 보관함에 있습니다!",
+    "audioSaved": "발음 기록이 성공적으로 저장되었습니다! ✅"
+  },
+  "trial": {
+    "limitTitle": "체험 한도에 도달했습니다!",
+    "limitDesc": "카드 10개 · 발음 30회 체험을 완료했습니다.",
+    "optionProTitle": "Pro 구독",
+    "optionProPrice": "₩4,900 / 월",
+    "optionProFeature1": "서비스 API 500회 / 월",
+    "optionProFeature2": "광고 있음",
+    "optionProBtn": "지금 시작하기",
+    "optionByokTitle": "내 API 키로 무료 사용",
+    "optionByokDesc": "Azure + Gemini 키 등록",
+    "optionByokFeature": "완전 무료 · 5분 설정 가이드 제공",
+    "optionByokBtn": "API 키 설정 시작"
+  },
+  "apiSetup": {
+    "title": "API 키 설정",
+    "step1Title": "1단계: Gemini API 키",
+    "step1Desc": "Google 계정으로 무료 발급 (약 5분 소요)",
+    "step2Title": "2단계: Azure Speech 키",
+    "step2Desc": "발음 평가를 위한 키 (약 10분, 신용카드 필요)",
+    "step2AltTip": "설정이 어렵다면 Pro 구독이 더 편합니다.",
+    "inputPlaceholder": "키를 여기에 붙여넣으세요",
+    "regionPlaceholder": "예: eastasia",
+    "testBtn": "연결 테스트",
+    "testSuccess": "연결 성공! ✅",
+    "testFail": "연결 실패. 키를 다시 확인해 주세요.",
+    "completeBtn": "무료 사용 시작"
+  },
+  "settings": {
+    "apiKeys": "API 키",
+    "myTier": "내 등급",
+    "tierTrial": "무료 체험",
+    "tierByokFree": "무료 (내 API)",
+    "tierSilver": "실버",
+    "tierPro": "프로",
+    "tierPremium": "프리미엄"
+  }
+}

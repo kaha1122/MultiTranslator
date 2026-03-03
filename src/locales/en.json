@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "Microphone access required. Please allow it in browser settings. 🎤",
+    "serverConnect": "Cannot connect to the analysis server. Please try again later. 🥺",
+    "libraryLoad": "Cannot load library data. Please check your internet connection. 😥",
+    "byokAzureFail": "Azure key connection failed. Please check your key and region.",
+    "byokGeminiFail": "Gemini key connection failed. Please check your key.",
+    "apiKeyMissing": "API key not found. Please set up your keys in Settings."
+  },
+  "card": {
+    "practicePrompt": "Press the button to practice pronunciation!",
+    "recording": "Speak now... 🎙️",
+    "analyzing": "AI Coach is analyzing... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 Accuracy",
+    "fluency": "🌊 Fluency",
+    "prosody": "🎭 Prosody",
+    "listenMyVoice": "🎧 Listen to My Voice",
+    "anatomy": "Phoneme Anatomy",
+    "noPhonemeData": "No detailed phoneme data for this word.",
+    "errOmission": "Omitted",
+    "errInsertion": "Inserted",
+    "errMispronunciation": "Mispronounced"
+  },
+  "library": {
+    "empty": "Library is empty.\nSwipe important cards to save them!",
+    "loading": "Opening library... 📚",
+    "loadError": "Cannot load library. Please check your internet connection. 😥",
+    "refresh": "Refresh",
+    "deleteConfirm": "Do you really want to delete this Card?",
+    "deleteCancel": "Cancel",
+    "deleteOk": "Delete",
+    "loadingMore": "Loading more cards... 📚",
+    "reachedEnd": "You've reached the end of your library! ✨"
+  },
+  "save": {
+    "savedSuccess": "Saved successfully!",
+    "savedToLibrary": "Saved to Library!",
+    "alreadyInLibrary": "Already in Library!",
+    "audioSaved": "Pronunciation record saved successfully! ✅"
+  },
+  "trial": {
+    "limitTitle": "Trial Limit Reached!",
+    "limitDesc": "You've used 10 cards and 30 pronunciation tests.",
+    "optionProTitle": "Pro Subscription",
+    "optionProPrice": "₩4,900 / month",
+    "optionProFeature1": "500 API calls / month",
+    "optionProFeature2": "Ads included",
+    "optionProBtn": "Start Now",
+    "optionByokTitle": "Use My Own API Keys (Free)",
+    "optionByokDesc": "Register Azure + Gemini keys",
+    "optionByokFeature": "Completely free · 5-min setup guide",
+    "optionByokBtn": "Set Up API Keys"
+  },
+  "apiSetup": {
+    "title": "API Key Setup",
+    "step1Title": "Step 1: Gemini API Key",
+    "step1Desc": "Free with your Google account (about 5 min)",
+    "step2Title": "Step 2: Azure Speech Key",
+    "step2Desc": "For pronunciation scoring (about 10 min, credit card required)",
+    "step2AltTip": "Prefer an easier setup? Try the Pro subscription instead.",
+    "inputPlaceholder": "Paste your key here",
+    "regionPlaceholder": "e.g. eastasia",
+    "testBtn": "Test Connection",
+    "testSuccess": "Connection successful! ✅",
+    "testFail": "Connection failed. Please check your key.",
+    "completeBtn": "Start Using Free"
+  },
+  "settings": {
+    "apiKeys": "API Keys",
+    "myTier": "My Plan",
+    "tierTrial": "Free Trial",
+    "tierByokFree": "Free (My API)",
+    "tierSilver": "Silver",
+    "tierPro": "Pro",
+    "tierPremium": "Premium"
+  }
+}

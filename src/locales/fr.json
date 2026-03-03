@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "Accès au microphone requis. Veuillez l'autoriser dans les paramètres du navigateur. 🎤",
+    "serverConnect": "Impossible de se connecter au serveur d'analyse. Veuillez réessayer. 🥺",
+    "libraryLoad": "Impossible de charger la bibliothèque. Vérifiez votre connexion internet. 😥",
+    "byokAzureFail": "La connexion à Azure a échoué. Vérifiez votre clé et votre région.",
+    "byokGeminiFail": "La connexion à Gemini a échoué. Vérifiez votre clé.",
+    "apiKeyMissing": "Clé API introuvable. Veuillez enregistrer vos clés dans les Paramètres."
+  },
+  "card": {
+    "practicePrompt": "Appuyez sur le bouton pour pratiquer la prononciation !",
+    "recording": "Parlez maintenant... 🎙️",
+    "analyzing": "Le coach IA analyse... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 Précision",
+    "fluency": "🌊 Fluidité",
+    "prosody": "🎭 Prosodie",
+    "listenMyVoice": "🎧 Écouter ma voix",
+    "anatomy": "Anatomie phonétique",
+    "noPhonemeData": "Aucune donnée phonémique détaillée pour ce mot.",
+    "errOmission": "Omis",
+    "errInsertion": "Ajouté",
+    "errMispronunciation": "Mal prononcé"
+  },
+  "library": {
+    "empty": "La bibliothèque est vide.\nFaites glisser les cartes importantes pour les sauvegarder !",
+    "loading": "Ouverture de la bibliothèque... 📚",
+    "loadError": "Impossible de charger la bibliothèque. Vérifiez votre connexion. 😥",
+    "refresh": "Actualiser",
+    "deleteConfirm": "Voulez-vous vraiment supprimer cette carte ?",
+    "deleteCancel": "Annuler",
+    "deleteOk": "Supprimer",
+    "loadingMore": "Chargement de plus de cartes... 📚",
+    "reachedEnd": "Vous avez atteint la fin de votre bibliothèque ! ✨"
+  },
+  "save": {
+    "savedSuccess": "Enregistré !",
+    "savedToLibrary": "Enregistré dans la bibliothèque !",
+    "alreadyInLibrary": "Déjà dans la bibliothèque !",
+    "audioSaved": "Enregistrement de prononciation sauvegardé avec succès ! ✅"
+  },
+  "trial": {
+    "limitTitle": "Limite d'essai atteinte !",
+    "limitDesc": "Vous avez utilisé 10 cartes et 30 tests de prononciation.",
+    "optionProTitle": "Abonnement Pro",
+    "optionProPrice": "₩4 900 / mois",
+    "optionProFeature1": "500 appels API / mois",
+    "optionProFeature2": "Publicités incluses",
+    "optionProBtn": "Commencer maintenant",
+    "optionByokTitle": "Utiliser mes propres clés API (Gratuit)",
+    "optionByokDesc": "Enregistrer les clés Azure + Gemini",
+    "optionByokFeature": "Entièrement gratuit · Guide de 5 min",
+    "optionByokBtn": "Configurer les clés API"
+  },
+  "apiSetup": {
+    "title": "Configuration des clés API",
+    "step1Title": "Étape 1 : Clé API Gemini",
+    "step1Desc": "Gratuit avec votre compte Google (environ 5 min)",
+    "step2Title": "Étape 2 : Clé Azure Speech",
+    "step2Desc": "Pour l'évaluation de la prononciation (environ 10 min, carte bancaire requise)",
+    "step2AltTip": "Configuration difficile ? L'abonnement Pro est plus simple.",
+    "inputPlaceholder": "Collez votre clé ici",
+    "regionPlaceholder": "Ex : eastasia",
+    "testBtn": "Tester la connexion",
+    "testSuccess": "Connexion réussie ! ✅",
+    "testFail": "Échec de connexion. Vérifiez votre clé.",
+    "completeBtn": "Commencer gratuitement"
+  },
+  "settings": {
+    "apiKeys": "Clés API",
+    "myTier": "Mon forfait",
+    "tierTrial": "Essai gratuit",
+    "tierByokFree": "Gratuit (mon API)",
+    "tierSilver": "Silver",
+    "tierPro": "Pro",
+    "tierPremium": "Premium"
+  }
+}

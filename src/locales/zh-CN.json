@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "需要麦克风权限。请在浏览器设置中允许。 🎤",
+    "serverConnect": "无法连接到分析服务器。请稍后重试。 🥺",
+    "libraryLoad": "无法加载词库数据。请检查您的网络连接。 😥",
+    "byokAzureFail": "Azure密钥连接失败。请检查您的密钥和区域。",
+    "byokGeminiFail": "Gemini密钥连接失败。请检查您的密钥。",
+    "apiKeyMissing": "未找到API密钥。请在设置中注册您的密钥。"
+  },
+  "card": {
+    "practicePrompt": "按下按钮开始发音练习！",
+    "recording": "请说话... 🎙️",
+    "analyzing": "AI教练正在分析... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 准确度",
+    "fluency": "🌊 流利度",
+    "prosody": "🎭 韵律感",
+    "listenMyVoice": "🎧 听我的声音",
+    "anatomy": "发音剖析图",
+    "noPhonemeData": "该单词没有详细的音素数据。",
+    "errOmission": "省略",
+    "errInsertion": "多余",
+    "errMispronunciation": "发音错误"
+  },
+  "library": {
+    "empty": "词库为空。\n滑动重要卡片以保存！",
+    "loading": "正在打开词库... 📚",
+    "loadError": "无法加载词库。请检查您的网络连接。 😥",
+    "refresh": "刷新",
+    "deleteConfirm": "确定要删除这张卡片吗？",
+    "deleteCancel": "取消",
+    "deleteOk": "删除",
+    "loadingMore": "加载更多... 📚",
+    "reachedEnd": "您已到达词库末尾！ ✨"
+  },
+  "save": {
+    "savedSuccess": "保存成功！",
+    "savedToLibrary": "已保存到词库！",
+    "alreadyInLibrary": "已在词库中！",
+    "audioSaved": "发音记录已成功保存！ ✅"
+  },
+  "trial": {
+    "limitTitle": "体验限额已达！",
+    "limitDesc": "您已完成10张卡片和30次发音测试。",
+    "optionProTitle": "Pro订阅",
+    "optionProPrice": "₩4,900 / 月",
+    "optionProFeature1": "每月500次API调用",
+    "optionProFeature2": "含广告",
+    "optionProBtn": "立即开始",
+    "optionByokTitle": "使用我的API密钥（免费）",
+    "optionByokDesc": "注册Azure + Gemini密钥",
+    "optionByokFeature": "完全免费 · 5分钟设置指南",
+    "optionByokBtn": "设置API密钥"
+  },
+  "apiSetup": {
+    "title": "API密钥设置",
+    "step1Title": "第1步：Gemini API密钥",
+    "step1Desc": "使用Google账户免费获取（约5分钟）",
+    "step2Title": "第2步：Azure Speech密钥",
+    "step2Desc": "用于发音评分（约10分钟，需要信用卡）",
+    "step2AltTip": "设置困难？试试Pro订阅更方便。",
+    "inputPlaceholder": "在此粘贴您的密钥",
+    "regionPlaceholder": "例：eastasia",
+    "testBtn": "测试连接",
+    "testSuccess": "连接成功！ ✅",
+    "testFail": "连接失败。请重新检查您的密钥。",
+    "completeBtn": "开始免费使用"
+  },
+  "settings": {
+    "apiKeys": "API密钥",
+    "myTier": "我的方案",
+    "tierTrial": "免费试用",
+    "tierByokFree": "免费（我的API）",
+    "tierSilver": "银牌",
+    "tierPro": "专业版",
+    "tierPremium": "高级版"
+  }
+}

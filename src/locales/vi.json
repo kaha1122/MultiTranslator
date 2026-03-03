@@ -1,0 +1,79 @@
+{
+  "errors": {
+    "micAccess": "Cần quyền truy cập microphone. Vui lòng cho phép trong cài đặt trình duyệt. 🎤",
+    "serverConnect": "Không thể kết nối máy chủ phân tích. Vui lòng thử lại sau. 🥺",
+    "libraryLoad": "Không thể tải dữ liệu thư viện. Vui lòng kiểm tra kết nối internet. 😥",
+    "byokAzureFail": "Kết nối Azure thất bại. Vui lòng kiểm tra khóa và vùng của bạn.",
+    "byokGeminiFail": "Kết nối Gemini thất bại. Vui lòng kiểm tra khóa của bạn.",
+    "apiKeyMissing": "Không tìm thấy khóa API. Vui lòng đăng ký trong Cài đặt."
+  },
+  "card": {
+    "practicePrompt": "Nhấn nút để bắt đầu luyện phát âm!",
+    "recording": "Hãy nói... 🎙️",
+    "analyzing": "AI Coach đang phân tích... ✨"
+  },
+  "scores": {
+    "accuracy": "🎯 Độ chính xác",
+    "fluency": "🌊 Độ trôi chảy",
+    "prosody": "🎭 Ngữ điệu",
+    "listenMyVoice": "🎧 Nghe giọng của tôi",
+    "anatomy": "Phân tích âm vị",
+    "noPhonemeData": "Không có dữ liệu âm vị chi tiết cho từ này.",
+    "errOmission": "Bỏ sót",
+    "errInsertion": "Thêm thừa",
+    "errMispronunciation": "Phát âm sai"
+  },
+  "library": {
+    "empty": "Thư viện trống.\nVuốt các thẻ quan trọng để lưu!",
+    "loading": "Đang mở thư viện... 📚",
+    "loadError": "Không thể tải thư viện. Vui lòng kiểm tra kết nối internet. 😥",
+    "refresh": "Tải lại",
+    "deleteConfirm": "Bạn có thực sự muốn xóa thẻ này không?",
+    "deleteCancel": "Hủy",
+    "deleteOk": "Xóa",
+    "loadingMore": "Đang tải thêm... 📚",
+    "reachedEnd": "Bạn đã đến cuối thư viện! ✨"
+  },
+  "save": {
+    "savedSuccess": "Đã lưu!",
+    "savedToLibrary": "Đã lưu vào Thư viện!",
+    "alreadyInLibrary": "Đã có trong Thư viện!",
+    "audioSaved": "Bản ghi phát âm đã được lưu thành công! ✅"
+  },
+  "trial": {
+    "limitTitle": "Đã đạt giới hạn dùng thử!",
+    "limitDesc": "Bạn đã dùng 10 thẻ và 30 lần kiểm tra phát âm.",
+    "optionProTitle": "Đăng ký Pro",
+    "optionProPrice": "₩4,900 / tháng",
+    "optionProFeature1": "500 lần gọi API / tháng",
+    "optionProFeature2": "Có quảng cáo",
+    "optionProBtn": "Bắt đầu ngay",
+    "optionByokTitle": "Dùng API key của tôi (Miễn phí)",
+    "optionByokDesc": "Đăng ký Azure + Gemini key",
+    "optionByokFeature": "Hoàn toàn miễn phí · Hướng dẫn 5 phút",
+    "optionByokBtn": "Thiết lập API Key"
+  },
+  "apiSetup": {
+    "title": "Thiết lập API Key",
+    "step1Title": "Bước 1: Gemini API Key",
+    "step1Desc": "Miễn phí với tài khoản Google (khoảng 5 phút)",
+    "step2Title": "Bước 2: Azure Speech Key",
+    "step2Desc": "Để chấm điểm phát âm (khoảng 10 phút, cần thẻ tín dụng)",
+    "step2AltTip": "Thiết lập phức tạp? Hãy thử đăng ký Pro cho tiện hơn.",
+    "inputPlaceholder": "Dán key của bạn vào đây",
+    "regionPlaceholder": "Ví dụ: eastasia",
+    "testBtn": "Kiểm tra kết nối",
+    "testSuccess": "Kết nối thành công! ✅",
+    "testFail": "Kết nối thất bại. Vui lòng kiểm tra lại key của bạn.",
+    "completeBtn": "Bắt đầu dùng miễn phí"
+  },
+  "settings": {
+    "apiKeys": "API Key",
+    "myTier": "Gói của tôi",
+    "tierTrial": "Dùng thử miễn phí",
+    "tierByokFree": "Miễn phí (API của tôi)",
+    "tierSilver": "Bạc",
+    "tierPro": "Pro",
+    "tierPremium": "Premium"
+  }
+}

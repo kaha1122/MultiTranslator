@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, updateDoc, limit } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2 } from 'lucide-react';
+import { useT } from '../utils/i18n';
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
+    const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
     // 상태 초기값을 브라우저 저장소(localStorage)에서 먼저 찾아보고 없으면 기본값을 씁니다.
     const [filterLang, setFilterLang] = useState(() => {
@@ -79,7 +81,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
             },
             (error) => {
                 console.error("Error loading library:", error);
-                setErrorMsg("Cannot load library data. Please check your internet connection. 😥");
+                setErrorMsg(t('library.loadError'));
                 setIsLoading(false);
             }
         );
@@ -130,7 +132,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     };
 
     // [신규] 2-1. 보관함 카드 재연습 시 점수 및 오디오 업데이트
-    const handlePracticeResult = async (id, langCode, result) => {
+    const handlePracticeResult = async (id, _langCode, result) => {
         try {
             // [추가] 낙관적 업데이트(Optimistic Update): 오디오 주소가 누락된 중간 단계 결과라도 기존 오디오를 날리지 않도록 병합합니다.
             setSavedCards(currentCards =>
@@ -208,7 +210,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
 
     if (isLoading) {
-        return <div className="loading-container">보관함을 여는 중... 📚</div>;
+        return <div className="loading-container">{t('library.loading')}</div>;
     }
 
     // 통신 오류 발생 시 나타날 부드러운 에러 화면 UI를 추가합니다.
@@ -220,7 +222,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                     onClick={() => window.location.reload()}
                     style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
                 >
-                    화면 새로고침
+                    {t('library.refresh')}
                 </button>
             </div>
         );
@@ -388,7 +390,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                 ) : (
                     <div className="empty-library">
                         <Search size={48} opacity={0.2} />
-                        <p>Library is empty.<br />Swipe important cards to save them!</p>
+                        <p>{t('library.empty').split('\n').map((line, i) => i === 0 ? line : <><br key={i} />{line}</>)}</p>
                     </div>
                 )}
             </div>
@@ -396,14 +398,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
             {/* [신규] 무한 스크롤 관찰용 빈 타겟 (화면 끝에 닿으면 감지됨) */}
             {!searchTerm && hasMore && filteredCards.length > 0 && (
                 <div ref={observerTarget} style={{ height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1rem' }}>
-                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>Loading more cards... 📚</span>
+                    <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>{t('library.loadingMore')}</span>
                 </div>
             )}
 
             {/* 데이터 끝에 도달했을 때 안내 */}
             {!hasMore && filteredCards.length > 0 && !searchTerm && (
                 <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '1rem', fontSize: '0.875rem', paddingBottom: '1rem' }}>
-                    You've reached the end of your library! ✨
+                    {t('library.reachedEnd')}
                 </div>
             )}
 
@@ -412,14 +414,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                 <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div className="modal-content" style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
                         <p style={{ margin: '0 0 24px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', lineHeight: '1.5' }}>
-                            Do you really want to delete this Card?
+                            {t('library.deleteConfirm')}
                         </p>
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
                             <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
-                                Cancel
+                                {t('library.deleteCancel')}
                             </button>
                             <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
-                                OK
+                                {t('library.deleteOk')}
                             </button>
                         </div>
                     </div>
