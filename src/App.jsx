@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
@@ -26,6 +26,9 @@ import OnboardingModal from './components/OnboardingModal';
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
 
+// [신규] 스플래시 화면 - 앱 아이콘으로 열 때 처음 보이는 로딩 화면
+import SplashScreen from './components/SplashScreen';
+
 // Supported Language List
 const SUPPORTED_LANGUAGES = [
   { code: 'ko', name: '한국어', tts: 'ko-KR', color: '#f0fdf4', textColor: '#166534' },
@@ -50,6 +53,12 @@ const languageNames = {
 };
 
 function App() {
+  // ── 스플래시 화면 상태 ──────────────────────────────────────────────────
+  // 앱 시작 시 한 번만 true, 스플래시가 끝나면 false로 바뀌어 메인 화면이 나타납니다.
+  const [showSplash, setShowSplash] = useState(true);
+  // useCallback: SplashScreen에 넘겨줄 onFinish 함수가 매 렌더링마다 새로 생성되지 않도록 최적화
+  const handleSplashFinish = useCallback(() => setShowSplash(false), []);
+
   const { user, profile, updateUserProfile } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
 
@@ -712,11 +721,17 @@ function App() {
 
   // --- 4. 화면 렌더링 (UI Rendering) ---
 
+  // ── 스플래시 화면: 모든 화면보다 먼저 렌더링됩니다 ──────────────────────
+  // 앱이 처음 로드될 때 showSplash가 true이면 스플래시만 보여주고,
+  // 2.3초 후 handleSplashFinish 가 호출되어 false로 전환됩니다.
+  if (showSplash) return <SplashScreen onFinish={handleSplashFinish} />;
+
   // ── Legal 페이지는 로그인 여부에 관계없이 항상 접근 가능해야 합니다 ──────────────
   // AdSense 심사관이 로그인 없이도 Privacy Policy / Contact 등을 볼 수 있어야 하기 때문입니다.
   if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
+
 
   // 로그인이 되어있지 않으면 로그인/회원가입 화면을 먼저 보여줍니다.
   if (!user) {

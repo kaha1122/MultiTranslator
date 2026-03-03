@@ -1,0 +1,176 @@
+/* ==========================================================================
+   SplashScreen.css - PronunFit 스플래시 화면 스타일
+   ========================================================================== */
+
+/* ── 전체 화면 녹색 배경 ────────────────────────────────────────────────── */
+.splash-screen {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: linear-gradient(145deg, #00a884 0%, #008f72 50%, #006e56 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 2.5rem;
+    opacity: 1;
+    transition: opacity 0.5s ease-in-out;
+}
+
+/* 페이드 아웃 상태 */
+.splash-fading {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* ── 링 컨테이너 ─────────────────────────────────────────────────────────── */
+.splash-ring-wrapper {
+    position: relative;
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-ring {
+    position: absolute;
+    border-radius: 50%;
+    border-style: solid;
+    border-color: transparent;
+}
+
+/* 바깥 링: 크고 연하게, 느리게 시계 방향 회전 */
+.ring-outer {
+    width: 180px;
+    height: 180px;
+    border-width: 3px;
+    border-top-color: rgba(255, 255, 255, 0.35);
+    border-right-color: rgba(255, 255, 255, 0.1);
+    animation: spin-cw 3s linear infinite;
+}
+
+/* 중간 링: 중간 크기, 반시계 방향 */
+.ring-middle {
+    width: 138px;
+    height: 138px;
+    border-width: 4px;
+    border-top-color: rgba(255, 255, 255, 0.65);
+    border-left-color: rgba(255, 255, 255, 0.2);
+    animation: spin-ccw 2s linear infinite;
+}
+
+/* 안쪽 링: 작고 선명하게, 빠르게 시계 방향 */
+.ring-inner {
+    width: 98px;
+    height: 98px;
+    border-width: 5px;
+    border-top-color: white;
+    border-right-color: rgba(255, 255, 255, 0.4);
+    animation: spin-cw 1.2s linear infinite;
+}
+
+@keyframes spin-cw {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes spin-ccw {
+    to {
+        transform: rotate(-360deg);
+    }
+}
+
+/* ── 링 중앙 사운드 웨이브 ──────────────────────────────────────────────── */
+.splash-center {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.splash-wave-icon {
+    width: 58px;
+    height: 29px;
+}
+
+/* 각 막대기가 위아래로 출렁이게 */
+.wave-bar {
+    animation: wave-pulse 1.2s ease-in-out infinite;
+    transform-origin: center bottom;
+}
+
+.bar1 {
+    animation-delay: 0.0s;
+}
+
+.bar2 {
+    animation-delay: 0.1s;
+}
+
+.bar3 {
+    animation-delay: 0.2s;
+}
+
+.bar4 {
+    animation-delay: 0.3s;
+}
+
+.bar5 {
+    animation-delay: 0.4s;
+}
+
+.bar6 {
+    animation-delay: 0.5s;
+}
+
+@keyframes wave-pulse {
+
+    0%,
+    100% {
+        transform: scaleY(0.3);
+        opacity: 0.5;
+    }
+
+    50% {
+        transform: scaleY(1.0);
+        opacity: 1.0;
+    }
+}
+
+/* ── 텍스트 블록 ─────────────────────────────────────────────────────────── */
+.splash-text-block {
+    text-align: center;
+    animation: splash-text-in 0.8s ease-out 0.3s both;
+}
+
+@keyframes splash-text-in {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.splash-app-name {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: white;
+    margin: 0 0 0.4rem 0;
+    letter-spacing: 1px;
+    text-shadow:
+        1px 1px 0px rgba(0, 0, 0, 0.2),
+        0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+.splash-tagline {
+    font-size: 0.85rem;
+    color: rgba(255, 255, 255, 0.8);
+    margin: 0;
+    font-weight: 500;
+}
