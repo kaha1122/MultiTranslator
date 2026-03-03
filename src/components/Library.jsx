@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, updateDoc, limit } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2, Volume2 } from 'lucide-react';
+import { Search, Trash2 } from 'lucide-react';
 import { useT } from '../utils/i18n';
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
@@ -131,43 +131,21 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // [신규] 2-1. 보관함 카드 재연습 시 점수 및 오디오 업데이트
+    // [신규] 2-1. 보관함 카드 재연습 시 점수 업데이트
     const handlePracticeResult = async (id, _langCode, result) => {
         try {
-            // [추가] 낙관적 업데이트(Optimistic Update): 오디오 주소가 누락된 중간 단계 결과라도 기존 오디오를 날리지 않도록 병합합니다.
-            setSavedCards(currentCards =>
-                currentCards.map(card => {
-                    if (card.id === id) {
-                        return {
-                            ...card,
-                            pronunciationScore: result.pronunciationScore || card.pronunciationScore,
-                            pronunciationAudioUrl: result.audioUrl || card.pronunciationAudioUrl
-                        };
-                    }
-                    return card;
-                })
-            );
-
-            // Firebase에는 실제로 존재하는 데이터만 업데이트하도록 필터링합니다.
-            const updateProps = {};
-            if (result.pronunciationScore !== undefined) updateProps.pronunciationScore = result.pronunciationScore;
-            if (result.audioUrl) updateProps.pronunciationAudioUrl = result.audioUrl;
-
-            if (Object.keys(updateProps).length > 0) {
+            if (result.pronunciationScore !== undefined) {
+                setSavedCards(currentCards =>
+                    currentCards.map(card =>
+                        card.id === id ? { ...card, pronunciationScore: result.pronunciationScore } : card
+                    )
+                );
                 const cardRef = doc(db, "savedCards", id);
-                await updateDoc(cardRef, updateProps);
-                console.log("Firebase 카드 속성 업데이트 완료");
+                await updateDoc(cardRef, { pronunciationScore: result.pronunciationScore });
             }
         } catch (error) {
             console.error("Failed to update pronunciation test results:", error);
         }
-    };
-
-    // [신규] 2-2. 저장된 내 발음 오디오 듣기
-    const playPronunciationAudio = (url) => {
-        if (!url) return;
-        const audio = new Audio(url);
-        audio.play().catch(e => console.error("Audio play failed:", e));
     };
 
     // 3. 언어 및 검색어(Like) 필터링 로직
@@ -357,20 +335,6 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                     <span className="stat-text" title="달성 여부">
                                         {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 80) ? '✅' : '❌'}
                                     </span>
-                                    {/* 저장된 내 발음 오디오 듣기 버튼 */}
-                                    <span className="stat-divider">·</span>
-                                    <button
-                                        className="stat-icon-btn"
-                                        title={card.pronunciationAudioUrl ? "내 발음 다시 듣기" : "저장된 발음 없음"}
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            if (card.pronunciationAudioUrl) playPronunciationAudio(card.pronunciationAudioUrl);
-                                        }}
-                                        disabled={!card.pronunciationAudioUrl}
-                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: card.pronunciationAudioUrl ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: card.pronunciationAudioUrl ? 1 : 0.3, color: 'var(--text-secondary)' }}
-                                    >
-                                        <Volume2 size={16} />
-                                    </button>
                                 </div>
                                 <div className="action-right">
                                     <button
