@@ -23,8 +23,6 @@ const upload = multer({ dest: UPLOADS_DIR });
 const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const ELEVENLABS_API_KEY = process.env.ELEVENLABS_API_KEY;
-const ELEVENLABS_VOICE_ID = process.env.ELEVENLABS_VOICE_ID || 'pNInz6obpgDQGcFmaJgB'; // Default Adam voice
 
 /**
  * 1. Azure Pronunciation Assessment
@@ -146,32 +144,6 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     }
 }
 
-/**
- * 3. ElevenLabs Text-to-Speech
- */
-async function generateCoachAudio(text) {
-    try {
-        const response = await axios.post(
-            `https://api.elevenlabs.io/v1/text-to-speech/${ELEVENLABS_VOICE_ID}`,
-            {
-                text: text,
-                model_id: "eleven_multilingual_v2",
-                voice_settings: { stability: 0.5, similarity_boost: 0.75 }
-            },
-            {
-                headers: {
-                    "xi-api-key": ELEVENLABS_API_KEY,
-                    "Content-Type": "application/json"
-                },
-                responseType: 'arraybuffer'
-            }
-        );
-        return Buffer.from(response.data).toString('base64');
-    } catch (error) {
-        console.error("ElevenLabs Error:", error.response?.data || error.message);
-        return null; // Fallback to no audio if ElevenLabs fails
-    }
-}
 
 /**
  * Main Analysis Endpoint
@@ -210,19 +182,13 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
         // 2. Gemini Coaching (사용자 언어 전달)
         const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang);
 
-        // 3. ElevenLabs Audio
-        const audioBase64 = await generateCoachAudio(tip);
-
         // Cleanup
         if (fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
 
         res.json({
             assessment,
-            coaching: {
-                tip,
-                audio: audioBase64 // Base64 encoded WAV/MP3
-            }
+            coaching: { tip }
         });
     } catch (error) {
         console.error("Analysis Pipeline Failed:", error);
@@ -243,9 +209,6 @@ app.listen(PORT, () => {
     console.log(`🚀 AI Orchestrator running on http://localhost:${PORT}`);
     console.log(`[Config] Azure Region: ${AZURE_REGION}`);
     console.log(`[Config] Gemini Key Prefix: ${GEMINI_API_KEY?.substring(0, 5)}...`);
-    console.log(`[Config] ElevenLabs Key Prefix: ${ELEVENLABS_API_KEY?.substring(0, 5)}...`);
-
     if (!AZURE_KEY) console.warn("⚠️ AZURE_SPEECH_KEY is missing in .env");
     if (!GEMINI_API_KEY) console.warn("⚠️ GEMINI_API_KEY is missing in .env");
-    if (!ELEVENLABS_API_KEY) console.warn("⚠️ ELEVENLABS_API_KEY is missing in .env");
 });

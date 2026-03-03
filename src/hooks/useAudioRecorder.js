@@ -1,7 +1,6 @@
 import { useState, useRef } from 'react';
 import axios from 'axios';
-import { storage, db } from '../firebase/config';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db } from '../firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
@@ -39,7 +38,6 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [assessmentResult, setAssessmentResult] = useState(null);
     const [coachTip, setCoachTip] = useState(null);
-    const [coachAudio, setCoachAudio] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null); // 에러를 화면에 띄우기 위한 상태 변수 추가
     const [saveMessage, setSaveMessage] = useState(null); // 저장 성공/에러 메시지
 
@@ -214,53 +212,30 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
             // 2. 상태 업데이트 (여기서 점수가 보입니다)
             setAssessmentResult(assessment);
             setCoachTip(coaching?.tip || null);
-            setCoachAudio(coaching?.audio || null);
 
             // [성능 혁신] 서버에서 분석 결과를 받자마자! 빙글빙글 도는 스피너를 즉시 멈춥니다.
             // 사용자는 점수를 바로 볼 수 있고, 3번의 Firebase 클라우드 저장은 티 나지 않게 백그라운드에서 조용히 진행됩니다.
             setIsAnalyzing(false);
 
-            // 3. Firebase 저장 로직 (로그인한 경우만)
-            // (이 단계는 1~3초가 걸릴 수 있지만, 화면은 이미 멈춰있고 점수가 뜬 상태입니다)
+            // 3. Firestore 점수 기록 (로그인한 경우만, 오디오는 메모리에만 보관)
             if (user) {
-                // Firebase Storage 버킷 설정이 안 되어 있거나 오류로 인해 무한정 로딩(빙글빙글) 도는 것을 
-                // 방지하기 위해 10초 제한 시간을 주는 타임아웃 래퍼(Wrapper) 
-                const uploadWithTimeout = new Promise(async (resolve, reject) => {
-                    const timer = setTimeout(() => reject(new Error('Firebase Timeout')), 10000);
-                    try {
-                        const textHash = text ? hashCode(text) : 'unknown';
-                        const audioRef = ref(storage, `pronunciation_audio/${user.uid}/${textHash}.wav`);
-                        await uploadBytes(audioRef, blob);
-                        const downloadUrl = await getDownloadURL(audioRef);
-
-                        const recordRef = doc(db, `users/${user.uid}/pronunciation_records`, textHash);
-                        await setDoc(recordRef, {
-                            cardId: textHash,
-                            originalText: text,
-                            timestamp: serverTimestamp(),
-                            scores: {
-                                accuracy: assessment.pronunciationScore || 0,
-                                fluency: assessment.fluencyScore || 0,
-                                prosody: assessment.prosodyScore || 0
-                            },
-                            words: assessment.words || [],
-                            audioUrl: downloadUrl
-                        });
-                        clearTimeout(timer);
-                        resolve(downloadUrl);
-                    } catch (e) {
-                        clearTimeout(timer);
-                        reject(e);
-                    }
-                });
-
                 try {
-                    await uploadWithTimeout;
+                    const textHash = text ? hashCode(text) : 'unknown';
+                    const recordRef = doc(db, `users/${user.uid}/pronunciation_records`, textHash);
+                    await setDoc(recordRef, {
+                        cardId: textHash,
+                        originalText: text,
+                        timestamp: serverTimestamp(),
+                        scores: {
+                            accuracy: assessment.pronunciationScore || 0,
+                            fluency: assessment.fluencyScore || 0,
+                            prosody: assessment.prosodyScore || 0
+                        },
+                        words: assessment.words || []
+                    });
                     setSaveMessage(getT(sourceLangCode, 'save.audioSaved'));
                 } catch (dbErr) {
-                    console.error("Firebase 저장 실패:", dbErr);
-                    // 에러 메시지를 화면에 띄워 디버깅을 돕습니다.
-                    setSaveMessage(`분석 성공, 하지만 오디오 저장 실패: ${dbErr.message || '알 수 없는 오류'}`);
+                    console.error("Firestore 저장 실패:", dbErr);
                 }
             }
 
@@ -272,15 +247,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         }
     };
 
-    // 4. AI 코치 목소리 재생 함수
-    const playCoachVoice = () => {
-        if (coachAudio) {
-            const audio = new Audio(`data:audio/mp3;base64,${coachAudio}`);
-            audio.play();
-        }
-    };
-
-    // 5. 발음 분석 결과 초기화 함수
+    // 4. 발음 분석 결과 초기화 함수
     const resetAssessment = () => {
         setAssessmentResult(null);
         setCoachTip(null);
@@ -288,18 +255,15 @@ export const useAudioRecorder = (text, langCode, sourceLangCode) => {
         setSaveMessage(null);
     };
 
-    // 사용할 수 있도록 필요한 상태와 함수들을 내보내 줍니다.
     return {
         isRecording,
         isAnalyzing,
         assessmentResult,
         coachTip,
-        coachAudio,
         errorMsg,
         saveMessage,
         startRecording,
         stopRecording,
-        playCoachVoice,
         resetAssessment
     };
 };
