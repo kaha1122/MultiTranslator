@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, updateDoc, limit } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2 } from 'lucide-react';
+import { Search, Trash2, Volume2 } from 'lucide-react';
 import { useT } from '../utils/i18n';
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
@@ -37,6 +37,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const [hasMore, setHasMore] = useState(true);
     const observerTarget = useRef(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null); // [신규] 커스텀 삭제 모달을 위한 ID 상태
+    const [sessionAudioUrls, setSessionAudioUrls] = useState({}); // 세션 내 녹음 Blob URL 맵 { cardId → url }
 
     // 1. Firebase에서 내가 저장한 카드 실시간으로 가져오기 (무한 스크롤 & 검색 대응)
     useEffect(() => {
@@ -131,9 +132,13 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // [신규] 2-1. 보관함 카드 재연습 시 점수 업데이트
+    // [신규] 2-1. 보관함 카드 재연습 시 점수 업데이트 + 세션 오디오 URL 저장
     const handlePracticeResult = async (id, _langCode, result) => {
         try {
+            // 방금 녹음한 Blob URL을 세션 상태에 저장 (새로고침 전까지 재생 가능)
+            if (result.audioUrl) {
+                setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
+            }
             if (result.pronunciationScore !== undefined) {
                 setSavedCards(currentCards =>
                     currentCards.map(card =>
@@ -146,6 +151,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         } catch (error) {
             console.error("Failed to update pronunciation test results:", error);
         }
+    };
+
+    const playPronunciationAudio = (url) => {
+        if (!url) return;
+        new Audio(url).play().catch(e => console.error("Audio play failed:", e));
     };
 
     // 3. 언어 및 검색어(Like) 필터링 로직
@@ -335,6 +345,16 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                     <span className="stat-text" title="달성 여부">
                                         {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 80) ? '✅' : '❌'}
                                     </span>
+                                    <span className="stat-divider">·</span>
+                                    <button
+                                        className="stat-icon-btn"
+                                        title={sessionAudioUrls[card.id] ? "내 발음 다시 듣기" : "녹음 후 활성화됩니다"}
+                                        onClick={(e) => { e.stopPropagation(); playPronunciationAudio(sessionAudioUrls[card.id]); }}
+                                        disabled={!sessionAudioUrls[card.id]}
+                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: sessionAudioUrls[card.id] ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: sessionAudioUrls[card.id] ? 1 : 0.3, color: 'var(--text-secondary)' }}
+                                    >
+                                        <Volume2 size={16} />
+                                    </button>
                                 </div>
                                 <div className="action-right">
                                     <button
