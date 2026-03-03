@@ -77,7 +77,10 @@ function App() {
 
   const {
     user, profile, updateUserProfile,
-    tier, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+    tier, trialCardCount, savedCardCount, trialPronCount,
+    TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+    isTrialSavedCardLimitReached,
+    incrementTrialCard, incrementSavedCard,
     byokGeminiKey,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
@@ -451,6 +454,7 @@ function App() {
       }));
 
       setTranslations(newTranslations);
+      incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
       generateGeminiTips(inputText, newTranslations);
 
     } catch (error) {
@@ -608,14 +612,11 @@ function App() {
     }
 
     try {
-      // 1. Trial 카드 저장 한도 체크 (현재 저장된 카드 수 기준, 삭제 시 복원)
-      if (tier === 'trial') {
-        const countSnap = await getDocs(query(collection(db, "savedCards"), where("userId", "==", user.uid)));
-        if (countSnap.size >= TRIAL_CARD_LIMIT) {
-          setTrialCardCurrentCount(countSnap.size);
-          setShowTrialLimitModal(true);
-          return { status: "trial_limit" };
-        }
+      // 1. Trial 카드 저장 한도 체크 (누적 저장 횟수 기준 — 삭제해도 카운트 감소 없음)
+      if (isTrialSavedCardLimitReached) {
+        setTrialCardCurrentCount(savedCardCount);
+        setShowTrialLimitModal(true);
+        return { status: "trial_limit" };
       }
 
       // 2. 중복 데이터 검사 쿼리
@@ -651,6 +652,7 @@ function App() {
       };
 
       await addDoc(collection(db, "savedCards"), cardData);
+      incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
       return { status: "success" };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -1230,7 +1232,7 @@ function App() {
                   }}>
                     <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
                       {{
-                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 max ${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
+                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 ${savedCardCount}/${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
                         byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
                         silver:   `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
                         pro:      `⭐ ${getT(sourceLang, 'settings.tierPro')}`,

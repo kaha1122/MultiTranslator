@@ -63,10 +63,34 @@ export const AuthProvider = ({ children }) => {
 
     // ── Tier / Trial 관리 ─────────────────────────────────────────────────────
     const tier = profile?.tier || 'trial';
-    const trialPronCount = profile?.trialPronCount || 0;
     const TRIAL_CARD_LIMIT = 10;
     const TRIAL_PRON_LIMIT = 30;
+
+    // 번역 클릭 누적 횟수 (분석용 — 삭제해도 감소하지 않음)
+    const trialCardCount = profile?.trialCardCount || 0;
+    // Library 저장 누적 횟수 (Trial 한도 기준 — 삭제해도 감소하지 않음)
+    const savedCardCount = profile?.savedCardCount || 0;
+    // 발음 평가 누적 횟수
+    const trialPronCount = profile?.trialPronCount || 0;
+
+    const isTrialSavedCardLimitReached = tier === 'trial' && savedCardCount >= TRIAL_CARD_LIMIT;
     const isTrialPronLimitReached = tier === 'trial' && trialPronCount >= TRIAL_PRON_LIMIT;
+
+    // 번역 클릭 카운터 (분석용, 모든 tier에서 기록)
+    const incrementTrialCard = async () => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { trialCardCount: increment(1) });
+        } catch (e) { console.error("incrementTrialCard failed:", e); }
+    };
+
+    // Library 저장 누적 카운터 (Trial 한도 산정용)
+    const incrementSavedCard = async () => {
+        if (!user || tier !== 'trial') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { savedCardCount: increment(1) });
+        } catch (e) { console.error("incrementSavedCard failed:", e); }
+    };
 
     const incrementTrialPron = async () => {
         if (!user || tier !== 'trial') return;
@@ -94,10 +118,11 @@ export const AuthProvider = ({ children }) => {
     return (
         <AuthContext.Provider value={{
             user, profile, loading, updateUserProfile,
-            tier, trialPronCount,
+            tier,
+            trialCardCount, savedCardCount, trialPronCount,
             TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
-            isTrialPronLimitReached,
-            incrementTrialPron,
+            isTrialSavedCardLimitReached, isTrialPronLimitReached,
+            incrementTrialCard, incrementSavedCard, incrementTrialPron,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
         }}>
