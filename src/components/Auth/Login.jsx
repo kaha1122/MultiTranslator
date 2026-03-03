@@ -80,10 +80,11 @@ function Login({ onSwitchToSignup }) {
             const additionalInfo = getAdditionalUserInfo(userCredential);
 
             // 구글 가입 기본 정보 세팅
+            // ※ displayName은 신규 가입 시에만 포함 — 기존 유저가 닉네임을 수정했을 경우
+            //   로그인할 때마다 Google 이름으로 덮어쓰는 버그를 방지합니다.
             const profileData = {
                 uid: user.uid,
                 email: user.email,
-                displayName: user.displayName || 'Google User',
                 membership: 'Free',
                 updatedAt: serverTimestamp()
             };
@@ -91,6 +92,7 @@ function Login({ onSwitchToSignup }) {
             // 만약 Firebase의 Auth에서 '완전 처음 가입(isNewUser)'으로 인식했다면 (계정 지우고 다시 가입한 경우 등)
             // 찌꺼기 데이터를 무시하고 온보딩(팝업)을 강제로 띄우도록 설정
             if (additionalInfo && additionalInfo.isNewUser) {
+                profileData.displayName = user.displayName || 'Google User';
                 profileData.hasCompletedOnboarding = false;
                 profileData.createdAt = serverTimestamp();
             }
