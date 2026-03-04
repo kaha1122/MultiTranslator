@@ -1,7 +1,8 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { ChevronLeft, Volume2, Mic, Square, Bookmark, BookmarkCheck, Loader, AlertCircle, ExternalLink } from 'lucide-react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Bookmark, BookmarkCheck, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useT } from '../utils/i18n';
+import PronunciationAssessment from './PronunciationAssessment';
 import './VoaReader.css';
 
 const getServerUrl = () => {
@@ -24,7 +25,7 @@ const LEVEL_COLORS = {
 
 /**
  * SentencePracticeCard
- * hooks는 루프 안에서 사용 불가이므로 별도 컴포넌트로 분리합니다.
+ * TranslationCard와 동일한 녹음 버튼 + PronunciationAssessment 게이지 사용
  */
 function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSave, isSaved, t }) {
     const {
@@ -32,53 +33,58 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
         startRecording, stopRecording, errorMsg,
     } = useAudioRecorder(sentence.text, 'en', sourceLang, onTrialLimitReached);
 
-    const score = assessmentResult?.pronunciationScore;
-
     return (
         <div className="voa-sentence-practice">
-            <div className="voa-sentence-actions">
-                {!isRecording && !isAnalyzing && (
-                    <button className="voa-record-btn" onClick={startRecording} title="Record">
-                        <Mic size={18} />
+            {/* 원형 게이지 + 단어 신호등 (TranslationCard와 동일한 컴포넌트) */}
+            {assessmentResult && (
+                <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+            )}
+
+            {/* AI 코치 팁 */}
+            {coachTip && (
+                <div className="voa-coach-tip">💡 {coachTip}</div>
+            )}
+
+            {/* 녹음 버튼 행 */}
+            <div className="voa-practice-actions">
+                <div className="voa-practice-left">
+                    {isRecording && (
+                        <p className="voa-recording-status">{t('card.recording')}</p>
+                    )}
+                    {isAnalyzing && (
+                        <p className="voa-analyzing-status">{t('card.analyzing')}</p>
+                    )}
+                    {/* 녹음 버튼: TranslationCard와 동일한 record-button circle 클래스 */}
+                    <button
+                        className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
+                        onClick={() => isRecording ? stopRecording() : startRecording()}
+                        disabled={isAnalyzing}
+                        title="Practice pronunciation"
+                    >
+                        {isAnalyzing
+                            ? <RotateCcw size={20} className="spin" />
+                            : isRecording
+                                ? <MicOff size={20} />
+                                : <Mic size={20} />
+                        }
                     </button>
-                )}
-                {isRecording && (
-                    <button className="voa-stop-btn" onClick={stopRecording} title="Stop">
-                        <Square size={18} />
-                    </button>
-                )}
-                {isAnalyzing && (
-                    <span className="voa-analyzing">
-                        <Loader size={16} className="voa-spin" /> {t('card.analyzing')}
-                    </span>
-                )}
+                </div>
+
+                {/* 북마크 버튼 — 항상 오른쪽 */}
                 <button
-                    className={`voa-save-btn ${isSaved ? 'saved' : ''}`}
+                    className={`voa-bookmark-btn ${isSaved ? 'saved' : ''}`}
                     onClick={onSave}
                     disabled={isSaved}
                     title={isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}
                 >
-                    {isSaved ? <BookmarkCheck size={18} /> : <Bookmark size={18} />}
+                    {isSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
+                    <span>{isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}</span>
                 </button>
             </div>
 
             {errorMsg && (
                 <p className="voa-error-msg"><AlertCircle size={14} /> {errorMsg}</p>
             )}
-
-            {score !== undefined && score !== null && (
-                <div className="voa-score">
-                    <span className={`voa-score-badge ${score >= 80 ? 'good' : score >= 60 ? 'ok' : 'poor'}`}>
-                        {Math.round(score)}pt
-                    </span>
-                    <span className="voa-score-detail">
-                        {t('scores.accuracy')} {Math.round(assessmentResult?.accuracyScore ?? 0)} &middot;{' '}
-                        {t('scores.fluency')} {Math.round(assessmentResult?.fluencyScore ?? 0)}
-                    </span>
-                </div>
-            )}
-
-            {coachTip && <p className="voa-coach-tip">💡 {coachTip}</p>}
         </div>
     );
 }
@@ -101,11 +107,15 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
     const [expandedIdx, setExpandedIdx]         = useState(null);
     const [savedSet, setSavedSet]               = useState(new Set());
 
+    // 하드웨어 뒤로 버튼 처리용 ref
+    const selectedArticleRef = useRef(null);
+
     // 기사 목록 fetch
     const fetchArticles = useCallback(async (cat) => {
         setLoadingList(true);
         setListError('');
         setSelectedArticle(null);
+        selectedArticleRef.current = null;
         setSentences([]);
         setExpandedIdx(null);
         try {
@@ -122,8 +132,24 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
 
     useEffect(() => { fetchArticles(category); }, [category, fetchArticles]);
 
+    // 하드웨어 뒤로 버튼 감지 — 기사 상세 뷰에서 뒤로 가면 목록으로
+    useEffect(() => {
+        const handlePop = () => {
+            if (selectedArticleRef.current) {
+                selectedArticleRef.current = null;
+                setSelectedArticle(null);
+                setSentences([]);
+            }
+        };
+        window.addEventListener('popstate', handlePop);
+        return () => window.removeEventListener('popstate', handlePop);
+    }, []);
+
     // 기사 본문 fetch
     const openArticle = async (article) => {
+        // 히스토리 스택에 상태 추가 — 뒤로 버튼 시 popstate 발생
+        window.history.pushState({ voaArticle: true }, '');
+        selectedArticleRef.current = article;
         setSelectedArticle(article);
         setSentences([]);
         setExpandedIdx(null);
@@ -141,6 +167,14 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
         } finally {
             setLoadingArticle(false);
         }
+    };
+
+    // < 버튼 — 히스토리도 함께 소비
+    const handleBack = () => {
+        selectedArticleRef.current = null;
+        setSelectedArticle(null);
+        setSentences([]);
+        window.history.back();
     };
 
     const handleSave = async (sentence, idx) => {
@@ -188,7 +222,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
                 <div className="voa-article-list">
                     {loadingList && (
                         <p className="voa-status-msg">
-                            <Loader size={16} className="voa-spin" /> {t('voa.loading')}
+                            <RotateCcw size={16} className="spin" /> {t('voa.loading')}
                         </p>
                     )}
                     {listError && (
@@ -262,10 +296,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
             {selectedArticle && (
                 <div className="voa-article-view">
                     <div className="voa-article-header">
-                        <button
-                            className="voa-back-btn"
-                            onClick={() => { setSelectedArticle(null); setSentences([]); }}
-                        >
+                        <button className="voa-back-btn" onClick={handleBack}>
                             <ChevronLeft size={22} />
                         </button>
                         <h2 className="voa-article-heading">{selectedArticle.title}</h2>
@@ -282,7 +313,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
 
                     {loadingArticle && (
                         <p className="voa-status-msg">
-                            <Loader size={16} className="voa-spin" /> {t('voa.articleLoading')}
+                            <RotateCcw size={16} className="spin" /> {t('voa.articleLoading')}
                         </p>
                     )}
                     {articleError && (

@@ -271,102 +271,72 @@
 
 /* ── 발음 연습 영역 ── */
 .voa-sentence-practice {
-    padding: 12px 16px 14px;
+    padding: 14px 16px 16px;
     background: #f8fafc;
     display: flex;
     flex-direction: column;
+    gap: 12px;
+}
+
+/* 녹음 버튼 행 */
+.voa-practice-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 10px;
 }
 
-.voa-sentence-actions {
+.voa-practice-left {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 12px;
 }
 
-.voa-record-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: #ef4444;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    transition: transform 0.15s, background 0.2s;
+/* 녹음 상태 텍스트 */
+.voa-recording-status {
+    font-size: 13px;
+    color: #ef4444;
+    font-weight: 600;
+    margin: 0;
+    animation: voa-pulse-text 1.5s infinite;
 }
-.voa-record-btn:hover {
-    background: #dc2626;
-    transform: scale(1.05);
+.voa-analyzing-status {
+    font-size: 13px;
+    color: #6366f1;
+    font-weight: 600;
+    margin: 0;
 }
-
-.voa-stop-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: none;
-    background: #f97316;
-    color: white;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    animation: voa-pulse 1.2s infinite;
+@keyframes voa-pulse-text {
+    0%, 100% { opacity: 1; }
+    50%       { opacity: 0.5; }
 }
 
-@keyframes voa-pulse {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(249, 115, 22, 0.5); }
-    50%       { box-shadow: 0 0 0 8px rgba(249, 115, 22, 0); }
-}
-
-.voa-analyzing {
+/* 북마크 버튼 — 텍스트 포함, 명확하게 */
+.voa-bookmark-btn {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 13px;
-    color: #64748b;
-}
-
-.voa-save-btn {
-    width: 36px;
-    height: 36px;
-    border-radius: 50%;
-    border: 1.5px solid #e2e8f0;
+    padding: 8px 14px;
+    border-radius: 10px;
+    border: 2px solid #94a3b8;
     background: white;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    color: #475569;
+    font-size: 12px;
+    font-weight: 600;
     cursor: pointer;
-    margin-left: auto;
     transition: all 0.2s;
+    white-space: nowrap;
 }
-.voa-save-btn.saved {
+.voa-bookmark-btn:hover {
+    border-color: #64748b;
+    background: #f8fafc;
+}
+.voa-bookmark-btn.saved {
     background: #dcfce7;
     border-color: #16a34a;
     color: #16a34a;
 }
-.voa-save-btn:disabled { cursor: default; }
-
-/* ── 점수 ── */
-.voa-score {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    flex-wrap: wrap;
-}
-
-.voa-score-badge {
-    padding: 3px 10px;
-    border-radius: 20px;
-    font-size: 14px;
-    font-weight: 700;
-}
-.voa-score-badge.good { background: #dcfce7; color: #15803d; }
-.voa-score-badge.ok   { background: #fef9c3; color: #a16207; }
-.voa-score-badge.poor { background: #fee2e2; color: #b91c1c; }
+.voa-bookmark-btn:disabled { cursor: default; }
 
 .voa-score-detail {
     font-size: 12px;

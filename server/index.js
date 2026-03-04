@@ -213,12 +213,12 @@ const rssParser = new RssParser({ timeout: 8000 });
 
 const VOA_FEEDS = {
     beginner:     'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
-    intermediate: 'https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi',   // As It Is
+    intermediate: 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
     advanced:     'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
 };
 
 // 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
-const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi';
+const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q';
 
 // 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
 const voaCache = new Map();
@@ -303,7 +303,7 @@ app.get('/api/voa-article', async (req, res) => {
 
         // 문장 분리: 마침표/느낌표/물음표 뒤 공백 기준
         const sentenceRaw = rawText.split(/(?<=[.!?])\s+/);
-        const SKIP_PATTERNS = /originally appeared|subscribe to|follow us|copyright|©|visit our|for more/i;
+        const SKIP_PATTERNS = /originally appeared|subscribe to|follow us|copyright|©|visit our|for more|no media source/i;
 
         const sentences = sentenceRaw
             .map(s => s.replace(/\s+/g, ' ').trim())
