@@ -212,15 +212,15 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 const rssParser = new RssParser({ timeout: 8000 });
 
 const VOA_FEEDS = {
-    all:      'https://learningenglish.voanews.com/podcast?zoneId=1689&_format=rss',
-    health:   'https://learningenglish.voanews.com/podcast?zoneId=3215&_format=rss',
-    science:  'https://learningenglish.voanews.com/podcast?zoneId=3214&_format=rss',
-    business: 'https://learningenglish.voanews.com/podcast?zoneId=3213&_format=rss',
-    stories:  'https://learningenglish.voanews.com/podcast?zoneId=4754&_format=rss',
+    all:      'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+    health:   'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',
+    science:  'https://learningenglish.voanews.com/api/zmg_pl-vomx-tpeymtm',
+    business: 'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+    stories:  'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',
 };
 
 // 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
-const VOA_FALLBACK = 'https://learningenglish.voanews.com/podcast?zoneId=1689&_format=rss';
+const VOA_FALLBACK = 'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS';
 
 // 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
 const voaCache = new Map();
