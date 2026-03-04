@@ -250,7 +250,7 @@ app.get('/api/voa-news', async (req, res) => {
             console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
             feed = await rssParser.parseURL(VOA_FALLBACK);
         }
-        const articles = (feed.items || []).slice(0, 20).map(item => {
+        const rawArticles = (feed.items || []).slice(0, 30).map(item => {
             const encUrl = item.enclosure?.url || '';
             return {
                 id: encodeURIComponent(item.link || item.guid || item.title),
@@ -262,6 +262,14 @@ app.get('/api/voa-news', async (req, res) => {
                 pubDate: item.pubDate || item.isoDate || '',
             };
         });
+
+        // 프로그램 로고(반복 이미지)를 가진 항목 제거 — 동일 이미지 URL이 3회 이상이면 오디오 전용 프로그램으로 판단
+        const imgFreq = {};
+        rawArticles.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
+        const articles = rawArticles
+            .filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3)
+            .slice(0, 20);
+
         const result = { articles };
         voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
         res.json(result);

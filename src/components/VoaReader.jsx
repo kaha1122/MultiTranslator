@@ -70,15 +70,14 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
                     </button>
                 </div>
 
-                {/* 북마크 버튼 — 항상 오른쪽 */}
+                {/* 북마크 버튼 — 아이콘만, 저장 시 초록색 */}
                 <button
                     className={`voa-bookmark-btn ${isSaved ? 'saved' : ''}`}
                     onClick={onSave}
                     disabled={isSaved}
                     title={isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}
                 >
-                    {isSaved ? <BookmarkCheck size={20} /> : <Bookmark size={20} />}
-                    <span>{isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}</span>
+                    {isSaved ? <BookmarkCheck size={22} /> : <Bookmark size={22} />}
                 </button>
             </div>
 

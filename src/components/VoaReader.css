@@ -311,25 +311,24 @@
     50%       { opacity: 0.5; }
 }
 
-/* 북마크 버튼 — 텍스트 포함, 명확하게 */
+/* 북마크 버튼 — 아이콘 전용 원형 */
 .voa-bookmark-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 2px solid #cbd5e1;
+    background: white;
+    color: #94a3b8;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 8px 14px;
-    border-radius: 10px;
-    border: 2px solid #94a3b8;
-    background: white;
-    color: #475569;
-    font-size: 12px;
-    font-weight: 600;
+    justify-content: center;
     cursor: pointer;
     transition: all 0.2s;
-    white-space: nowrap;
+    flex-shrink: 0;
 }
 .voa-bookmark-btn:hover {
-    border-color: #64748b;
-    background: #f8fafc;
+    border-color: #22c55e;
+    color: #22c55e;
 }
 .voa-bookmark-btn.saved {
     background: #dcfce7;
