@@ -61,7 +61,7 @@
     "step2Desc": "発音評価用キー（約10分、クレジットカード必要）",
     "step2AltTip": "設定が難しい場合は、Proサブスクリプションが便利です。",
     "inputPlaceholder": "キーをここに貼り付けてください",
-    "regionPlaceholder": "例: eastasia",
+    "regionPlaceholder": "リソース地域を入力 (例: koreacentral)",
     "testBtn": "接続テスト",
     "testSuccess": "接続成功！ ✅",
     "testFail": "接続失敗。キーをご確認ください。",

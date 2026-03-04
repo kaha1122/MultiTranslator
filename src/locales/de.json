@@ -61,7 +61,7 @@
     "step2Desc": "Für Aussprache-Bewertung (ca. 10 Min., Kreditkarte erforderlich)",
     "step2AltTip": "Einrichtung zu schwierig? Das Pro-Abonnement ist einfacher.",
     "inputPlaceholder": "Schlüssel hier einfügen",
-    "regionPlaceholder": "Z.B. eastasia",
+    "regionPlaceholder": "Ressourcenregion eingeben (z.B. koreacentral)",
     "testBtn": "Verbindung testen",
     "testSuccess": "Verbindung erfolgreich! ✅",
     "testFail": "Verbindung fehlgeschlagen. Bitte Schlüssel prüfen.",

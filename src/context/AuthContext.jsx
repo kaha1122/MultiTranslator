@@ -105,7 +105,7 @@ export const AuthProvider = ({ children }) => {
         await updateUserProfile({
             byokGeminiKey: geminiKey,
             byokAzureKey: azureKey,
-            byokAzureRegion: azureRegion || 'eastasia',
+            byokAzureRegion: azureRegion || '',
             tier: 'byok_free',
         });
     };
@@ -113,7 +113,7 @@ export const AuthProvider = ({ children }) => {
     // BYOK 키 읽기
     const byokGeminiKey  = profile?.byokGeminiKey  || null;
     const byokAzureKey   = profile?.byokAzureKey   || null;
-    const byokAzureRegion = profile?.byokAzureRegion || 'eastasia';
+    const byokAzureRegion = profile?.byokAzureRegion || '';
 
     return (
         <AuthContext.Provider value={{

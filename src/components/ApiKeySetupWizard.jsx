@@ -9,7 +9,7 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
 
     const [geminiKey, setGeminiKey]   = useState(byokGeminiKey  || '');
     const [azureKey, setAzureKey]     = useState(byokAzureKey   || '');
-    const [azureRegion, setAzureRegion] = useState(byokAzureRegion || 'eastasia');
+    const [azureRegion, setAzureRegion] = useState(byokAzureRegion || '');
     const [geminiStatus, setGeminiStatus] = useState(null); // null | 'testing' | 'ok' | 'fail'
     const [azureStatus,  setAzureStatus]  = useState(null);
     const [isSaving, setIsSaving] = useState(false);

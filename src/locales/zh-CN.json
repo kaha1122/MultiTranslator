@@ -61,7 +61,7 @@
     "step2Desc": "用于发音评分（约10分钟，需要信用卡）",
     "step2AltTip": "设置困难？试试Pro订阅更方便。",
     "inputPlaceholder": "在此粘贴您的密钥",
-    "regionPlaceholder": "例：eastasia",
+    "regionPlaceholder": "输入资源区域 (例：koreacentral)",
     "testBtn": "测试连接",
     "testSuccess": "连接成功！ ✅",
     "testFail": "连接失败。请重新检查您的密钥。",

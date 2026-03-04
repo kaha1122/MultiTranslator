@@ -61,7 +61,7 @@
     "step2Desc": "발음 평가를 위한 키 (약 10분, 신용카드 필요)",
     "step2AltTip": "설정이 어렵다면 Pro 구독이 더 편합니다.",
     "inputPlaceholder": "키를 여기에 붙여넣으세요",
-    "regionPlaceholder": "예: eastasia",
+    "regionPlaceholder": "리소스 위치를 입력하세요 (예: koreacentral)",
     "testBtn": "연결 테스트",
     "testSuccess": "연결 성공! ✅",
     "testFail": "연결 실패. 키를 다시 확인해 주세요.",

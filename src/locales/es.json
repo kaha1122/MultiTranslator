@@ -61,7 +61,7 @@
     "step2Desc": "Para evaluación de pronunciación (aprox. 10 min, tarjeta de crédito requerida)",
     "step2AltTip": "¿Configuración difícil? La suscripción Pro es más fácil.",
     "inputPlaceholder": "Pega tu clave aquí",
-    "regionPlaceholder": "Ej: eastasia",
+    "regionPlaceholder": "Ingrese la región (p.ej. koreacentral)",
     "testBtn": "Probar conexión",
     "testSuccess": "¡Conexión exitosa! ✅",
     "testFail": "Conexión fallida. Por favor, verifica tu clave.",

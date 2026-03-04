@@ -61,7 +61,7 @@
     "step2Desc": "Để chấm điểm phát âm (khoảng 10 phút, cần thẻ tín dụng)",
     "step2AltTip": "Thiết lập phức tạp? Hãy thử đăng ký Pro cho tiện hơn.",
     "inputPlaceholder": "Dán key của bạn vào đây",
-    "regionPlaceholder": "Ví dụ: eastasia",
+    "regionPlaceholder": "Nhập vùng tài nguyên (vd: koreacentral)",
     "testBtn": "Kiểm tra kết nối",
     "testSuccess": "Kết nối thành công! ✅",
     "testFail": "Kết nối thất bại. Vui lòng kiểm tra lại key của bạn.",
