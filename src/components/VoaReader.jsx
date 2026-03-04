@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Star, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useT } from '../utils/i18n';
+import { playStarSound } from '../utils/soundEffects';
 import PronunciationAssessment from './PronunciationAssessment';
 import './VoaReader.css';
 
@@ -177,6 +178,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
     };
 
     const handleSave = async (sentence, idx) => {
+        playStarSound();
         await onSaveToLibrary(sentence.text, selectedArticle?.title || '');
         setSavedSet(prev => new Set([...prev, idx]));
     };

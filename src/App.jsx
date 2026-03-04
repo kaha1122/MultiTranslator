@@ -8,7 +8,7 @@ import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 A
 
 // Firebase & Auth
 import { auth, db } from './firebase/config';
-import { collection, addDoc, serverTimestamp, query, orderBy, getDocs, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'firebase/firestore';
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -205,13 +205,9 @@ function App() {
   const [isTranslating, setIsTranslating] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
 
-  // --- [신규] 보관함 저장 및 선택 모드 전역 상태 ---
-  const [selectedCards, setSelectedCards] = useState(new Set()); // 선택된 언어 코드들
-  const [isInSelectionMode, setIsInSelectionMode] = useState(false); // 선택 모드 활성화 여부
-  const [isSavingCards, setIsSavingCards] = useState(false); // Firebase 저장 중 로딩 상태
+  // --- 보관함 저장 상태 ---
+  const [savedLangCodes, setSavedLangCodes] = useState(new Set()); // 현재 번역에서 저장된 langCode들
   const [practiceResults, setPracticeResults] = useState({}); // [신규] 발음 연습 기록 상태
-  const [saveMessages, setSaveMessages] = useState({}); // [신규] 보관함 저장 상태 알림 메시지
-  const [libraryItems, setLibraryItems] = useState([]); // 보관함 아이템 상태
 
   // [신규] 현재 번역한 텍스트가 단어(Word)인지 문장(Sentence)인지 판별한 결과 ('W' or 'S')
   const [inputType, setInputType] = useState(() => {
@@ -423,6 +419,7 @@ function App() {
     setIsTranslating(true);
     setIsGeneratingTips(true);
     setLearningTips({});
+    setSavedLangCodes(new Set()); // 새 번역 시 별 저장 상태 초기화
     setPronunciations({});
     setPracticeResults({});
 
@@ -545,24 +542,9 @@ function App() {
     }
   };
 
-  // --- [신규] 보관함 저장 및 제스처 로직 ---
+  // --- 보관함 저장 로직 ---
 
-  // 1. 카드 선택 토글 로직 (롱프레스 또는 클릭 시)
-  const toggleSelectCard = (langCode) => {
-    setSelectedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(langCode)) {
-        newSet.delete(langCode);
-      } else {
-        newSet.add(langCode);
-      }
-      // 선택된 것이 하나라도 있으면 선택 모드 유지, 없으면 해제
-      setIsInSelectionMode(newSet.size > 0);
-      return newSet;
-    });
-  };
-
-  // 2. Firebase Firestore에 실제 데이터를 저장하는 공통 함수
+  // Firebase Firestore에 실제 데이터를 저장하는 공통 함수
   const saveToFirebase = async (langCode) => {
     if (!user) { // userAuthState에서 가져온 user 객체 사용
       alert("Login required to use library.");
@@ -618,50 +600,12 @@ function App() {
     }
   };
 
-  // 3. 선택한 카드들을 한꺼번에 저장하는 함수
-  const handleSaveSelected = async () => {
-    if (selectedCards.size === 0) return;
-
-    setIsSavingCards(true);
-    let successCount = 0;
-
-    // 선택된 모든 언어 코드에 대해 순차적으로 저장 진행
-    for (const langCode of selectedCards) {
-      const result = await saveToFirebase(langCode);
-      if (result.status === "success") {
-        successCount++;
-        setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getT(sourceLang, 'save.savedSuccess')}` }));
-      } else if (result.status === "duplicate") {
-        setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getT(sourceLang, 'save.alreadyInLibrary')}` }));
-      }
-    }
-
-    setIsSavingCards(false);
-
-    if (successCount > 0) {
-      // 선택 모드 해제
-      setIsInSelectionMode(false);
-      setSelectedCards(new Set());
-    }
-  };
-
-  // 4. 개별 저장 함수 (스와이프 제스처용)
-  const handleSwipeSave = async (langCode) => {
+  // 별 버튼 저장 함수
+  const handleStarSave = async (langCode) => {
     const result = await saveToFirebase(langCode);
-    if (result.status === "success") {
-      setSaveMessages(prev => ({ ...prev, [langCode]: `✅ ${getT(sourceLang, 'save.savedToLibrary')}` }));
-    } else if (result.status === "duplicate") {
-      setSaveMessages(prev => ({ ...prev, [langCode]: `⚠️ ${getT(sourceLang, 'save.alreadyInLibrary')}` }));
+    if (result.status === "success" || result.status === "duplicate") {
+      setSavedLangCodes(prev => new Set([...prev, langCode]));
     }
-
-    // 3초 후 메시지 제거
-    setTimeout(() => {
-      setSaveMessages(prev => {
-        const newMessages = { ...prev };
-        delete newMessages[langCode];
-        return newMessages;
-      });
-    }, 3000);
   };
 
   // 5. VOA 문장을 Library에 저장하는 함수
@@ -706,31 +650,13 @@ function App() {
     synth.speak(utterance);
   };
 
-  // 데이터베이스(Firebase)에서 기존 저장된 데이터를 가져옵니다.
-  const fetchLibrary = async (uid) => {
-    try {
-      const q = query(collection(db, `users/${uid}/library`), orderBy('timestamp', 'desc'));
-      const snapshot = await getDocs(q);
-      const items = snapshot.docs.map(doc => doc.data());
-      setLibraryItems(items);
-    } catch (err) {
-      console.error("보관함 불러오기 에러:", err);
-    }
-  };
-
-  // --- 로그인/보관함/온보딩 관리 연동 ---
-  // 사용자가 로그인하면 그 사람의 보관함 데이터를 가져오고, 첫 방문이면 온보딩을 띄웁니다!
+  // --- 로그인/온보딩 관리 연동 ---
   useEffect(() => {
     if (user) {
-      fetchLibrary(user.uid);
-
-      // 사용자 고유 번호(uid)를 활용해 "이 사람이 온보딩을 본 적이 있는가?" 검사합니다.
       const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
       if (!hasSeen) {
-        setShowOnboarding(true); // 안 봤으면 화면 한가운데에 크게 띄워줍니다!
+        setShowOnboarding(true);
       }
-    } else {
-      setLibraryItems([]);
     }
   }, [user]);
 
@@ -900,14 +826,11 @@ function App() {
                         badgeColor={lang?.color}
                         badgeTextColor={lang?.textColor}
                         onSpeak={() => handleSpeak(translations[langCode], langCode)}
-                        isSelected={selectedCards.has(langCode)}
-                        onToggleSelect={() => toggleSelectCard(langCode)}
-                        onSwipeSave={() => handleSwipeSave(langCode)}
-                        isInSelectionMode={isInSelectionMode}
+                        onSave={() => handleStarSave(langCode)}
+                        isSaved={savedLangCodes.has(langCode)}
                         onPracticeResult={handlePracticeResult}
                         onTrialLimitReached={() => setShowTrialLimitModal(true)}
                         targetGoal={languageGoals[langCode] || 80}
-                        librarySaveMessage={saveMessages[langCode]}
                       />
                     );
                   })}
@@ -918,22 +841,6 @@ function App() {
                     </p>
                   )}
                 </div>
-
-                {/* 선택 모드일 때 나타나는 일괄 저장 플로팅 버튼 */}
-                {isInSelectionMode && (
-                  <div className="selection-fab-container">
-                    <button
-                      className={`save-fab ${isSavingCards ? 'loading' : ''}`}
-                      onClick={handleSaveSelected}
-                      disabled={isSavingCards}
-                    >
-                      {isSavingCards ? "Saving..." : `Save ${selectedCards.size} cards ✨`}
-                    </button>
-                    <button className="cancel-fab" onClick={() => { setSelectedCards(new Set()); setIsInSelectionMode(false); }}>
-                      Cancel
-                    </button>
-                  </div>
-                )}
               </>
         </div>
 
@@ -1334,28 +1241,28 @@ function App() {
 
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
-          onClick={() => { setViewMode('translation'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          onClick={() => { setViewMode('translation'); }}
           title="Language Card"
         >
           <Languages size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
-          onClick={() => { setViewMode('voa'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          onClick={() => { setViewMode('voa'); }}
           title="VOA News"
         >
           <Newspaper size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
-          onClick={() => { setViewMode('library'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          onClick={() => { setViewMode('library'); }}
           title="Library"
         >
           <Sparkles size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'settings' ? 'active' : ''}`}
-          onClick={() => { setViewMode('settings'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          onClick={() => { setViewMode('settings'); }}
           title="Settings"
         >
           <SettingsIcon size={32} />

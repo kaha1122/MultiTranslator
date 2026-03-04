@@ -64,7 +64,20 @@ export const playSuccessSound = () => {
     }
 };
 
-// 3. 스와이프 저장 소리 (쓱~ 바람 가르는 소리)
+// 3. 별 저장 소리 (반짝! 오름차순 별빛 차임)
+export const playStarSound = () => {
+    try {
+        playTone(523.25, 'sine', 0.08, 0);     // 도
+        playTone(659.25, 'sine', 0.08, 0.07);  // 미
+        playTone(783.99, 'sine', 0.08, 0.14);  // 솔
+        playTone(1046.50, 'sine', 0.08, 0.21); // 높은 도
+        playTone(1318.51, 'sine', 0.18, 0.28); // 높은 미 (반짝!)
+    } catch (e) {
+        console.error("Audio playback error:", e);
+    }
+};
+
+// 4. 스와이프 저장 소리 (쓱~ 바람 가르는 소리)
 export const playSwipeSound = () => {
     try {
         const ctx = initAudioContext();

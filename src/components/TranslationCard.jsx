@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle } from 'lucide-react';
+import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
-import { playAlertSound, playSuccessSound, playSwipeSound } from '../utils/soundEffects';
+import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundEffects';
 import { useT } from '../utils/i18n';
 import './TranslationCard.css';
 
@@ -17,15 +17,12 @@ const TranslationCard = ({
     badgeColor,
     badgeTextColor,
     onSpeak,
-    isSelected,
-    onToggleSelect,
-    onSwipeSave,
-    isInSelectionMode,
+    onSave,
+    isSaved,
     onPracticeResult,
     onTrialLimitReached,
     isLibraryView,
     targetGoal = 80,
-    librarySaveMessage
 }) => {
     const t = useT(sourceLangCode);
 
@@ -39,9 +36,6 @@ const TranslationCard = ({
         startRecording,
         stopRecording,
     } = useAudioRecorder(text, langCode, sourceLangCode, onTrialLimitReached);
-
-    const [swipeX, setSwipeX] = useState(0);
-    const [isSaving, setIsSaving] = useState(false);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -63,90 +57,16 @@ const TranslationCard = ({
         prevAnalyzing.current = isAnalyzing;
     }, [isAnalyzing, assessmentResult, targetGoal]);
 
-    const longPressTimer = useRef(null);
-    const touchStartPos = useRef({ x: 0, y: 0 });
-    const isSwiping = useRef(false);
-
-    const handleTouchStart = (e) => {
-        if (isLibraryView) return;
-
-        const touch = e.touches[0];
-        touchStartPos.current = { x: touch.clientX, y: touch.clientY };
-        isSwiping.current = false;
-
-        longPressTimer.current = setTimeout(() => {
-            if (!isSwiping.current) {
-                if ("vibrate" in navigator) navigator.vibrate(50);
-                onToggleSelect();
-            }
-        }, 500);
-    };
-
-    const handleTouchMove = (e) => {
-        if (isLibraryView) return;
-
-        const touch = e.touches[0];
-        const deltaX = touch.clientX - touchStartPos.current.x;
-        const deltaY = touch.clientY - touchStartPos.current.y;
-
-        if (Math.abs(deltaX) > 10) {
-            isSwiping.current = true;
-            clearTimeout(longPressTimer.current);
-
-            if (!isInSelectionMode) {
-                setSwipeX(deltaX);
-            }
-        }
-
-        if (Math.abs(deltaY) > 30) {
-            clearTimeout(longPressTimer.current);
-        }
-    };
-
-    const handleTouchEnd = () => {
-        if (isLibraryView) return;
-
-        clearTimeout(longPressTimer.current);
-
-        if (swipeX < -120 && !isInSelectionMode) {
-            playSwipeSound();
-            setIsSaving(true);
-            setTimeout(() => {
-                onSwipeSave();
-                setSwipeX(0);
-                setIsSaving(false);
-            }, 300);
-        } else {
-            setSwipeX(0);
-        }
-    };
-
-    const handleClick = () => {
-        if (isLibraryView) return;
-
-        if (isInSelectionMode) {
-            onToggleSelect();
-        }
+    const handleStarClick = (e) => {
+        e.stopPropagation();
+        if (isSaved) return;
+        playStarSound();
+        onSave?.();
     };
 
     return (
-        <div
-            className={`translation-card ${isSelected ? 'selected' : ''} ${isSaving ? 'saving-swipe-left' : ''}`}
-            style={{ '--swipe-x': `${swipeX}px`, transform: `translateX(${swipeX}px)` }}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            onTouchCancel={handleTouchEnd}
-            onClick={handleClick}
-        >
-            {/* 선택 모드일 때 나타나는 체크박스 */}
-            {isInSelectionMode && (
-                <div className={`selection-checkbox ${isSelected ? 'checked' : ''}`}>
-                    <CheckCircle size={24} fill={isSelected ? "#6366f1" : "white"} color={isSelected ? "white" : "#d1d5db"} />
-                </div>
-            )}
-
-            {/* 카드 상단: 언어 정보와 읽기 버튼 */}
+        <div className="translation-card">
+            {/* 카드 상단: 언어 정보, 별 저장 버튼, 읽기 버튼 */}
             <div className="card-header">
                 <span
                     className="language-badge"
@@ -155,9 +75,25 @@ const TranslationCard = ({
                     {fullLanguage || language}
                 </span>
 
-                <button className={`speak-button ${isInSelectionMode ? 'disabled' : ''}`} onClick={(e) => { e.stopPropagation(); onSpeak(); }} disabled={isInSelectionMode} title="Listen">
-                    <Play size={22} fill="white" stroke="white" />
-                </button>
+                <div className="card-header-actions">
+                    {!isLibraryView && (
+                        <button
+                            className={`card-star-btn ${isSaved ? 'saved' : ''}`}
+                            onClick={handleStarClick}
+                            disabled={isSaved}
+                            title="Save to Library"
+                        >
+                            <Star size={22} fill={isSaved ? '#facc15' : 'none'} color={isSaved ? '#facc15' : '#94a3b8'} />
+                        </button>
+                    )}
+                    <button
+                        className="speak-button"
+                        onClick={(e) => { e.stopPropagation(); onSpeak(); }}
+                        title="Listen"
+                    >
+                        <Play size={22} fill="white" stroke="white" />
+                    </button>
+                </div>
             </div>
 
             {/* 카드 본문: 번역 문장과 기본 발음 가이드 */}
@@ -174,78 +110,56 @@ const TranslationCard = ({
 
             <div className="section-divider"></div>
 
-            {/* 발음 연습 섹션 - 선택 모드에선 가리기 */}
-            {!isInSelectionMode && (
-                <div className="practice-section">
-                    <div className="section-header">
-                        <span className="section-label">PRONUNCIATION</span>
-                        {assessmentResult && (
-                            <div className="score-badge">
-                                <Award size={14} />
-                                {assessmentResult.pronunciationScore}Pt
-                            </div>
-                        )}
-                    </div>
-
-                    <div className="practice-content">
-                        {!assessmentResult && !isAnalyzing && !isRecording && (
-                            <p className="practice-placeholder">{t('card.practicePrompt')}</p>
-                        )}
-                        {isRecording && <p className="recording-status">{t('card.recording')}</p>}
-                        {isAnalyzing && <p className="analyzing-status">{t('card.analyzing')}</p>}
-
-                        {errorMsg && (
-                            <div className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center' }}>
-                                <AlertCircle size={14} />
-                                {errorMsg}
-                            </div>
-                        )}
-
-                        {saveMessage && !isAnalyzing && (
-                            <div className="save-message" style={{ color: '#10b981', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center', fontWeight: 'bold' }}>
-                                <CheckCircle size={14} />
-                                {saveMessage}
-                            </div>
-                        )}
-
-                        {/* 보관함 중복 저장 차단 메시지 */}
-                        {librarySaveMessage && !isAnalyzing && (
-                            <div className="library-save-message" style={{
-                                color: librarySaveMessage.includes('⚠️') ? '#f59e0b' : '#10b981',
-                                backgroundColor: librarySaveMessage.includes('⚠️') ? 'rgba(245, 158, 11, 0.1)' : 'rgba(16, 185, 129, 0.1)',
-                                padding: '8px 12px',
-                                borderRadius: '8px',
-                                fontSize: '0.875rem',
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: '6px',
-                                marginTop: '12px',
-                                justifyContent: 'center',
-                                fontWeight: '600'
-                            }}>
-                                {librarySaveMessage.includes('⚠️') ? <AlertCircle size={16} /> : <CheckCircle size={16} />}
-                                {librarySaveMessage.replace('⚠️ ', '').replace('✅ ', '')}
-                            </div>
-                        )}
-
-                        <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLangCode} />
-
-                        <div className="practice-actions">
-                            <button
-                                className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-                                onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
-                                disabled={isAnalyzing}
-                                title="Practice pronunciation"
-                            >
-                                {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
-                            </button>
+            {/* 발음 연습 섹션 */}
+            <div className="practice-section">
+                <div className="section-header">
+                    <span className="section-label">PRONUNCIATION</span>
+                    {assessmentResult && (
+                        <div className="score-badge">
+                            <Award size={14} />
+                            {assessmentResult.pronunciationScore}Pt
                         </div>
+                    )}
+                </div>
+
+                <div className="practice-content">
+                    {!assessmentResult && !isAnalyzing && !isRecording && (
+                        <p className="practice-placeholder">{t('card.practicePrompt')}</p>
+                    )}
+                    {isRecording && <p className="recording-status">{t('card.recording')}</p>}
+                    {isAnalyzing && <p className="analyzing-status">{t('card.analyzing')}</p>}
+
+                    {errorMsg && (
+                        <div className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center' }}>
+                            <AlertCircle size={14} />
+                            {errorMsg}
+                        </div>
+                    )}
+
+                    {saveMessage && !isAnalyzing && (
+                        <div className="save-message" style={{ color: '#10b981', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center', fontWeight: 'bold' }}>
+                            <CheckCircle size={14} />
+                            {saveMessage}
+                        </div>
+                    )}
+
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLangCode} />
+
+                    <div className="practice-actions">
+                        <button
+                            className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
+                            onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
+                            disabled={isAnalyzing}
+                            title="Practice pronunciation"
+                        >
+                            {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+                        </button>
                     </div>
                 </div>
-            )}
+            </div>
 
             {/* AI 코치 피드백 영역 */}
-            {coachTip && !isInSelectionMode && (
+            {coachTip && (
                 <div className="coach-feedback-area">
                     <div className="coach-header">
                         <span className="coach-label">AI PRO COACH</span>
