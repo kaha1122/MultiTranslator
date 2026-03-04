@@ -812,11 +812,11 @@ function App() {
       <main className="app-main-content">
         <AnimatePresence mode="wait">
           <motion.div
-            key={viewMode} // viewMode가 바뀔 때마다 새로운 화면으로 인식하여 애니메이션 실행
-            initial={{ opacity: 0, y: 20 }} // 화면이 약간 아래에서 투명하게 시작
-            animate={{ opacity: 1, y: 0 }}  // 제자리로 오면서 선명해짐
-            exit={{ opacity: 0, y: -20 }}   // 화면이 바뀔 때 위로 스르륵 사라짐
-            transition={{ duration: 0.3 }}  // 0.3초 동안 부드럽게 전환
+            key={viewMode}
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.15 }}
             style={{ width: '100%' }}
           >
             {/* 번역 모드(translation)일 때 보여주는 화면 */}

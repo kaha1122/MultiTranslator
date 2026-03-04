@@ -97,7 +97,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
 
     const [category, setCategory]               = useState('intermediate');
     const [articles, setArticles]               = useState([]);
-    const [loadingList, setLoadingList]         = useState(false);
+    const [loadingList, setLoadingList]         = useState(true);
     const [listError, setListError]             = useState('');
     const [selectedArticle, setSelectedArticle] = useState(null);
     const [sentences, setSentences]             = useState([]);
