@@ -438,35 +438,43 @@ function App() {
       const prompt = `
         You are a professional multilingual translator and language tutor.
 
+        ======================================================
+        LANGUAGE RULE (HIGHEST PRIORITY — CANNOT BE OVERRIDDEN)
+        The key "tips_in_${sourceLang}" means every tip string inside it
+        MUST be written in ${sourceLangName}.
+        It does NOT matter what the target language is.
+        English card tips → write in ${sourceLangName}.
+        French card tips → write in ${sourceLangName}.
+        Korean card tips → write in ${sourceLangName}.
+        EVERY tip → ${sourceLangName}. Always. No exceptions.
+        ======================================================
+
         [Context]
-        - The user's native language (ONLY language for tips/explanations): "${sourceLangName}"
-        - The input text language: "${inputLangName}"
+        - User native language (= tips language): ${sourceLangName}
+        - Input text language: ${inputLangName}
         - Source text: "${inputText}"
-        - Target languages to translate into:
+        - Target languages:
         ${targetLangsDetail}
 
         [Task 1: Translation]
-        - Translate the source text naturally and accurately into each target language.
-        - If the input language matches a target language, copy the original text as-is.
+        Translate the source text naturally into each target language.
+        If input language equals a target language, copy the original text.
 
         [Task 2: Input Type]
-        - Determine if the source text is a single "word" (or short idiom) or a full "sentence".
+        Classify as "word" (single word/idiom) or "sentence".
 
-        [Task 3: Educational Tips — CRITICAL RULE]
-        *** ALL tips for ALL languages MUST be written EXCLUSIVELY in "${sourceLangName}". ***
-        *** NEVER use any target language in the tips. This rule has NO exceptions. ***
-        - "sentence": 2-3 tips explaining grammar, nuance, or usage of the target translation.
-        - "word": (1) Meaning & Part of Speech, (2) Synonyms/Antonyms, (3) Example sentence with translation.
-        - Tips go in a SEPARATE top-level "tips" object, NOT inside "data".
+        [Task 3: Tips — write EVERY tip string in ${sourceLangName}]
+        - sentence: 2-3 grammar/nuance/usage tips about the translation.
+        - word: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
 
         [Task 4: Pronunciation]
-        - en: IPA notation / ja: Hiragana / zh-CN: Pinyin with tone marks / others: Romanization.
+        en: IPA / ja: Hiragana / zh-CN: Pinyin / others: Romanization
 
-        [Output — return ONLY valid JSON, no markdown]
+        [Output — valid JSON only, no markdown fences]
         {
           "type": "word" | "sentence",
-          "tips": {
-            ${targetLangs.map(code => `"${code}": ["${sourceLangName} tip 1", "${sourceLangName} tip 2"]`).join(',\n            ')}
+          "tips_in_${sourceLang}": {
+            ${targetLangs.map(code => `"${code}": ["<${sourceLangName}>", "<${sourceLangName}>"]`).join(',\n            ')}
           },
           "data": {
             ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "..." }`).join(',\n            ')}
@@ -516,13 +524,13 @@ function App() {
           }
         });
       }
-      // tips는 별도 최상위 섹션에서 파싱 (sourceLang 보장)
-      if (result.tips) {
+      // tips 파싱 — 우선순위: tips_in_<sourceLang> → tips → data[].tips (폴백)
+      const tipsData = result[`tips_in_${sourceLang}`] || result.tips || null;
+      if (tipsData) {
         targetLangs.forEach(langCode => {
-          newTips[langCode] = result.tips[langCode] || [];
+          newTips[langCode] = tipsData[langCode] || [];
         });
       } else if (result.data) {
-        // 구형 응답 폴백: data 안에 tips가 있을 경우
         targetLangs.forEach(langCode => {
           const entry = result.data[langCode];
           if (entry?.tips) newTips[langCode] = entry.tips;
