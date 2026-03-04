@@ -810,18 +810,9 @@ function App() {
       </header>
 
       <main className="app-main-content">
-        <AnimatePresence mode="wait">
-          <motion.div
-            key={viewMode}
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.15 }}
-            style={{ width: '100%' }}
-          >
-            {/* 번역 모드(translation)일 때 보여주는 화면 */}
-            {viewMode === 'translation' ? (
-              <>
+        {/* 번역 탭 */}
+        <div style={{ display: viewMode === 'translation' ? 'block' : 'none', width: '100%' }}>
+          <>
                 <div className="primary-sentence-container">
                   <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                     {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
@@ -926,24 +917,30 @@ function App() {
                   </div>
                 )}
               </>
-            ) : viewMode === 'library' ? (
-              /* [신규] 보관함 모드일 때 보여주는 화면: 언어별 목표 점수 설정값을 전달합니다. */
-              <Library
-                user={user}
-                sourceLang={sourceLang}
-                onSpeak={handleSpeak}
-                languageGoals={languageGoals}
-              />
-            ) : viewMode === 'voa' ? (
-              /* VOA Learning English 발음 연습 탭 */
-              <VoaReader
-                sourceLang={sourceLang}
-                onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                onSaveToLibrary={saveVoaCard}
-              />
-            ) : (
-              /* 설정 모드(settings)일 때 보여주는 화면 */
-              <div className="settings-container" style={{ position: 'relative' }}>
+        </div>
+
+        {/* VOA 탭 — 항상 마운트 유지 (탭 전환 시 기사 재로딩 방지) */}
+        <div style={{ display: viewMode === 'voa' ? 'block' : 'none', width: '100%' }}>
+          <VoaReader
+            sourceLang={sourceLang}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onSaveToLibrary={saveVoaCard}
+          />
+        </div>
+
+        {/* Library 탭 */}
+        <div style={{ display: viewMode === 'library' ? 'block' : 'none', width: '100%' }}>
+          <Library
+            user={user}
+            sourceLang={sourceLang}
+            onSpeak={handleSpeak}
+            languageGoals={languageGoals}
+          />
+        </div>
+
+        {/* Settings 탭 */}
+        <div style={{ display: viewMode === 'settings' ? 'block' : 'none', width: '100%' }}>
+          <div className="settings-container" style={{ position: 'relative' }}>
                 {/* [신규] 온보딩 팝업 */}
                 {showOnboarding && (
                   <div className="onboarding-overlay" style={{
@@ -962,48 +959,6 @@ function App() {
                   </div>
                 )}
 
-                {/* [신규] 인앱 브라우저 안내 커스텀 팝업 */}
-                {showInAppWarning && (
-                  <div className="onboarding-overlay" style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.6)', zIndex: 9999,
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px'
-                  }}>
-                    <div style={{
-                      background: 'white', borderRadius: '20px', padding: '20px',
-                      width: '100%', maxWidth: '380px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-                      display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '90vh', overflowY: 'auto'
-                    }}>
-                      <style>{`
-                        @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
-                        @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-                      `}</style>
-
-                      <div style={{ display: 'flex', justifyContent: 'center', color: '#eab308' }}>
-                        <AlertCircle size={40} />
-                      </div>
-
-                      <h3 style={{ textAlign: 'center', color: '#1e293b', margin: 0 }}>브라우저 변경 안내</h3>
-
-                      <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
-                        <p style={{ margin: '0 0 10px 0' }}>🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 <b>'다른 브라우저로 열기'(Chrome/Edge/Safari)</b>를 선택해 주세요!</p>
-                        <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>To fully use the microphone, please tap the menu button and select <b>'Open in another browser' (Chrome/Edge/Safari)</b>.</p>
-                      </div>
-
-                      {/* 이미지 가이드 영역 */}
-                      <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
-                        <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} />
-                      </div>
-
-                      <button
-                        style={{ marginTop: '5px', padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
-                        onClick={() => { setShowInAppWarning(false); setViewMode('translation'); }}
-                      >
-                        알겠습니다 (Got it)
-                      </button>
-                    </div>
-                  </div>
-                )}
 
                 <div className="user-profile-section">
                   <div className="user-info">
@@ -1269,10 +1224,45 @@ function App() {
                   ))}
                 </div>
               </div>
-            )}
-          </motion.div>
-        </AnimatePresence>
+        </div>
       </main>
+
+      {/* 인앱 브라우저 안내 팝업 — 탭과 무관하게 항상 표시 가능 */}
+      {showInAppWarning && (
+        <div className="onboarding-overlay" style={{
+          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+          background: 'rgba(0,0,0,0.6)', zIndex: 9999,
+          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px'
+        }}>
+          <div style={{
+            background: 'white', borderRadius: '20px', padding: '20px',
+            width: '100%', maxWidth: '380px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
+            display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '90vh', overflowY: 'auto'
+          }}>
+            <style>{`
+              @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
+              @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
+            `}</style>
+            <div style={{ display: 'flex', justifyContent: 'center', color: '#eab308' }}>
+              <AlertCircle size={40} />
+            </div>
+            <h3 style={{ textAlign: 'center', color: '#1e293b', margin: 0 }}>브라우저 변경 안내</h3>
+            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
+              <p style={{ margin: '0 0 10px 0' }}>🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 <b>'다른 브라우저로 열기'(Chrome/Edge/Safari)</b>를 선택해 주세요!</p>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>To fully use the microphone, please tap the menu button and select <b>'Open in another browser' (Chrome/Edge/Safari)</b>.</p>
+            </div>
+            <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
+              <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} />
+            </div>
+            <button
+              style={{ marginTop: '5px', padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
+              onClick={() => { setShowInAppWarning(false); setViewMode('translation'); }}
+            >
+              알겠습니다 (Got it)
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* ── PWA 홈 화면 설치 유도 배너 ──────────────────────────────────────
           showInstallBanner가 true일 때만 네비게이션 바 바로 위에 나타납니다.
