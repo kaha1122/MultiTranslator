@@ -439,7 +439,7 @@ function App() {
         You are a professional multilingual translator and language tutor.
 
         [Context]
-        - The user's primary language (for all explanations): "${sourceLangName}"
+        - The user's native language (ONLY language for tips/explanations): "${sourceLangName}"
         - The input text language: "${inputLangName}"
         - Source text: "${inputText}"
         - Target languages to translate into:
@@ -452,10 +452,12 @@ function App() {
         [Task 2: Input Type]
         - Determine if the source text is a single "word" (or short idiom) or a full "sentence".
 
-        [Task 3: Educational Tips — written ENTIRELY in "${sourceLangName}"]
-        - "sentence": 2-3 tips on grammar, nuance, or usage.
+        [Task 3: Educational Tips — CRITICAL RULE]
+        *** ALL tips for ALL languages MUST be written EXCLUSIVELY in "${sourceLangName}". ***
+        *** NEVER use any target language in the tips. This rule has NO exceptions. ***
+        - "sentence": 2-3 tips explaining grammar, nuance, or usage of the target translation.
         - "word": (1) Meaning & Part of Speech, (2) Synonyms/Antonyms, (3) Example sentence with translation.
-        - NEVER write tips in the target language. Always use "${sourceLangName}".
+        - Tips go in a SEPARATE top-level "tips" object, NOT inside "data".
 
         [Task 4: Pronunciation]
         - en: IPA notation / ja: Hiragana / zh-CN: Pinyin with tone marks / others: Romanization.
@@ -463,8 +465,11 @@ function App() {
         [Output — return ONLY valid JSON, no markdown]
         {
           "type": "word" | "sentence",
+          "tips": {
+            ${targetLangs.map(code => `"${code}": ["${sourceLangName} tip 1", "${sourceLangName} tip 2"]`).join(',\n            ')}
+          },
           "data": {
-            ${targetLangs.map(code => `"${code}": { "translation": "...", "tips": ["...", "..."], "pronunciation": "..." }`).join(',\n            ')}
+            ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "..." }`).join(',\n            ')}
           }
         }
       `;
@@ -507,9 +512,20 @@ function App() {
           const entry = result.data[langCode];
           if (entry) {
             newTranslations[langCode] = entry.translation || inputText;
-            newTips[langCode]         = entry.tips;
             newProns[langCode]        = entry.pronunciation;
           }
+        });
+      }
+      // tips는 별도 최상위 섹션에서 파싱 (sourceLang 보장)
+      if (result.tips) {
+        targetLangs.forEach(langCode => {
+          newTips[langCode] = result.tips[langCode] || [];
+        });
+      } else if (result.data) {
+        // 구형 응답 폴백: data 안에 tips가 있을 경우
+        targetLangs.forEach(langCode => {
+          const entry = result.data[langCode];
+          if (entry?.tips) newTips[langCode] = entry.tips;
         });
       }
 
