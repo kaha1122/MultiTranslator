@@ -75,5 +75,25 @@
     "tierSilver": "银牌",
     "tierPro": "专业版",
     "tierPremium": "高级版"
+  },
+  "voa": {
+    "tabTitle": "VOA新闻",
+    "loading": "正在加载文章...",
+    "loadError": "无法加载文章，请重试。",
+    "articleLoading": "正在解析文章内容...",
+    "articleLoadError": "无法加载文章，请重试。",
+    "selectPrompt": "选择一篇文章开始逐句发音练习 🎙️",
+    "practicePrompt": "点击句子开始练习发音",
+    "playAudio": "收听完整文章",
+    "saveToLibrary": "保存到Library",
+    "savedToLibrary": "已保存 ✅",
+    "loginRequired": "需要登录。",
+    "categories": {
+      "all": "全部",
+      "health": "健康",
+      "science": "科学",
+      "business": "商业",
+      "stories": "故事"
+    }
   }
 }

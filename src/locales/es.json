@@ -75,5 +75,25 @@
     "tierSilver": "Plata",
     "tierPro": "Pro",
     "tierPremium": "Premium"
+  },
+  "voa": {
+    "tabTitle": "Noticias VOA",
+    "loading": "Cargando artículos...",
+    "loadError": "No se pudieron cargar los artículos. Inténtalo de nuevo.",
+    "articleLoading": "Analizando contenido del artículo...",
+    "articleLoadError": "No se pudo cargar el artículo. Inténtalo de nuevo.",
+    "selectPrompt": "Selecciona un artículo para practicar pronunciación frase por frase 🎙️",
+    "practicePrompt": "Toca una frase para empezar a practicar",
+    "playAudio": "Escuchar artículo completo",
+    "saveToLibrary": "Guardar en biblioteca",
+    "savedToLibrary": "Guardado ✅",
+    "loginRequired": "Inicio de sesión requerido.",
+    "categories": {
+      "all": "Todo",
+      "health": "Salud",
+      "science": "Ciencia",
+      "business": "Negocios",
+      "stories": "Historias"
+    }
   }
 }

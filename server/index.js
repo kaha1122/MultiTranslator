@@ -6,6 +6,8 @@ const cors = require('cors');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
+const RssParser = require('rss-parser');
+const { parse: parseHtml } = require('node-html-parser');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
 
@@ -200,6 +202,107 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
         if (originalAudioPath && fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (audioPath && fs.existsSync(audioPath)) fs.unlinkSync(audioPath);
         res.status(500).json({ error: "Internal Server Error", details: error.message });
+    }
+});
+
+/**
+ * VOA Learning English — 기사 목록 & 본문 제공 엔드포인트
+ * 저작권: 미국 정부 제작물(VOA)은 공공 도메인이므로 상업적 사용 가능
+ */
+const rssParser = new RssParser({ timeout: 8000 });
+
+const VOA_FEEDS = {
+    all:      'https://learningenglish.voanews.com/podcast?zoneId=1689&_format=rss',
+    health:   'https://learningenglish.voanews.com/z/3215',
+    science:  'https://learningenglish.voanews.com/z/3214',
+    business: 'https://learningenglish.voanews.com/z/3213',
+    stories:  'https://learningenglish.voanews.com/z/4754',
+};
+
+// 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
+const voaCache = new Map();
+const VOA_CACHE_TTL = 15 * 60 * 1000;
+
+function getCached(key) {
+    const entry = voaCache.get(key);
+    if (!entry) return null;
+    if (Date.now() - entry.fetchedAt > VOA_CACHE_TTL) { voaCache.delete(key); return null; }
+    return entry.data;
+}
+
+// GET /api/voa-news?category=all
+app.get('/api/voa-news', async (req, res) => {
+    const category = VOA_FEEDS[req.query.category] ? req.query.category : 'all';
+    const cacheKey = `news:${category}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    try {
+        const feedUrl = VOA_FEEDS[category];
+        const feed = await rssParser.parseURL(feedUrl);
+        const articles = (feed.items || []).slice(0, 20).map(item => ({
+            id: encodeURIComponent(item.link || item.guid || item.title),
+            title: item.title || '',
+            summary: item.contentSnippet || item.summary || '',
+            articleUrl: item.link || '',
+            audioUrl: item.enclosure?.url || '',
+            pubDate: item.pubDate || item.isoDate || '',
+        }));
+        const result = { articles };
+        voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
+        res.json(result);
+    } catch (err) {
+        console.error('[VOA] Feed fetch error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch VOA feed', details: err.message });
+    }
+});
+
+// GET /api/voa-article?url=<encodedUrl>
+app.get('/api/voa-article', async (req, res) => {
+    const articleUrl = req.query.url;
+    if (!articleUrl) return res.status(400).json({ error: 'Missing url parameter' });
+
+    const cacheKey = `article:${articleUrl}`;
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
+
+    try {
+        const response = await axios.get(articleUrl, {
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 10000,
+        });
+        const root = parseHtml(response.data);
+
+        // VOA 기사 본문 선택자 (순서대로 시도)
+        const bodyEl = root.querySelector('div.article-body')
+            || root.querySelector('div.wsw')
+            || root.querySelector('div[class*="body"]')
+            || root.querySelector('article');
+
+        const title = root.querySelector('h1')?.text?.trim() || '';
+        const audioUrl = root.querySelector('audio source')?.getAttribute('src')
+            || root.querySelector('meta[property="og:audio"]')?.getAttribute('content')
+            || '';
+
+        const paragraphs = bodyEl ? bodyEl.querySelectorAll('p') : [];
+        const rawText = [...paragraphs].map(p => p.text.trim()).join(' ');
+
+        // 문장 분리: 마침표/느낌표/물음표 뒤 공백 기준
+        const sentenceRaw = rawText.split(/(?<=[.!?])\s+/);
+        const SKIP_PATTERNS = /originally appeared|subscribe to|follow us|copyright|©|visit our|for more/i;
+
+        const sentences = sentenceRaw
+            .map(s => s.replace(/\s+/g, ' ').trim())
+            .filter(s => s.length >= 15 && s.length <= 200 && !SKIP_PATTERNS.test(s))
+            .slice(0, 25)
+            .map((text, id) => ({ id, text }));
+
+        const result = { title, audioUrl, sentences };
+        voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
+        res.json(result);
+    } catch (err) {
+        console.error('[VOA] Article fetch error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch article', details: err.message });
     }
 });
 

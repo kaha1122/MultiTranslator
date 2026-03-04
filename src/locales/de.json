@@ -75,5 +75,25 @@
     "tierSilver": "Silber",
     "tierPro": "Pro",
     "tierPremium": "Premium"
+  },
+  "voa": {
+    "tabTitle": "VOA Nachrichten",
+    "loading": "Artikel werden geladen...",
+    "loadError": "Artikel konnten nicht geladen werden. Bitte erneut versuchen.",
+    "articleLoading": "Artikelinhalt wird analysiert...",
+    "articleLoadError": "Artikel konnten nicht geladen werden. Bitte erneut versuchen.",
+    "selectPrompt": "Wähle einen Artikel für satzweises Aussprachetraining 🎙️",
+    "practicePrompt": "Tippe auf einen Satz, um zu üben",
+    "playAudio": "Ganzen Artikel anhören",
+    "saveToLibrary": "In Bibliothek speichern",
+    "savedToLibrary": "Gespeichert ✅",
+    "loginRequired": "Anmeldung erforderlich.",
+    "categories": {
+      "all": "Alle",
+      "health": "Gesundheit",
+      "science": "Wissenschaft",
+      "business": "Wirtschaft",
+      "stories": "Geschichten"
+    }
   }
 }

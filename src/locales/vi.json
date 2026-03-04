@@ -75,5 +75,25 @@
     "tierSilver": "Bạc",
     "tierPro": "Pro",
     "tierPremium": "Premium"
+  },
+  "voa": {
+    "tabTitle": "Tin tức VOA",
+    "loading": "Đang tải bài viết...",
+    "loadError": "Không thể tải bài viết. Vui lòng thử lại.",
+    "articleLoading": "Đang phân tích nội dung bài viết...",
+    "articleLoadError": "Không thể tải bài viết. Vui lòng thử lại.",
+    "selectPrompt": "Chọn một bài viết để bắt đầu luyện phát âm từng câu 🎙️",
+    "practicePrompt": "Nhấn vào câu để bắt đầu luyện tập",
+    "playAudio": "Nghe toàn bộ bài viết",
+    "saveToLibrary": "Lưu vào Library",
+    "savedToLibrary": "Đã lưu ✅",
+    "loginRequired": "Yêu cầu đăng nhập.",
+    "categories": {
+      "all": "Tất cả",
+      "health": "Sức khỏe",
+      "science": "Khoa học",
+      "business": "Kinh doanh",
+      "stories": "Câu chuyện"
+    }
   }
 }

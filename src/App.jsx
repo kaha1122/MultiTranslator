@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -24,6 +24,7 @@ import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이�
 import OnboardingModal from './components/OnboardingModal';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
+import VoaReader from './components/VoaReader';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -645,6 +646,38 @@ function App() {
     }, 3000);
   };
 
+  // 5. VOA 문장을 Library에 저장하는 함수
+  const saveVoaCard = async (sentenceText, articleTitle) => {
+    if (!user) { alert(getT(sourceLang, 'voa.loginRequired')); return; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return;
+    }
+    try {
+      await addDoc(collection(db, "savedCards"), {
+        userId: user.uid,
+        userEmail: user.email,
+        sourceText: sentenceText,
+        translatedText: sentenceText,
+        langCode: 'en',
+        language: 'English',
+        inputLang: 'en',
+        inputType: 'S',
+        sourceLang,
+        sourceType: 'voa',
+        articleTitle,
+        learningTip: [],
+        pronunciation: '',
+        pronunciationScore: null,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+    } catch (error) {
+      console.error("VOA 카드 저장 오류:", error);
+    }
+  };
+
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
   const handleSpeak = (text, langCode) => {
     if (!text) return;
@@ -900,6 +933,13 @@ function App() {
                 sourceLang={sourceLang}
                 onSpeak={handleSpeak}
                 languageGoals={languageGoals}
+              />
+            ) : viewMode === 'voa' ? (
+              /* VOA Learning English 발음 연습 탭 */
+              <VoaReader
+                sourceLang={sourceLang}
+                onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                onSaveToLibrary={saveVoaCard}
               />
             ) : (
               /* 설정 모드(settings)일 때 보여주는 화면 */
@@ -1304,6 +1344,13 @@ function App() {
           title="Settings"
         >
           <SettingsIcon size={32} />
+        </button>
+        <button
+          className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
+          onClick={() => { setViewMode('voa'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          title="VOA News"
+        >
+          <Newspaper size={32} />
         </button>
       </nav>
 

@@ -75,5 +75,25 @@
     "tierSilver": "シルバー",
     "tierPro": "プロ",
     "tierPremium": "プレミアム"
+  },
+  "voa": {
+    "tabTitle": "VOAニュース",
+    "loading": "記事を読み込み中...",
+    "loadError": "記事を読み込めませんでした。もう一度お試しください。",
+    "articleLoading": "記事を解析中...",
+    "articleLoadError": "記事を読み込めませんでした。もう一度お試しください。",
+    "selectPrompt": "記事を選択して文ごとの発音練習を始めましょう 🎙️",
+    "practicePrompt": "文をタップして発音練習を始める",
+    "playAudio": "記事全体を聴く",
+    "saveToLibrary": "ライブラリに保存",
+    "savedToLibrary": "保存済み ✅",
+    "loginRequired": "ログインが必要です。",
+    "categories": {
+      "all": "全て",
+      "health": "健康",
+      "science": "科学",
+      "business": "ビジネス",
+      "stories": "ストーリー"
+    }
   }
 }

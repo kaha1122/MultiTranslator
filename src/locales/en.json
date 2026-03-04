@@ -75,5 +75,25 @@
     "tierSilver": "Silver",
     "tierPro": "Pro",
     "tierPremium": "Premium"
+  },
+  "voa": {
+    "tabTitle": "VOA News",
+    "loading": "Loading articles...",
+    "loadError": "Failed to load articles. Please try again.",
+    "articleLoading": "Parsing article content...",
+    "articleLoadError": "Failed to load article. Please try again.",
+    "selectPrompt": "Select an article to start sentence-by-sentence pronunciation practice 🎙️",
+    "practicePrompt": "Tap a sentence to start practicing",
+    "playAudio": "Listen to Full Article",
+    "saveToLibrary": "Save to Library",
+    "savedToLibrary": "Saved ✅",
+    "loginRequired": "Login required.",
+    "categories": {
+      "all": "All",
+      "health": "Health",
+      "science": "Science",
+      "business": "Business",
+      "stories": "Stories"
+    }
   }
 }

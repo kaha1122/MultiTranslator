@@ -75,5 +75,25 @@
     "tierSilver": "실버",
     "tierPro": "프로",
     "tierPremium": "프리미엄"
+  },
+  "voa": {
+    "tabTitle": "VOA 뉴스",
+    "loading": "기사를 불러오는 중...",
+    "loadError": "기사를 불러올 수 없습니다. 다시 시도해 주세요.",
+    "articleLoading": "기사 내용을 분석 중...",
+    "articleLoadError": "기사를 불러올 수 없습니다. 다시 시도해 주세요.",
+    "selectPrompt": "기사를 선택하면 문장별 발음 연습을 시작할 수 있습니다 🎙️",
+    "practicePrompt": "문장을 탭하여 발음 연습을 시작하세요",
+    "playAudio": "기사 전체 듣기",
+    "saveToLibrary": "Library에 저장",
+    "savedToLibrary": "저장됨 ✅",
+    "loginRequired": "로그인이 필요합니다.",
+    "categories": {
+      "all": "전체",
+      "health": "건강",
+      "science": "과학",
+      "business": "경제",
+      "stories": "이야기"
+    }
   }
 }
