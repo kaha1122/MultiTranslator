@@ -85,15 +85,15 @@
     "selectPrompt": "选择一篇文章开始逐句发音练习 🎙️",
     "practicePrompt": "点击句子开始练习发音",
     "playAudio": "收听完整文章",
+    "openArticle": "打开文章",
+    "practiceBtn": "发音练习",
     "saveToLibrary": "保存到Library",
     "savedToLibrary": "已保存 ✅",
     "loginRequired": "需要登录。",
     "categories": {
-      "all": "全部",
-      "health": "健康",
-      "science": "科学",
-      "business": "商业",
-      "stories": "故事"
+      "beginner": "初级",
+      "intermediate": "中级",
+      "advanced": "高级"
     }
   }
 }

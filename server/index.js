@@ -212,15 +212,13 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 const rssParser = new RssParser({ timeout: 8000 });
 
 const VOA_FEEDS = {
-    all:      'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
-    health:   'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',
-    science:  'https://learningenglish.voanews.com/api/zmg_pl-vomx-tpeymtm',
-    business: 'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
-    stories:  'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',
+    beginner:     'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
+    intermediate: 'https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi',   // As It Is
+    advanced:     'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
 };
 
 // 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
-const VOA_FALLBACK = 'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS';
+const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zkm-ql-vomx-tpej-rqi';
 
 // 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
 const voaCache = new Map();
@@ -233,9 +231,11 @@ function getCached(key) {
     return entry.data;
 }
 
-// GET /api/voa-news?category=all
+const isImageUrl = (url) => !!(url && (/\.(jpe?g|png|webp|gif)/i.test(url) || url.includes('gdb.voanews.com')));
+
+// GET /api/voa-news?category=intermediate
 app.get('/api/voa-news', async (req, res) => {
-    const category = VOA_FEEDS[req.query.category] ? req.query.category : 'all';
+    const category = VOA_FEEDS[req.query.category] ? req.query.category : 'intermediate';
     const cacheKey = `news:${category}`;
     const cached = getCached(cacheKey);
     if (cached) return res.json(cached);
@@ -250,14 +250,18 @@ app.get('/api/voa-news', async (req, res) => {
             console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
             feed = await rssParser.parseURL(VOA_FALLBACK);
         }
-        const articles = (feed.items || []).slice(0, 20).map(item => ({
-            id: encodeURIComponent(item.link || item.guid || item.title),
-            title: item.title || '',
-            summary: item.contentSnippet || item.summary || '',
-            articleUrl: item.link || '',
-            audioUrl: item.enclosure?.url || '',
-            pubDate: item.pubDate || item.isoDate || '',
-        }));
+        const articles = (feed.items || []).slice(0, 20).map(item => {
+            const encUrl = item.enclosure?.url || '';
+            return {
+                id: encodeURIComponent(item.link || item.guid || item.title),
+                title: item.title || '',
+                summary: item.contentSnippet || item.summary || '',
+                articleUrl: item.link || '',
+                imageUrl: isImageUrl(encUrl) ? encUrl : '',
+                audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
+                pubDate: item.pubDate || item.isoDate || '',
+            };
+        });
         const result = { articles };
         voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
         res.json(result);

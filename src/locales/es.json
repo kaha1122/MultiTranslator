@@ -85,15 +85,15 @@
     "selectPrompt": "Selecciona un artículo para practicar pronunciación frase por frase 🎙️",
     "practicePrompt": "Toca una frase para empezar a practicar",
     "playAudio": "Escuchar artículo completo",
+    "openArticle": "Abrir artículo",
+    "practiceBtn": "Practicar",
     "saveToLibrary": "Guardar en biblioteca",
     "savedToLibrary": "Guardado ✅",
     "loginRequired": "Inicio de sesión requerido.",
     "categories": {
-      "all": "Todo",
-      "health": "Salud",
-      "science": "Ciencia",
-      "business": "Negocios",
-      "stories": "Historias"
+      "beginner": "Principiante",
+      "intermediate": "Intermedio",
+      "advanced": "Avanzado"
     }
   }
 }

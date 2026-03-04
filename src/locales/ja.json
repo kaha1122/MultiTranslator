@@ -85,15 +85,15 @@
     "selectPrompt": "記事を選択して文ごとの発音練習を始めましょう 🎙️",
     "practicePrompt": "文をタップして発音練習を始める",
     "playAudio": "記事全体を聴く",
+    "openArticle": "記事を開く",
+    "practiceBtn": "発音練習",
     "saveToLibrary": "ライブラリに保存",
     "savedToLibrary": "保存済み ✅",
     "loginRequired": "ログインが必要です。",
     "categories": {
-      "all": "全て",
-      "health": "健康",
-      "science": "科学",
-      "business": "ビジネス",
-      "stories": "ストーリー"
+      "beginner": "初級",
+      "intermediate": "中級",
+      "advanced": "上級"
     }
   }
 }

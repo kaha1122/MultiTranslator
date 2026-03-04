@@ -85,15 +85,15 @@
     "selectPrompt": "Sélectionnez un article pour pratiquer la prononciation phrase par phrase 🎙️",
     "practicePrompt": "Appuyez sur une phrase pour commencer",
     "playAudio": "Écouter l'article en entier",
+    "openArticle": "Ouvrir l'article",
+    "practiceBtn": "Pratiquer",
     "saveToLibrary": "Enregistrer dans la bibliothèque",
     "savedToLibrary": "Enregistré ✅",
     "loginRequired": "Connexion requise.",
     "categories": {
-      "all": "Tout",
-      "health": "Santé",
-      "science": "Science",
-      "business": "Affaires",
-      "stories": "Histoires"
+      "beginner": "Débutant",
+      "intermediate": "Intermédiaire",
+      "advanced": "Avancé"
     }
   }
 }

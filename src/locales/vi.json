@@ -85,15 +85,15 @@
     "selectPrompt": "Chọn một bài viết để bắt đầu luyện phát âm từng câu 🎙️",
     "practicePrompt": "Nhấn vào câu để bắt đầu luyện tập",
     "playAudio": "Nghe toàn bộ bài viết",
+    "openArticle": "Mở bài viết",
+    "practiceBtn": "Luyện phát âm",
     "saveToLibrary": "Lưu vào Library",
     "savedToLibrary": "Đã lưu ✅",
     "loginRequired": "Yêu cầu đăng nhập.",
     "categories": {
-      "all": "Tất cả",
-      "health": "Sức khỏe",
-      "science": "Khoa học",
-      "business": "Kinh doanh",
-      "stories": "Câu chuyện"
+      "beginner": "Sơ cấp",
+      "intermediate": "Trung cấp",
+      "advanced": "Nâng cao"
     }
   }
 }

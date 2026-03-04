@@ -85,15 +85,15 @@
     "selectPrompt": "Wähle einen Artikel für satzweises Aussprachetraining 🎙️",
     "practicePrompt": "Tippe auf einen Satz, um zu üben",
     "playAudio": "Ganzen Artikel anhören",
+    "openArticle": "Artikel öffnen",
+    "practiceBtn": "Üben",
     "saveToLibrary": "In Bibliothek speichern",
     "savedToLibrary": "Gespeichert ✅",
     "loginRequired": "Anmeldung erforderlich.",
     "categories": {
-      "all": "Alle",
-      "health": "Gesundheit",
-      "science": "Wissenschaft",
-      "business": "Wirtschaft",
-      "stories": "Geschichten"
+      "beginner": "Anfänger",
+      "intermediate": "Mittelstufe",
+      "advanced": "Fortgeschritten"
     }
   }
 }
