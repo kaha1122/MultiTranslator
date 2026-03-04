@@ -435,22 +435,17 @@ function App() {
         return `- ${lang?.name || code} (code: "${code}")`;
       }).join('\n');
 
+      // tips 키에 언어코드 대신 번호(lang_1, lang_2, ...) 사용 → Gemini의 언어 연상 차단
+      const tipsKeyMap = targetLangs.map((code, i) => {
+        const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+        return { key: `lang_${i + 1}`, code, name: lang?.name || code };
+      });
+
       const prompt = `
         You are a professional multilingual translator and language tutor.
 
-        ======================================================
-        LANGUAGE RULE (HIGHEST PRIORITY — CANNOT BE OVERRIDDEN)
-        The key "tips_in_${sourceLang}" means every tip string inside it
-        MUST be written in ${sourceLangName}.
-        It does NOT matter what the target language is.
-        English card tips → write in ${sourceLangName}.
-        French card tips → write in ${sourceLangName}.
-        Korean card tips → write in ${sourceLangName}.
-        EVERY tip → ${sourceLangName}. Always. No exceptions.
-        ======================================================
-
         [Context]
-        - User native language (= tips language): ${sourceLangName}
+        - User's native language (ALL tips must be written in this language): ${sourceLangName}
         - Input text language: ${inputLangName}
         - Source text: "${inputText}"
         - Target languages:
@@ -463,9 +458,11 @@ function App() {
         [Task 2: Input Type]
         Classify as "word" (single word/idiom) or "sentence".
 
-        [Task 3: Tips — write EVERY tip string in ${sourceLangName}]
-        - sentence: 2-3 grammar/nuance/usage tips about the translation.
+        [Task 3: Educational Tips]
+        Write tips explaining each translation. Use ${sourceLangName} for EVERY tip.
+        - sentence: 2-3 grammar/nuance/usage tips.
         - word: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
+        Tips are stored under numbered keys (lang_1, lang_2, ...) — see output below.
 
         [Task 4: Pronunciation]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / others: Romanization
@@ -473,8 +470,8 @@ function App() {
         [Output — valid JSON only, no markdown fences]
         {
           "type": "word" | "sentence",
-          "tips_in_${sourceLang}": {
-            ${targetLangs.map(code => `"${code}": ["<${sourceLangName}>", "<${sourceLangName}>"]`).join(',\n            ')}
+          "tips": {
+            ${tipsKeyMap.map(({ key, name }) => `"${key}": ["(${sourceLangName}) tip about the ${name} translation", "(${sourceLangName}) tip 2"]`).join(',\n            ')}
           },
           "data": {
             ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "..." }`).join(',\n            ')}
@@ -524,11 +521,10 @@ function App() {
           }
         });
       }
-      // tips 파싱 — 우선순위: tips_in_<sourceLang> → tips → data[].tips (폴백)
-      const tipsData = result[`tips_in_${sourceLang}`] || result.tips || null;
-      if (tipsData) {
-        targetLangs.forEach(langCode => {
-          newTips[langCode] = tipsData[langCode] || [];
+      // tips 파싱 — 번호 키(lang_1, lang_2, ...) 기반으로 언어코드에 매핑
+      if (result.tips) {
+        tipsKeyMap.forEach(({ key, code }) => {
+          newTips[code] = result.tips[key] || [];
         });
       } else if (result.data) {
         targetLangs.forEach(langCode => {
