@@ -113,7 +113,6 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
     const fetchArticles = useCallback(async (cat) => {
         setLoadingList(true);
         setListError('');
-        setArticles([]);
         setSelectedArticle(null);
         selectedArticleRef.current = null;
         setSentences([]);
@@ -219,8 +218,11 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
 
             {/* 기사 목록 */}
             {!selectedArticle && (
-                <div className="voa-article-list">
-                    {loadingList && (
+                <div
+                    className="voa-article-list"
+                    style={{ opacity: loadingList ? 0.4 : 1, transition: 'opacity 0.25s' }}
+                >
+                    {loadingList && articles.length === 0 && (
                         <p className="voa-status-msg">
                             <RotateCcw size={16} className="spin" /> {t('voa.loading')}
                         </p>
@@ -228,7 +230,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
                     {listError && (
                         <p className="voa-error-msg"><AlertCircle size={16} /> {listError}</p>
                     )}
-                    {!loadingList && articles.map(article => (
+                    {articles.map(article => (
                         <div key={article.id} className="voa-article-card">
                             {/* 썸네일 이미지 */}
                             <div
