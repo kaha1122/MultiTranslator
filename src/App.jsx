@@ -1332,6 +1332,13 @@ function App() {
           <Languages size={32} />
         </button>
         <button
+          className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
+          onClick={() => { setViewMode('voa'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
+          title="VOA News"
+        >
+          <Newspaper size={32} />
+        </button>
+        <button
           className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
           onClick={() => { setViewMode('library'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
           title="Library"
@@ -1344,13 +1351,6 @@ function App() {
           title="Settings"
         >
           <SettingsIcon size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
-          onClick={() => { setViewMode('voa'); setIsInSelectionMode(false); setSelectedCards(new Set()); }}
-          title="VOA News"
-        >
-          <Newspaper size={32} />
         </button>
       </nav>
 

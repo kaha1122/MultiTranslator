@@ -113,6 +113,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
     const fetchArticles = useCallback(async (cat) => {
         setLoadingList(true);
         setListError('');
+        setArticles([]);
         setSelectedArticle(null);
         selectedArticleRef.current = null;
         setSentences([]);
