@@ -430,49 +430,43 @@ function App() {
       const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
       const inputLangName  = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name  || inputLang;
 
-      const targetLangsDetail = targetLangs.map(code => {
-        const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-        return `- ${lang?.name || code} (code: "${code}")`;
-      }).join('\n');
 
-      // tips 키에 언어코드 대신 번호(lang_1, lang_2, ...) 사용 → Gemini의 언어 연상 차단
-      const tipsKeyMap = targetLangs.map((code, i) => {
-        const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-        return { key: `lang_${i + 1}`, code, name: lang?.name || code };
-      });
+      const targetLangNames = targetLangs.map(code =>
+        SUPPORTED_LANGUAGES.find(l => l.code === code)?.name || code
+      );
 
       const prompt = `
         You are a professional multilingual translator and language tutor.
 
         [Context]
-        - User's native language (ALL tips must be written in this language): ${sourceLangName}
+        - User's native language: ${sourceLangName}
         - Input text language: ${inputLangName}
         - Source text: "${inputText}"
-        - Target languages:
-        ${targetLangsDetail}
+        - Target languages (in order): ${targetLangNames.join(', ')}
 
         [Task 1: Translation]
-        Translate the source text naturally into each target language.
-        If input language equals a target language, copy the original text.
+        Translate the source text into each target language. If input matches a target, copy as-is.
 
         [Task 2: Input Type]
         Classify as "word" (single word/idiom) or "sentence".
 
-        [Task 3: Educational Tips]
-        Write tips explaining each translation. Use ${sourceLangName} for EVERY tip.
-        - sentence: 2-3 grammar/nuance/usage tips.
-        - word: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
-        Tips are stored under numbered keys (lang_1, lang_2, ...) — see output below.
+        [Task 3: Educational Tips — language rule]
+        "tips" is an ordered array matching the target languages above.
+        Every string in "tips" MUST be written in ${sourceLangName}.
+        Do not use any other language for tips — not English, not French, not Korean.
+        Only ${sourceLangName}.
+        - sentence type: 2-3 grammar/nuance/usage tips per translation.
+        - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
 
         [Task 4: Pronunciation]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / others: Romanization
 
-        [Output — valid JSON only, no markdown fences]
+        [Output — valid JSON only, no markdown]
         {
           "type": "word" | "sentence",
-          "tips": {
-            ${tipsKeyMap.map(({ key, name }) => `"${key}": ["(${sourceLangName}) tip about the ${name} translation", "(${sourceLangName}) tip 2"]`).join(',\n            ')}
-          },
+          "tips": [
+            ${targetLangNames.map(name => `["${sourceLangName} tip about ${name} translation", "${sourceLangName} tip 2"]`).join(',\n            ')}
+          ],
           "data": {
             ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "..." }`).join(',\n            ')}
           }
@@ -521,15 +515,19 @@ function App() {
           }
         });
       }
-      // tips 파싱 — 번호 키(lang_1, lang_2, ...) 기반으로 언어코드에 매핑
-      if (result.tips) {
-        tipsKeyMap.forEach(({ key, code }) => {
-          newTips[code] = result.tips[key] || [];
+      // tips 파싱 — 배열 인덱스로 언어코드에 매핑 (키 없음 → 언어 연상 차단)
+      if (Array.isArray(result.tips)) {
+        targetLangs.forEach((langCode, i) => {
+          newTips[langCode] = result.tips[i] || [];
+        });
+      } else if (result.tips && typeof result.tips === 'object') {
+        // 폴백: Gemini가 객체로 응답한 경우 언어코드 키로 시도
+        targetLangs.forEach(langCode => {
+          newTips[langCode] = result.tips[langCode] || [];
         });
       } else if (result.data) {
         targetLangs.forEach(langCode => {
-          const entry = result.data[langCode];
-          if (entry?.tips) newTips[langCode] = entry.tips;
+          if (result.data[langCode]?.tips) newTips[langCode] = result.data[langCode].tips;
         });
       }
 
