@@ -213,11 +213,14 @@ const rssParser = new RssParser({ timeout: 8000 });
 
 const VOA_FEEDS = {
     all:      'https://learningenglish.voanews.com/podcast?zoneId=1689&_format=rss',
-    health:   'https://learningenglish.voanews.com/z/3215',
-    science:  'https://learningenglish.voanews.com/z/3214',
-    business: 'https://learningenglish.voanews.com/z/3213',
-    stories:  'https://learningenglish.voanews.com/z/4754',
+    health:   'https://learningenglish.voanews.com/podcast?zoneId=3215&_format=rss',
+    science:  'https://learningenglish.voanews.com/podcast?zoneId=3214&_format=rss',
+    business: 'https://learningenglish.voanews.com/podcast?zoneId=3213&_format=rss',
+    stories:  'https://learningenglish.voanews.com/podcast?zoneId=4754&_format=rss',
 };
+
+// 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
+const VOA_FALLBACK = 'https://learningenglish.voanews.com/podcast?zoneId=1689&_format=rss';
 
 // 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
 const voaCache = new Map();
@@ -238,8 +241,15 @@ app.get('/api/voa-news', async (req, res) => {
     if (cached) return res.json(cached);
 
     try {
-        const feedUrl = VOA_FEEDS[category];
-        const feed = await rssParser.parseURL(feedUrl);
+        let feedUrl = VOA_FEEDS[category];
+        let feed;
+        try {
+            feed = await rssParser.parseURL(feedUrl);
+        } catch (primaryErr) {
+            // 카테고리별 피드 실패 시 메인 피드로 fallback
+            console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
+            feed = await rssParser.parseURL(VOA_FALLBACK);
+        }
         const articles = (feed.items || []).slice(0, 20).map(item => ({
             id: encodeURIComponent(item.link || item.guid || item.title),
             title: item.title || '',
