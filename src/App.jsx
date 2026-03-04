@@ -897,7 +897,13 @@ function App() {
                         <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
                       </p>
                       <p className="user-email-secondary">{user.email}</p>
-                      <p className="user-status">{profile?.membership || 'Free'} Member</p>
+                      <p className="user-status">{{
+                        trial: 'Free Trial',
+                        byok_free: 'BYOK Free',
+                        silver: 'Silver',
+                        pro: 'Pro',
+                        premium: 'Premium',
+                      }[tier] || 'Free Trial'} Member</p>
                     </div>
                   </div>
                   <button className="logout-btn" onClick={handleLogout}>
