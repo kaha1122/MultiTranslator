@@ -328,10 +328,10 @@
     padding: 0;
 }
 .voa-bookmark-btn:hover {
-    color: #22c55e;
+    color: #facc15;
 }
 .voa-bookmark-btn.saved {
-    color: #16a34a;
+    color: #facc15;
 }
 .voa-bookmark-btn:disabled { cursor: default; }
 

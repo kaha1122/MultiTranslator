@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Bookmark, BookmarkCheck, AlertCircle, ExternalLink } from 'lucide-react';
+import { ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Star, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useT } from '../utils/i18n';
 import PronunciationAssessment from './PronunciationAssessment';
@@ -77,7 +77,7 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
                     disabled={isSaved}
                     title={isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}
                 >
-                    {isSaved ? <BookmarkCheck size={22} /> : <Bookmark size={22} />}
+                    <Star size={26} fill={isSaved ? '#facc15' : 'none'} />
                 </button>
             </div>
 
