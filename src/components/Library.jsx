@@ -137,9 +137,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // 2-1. 보관함 카드 재연습 시 점수 업데이트 + 세션 오디오 URL 저장
-    // Firestore만 업데이트 → onSnapshot이 단일 진실 출처로 상태 반영 (race condition 방지)
+    // 2-1. 메모/어노테이션 업데이트: 로컬 상태 즉시 반영 후 Firestore 동기화
     const handleMemoUpdate = async (cardId, newMemos, newAnnotations) => {
+        // 낙관적 업데이트 — Firestore 응답 전에 UI 즉시 반영
+        setSavedCards(prev => prev.map(card =>
+            card.id === cardId
+                ? { ...card, memos: newMemos, annotations: newAnnotations }
+                : card
+        ));
         try {
             await updateDoc(doc(db, "savedCards", cardId), {
                 memos: newMemos,
