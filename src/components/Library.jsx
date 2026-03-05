@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, where, orderBy, onSnapshot, deleteDoc, doc, updateDoc, limit } from 'firebase/firestore';
+import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2 } from 'lucide-react';
 import { useT } from '../utils/i18n';
@@ -64,10 +64,9 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         const unsubscribe = onSnapshot(
             q,
             (snapshot) => {
-                const cards = snapshot.docs.map(doc => ({
-                    id: doc.id,
-                    ...doc.data()
-                }));
+                const cards = snapshot.docs
+                    .map(doc => ({ id: doc.id, ...doc.data() }))
+                    .filter(card => !card.isDeleted);
                 setSavedCards(cards);
 
                 // 만약 가져온 개수가 현재 제한값보다 적다면 더 이상 데이터가 없다는 뜻입니다.
@@ -119,8 +118,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const confirmDelete = async () => {
         if (!deleteConfirmId) return;
         try {
-            await deleteDoc(doc(db, "savedCards", deleteConfirmId));
-            setDeleteConfirmId(null); // 모달 닫기
+            await updateDoc(doc(db, "savedCards", deleteConfirmId), {
+                isDeleted: true,
+                deletedAt: serverTimestamp(),
+            });
+            setDeleteConfirmId(null);
         } catch (error) {
             console.error("Delete failed:", error);
             alert(`카드 삭제에 실패했습니다! 😥\n\n에러 메시지: ${error.message}`);
@@ -322,7 +324,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}
-                                sourceLangCode={card.sourceLang || sourceLang}
+                                sourceLangCode={card.sourceLang || 'ko'}
                                 text={card.translatedText}
                                 pronunciation={card.pronunciation}
                                 learningTip={card.learningTip}
