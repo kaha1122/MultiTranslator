@@ -25,6 +25,7 @@ import OnboardingModal from './components/OnboardingModal';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import VoaReader from './components/VoaReader';
+import LandingPage from './components/LandingPage';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -85,6 +86,7 @@ function App() {
     byokGeminiKey,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
+  const [showLanding, setShowLanding] = useState(true);
 
   // [신규] 온보딩 팝업 표시 여부
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -708,8 +710,11 @@ function App() {
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
 
 
-  // 로그인이 되어있지 않으면 로그인/회원가입 화면을 먼저 보여줍니다.
+  // 로그인이 되어있지 않으면 랜딩 → 로그인/회원가입 화면을 보여줍니다.
   if (!user) {
+    if (showLanding) {
+      return <LandingPage onStart={() => setShowLanding(false)} />;
+    }
     return authMode === 'login' ? (
       <Login onSwitchToSignup={() => setAuthMode('signup')} />
     ) : (

@@ -1,0 +1,623 @@
+/* ==========================================================
+   LandingPage.css — Mobile-First Responsive
+   테마: 다크(#0B0C10) + 에메랄드 그린(#10b981) + 블루(#4A90E2)
+   브레이크포인트: 모바일(기본) → 768px → 1024px
+   ========================================================== */
+
+@import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
+
+/* ── CSS 변수 ── */
+.lp-root {
+    --lp-green: #10b981;
+    --lp-green-light: #34d399;
+    --lp-green-dark: #059669;
+    --lp-blue: #4A90E2;
+    --lp-purple: #9013FE;
+    --lp-dark-bg: #0B0C10;
+    --lp-dark-card: rgba(16, 185, 129, 0.05);
+    --lp-card-border: rgba(16, 185, 129, 0.15);
+    --lp-text-main: #FFFFFF;
+    --lp-text-muted: #94a3b8;
+    --lp-glass-border: rgba(255, 255, 255, 0.08);
+
+    background-color: var(--lp-dark-bg);
+    color: var(--lp-text-main);
+    min-height: 100vh;
+    overflow-x: hidden;
+    line-height: 1.6;
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+    position: relative;
+}
+
+/* ── 배경 앰비언트 ── */
+.lp-ambient {
+    position: fixed;
+    border-radius: 50%;
+    z-index: 0;
+    pointer-events: none;
+}
+
+.lp-ambient-1 {
+    top: -20vh;
+    left: -20vw;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+}
+
+.lp-ambient-2 {
+    bottom: -20vh;
+    right: -20vw;
+    width: 70vw;
+    height: 70vw;
+    background: radial-gradient(circle, rgba(74, 144, 226, 0.10) 0%, transparent 70%);
+}
+
+/* ================================================================
+   네비게이션
+   ================================================================ */
+.lp-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.1rem 5%;
+    position: fixed;
+    width: 100%;
+    top: 0;
+    z-index: 100;
+    background: rgba(11, 12, 16, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--lp-glass-border);
+}
+
+.lp-logo {
+    font-size: 1.3rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    letter-spacing: -0.5px;
+}
+
+.lp-login-btn {
+    padding: 0.5rem 1.2rem;
+    border-radius: 20px;
+    font-weight: 600;
+    color: var(--lp-text-main);
+    background: none;
+    border: 1px solid var(--lp-glass-border);
+    cursor: pointer;
+    font-family: inherit;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.lp-login-btn:hover {
+    border-color: var(--lp-green);
+    color: var(--lp-green-light);
+}
+
+/* ================================================================
+   HERO 섹션
+   ================================================================ */
+.lp-hero {
+    min-height: 100svh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    text-align: center;
+    padding: 5.5rem 6% 3rem;
+    position: relative;
+    z-index: 1;
+}
+
+.lp-tagline {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.4rem 1rem;
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 100px;
+    color: var(--lp-green-light);
+    font-size: 0.82rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    animation: lpFadeInDown 0.9s ease both;
+}
+
+.lp-tagline-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--lp-green);
+    display: inline-block;
+    animation: lpPulse 2s infinite;
+}
+
+.lp-hero-title {
+    font-size: 2.4rem;
+    font-weight: 900;
+    line-height: 1.15;
+    letter-spacing: -1px;
+    margin-bottom: 1.2rem;
+    animation: lpFadeInUp 0.9s ease 0.15s both;
+}
+
+.lp-title-plain {
+    color: var(--lp-text-main);
+}
+
+.lp-highlight {
+    background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, var(--lp-blue) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    display: inline-block;
+}
+
+.lp-hero-subtitle {
+    font-size: 1rem;
+    color: var(--lp-text-muted);
+    max-width: 480px;
+    margin: 0 auto 2.5rem;
+    line-height: 1.7;
+    animation: lpFadeInUp 0.9s ease 0.3s both;
+}
+
+.lp-hero-sub-em {
+    color: var(--lp-green-light);
+    font-weight: 600;
+}
+
+/* ── CTA 버튼 그룹 ── */
+.lp-cta-group {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+    max-width: 320px;
+    animation: lpFadeInUp 0.9s ease 0.45s both;
+}
+
+.lp-btn {
+    padding: 0.9rem 1.5rem;
+    border-radius: 100px;
+    font-weight: 700;
+    font-size: 1rem;
+    cursor: pointer;
+    border: none;
+    transition: all 0.25s ease;
+    font-family: inherit;
+    width: 100%;
+    letter-spacing: 0.01em;
+}
+
+.lp-btn-primary {
+    background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+    background-size: 200%;
+    color: white;
+    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+}
+
+.lp-btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
+}
+
+.lp-btn-secondary {
+    background: transparent;
+    color: var(--lp-text-main);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.lp-btn-secondary:hover {
+    border-color: var(--lp-green);
+    color: var(--lp-green-light);
+    transform: translateY(-2px);
+}
+
+/* ── 히어로 하단 신뢰 지표 ── */
+.lp-hero-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 3rem;
+    animation: lpFadeInUp 0.9s ease 0.6s both;
+}
+
+.lp-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.lp-stat-num {
+    font-size: 1.4rem;
+    font-weight: 800;
+    background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.lp-stat-label {
+    font-size: 0.75rem;
+    color: var(--lp-text-muted);
+    font-weight: 500;
+}
+
+/* ================================================================
+   USP 섹션 - Feature Cards
+   ================================================================ */
+.lp-usp-section {
+    padding: 4rem 5% 2rem;
+    position: relative;
+    z-index: 1;
+}
+
+.lp-section-label {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    color: var(--lp-green);
+    margin-bottom: 0.75rem;
+}
+
+.lp-section-title {
+    text-align: center;
+    font-size: 1.8rem;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+    line-height: 1.25;
+    margin-bottom: 2.5rem;
+    color: var(--lp-text-main);
+}
+
+.lp-features-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.lp-feature-card {
+    background: var(--lp-dark-card);
+    border: 1px solid var(--lp-card-border);
+    border-radius: 20px;
+    padding: 1.8rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: all 0.35s ease;
+    position: relative;
+    overflow: hidden;
+}
+
+.lp-feature-card::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 3px;
+    background: linear-gradient(90deg, var(--lp-green-dark), var(--lp-green-light));
+    transform: scaleX(0);
+    transform-origin: left;
+    transition: transform 0.35s ease;
+}
+
+.lp-feature-card:hover {
+    transform: translateY(-6px);
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 16px 40px rgba(16, 185, 129, 0.12);
+}
+
+.lp-feature-card:hover::after {
+    transform: scaleX(1);
+}
+
+.lp-feature-icon-wrap {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: rgba(16, 185, 129, 0.12);
+    border: 1px solid rgba(16, 185, 129, 0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+    margin-bottom: 1.2rem;
+}
+
+.lp-feature-number {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--lp-green);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 0.5rem;
+    display: block;
+}
+
+.lp-feature-title {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--lp-text-main);
+    margin-bottom: 0.7rem;
+    letter-spacing: -0.3px;
+    line-height: 1.35;
+}
+
+.lp-feature-desc {
+    color: var(--lp-text-muted);
+    font-size: 0.92rem;
+    line-height: 1.65;
+    margin-bottom: 1.2rem;
+}
+
+.lp-feature-tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    font-size: 0.78rem;
+    color: var(--lp-green-light);
+    font-weight: 600;
+    padding: 0.3rem 0.7rem;
+    background: rgba(16, 185, 129, 0.08);
+    border-radius: 100px;
+    border: 1px solid rgba(16, 185, 129, 0.15);
+}
+
+/* ================================================================
+   앱 스크린샷 섹션
+   ================================================================ */
+.lp-app-section {
+    padding: 3rem 5% 4rem;
+    position: relative;
+    z-index: 1;
+}
+
+.lp-app-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.lp-app-card {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--lp-glass-border);
+    border-radius: 24px;
+    overflow: hidden;
+    transition: all 0.35s ease;
+}
+
+.lp-app-card:hover {
+    border-color: rgba(16, 185, 129, 0.3);
+    box-shadow: 0 16px 48px rgba(16, 185, 129, 0.1);
+    transform: translateY(-4px);
+}
+
+.lp-app-card-body {
+    padding: 1.5rem 1.5rem 0;
+}
+
+.lp-app-card-badge {
+    display: inline-block;
+    font-size: 0.72rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--lp-green);
+    background: rgba(16, 185, 129, 0.1);
+    border-radius: 100px;
+    padding: 0.25rem 0.7rem;
+    margin-bottom: 0.75rem;
+}
+
+.lp-app-card-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--lp-text-main);
+    margin-bottom: 0.5rem;
+    letter-spacing: -0.3px;
+}
+
+.lp-app-card-desc {
+    font-size: 0.9rem;
+    color: var(--lp-text-muted);
+    line-height: 1.65;
+    margin-bottom: 1.2rem;
+}
+
+.lp-app-card-img {
+    width: 100%;
+    display: block;
+    border-radius: 0;
+    object-fit: cover;
+}
+
+/* ================================================================
+   하단 CTA 섹션
+   ================================================================ */
+.lp-cta-section {
+    padding: 4rem 6%;
+    text-align: center;
+    position: relative;
+    z-index: 1;
+    border-top: 1px solid var(--lp-glass-border);
+}
+
+.lp-cta-title {
+    font-size: 1.9rem;
+    font-weight: 900;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    margin-bottom: 1rem;
+}
+
+.lp-cta-sub {
+    font-size: 0.95rem;
+    color: var(--lp-text-muted);
+    margin-bottom: 2rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.lp-cta-btn-wrap {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    max-width: 320px;
+    margin: 0 auto;
+}
+
+.lp-footer-note {
+    margin-top: 1.5rem;
+    font-size: 0.8rem;
+    color: var(--lp-text-muted);
+}
+
+/* ================================================================
+   키프레임 애니메이션
+   ================================================================ */
+@keyframes lpFadeInUp {
+    from {
+        opacity: 0;
+        transform: translateY(24px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes lpFadeInDown {
+    from {
+        opacity: 0;
+        transform: translateY(-16px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes lpPulse {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: scale(0.8);
+    }
+}
+
+/* ================================================================
+   태블릿 (768px+)
+   ================================================================ */
+@media (min-width: 768px) {
+    .lp-logo {
+        font-size: 1.5rem;
+    }
+
+    .lp-nav {
+        padding: 1.3rem 6%;
+    }
+
+    .lp-hero {
+        padding: 7rem 8% 4rem;
+    }
+
+    .lp-hero-title {
+        font-size: 3.4rem;
+        letter-spacing: -1.5px;
+    }
+
+    .lp-hero-subtitle {
+        font-size: 1.1rem;
+        max-width: 560px;
+    }
+
+    .lp-cta-group {
+        flex-direction: row;
+        width: auto;
+        max-width: none;
+    }
+
+    .lp-btn {
+        width: auto;
+        padding: 0.9rem 2rem;
+    }
+
+    .lp-hero-stats {
+        gap: 3rem;
+        margin-top: 3.5rem;
+    }
+
+    .lp-stat-num {
+        font-size: 1.8rem;
+    }
+
+    .lp-section-title {
+        font-size: 2.2rem;
+    }
+
+    .lp-features-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+    }
+
+    .lp-app-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .lp-cta-title {
+        font-size: 2.4rem;
+    }
+
+    .lp-cta-btn-wrap {
+        flex-direction: row;
+        max-width: none;
+        justify-content: center;
+    }
+}
+
+/* ================================================================
+   데스크탑 (1024px+)
+   ================================================================ */
+@media (min-width: 1024px) {
+    .lp-hero-title {
+        font-size: 4.2rem;
+        letter-spacing: -2px;
+    }
+
+    .lp-hero-subtitle {
+        font-size: 1.2rem;
+    }
+
+    .lp-features-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+
+    .lp-feature-card {
+        padding: 2rem;
+    }
+
+    .lp-cta-title {
+        font-size: 2.8rem;
+    }
+}
