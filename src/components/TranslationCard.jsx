@@ -88,7 +88,6 @@ const TranslationCard = ({
     const [showMemoPopup, setShowMemoPopup] = useState(false);
     const [memoInput, setMemoInput] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
-    const [isListening, setIsListening] = useState(false);
     const memoInputRef = useRef(null);
 
     const {
@@ -113,21 +112,6 @@ const TranslationCard = ({
     useEffect(() => {
         if (showMemoPopup) setTimeout(() => memoInputRef.current?.focus(), 80);
     }, [showMemoPopup]);
-
-    // ── 음성 받아쓰기 (Web Speech API) ──
-    const startListening = () => {
-        const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (!SR) { alert('이 브라우저는 음성 인식을 지원하지 않습니다.'); return; }
-        const rec = new SR();
-        const langMap = { ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', 'zh-CN': 'zh-CN', vi: 'vi-VN', fr: 'fr-FR', de: 'de-DE', es: 'es-ES' };
-        rec.lang = langMap[sourceLangCode] || 'ko-KR';
-        rec.interimResults = false;
-        setIsListening(true);
-        rec.start();
-        rec.onresult = (e) => { setMemoInput(e.results[0][0].transcript); setIsListening(false); };
-        rec.onerror = () => setIsListening(false);
-        rec.onend = () => setIsListening(false);
-    };
 
     // ── Gemini AI 메모 호출 ──
     const callGeminiMemo = async (query) => {
@@ -233,15 +217,6 @@ Return only these 2 lines.`;
                     >
                         <Play size={22} fill="white" stroke="white" />
                     </button>
-                    {onMemoUpdate && (
-                        <button
-                            className={`memo-open-btn ${memos?.length || annotations?.length ? 'has-content' : ''}`}
-                            onClick={(e) => { e.stopPropagation(); setShowMemoPopup(true); }}
-                            title="메모 / 어노테이션"
-                        >
-                            <PenLine size={17} />
-                        </button>
-                    )}
                 </div>
             </div>
 
@@ -303,6 +278,15 @@ Return only these 2 lines.`;
                         >
                             {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
+                        {onMemoUpdate && (
+                            <button
+                                className={`memo-open-btn ${memos?.length || annotations?.length ? 'has-content' : ''}`}
+                                onClick={(e) => { e.stopPropagation(); setShowMemoPopup(true); }}
+                                title="메모 / 어노테이션"
+                            >
+                                <PenLine size={20} />
+                            </button>
+                        )}
                     </div>
                 </div>
             </div>
@@ -352,11 +336,11 @@ Return only these 2 lines.`;
 
             {/* 메모 팝업 */}
             {showMemoPopup && (
-                <div className="memo-popup-overlay" onClick={() => setShowMemoPopup(false)}>
+                <div className="memo-popup-overlay" onClick={() => { if (!isMemoLoading) setShowMemoPopup(false); }}>
                     <div className="memo-popup" onClick={e => e.stopPropagation()}>
                         <div className="memo-popup-header">
                             <span>✏️ 메모 · 어노테이션</span>
-                            <button className="memo-popup-close" onClick={() => setShowMemoPopup(false)}>✕</button>
+                            <button className="memo-popup-close" onClick={() => setShowMemoPopup(false)} disabled={isMemoLoading}>✕</button>
                         </div>
                         <p className="memo-popup-hint">
                             질문하거나 단어에 표시하세요.<br />
@@ -373,13 +357,16 @@ Return only these 2 lines.`;
                                 placeholder="질문 또는 어노테이션 명령..."
                                 disabled={isMemoLoading}
                             />
-                            <button className="memo-voice-btn" onClick={startListening} disabled={isListening || isMemoLoading} title="음성 입력">
-                                {isListening ? <RotateCcw size={16} className="spin" /> : <Mic size={16} />}
-                            </button>
                             <button className="memo-submit-btn" onClick={handleMemoSubmit} disabled={!memoInput.trim() || isMemoLoading} title="전송">
                                 {isMemoLoading ? <RotateCcw size={16} className="spin" /> : '→'}
                             </button>
                         </div>
+                        {isMemoLoading && (
+                            <div className="memo-loading-status">
+                                <span className="memo-loading-dot" />
+                                AI가 답변을 생성하고 있습니다...
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

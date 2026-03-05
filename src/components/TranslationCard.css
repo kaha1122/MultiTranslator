@@ -594,15 +594,43 @@
     inset: 0;
     background: rgba(0, 0, 0, 0.45);
     display: flex;
-    align-items: flex-end;
+    align-items: flex-start;
     justify-content: center;
+    padding-top: 72px;
     z-index: 600;
 }
 .memo-popup {
     background: white;
-    width: min(500px, 100%);
-    border-radius: 20px 20px 0 0;
-    padding: 20px 20px max(20px, env(safe-area-inset-bottom)) 20px;
+    width: min(480px, calc(100% - 32px));
+    border-radius: 20px;
+    padding: 20px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.18);
+}
+
+/* 진행 중 상태 표시 */
+.memo-loading-status {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #f0f0ff;
+    border-radius: 10px;
+    font-size: 0.85rem;
+    color: #6366f1;
+    font-weight: 600;
+}
+.memo-loading-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #6366f1;
+    animation: memoPulse 1.2s ease-in-out infinite;
+    flex-shrink: 0;
+}
+@keyframes memoPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%       { opacity: 0.4; transform: scale(0.75); }
 }
 .memo-popup-header {
     display: flex;
