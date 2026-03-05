@@ -71,8 +71,20 @@ const TranslationCard = ({
     const [editWord, setEditWord] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
     const [lastResponse, setLastResponse] = useState(null); // { text } — 팝업 안에 즉시 표시
+    // Firestore prop 업데이트 전에 즉시 표시할 낙관적 메모 목록
+    const [pendingMemos, setPendingMemos] = useState([]);
     const memoInputRef = useRef(null);
     const editInputRef = useRef(null);
+
+    // memos prop이 Firestore에서 업데이트되면 pendingMemos에서 확인된 항목 제거
+    useEffect(() => {
+        setPendingMemos(prev =>
+            prev.filter(pm => !(memos || []).some(m => m.createdAt === pm.createdAt))
+        );
+    }, [memos]);
+
+    // 카드에 실제 표시할 메모 목록 (prop + 아직 미확인 pending)
+    const displayMemos = [...(memos || []), ...pendingMemos];
 
     const {
         isRecording,
@@ -150,7 +162,10 @@ Return only these 2 lines.`;
         setIsMemoLoading(true);
         try {
             const response = await callGeminiMemo(query);
-            const newMemos = [...(memos || []), { query, response, createdAt: new Date().toISOString() }];
+            const memoEntry = { query, response, createdAt: new Date().toISOString() };
+            const newMemos = [...(memos || []), memoEntry];
+            // 카드에 즉시 표시 (Firestore prop 업데이트 전)
+            setPendingMemos(prev => [...prev, memoEntry]);
             await onMemoUpdate?.(newMemos, annotations);
             setLastResponse({ query, text: response });
         } catch (e) {
@@ -327,12 +342,12 @@ Return only these 2 lines.`;
                     )}
                 </div>
 
-                {/* 저장된 메모 목록 (AI Q&A만) */}
-                {memos?.length > 0 && (
+                {/* 저장된 메모 목록 (AI Q&A만) — pendingMemos 포함해 즉시 표시 */}
+                {displayMemos.length > 0 && (
                     <div className="card-memos">
                         <span className="memo-section-label">MY MEMOS</span>
-                        {memos.map((memo, i) => (
-                            <div key={i} className="memo-item">
+                        {displayMemos.map((memo, i) => (
+                            <div key={memo.createdAt || i} className="memo-item">
                                 <p className="memo-query">💬 {memo.query}</p>
                                 <p className="memo-response">{memo.response}</p>
                             </div>
