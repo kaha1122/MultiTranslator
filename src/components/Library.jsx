@@ -136,6 +136,17 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
 
     // 2-1. 보관함 카드 재연습 시 점수 업데이트 + 세션 오디오 URL 저장
     // Firestore만 업데이트 → onSnapshot이 단일 진실 출처로 상태 반영 (race condition 방지)
+    const handleMemoUpdate = async (cardId, newMemos, newAnnotations) => {
+        try {
+            await updateDoc(doc(db, "savedCards", cardId), {
+                memos: newMemos,
+                annotations: newAnnotations,
+            });
+        } catch (e) {
+            console.error("Memo update failed:", e);
+        }
+    };
+
     const handlePracticeResult = async (id, _langCode, result) => {
         try {
             if (result.audioUrl) {
@@ -327,10 +338,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                 badgeColor={card.langCode === 'en' ? '#e0e7ff' : card.langCode === 'ja' ? '#fef2f2' : '#fff7ed'}
                                 badgeTextColor={card.langCode === 'en' ? '#4338ca' : card.langCode === 'ja' ? '#b91c1c' : '#9a3412'}
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode)}
-                                isInSelectionMode={false} // 보관함에선 선택 모드 비활성
-                                isLibraryView={true} // [신규] 제스처 완전 차단
-                                onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)} // [신규] 연습 시 업데이트
-                                targetGoal={languageGoals[card.langCode] || 80} // [신규] 목표 점수 전달
+                                isInSelectionMode={false}
+                                isLibraryView={true}
+                                onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}
+                                targetGoal={languageGoals[card.langCode] || 80}
+                                cardId={card.id}
+                                memos={card.memos || []}
+                                annotations={card.annotations || []}
+                                onMemoUpdate={(newMemos, newAnnotations) => handleMemoUpdate(card.id, newMemos, newAnnotations)}
                             />
 
                             {/* [신규] 아이콘화된 하단 액션바 */}

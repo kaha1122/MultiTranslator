@@ -489,16 +489,205 @@
 @media (max-width: 600px) {
     .translation-card {
         padding: 20px;
-        /* 원래 28px -> 화면이 작은폰에서는 20px로 줄여 날씬하게 */
     }
 
     .section-divider {
         margin: 0 -20px 24px -20px;
-        /* 줄어든 패딩에 맞춰 가로선 길이도 다시 맞춤 */
     }
 
     .translated-text {
         font-size: 1.25rem;
-        /* 글씨 크기도 약간만 부드럽게 줄이기 */
     }
+}
+
+/* ══════════════════════════════════════════════════
+   메모 버튼 (재생 버튼 옆)
+   ══════════════════════════════════════════════════ */
+.memo-open-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #94a3b8;
+    transition: all 0.2s;
+    padding: 0;
+}
+.memo-open-btn:hover {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+.memo-open-btn.has-content {
+    border-color: #6366f1;
+    color: #6366f1;
+    background: #f0f0ff;
+}
+
+/* ══════════════════════════════════════════════════
+   어노테이션 스타일
+   ══════════════════════════════════════════════════ */
+.ann-highlight {
+    background: linear-gradient(transparent 55%, #fef08a 55%);
+    padding: 0 1px;
+}
+.ann-underline {
+    text-decoration: underline;
+    text-decoration-color: #ef4444;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 2px;
+}
+.ann-star::after {
+    content: '⭐';
+    font-size: 0.65em;
+    vertical-align: super;
+    margin-left: 1px;
+}
+
+/* ══════════════════════════════════════════════════
+   메모 목록 (Learning Tip 하단)
+   ══════════════════════════════════════════════════ */
+.card-memos {
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px dashed #e2e8f0;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.memo-section-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #94a3b8;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+}
+.memo-item {
+    background: #fafafa;
+    border-left: 3px solid #6366f1;
+    padding: 8px 10px;
+    border-radius: 0 8px 8px 0;
+}
+.memo-query {
+    font-size: 0.78rem;
+    color: #64748b;
+    margin: 0 0 4px 0;
+}
+.memo-response {
+    font-size: 0.85rem;
+    color: #1e293b;
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.6;
+}
+
+/* ══════════════════════════════════════════════════
+   메모 팝업
+   ══════════════════════════════════════════════════ */
+.memo-popup-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    z-index: 600;
+}
+.memo-popup {
+    background: white;
+    width: min(500px, 100%);
+    border-radius: 20px 20px 0 0;
+    padding: 20px 20px max(20px, env(safe-area-inset-bottom)) 20px;
+}
+.memo-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: 6px;
+}
+.memo-popup-close {
+    background: none;
+    border: none;
+    font-size: 1.1rem;
+    cursor: pointer;
+    color: #94a3b8;
+    padding: 0;
+    line-height: 1;
+}
+.memo-popup-hint {
+    font-size: 0.8rem;
+    color: #94a3b8;
+    margin: 0 0 12px 0;
+    line-height: 1.5;
+}
+.memo-popup-hint em {
+    color: #6366f1;
+    font-style: normal;
+}
+.memo-input-row {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+.memo-input {
+    flex: 1;
+    padding: 11px 13px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    outline: none;
+    font-family: inherit;
+}
+.memo-input:focus {
+    border-color: #6366f1;
+}
+.memo-voice-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: 1.5px solid #e2e8f0;
+    background: #f8fafc;
+    color: #64748b;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+    padding: 0;
+}
+.memo-voice-btn:hover:not(:disabled) {
+    border-color: #6366f1;
+    color: #6366f1;
+}
+.memo-submit-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: #6366f1;
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: background 0.2s;
+    padding: 0;
+}
+.memo-submit-btn:disabled {
+    background: #c7d2fe;
+    cursor: not-allowed;
+}
+.memo-submit-btn:hover:not(:disabled) {
+    background: #4f46e5;
 }
