@@ -254,9 +254,6 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
 
                             {/* 텍스트 영역 */}
                             <div className="voa-article-body">
-                                <p className="voa-article-date">
-                                    {article.pubDate ? new Date(article.pubDate).toLocaleDateString() : ''}
-                                </p>
                                 <h3 className="voa-article-title">{article.title}</h3>
                                 {article.summary && (
                                     <p className="voa-article-summary">{article.summary}</p>

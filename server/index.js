@@ -220,18 +220,36 @@ const VOA_FEEDS = {
 // 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
 const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q';
 
-// 메모리 캐시 (15분 TTL) — Render 무료 플랜에서 VOA 서버를 반복 호출하지 않도록
+// 메모리 캐시 — 당일 자정까지 유지 (매일 새 10개 선택 보장)
 const voaCache = new Map();
-const VOA_CACHE_TTL = 15 * 60 * 1000;
 
 function getCached(key) {
     const entry = voaCache.get(key);
     if (!entry) return null;
-    if (Date.now() - entry.fetchedAt > VOA_CACHE_TTL) { voaCache.delete(key); return null; }
+    // 캐시된 날짜(YYYYMMDD)가 오늘과 다르면 무효
+    if (entry.dateSeed !== getDailySeed()) { voaCache.delete(key); return null; }
     return entry.data;
 }
 
 const isImageUrl = (url) => !!(url && (/\.(jpe?g|png|webp|gif)/i.test(url) || url.includes('gdb.voanews.com')));
+
+// 날짜 기반 시드 LCG 랜덤 — 하루 동안 동일한 순서, 매일 다른 10개 선택
+function seededShuffle(arr, seed) {
+    const a = [...arr];
+    let s = seed;
+    for (let i = a.length - 1; i > 0; i--) {
+        s = (s * 1664525 + 1013904223) & 0xffffffff;
+        const j = Math.abs(s) % (i + 1);
+        [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+}
+
+function getDailySeed() {
+    const d = new Date();
+    // YYYYMMDD 형태의 정수를 시드로 사용
+    return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
+}
 
 // GET /api/voa-news?category=intermediate
 app.get('/api/voa-news', async (req, res) => {
@@ -250,7 +268,7 @@ app.get('/api/voa-news', async (req, res) => {
             console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
             feed = await rssParser.parseURL(VOA_FALLBACK);
         }
-        const rawArticles = (feed.items || []).slice(0, 30).map(item => {
+        const rawArticles = (feed.items || []).map(item => {
             const encUrl = item.enclosure?.url || '';
             return {
                 id: encodeURIComponent(item.link || item.guid || item.title),
@@ -259,19 +277,20 @@ app.get('/api/voa-news', async (req, res) => {
                 articleUrl: item.link || '',
                 imageUrl: isImageUrl(encUrl) ? encUrl : '',
                 audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
-                pubDate: item.pubDate || item.isoDate || '',
             };
         });
 
         // 프로그램 로고(반복 이미지)를 가진 항목 제거 — 동일 이미지 URL이 3회 이상이면 오디오 전용 프로그램으로 판단
         const imgFreq = {};
         rawArticles.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
-        const articles = rawArticles
-            .filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3)
-            .slice(0, 20);
+        const pool = rawArticles.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
+
+        // 날짜+카테고리 기반 시드로 매일 다른 10개 선택
+        const seed = getDailySeed() + category.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+        const articles = seededShuffle(pool, seed).slice(0, 10);
 
         const result = { articles };
-        voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
+        voaCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
         res.json(result);
     } catch (err) {
         console.error('[VOA] Feed fetch error:', err.message);
@@ -320,7 +339,7 @@ app.get('/api/voa-article', async (req, res) => {
             .map((text, id) => ({ id, text }));
 
         const result = { title, audioUrl, sentences };
-        voaCache.set(cacheKey, { data: result, fetchedAt: Date.now() });
+        voaCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
         res.json(result);
     } catch (err) {
         console.error('[VOA] Article fetch error:', err.message);
