@@ -137,22 +137,13 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // 2-1. 메모/어노테이션 업데이트: 로컬 상태 즉시 반영 후 Firestore 동기화
-    const handleMemoUpdate = async (cardId, newMemos, newAnnotations) => {
-        // 낙관적 업데이트 — Firestore 응답 전에 UI 즉시 반영
+    // 2-1. 메모/어노테이션 로컬 상태 즉시 반영 (Firestore 쓰기는 TranslationCard에서 직접 처리)
+    const handleMemoUpdate = (cardId, newMemos, newAnnotations) => {
         setSavedCards(prev => prev.map(card =>
             card.id === cardId
                 ? { ...card, memos: newMemos, annotations: newAnnotations }
                 : card
         ));
-        try {
-            await updateDoc(doc(db, "savedCards", cardId), {
-                memos: newMemos,
-                annotations: newAnnotations,
-            });
-        } catch (e) {
-            console.error("Memo update failed:", e);
-        }
     };
 
     const handlePracticeResult = async (id, _langCode, result) => {

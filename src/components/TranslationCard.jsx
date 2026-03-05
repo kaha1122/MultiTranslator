@@ -5,6 +5,8 @@ import { useAuth } from '../context/AuthContext';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundEffects';
 import { useT } from '../utils/i18n';
+import { db } from '../firebase/config';
+import { doc, updateDoc } from 'firebase/firestore';
 import './TranslationCard.css';
 
 // ── 어노테이션 헬퍼 ──────────────────────────────────────────────
@@ -150,6 +152,9 @@ Return only these 2 lines.`;
               body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
         );
         const data = await res.json();
+        if (!res.ok) {
+            throw new Error(data.error?.message || `API 오류 (${res.status})`);
+        }
         return data.candidates[0].content.parts[0].text.trim();
     };
 
@@ -164,13 +169,18 @@ Return only these 2 lines.`;
             const response = await callGeminiMemo(query);
             const memoEntry = { query, response, createdAt: new Date().toISOString() };
             const newMemos = [...(memos || []), memoEntry];
-            // 카드에 즉시 표시 (Firestore prop 업데이트 전)
+            // 카드에 즉시 표시
             setPendingMemos(prev => [...prev, memoEntry]);
-            await onMemoUpdate?.(newMemos, annotations);
+            // Firestore에 직접 저장 (cardId가 있는 Library 뷰에서만)
+            if (cardId) {
+                await updateDoc(doc(db, "savedCards", cardId), { memos: newMemos });
+            }
+            // Library 로컬 상태 업데이트 (화면 즉시 반영)
+            onMemoUpdate?.(newMemos, annotations);
             setLastResponse({ query, text: response });
         } catch (e) {
             console.error('Memo failed:', e);
-            setLastResponse({ query, text: '❌ 오류가 발생했습니다. 다시 시도해 주세요.' });
+            setLastResponse({ query, text: `❌ 오류: ${e.message || '다시 시도해 주세요.'}` });
         } finally {
             setIsMemoLoading(false);
         }
@@ -188,12 +198,18 @@ Return only these 2 lines.`;
                 ...(annotations || []).filter(a => a.matchText.toLowerCase() !== word.toLowerCase()),
                 ann,
             ];
-            await onMemoUpdate?.(memos, newAnnotations);
+            // Firestore에 직접 저장
+            if (cardId) {
+                await updateDoc(doc(db, "savedCards", cardId), { annotations: newAnnotations });
+            }
+            // Library 로컬 상태 업데이트
+            onMemoUpdate?.(memos, newAnnotations);
             const label = style === 'underline' ? '밑줄' : style === 'red' ? '빨강' : '형광';
             setLastResponse({ text: `"${word}" 에 ${label} 적용 완료 ✅` });
             setEditWord('');
         } catch (e) {
-            setLastResponse({ text: '❌ 오류가 발생했습니다.' });
+            console.error('Edit apply failed:', e);
+            setLastResponse({ text: `❌ 오류: ${e.message || '다시 시도해 주세요.'}` });
         } finally {
             setIsMemoLoading(false);
         }
