@@ -326,15 +326,21 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // [신규] 첫 로그인 감지 (온보딩 유도)
+  // 온보딩 표시 여부 — Firestore + localStorage 동시 확인 (단일 effect)
+  // profile이 업데이트될 때마다 실행되지만, 이미 "본 적 있음" 기록이 있으면 절대 팝업 재표시 안 함
   useEffect(() => {
-    // 사용자가 로그인했고(profile 로드 됨), 아직 온보딩(초기 설정)을 안 끝냈다면, 설정 화면으로 이동시킴
-    if (user && profile && profile.hasCompletedOnboarding !== true) {
-      setViewMode('settings');
-      setShowOnboarding(true);
-      // [수정] 내 브라우저(캐시)에 과거에 골라둔 언어 3개가 남아있을 수 있으므로 강제로 '영어'로 리셋!
-      setTargetLangs(['en']);
+    if (!user || !profile) return;
+    const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
+    // 둘 중 하나라도 완료 기록이 있으면 팝업 없음
+    if (hasSeen || profile.hasCompletedOnboarding === true) {
+      // Firestore는 완료됐는데 localStorage가 없으면 동기화해 두기
+      if (!hasSeen) localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
+      return;
     }
+    // 두 곳 모두 기록 없음 → 최초 온보딩
+    setViewMode('settings');
+    setShowOnboarding(true);
+    setTargetLangs(['en']);
   }, [user, profile]);
 
   // [신규] 온보딩 [확인] 버튼을 눌렀을 때
@@ -654,20 +660,7 @@ function App() {
     synth.speak(utterance);
   };
 
-  // --- 로그인/온보딩 관리 연동 ---
-  // Firestore에 이미 완료 기록이 있으면 localStorage가 없어도 팝업을 띄우지 않음
-  useEffect(() => {
-    if (user) {
-      const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
-      const completedInFirestore = profile?.hasCompletedOnboarding === true;
-      if (!hasSeen && !completedInFirestore) {
-        setShowOnboarding(true);
-      } else if (!hasSeen && completedInFirestore) {
-        // Firestore는 완료됐는데 localStorage가 없으면 동기화
-        localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
-      }
-    }
-  }, [user, profile]);
+  // (온보딩 effect는 위 단일 effect로 통합됨)
 
   // 온보딩 모달 [시작하기] 버튼을 누르면 완전히 닫고, 다음부터 안 뜨게 브라우저에 각인시킵니다.
   const handleCloseOnboarding = () => {
