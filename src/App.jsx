@@ -339,12 +339,13 @@ function App() {
 
   // [신규] 온보딩 [확인] 버튼을 눌렀을 때
   const handleCompleteOnboarding = async () => {
+    // localStorage도 함께 설정 — Effect 2(localStorage 기반)가 재실행되어도 팝업 재표시 방지
+    if (user) localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
+    setShowOnboarding(false);
     try {
       await updateUserProfile({ hasCompletedOnboarding: true });
-      setShowOnboarding(false);
     } catch (e) {
       console.error("Failed to complete onboarding:", e);
-      setShowOnboarding(false); // 실패하더라도 팝업은 닫아줌
     }
   };
 
@@ -654,14 +655,19 @@ function App() {
   };
 
   // --- 로그인/온보딩 관리 연동 ---
+  // Firestore에 이미 완료 기록이 있으면 localStorage가 없어도 팝업을 띄우지 않음
   useEffect(() => {
     if (user) {
       const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
-      if (!hasSeen) {
+      const completedInFirestore = profile?.hasCompletedOnboarding === true;
+      if (!hasSeen && !completedInFirestore) {
         setShowOnboarding(true);
+      } else if (!hasSeen && completedInFirestore) {
+        // Firestore는 완료됐는데 localStorage가 없으면 동기화
+        localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
       }
     }
-  }, [user]);
+  }, [user, profile]);
 
   // 온보딩 모달 [시작하기] 버튼을 누르면 완전히 닫고, 다음부터 안 뜨게 브라우저에 각인시킵니다.
   const handleCloseOnboarding = () => {
