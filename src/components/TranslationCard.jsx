@@ -348,7 +348,7 @@ Return only these 2 lines.`;
 
             {/* 메모 팝업 */}
             {showMemoPopup && (
-                <div className="memo-popup-overlay" onClick={closePopup}>
+                <div className="memo-popup-overlay">
                     <div className="memo-popup" onClick={e => e.stopPropagation()}>
                         {/* 헤더: 타이틀 + 전송 + 닫기 */}
                         <div className="memo-popup-header">
