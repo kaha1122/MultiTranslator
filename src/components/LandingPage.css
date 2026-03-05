@@ -22,6 +22,7 @@
 
     background-color: var(--lp-dark-bg);
     color: var(--lp-text-main);
+    width: 100%;
     min-height: 100vh;
     overflow-x: hidden;
     line-height: 1.6;
