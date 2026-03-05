@@ -1,9 +1,11 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import './LandingPage.css';
 
 const LandingPage = ({ onStart, onInstall, showInstall }) => {
   const titleRef = useRef(null);
   const subRef = useRef(null);
+  const bottomRef = useRef(null);
+  const [showInstallPopup, setShowInstallPopup] = useState(false);
 
   // USP 자동 로테이터 (5초마다 히어로 타이틀·서브 페이드 전환)
   const usps = [
@@ -46,6 +48,17 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // 스크롤 끝 감지 → 설치 팝업
+  useEffect(() => {
+    if (!showInstall || !bottomRef.current) return;
+    const observer = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) setShowInstallPopup(true); },
+      { threshold: 0.5 }
+    );
+    observer.observe(bottomRef.current);
+    return () => observer.disconnect();
+  }, [showInstall]);
+
   return (
     <div className="lp-root">
       {/* 배경 앰비언트 조명 */}
@@ -57,7 +70,7 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
         <div className="lp-logo">PronunFit.</div>
         <div className="lp-nav-actions">
           {showInstall && (
-            <button className="lp-install-btn" onClick={onInstall}>📲 앱 설치</button>
+            <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>
           )}
           <button className="lp-login-btn" onClick={onStart}>로그인</button>
         </div>
@@ -224,7 +237,20 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
           </button>
         </div>
         <p className="lp-footer-note">PronunFit · AI Pronunciation Coach · 가입 즉시 무료 이용</p>
+        {/* 스크롤 감지 sentinel */}
+        <div ref={bottomRef} style={{ height: 1 }} />
       </section>
+
+      {/* ── 설치 팝업 ── */}
+      {showInstall && showInstallPopup && (
+        <div className="lp-install-popup">
+          <button className="lp-popup-close" onClick={() => setShowInstallPopup(false)}>✕</button>
+          <p className="lp-popup-msg">📲 앱을 설치 하시면, 바로 접속 가능합니다</p>
+          <button className="lp-popup-install-btn" onClick={() => { onInstall(); setShowInstallPopup(false); }}>
+            Download
+          </button>
+        </div>
+      )}
     </div>
   );
 };
