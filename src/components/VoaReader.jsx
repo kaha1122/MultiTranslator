@@ -98,11 +98,11 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
 function getSessionRotationOffset() {
     const SESSION_KEY = 'voa_session_rotated';
     const OFFSET_KEY  = 'voa_rotation_offset';
-    let offset = parseInt(localStorage.getItem(OFFSET_KEY) || '0', 10);
+    // 먼저 현재 offset을 읽은 뒤, 다음 세션을 위해 +1 저장
+    const offset = parseInt(localStorage.getItem(OFFSET_KEY) || '0', 10);
     if (!sessionStorage.getItem(SESSION_KEY)) {
-        offset = (offset + 1) % 10;
-        localStorage.setItem(OFFSET_KEY, String(offset));
         sessionStorage.setItem(SESSION_KEY, '1');
+        localStorage.setItem(OFFSET_KEY, String((offset + 1) % 10));
     }
     return offset;
 }
@@ -141,7 +141,8 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
             const raw = data.articles || [];
             // 세션 오프셋만큼 배열 앞뒤를 교체해 매 로그인마다 다른 순서로 표시
             const off = rotationOffset.current % (raw.length || 1);
-            const rotated = off > 0 ? [...raw.slice(off), ...raw.slice(0, off)] : raw;
+            // 뒤에서부터 당겨오기: offset=1 → [10,1~9], offset=2 → [9,10,1~8]
+            const rotated = off > 0 ? [...raw.slice(raw.length - off), ...raw.slice(0, raw.length - off)] : raw;
             setArticles(rotated);
         } catch {
             setListError(t('voa.loadError'));
