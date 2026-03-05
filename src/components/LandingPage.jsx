@@ -243,9 +243,9 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
 
       {/* ── 설치 팝업 ── */}
       {showInstall && showInstallPopup && (
-        <div className="lp-install-popup">
+        <div className="lp-install-popup" style={{ position: 'fixed' }}>
           <button className="lp-popup-close" onClick={() => setShowInstallPopup(false)}>✕</button>
-          <p className="lp-popup-msg">📲 앱을 설치 하시면, 바로 접속 가능합니다</p>
+          <p className="lp-popup-msg">📲 앱을 설치 하시면,<br />바로 접속 가능합니다</p>
           <button className="lp-popup-install-btn" onClick={() => { onInstall(); setShowInstallPopup(false); }}>
             Download
           </button>
