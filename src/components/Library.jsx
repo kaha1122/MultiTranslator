@@ -134,24 +134,20 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // [신규] 2-1. 보관함 카드 재연습 시 점수 업데이트 + 세션 오디오 URL 저장
+    // 2-1. 보관함 카드 재연습 시 점수 업데이트 + 세션 오디오 URL 저장
+    // Firestore만 업데이트 → onSnapshot이 단일 진실 출처로 상태 반영 (race condition 방지)
     const handlePracticeResult = async (id, _langCode, result) => {
         try {
-            // 방금 녹음한 Blob URL을 세션 상태에 저장 (새로고침 전까지 재생 가능)
             if (result.audioUrl) {
                 setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
             }
-            if (result.pronunciationScore !== undefined) {
-                setSavedCards(currentCards =>
-                    currentCards.map(card =>
-                        card.id === id ? { ...card, pronunciationScore: result.pronunciationScore } : card
-                    )
-                );
-                const cardRef = doc(db, "savedCards", id);
-                await updateDoc(cardRef, { pronunciationScore: result.pronunciationScore });
+            if (result.pronunciationScore != null) {
+                await updateDoc(doc(db, "savedCards", id), {
+                    pronunciationScore: result.pronunciationScore,
+                });
             }
         } catch (error) {
-            console.error("Failed to update pronunciation test results:", error);
+            console.error("Failed to update pronunciation score:", error);
         }
     };
 
