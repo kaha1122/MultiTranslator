@@ -92,9 +92,25 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
 /**
  * VoaReader — VOA Learning English 레벨별 발음 연습 탭
  */
+// 세션마다 +1씩 증가하는 로테이션 오프셋 반환
+// - sessionStorage: 같은 세션 내 중복 증가 방지
+// - localStorage:   세션 간 누적 카운터 보존
+function getSessionRotationOffset() {
+    const SESSION_KEY = 'voa_session_rotated';
+    const OFFSET_KEY  = 'voa_rotation_offset';
+    let offset = parseInt(localStorage.getItem(OFFSET_KEY) || '0', 10);
+    if (!sessionStorage.getItem(SESSION_KEY)) {
+        offset = (offset + 1) % 10;
+        localStorage.setItem(OFFSET_KEY, String(offset));
+        sessionStorage.setItem(SESSION_KEY, '1');
+    }
+    return offset;
+}
+
 export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLibrary }) {
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
+    const rotationOffset = useRef(getSessionRotationOffset());
 
     const [category, setCategory]               = useState('intermediate');
     const [articles, setArticles]               = useState([]);
@@ -122,7 +138,11 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
             const res = await fetch(`${SERVER_URL}/api/voa-news?category=${cat}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
-            setArticles(data.articles || []);
+            const raw = data.articles || [];
+            // 세션 오프셋만큼 배열 앞뒤를 교체해 매 로그인마다 다른 순서로 표시
+            const off = rotationOffset.current % (raw.length || 1);
+            const rotated = off > 0 ? [...raw.slice(off), ...raw.slice(0, off)] : raw;
+            setArticles(rotated);
         } catch {
             setListError(t('voa.loadError'));
         } finally {
