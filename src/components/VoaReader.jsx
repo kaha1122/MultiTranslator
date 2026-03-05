@@ -161,6 +161,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setSentences(data.sentences || []);
+            if ((data.sentences || []).length > 0) setExpandedIdx(0); // 첫 문장 자동 펼침
             if (data.audioUrl) setSelectedArticle(prev => ({ ...prev, audioUrl: data.audioUrl || prev.audioUrl }));
         } catch {
             setArticleError(t('voa.articleLoadError'));
