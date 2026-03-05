@@ -636,9 +636,17 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 12px;
+}
+.memo-popup-title {
     font-weight: 700;
     font-size: 1rem;
-    margin-bottom: 6px;
+    color: #1e293b;
+}
+.memo-popup-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 .memo-popup-close {
     background: none;
@@ -649,24 +657,10 @@
     padding: 0;
     line-height: 1;
 }
-.memo-popup-hint {
-    font-size: 0.8rem;
-    color: #94a3b8;
-    margin: 0 0 12px 0;
-    line-height: 1.5;
-}
-.memo-popup-hint em {
-    color: #6366f1;
-    font-style: normal;
-}
-.memo-input-row {
-    display: flex;
-    gap: 8px;
-    align-items: center;
-}
 .memo-input {
-    flex: 1;
-    padding: 11px 13px;
+    width: 100%;
+    box-sizing: border-box;
+    padding: 12px 14px;
     border: 1.5px solid #e2e8f0;
     border-radius: 12px;
     font-size: 0.95rem;
@@ -675,25 +669,6 @@
 }
 .memo-input:focus {
     border-color: #6366f1;
-}
-.memo-voice-btn {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    border: 1.5px solid #e2e8f0;
-    background: #f8fafc;
-    color: #64748b;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: all 0.2s;
-    padding: 0;
-}
-.memo-voice-btn:hover:not(:disabled) {
-    border-color: #6366f1;
-    color: #6366f1;
 }
 .memo-submit-btn {
     width: 40px;
@@ -718,4 +693,26 @@
 }
 .memo-submit-btn:hover:not(:disabled) {
     background: #4f46e5;
+}
+
+/* 팝업 내 AI 즉시 답변 표시 */
+.memo-popup-response {
+    margin-top: 12px;
+    padding: 12px 14px;
+    background: #f0f0ff;
+    border-left: 3px solid #6366f1;
+    border-radius: 0 12px 12px 0;
+}
+.memo-popup-response-query {
+    font-size: 0.78rem;
+    color: #6366f1;
+    font-weight: 600;
+    margin: 0 0 6px 0;
+}
+.memo-popup-response-text {
+    font-size: 0.9rem;
+    color: #1e293b;
+    margin: 0;
+    white-space: pre-line;
+    line-height: 1.6;
 }

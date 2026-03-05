@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2, Volume2 } from 'lucide-react';
+import { Search, Trash2, Volume2, PenLine } from 'lucide-react';
 import { useT } from '../utils/i18n';
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
@@ -38,6 +38,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     const observerTarget = useRef(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null); // [신규] 커스텀 삭제 모달을 위한 ID 상태
     const [sessionAudioUrls, setSessionAudioUrls] = useState({}); // 세션 내 녹음 Blob URL 맵 { cardId → url }
+    const [memoOpenId, setMemoOpenId] = useState(null); // 메모 팝업이 열려있는 카드 ID
 
     // 1. Firebase에서 내가 저장한 카드 실시간으로 가져오기 (무한 스크롤 & 검색 대응)
     useEffect(() => {
@@ -346,6 +347,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                 memos={card.memos || []}
                                 annotations={card.annotations || []}
                                 onMemoUpdate={(newMemos, newAnnotations) => handleMemoUpdate(card.id, newMemos, newAnnotations)}
+                                memoPopupOpen={memoOpenId === card.id}
+                                onMemoClose={() => setMemoOpenId(null)}
                             />
 
                             {/* [신규] 아이콘화된 하단 액션바 */}
@@ -367,6 +370,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                         style={{ background: 'none', border: 'none', outline: 'none', cursor: sessionAudioUrls[card.id] ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: sessionAudioUrls[card.id] ? 1 : 0.3, color: 'var(--text-secondary)' }}
                                     >
                                         <Volume2 size={16} />
+                                    </button>
+                                    <span className="stat-divider">·</span>
+                                    <button
+                                        className="stat-icon-btn"
+                                        title="메모 / 어노테이션"
+                                        onClick={(e) => { e.stopPropagation(); setMemoOpenId(memoOpenId === card.id ? null : card.id); }}
+                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: (card.memos?.length || card.annotations?.length) ? '#6366f1' : 'var(--text-secondary)' }}
+                                    >
+                                        <PenLine size={16} />
                                     </button>
                                 </div>
                                 <div className="action-right">

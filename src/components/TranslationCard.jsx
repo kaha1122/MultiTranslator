@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
-import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star, PenLine } from 'lucide-react';
+import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import PronunciationAssessment from './PronunciationAssessment';
@@ -80,6 +80,9 @@ const TranslationCard = ({
     memos = [],
     annotations = [],
     onMemoUpdate,
+    // Library에서 외부적으로 팝업 열기/닫기 제어
+    memoPopupOpen = false,
+    onMemoClose,
 }) => {
     const t = useT(sourceLangCode);
     const { byokGeminiKey } = useAuth();
@@ -88,6 +91,7 @@ const TranslationCard = ({
     const [showMemoPopup, setShowMemoPopup] = useState(false);
     const [memoInput, setMemoInput] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
+    const [lastResponse, setLastResponse] = useState(null); // { query, text } — 팝업 안에 즉시 표시
     const memoInputRef = useRef(null);
 
     const {
@@ -108,10 +112,23 @@ const TranslationCard = ({
         }
     }, [assessmentResult, langCode]);
 
-    // ── 메모 팝업 열릴 때 input 포커스 ──
+    // ── 외부(Library)에서 memoPopupOpen prop으로 팝업 열기 ──
     useEffect(() => {
-        if (showMemoPopup) setTimeout(() => memoInputRef.current?.focus(), 80);
-    }, [showMemoPopup]);
+        if (memoPopupOpen) {
+            setShowMemoPopup(true);
+            setLastResponse(null);
+            setTimeout(() => memoInputRef.current?.focus(), 80);
+        }
+    }, [memoPopupOpen]);
+
+    // ── 팝업 닫기 (내부 + 외부 상태 모두 초기화) ──
+    const closePopup = () => {
+        if (isMemoLoading) return;
+        setShowMemoPopup(false);
+        setMemoInput('');
+        setLastResponse(null);
+        onMemoClose?.();
+    };
 
     // ── Gemini AI 메모 호출 ──
     const callGeminiMemo = async (query) => {
@@ -144,6 +161,7 @@ Return only these 2 lines.`;
         const query = memoInput.trim();
         if (!query || isMemoLoading) return;
         setMemoInput('');
+        setLastResponse(null);
         setIsMemoLoading(true);
         try {
             if (isAnnotationCommand(query)) {
@@ -154,17 +172,20 @@ Return only these 2 lines.`;
                         ann,
                     ];
                     await onMemoUpdate?.(memos, newAnnotations);
+                    setLastResponse({ query, text: `"${ann.matchText}" 에 ${ann.type === 'underline' ? '밑줄' : ann.type === 'star' ? '별표' : '형광펜'} 적용 완료 ✅` });
                 }
             } else {
                 const response = await callGeminiMemo(query);
                 const newMemos = [...(memos || []), { query, response, createdAt: new Date().toISOString() }];
                 await onMemoUpdate?.(newMemos, annotations);
+                setLastResponse({ query, text: response });
             }
         } catch (e) {
             console.error('Memo failed:', e);
+            setLastResponse({ query, text: '❌ 오류가 발생했습니다. 다시 시도해 주세요.' });
         } finally {
             setIsMemoLoading(false);
-            setShowMemoPopup(false);
+            // 팝업 자동 닫힘 없음 — 사용자가 직접 X 버튼으로 닫아야 함
         }
     };
 
@@ -278,15 +299,6 @@ Return only these 2 lines.`;
                         >
                             {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
-                        {onMemoUpdate && (
-                            <button
-                                className={`memo-open-btn ${memos?.length || annotations?.length ? 'has-content' : ''}`}
-                                onClick={(e) => { e.stopPropagation(); setShowMemoPopup(true); }}
-                                title="메모 / 어노테이션"
-                            >
-                                <PenLine size={20} />
-                            </button>
-                        )}
                     </div>
                 </div>
             </div>
@@ -336,35 +348,49 @@ Return only these 2 lines.`;
 
             {/* 메모 팝업 */}
             {showMemoPopup && (
-                <div className="memo-popup-overlay" onClick={() => { if (!isMemoLoading) setShowMemoPopup(false); }}>
+                <div className="memo-popup-overlay" onClick={closePopup}>
                     <div className="memo-popup" onClick={e => e.stopPropagation()}>
+                        {/* 헤더: 타이틀 + 전송 + 닫기 */}
                         <div className="memo-popup-header">
-                            <span>✏️ 메모 · 어노테이션</span>
-                            <button className="memo-popup-close" onClick={() => setShowMemoPopup(false)} disabled={isMemoLoading}>✕</button>
+                            <span className="memo-popup-title">메모</span>
+                            <div className="memo-popup-header-actions">
+                                <button
+                                    className="memo-submit-btn"
+                                    onClick={handleMemoSubmit}
+                                    disabled={!memoInput.trim() || isMemoLoading}
+                                    title="전송"
+                                >
+                                    {isMemoLoading ? <RotateCcw size={16} className="spin" /> : '→'}
+                                </button>
+                                <button className="memo-popup-close" onClick={closePopup} disabled={isMemoLoading}>✕</button>
+                            </div>
                         </div>
-                        <p className="memo-popup-hint">
-                            질문하거나 단어에 표시하세요.<br />
-                            <em>예) "run이 무슨 뜻이야?" · "Baseball에 밑줄 쳐줘"</em>
-                        </p>
-                        <div className="memo-input-row">
-                            <input
-                                ref={memoInputRef}
-                                type="text"
-                                className="memo-input"
-                                value={memoInput}
-                                onChange={e => setMemoInput(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && handleMemoSubmit()}
-                                placeholder="질문 또는 어노테이션 명령..."
-                                disabled={isMemoLoading}
-                            />
-                            <button className="memo-submit-btn" onClick={handleMemoSubmit} disabled={!memoInput.trim() || isMemoLoading} title="전송">
-                                {isMemoLoading ? <RotateCcw size={16} className="spin" /> : '→'}
-                            </button>
-                        </div>
+
+                        {/* 입력창 — 팝업 전체 너비 */}
+                        <input
+                            ref={memoInputRef}
+                            type="text"
+                            className="memo-input"
+                            value={memoInput}
+                            onChange={e => setMemoInput(e.target.value)}
+                            onKeyDown={e => e.key === 'Enter' && handleMemoSubmit()}
+                            placeholder='예) "run이 무슨 뜻이야?" · "Baseball에 밑줄 쳐줘"'
+                            disabled={isMemoLoading}
+                        />
+
+                        {/* 진행 중 표시 */}
                         {isMemoLoading && (
                             <div className="memo-loading-status">
                                 <span className="memo-loading-dot" />
                                 AI가 답변을 생성하고 있습니다...
+                            </div>
+                        )}
+
+                        {/* AI 답변 즉시 표시 */}
+                        {lastResponse && !isMemoLoading && (
+                            <div className="memo-popup-response">
+                                <p className="memo-popup-response-query">💬 {lastResponse.query}</p>
+                                <p className="memo-popup-response-text">{lastResponse.text}</p>
                             </div>
                         )}
                     </div>
