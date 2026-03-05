@@ -15,7 +15,9 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     // [신규] 'W' (단어), 'S' (문장) 다중 선택 필터 상태 (배열을 Set으로 변환)
     const [filterTypes, setFilterTypes] = useState(() => {
         const saved = localStorage.getItem('library_filterTypes');
-        return saved ? new Set(JSON.parse(saved)) : new Set(['W', 'S']);
+        const parsed = saved ? JSON.parse(saved) : null;
+        // 빈 배열이 저장된 경우(버그 복구) 기본값 ['W','S']로 초기화
+        return (parsed && parsed.length > 0) ? new Set(parsed) : new Set(['W', 'S']);
     });
     // [신규] 목표 점수 미달 카드만 보기 필터 상태
     const [filterTargetMissed, setFilterTargetMissed] = useState(() => {
@@ -177,8 +179,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
 
     // [신규] 단어(W) / 문장(S) 타입 다중 필터 적용
     if (filterTypes.size === 0) {
-        // 둘 다 체크 해제된 상태라면 목록은 비워야 합니다.
-        filteredCards = [];
+        // 둘 다 해제 = 전체 보기 (size===0은 localStorage 복구 후에도 발생 가능하므로 빈 결과 대신 전체 표시)
     } else if (filterTypes.size === 1) {
         // 둘 중 하나만 체크되었다면 해당 타입만 보여줍니다. (과거 버전의 데이터는 기본적으로 'S'로 취급)
         filteredCards = filteredCards.filter(card => filterTypes.has(card.inputType || 'S'));
