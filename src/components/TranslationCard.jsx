@@ -29,33 +29,10 @@ function AnnotatedText({ text, annotations }) {
     return (
         <>
             {parts.map((p, i) =>
-                p.ann ? <span key={i} className={`ann-${p.ann}`}>{p.t}</span> : p.t
+                p.ann ? <strong key={i} className={`ann-${p.ann}`}>{p.t}</strong> : p.t
             )}
         </>
     );
-}
-
-function isAnnotationCommand(text) {
-    return /(밑줄|underline|형광|highlight|별표|star)/i.test(text);
-}
-
-function parseAnnotation(input) {
-    let type = 'highlight';
-    if (/(밑줄|underline)/i.test(input)) type = 'underline';
-    else if (/(별표|star)/i.test(input)) type = 'star';
-
-    // 따옴표로 감싼 단어 우선 추출, 없으면 "X에/X을/X를" 패턴
-    const quoted = input.match(/["'"'`]([^"'"'`]+)["'"'`]/);
-    let matchText = '';
-    if (quoted) {
-        matchText = quoted[1].trim();
-    } else {
-        const cleaned = input
-            .replace(/(밑줄|underline|형광펜?|highlight|별표|star|쳐줘|칠해줘|해줘|그어줘|처줘|적용|을|를|에|은|는)/gi, ' ')
-            .trim();
-        matchText = cleaned.split(/\s+/).filter(Boolean).join(' ').trim();
-    }
-    return { matchText, type };
 }
 
 const TranslationCard = ({
@@ -89,10 +66,13 @@ const TranslationCard = ({
 
     // ── 메모 팝업 상태 ──
     const [showMemoPopup, setShowMemoPopup] = useState(false);
+    const [memoTab, setMemoTab] = useState('ai'); // 'ai' | 'edit'
     const [memoInput, setMemoInput] = useState('');
+    const [editWord, setEditWord] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
-    const [lastResponse, setLastResponse] = useState(null); // { query, text } — 팝업 안에 즉시 표시
+    const [lastResponse, setLastResponse] = useState(null); // { text } — 팝업 안에 즉시 표시
     const memoInputRef = useRef(null);
+    const editInputRef = useRef(null);
 
     const {
         isRecording,
@@ -116,7 +96,10 @@ const TranslationCard = ({
     useEffect(() => {
         if (memoPopupOpen) {
             setShowMemoPopup(true);
+            setMemoTab('ai');
             setLastResponse(null);
+            setMemoInput('');
+            setEditWord('');
             setTimeout(() => memoInputRef.current?.focus(), 80);
         }
     }, [memoPopupOpen]);
@@ -126,7 +109,9 @@ const TranslationCard = ({
         if (isMemoLoading) return;
         setShowMemoPopup(false);
         setMemoInput('');
+        setEditWord('');
         setLastResponse(null);
+        setMemoTab('ai');
         onMemoClose?.();
     };
 
@@ -156,7 +141,7 @@ Return only these 2 lines.`;
         return data.candidates[0].content.parts[0].text.trim();
     };
 
-    // ── 메모 제출 처리 ──
+    // ── AI Q/A 제출 ──
     const handleMemoSubmit = async () => {
         const query = memoInput.trim();
         if (!query || isMemoLoading) return;
@@ -164,28 +149,38 @@ Return only these 2 lines.`;
         setLastResponse(null);
         setIsMemoLoading(true);
         try {
-            if (isAnnotationCommand(query)) {
-                const ann = parseAnnotation(query);
-                if (ann.matchText) {
-                    const newAnnotations = [
-                        ...(annotations || []).filter(a => a.matchText.toLowerCase() !== ann.matchText.toLowerCase()),
-                        ann,
-                    ];
-                    await onMemoUpdate?.(memos, newAnnotations);
-                    setLastResponse({ query, text: `"${ann.matchText}" 에 ${ann.type === 'underline' ? '밑줄' : ann.type === 'star' ? '별표' : '형광펜'} 적용 완료 ✅` });
-                }
-            } else {
-                const response = await callGeminiMemo(query);
-                const newMemos = [...(memos || []), { query, response, createdAt: new Date().toISOString() }];
-                await onMemoUpdate?.(newMemos, annotations);
-                setLastResponse({ query, text: response });
-            }
+            const response = await callGeminiMemo(query);
+            const newMemos = [...(memos || []), { query, response, createdAt: new Date().toISOString() }];
+            await onMemoUpdate?.(newMemos, annotations);
+            setLastResponse({ query, text: response });
         } catch (e) {
             console.error('Memo failed:', e);
             setLastResponse({ query, text: '❌ 오류가 발생했습니다. 다시 시도해 주세요.' });
         } finally {
             setIsMemoLoading(false);
-            // 팝업 자동 닫힘 없음 — 사용자가 직접 X 버튼으로 닫아야 함
+        }
+    };
+
+    // ── Edit 탭: 어노테이션 적용 ──
+    const handleEditApply = async (style) => {
+        const word = editWord.trim();
+        if (!word || isMemoLoading) return;
+        setIsMemoLoading(true);
+        setLastResponse(null);
+        try {
+            const ann = { matchText: word, type: style };
+            const newAnnotations = [
+                ...(annotations || []).filter(a => a.matchText.toLowerCase() !== word.toLowerCase()),
+                ann,
+            ];
+            await onMemoUpdate?.(memos, newAnnotations);
+            const label = style === 'underline' ? '밑줄' : style === 'red' ? '빨강' : '형광';
+            setLastResponse({ text: `"${word}" 에 ${label} 적용 완료 ✅` });
+            setEditWord('');
+        } catch (e) {
+            setLastResponse({ text: '❌ 오류가 발생했습니다.' });
+        } finally {
+            setIsMemoLoading(false);
         }
     };
 
@@ -332,7 +327,7 @@ Return only these 2 lines.`;
                     )}
                 </div>
 
-                {/* 저장된 메모 목록 */}
+                {/* 저장된 메모 목록 (AI Q&A만) */}
                 {memos?.length > 0 && (
                     <div className="card-memos">
                         <span className="memo-section-label">MY MEMOS</span>
@@ -350,47 +345,102 @@ Return only these 2 lines.`;
             {showMemoPopup && (
                 <div className="memo-popup-overlay">
                     <div className="memo-popup" onClick={e => e.stopPropagation()}>
-                        {/* 헤더: 타이틀 + 전송 + 닫기 */}
+                        {/* 헤더: 타이틀 + 닫기 */}
                         <div className="memo-popup-header">
                             <span className="memo-popup-title">메모</span>
-                            <div className="memo-popup-header-actions">
-                                <button
-                                    className="memo-submit-btn"
-                                    onClick={handleMemoSubmit}
-                                    disabled={!memoInput.trim() || isMemoLoading}
-                                    title="전송"
-                                >
-                                    {isMemoLoading ? <RotateCcw size={16} className="spin" /> : '→'}
-                                </button>
-                                <button className="memo-popup-close" onClick={closePopup} disabled={isMemoLoading}>✕</button>
-                            </div>
+                            <button className="memo-popup-close" onClick={closePopup} disabled={isMemoLoading}>✕</button>
                         </div>
 
-                        {/* 입력창 — 팝업 전체 너비 */}
-                        <input
-                            ref={memoInputRef}
-                            type="text"
-                            className="memo-input"
-                            value={memoInput}
-                            onChange={e => setMemoInput(e.target.value)}
-                            onKeyDown={e => e.key === 'Enter' && handleMemoSubmit()}
-                            placeholder='예) "run이 무슨 뜻이야?" · "Baseball에 밑줄 쳐줘"'
-                            disabled={isMemoLoading}
-                        />
+                        {/* 탭 */}
+                        <div className="memo-tab-bar">
+                            <button
+                                className={`memo-tab-btn ${memoTab === 'ai' ? 'active' : ''}`}
+                                onClick={() => { setMemoTab('ai'); setLastResponse(null); setTimeout(() => memoInputRef.current?.focus(), 50); }}
+                            >AI Q&amp;A</button>
+                            <button
+                                className={`memo-tab-btn ${memoTab === 'edit' ? 'active' : ''}`}
+                                onClick={() => { setMemoTab('edit'); setLastResponse(null); setTimeout(() => editInputRef.current?.focus(), 50); }}
+                            >Edit</button>
+                        </div>
 
-                        {/* 진행 중 표시 */}
-                        {isMemoLoading && (
-                            <div className="memo-loading-status">
-                                <span className="memo-loading-dot" />
-                                AI가 답변을 생성하고 있습니다...
+                        {/* AI Q&A 탭 */}
+                        {memoTab === 'ai' && (
+                            <div className="memo-tab-content">
+                                <div className="memo-input-row">
+                                    <input
+                                        ref={memoInputRef}
+                                        type="text"
+                                        className="memo-input"
+                                        value={memoInput}
+                                        onChange={e => setMemoInput(e.target.value)}
+                                        onKeyDown={e => e.key === 'Enter' && handleMemoSubmit()}
+                                        placeholder="예) run이 무슨 뜻이야?"
+                                        disabled={isMemoLoading}
+                                    />
+                                    <button
+                                        className="memo-submit-btn"
+                                        onClick={handleMemoSubmit}
+                                        disabled={!memoInput.trim() || isMemoLoading}
+                                        title="전송"
+                                    >
+                                        {isMemoLoading ? <RotateCcw size={16} className="spin" /> : '→'}
+                                    </button>
+                                </div>
+                                {isMemoLoading && (
+                                    <div className="memo-loading-status">
+                                        <span className="memo-loading-dot" />
+                                        AI가 답변을 생성하고 있습니다...
+                                    </div>
+                                )}
+                                {lastResponse && !isMemoLoading && (
+                                    <div className="memo-popup-response">
+                                        <p className="memo-popup-response-query">💬 {lastResponse.query}</p>
+                                        <p className="memo-popup-response-text">{lastResponse.text}</p>
+                                    </div>
+                                )}
                             </div>
                         )}
 
-                        {/* AI 답변 즉시 표시 */}
-                        {lastResponse && !isMemoLoading && (
-                            <div className="memo-popup-response">
-                                <p className="memo-popup-response-query">💬 {lastResponse.query}</p>
-                                <p className="memo-popup-response-text">{lastResponse.text}</p>
+                        {/* Edit 탭 */}
+                        {memoTab === 'edit' && (
+                            <div className="memo-tab-content">
+                                <input
+                                    ref={editInputRef}
+                                    type="text"
+                                    className="memo-input"
+                                    value={editWord}
+                                    onChange={e => setEditWord(e.target.value)}
+                                    placeholder="단어를 입력하세요"
+                                    disabled={isMemoLoading}
+                                />
+                                <div className="memo-style-btns">
+                                    <button
+                                        className="memo-style-btn memo-style-highlight"
+                                        onClick={() => handleEditApply('highlight')}
+                                        disabled={!editWord.trim() || isMemoLoading}
+                                    >🟡 형광</button>
+                                    <button
+                                        className="memo-style-btn memo-style-underline"
+                                        onClick={() => handleEditApply('underline')}
+                                        disabled={!editWord.trim() || isMemoLoading}
+                                    >밑줄</button>
+                                    <button
+                                        className="memo-style-btn memo-style-red"
+                                        onClick={() => handleEditApply('red')}
+                                        disabled={!editWord.trim() || isMemoLoading}
+                                    >🔴 빨강</button>
+                                </div>
+                                {isMemoLoading && (
+                                    <div className="memo-loading-status">
+                                        <span className="memo-loading-dot" />
+                                        적용 중...
+                                    </div>
+                                )}
+                                {lastResponse && !isMemoLoading && (
+                                    <div className="memo-popup-response">
+                                        <p className="memo-popup-response-text">{lastResponse.text}</p>
+                                    </div>
+                                )}
                             </div>
                         )}
                     </div>
