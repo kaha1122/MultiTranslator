@@ -80,6 +80,31 @@
     letter-spacing: -0.5px;
 }
 
+.lp-nav-actions {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.lp-install-btn {
+    padding: 0.5rem 1.1rem;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-family: inherit;
+    color: #0B0C10;
+    background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
+    border: none;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.lp-install-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+}
+
 .lp-login-btn {
     padding: 0.5rem 1.2rem;
     border-radius: 20px;

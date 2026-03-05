@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 import './LandingPage.css';
 
-const LandingPage = ({ onStart }) => {
+const LandingPage = ({ onStart, onInstall, showInstall }) => {
   const titleRef = useRef(null);
   const subRef = useRef(null);
 
@@ -55,7 +55,12 @@ const LandingPage = ({ onStart }) => {
       {/* ── 네비게이션 ── */}
       <nav className="lp-nav">
         <div className="lp-logo">PronunFit.</div>
-        <button className="lp-login-btn" onClick={onStart}>로그인</button>
+        <div className="lp-nav-actions">
+          {showInstall && (
+            <button className="lp-install-btn" onClick={onInstall}>📲 앱 설치</button>
+          )}
+          <button className="lp-login-btn" onClick={onStart}>로그인</button>
+        </div>
       </nav>
 
       {/* ── HERO 섹션 ── */}

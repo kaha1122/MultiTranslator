@@ -713,7 +713,7 @@ function App() {
   // 로그인이 되어있지 않으면 랜딩 → 로그인/회원가입 화면을 보여줍니다.
   if (!user) {
     if (showLanding) {
-      return <LandingPage onStart={() => setShowLanding(false)} />;
+      return <LandingPage onStart={() => setShowLanding(false)} onInstall={handleInstallClick} showInstall={showInstallBanner} />;
     }
     return authMode === 'login' ? (
       <Login onSwitchToSignup={() => setAuthMode('signup')} />
