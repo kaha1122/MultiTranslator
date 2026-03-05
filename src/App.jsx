@@ -128,7 +128,7 @@ function App() {
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
 
   // 현재 화면 모드 ('translation': 번역 화면, 'settings': 설정 화면)
-  const [viewMode, setViewMode] = useState('translation');
+  const [viewMode, setViewMode] = useState('voa');
 
   // 사용자가 입력한 번역할 텍스트
   const [inputText, setInputText] = useState(() => {
@@ -1251,18 +1251,18 @@ function App() {
       <nav className="app-nav">
 
         <button
-          className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
-          onClick={() => { setViewMode('translation'); }}
-          title="Language Card"
-        >
-          <Languages size={32} />
-        </button>
-        <button
           className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
           onClick={() => { setViewMode('voa'); }}
           title="VOA News"
         >
           <Newspaper size={32} />
+        </button>
+        <button
+          className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
+          onClick={() => { setViewMode('translation'); }}
+          title="Language Card"
+        >
+          <Languages size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
