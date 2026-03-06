@@ -76,6 +76,20 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "ted": {
+    "tabTitle": "Luyện YouTube",
+    "placeholder": "Dán URL YouTube vào đây",
+    "loadBtn": "Tải phụ đề",
+    "loading": "Đang tải phụ đề...",
+    "loadError": "Không thể tải phụ đề. Vui lòng thử lại.",
+    "invalidUrl": "URL YouTube không hợp lệ.",
+    "noTranscript": "Không tìm thấy phụ đề cho video này.",
+    "practicePrompt": "Nhấn vào câu để bắt đầu luyện phát âm",
+    "saveToLibrary": "Lưu vào thư viện",
+    "savedToLibrary": "Đã lưu ✅",
+    "loginRequired": "Vui lòng đăng nhập.",
+    "emptyHint": "Nhập URL YouTube bất kỳ — TED, tin tức, bài giảng..."
+  },
   "voa": {
     "tabTitle": "Tin tức VOA",
     "loading": "Đang tải bài viết...",

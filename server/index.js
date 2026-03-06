@@ -8,6 +8,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const RssParser = require('rss-parser');
 const { parse: parseHtml } = require('node-html-parser');
+const { YoutubeTranscript } = require('youtube-transcript');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
 
@@ -211,23 +212,14 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
  */
 const rssParser = new RssParser({ timeout: 8000 });
 
-// 카테고리별 피드 배열: 앞쪽이 주 피드, 부족 시 뒤쪽 피드에서 보충
-// 실측 아이템 수: Everyday Grammar=250, Words and Their Stories=250, American Stories=43
 const VOA_FEEDS = {
-    beginner:     [
-        'https://learningenglish.voanews.com/podcast/?zoneId=4456&format=RSS', // Everyday Grammar (250개)
-        'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr',      // Ask a Teacher (20개)
-    ],
-    intermediate: [
-        'https://learningenglish.voanews.com/podcast/?zoneId=987&format=RSS',  // Words and Their Stories (250개)
-        'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',         // Health & Lifestyle (20개)
-    ],
-    advanced:     [
-        'https://learningenglish.voanews.com/podcast/?zoneId=1581&format=RSS', // American Stories (43개)
-        'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',         // American Stories API (20개)
-        'https://learningenglish.voanews.com/podcast/?zoneId=987&format=RSS',  // Words and Their Stories 보충
-    ],
+    beginner:     'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
+    intermediate: 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
+    advanced:     'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
 };
+
+// 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
+const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q';
 
 // 메모리 캐시 — 당일 자정까지 유지 (매일 새 10개 선택 보장)
 const voaCache = new Map();
@@ -260,63 +252,39 @@ function getDailySeed() {
     return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
-// RSS 아이템 → 공통 형태로 변환
-function parseItems(items) {
-    return (items || []).map(item => {
-        const encUrl = item.enclosure?.url || '';
-        return {
-            id: encodeURIComponent(item.link || item.guid || item.title),
-            title: item.title || '',
-            summary: item.contentSnippet || item.summary || '',
-            articleUrl: item.link || '',
-            imageUrl: isImageUrl(encUrl) ? encUrl : '',
-            audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
-        };
-    });
-}
-
-// GET /api/voa-news?category=intermediate[&refresh=1]
+// GET /api/voa-news?category=intermediate
 app.get('/api/voa-news', async (req, res) => {
     const category = VOA_FEEDS[req.query.category] ? req.query.category : 'intermediate';
-    const forceRefresh = req.query.refresh === '1';
     const cacheKey = `news:${category}`;
-    if (!forceRefresh) {
-        const cached = getCached(cacheKey);
-        if (cached) return res.json(cached);
-    } else {
-        voaCache.delete(cacheKey);
-    }
+    const cached = getCached(cacheKey);
+    if (cached) return res.json(cached);
 
     try {
-        const feedUrls = VOA_FEEDS[category];
-        let combinedItems = [];
-        const seenUrls = new Set();
-
-        for (const url of feedUrls) {
-            try {
-                const feed = await rssParser.parseURL(url);
-                const items = parseItems(feed.items);
-                for (const item of items) {
-                    if (item.articleUrl && !seenUrls.has(item.articleUrl)) {
-                        seenUrls.add(item.articleUrl);
-                        combinedItems.push(item);
-                    }
-                }
-                // 충분한 pool(최소 50개)이 확보되면 추가 피드 fetch 불필요
-                if (combinedItems.length >= 50) break;
-            } catch (feedErr) {
-                console.warn(`[VOA] Feed failed (${url}): ${feedErr.message}`);
-            }
+        let feedUrl = VOA_FEEDS[category];
+        let feed;
+        try {
+            feed = await rssParser.parseURL(feedUrl);
+        } catch (primaryErr) {
+            // 카테고리별 피드 실패 시 메인 피드로 fallback
+            console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
+            feed = await rssParser.parseURL(VOA_FALLBACK);
         }
+        const rawArticles = (feed.items || []).map(item => {
+            const encUrl = item.enclosure?.url || '';
+            return {
+                id: encodeURIComponent(item.link || item.guid || item.title),
+                title: item.title || '',
+                summary: item.contentSnippet || item.summary || '',
+                articleUrl: item.link || '',
+                imageUrl: isImageUrl(encUrl) ? encUrl : '',
+                audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
+            };
+        });
 
-        if (combinedItems.length === 0) {
-            return res.status(502).json({ error: 'All VOA feeds failed' });
-        }
-
-        // 프로그램 로고(반복 이미지)를 가진 항목 제거
+        // 프로그램 로고(반복 이미지)를 가진 항목 제거 — 동일 이미지 URL이 3회 이상이면 오디오 전용 프로그램으로 판단
         const imgFreq = {};
-        combinedItems.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
-        const pool = combinedItems.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
+        rawArticles.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
+        const pool = rawArticles.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
 
         // 날짜+카테고리 기반 시드로 매일 다른 10개 선택
         const seed = getDailySeed() + category.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
@@ -377,6 +345,70 @@ app.get('/api/voa-article', async (req, res) => {
     } catch (err) {
         console.error('[VOA] Article fetch error:', err.message);
         res.status(502).json({ error: 'Failed to fetch article', details: err.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────
+// YouTube 자막 추출 API
+// ─────────────────────────────────────────────────────
+function extractVideoId(url) {
+    const patterns = [
+        /[?&]v=([^&]+)/,
+        /youtu\.be\/([^?]+)/,
+        /youtube\.com\/embed\/([^?]+)/,
+    ];
+    for (const p of patterns) {
+        const m = (url || '').match(p);
+        if (m) return m[1];
+    }
+    return null;
+}
+
+// GET /api/youtube-transcript?url=<encodedYouTubeUrl>
+app.get('/api/youtube-transcript', async (req, res) => {
+    const url = req.query.url;
+    if (!url) return res.status(400).json({ error: 'Missing url parameter' });
+
+    const videoId = extractVideoId(url);
+    if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL' });
+
+    try {
+        // 영어 자막 우선, 없으면 자동 자막
+        const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+
+        // 짧은 자막 조각을 문장 단위로 병합
+        const sentences = [];
+        let current = '';
+        let startSec = 0;
+
+        for (const item of items) {
+            const text = (item.text || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+            if (!text) continue;
+            if (!current) startSec = Math.round((item.offset || 0) / 1000);
+            current += (current ? ' ' : '') + text;
+
+            // 문장 끝 기호 발견 시 분리
+            if (/[.!?]$/.test(current) && current.length >= 20) {
+                sentences.push({ id: sentences.length, text: current, start: startSec });
+                current = '';
+            } else if (current.length > 220) {
+                // 너무 길면 강제 분리
+                sentences.push({ id: sentences.length, text: current, start: startSec });
+                current = '';
+            }
+        }
+        if (current.length >= 15) {
+            sentences.push({ id: sentences.length, text: current, start: startSec });
+        }
+
+        const filtered = sentences
+            .filter(s => s.text.length >= 15 && s.text.length <= 250)
+            .slice(0, 40);
+
+        res.json({ videoId, sentences: filtered });
+    } catch (err) {
+        console.error('[YouTube] Transcript fetch error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch transcript', details: err.message });
     }
 });
 

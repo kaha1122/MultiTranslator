@@ -76,6 +76,20 @@
     "tierPro": "プロ",
     "tierPremium": "プレミアム"
   },
+  "ted": {
+    "tabTitle": "YouTube練習",
+    "placeholder": "YouTube URLを貼り付けてください",
+    "loadBtn": "字幕を読み込む",
+    "loading": "字幕を取得中...",
+    "loadError": "字幕を読み込めませんでした。もう一度お試しください。",
+    "invalidUrl": "有効なYouTube URLではありません。",
+    "noTranscript": "この動画の字幕が見つかりませんでした。",
+    "practicePrompt": "文をタップして発音練習を始めましょう",
+    "saveToLibrary": "ライブラリに保存",
+    "savedToLibrary": "保存済み ✅",
+    "loginRequired": "ログインが必要です。",
+    "emptyHint": "TED、ニュース、講義などのYouTube URLを入力してください"
+  },
   "voa": {
     "tabTitle": "VOAニュース",
     "loading": "記事を読み込み中...",

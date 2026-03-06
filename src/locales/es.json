@@ -76,6 +76,20 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "ted": {
+    "tabTitle": "Práctica YouTube",
+    "placeholder": "Pega una URL de YouTube aquí",
+    "loadBtn": "Cargar subtítulos",
+    "loading": "Obteniendo subtítulos...",
+    "loadError": "No se pudieron cargar los subtítulos. Inténtalo de nuevo.",
+    "invalidUrl": "URL de YouTube no válida.",
+    "noTranscript": "No se encontraron subtítulos para este vídeo.",
+    "practicePrompt": "Toca una frase para comenzar la práctica",
+    "saveToLibrary": "Guardar en biblioteca",
+    "savedToLibrary": "Guardado ✅",
+    "loginRequired": "Por favor inicia sesión.",
+    "emptyHint": "Introduce cualquier URL de YouTube — TED, noticias, clases..."
+  },
   "voa": {
     "tabTitle": "Noticias VOA",
     "loading": "Cargando artículos...",

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper, Youtube } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -25,6 +25,7 @@ import OnboardingModal from './components/OnboardingModal';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import VoaReader from './components/VoaReader';
+import TedReader from './components/TedReader';
 import LandingPage from './components/LandingPage';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -650,6 +651,38 @@ function App() {
     }
   };
 
+  // 6. YouTube(TED) 문장을 Library에 저장하는 함수
+  const saveTedCard = async (sentenceText, videoUrl) => {
+    if (!user) { alert(getT(sourceLang, 'ted.loginRequired')); return; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return;
+    }
+    try {
+      await addDoc(collection(db, "savedCards"), {
+        userId: user.uid,
+        userEmail: user.email,
+        sourceText: sentenceText,
+        translatedText: sentenceText,
+        langCode: 'en',
+        language: 'English',
+        inputLang: 'en',
+        inputType: 'S',
+        sourceLang,
+        sourceType: 'youtube',
+        articleTitle: videoUrl,
+        learningTip: [],
+        pronunciation: '',
+        pronunciationScore: null,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+    } catch (error) {
+      console.error("YouTube 카드 저장 오류:", error);
+    }
+  };
+
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
   const handleSpeak = (text, langCode) => {
     if (!text) return;
@@ -855,6 +888,15 @@ function App() {
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onSaveToLibrary={saveVoaCard}
+          />
+        </div>
+
+        {/* YouTube(TED) 탭 */}
+        <div style={{ display: viewMode === 'ted' ? 'block' : 'none', width: '100%', height: '100%' }}>
+          <TedReader
+            sourceLang={sourceLang}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onSaveToLibrary={saveTedCard}
           />
         </div>
 
@@ -1256,6 +1298,13 @@ function App() {
           title="VOA News"
         >
           <Newspaper size={32} />
+        </button>
+        <button
+          className={`nav-item ${viewMode === 'ted' ? 'active' : ''}`}
+          onClick={() => { setViewMode('ted'); }}
+          title="YouTube Practice"
+        >
+          <Youtube size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}

@@ -76,6 +76,20 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "ted": {
+    "tabTitle": "YouTube Practice",
+    "placeholder": "Paste a YouTube URL here",
+    "loadBtn": "Load Captions",
+    "loading": "Fetching captions...",
+    "loadError": "Could not load captions. Please try again.",
+    "invalidUrl": "Not a valid YouTube URL.",
+    "noTranscript": "No captions found for this video.",
+    "practicePrompt": "Tap a sentence to start pronunciation practice",
+    "saveToLibrary": "Save to Library",
+    "savedToLibrary": "Saved ✅",
+    "loginRequired": "Please log in.",
+    "emptyHint": "Enter any YouTube URL — TED talks, lectures, news, and more"
+  },
   "voa": {
     "tabTitle": "VOA News",
     "loading": "Loading articles...",

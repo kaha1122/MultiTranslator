@@ -76,6 +76,20 @@
     "tierPro": "专业版",
     "tierPremium": "高级版"
   },
+  "ted": {
+    "tabTitle": "YouTube练习",
+    "placeholder": "在此粘贴YouTube链接",
+    "loadBtn": "加载字幕",
+    "loading": "正在获取字幕...",
+    "loadError": "无法加载字幕，请重试。",
+    "invalidUrl": "不是有效的YouTube链接。",
+    "noTranscript": "找不到该视频的字幕。",
+    "practicePrompt": "点击句子开始发音练习",
+    "saveToLibrary": "保存到库",
+    "savedToLibrary": "已保存 ✅",
+    "loginRequired": "请先登录。",
+    "emptyHint": "输入任意YouTube链接 — TED演讲、讲座、新闻等"
+  },
   "voa": {
     "tabTitle": "VOA新闻",
     "loading": "正在加载文章...",

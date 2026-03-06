@@ -17,6 +17,7 @@
         "microsoft-cognitiveservices-speech-sdk": "^1.33.0",
         "multer": "^1.4.5-lts.1",
         "node-html-parser": "^7.1.0",
-        "rss-parser": "^3.13.0"
+        "rss-parser": "^3.13.0",
+        "youtube-transcript": "^1.2.1"
     }
 }
