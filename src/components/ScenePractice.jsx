@@ -220,6 +220,10 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         });
         playStarSound();
         setIsSaved(true);
+        setTimeout(() => {
+            setGenerated(null);
+            setIsSaved(false);
+        }, 1200);
     };
 
     const currentScenes = SCENES[category];
