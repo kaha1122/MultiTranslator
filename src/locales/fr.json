@@ -85,7 +85,8 @@
     "selectScene": "Sélectionnez un lieu ou une situation ci-dessus",
     "saveToLibrary": "Enregistrer dans la bibliothèque",
     "savedToLibrary": "Enregistré ✅",
-    "loginRequired": "Veuillez vous connecter."
+    "loginRequired": "Veuillez vous connecter.",
+    "customPlaceholder": "Entrez votre propre lieu ou situation"
   },
   "ted": {
     "tabTitle": "YouTube",

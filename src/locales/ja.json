@@ -85,7 +85,8 @@
     "selectScene": "上から場所またはシチュエーションを選んでください",
     "saveToLibrary": "ライブラリに保存",
     "savedToLibrary": "保存済み ✅",
-    "loginRequired": "ログインしてください。"
+    "loginRequired": "ログインしてください。",
+    "customPlaceholder": "場所や状況を直接入力してください"
   },
   "ted": {
     "tabTitle": "YouTube",

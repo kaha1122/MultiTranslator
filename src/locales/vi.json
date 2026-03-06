@@ -85,7 +85,8 @@
     "selectScene": "Chọn địa điểm hoặc tình huống ở trên",
     "saveToLibrary": "Lưu vào thư viện",
     "savedToLibrary": "Đã lưu ✅",
-    "loginRequired": "Vui lòng đăng nhập."
+    "loginRequired": "Vui lòng đăng nhập.",
+    "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn"
   },
   "ted": {
     "tabTitle": "YouTube",

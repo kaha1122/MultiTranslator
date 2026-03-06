@@ -129,6 +129,38 @@
     font-weight: 600;
 }
 
+/* ── 직접입력 필드 ──────────────────────────────────────────────────── */
+.scene-custom-input {
+    width: 100%;
+    padding: 11px 14px;
+    border: 1.5px solid var(--primary-color, #00a884);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    color: #1e293b;
+    background: white;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.scene-custom-input::placeholder {
+    color: #94a3b8;
+}
+
+.scene-prompt-inline {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    margin: 0;
+}
+
+.scene-item-custom {
+    border-style: dashed;
+}
+
+.scene-item-custom.selected {
+    border-style: solid;
+}
+
 .scene-request-btn {
     display: flex;
     align-items: center;

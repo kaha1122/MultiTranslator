@@ -85,7 +85,8 @@
     "selectScene": "위에서 장소 또는 상황을 선택하세요",
     "saveToLibrary": "Library에 저장",
     "savedToLibrary": "저장됨 ✅",
-    "loginRequired": "로그인이 필요합니다."
+    "loginRequired": "로그인이 필요합니다.",
+    "customPlaceholder": "장소나 상황을 직접 입력하세요"
   },
   "ted": {
     "tabTitle": "YouTube",

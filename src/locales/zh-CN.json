@@ -85,7 +85,8 @@
     "selectScene": "请在上方选择场所或情境",
     "saveToLibrary": "保存到库",
     "savedToLibrary": "已保存 ✅",
-    "loginRequired": "请先登录。"
+    "loginRequired": "请先登录。",
+    "customPlaceholder": "请输入您的场景或情境"
   },
   "ted": {
     "tabTitle": "YouTube",
