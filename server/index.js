@@ -211,14 +211,22 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
  */
 const rssParser = new RssParser({ timeout: 8000 });
 
+// 카테고리별 피드 배열: 앞쪽이 주 피드, 뒤쪽은 아이템 부족 시 보충 소스
+// 공식 표준 피드(zoneId=1689)는 250개를 리턴하므로 pool을 대폭 확장
 const VOA_FEEDS = {
-    beginner:     'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
-    intermediate: 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
-    advanced:     'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
+    beginner:     [
+        'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
+        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS', // 전체 통합(250개)
+    ],
+    intermediate: [
+        'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
+        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+    ],
+    advanced:     [
+        'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
+        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+    ],
 };
-
-// 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
-const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q';
 
 // 메모리 캐시 — 당일 자정까지 유지 (매일 새 10개 선택 보장)
 const voaCache = new Map();
@@ -251,6 +259,21 @@ function getDailySeed() {
     return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
+// RSS 아이템 → 공통 형태로 변환
+function parseItems(items) {
+    return (items || []).map(item => {
+        const encUrl = item.enclosure?.url || '';
+        return {
+            id: encodeURIComponent(item.link || item.guid || item.title),
+            title: item.title || '',
+            summary: item.contentSnippet || item.summary || '',
+            articleUrl: item.link || '',
+            imageUrl: isImageUrl(encUrl) ? encUrl : '',
+            audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
+        };
+    });
+}
+
 // GET /api/voa-news?category=intermediate
 app.get('/api/voa-news', async (req, res) => {
     const category = VOA_FEEDS[req.query.category] ? req.query.category : 'intermediate';
@@ -259,31 +282,35 @@ app.get('/api/voa-news', async (req, res) => {
     if (cached) return res.json(cached);
 
     try {
-        let feedUrl = VOA_FEEDS[category];
-        let feed;
-        try {
-            feed = await rssParser.parseURL(feedUrl);
-        } catch (primaryErr) {
-            // 카테고리별 피드 실패 시 메인 피드로 fallback
-            console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
-            feed = await rssParser.parseURL(VOA_FALLBACK);
-        }
-        const rawArticles = (feed.items || []).map(item => {
-            const encUrl = item.enclosure?.url || '';
-            return {
-                id: encodeURIComponent(item.link || item.guid || item.title),
-                title: item.title || '',
-                summary: item.contentSnippet || item.summary || '',
-                articleUrl: item.link || '',
-                imageUrl: isImageUrl(encUrl) ? encUrl : '',
-                audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
-            };
-        });
+        const feedUrls = VOA_FEEDS[category];
+        let combinedItems = [];
+        const seenUrls = new Set();
 
-        // 프로그램 로고(반복 이미지)를 가진 항목 제거 — 동일 이미지 URL이 3회 이상이면 오디오 전용 프로그램으로 판단
+        for (const url of feedUrls) {
+            try {
+                const feed = await rssParser.parseURL(url);
+                const items = parseItems(feed.items);
+                for (const item of items) {
+                    if (item.articleUrl && !seenUrls.has(item.articleUrl)) {
+                        seenUrls.add(item.articleUrl);
+                        combinedItems.push(item);
+                    }
+                }
+                // 충분한 pool(최소 50개)이 확보되면 추가 피드 fetch 불필요
+                if (combinedItems.length >= 50) break;
+            } catch (feedErr) {
+                console.warn(`[VOA] Feed failed (${url}): ${feedErr.message}`);
+            }
+        }
+
+        if (combinedItems.length === 0) {
+            return res.status(502).json({ error: 'All VOA feeds failed' });
+        }
+
+        // 프로그램 로고(반복 이미지)를 가진 항목 제거
         const imgFreq = {};
-        rawArticles.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
-        const pool = rawArticles.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
+        combinedItems.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
+        const pool = combinedItems.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
 
         // 날짜+카테고리 기반 시드로 매일 다른 10개 선택
         const seed = getDailySeed() + category.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
