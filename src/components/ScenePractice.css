@@ -60,24 +60,33 @@
     padding: 10px 4px;
     border: 1.5px solid #e2e8f0;
     border-radius: 12px;
-    background: white;
+    background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
     cursor: pointer;
     transition: all 0.2s;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05), 0 1px 2px rgba(0,0,0,0.03);
+}
+
+.scene-item:hover {
+    box-shadow: 0 4px 10px rgba(0,0,0,0.09);
+    transform: translateY(-1px);
+    border-color: #cbd5e1;
 }
 
 .scene-item:active {
-    transform: scale(0.95);
+    transform: scale(0.95) translateY(0);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
 }
 
 .scene-item.selected {
     border-color: var(--primary-color, #00a884);
-    background: #f0fdf9;
-    box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.15);
+    background: linear-gradient(160deg, #f0fdf9 0%, #dcfce7 100%);
+    box-shadow: 0 0 0 2px rgba(0,168,132,0.15), 0 4px 10px rgba(0,168,132,0.1);
 }
 
 .scene-icon {
     font-size: 1.4rem;
     line-height: 1;
+    filter: drop-shadow(0 1px 2px rgba(0,0,0,0.18));
 }
 
 .scene-name {
@@ -153,12 +162,45 @@
     margin: 0;
 }
 
+/* ── 직접입력 아이템 — 2칸 너비, 인디고 톤 ────────────────────────── */
 .scene-item-custom {
-    border-style: dashed;
+    grid-column: span 2;
+    flex-direction: row;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px 8px;
+    background: linear-gradient(135deg, #eef2ff 0%, #e0e7ff 100%);
+    border: 1.5px solid #a5b4fc;
+    box-shadow: 0 2px 6px rgba(99,102,241,0.1), 0 1px 2px rgba(99,102,241,0.06);
+}
+
+.scene-item-custom:hover {
+    box-shadow: 0 4px 12px rgba(99,102,241,0.18);
+    border-color: #818cf8;
+    transform: translateY(-1px);
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+}
+
+.scene-item-custom .scene-icon {
+    font-size: 1.5rem;
+    filter: drop-shadow(0 1px 3px rgba(99,102,241,0.35));
+}
+
+.scene-item-custom .scene-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #4f46e5;
 }
 
 .scene-item-custom.selected {
-    border-style: solid;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    border-color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99,102,241,0.2), 0 4px 12px rgba(99,102,241,0.15);
+}
+
+.scene-item-custom.selected .scene-name {
+    color: #4338ca;
+    font-weight: 700;
 }
 
 .scene-request-btn {
