@@ -76,6 +76,17 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "scene": {
+    "tabTitle": "Scene Practice",
+    "locations": "Locations",
+    "situations": "Situations",
+    "requestBtn": "Generate Sentence",
+    "loadError": "Could not generate a sentence. Please try again.",
+    "selectScene": "Select a location or situation above",
+    "saveToLibrary": "Save to Library",
+    "savedToLibrary": "Saved ✅",
+    "loginRequired": "Please log in."
+  },
   "ted": {
     "tabTitle": "YouTube",
     "placeholder": "Paste a YouTube URL here",

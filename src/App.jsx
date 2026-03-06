@@ -26,6 +26,7 @@ import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import VoaReader from './components/VoaReader';
 import TedReader from './components/TedReader';
+import ScenePractice from './components/ScenePractice';
 import LandingPage from './components/LandingPage';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -690,6 +691,39 @@ function App() {
     }
   };
 
+  // 7. Scene 카드를 Library에 저장하는 함수
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip }) => {
+    if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return;
+    }
+    const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+    try {
+      await addDoc(collection(db, "savedCards"), {
+        userId: user.uid,
+        userEmail: user.email,
+        sourceText: sceneHint || scene || '',
+        translatedText: sentence,
+        langCode,
+        language: langInfo?.name || langCode,
+        inputLang: langCode,
+        inputType: 'S',
+        sourceLang,
+        sourceType: 'scene',
+        scene,
+        learningTip: learningTip ? [{ type: 'tip', content: learningTip }] : [],
+        pronunciation: '',
+        pronunciationScore: null,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+    } catch (error) {
+      console.error("Scene 카드 저장 오류:", error);
+    }
+  };
+
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
   const handleSpeak = (text, langCode) => {
     if (!text) return;
@@ -904,6 +938,17 @@ function App() {
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onSaveToLibrary={saveTedCard}
+          />
+        </div>
+
+        {/* Scene 탭 */}
+        <div style={{ display: viewMode === 'scene' ? 'block' : 'none', width: '100%' }}>
+          <ScenePractice
+            sourceLang={sourceLang}
+            targetLangs={targetLangs}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onSaveToLibrary={saveSceneCard}
+            onSpeak={handleSpeak}
           />
         </div>
 
@@ -1312,6 +1357,13 @@ function App() {
           title="YouTube Practice"
         >
           <Youtube size={32} />
+        </button>
+        <button
+          className={`nav-item ${viewMode === 'scene' ? 'active' : ''}`}
+          onClick={() => { setViewMode('scene'); }}
+          title="Scene Practice"
+        >
+          <MapPin size={32} />
         </button>
         <button
           className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}

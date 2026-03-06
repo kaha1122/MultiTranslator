@@ -1,0 +1,364 @@
+/* ── ScenePractice ───────────────────────────────────────────────── */
+.scene-root {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    padding: 16px;
+    padding-bottom: 100px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ── 카테고리 토글 ─────────────────────────────────────────────── */
+.scene-category-toggle {
+    display: flex;
+    background: #f1f5f9;
+    border-radius: 12px;
+    padding: 4px;
+    gap: 4px;
+}
+
+.scene-category-toggle button {
+    flex: 1;
+    padding: 10px 8px;
+    border: none;
+    border-radius: 10px;
+    background: transparent;
+    color: #64748b;
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scene-category-toggle button.active {
+    background: white;
+    color: var(--primary-color, #00a884);
+    box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+}
+
+/* ── 씬 그리드 ────────────────────────────────────────────────── */
+.scene-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 8px;
+}
+
+@media (max-width: 400px) {
+    .scene-grid {
+        grid-template-columns: repeat(4, 1fr);
+    }
+}
+
+.scene-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 10px 4px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 12px;
+    background: white;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scene-item:active {
+    transform: scale(0.95);
+}
+
+.scene-item.selected {
+    border-color: var(--primary-color, #00a884);
+    background: #f0fdf9;
+    box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.15);
+}
+
+.scene-icon {
+    font-size: 1.4rem;
+    line-height: 1;
+}
+
+.scene-name {
+    font-size: 0.62rem;
+    color: #475569;
+    text-align: center;
+    line-height: 1.2;
+    word-break: keep-all;
+}
+
+.scene-item.selected .scene-name {
+    color: var(--primary-color, #00a884);
+    font-weight: 600;
+}
+
+/* ── 언어 선택 + Request 버튼 ──────────────────────────────────── */
+.scene-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: #f8fafc;
+    border-radius: 14px;
+    padding: 14px;
+    border: 1px solid #e2e8f0;
+}
+
+.scene-lang-pills {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.scene-lang-pill {
+    padding: 6px 14px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 20px;
+    background: white;
+    color: #475569;
+    font-size: 0.82rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scene-lang-pill.active {
+    background: var(--primary-color, #00a884);
+    border-color: var(--primary-color, #00a884);
+    color: white;
+    font-weight: 600;
+}
+
+.scene-request-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 14px;
+    background: var(--primary-color, #00a884);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 0.95rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    min-height: 48px;
+}
+
+.scene-request-btn:hover:not(:disabled) {
+    filter: brightness(1.05);
+}
+
+.scene-request-btn:disabled {
+    opacity: 0.7;
+    cursor: not-allowed;
+}
+
+/* ── 안내 / 에러 ──────────────────────────────────────────────── */
+.scene-prompt {
+    text-align: center;
+    color: #94a3b8;
+    font-size: 0.85rem;
+    padding: 16px 0;
+}
+
+.scene-error {
+    text-align: center;
+    color: #ef4444;
+    font-size: 0.85rem;
+    padding: 8px;
+    background: #fef2f2;
+    border-radius: 8px;
+}
+
+/* ── 생성 카드 ────────────────────────────────────────────────── */
+.scene-card {
+    background: white;
+    border-radius: 16px;
+    border: 1px solid #e2e8f0;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.scene-card-hint {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #f8fafc;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border-left: 3px solid var(--primary-color, #00a884);
+}
+
+.scene-card-hint-icon {
+    font-size: 1rem;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.scene-card-hint p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #475569;
+    line-height: 1.4;
+}
+
+.scene-card-sentence {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.4;
+    text-align: center;
+    padding: 4px 0;
+}
+
+.scene-card-translation {
+    font-size: 0.88rem;
+    color: #64748b;
+    text-align: center;
+    line-height: 1.4;
+}
+
+.scene-card-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #fffbeb;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border-left: 3px solid #f59e0b;
+}
+
+.scene-card-tip span {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.scene-card-tip p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #92400e;
+    line-height: 1.4;
+}
+
+.scene-coach-tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    background: #f0f9ff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    border-left: 3px solid #0ea5e9;
+}
+
+.scene-coach-tip span {
+    font-size: 0.95rem;
+    flex-shrink: 0;
+}
+
+.scene-coach-tip p {
+    margin: 0;
+    font-size: 0.82rem;
+    color: #0c4a6e;
+    line-height: 1.4;
+}
+
+.scene-error-msg {
+    font-size: 0.82rem;
+    color: #ef4444;
+    text-align: center;
+    margin: 0;
+}
+
+/* ── 카드 액션 버튼 ───────────────────────────────────────────── */
+.scene-card-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-top: 4px;
+    border-top: 1px solid #f1f5f9;
+    margin-top: 4px;
+}
+
+.scene-tts-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 50%;
+    background: white;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scene-tts-btn:hover {
+    background: #f1f5f9;
+    color: var(--primary-color, #00a884);
+    border-color: var(--primary-color, #00a884);
+}
+
+.scene-record-wrap {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+}
+
+.scene-recording-status,
+.scene-analyzing-status {
+    font-size: 0.72rem;
+    color: #64748b;
+    margin: 0;
+    white-space: nowrap;
+}
+
+.scene-recording-status {
+    color: #ef4444;
+}
+
+.scene-star-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 50%;
+    background: white;
+    color: #94a3b8;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.scene-star-btn:hover:not(:disabled) {
+    color: #f59e0b;
+    border-color: #f59e0b;
+}
+
+.scene-star-btn.saved {
+    color: #f59e0b;
+    border-color: #f59e0b;
+    background: #fffbeb;
+}
+
+.scene-star-btn:disabled {
+    cursor: default;
+}
+
+/* spin 애니메이션 (VoaReader와 공유) */
+.spin {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+}

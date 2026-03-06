@@ -76,6 +76,17 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "scene": {
+    "tabTitle": "Pratique Scène",
+    "locations": "Lieux",
+    "situations": "Situations",
+    "requestBtn": "Générer une phrase",
+    "loadError": "Impossible de générer une phrase. Veuillez réessayer.",
+    "selectScene": "Sélectionnez un lieu ou une situation ci-dessus",
+    "saveToLibrary": "Enregistrer dans la bibliothèque",
+    "savedToLibrary": "Enregistré ✅",
+    "loginRequired": "Veuillez vous connecter."
+  },
   "ted": {
     "tabTitle": "YouTube",
     "placeholder": "Collez une URL YouTube ici",

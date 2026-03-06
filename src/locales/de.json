@@ -76,6 +76,17 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "scene": {
+    "tabTitle": "Szenen-Übung",
+    "locations": "Orte",
+    "situations": "Situationen",
+    "requestBtn": "Satz generieren",
+    "loadError": "Satz konnte nicht generiert werden. Bitte erneut versuchen.",
+    "selectScene": "Wähle oben einen Ort oder eine Situation aus",
+    "saveToLibrary": "In Bibliothek speichern",
+    "savedToLibrary": "Gespeichert ✅",
+    "loginRequired": "Bitte einloggen."
+  },
   "ted": {
     "tabTitle": "YouTube",
     "placeholder": "YouTube-URL hier einfügen",

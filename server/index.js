@@ -589,6 +589,65 @@ app.get('/api/ted-videos', async (req, res) => {
     }
 });
 
+/**
+ * Scene Sentence Generation
+ * POST /api/scene-sentence
+ * Body: { scene, category, targetLang, sourceLang, byokGeminiKey? }
+ */
+const LANG_NAMES_FOR_SCENE = {
+    'ko': 'Korean', 'en': 'English', 'ja': 'Japanese',
+    'zh-CN': 'Chinese (Simplified)', 'vi': 'Vietnamese',
+    'fr': 'French', 'de': 'German', 'es': 'Spanish',
+};
+
+app.post('/api/scene-sentence', async (req, res) => {
+    const { scene, targetLang, sourceLang, byokGeminiKey } = req.body;
+    if (!scene || !targetLang) {
+        return res.status(400).json({ error: 'Missing scene or targetLang' });
+    }
+
+    const geminiKey = byokGeminiKey || GEMINI_API_KEY;
+    if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
+    const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
+
+    const prompt = `You are a language learning coach. Generate a single natural sentence for a learner to practice speaking in a real-life context.
+
+Context:
+- Scene: ${scene}
+- Target language: ${targetLangName}
+- Learner's native language: ${sourceLangName}
+
+Rules:
+1. The sentence must be something the LEARNER says (not a response directed at them)
+2. Length: 8–18 words — short enough to practice in one breath
+3. Vocabulary: everyday, natural, beginner-intermediate level
+4. Avoid slang or overly casual tone
+
+Return ONLY valid JSON (no markdown):
+{
+  "sentence": "<sentence in ${targetLangName}>",
+  "translation": "<translation in ${sourceLangName}>",
+  "scene_hint": "<one sentence in ${sourceLangName} describing the exact moment — e.g., '수하물을 못 찾아 직원에게 말하는 상황'>",
+  "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
+}`;
+
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            { contents: [{ parts: [{ text: prompt }] }] }
+        );
+        const raw = response.data.candidates[0].content.parts[0].text;
+        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(jsonStr);
+        res.json(parsed);
+    } catch (e) {
+        console.error('[SceneSentence] Error:', e.response?.data || e.message);
+        res.status(500).json({ error: 'Failed to generate sentence' });
+    }
+});
+
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 // 클라우드 서비스(Render 등)는 접속이 없으면 잠들어버리는데, 앱 접속 시 이 주소를 몰래 찔러서 깨웁니다.
 app.get('/ping', (req, res) => {

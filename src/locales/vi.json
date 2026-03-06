@@ -76,6 +76,17 @@
     "tierPro": "Pro",
     "tierPremium": "Premium"
   },
+  "scene": {
+    "tabTitle": "Luyện Tình Huống",
+    "locations": "Địa điểm",
+    "situations": "Tình huống",
+    "requestBtn": "Tạo câu",
+    "loadError": "Không thể tạo câu. Vui lòng thử lại.",
+    "selectScene": "Chọn địa điểm hoặc tình huống ở trên",
+    "saveToLibrary": "Lưu vào thư viện",
+    "savedToLibrary": "Đã lưu ✅",
+    "loginRequired": "Vui lòng đăng nhập."
+  },
   "ted": {
     "tabTitle": "YouTube",
     "placeholder": "Dán URL YouTube vào đây",

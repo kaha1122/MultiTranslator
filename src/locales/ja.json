@@ -76,6 +76,17 @@
     "tierPro": "プロ",
     "tierPremium": "プレミアム"
   },
+  "scene": {
+    "tabTitle": "シーン練習",
+    "locations": "場所",
+    "situations": "シチュエーション",
+    "requestBtn": "文を生成",
+    "loadError": "文を生成できませんでした。もう一度お試しください。",
+    "selectScene": "上から場所またはシチュエーションを選んでください",
+    "saveToLibrary": "ライブラリに保存",
+    "savedToLibrary": "保存済み ✅",
+    "loginRequired": "ログインしてください。"
+  },
   "ted": {
     "tabTitle": "YouTube",
     "placeholder": "YouTube URLを貼り付けてください",
