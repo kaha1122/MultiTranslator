@@ -70,6 +70,210 @@ const CONTENT = {
     footerNote: 'PronunFit · AI Pronunciation Coach · Free from day one',
     installPopup: '📲 Install the app\nfor instant access',
   },
+  ja: {
+    login: 'ログイン',
+    usps: [
+      { title: 'ネイティブ発音を最速で\n習得する方法 — 無料', sub: 'AIが翻訳・採点・コーチング。8言語、完全無料。' },
+      { title: '聞いて・まねして・点数をもらい\n完璧な発音に', sub: '正確さ・流暢さ・韻律など5項目でネイティブとの差を一目で確認。' },
+      { title: '保存してまた練習できる\nスマート単語帳', sub: '一タップで保存。保管庫からいつでも取り出して発音練習できます。' },
+      { title: '豊富な学習コンテンツで\nリアルな言語を練習', sub: 'リアルなニュースと公式教育コンテンツで本物の発音を身につけましょう。' },
+    ],
+    tagline: 'AI発音コーチ · 8言語 · 無料',
+    heroTitle: 'ネイティブ発音を\n最速で習得する方法',
+    heroSub: 'AIが翻訳・採点・コーチングします。',
+    heroSubEm: '8言語、完全無料。',
+    ctaStart: '無料で始める',
+    stats: [{ num: '8', label: '対応言語' }, { num: '100', label: '点満点採点' }, { num: '無料', label: '完全無料' }],
+    sectionLabel: '主な機能',
+    sectionTitle: 'なぜPronunFitなのか？',
+    features: [
+      { icon: '🆓', num: '01 · 完全無料', title: '8言語のAI発音アプリ、<br />0円でスタート', desc: '英語・韓国語・日本語・中国語・ベトナム語・フランス語・ドイツ語・スペイン語。広告なし、隠れた費用なし — 登録だけですべての機能が無料に。', tag: '✓ クレジットカード不要' },
+      { icon: '🎙️', num: '02 · AI発音コーチ', title: '聞いて → まねして →<br />点数をもらう', desc: 'AIが文を読み上げるのを聞いてまねてください。正確さ・流暢さ・韻律など5項目をリアルタイムで分析してグラフで表示します。', tag: '✓ Azure AI音声分析' },
+      { icon: '📚', num: '03 · スマート単語帳', title: '保存して・確認して・<br />また練習できる単語帳', desc: '翻訳した文をワンタップで保存するだけ。保管庫からいつでも取り出して発音練習まで続けられます。', tag: '✓ 学習履歴自動保存' },
+      { icon: '🌍', num: '04 · 実際のコンテンツ練習', title: 'VOA·NHK·公式教材<br />生きた言語で', desc: 'リアルなニュースと公式教育機関のコンテンツで発音練習。英語はVOA、日本語はNHKベースの文章で本物の言語を学びましょう。', tag: '✓ 公式認定コンテンツ' },
+    ],
+    appLabel: 'アプリを見てみる',
+    appTitle: 'こんな機能が待っています',
+    appCards: [
+      { badge: '発音分析結果', title: 'AIが音素レベルまで<br />精密に分析します', desc: '話した後すぐにスコアが出ます。単語・音素ごとの正確さを信号機の色で直感的に確認し、AIコーチのカスタムフィードバックも受けられます。', img: '/mockup_pronunciation.png', imgAlt: '発音分析結果画面' },
+      { badge: '言語・目標設定', title: '自分に合わせて<br />言語と目標を設定', desc: '8言語から最大3つを選び、目標スコアを設定するとAIがそれに合わせたコーチングを提供します。', img: '/mockup_multilang.png', imgAlt: '多言語設定画面' },
+    ],
+    ctaTitle: '今すぐ始めましょう。',
+    ctaHighlight: '無料で、すぐに。',
+    ctaSub: '登録30秒。8言語のAI発音コーチが今あなたを待っています。',
+    footerNote: 'PronunFit · AI発音コーチ · 登録後すぐ無料利用',
+    installPopup: '📲 アプリをインストールすると\nすぐにアクセスできます',
+  },
+  'zh-CN': {
+    login: '登录',
+    usps: [
+      { title: '免费快速提升\n母语级发音的最佳方法', sub: 'AI翻译、评分、辅导。8种语言，完全免费。' },
+      { title: '听 · 模仿 · 获得评分\n完善你的发音', sub: '通过5项指标了解准确度、流利度和韵律，一眼看出与母语者的差距。' },
+      { title: '保存并反复练习的\n智能单词本', sub: '一键保存，随时从词库取出进行发音练习。' },
+      { title: '丰富的学习内容\n用真实语言练习', sub: '通过真实新闻和官方教育内容练习地道发音。' },
+    ],
+    tagline: 'AI发音教练 · 8种语言 · 免费',
+    heroTitle: '快速提升\n母语级发音的最佳方法',
+    heroSub: 'AI翻译、评分、辅导。',
+    heroSubEm: '8种语言，完全免费。',
+    ctaStart: '免费开始',
+    stats: [{ num: '8', label: '支持语言' }, { num: '100', label: '满分评分' }, { num: '免费', label: '完全免费' }],
+    sectionLabel: '核心功能',
+    sectionTitle: '为什么选择PronunFit？',
+    features: [
+      { icon: '🆓', num: '01 · 完全免费', title: '8种语言AI发音应用，<br />零成本开始', desc: '英语·韩语·日语·中文·越南语·法语·德语·西班牙语。无广告，无隐藏费用 — 注册即可免费使用所有功能。', tag: '✓ 无需信用卡' },
+      { icon: '🎙️', num: '02 · AI发音教练', title: '听 → 模仿 →<br />获得评分', desc: 'AI朗读句子，你来模仿。实时分析准确度、流利度、韵律等5项指标，以图表直观呈现。', tag: '✓ Azure AI语音分析' },
+      { icon: '📚', num: '03 · 智能单词本', title: '保存、查找、<br />反复练习', desc: '翻译的句子一键收藏。从词库取出后可继续进行发音练习。', tag: '✓ 学习记录自动保存' },
+      { icon: '🌍', num: '04 · 真实内容练习', title: 'VOA·NHK·官方来源<br />真实语境', desc: '使用真实新闻和权威教育机构内容练习发音。英语用VOA，日语用NHK，学习真实使用的语言。', tag: '✓ 官方认证内容' },
+    ],
+    appLabel: '探索应用',
+    appTitle: '这些功能等着你',
+    appCards: [
+      { badge: '发音分析结果', title: 'AI精确分析到<br />每个音素', desc: '说完立即得分。以红绿灯颜色直观显示每个单词和音素的准确度，还可获得AI教练的个性化反馈。', img: '/mockup_pronunciation.png', imgAlt: '发音分析结果界面' },
+      { badge: '语言与目标设置', title: '设置你的语言<br />和目标分数', desc: '从8种语言中最多选择3种，设定目标分数后AI会提供个性化辅导。随时更改设置。', img: '/mockup_multilang.png', imgAlt: '多语言设置界面' },
+    ],
+    ctaTitle: '立即开始。',
+    ctaHighlight: '免费。即时。',
+    ctaSub: '30秒完成注册。8种语言的AI发音教练已准备好为你服务。',
+    footerNote: 'PronunFit · AI发音教练 · 注册即免费使用',
+    installPopup: '📲 安装应用，\n随时即可访问',
+  },
+  vi: {
+    login: 'Đăng nhập',
+    usps: [
+      { title: 'Cách nhanh nhất để luyện\nphát âm chuẩn bản ngữ — miễn phí', sub: 'AI dịch, chấm điểm và huấn luyện bạn. 8 ngôn ngữ, hoàn toàn miễn phí.' },
+      { title: 'Nghe · Lặp lại · Nhận điểm\nvà hoàn thiện phát âm', sub: 'Xem độ chính xác, sự trôi chảy và ngữ điệu qua 5 chỉ số để biết khoảng cách với người bản ngữ.' },
+      { title: 'Kho từ vựng thông minh —\nlưu và luyện tập lại', sub: 'Một chạm để lưu, lấy ra luyện phát âm bất cứ lúc nào.' },
+      { title: 'Nội dung phong phú\ncho thực hành thực tế', sub: 'Luyện với tin tức thực tế và nội dung giáo dục chính thức để học phát âm địa phương.' },
+    ],
+    tagline: 'Huấn luyện phát âm AI · 8 ngôn ngữ · Miễn phí',
+    heroTitle: 'Cách nhanh nhất để luyện\nphát âm chuẩn bản ngữ',
+    heroSub: 'AI dịch, chấm điểm và huấn luyện bạn. ',
+    heroSubEm: '8 ngôn ngữ, hoàn toàn miễn phí.',
+    ctaStart: 'Bắt đầu miễn phí',
+    stats: [{ num: '8', label: 'Ngôn ngữ' }, { num: '100', label: 'Thang điểm' }, { num: 'Miễn phí', label: 'Luôn miễn phí' }],
+    sectionLabel: 'Tính năng chính',
+    sectionTitle: 'Tại sao chọn PronunFit?',
+    features: [
+      { icon: '🆓', num: '01 · Hoàn toàn miễn phí', title: 'Ứng dụng phát âm AI 8 ngôn ngữ,<br />không tốn chi phí', desc: 'Tiếng Anh · Hàn · Nhật · Trung · Việt · Pháp · Đức · Tây Ban Nha. Không quảng cáo, không phí ẩn — đăng ký là dùng được toàn bộ tính năng miễn phí.', tag: '✓ Không cần thẻ tín dụng' },
+      { icon: '🎙️', num: '02 · Huấn luyện phát âm AI', title: 'Nghe → Lặp lại →<br />Nhận điểm', desc: 'AI đọc câu — bạn lặp lại. Phân tích thời gian thực về độ chính xác, sự trôi chảy và ngữ điệu qua 5 chiều, hiển thị dạng biểu đồ.', tag: '✓ Hỗ trợ bởi Azure AI Speech' },
+      { icon: '📚', num: '03 · Kho từ vựng thông minh', title: 'Lưu, xem lại,<br />và luyện tập lại', desc: 'Gắn sao bất kỳ câu dịch nào để lưu ngay lập tức. Mở thư viện bất cứ lúc nào và luyện phát âm ngay.', tag: '✓ Tự động lưu lịch sử học' },
+      { icon: '🌍', num: '04 · Luyện với nội dung thực tế', title: 'VOA · NHK · Nguồn chính thức<br />Ngôn ngữ thực, bối cảnh thực', desc: 'Luyện phát âm với tin tức thực tế và nội dung giáo dục được chứng nhận. VOA cho tiếng Anh, NHK cho tiếng Nhật — học ngôn ngữ như người bản ngữ nói.', tag: '✓ Nội dung chính thức được xác thực' },
+    ],
+    appLabel: 'Khám phá ứng dụng',
+    appTitle: 'Đây là những gì đang chờ bạn',
+    appCards: [
+      { badge: 'Kết quả phân tích phát âm', title: 'AI chấm điểm đến từng<br />âm vị', desc: 'Nhận điểm ngay sau khi nói. Xem độ chính xác theo từng từ và âm vị với màu sắc đèn giao thông, cùng gợi ý coaching cá nhân từ AI.', img: '/mockup_pronunciation.png', imgAlt: 'Màn hình phân tích phát âm' },
+      { badge: 'Cài đặt ngôn ngữ & mục tiêu', title: 'Đặt ngôn ngữ<br />và điểm mục tiêu', desc: 'Chọn tối đa 3 trong 8 ngôn ngữ và đặt điểm mục tiêu — AI điều chỉnh coaching phù hợp. Thay đổi cài đặt bất cứ lúc nào.', img: '/mockup_multilang.png', imgAlt: 'Màn hình cài đặt đa ngôn ngữ' },
+    ],
+    ctaTitle: 'Bắt đầu ngay bây giờ.',
+    ctaHighlight: 'Miễn phí. Ngay lập tức.',
+    ctaSub: '30 giây để đăng ký. Huấn luyện viên phát âm AI 8 ngôn ngữ đã sẵn sàng.',
+    footerNote: 'PronunFit · Huấn luyện phát âm AI · Miễn phí từ ngày đầu',
+    installPopup: '📲 Cài đặt ứng dụng\nđể truy cập ngay',
+  },
+  fr: {
+    login: 'Connexion',
+    usps: [
+      { title: 'La façon la plus rapide de maîtriser\nla prononciation native — gratuit', sub: "L'IA traduit, note et vous entraîne. 8 langues, entièrement gratuit." },
+      { title: 'Écouter · Répéter · Obtenir une note\net perfectionner votre accent', sub: "Voyez la précision, la fluidité et la prosodie sur 5 métriques pour identifier l'écart avec les locuteurs natifs." },
+      { title: 'Votre carnet de vocabulaire intelligent —\nenregistrer et pratiquer encore', sub: "Un tap pour enregistrer, puis reprenez-le pour des exercices de prononciation." },
+      { title: 'Contenu authentique riche\npour une pratique réelle', sub: 'Pratiquez avec de vraies actualités et du contenu éducatif officiel pour acquérir une prononciation authentique.' },
+    ],
+    tagline: 'Coach de prononciation IA · 8 langues · Gratuit',
+    heroTitle: 'La façon la plus rapide de maîtriser\nla prononciation native',
+    heroSub: "L'IA traduit, note et vous entraîne. ",
+    heroSubEm: '8 langues, entièrement gratuit.',
+    ctaStart: 'Commencer gratuitement',
+    stats: [{ num: '8', label: 'Langues' }, { num: '100', label: 'Points' }, { num: 'Gratuit', label: 'Toujours gratuit' }],
+    sectionLabel: 'Fonctionnalités clés',
+    sectionTitle: 'Pourquoi PronunFit ?',
+    features: [
+      { icon: '🆓', num: '01 · Entièrement gratuit', title: 'Prononciation IA en 8 langues,<br />zéro coût', desc: 'Anglais · Coréen · Japonais · Chinois · Vietnamien · Français · Allemand · Espagnol. Pas de pubs, pas de frais cachés — inscrivez-vous et accédez à tout gratuitement.', tag: '✓ Pas de carte de crédit requise' },
+      { icon: '🎙️', num: "02 · Coach de prononciation IA", title: "Écouter → Répéter →<br />Obtenir votre note", desc: "L'IA lit la phrase à voix haute — vous la répétez. Analyse en temps réel de la précision, de la fluidité et de la prosodie sur 5 dimensions, visualisées en graphique.", tag: '✓ Propulsé par Azure AI Speech' },
+      { icon: '📚', num: '03 · Carnet de vocabulaire intelligent', title: 'Enregistrer, réviser,<br />et pratiquer encore', desc: "Mettez une étoile sur n'importe quelle phrase traduite pour la sauvegarder instantanément. Ouvrez votre bibliothèque et commencez à pratiquer la prononciation.", tag: "✓ Historique d'apprentissage auto-sauvegardé" },
+      { icon: '🌍', num: '04 · Pratique avec du contenu authentique', title: 'VOA · NHK · Sources officielles<br />Vrai langage, vrai contexte', desc: "Pratiquez la prononciation avec de vraies actualités et du contenu éducatif accrédité. VOA pour l'anglais, NHK pour le japonais — apprenez la langue telle qu'elle est parlée.", tag: '✓ Contenu officiel vérifié' },
+    ],
+    appLabel: "Explorer l'application",
+    appTitle: 'Voici ce qui vous attend',
+    appCards: [
+      { badge: 'Analyse de prononciation', title: "L'IA vous note jusqu'aux<br />phonèmes individuels", desc: "Obtenez votre score immédiatement après avoir parlé. Voyez la précision par mot et par phonème codée en couleurs comme un feu de circulation, plus des conseils personnalisés de l'IA.", img: '/mockup_pronunciation.png', imgAlt: "Écran d'analyse de prononciation" },
+      { badge: 'Paramètres de langue et objectif', title: 'Définissez vos langues<br />et votre score cible', desc: "Choisissez jusqu'à 3 langues parmi 8 et définissez votre score cible — l'IA adapte son coaching. Modifiez vos paramètres à tout moment.", img: '/mockup_multilang.png', imgAlt: 'Écran de paramètres multilingues' },
+    ],
+    ctaTitle: 'Commencez maintenant.',
+    ctaHighlight: 'Gratuit. Instantané.',
+    ctaSub: "30 secondes pour s'inscrire. Votre coach de prononciation IA en 8 langues est prêt.",
+    footerNote: "PronunFit · Coach de prononciation IA · Gratuit dès le premier jour",
+    installPopup: "📲 Installez l'application\npour un accès instantané",
+  },
+  de: {
+    login: 'Anmelden',
+    usps: [
+      { title: 'Der schnellste Weg zur muttersprachlichen\nAussprache — kostenlos', sub: 'KI übersetzt, bewertet und coacht Sie. 8 Sprachen, völlig kostenlos.' },
+      { title: 'Hören · Nachsprechen · Punkte sammeln\nund Akzent perfektionieren', sub: 'Sehen Sie Genauigkeit, Flüssigkeit und Prosodie in 5 Metriken, um den Unterschied zu Muttersprachlern zu erkennen.' },
+      { title: 'Ihr smartes Vokabelheft —\nspeichern und wieder üben', sub: 'Ein Tipp zum Speichern, dann jederzeit für Ausspracheübungen wieder aufrufen.' },
+      { title: 'Reichhaltiger authentischer Inhalt\nfür reale Übungen', sub: 'Üben Sie mit echten Nachrichten und offiziellem Lernmaterial für echte Aussprache.' },
+    ],
+    tagline: 'KI-Aussprache-Coach · 8 Sprachen · Kostenlos',
+    heroTitle: 'Der schnellste Weg zur\nmuttersprachlichen Aussprache',
+    heroSub: 'KI übersetzt, bewertet und coacht Sie. ',
+    heroSubEm: '8 Sprachen, völlig kostenlos.',
+    ctaStart: 'Kostenlos starten',
+    stats: [{ num: '8', label: 'Sprachen' }, { num: '100', label: 'Punkte' }, { num: 'Gratis', label: 'Immer kostenlos' }],
+    sectionLabel: 'Kernfunktionen',
+    sectionTitle: 'Warum PronunFit?',
+    features: [
+      { icon: '🆓', num: '01 · Völlig kostenlos', title: 'KI-Aussprache in 8 Sprachen,<br />null Kosten', desc: 'Englisch · Koreanisch · Japanisch · Chinesisch · Vietnamesisch · Französisch · Deutsch · Spanisch. Keine Werbung, keine versteckten Kosten — registrieren Sie sich und erhalten Sie alles kostenlos.', tag: '✓ Keine Kreditkarte erforderlich' },
+      { icon: '🎙️', num: '02 · KI-Aussprache-Coach', title: 'Hören → Nachsprechen →<br />Punkte erhalten', desc: 'KI liest den Satz vor — Sie sprechen nach. Echtzeit-Analyse von Genauigkeit, Flüssigkeit und Prosodie in 5 Dimensionen, visualisiert als Diagramm.', tag: '✓ Unterstützt von Azure AI Speech' },
+      { icon: '📚', num: '03 · Smartes Vokabelheft', title: 'Speichern, überprüfen,<br />und wieder üben', desc: 'Markieren Sie einen beliebigen übersetzten Satz mit einem Stern zum sofortigen Speichern. Öffnen Sie Ihre Bibliothek und üben Sie direkt Aussprache.', tag: '✓ Lernverlauf automatisch gespeichert' },
+      { icon: '🌍', num: '04 · Authentische Inhalte üben', title: 'VOA · NHK · Offizielle Quellen<br />Echte Sprache, echter Kontext', desc: 'Üben Sie Aussprache mit echten Nachrichten und akkreditierten Bildungsinhalten. VOA für Englisch, NHK für Japanisch — lernen Sie Sprache, wie sie wirklich gesprochen wird.', tag: '✓ Verifizierte offizielle Inhalte' },
+    ],
+    appLabel: 'App erkunden',
+    appTitle: 'Das erwartet Sie',
+    appCards: [
+      { badge: 'Ausspracheanalyse', title: 'KI bewertet Sie bis zu<br />einzelnen Phonemen', desc: 'Erhalten Sie Ihren Score sofort nach dem Sprechen. Sehen Sie Wort- und Phonemgenauigkeit farbcodiert wie eine Ampel, plus personalisierte Coaching-Tipps der KI.', img: '/mockup_pronunciation.png', imgAlt: 'Bildschirm Ausspracheanalyse' },
+      { badge: 'Sprach- und Zieleinstellung', title: 'Legen Sie Ihre Sprachen<br />und Zielpunkte fest', desc: 'Wählen Sie bis zu 3 von 8 Sprachen und legen Sie Ihren Zielscore fest — KI passt das Coaching an. Einstellungen jederzeit änderbar.', img: '/mockup_multilang.png', imgAlt: 'Mehrsprachiger Einstellungsbildschirm' },
+    ],
+    ctaTitle: 'Jetzt sofort anfangen.',
+    ctaHighlight: 'Kostenlos. Sofort.',
+    ctaSub: '30 Sekunden zur Anmeldung. Ihr KI-Aussprache-Coach in 8 Sprachen ist bereit.',
+    footerNote: 'PronunFit · KI-Aussprache-Coach · Ab dem ersten Tag kostenlos',
+    installPopup: '📲 Installieren Sie die App\nfür sofortigen Zugang',
+  },
+  es: {
+    login: 'Iniciar sesión',
+    usps: [
+      { title: 'La forma más rápida de dominar\nla pronunciación nativa — gratis', sub: 'La IA traduce, puntúa y te entrena. 8 idiomas, completamente gratis.' },
+      { title: 'Escuchar · Repetir · Recibir puntos\ny perfeccionar tu acento', sub: 'Ve la precisión, fluidez y prosodia en 5 métricas para identificar la brecha con los hablantes nativos.' },
+      { title: 'Tu vocabulario inteligente —\nguardar y practicar de nuevo', sub: 'Un toque para guardar, luego sácalo para practicar pronunciación cuando quieras.' },
+      { title: 'Contenido auténtico y rico\npara práctica real', sub: 'Practica con noticias reales y contenido educativo oficial para adquirir pronunciación genuina.' },
+    ],
+    tagline: 'Coach de pronunciación IA · 8 idiomas · Gratis',
+    heroTitle: 'La forma más rápida de dominar\nla pronunciación nativa',
+    heroSub: 'La IA traduce, puntúa y te entrena. ',
+    heroSubEm: '8 idiomas, completamente gratis.',
+    ctaStart: 'Empezar gratis',
+    stats: [{ num: '8', label: 'Idiomas' }, { num: '100', label: 'Puntuación' }, { num: 'Gratis', label: 'Siempre gratis' }],
+    sectionLabel: 'Características clave',
+    sectionTitle: '¿Por qué PronunFit?',
+    features: [
+      { icon: '🆓', num: '01 · Completamente gratis', title: 'Pronunciación IA en 8 idiomas,<br />cero costo', desc: 'Inglés · Coreano · Japonés · Chino · Vietnamita · Francés · Alemán · Español. Sin anuncios, sin tarifas ocultas — regístrate y accede a todo gratis.', tag: '✓ No se requiere tarjeta de crédito' },
+      { icon: '🎙️', num: '02 · Coach de pronunciación IA', title: 'Escuchar → Repetir →<br />Recibir puntuación', desc: 'La IA lee la frase en voz alta — tú la repites. Análisis en tiempo real de precisión, fluidez y prosodia en 5 dimensiones, visualizadas en un gráfico.', tag: '✓ Desarrollado con Azure AI Speech' },
+      { icon: '📚', num: '03 · Vocabulario inteligente', title: 'Guardar, revisar,<br />y practicar de nuevo', desc: 'Marca cualquier frase traducida para guardarla al instante. Abre tu biblioteca y comienza a practicar pronunciación directamente.', tag: '✓ Historial de aprendizaje guardado automáticamente' },
+      { icon: '🌍', num: '04 · Práctica con contenido auténtico', title: 'VOA · NHK · Fuentes oficiales<br />Idioma real, contexto real', desc: 'Practica pronunciación con noticias reales y contenido educativo acreditado. VOA para inglés, NHK para japonés — aprende el idioma como realmente se habla.', tag: '✓ Contenido oficial verificado' },
+    ],
+    appLabel: 'Explorar la app',
+    appTitle: 'Esto es lo que te espera',
+    appCards: [
+      { badge: 'Análisis de pronunciación', title: 'La IA te puntúa hasta los<br />fonemas individuales', desc: 'Obtén tu puntuación inmediatamente después de hablar. Ve la precisión por palabra y fonema codificada por colores como un semáforo, más consejos de coaching personalizados de la IA.', img: '/mockup_pronunciation.png', imgAlt: 'Pantalla de análisis de pronunciación' },
+      { badge: 'Configuración de idioma y objetivo', title: 'Configura tus idiomas<br />y puntuación objetivo', desc: 'Elige hasta 3 de 8 idiomas y establece tu puntuación objetivo — la IA adapta su coaching. Cambia la configuración en cualquier momento.', img: '/mockup_multilang.png', imgAlt: 'Pantalla de configuración multilingüe' },
+    ],
+    ctaTitle: 'Empieza ahora mismo.',
+    ctaHighlight: 'Gratis. Instantáneo.',
+    ctaSub: '30 segundos para registrarse. Tu coach de pronunciación IA en 8 idiomas está listo.',
+    footerNote: 'PronunFit · Coach de pronunciación IA · Gratis desde el primer día',
+    installPopup: '📲 Instala la app\npara acceso instantáneo',
+  },
 };
 
 const LandingPage = ({ onStart, onInstall, showInstall }) => {
@@ -79,7 +283,16 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
   const [showInstallPopup, setShowInstallPopup] = useState(false);
 
   const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
-  const c = browserLang.startsWith('ko') ? CONTENT.ko : CONTENT.en;
+  const c = (() => {
+    if (browserLang.startsWith('ko')) return CONTENT.ko;
+    if (browserLang.startsWith('ja')) return CONTENT.ja;
+    if (browserLang.startsWith('zh')) return CONTENT['zh-CN'];
+    if (browserLang.startsWith('vi')) return CONTENT.vi;
+    if (browserLang.startsWith('fr')) return CONTENT.fr;
+    if (browserLang.startsWith('de')) return CONTENT.de;
+    if (browserLang.startsWith('es')) return CONTENT.es;
+    return CONTENT.en;
+  })();
 
   const usps = c.usps;
 
