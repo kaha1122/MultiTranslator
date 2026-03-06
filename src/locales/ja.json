@@ -88,7 +88,9 @@
     "saveToLibrary": "ライブラリに保存",
     "savedToLibrary": "保存済み ✅",
     "loginRequired": "ログインが必要です。",
-    "emptyHint": "TED、ニュース、講義などのYouTube URLを入力してください"
+    "emptyHint": "TED、ニュース、講義などのYouTube URLを入力してください",
+    "loadingVideos": "最新のTED動画を読み込み中...",
+    "videosError": "TED動画リストを読み込めませんでした。"
   },
   "voa": {
     "tabTitle": "VOAニュース",

@@ -88,7 +88,9 @@
     "saveToLibrary": "Library에 저장",
     "savedToLibrary": "저장됨 ✅",
     "loginRequired": "로그인이 필요합니다.",
-    "emptyHint": "TED, 뉴스, 강의 등 YouTube 영상 URL을 입력하세요"
+    "emptyHint": "TED, 뉴스, 강의 등 YouTube 영상 URL을 입력하세요",
+    "loadingVideos": "TED 최신 영상을 불러오는 중...",
+    "videosError": "TED 영상 목록을 불러올 수 없습니다."
   },
   "voa": {
     "tabTitle": "VOA 뉴스",

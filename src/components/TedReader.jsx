@@ -1,5 +1,5 @@
-import React, { useState, useRef } from 'react';
-import { Mic, MicOff, RotateCcw, Star, AlertCircle } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { ChevronLeft, Mic, MicOff, RotateCcw, Star, AlertCircle } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useT } from '../utils/i18n';
 import { playStarSound } from '../utils/soundEffects';
@@ -19,8 +19,9 @@ const getServerUrl = () => {
 function extractVideoId(url) {
     const patterns = [
         /[?&]v=([^&]+)/,
-        /youtu\.be\/([^?]+)/,
-        /youtube\.com\/embed\/([^?]+)/,
+        /youtu\.be\/([^?&]+)/,
+        /youtube\.com\/embed\/([^?&]+)/,
+        /youtube\.com\/shorts\/([^?&]+)/,
     ];
     for (const p of patterns) {
         const m = (url || '').match(p);
@@ -71,7 +72,7 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
                 </button>
             </div>
             {errorMsg && (
-                <p className="ted-error-msg"><AlertCircle size={14} /> {errorMsg}</p>
+                <p className="ted-error-inline"><AlertCircle size={14} /> {errorMsg}</p>
             )}
         </div>
     );
@@ -81,110 +82,139 @@ export default function TedReader({ sourceLang, onTrialLimitReached, onSaveToLib
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
 
+    // ── 목록 상태
+    const [videos, setVideos] = useState([]);
+    const [loadingVideos, setLoadingVideos] = useState(true);
+    const [videosError, setVideosError] = useState('');
+
+    // ── URL 입력
     const [urlInput, setUrlInput] = useState('');
-    const [videoId, setVideoId] = useState(null);
+
+    // ── 선택된 영상 (null = 목록 뷰)
+    const [selected, setSelected] = useState(null); // { videoId, title, url }
+    const selectedRef = useRef(null);
+
+    // ── 자막 상태
     const [sentences, setSentences] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState('');
+    const [loadingSentences, setLoadingSentences] = useState(false);
+    const [transcriptError, setTranscriptError] = useState('');
     const [expandedIdx, setExpandedIdx] = useState(null);
     const [savedSet, setSavedSet] = useState(new Set());
-    const inputRef = useRef(null);
 
-    const handleLoad = async () => {
-        const trimmed = urlInput.trim();
-        if (!trimmed) return;
-        const vid = extractVideoId(trimmed);
-        if (!vid) { setError(t('ted.invalidUrl')); return; }
+    // TED 채널 최신 영상 로드
+    useEffect(() => {
+        (async () => {
+            setLoadingVideos(true);
+            setVideosError('');
+            try {
+                const res = await fetch(`${SERVER_URL}/api/ted-videos`);
+                if (!res.ok) throw new Error(`HTTP ${res.status}`);
+                const data = await res.json();
+                setVideos(data.videos || []);
+            } catch {
+                setVideosError(t('ted.videosError'));
+            } finally {
+                setLoadingVideos(false);
+            }
+        })();
+    }, [SERVER_URL, t]);
 
-        setError('');
-        setLoading(true);
+    // 뒤로가기 (하드웨어 버튼)
+    useEffect(() => {
+        const handlePop = () => {
+            if (selectedRef.current) {
+                selectedRef.current = null;
+                setSelected(null);
+                setSentences([]);
+            }
+        };
+        window.addEventListener('popstate', handlePop);
+        return () => window.removeEventListener('popstate', handlePop);
+    }, []);
+
+    const loadTranscript = async (videoUrl, videoInfo) => {
+        const vid = extractVideoId(videoUrl);
+        if (!vid) { setTranscriptError(t('ted.invalidUrl')); return; }
+
+        window.history.pushState({ tedVideo: true }, '');
+        const info = videoInfo || { videoId: vid, title: videoUrl, url: videoUrl };
+        selectedRef.current = info;
+        setSelected(info);
         setSentences([]);
         setExpandedIdx(null);
         setSavedSet(new Set());
-        setVideoId(vid);
+        setTranscriptError('');
+        setLoadingSentences(true);
 
         try {
-            const res = await fetch(`${SERVER_URL}/api/youtube-transcript?url=${encodeURIComponent(trimmed)}`);
-            if (!res.ok) {
-                const data = await res.json().catch(() => ({}));
-                throw new Error(data.error || `HTTP ${res.status}`);
-            }
+            const res = await fetch(`${SERVER_URL}/api/youtube-transcript?url=${encodeURIComponent(videoUrl)}`);
             const data = await res.json();
+            if (!res.ok) throw new Error(data.error || `HTTP ${res.status}`);
             const sents = data.sentences || [];
             setSentences(sents);
             if (sents.length > 0) setExpandedIdx(0);
-            if (sents.length === 0) setError(t('ted.noTranscript'));
+            if (sents.length === 0) setTranscriptError(t('ted.noTranscript'));
         } catch (err) {
-            setError(t('ted.loadError'));
+            setTranscriptError(t('ted.loadError'));
             console.error('[TED] transcript error:', err.message);
         } finally {
-            setLoading(false);
+            setLoadingSentences(false);
         }
+    };
+
+    const handleBack = () => {
+        selectedRef.current = null;
+        setSelected(null);
+        setSentences([]);
+        setTranscriptError('');
+        window.history.back();
+    };
+
+    const handleUrlLoad = () => {
+        const trimmed = urlInput.trim();
+        if (!trimmed) return;
+        loadTranscript(trimmed);
     };
 
     const handleSave = async (sentence, idx) => {
         playStarSound();
-        await onSaveToLibrary(sentence.text, urlInput.trim());
+        await onSaveToLibrary(sentence.text, selected?.url || urlInput.trim());
         setSavedSet(prev => new Set([...prev, idx]));
     };
 
-    const handleKeyDown = (e) => {
-        if (e.key === 'Enter') handleLoad();
-    };
+    // ── 영상 상세 뷰
+    if (selected) {
+        return (
+            <div className="ted-container">
+                <div className="ted-article-header">
+                    <button className="ted-back-btn" onClick={handleBack}>
+                        <ChevronLeft size={22} />
+                    </button>
+                    <h2 className="ted-article-heading">{selected.title}</h2>
+                </div>
 
-    return (
-        <div className="ted-container">
-            {/* URL 입력 영역 */}
-            <div className="ted-input-area">
-                <input
-                    ref={inputRef}
-                    className="ted-url-input"
-                    type="text"
-                    placeholder={t('ted.placeholder')}
-                    value={urlInput}
-                    onChange={e => setUrlInput(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                />
-                <button
-                    className="ted-load-btn"
-                    onClick={handleLoad}
-                    disabled={loading || !urlInput.trim()}
-                >
-                    {loading
-                        ? <RotateCcw size={16} className="spin" />
-                        : t('ted.loadBtn')
-                    }
-                </button>
-            </div>
-
-            {error && (
-                <p className="ted-error-msg" style={{ margin: '8px 16px 0' }}>
-                    <AlertCircle size={14} /> {error}
-                </p>
-            )}
-
-            {/* YouTube 동영상 임베드 */}
-            {videoId && (
+                {/* YouTube iframe */}
                 <div className="ted-video-wrapper">
                     <iframe
                         className="ted-iframe"
-                        src={`https://www.youtube.com/embed/${videoId}`}
+                        src={`https://www.youtube.com/embed/${selected.videoId}`}
                         allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                         allowFullScreen
-                        title="YouTube video"
+                        title={selected.title}
                     />
                 </div>
-            )}
 
-            {/* 로딩 */}
-            {loading && (
-                <p className="ted-status-msg">
-                    <RotateCcw size={16} className="spin" /> {t('ted.loading')}
-                </p>
-            )}
+                {loadingSentences && (
+                    <p className="ted-status-msg">
+                        <RotateCcw size={16} className="spin" /> {t('ted.loading')}
+                    </p>
+                )}
+                {transcriptError && (
+                    <p className="ted-error-msg" style={{ margin: '8px 16px' }}>
+                        <AlertCircle size={14} /> {transcriptError}
+                    </p>
+                )}
 
-            {/* 문장 목록 */}
-            {sentences.length > 0 && (
                 <div className="ted-sentence-list">
                     {sentences.map((sentence, idx) => (
                         <div key={sentence.id} className="ted-sentence-item">
@@ -207,17 +237,81 @@ export default function TedReader({ sourceLang, onTrialLimitReached, onSaveToLib
                             )}
                         </div>
                     ))}
-                    <p className="ted-select-prompt">{t('ted.practicePrompt')}</p>
+                    {!loadingSentences && sentences.length > 0 && (
+                        <p className="ted-select-prompt">{t('ted.practicePrompt')}</p>
+                    )}
                 </div>
-            )}
+            </div>
+        );
+    }
 
-            {/* 초기 안내 */}
-            {!videoId && !loading && (
-                <div className="ted-empty-state">
-                    <span style={{ fontSize: 48 }}>🎬</span>
-                    <p>{t('ted.emptyHint')}</p>
-                </div>
-            )}
+    // ── 목록 뷰
+    return (
+        <div className="ted-container">
+            {/* URL 직접 입력 */}
+            <div className="ted-input-area">
+                <input
+                    className="ted-url-input"
+                    type="text"
+                    placeholder={t('ted.placeholder')}
+                    value={urlInput}
+                    onChange={e => setUrlInput(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && handleUrlLoad()}
+                />
+                <button
+                    className="ted-load-btn"
+                    onClick={handleUrlLoad}
+                    disabled={!urlInput.trim()}
+                >
+                    {t('ted.loadBtn')}
+                </button>
+            </div>
+
+            {/* TED 채널 최신 영상 */}
+            <div
+                className="ted-video-list"
+                style={{ opacity: loadingVideos ? 0.4 : 1, transition: 'opacity 0.25s' }}
+            >
+                {loadingVideos && videos.length === 0 && (
+                    <p className="ted-status-msg">
+                        <RotateCcw size={16} className="spin" /> {t('ted.loadingVideos')}
+                    </p>
+                )}
+                {videosError && (
+                    <p className="ted-error-msg" style={{ margin: '8px 16px' }}>
+                        <AlertCircle size={14} /> {videosError}
+                    </p>
+                )}
+                {videos.map(video => (
+                    <div key={video.id} className="ted-video-card">
+                        <div
+                            className="ted-thumbnail"
+                            style={{ backgroundImage: `url(${video.thumbnail})` }}
+                        >
+                            <span className="ted-channel-badge">TED</span>
+                        </div>
+                        <div className="ted-card-body">
+                            <h3 className="ted-card-title">{video.title}</h3>
+                            <div className="ted-card-actions">
+                                <a
+                                    className="ted-action-btn ted-yt-btn"
+                                    href={video.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                >
+                                    YouTube
+                                </a>
+                                <button
+                                    className="ted-action-btn ted-practice-btn"
+                                    onClick={() => loadTranscript(video.url, video)}
+                                >
+                                    <Mic size={13} /> {t('voa.practiceBtn')}
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
         </div>
     );
 }

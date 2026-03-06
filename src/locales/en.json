@@ -88,7 +88,9 @@
     "saveToLibrary": "Save to Library",
     "savedToLibrary": "Saved ✅",
     "loginRequired": "Please log in.",
-    "emptyHint": "Enter any YouTube URL — TED talks, lectures, news, and more"
+    "emptyHint": "Enter any YouTube URL — TED talks, lectures, news, and more",
+    "loadingVideos": "Loading latest TED talks...",
+    "videosError": "Could not load TED video list."
   },
   "voa": {
     "tabTitle": "VOA News",

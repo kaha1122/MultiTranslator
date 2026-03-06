@@ -88,7 +88,9 @@
     "saveToLibrary": "保存到库",
     "savedToLibrary": "已保存 ✅",
     "loginRequired": "请先登录。",
-    "emptyHint": "输入任意YouTube链接 — TED演讲、讲座、新闻等"
+    "emptyHint": "输入任意YouTube链接 — TED演讲、讲座、新闻等",
+    "loadingVideos": "正在加载最新TED视频...",
+    "videosError": "无法加载TED视频列表。"
   },
   "voa": {
     "tabTitle": "VOA新闻",

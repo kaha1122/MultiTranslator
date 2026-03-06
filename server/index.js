@@ -349,19 +349,89 @@ app.get('/api/voa-article', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────
-// YouTube 자막 추출 API
+// YouTube 자막 추출 API  (3단계 폴백)
 // ─────────────────────────────────────────────────────
 function extractVideoId(url) {
     const patterns = [
         /[?&]v=([^&]+)/,
-        /youtu\.be\/([^?]+)/,
-        /youtube\.com\/embed\/([^?]+)/,
+        /youtu\.be\/([^?&]+)/,
+        /youtube\.com\/embed\/([^?&]+)/,
+        /youtube\.com\/shorts\/([^?&]+)/,
     ];
     for (const p of patterns) {
         const m = (url || '').match(p);
         if (m) return m[1];
     }
     return null;
+}
+
+// 짧은 자막 조각 → 문장 단위 병합
+function mergeToSentences(items) {
+    const sentences = [];
+    let current = '';
+    let startSec = 0;
+    const SKIP = /^\[.+\]$|^♪/; // [Music], [Applause], ♪ 등 제거
+
+    for (const item of items) {
+        const text = (item.text || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
+        if (!text || SKIP.test(text)) continue;
+        if (!current) startSec = Math.round((item.offset || 0) / 1000);
+        current += (current ? ' ' : '') + text;
+
+        if (/[.!?]$/.test(current) && current.length >= 20) {
+            sentences.push({ id: sentences.length, text: current, start: startSec });
+            current = '';
+        } else if (current.length > 220) {
+            sentences.push({ id: sentences.length, text: current, start: startSec });
+            current = '';
+        }
+    }
+    if (current.length >= 15) {
+        sentences.push({ id: sentences.length, text: current, start: startSec });
+    }
+    return sentences.filter(s => s.text.length >= 15 && s.text.length <= 250).slice(0, 40);
+}
+
+// [Method 2] YouTube 페이지에서 captionTracks 직접 스크래핑
+async function fetchTranscriptFromPage(videoId) {
+    const html = (await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        },
+        timeout: 15000,
+    })).data;
+
+    // captionTracks JSON 추출
+    const match = html.match(/"captionTracks":(\[.*?\])(?:,|])/);
+    if (!match) throw new Error('captionTracks not found in page');
+
+    const tracks = JSON.parse(match[1]);
+
+    // 영어 수동 자막 > 영어 자동 자막 > 첫 번째 트랙
+    const track = tracks.find(t => t.languageCode === 'en' && t.kind !== 'asr')
+        || tracks.find(t => t.languageCode === 'en')
+        || tracks.find(t => t.kind === 'asr')
+        || tracks[0];
+
+    if (!track || !track.baseUrl) throw new Error('No usable caption track');
+
+    // baseUrl의 유니코드 이스케이프 디코딩 후 json3 형식으로 요청
+    const captionUrl = track.baseUrl.replace(/\\u0026/g, '&') + '&fmt=json3';
+    const captionData = (await axios.get(captionUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0' },
+        timeout: 10000,
+    })).data;
+
+    return (captionData.events || [])
+        .filter(e => e.segs)
+        .map(e => ({
+            text: e.segs.map(s => s.utf8 || '').join(''),
+            offset: e.tStartMs || 0,
+            duration: e.dDurationMs || 0,
+        }))
+        .filter(item => item.text.trim());
 }
 
 // GET /api/youtube-transcript?url=<encodedYouTubeUrl>
@@ -372,43 +442,86 @@ app.get('/api/youtube-transcript', async (req, res) => {
     const videoId = extractVideoId(url);
     if (!videoId) return res.status(400).json({ error: 'Invalid YouTube URL' });
 
+    const errors = [];
+    let rawItems = null;
+
+    // Method 1: youtube-transcript 패키지 (영어)
     try {
-        // 영어 자막 우선, 없으면 자동 자막
-        const items = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-
-        // 짧은 자막 조각을 문장 단위로 병합
-        const sentences = [];
-        let current = '';
-        let startSec = 0;
-
-        for (const item of items) {
-            const text = (item.text || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
-            if (!text) continue;
-            if (!current) startSec = Math.round((item.offset || 0) / 1000);
-            current += (current ? ' ' : '') + text;
-
-            // 문장 끝 기호 발견 시 분리
-            if (/[.!?]$/.test(current) && current.length >= 20) {
-                sentences.push({ id: sentences.length, text: current, start: startSec });
-                current = '';
-            } else if (current.length > 220) {
-                // 너무 길면 강제 분리
-                sentences.push({ id: sentences.length, text: current, start: startSec });
-                current = '';
+        rawItems = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
+        console.log(`[YouTube] Method1(pkg-en) OK: ${rawItems.length} items`);
+    } catch (e1) {
+        errors.push(`pkg-en: ${e1.message}`);
+        // Method 1b: 언어 지정 없이 (자동 자막 포함)
+        try {
+            rawItems = await YoutubeTranscript.fetchTranscript(videoId);
+            console.log(`[YouTube] Method1b(pkg-any) OK: ${rawItems.length} items`);
+        } catch (e2) {
+            errors.push(`pkg-any: ${e2.message}`);
+            // Method 2: 페이지 직접 스크래핑
+            try {
+                rawItems = await fetchTranscriptFromPage(videoId);
+                console.log(`[YouTube] Method2(scrape) OK: ${rawItems.length} items`);
+            } catch (e3) {
+                errors.push(`scrape: ${e3.message}`);
             }
         }
-        if (current.length >= 15) {
-            sentences.push({ id: sentences.length, text: current, start: startSec });
-        }
+    }
 
-        const filtered = sentences
-            .filter(s => s.text.length >= 15 && s.text.length <= 250)
-            .slice(0, 40);
+    if (!rawItems || rawItems.length === 0) {
+        console.error('[YouTube] All methods failed:', errors.join(' | '));
+        return res.status(502).json({ error: 'Failed to fetch transcript', details: errors.join(' | ') });
+    }
 
-        res.json({ videoId, sentences: filtered });
+    const sentences = mergeToSentences(rawItems);
+    if (sentences.length === 0) {
+        return res.status(404).json({ error: 'No captions found for this video' });
+    }
+
+    res.json({ videoId, sentences });
+});
+
+// ─────────────────────────────────────────────────────
+// TED 채널 최신 영상 목록 API  (일 1회 캐시)
+// ─────────────────────────────────────────────────────
+// TED YouTube 채널 ID (youtube.com/@TED)
+const TED_CHANNEL_ID = 'UCsooa4yRKGN_zEE8iknghZA';
+const TED_FEED_URL   = `https://www.youtube.com/feeds/videos.xml?channel_id=${TED_CHANNEL_ID}`;
+const tedCache = new Map();
+
+const rssParserYT = new RssParser({
+    customFields: { item: [['yt:videoId', 'videoId'], ['media:group', 'mediaGroup']] },
+    timeout: 10000,
+});
+
+// GET /api/ted-videos
+app.get('/api/ted-videos', async (req, res) => {
+    const cacheKey = 'ted:videos';
+    const cached = tedCache.get(cacheKey);
+    if (cached && cached.dateSeed === getDailySeed()) {
+        return res.json(cached.data);
+    }
+
+    try {
+        const feed = await rssParserYT.parseURL(TED_FEED_URL);
+        const videos = (feed.items || []).map(item => {
+            const vid = item.videoId || extractVideoId(item.link || '');
+            if (!vid) return null;
+            return {
+                id: vid,
+                title: item.title || '',
+                videoId: vid,
+                url: `https://www.youtube.com/watch?v=${vid}`,
+                thumbnail: `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`,
+                pubDate: item.pubDate || item.isoDate || '',
+            };
+        }).filter(Boolean);
+
+        const result = { videos };
+        tedCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
+        res.json(result);
     } catch (err) {
-        console.error('[YouTube] Transcript fetch error:', err.message);
-        res.status(502).json({ error: 'Failed to fetch transcript', details: err.message });
+        console.error('[TED] Feed fetch error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch TED channel', details: err.message });
     }
 });
 

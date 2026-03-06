@@ -88,7 +88,9 @@
     "saveToLibrary": "Enregistrer dans la bibliothèque",
     "savedToLibrary": "Enregistré ✅",
     "loginRequired": "Veuillez vous connecter.",
-    "emptyHint": "Entrez n'importe quelle URL YouTube — TED, actualités, cours..."
+    "emptyHint": "Entrez n'importe quelle URL YouTube — TED, actualités, cours...",
+    "loadingVideos": "Chargement des dernières vidéos TED...",
+    "videosError": "Impossible de charger la liste des vidéos TED."
   },
   "voa": {
     "tabTitle": "Actualités VOA",

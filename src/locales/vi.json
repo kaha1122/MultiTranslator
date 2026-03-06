@@ -88,7 +88,9 @@
     "saveToLibrary": "Lưu vào thư viện",
     "savedToLibrary": "Đã lưu ✅",
     "loginRequired": "Vui lòng đăng nhập.",
-    "emptyHint": "Nhập URL YouTube bất kỳ — TED, tin tức, bài giảng..."
+    "emptyHint": "Nhập URL YouTube bất kỳ — TED, tin tức, bài giảng...",
+    "loadingVideos": "Đang tải video TED mới nhất...",
+    "videosError": "Không thể tải danh sách video TED."
   },
   "voa": {
     "tabTitle": "Tin tức VOA",

@@ -88,7 +88,9 @@
     "saveToLibrary": "Guardar en biblioteca",
     "savedToLibrary": "Guardado ✅",
     "loginRequired": "Por favor inicia sesión.",
-    "emptyHint": "Introduce cualquier URL de YouTube — TED, noticias, clases..."
+    "emptyHint": "Introduce cualquier URL de YouTube — TED, noticias, clases...",
+    "loadingVideos": "Cargando últimos videos de TED...",
+    "videosError": "No se pudo cargar la lista de videos de TED."
   },
   "voa": {
     "tabTitle": "Noticias VOA",

@@ -88,7 +88,9 @@
     "saveToLibrary": "In Bibliothek speichern",
     "savedToLibrary": "Gespeichert ✅",
     "loginRequired": "Bitte einloggen.",
-    "emptyHint": "Beliebige YouTube-URL eingeben — TED-Talks, Vorlesungen, Nachrichten..."
+    "emptyHint": "Beliebige YouTube-URL eingeben — TED-Talks, Vorlesungen, Nachrichten...",
+    "loadingVideos": "Neueste TED-Videos werden geladen...",
+    "videosError": "TED-Videoliste konnte nicht geladen werden."
   },
   "voa": {
     "tabTitle": "VOA Nachrichten",
