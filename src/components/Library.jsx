@@ -147,17 +147,23 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
     };
 
     const handlePracticeResult = async (id, _langCode, result) => {
-        try {
-            if (result.audioUrl) {
-                setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
-            }
-            if (result.pronunciationScore != null) {
+        if (result.audioUrl) {
+            setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
+        }
+        if (result.pronunciationScore != null) {
+            // 로컬 상태 즉시 업데이트 → action bar 즉시 반영
+            setSavedCards(prev => prev.map(card =>
+                card.id === id
+                    ? { ...card, pronunciationScore: result.pronunciationScore }
+                    : card
+            ));
+            try {
                 await updateDoc(doc(db, "savedCards", id), {
                     pronunciationScore: result.pronunciationScore,
                 });
+            } catch (error) {
+                console.error("Failed to update pronunciation score:", error);
             }
-        } catch (error) {
-            console.error("Failed to update pronunciation score:", error);
         }
     };
 
