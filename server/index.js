@@ -211,20 +211,21 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
  */
 const rssParser = new RssParser({ timeout: 8000 });
 
-// 카테고리별 피드 배열: 앞쪽이 주 피드, 뒤쪽은 아이템 부족 시 보충 소스
-// 공식 표준 피드(zoneId=1689)는 250개를 리턴하므로 pool을 대폭 확장
+// 카테고리별 피드 배열: 앞쪽이 주 피드, 부족 시 뒤쪽 피드에서 보충
+// 실측 아이템 수: Everyday Grammar=250, Words and Their Stories=250, American Stories=43
 const VOA_FEEDS = {
     beginner:     [
-        'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
-        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS', // 전체 통합(250개)
+        'https://learningenglish.voanews.com/podcast/?zoneId=4456&format=RSS', // Everyday Grammar (250개)
+        'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr',      // Ask a Teacher (20개)
     ],
     intermediate: [
-        'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
-        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+        'https://learningenglish.voanews.com/podcast/?zoneId=987&format=RSS',  // Words and Their Stories (250개)
+        'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',         // Health & Lifestyle (20개)
     ],
     advanced:     [
-        'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
-        'https://learningenglish.voanews.com/podcast/?zoneId=1689&format=RSS',
+        'https://learningenglish.voanews.com/podcast/?zoneId=1581&format=RSS', // American Stories (43개)
+        'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',         // American Stories API (20개)
+        'https://learningenglish.voanews.com/podcast/?zoneId=987&format=RSS',  // Words and Their Stories 보충
     ],
 };
 
@@ -274,12 +275,17 @@ function parseItems(items) {
     });
 }
 
-// GET /api/voa-news?category=intermediate
+// GET /api/voa-news?category=intermediate[&refresh=1]
 app.get('/api/voa-news', async (req, res) => {
     const category = VOA_FEEDS[req.query.category] ? req.query.category : 'intermediate';
+    const forceRefresh = req.query.refresh === '1';
     const cacheKey = `news:${category}`;
-    const cached = getCached(cacheKey);
-    if (cached) return res.json(cached);
+    if (!forceRefresh) {
+        const cached = getCached(cacheKey);
+        if (cached) return res.json(cached);
+    } else {
+        voaCache.delete(cacheKey);
+    }
 
     try {
         const feedUrls = VOA_FEEDS[category];
