@@ -83,7 +83,7 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
                     disabled={isSaved}
                     title={isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}
                 >
-                    <Star size={26} fill={isSaved ? '#facc15' : 'none'} />
+                    <Star size={26} color={isSaved ? '#facc15' : '#94a3b8'} fill={isSaved ? '#facc15' : 'none'} />
                 </button>
             </div>
 
