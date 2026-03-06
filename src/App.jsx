@@ -628,7 +628,7 @@ function App() {
   };
 
   // 5. VOA 문장을 Library에 저장하는 함수
-  const saveVoaCard = async (sentenceText, articleTitle) => {
+  const saveVoaCard = async (sentenceText, articleTitle, pronunciationScore = null) => {
     if (!user) { alert(getT(sourceLang, 'voa.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -650,7 +650,7 @@ function App() {
         articleTitle,
         learningTip: [],
         pronunciation: '',
-        pronunciationScore: null,
+        pronunciationScore,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
@@ -692,7 +692,7 @@ function App() {
   };
 
   // 7. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip, pronunciationScore = null }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -715,7 +715,7 @@ function App() {
         scene,
         learningTip: learningTip ? [{ type: 'tip', content: learningTip }] : [],
         pronunciation: '',
-        pronunciationScore: null,
+        pronunciationScore,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();

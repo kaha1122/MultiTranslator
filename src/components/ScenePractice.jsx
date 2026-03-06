@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Mic, MicOff, RotateCcw, Star, Volume2 } from 'lucide-react';
+import { Award, Mic, MicOff, RotateCcw, Star, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
@@ -80,7 +80,12 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 
             {/* 발음 평가 결과 */}
             {assessmentResult && (
-                <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                <>
+                    <div className="score-badge">
+                        <Award size={12} /> {assessmentResult.pronunciationScore}Pt
+                    </div>
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                </>
             )}
 
             {/* AI 코치 팁 */}
@@ -124,7 +129,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 
                 <button
                     className={`scene-star-btn ${isSaved ? 'saved' : ''}`}
-                    onClick={onSave}
+                    onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
                     disabled={isSaved}
                     title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
                 >
@@ -192,15 +197,16 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         }
     };
 
-    const handleSave = async () => {
+    const handleSave = async (pronunciationScore = null) => {
         if (!generated || !selectedScene) return;
         await onSaveToLibrary({
-            sentence:     generated.sentence,
-            translation:  generated.translation,
-            langCode:     selectedLang,
-            scene:        selectedScene.id,
-            sceneHint:    generated.scene_hint,
-            learningTip:  generated.learning_tip,
+            sentence:          generated.sentence,
+            translation:       generated.translation,
+            langCode:          selectedLang,
+            scene:             selectedScene.id,
+            sceneHint:         generated.scene_hint,
+            learningTip:       generated.learning_tip,
+            pronunciationScore,
         });
         playStarSound();
         setIsSaved(true);

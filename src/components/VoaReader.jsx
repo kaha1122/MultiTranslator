@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Star, AlertCircle, ExternalLink } from 'lucide-react';
+import { Award, ChevronLeft, Volume2, Mic, MicOff, RotateCcw, Star, AlertCircle, ExternalLink } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useT } from '../utils/i18n';
 import { playStarSound } from '../utils/soundEffects';
@@ -38,7 +38,12 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
         <div className="voa-sentence-practice">
             {/* 원형 게이지 + 단어 신호등 (TranslationCard와 동일한 컴포넌트) */}
             {assessmentResult && (
-                <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                <>
+                    <div className="score-badge">
+                        <Award size={12} /> {assessmentResult.pronunciationScore}Pt
+                    </div>
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                </>
             )}
 
             {/* AI 코치 팁 */}
@@ -74,7 +79,7 @@ function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSav
                 {/* 북마크 버튼 — 아이콘만, 저장 시 초록색 */}
                 <button
                     className={`voa-bookmark-btn ${isSaved ? 'saved' : ''}`}
-                    onClick={onSave}
+                    onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
                     disabled={isSaved}
                     title={isSaved ? t('voa.savedToLibrary') : t('voa.saveToLibrary')}
                 >
@@ -199,9 +204,9 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
         window.history.back();
     };
 
-    const handleSave = async (sentence, idx) => {
+    const handleSave = async (sentence, idx, pronunciationScore = null) => {
         playStarSound();
-        await onSaveToLibrary(sentence.text, selectedArticle?.title || '');
+        await onSaveToLibrary(sentence.text, selectedArticle?.title || '', pronunciationScore);
         setSavedSet(prev => new Set([...prev, idx]));
     };
 
@@ -358,7 +363,7 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
                                         sentence={sentence}
                                         sourceLang={sourceLang}
                                         onTrialLimitReached={onTrialLimitReached}
-                                        onSave={() => handleSave(sentence, idx)}
+                                        onSave={(score) => handleSave(sentence, idx, score)}
                                         isSaved={savedSet.has(idx)}
                                         t={t}
                                     />

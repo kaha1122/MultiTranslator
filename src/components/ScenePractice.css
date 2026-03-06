@@ -299,10 +299,20 @@
     transition: all 0.2s;
 }
 
+.scene-tts-btn svg {
+    color: #64748b;
+    stroke: #64748b;
+}
+
 .scene-tts-btn:hover {
     background: #f1f5f9;
     color: var(--primary-color, #00a884);
     border-color: var(--primary-color, #00a884);
+}
+
+.scene-tts-btn:hover svg {
+    color: var(--primary-color, #00a884);
+    stroke: var(--primary-color, #00a884);
 }
 
 .scene-record-wrap {
@@ -338,15 +348,31 @@
     transition: all 0.2s;
 }
 
+.scene-star-btn svg {
+    color: #94a3b8;
+    stroke: #94a3b8;
+}
+
 .scene-star-btn:hover:not(:disabled) {
     color: #f59e0b;
     border-color: #f59e0b;
+}
+
+.scene-star-btn:hover:not(:disabled) svg {
+    color: #f59e0b;
+    stroke: #f59e0b;
 }
 
 .scene-star-btn.saved {
     color: #f59e0b;
     border-color: #f59e0b;
     background: #fffbeb;
+}
+
+.scene-star-btn.saved svg {
+    color: #f59e0b;
+    stroke: #f59e0b;
+    fill: #f59e0b;
 }
 
 .scene-star-btn:disabled {
