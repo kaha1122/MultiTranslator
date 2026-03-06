@@ -125,9 +125,7 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
       <nav className="lp-nav">
         <div className="lp-logo">PronunFit.</div>
         <div className="lp-nav-actions">
-          {showInstall && (
-            <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>
-          )}
+          <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>
           <button className="lp-login-btn" onClick={onStart}>{c.login}</button>
         </div>
       </nav>

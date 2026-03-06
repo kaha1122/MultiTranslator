@@ -258,7 +258,14 @@ function App() {
 
   // [설치] 버튼을 눌렀을 때 실행
   const handleInstallClick = async () => {
-    if (!deferredPrompt) return;
+    if (!deferredPrompt) {
+      // iOS Safari: 브라우저 공유 메뉴 안내
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      if (isIOS) {
+        alert('홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택하세요.');
+      }
+      return;
+    }
     deferredPrompt.prompt(); // 브라우저 설치 팝업 실행
     const { outcome } = await deferredPrompt.userChoice;
     console.log('[PWA] 사용자 선택:', outcome); // 'accepted' or 'dismissed'
@@ -435,7 +442,7 @@ function App() {
 
     try {
       const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
-      const inputLangName  = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name  || inputLang;
+      const inputLangName = SUPPORTED_LANGUAGES.find(l => l.code === inputLang)?.name || inputLang;
 
 
       const targetLangNames = targetLangs.map(code =>
@@ -518,7 +525,7 @@ function App() {
           const entry = result.data[langCode];
           if (entry) {
             newTranslations[langCode] = entry.translation || inputText;
-            newProns[langCode]        = entry.pronunciation;
+            newProns[langCode] = entry.pronunciation;
           }
         });
       }
@@ -795,91 +802,91 @@ function App() {
         {/* 번역 탭 */}
         <div style={{ display: viewMode === 'translation' ? 'block' : 'none', width: '100%' }}>
           <>
-                <div className="primary-sentence-container">
-                  <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                    {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
-                    {[sourceLang, ...targetLangs].filter((value, index, self) => self.indexOf(value) === index).map((langCode) => {
-                      const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-                      if (!lang) return null;
-                      const isSelected = inputLang === langCode;
-                      return (
-                        <button
-                          key={langCode}
-                          onClick={() => setInputLang(langCode)}
-                          style={{
-                            padding: '6px 14px',
-                            borderRadius: '16px',
-                            border: isSelected ? 'none' : '1px solid #e2e8f0',
-                            background: isSelected ? lang.color : 'white',
-                            color: isSelected ? lang.textColor : '#64748b',
-                            fontWeight: '700',
-                            fontSize: '0.8rem',
-                            cursor: 'pointer',
-                            whiteSpace: 'nowrap',
-                            boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-                            transition: 'all 0.2s'
-                          }}
-                        >
-                          {lang.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <input
-                    type="text"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    placeholder="Enter text to translate..."
-                    className="text-input"
-                  />
-                  <div className="translate-btn-container">
+            <div className="primary-sentence-container">
+              <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
+                {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
+                {[sourceLang, ...targetLangs].filter((value, index, self) => self.indexOf(value) === index).map((langCode) => {
+                  const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                  if (!lang) return null;
+                  const isSelected = inputLang === langCode;
+                  return (
                     <button
-                      className="translate-btn"
-                      onClick={handleTranslate}
-                      disabled={isTranslating || !inputText.trim()}
+                      key={langCode}
+                      onClick={() => setInputLang(langCode)}
+                      style={{
+                        padding: '6px 14px',
+                        borderRadius: '16px',
+                        border: isSelected ? 'none' : '1px solid #e2e8f0',
+                        background: isSelected ? lang.color : 'white',
+                        color: isSelected ? lang.textColor : '#64748b',
+                        fontWeight: '700',
+                        fontSize: '0.8rem',
+                        cursor: 'pointer',
+                        whiteSpace: 'nowrap',
+                        boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
+                        transition: 'all 0.2s'
+                      }}
                     >
-                      {isTranslating ? 'Translating...' : (
-                        <>
-                          <Sparkles size={20} />
-                          Translate
-                        </>
-                      )}
+                      {lang.name}
                     </button>
-                  </div>
-                </div>
-
-                {/* 번역 결과 카드들이 나오는 영역 */}
-                <div className="cards-grid">
-                  {targetLangs.map((langCode) => {
-                    const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-                    return (
-                      <TranslationCard
-                        key={langCode}
-                        language={lang?.name}
-                        langCode={langCode}
-                        sourceLangCode={sourceLang}
-                        text={translations[langCode]}
-                        pronunciation={pronunciations[langCode]}
-                        learningTip={learningTips[langCode]}
-                        badgeColor={lang?.color}
-                        badgeTextColor={lang?.textColor}
-                        onSpeak={() => handleSpeak(translations[langCode], langCode)}
-                        onSave={() => handleStarSave(langCode)}
-                        isSaved={savedLangCodes.has(langCode)}
-                        onPracticeResult={handlePracticeResult}
-                        onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                        targetGoal={languageGoals[langCode] || 80}
-                      />
-                    );
-                  })}
-                  {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
-                  {targetLangs.length === 0 && (
-                    <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
-                      Please select at least 1 target language.
-                    </p>
+                  );
+                })}
+              </div>
+              <input
+                type="text"
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                placeholder="Enter text to translate..."
+                className="text-input"
+              />
+              <div className="translate-btn-container">
+                <button
+                  className="translate-btn"
+                  onClick={handleTranslate}
+                  disabled={isTranslating || !inputText.trim()}
+                >
+                  {isTranslating ? 'Translating...' : (
+                    <>
+                      <Sparkles size={20} />
+                      Translate
+                    </>
                   )}
-                </div>
-              </>
+                </button>
+              </div>
+            </div>
+
+            {/* 번역 결과 카드들이 나오는 영역 */}
+            <div className="cards-grid">
+              {targetLangs.map((langCode) => {
+                const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                return (
+                  <TranslationCard
+                    key={langCode}
+                    language={lang?.name}
+                    langCode={langCode}
+                    sourceLangCode={sourceLang}
+                    text={translations[langCode]}
+                    pronunciation={pronunciations[langCode]}
+                    learningTip={learningTips[langCode]}
+                    badgeColor={lang?.color}
+                    badgeTextColor={lang?.textColor}
+                    onSpeak={() => handleSpeak(translations[langCode], langCode)}
+                    onSave={() => handleStarSave(langCode)}
+                    isSaved={savedLangCodes.has(langCode)}
+                    onPracticeResult={handlePracticeResult}
+                    onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                    targetGoal={languageGoals[langCode] || 80}
+                  />
+                );
+              })}
+              {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
+              {targetLangs.length === 0 && (
+                <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
+                  Please select at least 1 target language.
+                </p>
+              )}
+            </div>
+          </>
         </div>
 
         {/* VOA 탭 — 항상 마운트 유지 (탭 전환 시 기사 재로딩 방지) */}
@@ -913,295 +920,295 @@ function App() {
         {/* Settings 탭 */}
         <div style={{ display: viewMode === 'settings' ? 'block' : 'none', width: '100%' }}>
           <div className="settings-container" style={{ position: 'relative' }}>
-                {/* [신규] 온보딩 팝업 */}
-                {showOnboarding && (
-                  <div className="onboarding-overlay" style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(255,255,255,0.95)', zIndex: 9999,
-                    display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '0',
-                    backdropFilter: 'blur(5px)'
-                  }}>
-                    <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>Welcome to PronunFit! 🎉</h2>
-                    <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#475569', lineHeight: '1.5' }}>
-                      To get started, please select your <b>primary language</b> (Source Language) and the language you want to learn (<b>Target Language</b>).
-                    </p>
-                    <button className="translate-btn" onClick={handleCompleteOnboarding}>
-                      Go to Settings 🚀
-                    </button>
-                  </div>
-                )}
-
-
-                <div className="user-profile-section">
-                  <div className="user-info">
-                    <div className="user-avatar">
-                      <User size={24} color="var(--primary-color)" />
-                    </div>
-                    <div className="user-details">
-                      <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        {profile?.displayName || user?.displayName || 'Google User'}
-                        <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
-                      </p>
-                      <p className="user-email-secondary">{user.email}</p>
-                      <p className="user-status" style={{ textDecoration: 'underline' }}>{{
-                        trial: 'Free Trial',
-                        byok_free: 'BYOK Free',
-                        silver: 'Silver',
-                        pro: 'Pro',
-                        premium: 'Premium',
-                      }[tier] || 'Free Trial'}</p>
-                    </div>
-                  </div>
-                  <button className="logout-btn" onClick={handleLogout}>
-                    <LogOut size={18} />
-                    Logout
-                  </button>
-                </div>
-
-                {/* --- [신규] 프로필 수정 모달 (Signup 디자인 적용) --- */}
-                <AnimatePresence>
-                  {showProfileModal && (
-                    <motion.div
-                      className="modal-overlay"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      onClick={() => setShowProfileModal(false)}
-                      style={{
-                        position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                        background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-                        padding: '20px' // 화면 작은 폰에서 짤리지 않게 패딩 추가
-                      }}
-                    >
-                      <motion.div
-                        className="auth-card"
-                        initial={{ scale: 0.9, y: 20 }}
-                        animate={{ scale: 1, y: 0 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
-                        onClick={(e) => e.stopPropagation()}
-                        style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
-                      >
-                        <button
-                          onClick={() => setShowProfileModal(false)}
-                          style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                        >
-                          <X size={24} />
-                        </button>
-
-                        <div className="auth-header">
-                          <div className="auth-icon-circle signup-icon">
-                            <User size={24} color="white" />
-                          </div>
-                          <h2>Edit Profile</h2>
-                          <p>Update your information</p>
-                        </div>
-
-                        <form onSubmit={handleSaveProfile} className="auth-form">
-                          <div className="input-wrapper">
-                            <label className="input-label">Email address</label>
-                            <div className="input-group">
-                              <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
-                              <input
-                                type="email"
-                                value={user.email || ''}
-                                disabled
-                                style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="input-wrapper">
-                            <label className="input-label">Nickname <span className="required-star">*</span></label>
-                            <div className="input-group">
-                              <User size={18} className="input-icon" />
-                              <input
-                                type="text"
-                                placeholder="Nickname"
-                                value={profileFormData.nickname}
-                                onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
-                                required
-                              />
-                            </div>
-                          </div>
-
-                          <div className="input-wrapper">
-                            <label className="input-label">Phone</label>
-                            <div className="input-group">
-                              <Phone size={18} className="input-icon" />
-                              <input
-                                type="tel"
-                                placeholder="010-0000-0000"
-                                value={profileFormData.phone}
-                                onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
-                              />
-                            </div>
-                          </div>
-
-                          <div className="input-wrapper">
-                            <label className="input-label">Address</label>
-                            <div className="input-group">
-                              <MapPin size={18} className="input-icon" />
-                              <input
-                                type="text"
-                                placeholder="Seoul, Korea"
-                                value={profileFormData.address}
-                                onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
-                              />
-                            </div>
-                          </div>
-
-                          <button type="submit" className="auth-submit-btn" style={{ marginTop: '10px' }}>
-                            Save Changes
-                          </button>
-                        </form>
-                      </motion.div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
-                <div className="settings-group">
-                  <label className="settings-label">
-                    <ArrowLeft size={18} /> Select Source Language
-                  </label>
-                  <div className="lang-grid">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <div
-                        key={lang.code}
-                        className={`lang-option ${sourceLang === lang.code ? 'selected' : ''}`}
-                        onClick={() => setSourceLang(lang.code)}
-                      >
-                        {sourceLang === lang.code && <CheckCircle2 size={16} />}
-                        {lang.name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
-                <div className="settings-group">
-                  <label className="settings-label">
-                    Select Target Languages (Max 3)
-                  </label>
-                  <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
-                  <div className="lang-grid">
-                    {SUPPORTED_LANGUAGES.map((lang) => (
-                      <div
-                        key={lang.code}
-                        className={`lang-option ${targetLangs.includes(lang.code) ? 'selected' : ''} ${!targetLangs.includes(lang.code) && targetLangs.length >= 3 ? 'disabled' : ''}`}
-                        onClick={() => toggleTargetLang(lang.code)}
-                      >
-                        {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
-                        {lang.name}
-                      </div>
-                    ))}
-                  </div>
-                </div>
-
-                {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
-                <div className="settings-group">
-                  <label className="settings-label">Target Score Goals 🎯</label>
-                  <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
-                    Set your pronunciation target score for each language.
-                  </p>
-                  <div className="goal-sliders">
-                    {targetLangs.map(code => {
-                      const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-                      const currentGoal = languageGoals[code] || 80; // 기본값 80
-                      return (
-                        <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
-                          <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
-                          <input
-                            type="range"
-                            min="0"
-                            max="100"
-                            value={currentGoal}
-                            onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
-                            style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
-                          />
-                          <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
-                        </div>
-                      );
-                    })}
-                    {targetLangs.length === 0 && (
-                      <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
-                    )}
-                  </div>
-                </div>
-
-                <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
-                  Save Settings & Return
+            {/* [신규] 온보딩 팝업 */}
+            {showOnboarding && (
+              <div className="onboarding-overlay" style={{
+                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                background: 'rgba(255,255,255,0.95)', zIndex: 9999,
+                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '0',
+                backdropFilter: 'blur(5px)'
+              }}>
+                <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>Welcome to PronunFit! 🎉</h2>
+                <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#475569', lineHeight: '1.5' }}>
+                  To get started, please select your <b>primary language</b> (Source Language) and the language you want to learn (<b>Target Language</b>).
+                </p>
+                <button className="translate-btn" onClick={handleCompleteOnboarding}>
+                  Go to Settings 🚀
                 </button>
+              </div>
+            )}
 
-                {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
-                <div className="settings-group" style={{ marginTop: '8px' }}>
-                  <label className="settings-label">
-                    <Lock size={16} /> {getT(sourceLang, 'settings.apiKeys')} · {getT(sourceLang, 'settings.myTier')}
-                  </label>
-                  <div style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    background: '#f8fafc', borderRadius: '12px', padding: '12px 16px'
-                  }}>
-                    <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
-                      {{
-                        trial:    `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 ${savedCardCount}/${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
-                        byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
-                        silver:   `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
-                        pro:      `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
-                        premium:  `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
-                      }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
-                    </span>
-                    <button
-                      onClick={() => setShowApiKeyWizard(true)}
-                      style={{
-                        padding: '8px 14px', background: '#6366f1', color: 'white',
-                        border: 'none', borderRadius: '8px', fontWeight: 'bold',
-                        cursor: 'pointer', fontSize: '0.82rem'
-                      }}
-                    >
-                      🔑 {getT(sourceLang, 'settings.apiKeys')}
-                    </button>
-                  </div>
+
+            <div className="user-profile-section">
+              <div className="user-info">
+                <div className="user-avatar">
+                  <User size={24} color="var(--primary-color)" />
                 </div>
+                <div className="user-details">
+                  <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    {profile?.displayName || user?.displayName || 'Google User'}
+                    <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
+                  </p>
+                  <p className="user-email-secondary">{user.email}</p>
+                  <p className="user-status" style={{ textDecoration: 'underline' }}>{{
+                    trial: 'Free Trial',
+                    byok_free: 'BYOK Free',
+                    silver: 'Silver',
+                    pro: 'Pro',
+                    premium: 'Premium',
+                  }[tier] || 'Free Trial'}</p>
+                </div>
+              </div>
+              <button className="logout-btn" onClick={handleLogout}>
+                <LogOut size={18} />
+                Logout
+              </button>
+            </div>
 
-                {/* ── Legal 링크 Footer ──────────────────────────────────────────────
+            {/* --- [신규] 프로필 수정 모달 (Signup 디자인 적용) --- */}
+            <AnimatePresence>
+              {showProfileModal && (
+                <motion.div
+                  className="modal-overlay"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  onClick={() => setShowProfileModal(false)}
+                  style={{
+                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+                    background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+                    padding: '20px' // 화면 작은 폰에서 짤리지 않게 패딩 추가
+                  }}
+                >
+                  <motion.div
+                    className="auth-card"
+                    initial={{ scale: 0.9, y: 20 }}
+                    animate={{ scale: 1, y: 0 }}
+                    exit={{ scale: 0.9, opacity: 0 }}
+                    onClick={(e) => e.stopPropagation()}
+                    style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
+                  >
+                    <button
+                      onClick={() => setShowProfileModal(false)}
+                      style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+                    >
+                      <X size={24} />
+                    </button>
+
+                    <div className="auth-header">
+                      <div className="auth-icon-circle signup-icon">
+                        <User size={24} color="white" />
+                      </div>
+                      <h2>Edit Profile</h2>
+                      <p>Update your information</p>
+                    </div>
+
+                    <form onSubmit={handleSaveProfile} className="auth-form">
+                      <div className="input-wrapper">
+                        <label className="input-label">Email address</label>
+                        <div className="input-group">
+                          <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
+                          <input
+                            type="email"
+                            value={user.email || ''}
+                            disabled
+                            style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="input-wrapper">
+                        <label className="input-label">Nickname <span className="required-star">*</span></label>
+                        <div className="input-group">
+                          <User size={18} className="input-icon" />
+                          <input
+                            type="text"
+                            placeholder="Nickname"
+                            value={profileFormData.nickname}
+                            onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="input-wrapper">
+                        <label className="input-label">Phone</label>
+                        <div className="input-group">
+                          <Phone size={18} className="input-icon" />
+                          <input
+                            type="tel"
+                            placeholder="010-0000-0000"
+                            value={profileFormData.phone}
+                            onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="input-wrapper">
+                        <label className="input-label">Address</label>
+                        <div className="input-group">
+                          <MapPin size={18} className="input-icon" />
+                          <input
+                            type="text"
+                            placeholder="Seoul, Korea"
+                            value={profileFormData.address}
+                            onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
+                          />
+                        </div>
+                      </div>
+
+                      <button type="submit" className="auth-submit-btn" style={{ marginTop: '10px' }}>
+                        Save Changes
+                      </button>
+                    </form>
+                  </motion.div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
+            <div className="settings-group">
+              <label className="settings-label">
+                <ArrowLeft size={18} /> Select Source Language
+              </label>
+              <div className="lang-grid">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <div
+                    key={lang.code}
+                    className={`lang-option ${sourceLang === lang.code ? 'selected' : ''}`}
+                    onClick={() => setSourceLang(lang.code)}
+                  >
+                    {sourceLang === lang.code && <CheckCircle2 size={16} />}
+                    {lang.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
+            <div className="settings-group">
+              <label className="settings-label">
+                Select Target Languages (Max 3)
+              </label>
+              <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
+              <div className="lang-grid">
+                {SUPPORTED_LANGUAGES.map((lang) => (
+                  <div
+                    key={lang.code}
+                    className={`lang-option ${targetLangs.includes(lang.code) ? 'selected' : ''} ${!targetLangs.includes(lang.code) && targetLangs.length >= 3 ? 'disabled' : ''}`}
+                    onClick={() => toggleTargetLang(lang.code)}
+                  >
+                    {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
+                    {lang.name}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
+            <div className="settings-group">
+              <label className="settings-label">Target Score Goals 🎯</label>
+              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
+                Set your pronunciation target score for each language.
+              </p>
+              <div className="goal-sliders">
+                {targetLangs.map(code => {
+                  const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
+                  const currentGoal = languageGoals[code] || 80; // 기본값 80
+                  return (
+                    <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
+                      <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={currentGoal}
+                        onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
+                        style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
+                      />
+                      <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
+                    </div>
+                  );
+                })}
+                {targetLangs.length === 0 && (
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
+                )}
+              </div>
+            </div>
+
+            <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
+              Save Settings & Return
+            </button>
+
+            {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
+            <div className="settings-group" style={{ marginTop: '8px' }}>
+              <label className="settings-label">
+                <Lock size={16} /> {getT(sourceLang, 'settings.apiKeys')} · {getT(sourceLang, 'settings.myTier')}
+              </label>
+              <div style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                background: '#f8fafc', borderRadius: '12px', padding: '12px 16px'
+              }}>
+                <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
+                  {{
+                    trial: `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 ${savedCardCount}/${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
+                    byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
+                    silver: `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
+                    pro: `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
+                    premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
+                  }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
+                </span>
+                <button
+                  onClick={() => setShowApiKeyWizard(true)}
+                  style={{
+                    padding: '8px 14px', background: '#6366f1', color: 'white',
+                    border: 'none', borderRadius: '8px', fontWeight: 'bold',
+                    cursor: 'pointer', fontSize: '0.82rem'
+                  }}
+                >
+                  🔑 {getT(sourceLang, 'settings.apiKeys')}
+                </button>
+              </div>
+            </div>
+
+            {/* ── Legal 링크 Footer ──────────────────────────────────────────────
                     AdSense 심사를 위해 Privacy Policy / Terms / Contact 링크가
                     앱 안에서 눈에 잘 띄는 곳에 있어야 합니다.
                     Settings 화면 하단에 항상 표시합니다.
                 ──────────────────────────────────────────────────────────────────── */}
-                <div style={{
-                  display: 'flex',
-                  justifyContent: 'center',
-                  gap: '16px',
-                  paddingTop: '8px',
-                  borderTop: '1px solid #f1f5f9',
-                  flexWrap: 'wrap'
-                }}>
-                  {[
-                    { label: '개인정보처리방침', mode: 'privacy' },
-                    { label: '이용약관', mode: 'terms' },
-                    { label: '연락처', mode: 'contact' },
-                  ].map(({ label, mode }) => (
-                    <button
-                      key={mode}
-                      onClick={() => setViewMode(mode)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        color: '#94a3b8',
-                        fontSize: '0.78rem',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        padding: '4px 0',
-                        textDecoration: 'underline',
-                        textDecorationColor: '#cbd5e1'
-                      }}
-                    >
-                      {label}
-                    </button>
-                  ))}
-                </div>
-              </div>
+            <div style={{
+              display: 'flex',
+              justifyContent: 'center',
+              gap: '16px',
+              paddingTop: '8px',
+              borderTop: '1px solid #f1f5f9',
+              flexWrap: 'wrap'
+            }}>
+              {[
+                { label: '개인정보처리방침', mode: 'privacy' },
+                { label: '이용약관', mode: 'terms' },
+                { label: '연락처', mode: 'contact' },
+              ].map(({ label, mode }) => (
+                <button
+                  key={mode}
+                  onClick={() => setViewMode(mode)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#94a3b8',
+                    fontSize: '0.78rem',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    padding: '4px 0',
+                    textDecoration: 'underline',
+                    textDecorationColor: '#cbd5e1'
+                  }}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
       </main>
 
