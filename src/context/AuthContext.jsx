@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { auth, db } from '../firebase/config';
+import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { setUserId } from 'firebase/analytics';
 
 const AuthContext = createContext();
 
@@ -16,6 +17,7 @@ export const AuthProvider = ({ children }) => {
         const unsubscribeAuth = onAuthStateChanged(auth, (authenticatedUser) => {
             if (authenticatedUser) {
                 setUser(authenticatedUser);
+                if (analytics) setUserId(analytics, authenticatedUser.uid);
 
                 // Firestore에서 프로필 정보를 실시간으로 구독(onSnapshot)합니다.
                 // 이렇게 하면 구글 가입 직후 데이터가 생겨나는 것도 즉시 감지하여 App.jsx로 전달합니다.
@@ -36,6 +38,7 @@ export const AuthProvider = ({ children }) => {
             } else {
                 setUser(null);
                 setProfile(null);
+                if (analytics) setUserId(analytics, null);
                 if (unsubscribeProfile) {
                     unsubscribeProfile();
                 }
