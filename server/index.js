@@ -392,39 +392,46 @@ function mergeToSentences(items) {
     return sentences.filter(s => s.text.length >= 15 && s.text.length <= 250).slice(0, 40);
 }
 
-// [Method 2] YouTube 페이지에서 captionTracks 직접 스크래핑
-async function fetchTranscriptFromPage(videoId) {
-    const html = (await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
-        headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
-        },
-        timeout: 15000,
-    })).data;
+// 브래킷 균형 탐색으로 JSON 배열 안전하게 추출
+// 기존 /[.*?]/ 방식은 중첩 ] 에서 조기 종료 버그 있음
+function extractJsonArray(html, marker) {
+    const idx = html.indexOf(marker);
+    if (idx === -1) return null;
+    const start = idx + marker.length;
+    if (html[start] !== '[') return null;
+    let depth = 0, inStr = false, esc = false;
+    for (let i = start; i < html.length; i++) {
+        const c = html[i];
+        if (esc)              { esc = false; continue; }
+        if (c === '\\' && inStr) { esc = true; continue; }
+        if (c === '"')        { inStr = !inStr; continue; }
+        if (!inStr) {
+            if (c === '[' || c === '{') depth++;
+            else if (c === ']' || c === '}') {
+                depth--;
+                if (depth === 0) {
+                    try { return JSON.parse(html.slice(start, i + 1)); } catch { return null; }
+                }
+            }
+        }
+    }
+    return null;
+}
 
-    // captionTracks JSON 추출
-    const match = html.match(/"captionTracks":(\[.*?\])(?:,|])/);
-    if (!match) throw new Error('captionTracks not found in page');
-
-    const tracks = JSON.parse(match[1]);
-
-    // 영어 수동 자막 > 영어 자동 자막 > 첫 번째 트랙
+// captionTracks → 실제 자막 아이템 배열
+async function fetchCaptionItems(tracks) {
     const track = tracks.find(t => t.languageCode === 'en' && t.kind !== 'asr')
         || tracks.find(t => t.languageCode === 'en')
         || tracks.find(t => t.kind === 'asr')
         || tracks[0];
+    if (!track?.baseUrl) throw new Error('No usable caption track');
 
-    if (!track || !track.baseUrl) throw new Error('No usable caption track');
-
-    // baseUrl의 유니코드 이스케이프 디코딩 후 json3 형식으로 요청
-    const captionUrl = track.baseUrl.replace(/\\u0026/g, '&') + '&fmt=json3';
-    const captionData = (await axios.get(captionUrl, {
-        headers: { 'User-Agent': 'Mozilla/5.0' },
+    const url = track.baseUrl.replace(/\\u0026/g, '&') + '&fmt=json3';
+    const { data } = await axios.get(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0', 'Referer': 'https://www.youtube.com/' },
         timeout: 10000,
-    })).data;
-
-    return (captionData.events || [])
+    });
+    return (data.events || [])
         .filter(e => e.segs)
         .map(e => ({
             text: e.segs.map(s => s.utf8 || '').join(''),
@@ -432,6 +439,57 @@ async function fetchTranscriptFromPage(videoId) {
             duration: e.dDurationMs || 0,
         }))
         .filter(item => item.text.trim());
+}
+
+// [Method 2] InnerTube Android 클라이언트 — 봇 감지 우회에 효과적
+async function fetchTranscriptInnerTube(videoId) {
+    const { data: player } = await axios.post(
+        'https://www.youtube.com/youtubei/v1/player',
+        {
+            videoId,
+            context: {
+                client: {
+                    clientName: 'ANDROID',
+                    clientVersion: '19.09.37',
+                    androidSdkVersion: 30,
+                    hl: 'en',
+                    gl: 'US',
+                    timeZone: 'UTC',
+                    utcOffsetMinutes: 0,
+                },
+            },
+        },
+        {
+            headers: {
+                'Content-Type': 'application/json',
+                'User-Agent': 'com.google.android.youtube/19.09.37 (Linux; U; Android 11) gzip',
+                'X-YouTube-Client-Name': '3',
+                'X-YouTube-Client-Version': '19.09.37',
+                'Origin': 'https://www.youtube.com',
+            },
+            timeout: 15000,
+        }
+    );
+    const tracks = player?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
+    if (!tracks?.length) throw new Error('No captions in InnerTube response');
+    return fetchCaptionItems(tracks);
+}
+
+// [Method 3] 웹 페이지 스크래핑 (브래킷 균형 파싱)
+async function fetchTranscriptFromPage(videoId) {
+    const { data: html } = await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
+        headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+            'Accept-Language': 'en-US,en;q=0.9',
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+            // consent 쿠키로 EU 동의 페이지 우회
+            'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+409;',
+        },
+        timeout: 15000,
+    });
+    const tracks = extractJsonArray(html, '"captionTracks":');
+    if (!tracks?.length) throw new Error(`captionTracks not found (html ${html.length} chars)`);
+    return fetchCaptionItems(tracks);
 }
 
 // GET /api/youtube-transcript?url=<encodedYouTubeUrl>
@@ -445,38 +503,44 @@ app.get('/api/youtube-transcript', async (req, res) => {
     const errors = [];
     let rawItems = null;
 
-    // Method 1: youtube-transcript 패키지 (영어)
+    // Method 1a: youtube-transcript 패키지 (영어 지정)
     try {
         rawItems = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-        console.log(`[YouTube] Method1(pkg-en) OK: ${rawItems.length} items`);
+        console.log(`[YT] M1a OK (${rawItems.length})`);
     } catch (e1) {
-        errors.push(`pkg-en: ${e1.message}`);
-        // Method 1b: 언어 지정 없이 (자동 자막 포함)
+        errors.push(`m1a: ${e1.message}`);
+        // Method 1b: 언어 무관
         try {
             rawItems = await YoutubeTranscript.fetchTranscript(videoId);
-            console.log(`[YouTube] Method1b(pkg-any) OK: ${rawItems.length} items`);
+            console.log(`[YT] M1b OK (${rawItems.length})`);
         } catch (e2) {
-            errors.push(`pkg-any: ${e2.message}`);
-            // Method 2: 페이지 직접 스크래핑
+            errors.push(`m1b: ${e2.message}`);
+            // Method 2: InnerTube Android API
             try {
-                rawItems = await fetchTranscriptFromPage(videoId);
-                console.log(`[YouTube] Method2(scrape) OK: ${rawItems.length} items`);
+                rawItems = await fetchTranscriptInnerTube(videoId);
+                console.log(`[YT] M2-InnerTube OK (${rawItems.length})`);
             } catch (e3) {
-                errors.push(`scrape: ${e3.message}`);
+                errors.push(`m2: ${e3.message}`);
+                // Method 3: 페이지 스크래핑
+                try {
+                    rawItems = await fetchTranscriptFromPage(videoId);
+                    console.log(`[YT] M3-Scrape OK (${rawItems.length})`);
+                } catch (e4) {
+                    errors.push(`m3: ${e4.message}`);
+                }
             }
         }
     }
 
-    if (!rawItems || rawItems.length === 0) {
-        console.error('[YouTube] All methods failed:', errors.join(' | '));
+    if (!rawItems?.length) {
+        console.error('[YT] All methods failed:', errors.join(' | '));
         return res.status(502).json({ error: 'Failed to fetch transcript', details: errors.join(' | ') });
     }
 
     const sentences = mergeToSentences(rawItems);
-    if (sentences.length === 0) {
+    if (!sentences.length) {
         return res.status(404).json({ error: 'No captions found for this video' });
     }
-
     res.json({ videoId, sentences });
 });
 

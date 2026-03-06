@@ -77,20 +77,13 @@
     "tierPremium": "Premium"
   },
   "ted": {
-    "tabTitle": "Pratique YouTube",
+    "tabTitle": "YouTube",
     "placeholder": "Collez une URL YouTube ici",
-    "loadBtn": "Charger les sous-titres",
-    "loading": "Récupération des sous-titres...",
-    "loadError": "Impossible de charger les sous-titres. Veuillez réessayer.",
-    "invalidUrl": "URL YouTube non valide.",
-    "noTranscript": "Aucun sous-titre trouvé pour cette vidéo.",
-    "practicePrompt": "Appuyez sur une phrase pour commencer",
-    "saveToLibrary": "Enregistrer dans la bibliothèque",
-    "savedToLibrary": "Enregistré ✅",
-    "loginRequired": "Veuillez vous connecter.",
-    "emptyHint": "Entrez n'importe quelle URL YouTube — TED, actualités, cours...",
+    "loadBtn": "Lire",
     "loadingVideos": "Chargement des dernières vidéos TED...",
-    "videosError": "Impossible de charger la liste des vidéos TED."
+    "videosError": "Impossible de charger la liste des vidéos TED.",
+    "sectionTitle": "Dernières conférences TED",
+    "watchHint": "Activez le bouton CC (Sous-titres) sur YouTube pour afficher les sous-titres en anglais. Regardez et écoutez pour absorber la prononciation et les expressions naturelles."
   },
   "voa": {
     "tabTitle": "Actualités VOA",

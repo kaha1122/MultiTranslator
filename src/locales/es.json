@@ -77,20 +77,13 @@
     "tierPremium": "Premium"
   },
   "ted": {
-    "tabTitle": "Práctica YouTube",
+    "tabTitle": "YouTube",
     "placeholder": "Pega una URL de YouTube aquí",
-    "loadBtn": "Cargar subtítulos",
-    "loading": "Obteniendo subtítulos...",
-    "loadError": "No se pudieron cargar los subtítulos. Inténtalo de nuevo.",
-    "invalidUrl": "URL de YouTube no válida.",
-    "noTranscript": "No se encontraron subtítulos para este vídeo.",
-    "practicePrompt": "Toca una frase para comenzar la práctica",
-    "saveToLibrary": "Guardar en biblioteca",
-    "savedToLibrary": "Guardado ✅",
-    "loginRequired": "Por favor inicia sesión.",
-    "emptyHint": "Introduce cualquier URL de YouTube — TED, noticias, clases...",
+    "loadBtn": "Reproducir",
     "loadingVideos": "Cargando últimos videos de TED...",
-    "videosError": "No se pudo cargar la lista de videos de TED."
+    "videosError": "No se pudo cargar la lista de videos de TED.",
+    "sectionTitle": "Últimas conferencias TED",
+    "watchHint": "Activa el botón CC (Subtítulos) en YouTube para ver los subtítulos en inglés. Mira y escucha para absorber la pronunciación y las expresiones naturales."
   },
   "voa": {
     "tabTitle": "Noticias VOA",

@@ -77,20 +77,13 @@
     "tierPremium": "Premium"
   },
   "ted": {
-    "tabTitle": "YouTube-Übung",
+    "tabTitle": "YouTube",
     "placeholder": "YouTube-URL hier einfügen",
-    "loadBtn": "Untertitel laden",
-    "loading": "Untertitel werden abgerufen...",
-    "loadError": "Untertitel konnten nicht geladen werden. Bitte erneut versuchen.",
-    "invalidUrl": "Keine gültige YouTube-URL.",
-    "noTranscript": "Für dieses Video wurden keine Untertitel gefunden.",
-    "practicePrompt": "Tippe auf einen Satz, um die Aussprache zu üben",
-    "saveToLibrary": "In Bibliothek speichern",
-    "savedToLibrary": "Gespeichert ✅",
-    "loginRequired": "Bitte einloggen.",
-    "emptyHint": "Beliebige YouTube-URL eingeben — TED-Talks, Vorlesungen, Nachrichten...",
+    "loadBtn": "Abspielen",
     "loadingVideos": "Neueste TED-Videos werden geladen...",
-    "videosError": "TED-Videoliste konnte nicht geladen werden."
+    "videosError": "TED-Videoliste konnte nicht geladen werden.",
+    "sectionTitle": "Neueste TED-Talks",
+    "watchHint": "Aktiviere den CC-Button (Untertitel) auf YouTube, um englische Untertitel anzuzeigen. Schau und höre zu, um natürliche Aussprache und Ausdrücke aufzunehmen."
   },
   "voa": {
     "tabTitle": "VOA Nachrichten",
