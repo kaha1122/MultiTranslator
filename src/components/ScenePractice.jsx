@@ -110,7 +110,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                     onClick={() => onSpeak(generated.sentence, langCode)}
                     title="Listen"
                 >
-                    <Volume2 size={20} color="#64748b" />
+                    <Volume2 size={20} />
                 </button>
 
                 <div className="scene-record-wrap">
@@ -137,7 +137,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                     disabled={isSaved}
                     title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
                 >
-                    <Star size={20} color={isSaved ? '#f59e0b' : '#94a3b8'} fill={isSaved ? '#f59e0b' : 'none'} />
+                    <Star size={20} />
                 </button>
             </div>
         </div>
