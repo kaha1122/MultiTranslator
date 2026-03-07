@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { useTranslation } from 'react-i18next';
+import { getT } from '../utils/i18n';
 import './SplashScreen.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -13,7 +13,8 @@ import './SplashScreen.css';
 // ─────────────────────────────────────────────────────────────────────────────
 
 function SplashScreen({ onFinish }) {
-    const { t } = useTranslation();
+    const lang = localStorage.getItem('sourceLang') || navigator.language?.split('-')[0] || 'ko';
+    const tagLine = getT(lang.startsWith('zh') ? 'zh-CN' : lang, 'splashTagline');
     // isFading: true가 되면 CSS 트랜지션으로 화면이 투명해지기 시작합니다.
     const [isFading, setIsFading] = useState(false);
 
@@ -58,7 +59,7 @@ function SplashScreen({ onFinish }) {
             {/* ── 앱 이름 + 부제목 ──────────────────────────────────────── */}
             <div className="splash-text-block">
                 <h1 className="splash-app-name">PronunFit</h1>
-                <p className="splash-tagline">{t('splashTagline')}</p>
+                <p className="splash-tagline">{tagLine}</p>
             </div>
 
         </div>
