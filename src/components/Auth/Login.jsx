@@ -109,6 +109,17 @@ function Login({ onSwitchToSignup }) {
         }
     };
 
+    if (isLoading) {
+        return (
+            <div className="auth-container">
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '12px', padding: '3rem' }}>
+                    <div style={{ width: '36px', height: '36px', border: '4px solid #e2e8f0', borderTop: '4px solid #00a884', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />
+                    <p style={{ color: '#64748b', margin: 0, fontSize: '0.9rem' }}>로그인 처리 중...</p>
+                </div>
+            </div>
+        );
+    }
+
     return (
         <div className="auth-container">
             <div className="auth-card">
