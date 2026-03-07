@@ -124,5 +124,13 @@
       "intermediate": "Intermédiaire",
       "advanced": "Avancé"
     }
+  },
+  "tabTag": {
+    "scene":       "Choisissez une scène et entraînez-vous avec l'IA",
+    "translation": "Traduisez et pratiquez la prononciation",
+    "voa":         "Entraînez votre prononciation avec les news VOA",
+    "ted":         "Regardez des vidéos et absorbez l'anglais naturel",
+    "library":     "Révisez vos cartes sauvegardées et pratiquez encore",
+    "settings":    "Configurez votre langue d'apprentissage et l'API"
   }
 }

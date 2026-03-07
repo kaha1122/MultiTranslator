@@ -833,31 +833,62 @@ function App() {
       <Analytics />
 
       <header className="app-header">
-        <motion.h1
-          className="main-logo-3d"
-          initial="hidden"
-          animate="visible"
-          variants={{
-            hidden: { opacity: 1 },
-            visible: {
-              opacity: 1,
-              transition: { staggerChildren: 0.15 }
-            }
-          }}
-        >
-          {"PronunFit".split("").map((char, index) => (
-            <motion.span
-              key={index}
-              variants={{
-                hidden: { opacity: 0, y: 20, scale: 0.8 },
-                visible: { opacity: 1, y: 0, scale: 1 }
-              }}
-              style={{ display: "inline-block" }}
-            >
-              {char}
-            </motion.span>
-          ))}
-        </motion.h1>
+        <div className="app-header-top">
+          <motion.h1
+            className="main-logo-3d"
+            initial="hidden"
+            animate="visible"
+            variants={{
+              hidden: { opacity: 1 },
+              visible: {
+                opacity: 1,
+                transition: { staggerChildren: 0.15 }
+              }
+            }}
+          >
+            {"PronunFit".split("").map((char, index) => (
+              <motion.span
+                key={index}
+                variants={{
+                  hidden: { opacity: 0, y: 20, scale: 0.8 },
+                  visible: { opacity: 1, y: 0, scale: 1 }
+                }}
+                style={{ display: "inline-block" }}
+              >
+                {char}
+              </motion.span>
+            ))}
+          </motion.h1>
+
+          <AnimatePresence mode="wait">
+            {(() => {
+              const TAB_CONTEXT = {
+                scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
+                translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
+                voa:         { icon: '📰', text: getT(sourceLang, 'tabTag.voa') },
+                ted:         { icon: '🎬', text: getT(sourceLang, 'tabTag.ted') },
+                library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
+                settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
+              };
+              const ctx = TAB_CONTEXT[viewMode];
+              if (!ctx) return null;
+              return (
+                <motion.div
+                  key={viewMode}
+                  className="tab-context-bar"
+                  initial={{ opacity: 0, x: 10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -10 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <span className="tab-context-icon">{ctx.icon}</span>
+                  <span className="tab-context-text">{ctx.text}</span>
+                </motion.div>
+              );
+            })()}
+          </AnimatePresence>
+        </div>
+
         {/* 광고: 로고 아래 전체 너비 배너 — slot은 AdSense 심사 통과 후 채우세요 */}
         <AdBanner slot="TODO" style={{ width: '100%', margin: '4px 0 0' }} />
       </header>

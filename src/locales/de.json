@@ -124,5 +124,13 @@
       "intermediate": "Mittelstufe",
       "advanced": "Fortgeschritten"
     }
+  },
+  "tabTag": {
+    "scene":       "Wähle eine Szene und übe echte Gespräche mit KI",
+    "translation": "Übersetze Wörter & Sätze, dann übe die Aussprache",
+    "voa":         "Trainiere deine Aussprache mit VOA-Englisch-News",
+    "ted":         "Schau Videos und erlerne natürliches Englisch",
+    "library":     "Wiederhole gespeicherte Karten und übe erneut",
+    "settings":    "Lernsprache und API-Umgebung einstellen"
   }
 }

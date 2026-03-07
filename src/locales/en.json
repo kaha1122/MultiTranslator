@@ -124,5 +124,13 @@
       "intermediate": "Intermediate",
       "advanced": "Advanced"
     }
+  },
+  "tabTag": {
+    "scene":       "Pick a scene and practice real conversations with AI",
+    "translation": "Translate words & sentences, then practice pronunciation",
+    "voa":         "Train your pronunciation with VOA English news",
+    "ted":         "Watch videos and absorb natural English",
+    "library":     "Review your saved cards and practice again",
+    "settings":    "Set your learning language and API environment"
   }
 }

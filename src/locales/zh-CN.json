@@ -124,5 +124,13 @@
       "intermediate": "中级",
       "advanced": "高级"
     }
+  },
+  "tabTag": {
+    "scene":       "选择场景，与AI练习真实对话",
+    "translation": "翻译单词和句子，练习发音",
+    "voa":         "用VOA英语新闻训练实战发音",
+    "ted":         "通过视频学习自然英语",
+    "library":     "复习保存的卡片，再次练习",
+    "settings":    "设置学习语言和API环境"
   }
 }

@@ -124,5 +124,13 @@
       "intermediate": "Intermedio",
       "advanced": "Avanzado"
     }
+  },
+  "tabTag": {
+    "scene":       "Elige una escena y practica conversaciones reales con IA",
+    "translation": "Traduce palabras y frases, luego practica la pronunciación",
+    "voa":         "Entrena tu pronunciación con las noticias VOA en inglés",
+    "ted":         "Mira videos y absorbe el inglés natural",
+    "library":     "Repasa tus tarjetas guardadas y practica de nuevo",
+    "settings":    "Configura tu idioma de aprendizaje y entorno API"
   }
 }
