@@ -4,6 +4,8 @@ import './LandingPage.css';
 const CONTENT = {
   ko: {
     login: '로그인',
+    signUp: '회원가입',
+    otherLogin: '다른 방법으로 로그인',
     usps: [
       { title: '무료로 원어민 발음을\n가장 빠르게 향상시키는 방법', sub: 'AI가 번역하고, 채점하고, 코치하고. 8개국 어학학습을 무료로.' },
       { title: 'AI와 듣고, 따라하고,\n점수 받고 완벽해지다', sub: '정확도·유창성·운율까지 5가지 지표로 원어민과의 차이를 한눈에 확인하세요.' },
@@ -39,6 +41,8 @@ const CONTENT = {
   },
   en: {
     login: 'Log In',
+    signUp: 'Sign Up',
+    otherLogin: 'Other sign-in options',
     usps: [
       { title: 'The fastest way to master\nnative-level pronunciation — free', sub: 'AI translates, scores, and coaches you. 8 languages, completely free.' },
       { title: 'Listen · Repeat · Get scored\nand perfect your accent', sub: 'See accuracy, fluency, and prosody across 5 metrics to pinpoint the gap with native speakers.' },
@@ -74,6 +78,8 @@ const CONTENT = {
   },
   ja: {
     login: 'ログイン',
+    signUp: '新規登録',
+    otherLogin: '他の方法でログイン',
     usps: [
       { title: 'ネイティブ発音を最速で\n習得する方法 — 無料', sub: 'AIが翻訳・採点・コーチング。8言語、完全無料。' },
       { title: '聞いて・まねして・点数をもらい\n完璧な発音に', sub: '正確さ・流暢さ・韻律など5項目でネイティブとの差を一目で確認。' },
@@ -109,6 +115,8 @@ const CONTENT = {
   },
   'zh-CN': {
     login: '登录',
+    signUp: '注册',
+    otherLogin: '其他登录方式',
     usps: [
       { title: '免费快速提升\n母语级发音的最佳方法', sub: 'AI翻译、评分、辅导。8种语言，完全免费。' },
       { title: '听 · 模仿 · 获得评分\n完善你的发音', sub: '通过5项指标了解准确度、流利度和韵律，一眼看出与母语者的差距。' },
@@ -144,6 +152,8 @@ const CONTENT = {
   },
   vi: {
     login: 'Đăng nhập',
+    signUp: 'Đăng ký',
+    otherLogin: 'Phương thức đăng nhập khác',
     usps: [
       { title: 'Cách nhanh nhất để luyện\nphát âm chuẩn bản ngữ — miễn phí', sub: 'AI dịch, chấm điểm và huấn luyện bạn. 8 ngôn ngữ, hoàn toàn miễn phí.' },
       { title: 'Nghe · Lặp lại · Nhận điểm\nvà hoàn thiện phát âm', sub: 'Xem độ chính xác, sự trôi chảy và ngữ điệu qua 5 chỉ số để biết khoảng cách với người bản ngữ.' },
@@ -179,6 +189,8 @@ const CONTENT = {
   },
   fr: {
     login: 'Connexion',
+    signUp: "S'inscrire",
+    otherLogin: 'Autres options de connexion',
     usps: [
       { title: 'La façon la plus rapide de maîtriser\nla prononciation native — gratuit', sub: "L'IA traduit, note et vous entraîne. 8 langues, entièrement gratuit." },
       { title: 'Écouter · Répéter · Obtenir une note\net perfectionner votre accent', sub: "Voyez la précision, la fluidité et la prosodie sur 5 métriques pour identifier l'écart avec les locuteurs natifs." },
@@ -214,6 +226,8 @@ const CONTENT = {
   },
   de: {
     login: 'Anmelden',
+    signUp: 'Registrieren',
+    otherLogin: 'Andere Anmeldemethoden',
     usps: [
       { title: 'Der schnellste Weg zur muttersprachlichen\nAussprache — kostenlos', sub: 'KI übersetzt, bewertet und coacht Sie. 8 Sprachen, völlig kostenlos.' },
       { title: 'Hören · Nachsprechen · Punkte sammeln\nund Akzent perfektionieren', sub: 'Sehen Sie Genauigkeit, Flüssigkeit und Prosodie in 5 Metriken, um den Unterschied zu Muttersprachlern zu erkennen.' },
@@ -249,6 +263,8 @@ const CONTENT = {
   },
   es: {
     login: 'Iniciar sesión',
+    signUp: 'Registrarse',
+    otherLogin: 'Otras opciones de inicio de sesión',
     usps: [
       { title: 'La forma más rápida de dominar\nla pronunciación nativa — gratis', sub: 'La IA traduce, puntúa y te entrena. 8 idiomas, completamente gratis.' },
       { title: 'Escuchar · Repetir · Recibir puntos\ny perfeccionar tu acento', sub: 'Ve la precisión, fluidez y prosodia en 5 métricas para identificar la brecha con los hablantes nativos.' },
@@ -284,7 +300,7 @@ const CONTENT = {
   },
 };
 
-const LandingPage = ({ onStart, onInstall, showInstall }) => {
+const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall }) => {
   const titleRef = useRef(null);
   const subRef = useRef(null);
   const bottomRef = useRef(null);
@@ -344,10 +360,10 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
 
       {/* ── 네비게이션 ── */}
       <nav className="lp-nav">
-        <div className="lp-logo">PronunFit.</div>
+        <div className="lp-logo">PronunFit</div>
         <div className="lp-nav-actions">
           <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>
-          <button className="lp-login-btn" onClick={onStart}>{c.login}</button>
+          <button className="lp-login-btn" onClick={onSignup}>{c.signUp}</button>
         </div>
       </nav>
 
@@ -368,11 +384,11 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
         </p>
 
         <div className="lp-cta-group">
-          <button className="lp-btn lp-btn-primary" onClick={onStart}>
+          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>
             {c.ctaStart}
           </button>
-          <button className="lp-btn lp-btn-secondary" onClick={onStart}>
-            {c.login}
+          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>
+            {c.otherLogin}
           </button>
         </div>
 
@@ -432,11 +448,11 @@ const LandingPage = ({ onStart, onInstall, showInstall }) => {
         </h2>
         <p className="lp-cta-sub">{c.ctaSub}</p>
         <div className="lp-cta-btn-wrap">
-          <button className="lp-btn lp-btn-primary" onClick={onStart}>
+          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>
             {c.ctaStart}
           </button>
-          <button className="lp-btn lp-btn-secondary" onClick={onStart}>
-            {c.login}
+          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>
+            {c.otherLogin}
           </button>
         </div>
         <p className="lp-footer-note">{c.footerNote}</p>

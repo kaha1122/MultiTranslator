@@ -12,7 +12,9 @@ import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'fire
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut } from 'firebase/auth';
+import { signOut, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { googleProvider } from './firebase/config';
+import { setDoc, doc } from 'firebase/firestore';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
@@ -783,10 +785,38 @@ function App() {
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
 
 
+  // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
+  const handleGoogleLoginFromLanding = async () => {
+    const ua = navigator.userAgent || '';
+    const isInApp = /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
+      || (/Android/.test(ua) && /wv\)/.test(ua))
+      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
+    if (isInApp) { setShowLanding(false); return; } // Login 화면이 인앱 경고 처리
+    try {
+      const cred = await signInWithPopup(auth, googleProvider);
+      const info = getAdditionalUserInfo(cred);
+      const profileData = { uid: cred.user.uid, email: cred.user.email, membership: 'Free', updatedAt: serverTimestamp() };
+      if (info?.isNewUser) {
+        profileData.displayName = cred.user.displayName || 'Google User';
+        profileData.hasCompletedOnboarding = false;
+        profileData.createdAt = serverTimestamp();
+      }
+      await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user') console.error('Google login error:', err);
+    }
+  };
+
   // 로그인이 되어있지 않으면 랜딩 → 로그인/회원가입 화면을 보여줍니다.
   if (!user) {
     if (showLanding) {
-      return <LandingPage onStart={() => setShowLanding(false)} onInstall={handleInstallClick} showInstall={showInstallBanner} />;
+      return <LandingPage
+        onGoogleLogin={handleGoogleLoginFromLanding}
+        onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
+        onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
+        onInstall={handleInstallClick}
+        showInstall={showInstallBanner}
+      />;
     }
     return authMode === 'login' ? (
       <Login onSwitchToSignup={() => setAuthMode('signup')} />
