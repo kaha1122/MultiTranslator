@@ -137,11 +137,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         setDeleteConfirmId(null);
     };
 
-    // 2-1. 메모/어노테이션 로컬 상태 즉시 반영 (Firestore 쓰기는 TranslationCard에서 직접 처리)
-    const handleMemoUpdate = (cardId, newMemos, newAnnotations) => {
+    // 2-1. 메모/어노테이션/노트 로컬 상태 즉시 반영 (Firestore 쓰기는 TranslationCard에서 직접 처리)
+    const handleMemoUpdate = (cardId, newMemos, newAnnotations, newUserNotes) => {
         setSavedCards(prev => prev.map(card =>
             card.id === cardId
-                ? { ...card, memos: newMemos, annotations: newAnnotations }
+                ? { ...card, memos: newMemos, annotations: newAnnotations, userNotes: newUserNotes ?? card.userNotes }
                 : card
         ));
     };
@@ -349,7 +349,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                 cardId={card.id}
                                 memos={card.memos || []}
                                 annotations={card.annotations || []}
-                                onMemoUpdate={(newMemos, newAnnotations) => handleMemoUpdate(card.id, newMemos, newAnnotations)}
+                                userNotes={card.userNotes || []}
+                                onMemoUpdate={(newMemos, newAnnotations, newUserNotes) => handleMemoUpdate(card.id, newMemos, newAnnotations, newUserNotes)}
                                 memoPopupOpen={memoOpenId === card.id}
                                 onMemoClose={() => setMemoOpenId(null)}
                             />
@@ -379,7 +380,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                         className="stat-icon-btn"
                                         title="메모 / 어노테이션"
                                         onClick={(e) => { e.stopPropagation(); setMemoOpenId(memoOpenId === card.id ? null : card.id); }}
-                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: (card.memos?.length || card.annotations?.length) ? '#6366f1' : 'var(--text-secondary)' }}
+                                        style={{ background: 'none', border: 'none', outline: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: (card.memos?.length || card.userNotes?.length) ? '#6366f1' : 'var(--text-secondary)' }}
                                     >
                                         <PenLine size={16} />
                                     </button>

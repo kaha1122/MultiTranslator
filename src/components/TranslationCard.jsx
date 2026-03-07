@@ -58,6 +58,7 @@ const TranslationCard = ({
     cardId,
     memos = [],
     annotations = [],
+    userNotes = [],
     onMemoUpdate,
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
@@ -68,25 +69,32 @@ const TranslationCard = ({
 
     // ── 메모 팝업 상태 ──
     const [showMemoPopup, setShowMemoPopup] = useState(false);
-    const [memoTab, setMemoTab] = useState('ai'); // 'ai' | 'edit'
+    const [memoTab, setMemoTab] = useState('ai'); // 'ai' | 'note'
     const [memoInput, setMemoInput] = useState('');
-    const [editWord, setEditWord] = useState('');
+    const [noteInput, setNoteInput] = useState('');
     const [isMemoLoading, setIsMemoLoading] = useState(false);
-    const [lastResponse, setLastResponse] = useState(null); // { text } — 팝업 안에 즉시 표시
-    // Firestore prop 업데이트 전에 즉시 표시할 낙관적 메모 목록
+    const [lastResponse, setLastResponse] = useState(null);
+    // 낙관적 업데이트용 pending 목록
     const [pendingMemos, setPendingMemos] = useState([]);
+    const [pendingNotes, setPendingNotes] = useState([]);
     const memoInputRef = useRef(null);
-    const editInputRef = useRef(null);
+    const noteInputRef = useRef(null);
 
-    // memos prop이 Firestore에서 업데이트되면 pendingMemos에서 확인된 항목 제거
+    // Firestore 반영 후 pending 제거
     useEffect(() => {
         setPendingMemos(prev =>
             prev.filter(pm => !(memos || []).some(m => m.createdAt === pm.createdAt))
         );
     }, [memos]);
+    useEffect(() => {
+        setPendingNotes(prev =>
+            prev.filter(pn => !(userNotes || []).some(n => n.createdAt === pn.createdAt))
+        );
+    }, [userNotes]);
 
-    // 카드에 실제 표시할 메모 목록 (prop + 아직 미확인 pending)
+    // 카드에 실제 표시할 목록 (prop + pending)
     const displayMemos = [...(memos || []), ...pendingMemos];
+    const displayNotes = [...(userNotes || []), ...pendingNotes];
 
     const {
         isRecording,
@@ -113,17 +121,17 @@ const TranslationCard = ({
             setMemoTab('ai');
             setLastResponse(null);
             setMemoInput('');
-            setEditWord('');
+            setNoteInput('');
             setTimeout(() => memoInputRef.current?.focus(), 80);
         }
     }, [memoPopupOpen]);
 
-    // ── 팝업 닫기 (내부 + 외부 상태 모두 초기화) ──
+    // ── 팝업 닫기 ──
     const closePopup = () => {
         if (isMemoLoading) return;
         setShowMemoPopup(false);
         setMemoInput('');
-        setEditWord('');
+        setNoteInput('');
         setLastResponse(null);
         setMemoTab('ai');
         onMemoClose?.();
@@ -172,14 +180,11 @@ Return only these 2 lines.`;
             const response = await callGeminiMemo(query);
             const memoEntry = { query, response, createdAt: new Date().toISOString() };
             const newMemos = [...(memos || []), memoEntry];
-            // 카드에 즉시 표시
             setPendingMemos(prev => [...prev, memoEntry]);
-            // Firestore에 직접 저장 (cardId가 있는 Library 뷰에서만)
             if (cardId) {
                 await updateDoc(doc(db, "savedCards", cardId), { memos: newMemos });
             }
-            // Library 로컬 상태 업데이트 (화면 즉시 반영)
-            onMemoUpdate?.(newMemos, annotations);
+            onMemoUpdate?.(newMemos, annotations, userNotes);
             setLastResponse({ query, text: response });
         } catch (e) {
             console.error('Memo failed:', e);
@@ -189,33 +194,18 @@ Return only these 2 lines.`;
         }
     };
 
-    // ── Edit 탭: 어노테이션 적용 ──
-    const handleEditApply = async (style) => {
-        const word = editWord.trim();
-        if (!word || isMemoLoading) return;
-        setIsMemoLoading(true);
-        setLastResponse(null);
-        try {
-            const ann = { matchText: word, type: style };
-            const newAnnotations = [
-                ...(annotations || []).filter(a => a.matchText.toLowerCase() !== word.toLowerCase()),
-                ann,
-            ];
-            // Firestore에 직접 저장
-            if (cardId) {
-                await updateDoc(doc(db, "savedCards", cardId), { annotations: newAnnotations });
-            }
-            // Library 로컬 상태 업데이트
-            onMemoUpdate?.(memos, newAnnotations);
-            const label = style === 'underline' ? '밑줄' : style === 'red' ? '빨강' : '형광';
-            setLastResponse({ text: `"${word}" 에 ${label} 적용 완료 ✅` });
-            setEditWord('');
-        } catch (e) {
-            console.error('Edit apply failed:', e);
-            setLastResponse({ text: `❌ 오류: ${e.message || '다시 시도해 주세요.'}` });
-        } finally {
-            setIsMemoLoading(false);
+    // ── 내 메모(노트) 저장 ──
+    const handleNoteSubmit = async () => {
+        const text = noteInput.trim();
+        if (!text) return;
+        const noteEntry = { text, createdAt: new Date().toISOString() };
+        const newNotes = [...(userNotes || []), noteEntry];
+        setNoteInput('');
+        setPendingNotes(prev => [...prev, noteEntry]);
+        if (cardId) {
+            await updateDoc(doc(db, "savedCards", cardId), { userNotes: newNotes });
         }
+        onMemoUpdate?.(memos, annotations, newNotes);
     };
 
     const prevAnalyzing = useRef(isAnalyzing);
@@ -364,14 +354,26 @@ Return only these 2 lines.`;
                     )}
                 </div>
 
-                {/* 저장된 메모 목록 (AI Q&A만) — pendingMemos 포함해 즉시 표시 */}
+                {/* AI Q&A 메모 */}
                 {displayMemos.length > 0 && (
                     <div className="card-memos">
-                        <span className="memo-section-label">MY MEMOS</span>
+                        <span className="memo-section-label">🤖 AI Q&amp;A</span>
                         {displayMemos.map((memo, i) => (
-                            <div key={memo.createdAt || i} className="memo-item">
+                            <div key={memo.createdAt || i} className="memo-item memo-item-ai">
                                 <p className="memo-query">💬 {memo.query}</p>
                                 <p className="memo-response">{memo.response}</p>
+                            </div>
+                        ))}
+                    </div>
+                )}
+
+                {/* 사용자 직접 메모 */}
+                {displayNotes.length > 0 && (
+                    <div className="card-memos">
+                        <span className="memo-section-label memo-section-label-note">✏️ 내 메모</span>
+                        {displayNotes.map((note, i) => (
+                            <div key={note.createdAt || i} className="memo-item memo-item-note">
+                                <p className="memo-note-text">{note.text}</p>
                             </div>
                         ))}
                     </div>
@@ -393,11 +395,11 @@ Return only these 2 lines.`;
                             <button
                                 className={`memo-tab-btn ${memoTab === 'ai' ? 'active' : ''}`}
                                 onClick={() => { setMemoTab('ai'); setLastResponse(null); setTimeout(() => memoInputRef.current?.focus(), 50); }}
-                            >AI Q&amp;A</button>
+                            >🤖 AI Q&amp;A</button>
                             <button
-                                className={`memo-tab-btn ${memoTab === 'edit' ? 'active' : ''}`}
-                                onClick={() => { setMemoTab('edit'); setLastResponse(null); setTimeout(() => editInputRef.current?.focus(), 50); }}
-                            >Edit</button>
+                                className={`memo-tab-btn memo-tab-note ${memoTab === 'note' ? 'active' : ''}`}
+                                onClick={() => { setMemoTab('note'); setTimeout(() => noteInputRef.current?.focus(), 50); }}
+                            >✏️ 내 메모</button>
                         </div>
 
                         {/* AI Q&A 탭 */}
@@ -438,44 +440,34 @@ Return only these 2 lines.`;
                             </div>
                         )}
 
-                        {/* Edit 탭 */}
-                        {memoTab === 'edit' && (
+                        {/* 내 메모 탭 */}
+                        {memoTab === 'note' && (
                             <div className="memo-tab-content">
-                                <input
-                                    ref={editInputRef}
-                                    type="text"
-                                    className="memo-input"
-                                    value={editWord}
-                                    onChange={e => setEditWord(e.target.value)}
-                                    placeholder="단어를 입력하세요"
-                                    disabled={isMemoLoading}
-                                />
-                                <div className="memo-style-btns">
+                                <div className="memo-input-row memo-note-row">
+                                    <textarea
+                                        ref={noteInputRef}
+                                        className="memo-note-textarea"
+                                        value={noteInput}
+                                        onChange={e => setNoteInput(e.target.value)}
+                                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleNoteSubmit(); } }}
+                                        placeholder="기억하고 싶은 내용을 자유롭게 적어보세요. (Enter로 저장)"
+                                        rows={3}
+                                    />
                                     <button
-                                        className="memo-style-btn memo-style-highlight"
-                                        onClick={() => handleEditApply('highlight')}
-                                        disabled={!editWord.trim() || isMemoLoading}
-                                    >🟡 형광</button>
-                                    <button
-                                        className="memo-style-btn memo-style-underline"
-                                        onClick={() => handleEditApply('underline')}
-                                        disabled={!editWord.trim() || isMemoLoading}
-                                    >밑줄</button>
-                                    <button
-                                        className="memo-style-btn memo-style-red"
-                                        onClick={() => handleEditApply('red')}
-                                        disabled={!editWord.trim() || isMemoLoading}
-                                    >🔴 빨강</button>
+                                        className="memo-submit-btn memo-note-submit-btn"
+                                        onClick={handleNoteSubmit}
+                                        disabled={!noteInput.trim()}
+                                        title="저장"
+                                    >+</button>
                                 </div>
-                                {isMemoLoading && (
-                                    <div className="memo-loading-status">
-                                        <span className="memo-loading-dot" />
-                                        적용 중...
-                                    </div>
-                                )}
-                                {lastResponse && !isMemoLoading && (
-                                    <div className="memo-popup-response">
-                                        <p className="memo-popup-response-text">{lastResponse.text}</p>
+                                {displayNotes.length > 0 && (
+                                    <div className="memo-note-list">
+                                        {[...displayNotes].reverse().map((note, i) => (
+                                            <div key={note.createdAt || i} className="memo-note-preview">
+                                                <p>{note.text}</p>
+                                                <span className="memo-note-date">{new Date(note.createdAt).toLocaleDateString()}</span>
+                                            </div>
+                                        ))}
                                     </div>
                                 )}
                             </div>
