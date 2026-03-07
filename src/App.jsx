@@ -162,8 +162,8 @@ function App() {
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
 
-  // 현재 화면 모드 ('translation': 번역 화면, 'settings': 설정 화면)
-  const [viewMode, setViewMode] = useState('voa');
+  // 현재 화면 모드 — 기본 홈은 'scene'
+  const [viewMode, setViewMode] = useState('scene');
 
   // 사용자가 입력한 번역할 텍스트
   const [inputText, setInputText] = useState(() => {
@@ -368,11 +368,12 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // 신규 유저 첫 로그인 시 기본 학습 언어(영어) 설정
+  // 신규 유저 첫 로그인 시 설정 화면으로 이동
   useEffect(() => {
     if (!user || !profile) return;
     if (profile.hasCompletedOnboarding === true) return;
     setTargetLangs(['en']);
+    setViewMode('settings');
     updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
   }, [user, profile]);
 
@@ -434,8 +435,8 @@ function App() {
       // 인앱 브라우저인 경우, 사용자에게 친절한 모달 팝업을 띄움 (화면 이동은 하지 않음)
       setShowInAppWarning(true);
     } else {
-      // 일반 브라우저인 경우 바로 홈 화면(번역 모드)으로 이동
-      setViewMode('translation');
+      // 일반 브라우저인 경우 Scene 홈으로 이동
+      setViewMode('scene');
     }
   };
 
@@ -750,7 +751,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase 서버에 로그아웃 알림
-      setViewMode('translation'); // 로그아웃 후 기본 화면으로 이동
+      setViewMode('scene'); // 로그아웃 후 기본 화면으로 이동
     } catch (error) {
       console.error("로그아웃 실패:", error);
     }
