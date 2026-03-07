@@ -9,11 +9,80 @@ const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const RssParser = require('rss-parser');
 const { parse: parseHtml } = require('node-html-parser');
 const { YoutubeTranscript } = require('youtube-transcript');
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+const admin = require('firebase-admin');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
 
+// ── Firebase Admin 초기화 ────────────────────────────────────────────────────
+if (!admin.apps.length) {
+    try {
+        const serviceAccount = JSON.parse(
+            Buffer.from(process.env.FIREBASE_SERVICE_ACCOUNT_BASE64 || '', 'base64').toString('utf8')
+        );
+        admin.initializeApp({ credential: admin.credential.cert(serviceAccount) });
+        console.log('[Firebase Admin] Initialized successfully');
+    } catch (e) {
+        console.warn('[Firebase Admin] Init skipped (no FIREBASE_SERVICE_ACCOUNT_BASE64):', e.message);
+    }
+}
+const adminDb = admin.apps.length ? admin.firestore() : null;
+
 const app = express();
 app.use(cors());
+
+// ── Stripe Webhook (express.raw BEFORE express.json()) ───────────────────────
+// Stripe는 서명 검증을 위해 raw body가 필요합니다.
+// express.json()보다 먼저 등록해야 합니다.
+app.post('/api/stripe-webhook', express.raw({ type: 'application/json' }), async (req, res) => {
+    const sig = req.headers['stripe-signature'];
+    const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
+    let event;
+
+    try {
+        event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
+    } catch (err) {
+        console.error('[Stripe Webhook] Signature verification failed:', err.message);
+        return res.status(400).send(`Webhook Error: ${err.message}`);
+    }
+
+    try {
+        if (event.type === 'checkout.session.completed') {
+            const session = event.data.object;
+            const userId = session.client_reference_id;
+            const tier = session.metadata?.tier;
+            if (adminDb && userId && tier) {
+                await adminDb.collection('users').doc(userId).update({
+                    tier,
+                    stripeCustomerId: session.customer,
+                    stripeSubscriptionId: session.subscription,
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[Stripe Webhook] tier updated: ${userId} → ${tier}`);
+            }
+        }
+
+        if (event.type === 'customer.subscription.deleted') {
+            const subscription = event.data.object;
+            const customerId = subscription.customer;
+            if (adminDb) {
+                const snapshot = await adminDb.collection('users')
+                    .where('stripeCustomerId', '==', customerId).get();
+                const batch = adminDb.batch();
+                snapshot.forEach(doc => {
+                    batch.update(doc.ref, { tier: 'trial', stripeSubscriptionId: null });
+                });
+                await batch.commit();
+                console.log(`[Stripe Webhook] subscription cancelled: customerId=${customerId}`);
+            }
+        }
+    } catch (err) {
+        console.error('[Stripe Webhook] Handler error:', err.message);
+    }
+
+    res.json({ received: true });
+});
+
 app.use(express.json());
 
 const UPLOADS_DIR = 'uploads/';
@@ -645,6 +714,57 @@ Return ONLY valid JSON (no markdown):
     } catch (e) {
         console.error('[SceneSentence] Error:', e.response?.data || e.message);
         res.status(500).json({ error: 'Failed to generate sentence' });
+    }
+});
+
+// ── Stripe Checkout 세션 생성 ────────────────────────────────────────────────
+app.post('/api/create-checkout-session', async (req, res) => {
+    const { userId, userEmail, tier } = req.body;
+    if (!userId || !tier) return res.status(400).json({ error: 'userId and tier are required' });
+
+    const PRICE_IDS = {
+        pro:     process.env.STRIPE_PRICE_PRO,
+        premium: process.env.STRIPE_PRICE_PREMIUM,
+    };
+    const priceId = PRICE_IDS[tier];
+    if (!priceId) return res.status(400).json({ error: `Unknown tier: ${tier}` });
+
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'https://multi-translator-seven.vercel.app';
+
+    try {
+        const session = await stripe.checkout.sessions.create({
+            payment_method_types: ['card'],
+            mode: 'subscription',
+            line_items: [{ price: priceId, quantity: 1 }],
+            client_reference_id: userId,
+            customer_email: userEmail || undefined,
+            success_url: `${FRONTEND_URL}?payment=success&tier=${tier}`,
+            cancel_url:  `${FRONTEND_URL}?payment=cancelled`,
+            metadata: { userId, tier },
+        });
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('[Stripe] create-checkout-session error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── Stripe Customer Portal (구독 관리 / 취소) ────────────────────────────────
+app.post('/api/customer-portal', async (req, res) => {
+    const { customerId } = req.body;
+    if (!customerId) return res.status(400).json({ error: 'customerId required' });
+
+    const FRONTEND_URL = process.env.FRONTEND_URL || 'https://multi-translator-seven.vercel.app';
+
+    try {
+        const session = await stripe.billingPortal.sessions.create({
+            customer: customerId,
+            return_url: FRONTEND_URL,
+        });
+        res.json({ url: session.url });
+    } catch (err) {
+        console.error('[Stripe] customer-portal error:', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

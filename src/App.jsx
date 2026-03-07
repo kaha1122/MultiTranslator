@@ -24,6 +24,7 @@ import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이�
 import OnboardingModal from './components/OnboardingModal';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
+import UpgradeModal from './components/UpgradeModal';
 import VoaReader from './components/VoaReader';
 import TedReader from './components/TedReader';
 import ScenePractice from './components/ScenePractice';
@@ -100,6 +101,26 @@ function App() {
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   const [trialCardCurrentCount, setTrialCardCurrentCount] = useState(0);
+
+  // 업그레이드 모달
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  // Stripe 결제 성공/취소 후 URL 파라미터 처리
+  const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'cancelled' | ''
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const payment = params.get('payment');
+    if (payment === 'success') {
+      setPaymentToast('success');
+      setTimeout(() => setPaymentToast(''), 4000);
+    } else if (payment === 'cancelled') {
+      setPaymentToast('cancelled');
+      setTimeout(() => setPaymentToast(''), 3000);
+    }
+    if (payment) {
+      // URL에서 파라미터 제거 (히스토리 남기지 않음)
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+  }, []);
 
   // ── PWA 홈 화면 설치 유도 배너 상태 ──────────────────────────────────────
   // deferredPrompt: 브라우저가 "설치 가능" 이벤트를 던져주면 여기에 보관해둡니다.
@@ -1203,16 +1224,30 @@ function App() {
                     premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
                   }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
                 </span>
-                <button
-                  onClick={() => setShowApiKeyWizard(true)}
-                  style={{
-                    padding: '8px 14px', background: '#6366f1', color: 'white',
-                    border: 'none', borderRadius: '8px', fontWeight: 'bold',
-                    cursor: 'pointer', fontSize: '0.82rem'
-                  }}
-                >
-                  🔑 {getT(sourceLang, 'settings.apiKeys')}
-                </button>
+                <div style={{ display: 'flex', gap: '8px' }}>
+                  {(tier === 'trial' || tier === 'byok_free') && (
+                    <button
+                      onClick={() => setShowUpgradeModal(true)}
+                      style={{
+                        padding: '8px 14px', background: '#00a884', color: 'white',
+                        border: 'none', borderRadius: '8px', fontWeight: 'bold',
+                        cursor: 'pointer', fontSize: '0.82rem'
+                      }}
+                    >
+                      ✨ 업그레이드
+                    </button>
+                  )}
+                  <button
+                    onClick={() => setShowApiKeyWizard(true)}
+                    style={{
+                      padding: '8px 14px', background: '#6366f1', color: 'white',
+                      border: 'none', borderRadius: '8px', fontWeight: 'bold',
+                      cursor: 'pointer', fontSize: '0.82rem'
+                    }}
+                  >
+                    🔑 {getT(sourceLang, 'settings.apiKeys')}
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -1411,6 +1446,27 @@ function App() {
           onClose={() => setShowApiKeyWizard(false)}
           onComplete={() => setShowApiKeyWizard(false)}
         />
+      )}
+
+      {/* 업그레이드 모달 */}
+      {showUpgradeModal && (
+        <UpgradeModal
+          sourceLang={sourceLang}
+          onClose={() => setShowUpgradeModal(false)}
+        />
+      )}
+
+      {/* Stripe 결제 결과 토스트 */}
+      {paymentToast && (
+        <div style={{
+          position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)',
+          background: paymentToast === 'success' ? '#00a884' : '#64748b',
+          color: 'white', padding: '12px 24px', borderRadius: '20px',
+          fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
+          boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
+        }}>
+          {paymentToast === 'success' ? '🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.' : '결제가 취소되었습니다.'}
+        </div>
       )}
     </div>
   );

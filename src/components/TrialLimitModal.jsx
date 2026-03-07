@@ -1,10 +1,14 @@
+import { useState } from 'react';
 import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
+const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
 const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
     const t = useT(sourceLang);
-    const { trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT } = useAuth();
+    const { user, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT } = useAuth();
+    const [isLoading, setIsLoading] = useState(false);
 
     return (
         <div
@@ -68,14 +72,31 @@ const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
                         <li>{t('trial.optionProFeature2')}</li>
                     </ul>
                     <button
-                        onClick={() => alert('Coming soon! 🚧')}
+                        onClick={async () => {
+                            if (!user) return;
+                            setIsLoading(true);
+                            try {
+                                const res = await fetch(`${SERVER_URL}/api/create-checkout-session`, {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({ userId: user.uid, userEmail: user.email, tier: 'pro' }),
+                                });
+                                const data = await res.json();
+                                if (data.url) window.location.href = data.url;
+                            } catch (e) {
+                                alert('결제 페이지 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+                            } finally {
+                                setIsLoading(false);
+                            }
+                        }}
+                        disabled={isLoading}
                         style={{
                             width: '100%', padding: '12px', background: '#4338ca', color: 'white',
                             border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer',
-                            fontSize: '0.95rem'
+                            fontSize: '0.95rem', opacity: isLoading ? 0.7 : 1
                         }}
                     >
-                        {t('trial.optionProBtn')}
+                        {isLoading ? '처리 중...' : t('trial.optionProBtn')}
                     </button>
                 </div>
 
