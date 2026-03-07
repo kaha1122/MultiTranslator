@@ -198,9 +198,9 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
         });
 
         // BYOK: 사용자가 직접 제공한 키가 있으면 우선 사용, 없으면 서버 환경 변수 사용
-        const azureKeyToUse    = req.body.userAzureKey    || AZURE_KEY;
+        const azureKeyToUse = req.body.userAzureKey || AZURE_KEY;
         const azureRegionToUse = req.body.userAzureRegion || AZURE_REGION;
-        const geminiKeyToUse   = req.body.userGeminiKey   || GEMINI_API_KEY;
+        const geminiKeyToUse = req.body.userGeminiKey || GEMINI_API_KEY;
 
         // 1. Azure Assessment (언어 코드 추가 전달)
         const assessment = await analyzePronunciation(audioPath, referenceText, langCode, azureKeyToUse, azureRegionToUse);
@@ -231,9 +231,9 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 const rssParser = new RssParser({ timeout: 8000 });
 
 const VOA_FEEDS = {
-    beginner:     'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
+    beginner: 'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
     intermediate: 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
-    advanced:     'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
+    advanced: 'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
 };
 
 // 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
@@ -420,9 +420,9 @@ function extractJsonArray(html, marker) {
     let depth = 0, inStr = false, esc = false;
     for (let i = start; i < html.length; i++) {
         const c = html[i];
-        if (esc)              { esc = false; continue; }
+        if (esc) { esc = false; continue; }
         if (c === '\\' && inStr) { esc = true; continue; }
-        if (c === '"')        { inStr = !inStr; continue; }
+        if (c === '"') { inStr = !inStr; continue; }
         if (!inStr) {
             if (c === '[' || c === '{') depth++;
             else if (c === ']' || c === '}') {
@@ -567,7 +567,7 @@ app.get('/api/youtube-transcript', async (req, res) => {
 // ─────────────────────────────────────────────────────
 // TED YouTube 채널 ID (youtube.com/@TED)
 const TED_CHANNEL_ID = 'UCsooa4yRKGN_zEE8iknghZA';
-const TED_FEED_URL   = `https://www.youtube.com/feeds/videos.xml?channel_id=${TED_CHANNEL_ID}`;
+const TED_FEED_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${TED_CHANNEL_ID}`;
 const tedCache = new Map();
 
 const rssParserYT = new RssParser({
@@ -619,9 +619,9 @@ const LANG_NAMES_FOR_SCENE = {
 };
 
 const DIFFICULTY_DESC = {
-    basic:        'beginner level — use only the most common, simple words and very short phrases',
+    basic: 'beginner level — use only the most common, simple words and very short phrases',
     intermediate: 'intermediate level — use natural everyday expressions and moderate vocabulary',
-    high:         'advanced level — use complex sentence structures, idiomatic expressions, and nuanced language',
+    high: 'advanced level — use complex sentence structures, idiomatic expressions, and nuanced language',
 };
 const STYLE_DESC = {
     casual: 'casual, informal tone — as if speaking to a close friend; use contractions and relaxed language',
@@ -639,8 +639,8 @@ app.post('/api/scene-sentence', async (req, res) => {
 
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
-    const diffDesc   = DIFFICULTY_DESC[difficulty]  || DIFFICULTY_DESC.intermediate;
-    const styleDesc  = STYLE_DESC[speechStyle]      || STYLE_DESC.formal;
+    const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
+    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
     const prompt = `You are a language learning coach. Generate a single natural QUESTION sentence for a learner to practice speaking in a real-life context.
 
@@ -656,6 +656,8 @@ Rules:
 2. Length: 8–18 words — short enough to practice in one breath
 3. Match the difficulty and speech style exactly
 4. The sentence must end with a question mark
+5. CRITICAL: DO NOT always start the sentence with boring greetings like "Excuse me," "Hello," or "Hey,". 
+6. Be highly creative with sentence starters! Jump directly into the main point, or use varied natural openings (e.g., "I was wondering if...", "Could you possibly...", "Hi there, do you...", "Sorry to bother you, but...").
 
 Return ONLY valid JSON (no markdown):
 {
@@ -696,8 +698,8 @@ app.post('/api/scene-answer', async (req, res) => {
 
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
-    const diffDesc  = DIFFICULTY_DESC[difficulty]  || DIFFICULTY_DESC.intermediate;
-    const styleDesc = STYLE_DESC[speechStyle]      || STYLE_DESC.formal;
+    const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
+    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
     const prompt = `You are a language learning coach. A learner just practiced saying a question in ${targetLangName}. Now generate a natural REPLY that the other person would say in response.
 
@@ -714,6 +716,8 @@ Rules:
 2. Length: 8–18 words — short enough to practice in one breath
 3. Match the difficulty and speech style exactly
 4. Make the reply directly relevant to the question asked
+5. CRITICAL: DO NOT always start the reply with "Yes," "Sure," "Hello," or "Here is". 
+6. Vary the sentence drastically! Make it sound like a real native speaker responding naturally (e.g., start with "Oh, of course...", "Actually, we...", "Let me check that for you...", or just jump straight into the answer).
 
 Return ONLY valid JSON (no markdown):
 {
