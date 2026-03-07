@@ -5,6 +5,7 @@ import { useT } from '../utils/i18n';
 import { playStarSound } from '../utils/soundEffects';
 import PronunciationAssessment from './PronunciationAssessment';
 import './VoaReader.css';
+import AdBanner from './AdBanner';
 
 const getServerUrl = () => {
     try {
@@ -373,6 +374,8 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
                         {!loadingArticle && sentences.length > 0 && (
                             <p className="voa-select-prompt">{t('voa.practicePrompt')}</p>
                         )}
+                        {/* 광고: 문장 목록 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
+                        <AdBanner slot="TODO" style={{ margin: '16px 0 8px' }} />
                     </div>
                 </div>
             )}

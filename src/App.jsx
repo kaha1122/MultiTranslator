@@ -29,6 +29,7 @@ import VoaReader from './components/VoaReader';
 import TedReader from './components/TedReader';
 import ScenePractice from './components/ScenePractice';
 import LandingPage from './components/LandingPage';
+import AdBanner from './components/AdBanner';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -836,7 +837,6 @@ function App() {
       <Analytics />
 
       <header className="app-header">
-        {/* [디자인 변경]: 앱 이름을 PronunFit으로 변경하고, framer-motion을 활용해 타이핑 애니메이션과 입체 3D 효과를 줍니다. */}
         <motion.h1
           className="main-logo-3d"
           initial="hidden"
@@ -845,9 +845,7 @@ function App() {
             hidden: { opacity: 1 },
             visible: {
               opacity: 1,
-              transition: {
-                staggerChildren: 0.15, // 한 글자씩 나타나는 딜레이 (타이핑 효과)
-              }
+              transition: { staggerChildren: 0.15 }
             }
           }}
         >
@@ -855,8 +853,8 @@ function App() {
             <motion.span
               key={index}
               variants={{
-                hidden: { opacity: 0, y: 20, scale: 0.8 }, // 시작할 때 투명하고 약간 아래에 위치
-                visible: { opacity: 1, y: 0, scale: 1 }    // 나타날 때 원래 위치로 고정되며 완성됨
+                hidden: { opacity: 0, y: 20, scale: 0.8 },
+                visible: { opacity: 1, y: 0, scale: 1 }
               }}
               style={{ display: "inline-block" }}
             >
@@ -864,6 +862,8 @@ function App() {
             </motion.span>
           ))}
         </motion.h1>
+        {/* 광고: 로고 아래 전체 너비 배너 — slot은 AdSense 심사 통과 후 채우세요 */}
+        <AdBanner slot="TODO" style={{ width: '100%', margin: '4px 0 0' }} />
       </header>
 
       <main className="app-main-content">
@@ -954,6 +954,8 @@ function App() {
                 </p>
               )}
             </div>
+            {/* 광고: 번역 결과 카드 아래 — slot은 AdSense 심사 통과 후 채우세요 */}
+            <AdBanner slot="TODO" style={{ margin: '12px 0 4px' }} />
           </>
         </div>
 
@@ -988,6 +990,8 @@ function App() {
 
         {/* Library 탭 */}
         <div style={{ display: viewMode === 'library' ? 'block' : 'none', width: '100%' }}>
+          {/* 광고: 라이브러리 목록 상단 — slot은 AdSense 심사 통과 후 채우세요 */}
+          <AdBanner slot="TODO" style={{ margin: '0 0 8px' }} />
           <Library
             user={user}
             sourceLang={sourceLang}

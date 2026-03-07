@@ -51,22 +51,22 @@ body {
 
 /* Header Section */
 .app-header {
-  text-align: center;
-  padding: 2rem 1rem 1rem;
   display: flex;
   flex-direction: column;
-  align-items: center;
+  align-items: flex-start;
+  padding: 6px 14px 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .main-logo-3d {
-  font-size: 3rem;
+  font-size: 1.3rem;
   font-weight: 900;
   color: #00a884;
-  letter-spacing: 2px;
+  letter-spacing: 1px;
   margin: 0;
-  padding: 1.5rem;
+  padding: 2px 0;
   display: flex;
-  justify-content: center;
   align-items: center;
   text-shadow:
     1px 1px 0px #008f72,
@@ -78,8 +78,7 @@ body {
 
 @media (max-width: 900px) {
   .main-logo-3d {
-    font-size: 2.2rem;
-    padding: 1rem;
+    font-size: 1.2rem;
   }
 }
 
