@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
+import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 
-const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
 
 const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
     const t = useT(sourceLang);
@@ -76,16 +77,17 @@ const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
                             if (!user) return;
                             setIsLoading(true);
                             try {
-                                const res = await fetch(`${SERVER_URL}/api/create-checkout-session`, {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({ userId: user.uid, userEmail: user.email, tier: 'pro' }),
+                                const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+                                const billing = tossPayments.billing({ customerKey: user.uid });
+                                await billing.requestBillingAuth({
+                                    method: 'CARD',
+                                    successUrl: `${window.location.origin}?billing=success&tier=pro&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
+                                    failUrl:    `${window.location.origin}?billing=fail`,
+                                    customerEmail: user.email || undefined,
+                                    customerName:  user.displayName || undefined,
                                 });
-                                const data = await res.json();
-                                if (data.url) window.location.href = data.url;
                             } catch (e) {
-                                alert('결제 페이지 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-                            } finally {
+                                alert('결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
                                 setIsLoading(false);
                             }
                         }}

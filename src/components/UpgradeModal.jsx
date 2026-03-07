@@ -1,9 +1,11 @@
 import { useState } from 'react';
 import { X, Zap, Crown, Check } from 'lucide-react';
+import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { useAuth } from '../context/AuthContext';
 import './UpgradeModal.css';
 
-const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
+const FRONTEND_URL = window.location.origin;
 
 const PLANS = [
     {
@@ -40,7 +42,7 @@ const PLANS = [
     },
 ];
 
-const UpgradeModal = ({ sourceLang, onClose }) => {
+const UpgradeModal = ({ onClose }) => {
     const { user, profile } = useAuth();
     const [loadingTier, setLoadingTier] = useState(null);
     const [error, setError] = useState('');
@@ -50,42 +52,19 @@ const UpgradeModal = ({ sourceLang, onClose }) => {
         setLoadingTier(tierId);
         setError('');
         try {
-            const res = await fetch(`${SERVER_URL}/api/create-checkout-session`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    userId: user.uid,
-                    userEmail: user.email,
-                    tier: tierId,
-                }),
+            const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+            // customerKey = Firebase UID (구독자 식별자)
+            const billing = tossPayments.billing({ customerKey: user.uid });
+            await billing.requestBillingAuth({
+                method: 'CARD',
+                successUrl: `${FRONTEND_URL}?billing=success&tier=${tierId}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
+                failUrl:    `${FRONTEND_URL}?billing=fail`,
+                customerEmail: user.email || undefined,
+                customerName:  user.displayName || undefined,
             });
-            const data = await res.json();
-            if (data.url) {
-                window.location.href = data.url;
-            } else {
-                setError(data.error || '결제 페이지를 열 수 없습니다.');
-            }
+            // requestBillingAuth는 페이지를 리디렉트하므로 이 아래 코드는 실행되지 않음
         } catch (e) {
-            setError('서버 연결에 실패했습니다. 잠시 후 다시 시도해 주세요.');
-        } finally {
-            setLoadingTier(null);
-        }
-    };
-
-    const handleManageSubscription = async () => {
-        if (!profile?.stripeCustomerId) return;
-        setLoadingTier('manage');
-        try {
-            const res = await fetch(`${SERVER_URL}/api/customer-portal`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ customerId: profile.stripeCustomerId }),
-            });
-            const data = await res.json();
-            if (data.url) window.location.href = data.url;
-        } catch (e) {
-            setError('구독 관리 페이지를 열 수 없습니다.');
-        } finally {
+            setError('결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
             setLoadingTier(null);
         }
     };
@@ -169,22 +148,44 @@ const UpgradeModal = ({ sourceLang, onClose }) => {
                     })}
                 </div>
 
-                {isSubscribed && profile?.stripeCustomerId && (
-                    <button
-                        className="upgrade-manage-btn"
-                        onClick={handleManageSubscription}
-                        disabled={loadingTier === 'manage'}
-                    >
-                        {loadingTier === 'manage' ? '처리 중...' : '구독 관리 / 취소'}
-                    </button>
+                {isSubscribed && (
+                    <CancelSubscriptionButton userId={user?.uid} />
                 )}
 
                 <p className="upgrade-footer-note">
-                    언제든지 취소 가능 · 카드 정보는 Stripe에서 안전하게 처리됩니다
+                    언제든지 취소 가능 · 카드 정보는 토스페이먼츠에서 안전하게 처리됩니다
                 </p>
             </div>
         </div>
     );
 };
+
+const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+function CancelSubscriptionButton({ userId }) {
+    const [loading, setLoading] = useState(false);
+
+    const handleCancel = async () => {
+        if (!confirm('구독을 취소하시겠습니까? 즉시 Free Trial로 변경됩니다.')) return;
+        setLoading(true);
+        try {
+            await fetch(`${SERVER_URL}/api/cancel-subscription`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId }),
+            });
+        } catch (e) {
+            alert('취소 처리에 실패했습니다. 다시 시도해 주세요.');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <button className="upgrade-manage-btn" onClick={handleCancel} disabled={loading}>
+            {loading ? '처리 중...' : '구독 취소'}
+        </button>
+    );
+}
 
 export default UpgradeModal;

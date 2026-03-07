@@ -104,21 +104,34 @@ function App() {
 
   // 업그레이드 모달
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  // Stripe 결제 성공/취소 후 URL 파라미터 처리
-  const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'cancelled' | ''
+  // TossPayments 빌링 성공 후 URL 파라미터 처리
+  const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'fail' | ''
+  const SERVER_URL_FOR_BILLING = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
-    const payment = params.get('payment');
-    if (payment === 'success') {
-      setPaymentToast('success');
-      setTimeout(() => setPaymentToast(''), 4000);
-    } else if (payment === 'cancelled') {
-      setPaymentToast('cancelled');
-      setTimeout(() => setPaymentToast(''), 3000);
-    }
-    if (payment) {
-      // URL에서 파라미터 제거 (히스토리 남기지 않음)
+    const billing = params.get('billing');
+    const authKey = params.get('authKey');
+    const customerKey = params.get('customerKey');
+    const tier = params.get('tier');
+    const email = params.get('email');
+
+    if (billing === 'success' && authKey && customerKey && tier) {
       window.history.replaceState({}, '', window.location.pathname);
+      fetch(`${SERVER_URL_FOR_BILLING}/api/toss-confirm-billing`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ authKey, customerKey, tier, userEmail: email ? decodeURIComponent(email) : '' }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          setPaymentToast(data.success ? 'success' : 'fail');
+          setTimeout(() => setPaymentToast(''), 4000);
+        })
+        .catch(() => { setPaymentToast('fail'); setTimeout(() => setPaymentToast(''), 4000); });
+    } else if (billing === 'fail') {
+      window.history.replaceState({}, '', window.location.pathname);
+      setPaymentToast('fail');
+      setTimeout(() => setPaymentToast(''), 3000);
     }
   }, []);
 
@@ -1465,7 +1478,7 @@ function App() {
           fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
         }}>
-          {paymentToast === 'success' ? '🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.' : '결제가 취소되었습니다.'}
+          {paymentToast === 'success' ? '🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.' : '결제에 실패하거나 취소되었습니다.'}
         </div>
       )}
     </div>
