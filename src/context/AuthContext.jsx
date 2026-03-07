@@ -129,7 +129,19 @@ export const AuthProvider = ({ children }) => {
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
         }}>
-            {!loading && children}
+            {loading ? (
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                    height: '100vh', background: '#f8fafc', flexDirection: 'column', gap: '12px'
+                }}>
+                    <div style={{
+                        width: '36px', height: '36px', border: '4px solid #e2e8f0',
+                        borderTop: '4px solid #00a884', borderRadius: '50%',
+                        animation: 'spin 0.8s linear infinite'
+                    }} />
+                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>Loading…</p>
+                </div>
+            ) : children}
         </AuthContext.Provider>
     );
 };
