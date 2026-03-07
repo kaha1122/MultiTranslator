@@ -563,7 +563,7 @@ body {
   text-align: center;
 }
 
-.lang-option:hover {
+.lang-option:not(.selected):hover {
   border-color: var(--primary-color);
   background: #f0fdf4;
   transform: translateY(-2px);

@@ -105,8 +105,7 @@ function Login({ onSwitchToSignup }) {
             if (err.code !== 'auth/popup-closed-by-user') {
                 setError(`Google login failed: ${err.code}`);
             }
-        } finally {
-            setIsLoading(false);
+            setIsLoading(false); // 실패 시에만 로딩 해제 — 성공 시엔 컴포넌트가 unmount되므로 불필요
         }
     };
 
