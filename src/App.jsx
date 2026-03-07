@@ -21,7 +21,6 @@ import { getT } from './utils/i18n';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
-import OnboardingModal from './components/OnboardingModal';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
@@ -91,9 +90,6 @@ function App() {
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [showLanding, setShowLanding] = useState(true);
-
-  // [신규] 온보딩 팝업 표시 여부
-  const [showOnboarding, setShowOnboarding] = useState(false);
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
@@ -370,34 +366,13 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // 온보딩 표시 여부 — Firestore + localStorage 동시 확인 (단일 effect)
-  // profile이 업데이트될 때마다 실행되지만, 이미 "본 적 있음" 기록이 있으면 절대 팝업 재표시 안 함
+  // 신규 유저 첫 로그인 시 기본 학습 언어(영어) 설정
   useEffect(() => {
     if (!user || !profile) return;
-    const hasSeen = localStorage.getItem(`hasSeenOnboarding_${user.uid}`);
-    // 둘 중 하나라도 완료 기록이 있으면 팝업 없음
-    if (hasSeen || profile.hasCompletedOnboarding === true) {
-      // Firestore는 완료됐는데 localStorage가 없으면 동기화해 두기
-      if (!hasSeen) localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
-      return;
-    }
-    // 두 곳 모두 기록 없음 → 최초 온보딩
-    setViewMode('settings');
-    setShowOnboarding(true);
+    if (profile.hasCompletedOnboarding === true) return;
     setTargetLangs(['en']);
+    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
   }, [user, profile]);
-
-  // [신규] 온보딩 [확인] 버튼을 눌렀을 때
-  const handleCompleteOnboarding = async () => {
-    // localStorage도 함께 설정 — Effect 2(localStorage 기반)가 재실행되어도 팝업 재표시 방지
-    if (user) localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
-    setShowOnboarding(false);
-    try {
-      await updateUserProfile({ hasCompletedOnboarding: true });
-    } catch (e) {
-      console.error("Failed to complete onboarding:", e);
-    }
-  };
 
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
@@ -769,16 +744,6 @@ function App() {
     synth.speak(utterance);
   };
 
-  // (온보딩 effect는 위 단일 effect로 통합됨)
-
-  // 온보딩 모달 [시작하기] 버튼을 누르면 완전히 닫고, 다음부터 안 뜨게 브라우저에 각인시킵니다.
-  const handleCloseOnboarding = () => {
-    setShowOnboarding(false);
-    if (user) {
-      localStorage.setItem(`hasSeenOnboarding_${user.uid}`, 'true');
-    }
-  };
-
   // 로그아웃을 처리하는 함수
   const handleLogout = async () => {
     try {
@@ -1007,24 +972,6 @@ function App() {
         {/* Settings 탭 */}
         <div style={{ display: viewMode === 'settings' ? 'block' : 'none', width: '100%' }}>
           <div className="settings-container" style={{ position: 'relative' }}>
-            {/* [신규] 온보딩 팝업 */}
-            {showOnboarding && (
-              <div className="onboarding-overlay" style={{
-                position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(255,255,255,0.95)', zIndex: 9999,
-                display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '2rem', borderRadius: '0',
-                backdropFilter: 'blur(5px)'
-              }}>
-                <h2 style={{ marginBottom: '1rem', color: 'var(--primary-color)', textAlign: 'center' }}>Welcome to PronunFit! 🎉</h2>
-                <p style={{ textAlign: 'center', marginBottom: '2rem', color: '#475569', lineHeight: '1.5' }}>
-                  To get started, please select your <b>primary language</b> (Source Language) and the language you want to learn (<b>Target Language</b>).
-                </p>
-                <button className="translate-btn" onClick={handleCompleteOnboarding}>
-                  Go to Settings 🚀
-                </button>
-              </div>
-            )}
-
 
             <div className="user-profile-section">
               <div className="user-info">
@@ -1443,12 +1390,6 @@ function App() {
           <SettingsIcon size={32} />
         </button>
       </nav>
-
-      {/* 🚀 [신규] 온보딩 안내 모달 */}
-      <OnboardingModal
-        isOpen={showOnboarding}
-        onClose={handleCloseOnboarding}
-      />
 
       {/* Trial 한도 도달 모달 */}
       {showTrialLimitModal && (
