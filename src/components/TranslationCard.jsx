@@ -135,7 +135,9 @@ const TranslationCard = ({
         if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
         const langNames = { ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文', vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español' };
         const srcName = langNames[sourceLangCode] || 'Korean';
-        const tipText = Array.isArray(learningTip) ? learningTip.join(' ') : (learningTip || '');
+        const tipText = Array.isArray(learningTip)
+            ? learningTip.map(t => (t && typeof t === 'object') ? (t.content || '') : String(t || '')).join(' ')
+            : (learningTip || '');
 
         const prompt = `You are a language learning assistant.
 Card text: "${text}" (${langCode})
@@ -349,11 +351,14 @@ Return only these 2 lines.`;
                             <AnnotatedText text={learningTip} annotations={annotations} />
                         </p>
                     ) : Array.isArray(learningTip) ? (
-                        learningTip.map((tip, index) => (
-                            <p key={index} className={`tip-content font-${sourceLangCode}`}>
-                                • <AnnotatedText text={tip} annotations={annotations} />
-                            </p>
-                        ))
+                        learningTip.map((tip, index) => {
+                            const tipText = (tip && typeof tip === 'object') ? (tip.content || '') : String(tip || '');
+                            return (
+                                <p key={index} className={`tip-content font-${sourceLangCode}`}>
+                                    • <AnnotatedText text={tipText} annotations={annotations} />
+                                </p>
+                            );
+                        })
                     ) : (
                         <p className="tip-content">AI is analyzing the sentence...</p>
                     )}
