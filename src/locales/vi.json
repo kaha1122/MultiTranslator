@@ -1,4 +1,5 @@
 {
+  "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",
   "errors": {
     "micAccess": "Cần quyền truy cập microphone. Vui lòng cho phép trong cài đặt trình duyệt. 🎤",
     "serverConnect": "Không thể kết nối máy chủ phân tích. Vui lòng thử lại sau. 🥺",
@@ -126,11 +127,11 @@
     }
   },
   "tabTag": {
-    "scene":       "Chọn tình huống và luyện hội thoại thực tế với AI",
+    "scene": "Chọn tình huống và luyện hội thoại thực tế với AI",
     "translation": "Dịch từ và câu, sau đó luyện phát âm",
-    "voa":         "Rèn luyện phát âm với tin tức tiếng Anh VOA",
-    "ted":         "Xem video và tiếp thu tiếng Anh tự nhiên",
-    "library":     "Ôn tập thẻ đã lưu và thêm ghi chú của bạn",
-    "settings":    "Cài đặt ngôn ngữ học và môi trường API"
+    "voa": "Rèn luyện phát âm với tin tức tiếng Anh VOA",
+    "ted": "Xem video và tiếp thu tiếng Anh tự nhiên",
+    "library": "Ôn tập thẻ đã lưu và thêm ghi chú của bạn",
+    "settings": "Cài đặt ngôn ngữ học và môi trường API"
   }
 }

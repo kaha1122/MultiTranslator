@@ -1,4 +1,5 @@
 {
+  "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",
   "errors": {
     "micAccess": "Accès au microphone requis. Veuillez l'autoriser dans les paramètres du navigateur. 🎤",
     "serverConnect": "Impossible de se connecter au serveur d'analyse. Veuillez réessayer. 🥺",
@@ -126,11 +127,11 @@
     }
   },
   "tabTag": {
-    "scene":       "Choisissez une scène et entraînez-vous avec l'IA",
+    "scene": "Choisissez une scène et entraînez-vous avec l'IA",
     "translation": "Traduisez et pratiquez la prononciation",
-    "voa":         "Entraînez votre prononciation avec les news VOA",
-    "ted":         "Regardez des vidéos et absorbez l'anglais naturel",
-    "library":     "Révisez vos cartes et ajoutez vos propres notes",
-    "settings":    "Configurez votre langue d'apprentissage et l'API"
+    "voa": "Entraînez votre prononciation avec les news VOA",
+    "ted": "Regardez des vidéos et absorbez l'anglais naturel",
+    "library": "Révisez vos cartes et ajoutez vos propres notes",
+    "settings": "Configurez votre langue d'apprentissage et l'API"
   }
 }

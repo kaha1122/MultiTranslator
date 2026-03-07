@@ -1,4 +1,5 @@
 {
+  "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {
     "micAccess": "Mikrofonzugriff erforderlich. Bitte in den Browsereinstellungen erlauben. 🎤",
     "serverConnect": "Verbindung zum Analyseserver fehlgeschlagen. Bitte später erneut versuchen. 🥺",
@@ -126,11 +127,11 @@
     }
   },
   "tabTag": {
-    "scene":       "Wähle eine Szene und übe echte Gespräche mit KI",
+    "scene": "Wähle eine Szene und übe echte Gespräche mit KI",
     "translation": "Übersetze Wörter & Sätze, dann übe die Aussprache",
-    "voa":         "Trainiere deine Aussprache mit VOA-Englisch-News",
-    "ted":         "Schau Videos und erlerne natürliches Englisch",
-    "library":     "Gespeicherte Karten wiederholen und Notizen hinzufügen",
-    "settings":    "Lernsprache und API-Umgebung einstellen"
+    "voa": "Trainiere deine Aussprache mit VOA-Englisch-News",
+    "ted": "Schau Videos und erlerne natürliches Englisch",
+    "library": "Gespeicherte Karten wiederholen und Notizen hinzufügen",
+    "settings": "Lernsprache und API-Umgebung einstellen"
   }
 }

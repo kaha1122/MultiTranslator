@@ -1,4 +1,5 @@
 {
+  "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",
   "errors": {
     "micAccess": "Se requiere acceso al micrófono. Por favor, permítalo en la configuración del navegador. 🎤",
     "serverConnect": "No se puede conectar al servidor de análisis. Por favor, inténtelo más tarde. 🥺",
@@ -126,11 +127,11 @@
     }
   },
   "tabTag": {
-    "scene":       "Elige una escena y practica conversaciones reales con IA",
+    "scene": "Elige una escena y practica conversaciones reales con IA",
     "translation": "Traduce palabras y frases, luego practica la pronunciación",
-    "voa":         "Entrena tu pronunciación con las noticias VOA en inglés",
-    "ted":         "Mira videos y absorbe el inglés natural",
-    "library":     "Repasa tus tarjetas guardadas y añade tus propias notas",
-    "settings":    "Configura tu idioma de aprendizaje y entorno API"
+    "voa": "Entrena tu pronunciación con las noticias VOA en inglés",
+    "ted": "Mira videos y absorbe el inglés natural",
+    "library": "Repasa tus tarjetas guardadas y añade tus propias notas",
+    "settings": "Configura tu idioma de aprendizaje y entorno API"
   }
 }
