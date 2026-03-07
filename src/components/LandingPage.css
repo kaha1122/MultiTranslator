@@ -148,23 +148,17 @@
 
 .lp-hero-free-badge {
     position: absolute;
-    top: -25px;
-    left: -35px;
-    background: linear-gradient(135deg, #FFD700, #FF8C00);
-    color: #111;
-    font-weight: 900;
-    font-size: 1.1rem;
-    font-style: italic;
-    padding: 0.1rem 0.8rem;
-    border-radius: 8px;
-    transform: rotate(-12deg);
-    box-shadow:
-        0 4px 0 #CC5500,
-        -1px 4px 15px rgba(255, 140, 0, 0.5);
-    border: 2px solid #FFF;
-    letter-spacing: 0.05em;
+    top: -24px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #FFD700;
+    color: #0B0C10;
+    font-weight: 800;
+    font-size: 0.75rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 4px;
+    letter-spacing: 0.08em;
     z-index: 10;
-    animation: lpFloatBounce 2.5s ease-in-out infinite;
 }
 
 .lp-tagline {
@@ -656,18 +650,6 @@
     50% {
         opacity: 0.5;
         transform: scale(0.8);
-    }
-}
-
-@keyframes lpFloatBounce {
-
-    0%,
-    100% {
-        transform: rotate(-12deg) translateY(0);
-    }
-
-    50% {
-        transform: rotate(-12deg) translateY(-6px);
     }
 }
 
