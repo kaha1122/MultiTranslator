@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
@@ -380,9 +381,9 @@ Return only these 2 lines.`;
                 )}
             </div>
 
-            {/* 메모 팝업 */}
-            {showMemoPopup && (
-                <div className="memo-popup-overlay">
+            {/* 메모 팝업 — Portal로 body에 렌더링 (transform 부모 탈출) */}
+            {showMemoPopup && createPortal(
+                <div className="memo-popup-overlay" onClick={closePopup}>
                     <div className="memo-popup" onClick={e => e.stopPropagation()}>
                         {/* 헤더: 타이틀 + 닫기 */}
                         <div className="memo-popup-header">
@@ -473,7 +474,8 @@ Return only these 2 lines.`;
                             </div>
                         )}
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );
