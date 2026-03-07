@@ -369,9 +369,12 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
 
       {/* ── HERO 섹션 ── */}
       <header className="lp-hero">
-        <div className="lp-tagline">
-          <span className="lp-tagline-dot" />
-          {c.tagline}
+        <div className="lp-tagline-wrap">
+          <div className="lp-hero-free-badge">FREE</div>
+          <div className="lp-tagline">
+            <span className="lp-tagline-dot" />
+            {c.tagline}
+          </div>
         </div>
 
         <h1 className="lp-hero-title" ref={titleRef}>
