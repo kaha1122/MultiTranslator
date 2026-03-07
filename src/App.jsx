@@ -975,6 +975,8 @@ function App() {
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onSaveToLibrary={saveTedCard}
           />
+          {/* 광고: TED 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
+          <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Scene 탭 */}
@@ -986,6 +988,8 @@ function App() {
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
           />
+          {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
+          <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Library 탭 */}
