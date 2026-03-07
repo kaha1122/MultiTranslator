@@ -1,14 +1,44 @@
-import { StrictMode } from 'react'
+import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 
+class ErrorBoundary extends Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <div style={{ padding: '2rem', fontFamily: 'monospace', background: '#fff1f1', minHeight: '100vh' }}>
+          <h2 style={{ color: '#dc2626' }}>앱 오류 발생</h2>
+          <p style={{ color: '#991b1b', fontSize: '0.9rem' }}>{String(this.state.error)}</p>
+          <p style={{ color: '#6b7280', fontSize: '0.8rem' }}>{this.state.error?.stack}</p>
+          <button
+            onClick={() => { localStorage.clear(); window.location.reload(); }}
+            style={{ marginTop: '1rem', padding: '10px 20px', background: '#dc2626', color: 'white', border: 'none', borderRadius: '8px', cursor: 'pointer' }}
+          >
+            로컬 데이터 초기화 후 재시작
+          </button>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <AuthProvider>
-      <App />
-    </AuthProvider>
+    <ErrorBoundary>
+      <AuthProvider>
+        <App />
+      </AuthProvider>
+    </ErrorBoundary>
   </StrictMode>,
 )
 
