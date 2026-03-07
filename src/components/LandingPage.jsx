@@ -46,7 +46,7 @@ const CONTENT = {
     usps: [
       { title: 'The fastest way to master\nnative-level pronunciation — free', sub: 'AI translates, scores, and coaches you. 8 languages, completely free.' },
       { title: 'Listen · Repeat · Get scored\nand perfect your accent', sub: 'See accuracy, fluency, and prosody across 5 metrics to pinpoint the gap with native speakers.' },
-      { title: 'Your smart vocabulary vault —\nsave and practice again', sub: 'One tap to save, then pull it back for pronunciation drills anytime.' },
+      { title: 'Your smart vocabulary note —\nsave and practice again', sub: 'One tap to save, then pull it back for pronunciation drills anytime.' },
       { title: 'AI-tailored sentences for\nreal-world language practice', sub: 'AI generates sentences by location and situation, reads them aloud, and guides you through pronunciation drills.' },
     ],
     tagline: 'AI Pronunciation Coach · 8 Languages · Free',
@@ -60,7 +60,7 @@ const CONTENT = {
     features: [
       { icon: '🆓', num: '01 · Completely Free', title: 'AI pronunciation in 8 languages,<br />zero cost', desc: 'English · Korean · Japanese · Chinese · Vietnamese · French · German · Spanish. No ads, no hidden fees — sign up and unlock everything for free.', tag: '✓ No credit card required' },
       { icon: '🎙️', num: '02 · AI Pronunciation Coach', title: 'Listen → Repeat →<br />Get your score', desc: 'AI reads the sentence aloud — you repeat it. Get real-time analysis of accuracy, fluency, and prosody across 5 dimensions, visualized in a graph.', tag: '✓ Powered by Azure AI Speech' },
-      { icon: '📚', num: '03 · Smart Vocabulary Vault', title: 'Save, review,<br />and drill again', desc: 'Star any translated sentence to save it instantly. Open your library anytime and jump straight into pronunciation practice.', tag: '✓ Auto-saved learning history' },
+      { icon: '📚', num: '03 · Smart Vocabulary Note', title: 'Save, review,<br />and drill again', desc: 'Star any translated sentence to save it instantly. Open your library anytime and jump straight into pronunciation practice.', tag: '✓ Auto-saved learning history' },
       { icon: '🌍', num: '04 · Scene Practice', title: 'Practice by location & situation<br />with AI-generated sentences', desc: 'Select a scene — airport, hotel, restaurant, and more. AI generates and reads sentences aloud. Practice real-world pronunciation in context.', tag: '✓ AI scene-based learning' },
     ],
     appLabel: 'Explore the App',
