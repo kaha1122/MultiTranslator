@@ -88,7 +88,7 @@ function App() {
     TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
     isTrialSavedCardLimitReached,
     incrementTrialCard, incrementSavedCard,
-    byokGeminiKey,
+    byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [showLanding, setShowLanding] = useState(true);
@@ -738,13 +738,40 @@ function App() {
   };
 
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
-  const handleSpeak = (text, langCode) => {
+  // Web Speech API fallback (오프라인 / Azure 실패 시)
+  const handleSpeakFallback = (text, langCode) => {
     if (!text) return;
     const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
-    const synth = window.speechSynthesis;
     const utterance = new SpeechSynthesisUtterance(text);
-    if (langInfo) utterance.lang = langInfo.tts; // 해당 언어의 목소리 설정
-    synth.speak(utterance);
+    if (langInfo) utterance.lang = langInfo.tts;
+    window.speechSynthesis.speak(utterance);
+  };
+
+  // Azure Neural TTS — 모든 탭 공용 (실패 시 Web Speech API로 폴백)
+  const handleSpeak = async (text, langCode) => {
+    if (!text) return;
+    const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    try {
+      const res = await fetch(`${SERVER_URL}/api/azure-tts`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text,
+          langCode,
+          byokAzureKey:    byokAzureKey    || undefined,
+          byokAzureRegion: byokAzureRegion || undefined,
+        }),
+      });
+      if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
+      const blob  = await res.blob();
+      const url   = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audio.onended = () => URL.revokeObjectURL(url);
+      await audio.play();
+    } catch (e) {
+      console.warn('[TTS] Azure failed, fallback to Web Speech API', e);
+      handleSpeakFallback(text, langCode);
+    }
   };
 
   // 로그아웃을 처리하는 함수

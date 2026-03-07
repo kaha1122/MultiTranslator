@@ -608,6 +608,57 @@ app.get('/api/ted-videos', async (req, res) => {
 });
 
 /**
+ * Azure Neural TTS
+ * POST /api/azure-tts
+ * Body: { text, langCode, byokAzureKey?, byokAzureRegion? }
+ * Returns: audio/mpeg binary
+ */
+const AZURE_TTS_VOICE_MAP = {
+    'en':    'en-US-JennyNeural',
+    'ja':    'ja-JP-NanamiNeural',
+    'zh-CN': 'zh-CN-XiaoxiaoNeural',
+    'vi':    'vi-VN-HoaiMyNeural',
+    'fr':    'fr-FR-DeniseNeural',
+    'de':    'de-DE-KatjaNeural',
+    'es':    'es-ES-ElviraNeural',
+    'ko':    'ko-KR-SunHiNeural',
+};
+
+app.post('/api/azure-tts', async (req, res) => {
+    const { text, langCode, byokAzureKey, byokAzureRegion } = req.body;
+    if (!text) return res.status(400).json({ error: 'Missing text' });
+
+    const azureKey    = byokAzureKey    || AZURE_KEY;
+    const azureRegion = byokAzureRegion || AZURE_REGION;
+    if (!azureKey || !azureRegion) return res.status(500).json({ error: 'Azure TTS not configured' });
+
+    const voiceName = AZURE_TTS_VOICE_MAP[langCode] || 'en-US-JennyNeural';
+    const locale    = voiceName.split('-').slice(0, 2).join('-'); // e.g. "en-US"
+    const escaped   = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const ssml      = `<speak version='1.0' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${escaped}</voice></speak>`;
+
+    try {
+        const response = await axios.post(
+            `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
+            ssml,
+            {
+                headers: {
+                    'Ocp-Apim-Subscription-Key': azureKey,
+                    'Content-Type': 'application/ssml+xml',
+                    'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+                },
+                responseType: 'arraybuffer',
+            }
+        );
+        res.set('Content-Type', 'audio/mpeg');
+        res.send(Buffer.from(response.data));
+    } catch (e) {
+        console.error('[AzureTTS] Error:', e.response?.status, e.message);
+        res.status(500).json({ error: 'Azure TTS failed' });
+    }
+});
+
+/**
  * Scene Sentence Generation
  * POST /api/scene-sentence
  * Body: { scene, category, targetLang, sourceLang, byokGeminiKey? }
