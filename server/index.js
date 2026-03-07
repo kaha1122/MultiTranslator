@@ -618,8 +618,18 @@ const LANG_NAMES_FOR_SCENE = {
     'fr': 'French', 'de': 'German', 'es': 'Spanish',
 };
 
+const DIFFICULTY_DESC = {
+    basic:        'beginner level — use only the most common, simple words and very short phrases',
+    intermediate: 'intermediate level — use natural everyday expressions and moderate vocabulary',
+    high:         'advanced level — use complex sentence structures, idiomatic expressions, and nuanced language',
+};
+const STYLE_DESC = {
+    casual: 'casual, informal tone — as if speaking to a close friend; use contractions and relaxed language',
+    formal: 'polite, formal tone — as if speaking to a stranger, staff, or superior; use respectful expressions',
+};
+
 app.post('/api/scene-sentence', async (req, res) => {
-    const { scene, targetLang, sourceLang, byokGeminiKey } = req.body;
+    const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
     }
@@ -629,19 +639,23 @@ app.post('/api/scene-sentence', async (req, res) => {
 
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
+    const diffDesc   = DIFFICULTY_DESC[difficulty]  || DIFFICULTY_DESC.intermediate;
+    const styleDesc  = STYLE_DESC[speechStyle]      || STYLE_DESC.formal;
 
-    const prompt = `You are a language learning coach. Generate a single natural sentence for a learner to practice speaking in a real-life context.
+    const prompt = `You are a language learning coach. Generate a single natural QUESTION sentence for a learner to practice speaking in a real-life context.
 
 Context:
 - Scene: ${scene}
 - Target language: ${targetLangName}
 - Learner's native language: ${sourceLangName}
+- Difficulty: ${diffDesc}
+- Speech style: ${styleDesc}
 
 Rules:
-1. The sentence must be something the LEARNER says (not a response directed at them)
+1. The sentence must be a QUESTION the LEARNER asks (e.g., asking staff, locals, or a counterpart in the scene)
 2. Length: 8–18 words — short enough to practice in one breath
-3. Vocabulary: everyday, natural, beginner-intermediate level
-4. Avoid slang or overly casual tone
+3. Match the difficulty and speech style exactly
+4. The sentence must end with a question mark
 
 Return ONLY valid JSON (no markdown):
 {
@@ -663,6 +677,64 @@ Return ONLY valid JSON (no markdown):
     } catch (e) {
         console.error('[SceneSentence] Error:', e.response?.data || e.message);
         res.status(500).json({ error: 'Failed to generate sentence' });
+    }
+});
+
+/**
+ * Scene Answer Generation
+ * POST /api/scene-answer
+ * Body: { question, scene, targetLang, sourceLang, byokGeminiKey? }
+ */
+app.post('/api/scene-answer', async (req, res) => {
+    const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey } = req.body;
+    if (!question || !targetLang) {
+        return res.status(400).json({ error: 'Missing question or targetLang' });
+    }
+
+    const geminiKey = byokGeminiKey || GEMINI_API_KEY;
+    if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
+    const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
+    const diffDesc  = DIFFICULTY_DESC[difficulty]  || DIFFICULTY_DESC.intermediate;
+    const styleDesc = STYLE_DESC[speechStyle]      || STYLE_DESC.formal;
+
+    const prompt = `You are a language learning coach. A learner just practiced saying a question in ${targetLangName}. Now generate a natural REPLY that the other person would say in response.
+
+Context:
+- Scene: ${scene}
+- Question the learner said: "${question}"
+- Target language: ${targetLangName}
+- Learner's native language: ${sourceLangName}
+- Difficulty: ${diffDesc}
+- Speech style: ${styleDesc}
+
+Rules:
+1. The sentence must be the OTHER PERSON'S natural reply to the question above
+2. Length: 8–18 words — short enough to practice in one breath
+3. Match the difficulty and speech style exactly
+4. Make the reply directly relevant to the question asked
+
+Return ONLY valid JSON (no markdown):
+{
+  "sentence": "<reply sentence in ${targetLangName}>",
+  "translation": "<translation in ${sourceLangName}>",
+  "scene_hint": "<one sentence in ${sourceLangName} describing who is speaking and what they mean>",
+  "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
+}`;
+
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            { contents: [{ parts: [{ text: prompt }] }] }
+        );
+        const raw = response.data.candidates[0].content.parts[0].text;
+        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(jsonStr);
+        res.json(parsed);
+    } catch (e) {
+        console.error('[SceneAnswer] Error:', e.response?.data || e.message);
+        res.status(500).json({ error: 'Failed to generate answer' });
     }
 });
 

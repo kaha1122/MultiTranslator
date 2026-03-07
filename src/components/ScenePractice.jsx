@@ -150,10 +150,15 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
     const [selectedLang, setSelectedLang]   = useState(targetLangs?.[0] || 'en');
+    const [difficulty, setDifficulty]       = useState('intermediate');
+    const [speechStyle, setSpeechStyle]     = useState('formal');
     const [generated, setGenerated]         = useState(null);
+    const [generatedAnswer, setGeneratedAnswer] = useState(null);
     const [loading, setLoading]             = useState(false);
+    const [loadingAnswer, setLoadingAnswer] = useState(false);
     const [error, setError]                 = useState(null);
     const [isSaved, setIsSaved]             = useState(false);
+    const [isAnswerSaved, setIsAnswerSaved] = useState(false);
 
     const t = useT(sourceLang);
     const { byokGeminiKey } = useAuth();
@@ -164,15 +169,19 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setSelectedScene(null);
         setCustomInput('');
         setGenerated(null);
+        setGeneratedAnswer(null);
         setError(null);
         setIsSaved(false);
+        setIsAnswerSaved(false);
     };
 
     const selectScene = (scene) => {
         setSelectedScene(scene);
         setGenerated(null);
+        setGeneratedAnswer(null);
         setError(null);
         setIsSaved(false);
+        setIsAnswerSaved(false);
     };
 
     const isCustomSelected = selectedScene?.id === 'custom';
@@ -183,7 +192,9 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setLoading(true);
         setError(null);
         setGenerated(null);
+        setGeneratedAnswer(null);
         setIsSaved(false);
+        setIsAnswerSaved(false);
         try {
             const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
             const res = await fetch(`${SERVER_URL}/api/scene-sentence`, {
@@ -194,6 +205,8 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     category,
                     targetLang: selectedLang,
                     sourceLang,
+                    difficulty,
+                    speechStyle,
                     byokGeminiKey: byokGeminiKey || undefined,
                 }),
             });
@@ -204,6 +217,37 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             setError(t('scene.loadError'));
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleAnswerRequest = async () => {
+        if (!generated) return;
+        setLoadingAnswer(true);
+        setError(null);
+        setGeneratedAnswer(null);
+        setIsAnswerSaved(false);
+        try {
+            const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
+            const res = await fetch(`${SERVER_URL}/api/scene-answer`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    question: generated.sentence,
+                    scene: sceneText,
+                    targetLang: selectedLang,
+                    sourceLang,
+                    difficulty,
+                    speechStyle,
+                    byokGeminiKey: byokGeminiKey || undefined,
+                }),
+            });
+            if (!res.ok) throw new Error('Server error');
+            const data = await res.json();
+            setGeneratedAnswer(data);
+        } catch (e) {
+            setError(t('scene.loadError'));
+        } finally {
+            setLoadingAnswer(false);
         }
     };
 
@@ -220,10 +264,23 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         });
         playStarSound();
         setIsSaved(true);
-        setTimeout(() => {
-            setGenerated(null);
-            setIsSaved(false);
-        }, 1200);
+        setTimeout(() => setIsSaved(false), 1200);
+    };
+
+    const handleAnswerSave = async (pronunciationScore = null) => {
+        if (!generatedAnswer || !selectedScene) return;
+        await onSaveToLibrary({
+            sentence:          generatedAnswer.sentence,
+            translation:       generatedAnswer.translation,
+            langCode:          selectedLang,
+            scene:             selectedScene.id,
+            sceneHint:         generatedAnswer.scene_hint,
+            learningTip:       generatedAnswer.learning_tip,
+            pronunciationScore,
+        });
+        playStarSound();
+        setIsAnswerSaved(true);
+        setTimeout(() => setIsAnswerSaved(false), 1200);
     };
 
     const currentScenes = SCENES[category];
@@ -261,6 +318,38 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                 ))}
             </div>
 
+            {/* 난이도 + 말투 선택 */}
+            <div className="scene-options">
+                <div className="scene-option-row">
+                    <span className="scene-option-label">{t('scene.diffTitle')}</span>
+                    <div className="scene-option-pills">
+                        {['basic', 'intermediate', 'high'].map(d => (
+                            <button
+                                key={d}
+                                className={`scene-option-pill ${difficulty === d ? 'active' : ''}`}
+                                onClick={() => setDifficulty(d)}
+                            >
+                                {t(`scene.diff${d.charAt(0).toUpperCase() + d.slice(1)}`)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+                <div className="scene-option-row">
+                    <span className="scene-option-label">{t('scene.styleTitle')}</span>
+                    <div className="scene-option-pills">
+                        {['casual', 'formal'].map(s => (
+                            <button
+                                key={s}
+                                className={`scene-option-pill ${speechStyle === s ? 'active' : ''}`}
+                                onClick={() => setSpeechStyle(s)}
+                            >
+                                {t(`scene.style${s.charAt(0).toUpperCase() + s.slice(1)}`)}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            </div>
+
             {/* 언어 선택 + Request 버튼 — 탭 진입 시 항상 표시 */}
             <div className="scene-controls">
                 {/* 직접입력 선택 시 텍스트 입력 */}
@@ -295,22 +384,34 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                         </button>
                     ))}
                 </div>
-                <button
-                    className="scene-request-btn"
-                    onClick={handleRequest}
-                    disabled={loading || !canRequest}
-                >
-                    {loading
-                        ? <RotateCcw size={18} className="spin" />
-                        : t('scene.requestBtn')
-                    }
-                </button>
+                <div className="scene-request-btns">
+                    <button
+                        className="scene-request-btn"
+                        onClick={handleRequest}
+                        disabled={loading || loadingAnswer || !canRequest}
+                    >
+                        {loading
+                            ? <RotateCcw size={18} className="spin" />
+                            : t('scene.questionBtn')
+                        }
+                    </button>
+                    <button
+                        className="scene-answer-btn"
+                        onClick={handleAnswerRequest}
+                        disabled={loadingAnswer || loading || !generated || !!generatedAnswer}
+                    >
+                        {loadingAnswer
+                            ? <RotateCcw size={18} className="spin" />
+                            : t('scene.answerBtn')
+                        }
+                    </button>
+                </div>
             </div>
 
             {/* 에러 */}
             {error && <p className="scene-error">{error}</p>}
 
-            {/* 생성된 카드 */}
+            {/* 질문 카드 */}
             {generated && (
                 <ScenePracticeCard
                     generated={generated}
@@ -319,6 +420,20 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     onTrialLimitReached={onTrialLimitReached}
                     onSave={handleSave}
                     isSaved={isSaved}
+                    onSpeak={onSpeak}
+                    t={t}
+                />
+            )}
+
+            {/* 답변 카드 */}
+            {generatedAnswer && (
+                <ScenePracticeCard
+                    generated={generatedAnswer}
+                    langCode={selectedLang}
+                    sourceLang={sourceLang}
+                    onTrialLimitReached={onTrialLimitReached}
+                    onSave={handleAnswerSave}
+                    isSaved={isAnswerSaved}
                     onSpeak={onSpeak}
                     t={t}
                 />
