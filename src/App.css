@@ -61,43 +61,43 @@ body {
 
 .app-header-top {
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 10px;
+  flex-direction: column;
+  align-items: flex-start;
   width: 100%;
+  gap: 4px;
 }
 
-/* 탭 컨텍스트 바 */
+/* 탭 컨텍스트 바 — 로고 아래 풀너비 */
 .tab-context-bar {
   display: flex;
   align-items: center;
-  gap: 5px;
-  flex: 1;
-  min-width: 0;
-  background: linear-gradient(90deg, rgba(0,168,132,0.08) 0%, rgba(0,168,132,0.03) 100%);
-  border-left: 2px solid var(--primary-color, #00a884);
+  gap: 6px;
+  width: 100%;
+  box-sizing: border-box;
+  background: linear-gradient(90deg, rgba(0,168,132,0.1) 0%, rgba(0,168,132,0.02) 100%);
+  border-left: 3px solid var(--primary-color, #00a884);
   border-radius: 0 6px 6px 0;
-  padding: 3px 8px;
+  padding: 4px 10px;
 }
 
 .tab-context-icon {
-  font-size: 0.9rem;
+  font-size: 1rem;
   flex-shrink: 0;
   line-height: 1;
 }
 
 .tab-context-text {
-  font-size: 0.72rem;
-  color: #475569;
+  font-size: 0.82rem;
+  color: #334155;
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
 .main-logo-3d {
-  font-size: 1.3rem;
+  font-size: 1.9rem;
   font-weight: 900;
   color: #00a884;
   letter-spacing: 1px;
@@ -115,7 +115,7 @@ body {
 
 @media (max-width: 900px) {
   .main-logo-3d {
-    font-size: 1.2rem;
+    font-size: 1.7rem;
   }
 }
 
