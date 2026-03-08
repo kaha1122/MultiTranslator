@@ -24,7 +24,7 @@
     color: var(--lp-text-main);
     width: 100%;
     min-height: 100vh;
-    overflow-x: hidden;
+    overflow-x: clip;
     line-height: 1.6;
     font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
     position: relative;
