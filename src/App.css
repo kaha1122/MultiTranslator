@@ -42,7 +42,7 @@ body {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(80px + env(safe-area-inset-bottom)) 0;
+  padding: 0 0 env(safe-area-inset-bottom, 16px) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
@@ -53,18 +53,43 @@ body {
 .app-header {
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   padding: 6px 14px 0;
   width: 100%;
   box-sizing: border-box;
 }
 
-.app-header-top {
+/* 햄버거 버튼 + 가운데 로고 + 오른쪽 스페이서 row */
+.app-header-row {
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
-  gap: 4px;
+  gap: 0;
+}
+
+.hamburger-btn {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+  transition: background 0.2s;
+}
+
+.hamburger-btn:hover {
+  background: rgba(0, 168, 132, 0.08);
+}
+
+.header-spacer {
+  flex-shrink: 0;
+  width: 40px;
 }
 
 /* 탭 컨텍스트 바 — 로고 아래 풀너비 */
@@ -97,6 +122,7 @@ body {
 }
 
 .main-logo-3d {
+  flex: 1;
   font-size: 1.9rem;
   font-weight: 900;
   color: #00a884;
@@ -105,6 +131,8 @@ body {
   padding: 2px 0;
   display: flex;
   align-items: center;
+  justify-content: center;
+  text-align: center;
   text-shadow:
     1px 1px 0px #008f72,
     2px 2px 0px #007a5e,
@@ -112,6 +140,28 @@ body {
     4px 4px 0px #004d3b,
     5px 5px 8px rgba(0, 0, 0, 0.3);
 }
+
+/* 로고 글자 CSS 애니메이션 (motion.span 대체) */
+@keyframes logo-char-in {
+  from { opacity: 0; transform: translateY(16px) scale(0.8); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.logo-char {
+  display: inline-block;
+  animation: logo-char-in 0.4s ease both;
+  opacity: 0;
+}
+
+.logo-char:nth-child(1) { animation-delay: 0.00s; }
+.logo-char:nth-child(2) { animation-delay: 0.10s; }
+.logo-char:nth-child(3) { animation-delay: 0.20s; }
+.logo-char:nth-child(4) { animation-delay: 0.30s; }
+.logo-char:nth-child(5) { animation-delay: 0.40s; }
+.logo-char:nth-child(6) { animation-delay: 0.50s; }
+.logo-char:nth-child(7) { animation-delay: 0.60s; }
+.logo-char:nth-child(8) { animation-delay: 0.70s; }
+.logo-char:nth-child(9) { animation-delay: 0.80s; }
 
 @media (max-width: 900px) {
   .main-logo-3d {
@@ -160,20 +210,22 @@ body {
 .sidebar {
   position: fixed;
   top: 0; left: 0; bottom: 0;
-  width: 280px;
+  width: min(192px, 40vw);
   background: white;
   z-index: 2001;
   display: flex;
   flex-direction: column;
-  box-shadow: 4px 0 24px rgba(0,0,0,0.15);
+  box-shadow: 4px 0 32px rgba(0,0,0,0.18);
+  overflow-y: auto;
 }
 
 .sidebar-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1.2rem 1.5rem;
+  padding: 1rem 1rem;
   border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 
 .sidebar-logo {
@@ -188,8 +240,9 @@ body {
 }
 
 .sidebar-user-info {
-  display: flex; align-items: center; gap: 12px;
-  padding: 1.5rem; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 10px;
+  padding: 1rem; border-bottom: 1px solid #f1f5f9;
+  flex-shrink: 0;
 }
 
 .sidebar-username {
@@ -201,31 +254,111 @@ body {
 }
 
 .sidebar-nav {
-  display: flex; flex-direction: column; padding: 1.2rem 1rem; flex: 1; gap: 0.4rem;
+  display: flex; flex-direction: column; padding: 0.8rem 0.6rem; flex: 1; gap: 0.2rem;
 }
 
 .sidebar-nav-item {
-  display: flex; align-items: center; gap: 12px;
-  padding: 14px 16px; border-radius: 12px;
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px 14px; border-radius: 10px;
   border: none; background: transparent;
-  font-size: 1.05rem; font-weight: 600; color: #475569;
+  font-size: 0.92rem; font-weight: 600; color: #475569;
   cursor: pointer; transition: all 0.2s;
-  text-align: left;
+  text-align: left; width: 100%;
 }
 
 .sidebar-nav-item.active, .sidebar-nav-item:hover {
   background: #f0fdf4; color: var(--primary-color);
 }
 
+.sidebar-nav-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+
+.sidebar-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+  padding-left: 12px;
+}
+
+.sidebar-submenu-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 9px 12px; border-radius: 8px;
+  border: none; background: transparent;
+  font-size: 0.82rem; font-weight: 500; color: #64748b;
+  cursor: pointer; transition: all 0.15s;
+  text-align: left; width: 100%;
+}
+
+.sidebar-submenu-item:hover {
+  background: #f8fafc; color: var(--primary-color);
+}
+
+.sidebar-divider {
+  height: 1px;
+  background: #f1f5f9;
+  margin: 6px 0;
+}
+
+.sidebar-legal-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 0 4px;
+}
+
+.sidebar-legal-btn {
+  display: block;
+  padding: 8px 12px;
+  border: none; background: transparent;
+  font-size: 0.76rem; color: #94a3b8;
+  cursor: pointer; text-align: left; width: 100%;
+  border-radius: 6px;
+  transition: color 0.15s;
+}
+
+.sidebar-legal-btn:hover { color: #64748b; }
+
 .sidebar-footer {
-  padding: 1.5rem; border-top: 1px solid #f1f5f9;
+  padding: 1rem; border-top: 1px solid #f1f5f9;
 }
 
 .sidebar-logout-btn {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 14px; border-radius: 12px;
+  width: 100%; padding: 12px; border-radius: 10px;
   background: #fee2e2; color: #dc2626; border: none;
   font-weight: 700; cursor: pointer; justify-content: center;
+  font-size: 0.88rem;
+}
+
+/* 드로어 슬라이드 인 애니메이션 */
+@keyframes sidebar-slide-in {
+  from { transform: translateX(-100%); }
+  to   { transform: translateX(0); }
+}
+
+@keyframes sidebar-slide-out {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-100%); }
+}
+
+.sidebar-enter {
+  animation: sidebar-slide-in 0.25s cubic-bezier(0.4, 0, 0.2, 1) both;
+}
+
+@keyframes overlay-fade-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.sidebar-overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 2000;
+  animation: overlay-fade-in 0.2s ease both;
 }
 
 /* Bottom Navigation */

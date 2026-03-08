@@ -172,5 +172,19 @@
     "ted": "Xem video và tiếp thu tiếng Anh tự nhiên",
     "library": "Ôn tập thẻ đã lưu và thêm ghi chú của bạn",
     "settings": "Cài đặt ngôn ngữ học và môi trường API"
+  },
+  "nav": {
+    "scene": "Theo địa điểm / tình huống",
+    "translation": "Từ điển",
+    "library": "Sổ từ vựng",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "Hỏi & Đáp",
+    "qaUsage": "Hướng dẫn sử dụng",
+    "qaApiTip": "Mẹo cài đặt API",
+    "privacy": "Chính sách bảo mật",
+    "terms": "Điều khoản dịch vụ",
+    "contact": "Liên hệ",
+    "settings": "Cài đặt"
   }
 }

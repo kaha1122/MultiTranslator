@@ -5,7 +5,7 @@ import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2, PenLine } from 'lucide-react';
 import { useT } from '../utils/i18n';
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
     // 상태 초기값을 브라우저 저장소(localStorage)에서 먼저 찾아보고 없으면 기본값을 씁니다.
@@ -120,11 +120,13 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     const confirmDelete = async () => {
         if (!deleteConfirmId) return;
+        const card = savedCards.find(c => c.id === deleteConfirmId);
         try {
             await updateDoc(doc(db, "savedCards", deleteConfirmId), {
                 isDeleted: true,
                 deletedAt: serverTimestamp(),
             });
+            onCardDeleted?.(card?.langCode, card?.sourceText);
             setDeleteConfirmId(null);
         } catch (error) {
             console.error("Delete failed:", error);

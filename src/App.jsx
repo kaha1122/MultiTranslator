@@ -1,5 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper, Youtube, Volume2 } from 'lucide-react';
+// [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
+import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -205,6 +207,10 @@ function App() {
   // 현재 화면 모드 — 기본 홈은 'scene'
   const [viewMode, setViewMode] = useState('scene');
 
+  // 좌측 드로어(햄버거 메뉴) 상태
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
+
   // 사용자가 입력한 번역할 텍스트
   const [inputText, setInputText] = useState(() => {
     try {
@@ -281,6 +287,22 @@ function App() {
   // 현재 번역 중인지, 팁을 만드는 중인지 나타내는 상태 (화면에 로딩 표시용)
   const [isTranslating, setIsTranslating] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
+
+  // Library에서 카드 삭제 시 현재 세션의 savedLangCodes/savedCardIds 초기화
+  const handleCardDeleted = useCallback((langCode, sourceText) => {
+    if (sourceText === inputText) {
+      setSavedLangCodes(prev => {
+        const next = new Set(prev);
+        next.delete(langCode);
+        return next;
+      });
+      setSavedCardIds(prev => {
+        const next = { ...prev };
+        delete next[langCode];
+        return next;
+      });
+    }
+  }, [inputText]);
 
   // --- 보관함 저장 상태 ---
   const [savedLangCodes, setSavedLangCodes] = useState(new Set()); // 현재 번역에서 저장된 langCode들
@@ -640,7 +662,9 @@ function App() {
       );
 
       const querySnapshot = await getDocs(q);
-      if (!querySnapshot.empty) {
+      // isDeleted: true 카드는 중복으로 처리하지 않음 → 삭제 후 재저장 가능하도록
+      const activeDocs = querySnapshot.docs.filter(d => !d.data().isDeleted);
+      if (activeDocs.length > 0) {
         // 이미 동일한 조건의 카드가 존재함
         return { status: "duplicate" };
       }
@@ -921,62 +945,163 @@ function App() {
       {/* Vercel 분석 도구 (성능 및 방문자 통계용) */}
       <Analytics />
 
-      <header className="app-header">
-        <div className="app-header-top">
-          <motion.h1
-            className="main-logo-3d"
-            initial="hidden"
-            animate="visible"
-            variants={{
-              hidden: { opacity: 1 },
-              visible: {
-                opacity: 1,
-                transition: { staggerChildren: 0.15 }
-              }
-            }}
-          >
-            {"PronunFit".split("").map((char, index) => (
-              <motion.span
-                key={index}
-                variants={{
-                  hidden: { opacity: 0, y: 20, scale: 0.8 },
-                  visible: { opacity: 1, y: 0, scale: 1 }
-                }}
-                style={{ display: "inline-block" }}
-              >
-                {char}
-              </motion.span>
-            ))}
-          </motion.h1>
+      {/* 좌측 슬라이드 드로어 */}
+      {sidebarOpen && (
+        <>
+          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
+          <div className="sidebar sidebar-enter">
+            {/* 드로어 상단: 로고 + 닫기 */}
+            <div className="sidebar-header">
+              <p className="sidebar-logo">PronunFit</p>
+              <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>
+                <X size={20} />
+              </button>
+            </div>
 
-          <AnimatePresence mode="wait">
-            {(() => {
-              const TAB_CONTEXT = {
-                scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
-                translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
-                voa:         { icon: '📰', text: getT(sourceLang, 'tabTag.voa') },
-                ted:         { icon: '🎬', text: getT(sourceLang, 'tabTag.ted') },
-                library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
-                settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
-              };
-              const ctx = TAB_CONTEXT[viewMode];
-              if (!ctx) return null;
-              return (
-                <motion.div
-                  key={viewMode}
-                  className="tab-context-bar"
-                  initial={{ opacity: 0, x: 10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  exit={{ opacity: 0, x: -10 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <span className="tab-context-icon">{ctx.icon}</span>
-                  <span className="tab-context-text">{ctx.text}</span>
-                </motion.div>
-              );
-            })()}
-          </AnimatePresence>
+            {/* 유저 정보 */}
+            {user && (
+              <div className="sidebar-user-info">
+                <div className="user-avatar" style={{ width: 36, height: 36, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                  <User size={18} color="var(--primary-color)" />
+                </div>
+                <div style={{ minWidth: 0 }}>
+                  <p className="sidebar-username" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {profile?.displayName || user?.displayName || 'User'}
+                  </p>
+                  <p className="sidebar-user-tier">{tier || 'Free'}</p>
+                </div>
+              </div>
+            )}
+
+            {/* 메뉴 목록 */}
+            <nav className="sidebar-nav">
+              <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
+                onClick={() => { setViewMode('scene'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><MapPin size={16} /></span>
+                {getT(sourceLang, 'nav.scene')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
+                onClick={() => { setViewMode('translation'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><Languages size={16} /></span>
+                {getT(sourceLang, 'nav.translation')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
+                onClick={() => { setViewMode('library'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
+                {getT(sourceLang, 'nav.library')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'voa' ? 'active' : ''}`}
+                onClick={() => { setViewMode('voa'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><Newspaper size={16} /></span>
+                {getT(sourceLang, 'nav.voa')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'ted' ? 'active' : ''}`}
+                onClick={() => { setViewMode('ted'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><Youtube size={16} /></span>
+                {getT(sourceLang, 'nav.ted')}
+              </button>
+
+              {/* Q&A 서브메뉴 */}
+              <button className="sidebar-nav-item"
+                onClick={() => setQaMenuOpen(prev => !prev)}>
+                <span className="sidebar-nav-icon"><HelpCircle size={16} /></span>
+                <span style={{ flex: 1 }}>{getT(sourceLang, 'nav.qa')}</span>
+                {qaMenuOpen ? <ChevronDown size={14} /> : <ChevronRight size={14} />}
+              </button>
+              {qaMenuOpen && (
+                <div className="sidebar-submenu">
+                  <button className="sidebar-submenu-item"
+                    onClick={() => { setSidebarOpen(false); window.open('https://github.com/kaha1122/MultiTranslator', '_blank'); }}>
+                    {getT(sourceLang, 'nav.qaUsage')}
+                  </button>
+                  <button className="sidebar-submenu-item"
+                    onClick={() => { setSidebarOpen(false); setShowApiKeyWizard(true); }}>
+                    {getT(sourceLang, 'nav.qaApiTip')}
+                  </button>
+                </div>
+              )}
+
+              <div className="sidebar-divider" />
+
+              {/* 법적 정보 */}
+              <div className="sidebar-legal-section">
+                <button className="sidebar-legal-btn" onClick={() => { setViewMode('privacy'); setSidebarOpen(false); }}>
+                  {getT(sourceLang, 'nav.privacy')}
+                </button>
+                <button className="sidebar-legal-btn" onClick={() => { setViewMode('terms'); setSidebarOpen(false); }}>
+                  {getT(sourceLang, 'nav.terms')}
+                </button>
+                <button className="sidebar-legal-btn" onClick={() => { setViewMode('contact'); setSidebarOpen(false); }}>
+                  {getT(sourceLang, 'nav.contact')}
+                </button>
+              </div>
+
+              <div className="sidebar-divider" />
+
+              <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
+                onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><SettingsIcon size={16} /></span>
+                {getT(sourceLang, 'nav.settings')}
+              </button>
+            </nav>
+
+            {/* 로그아웃 */}
+            <div className="sidebar-footer">
+              <button className="sidebar-logout-btn" onClick={handleLogout}>
+                <LogOut size={16} />
+                {getT(sourceLang, 'settings.logout') || 'Logout'}
+              </button>
+            </div>
+          </div>
+        </>
+      )}
+
+      <header className="app-header">
+        <div className="app-header-row">
+          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+            <Menu size={22} />
+          </button>
+
+          <h1 className="main-logo-3d">
+            {"PronunFit".split("").map((char, index) => (
+              <span key={index} className="logo-char">{char}</span>
+            ))}
+          </h1>
+
+          <div className="header-spacer" />
         </div>
+
+        <AnimatePresence mode="wait">
+          {(() => {
+            const TAB_CONTEXT = {
+              scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
+              translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
+              voa:         { icon: '📰', text: getT(sourceLang, 'tabTag.voa') },
+              ted:         { icon: '🎬', text: getT(sourceLang, 'tabTag.ted') },
+              library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
+              settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
+            };
+            const ctx = TAB_CONTEXT[viewMode];
+            if (!ctx) return null;
+            return (
+              <motion.div
+                key={viewMode}
+                className="tab-context-bar"
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="tab-context-icon">{ctx.icon}</span>
+                <span className="tab-context-text">{ctx.text}</span>
+              </motion.div>
+            );
+          })()}
+        </AnimatePresence>
 
         {/* 미니 일일 진도 바 */}
         {user && (
@@ -1169,6 +1294,7 @@ function App() {
             todayCount={todayCount}
             dailyGoal={dailyGoal}
             onTargetAchieved={handleTargetAchieved}
+            onCardDeleted={handleCardDeleted}
           />
         </div>
 
@@ -1590,52 +1716,7 @@ function App() {
         />
       )}
 
-      {/* 화면 하단에 고정된 메뉴바 (네비게이션) - 아이콘 전용 */}
-      <nav className="app-nav">
-
-        <button
-          className={`nav-item ${viewMode === 'voa' ? 'active' : ''}`}
-          onClick={() => { setViewMode('voa'); }}
-          title="VOA News"
-        >
-          <Newspaper size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'ted' ? 'active' : ''}`}
-          onClick={() => { setViewMode('ted'); }}
-          title="YouTube Practice"
-        >
-          <Youtube size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-          onClick={() => { setViewMode('scene'); }}
-          title="Scene Practice"
-        >
-          <MapPin size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'translation' ? 'active' : ''}`}
-          onClick={() => { setViewMode('translation'); }}
-          title="Language Card"
-        >
-          <Languages size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'library' ? 'active' : ''}`}
-          onClick={() => { setViewMode('library'); }}
-          title="Library"
-        >
-          <Sparkles size={32} />
-        </button>
-        <button
-          className={`nav-item ${viewMode === 'settings' ? 'active' : ''}`}
-          onClick={() => { setViewMode('settings'); }}
-          title="Settings"
-        >
-          <SettingsIcon size={32} />
-        </button>
-      </nav>
+      {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
 
       {/* Trial 한도 도달 모달 */}
       {showTrialLimitModal && (

@@ -172,5 +172,19 @@
     "ted": "Watch videos and absorb natural English",
     "library": "Review your saved cards and add your own notes",
     "settings": "Set your learning language and API environment"
+  },
+  "nav": {
+    "scene": "Scene Practice",
+    "translation": "Dictionary",
+    "library": "Word Book",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "Q&A",
+    "qaUsage": "How to Use",
+    "qaApiTip": "API Setup Tips",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact",
+    "settings": "Settings"
   }
 }

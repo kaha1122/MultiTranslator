@@ -172,5 +172,19 @@
     "ted": "Mira videos y absorbe el inglés natural",
     "library": "Repasa tus tarjetas guardadas y añade tus propias notas",
     "settings": "Configura tu idioma de aprendizaje y entorno API"
+  },
+  "nav": {
+    "scene": "Por lugar / situación",
+    "translation": "Diccionario",
+    "library": "Libreta de palabras",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "Preguntas frecuentes",
+    "qaUsage": "Guía de uso",
+    "qaApiTip": "Consejos de API",
+    "privacy": "Política de privacidad",
+    "terms": "Términos de servicio",
+    "contact": "Contacto",
+    "settings": "Configuración"
   }
 }

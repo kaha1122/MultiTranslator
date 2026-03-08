@@ -172,5 +172,19 @@
     "ted": "通过视频学习自然英语",
     "library": "复习保存的卡片，还可以添加笔记",
     "settings": "设置学习语言和API环境"
+  },
+  "nav": {
+    "scene": "场景练习",
+    "translation": "词典",
+    "library": "单词本",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "问答",
+    "qaUsage": "使用指南",
+    "qaApiTip": "API 设置技巧",
+    "privacy": "隐私政策",
+    "terms": "服务条款",
+    "contact": "联系我们",
+    "settings": "设置"
   }
 }

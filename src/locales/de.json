@@ -172,5 +172,19 @@
     "ted": "Schau Videos und erlerne natürliches Englisch",
     "library": "Gespeicherte Karten wiederholen und Notizen hinzufügen",
     "settings": "Lernsprache und API-Umgebung einstellen"
+  },
+  "nav": {
+    "scene": "Nach Ort / Situation",
+    "translation": "Wörterbuch",
+    "library": "Vokabelheft",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "F&A",
+    "qaUsage": "App-Anleitung",
+    "qaApiTip": "API-Einrichtungstipps",
+    "privacy": "Datenschutzerklärung",
+    "terms": "Nutzungsbedingungen",
+    "contact": "Kontakt",
+    "settings": "Einstellungen"
   }
 }

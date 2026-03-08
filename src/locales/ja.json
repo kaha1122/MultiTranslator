@@ -172,5 +172,19 @@
     "ted": "動画を見て自然な英語を身につけよう",
     "library": "保存したカードを復習してメモも書き込もう",
     "settings": "学習言語とAPI環境を設定しよう"
+  },
+  "nav": {
+    "scene": "場所別 / 状況別",
+    "translation": "辞書",
+    "library": "単語帳",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "Q&A",
+    "qaUsage": "アプリの使い方",
+    "qaApiTip": "APIの設定ヒント",
+    "privacy": "プライバシーポリシー",
+    "terms": "利用規約",
+    "contact": "お問い合わせ",
+    "settings": "設定"
   }
 }

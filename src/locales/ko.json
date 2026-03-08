@@ -172,5 +172,19 @@
     "ted": "영상을 보며 자연스러운 영어를 익히세요",
     "library": "저장된 카드를 복습하고 메모도 달아보세요",
     "settings": "학습 언어와 API 환경을 설정하세요"
+  },
+  "nav": {
+    "scene": "장소별 / 상황별",
+    "translation": "사전",
+    "library": "단어장",
+    "voa": "Voice of America",
+    "ted": "YouTube (TED)",
+    "qa": "Q&A",
+    "qaUsage": "앱 활용법",
+    "qaApiTip": "API 설정 Tip",
+    "privacy": "개인정보보호방침",
+    "terms": "이용약관",
+    "contact": "연락처",
+    "settings": "설정"
   }
 }
