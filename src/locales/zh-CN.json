@@ -126,6 +126,29 @@
       "advanced": "高级"
     }
   },
+  "upgrade": {
+    "modalTitle": "升级您的方案",
+    "modalSubtitle": "更多练习，更快进步",
+    "period": "/月",
+    "processing": "处理中...",
+    "currentPlan": "当前方案",
+    "startPlan": "立即开始",
+    "footerNote": "随时可取消 · 支付信息由TossPayments安全处理",
+    "paymentError": "无法打开支付页面，请稍后再试。",
+    "cancelConfirm": "确定取消订阅？将立即切换至Free Trial。",
+    "cancelFailed": "取消失败，请重试。",
+    "cancelBtn": "取消订阅",
+    "btnLabel": "升级",
+    "toastSuccess": "🎉 支付成功！方案正在升级中。",
+    "toastFail": "支付失败或已取消。",
+    "proFeature1": "每月500次发音评估",
+    "proFeature2": "使用开发者API（无需密钥）",
+    "proFeature3": "所有标签页无限使用",
+    "premiumFeature1": "无限发音评估",
+    "premiumFeature2": "使用开发者API（无需密钥）",
+    "premiumFeature3": "无广告",
+    "premiumFeature4": "所有标签页无限使用"
+  },
   "daily": {
     "goalComplete": "今日目标达成！🎉",
     "keepGoing": "很好！继续加油 💪",

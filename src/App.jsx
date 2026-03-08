@@ -1382,7 +1382,7 @@ function App() {
                         cursor: 'pointer', fontSize: '0.82rem'
                       }}
                     >
-                      ✨ 업그레이드
+                      ✨ {getT(sourceLang, 'upgrade.btnLabel')}
                     </button>
                   )}
                   <button
@@ -1618,7 +1618,7 @@ function App() {
           fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
         }}>
-          {paymentToast === 'success' ? '🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.' : '결제에 실패하거나 취소되었습니다.'}
+          {paymentToast === 'success' ? getT(sourceLang, 'upgrade.toastSuccess') : getT(sourceLang, 'upgrade.toastFail')}
         </div>
       )}
     </div>

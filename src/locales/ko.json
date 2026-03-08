@@ -126,6 +126,29 @@
       "advanced": "고급"
     }
   },
+  "upgrade": {
+    "modalTitle": "플랜 업그레이드",
+    "modalSubtitle": "더 많은 연습으로 빠르게 실력을 키우세요",
+    "period": "/월",
+    "processing": "처리 중...",
+    "currentPlan": "현재 플랜",
+    "startPlan": "시작하기",
+    "footerNote": "언제든지 취소 가능 · 카드 정보는 토스페이먼츠에서 안전하게 처리됩니다",
+    "paymentError": "결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해 주세요.",
+    "cancelConfirm": "구독을 취소하시겠습니까? 즉시 Free Trial로 변경됩니다.",
+    "cancelFailed": "취소 처리에 실패했습니다. 다시 시도해 주세요.",
+    "cancelBtn": "구독 취소",
+    "btnLabel": "업그레이드",
+    "toastSuccess": "🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.",
+    "toastFail": "결제에 실패하거나 취소되었습니다.",
+    "proFeature1": "발음 평가 월 500회",
+    "proFeature2": "개발자 API 사용 (키 불필요)",
+    "proFeature3": "모든 탭 무제한 이용",
+    "premiumFeature1": "발음 평가 무제한",
+    "premiumFeature2": "개발자 API 사용 (키 불필요)",
+    "premiumFeature3": "광고 없음",
+    "premiumFeature4": "모든 탭 무제한 이용"
+  },
   "daily": {
     "goalComplete": "오늘 목표 달성! 🎉",
     "keepGoing": "잘하고 있어요! 계속 해봐요 💪",

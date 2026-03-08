@@ -126,6 +126,29 @@
       "advanced": "Avancé"
     }
   },
+  "upgrade": {
+    "modalTitle": "Améliorer votre plan",
+    "modalSubtitle": "Pratiquez plus et progressez plus vite",
+    "period": "/mois",
+    "processing": "Traitement...",
+    "currentPlan": "Plan actuel",
+    "startPlan": "Commencer",
+    "footerNote": "Annulation à tout moment · Paiement sécurisé via TossPayments",
+    "paymentError": "Impossible d'ouvrir la page de paiement. Veuillez réessayer.",
+    "cancelConfirm": "Annuler l'abonnement ? Vous passerez immédiatement en Free Trial.",
+    "cancelFailed": "Annulation échouée. Veuillez réessayer.",
+    "cancelBtn": "Annuler l'abonnement",
+    "btnLabel": "Mettre à niveau",
+    "toastSuccess": "🎉 Paiement effectué ! Votre plan est en cours de mise à niveau.",
+    "toastFail": "Paiement échoué ou annulé.",
+    "proFeature1": "500 évaluations de prononciation/mois",
+    "proFeature2": "API développeur (sans clé)",
+    "proFeature3": "Accès illimité à tous les onglets",
+    "premiumFeature1": "Évaluations de prononciation illimitées",
+    "premiumFeature2": "API développeur (sans clé)",
+    "premiumFeature3": "Sans publicité",
+    "premiumFeature4": "Accès illimité à tous les onglets"
+  },
   "daily": {
     "goalComplete": "Objectif du jour atteint ! 🎉",
     "keepGoing": "Bravo ! Continuez 💪",

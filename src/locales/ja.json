@@ -126,6 +126,29 @@
       "advanced": "上級"
     }
   },
+  "upgrade": {
+    "modalTitle": "プランをアップグレード",
+    "modalSubtitle": "より多く練習して、速く上達しましょう",
+    "period": "/月",
+    "processing": "処理中...",
+    "currentPlan": "現在のプラン",
+    "startPlan": "始める",
+    "footerNote": "いつでもキャンセル可能 · カード情報はTossPaymentsで安全に処理されます",
+    "paymentError": "決済ページを開けません。しばらくしてからお試しください。",
+    "cancelConfirm": "サブスクリプションをキャンセルしますか？即座にFree Trialに変更されます。",
+    "cancelFailed": "キャンセルに失敗しました。再度お試しください。",
+    "cancelBtn": "サブスクリプション解約",
+    "btnLabel": "アップグレード",
+    "toastSuccess": "🎉 お支払い完了！プランがアップグレードされます。",
+    "toastFail": "支払いに失敗またはキャンセルされました。",
+    "proFeature1": "発音評価 月500回",
+    "proFeature2": "開発者API使用（キー不要）",
+    "proFeature3": "すべてのタブ無制限",
+    "premiumFeature1": "発音評価無制限",
+    "premiumFeature2": "開発者API使用（キー不要）",
+    "premiumFeature3": "広告なし",
+    "premiumFeature4": "すべてのタブ無制限"
+  },
   "daily": {
     "goalComplete": "今日の目標達成！🎉",
     "keepGoing": "よくできました！続けましょう 💪",

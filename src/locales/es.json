@@ -126,6 +126,29 @@
       "advanced": "Avanzado"
     }
   },
+  "upgrade": {
+    "modalTitle": "Actualizar tu plan",
+    "modalSubtitle": "Practica más y mejora más rápido",
+    "period": "/mes",
+    "processing": "Procesando...",
+    "currentPlan": "Plan actual",
+    "startPlan": "Comenzar",
+    "footerNote": "Cancela en cualquier momento · Pago seguro con TossPayments",
+    "paymentError": "No se pudo abrir la página de pago. Por favor, inténtalo más tarde.",
+    "cancelConfirm": "¿Cancelar suscripción? Pasarás al Free Trial inmediatamente.",
+    "cancelFailed": "Cancelación fallida. Por favor, inténtalo de nuevo.",
+    "cancelBtn": "Cancelar suscripción",
+    "btnLabel": "Actualizar",
+    "toastSuccess": "🎉 ¡Pago completado! Tu plan está siendo actualizado.",
+    "toastFail": "Pago fallido o cancelado.",
+    "proFeature1": "500 evaluaciones de pronunciación/mes",
+    "proFeature2": "API del desarrollador (sin clave)",
+    "proFeature3": "Acceso ilimitado a todas las pestañas",
+    "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
+    "premiumFeature2": "API del desarrollador (sin clave)",
+    "premiumFeature3": "Sin anuncios",
+    "premiumFeature4": "Acceso ilimitado a todas las pestañas"
+  },
   "daily": {
     "goalComplete": "¡Objetivo diario alcanzado! 🎉",
     "keepGoing": "¡Muy bien! Sigue adelante 💪",

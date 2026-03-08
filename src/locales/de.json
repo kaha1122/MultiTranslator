@@ -126,6 +126,29 @@
       "advanced": "Fortgeschritten"
     }
   },
+  "upgrade": {
+    "modalTitle": "Plan upgraden",
+    "modalSubtitle": "Mehr üben, schneller verbessern",
+    "period": "/Mo.",
+    "processing": "Wird verarbeitet...",
+    "currentPlan": "Aktueller Plan",
+    "startPlan": "Jetzt starten",
+    "footerNote": "Jederzeit kündbar · Zahlung sicher über TossPayments",
+    "paymentError": "Zahlungsseite konnte nicht geöffnet werden. Bitte erneut versuchen.",
+    "cancelConfirm": "Abonnement kündigen? Sie werden sofort zum Free Trial gewechselt.",
+    "cancelFailed": "Kündigung fehlgeschlagen. Bitte erneut versuchen.",
+    "cancelBtn": "Abonnement kündigen",
+    "btnLabel": "Upgraden",
+    "toastSuccess": "🎉 Zahlung abgeschlossen! Ihr Plan wird aktualisiert.",
+    "toastFail": "Zahlung fehlgeschlagen oder abgebrochen.",
+    "proFeature1": "500 Aussprache-Bewertungen/Monat",
+    "proFeature2": "Entwickler-API (kein Schlüssel nötig)",
+    "proFeature3": "Unbegrenzt alle Tabs nutzen",
+    "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
+    "premiumFeature2": "Entwickler-API (kein Schlüssel nötig)",
+    "premiumFeature3": "Keine Werbung",
+    "premiumFeature4": "Unbegrenzt alle Tabs nutzen"
+  },
   "daily": {
     "goalComplete": "Tagesziel erreicht! 🎉",
     "keepGoing": "Super! Weiter so 💪",

@@ -2,48 +2,39 @@ import { useState } from 'react';
 import { X, Zap, Crown, Check } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { useAuth } from '../context/AuthContext';
+import { useT } from '../utils/i18n';
 import './UpgradeModal.css';
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const FRONTEND_URL = window.location.origin;
 
-const PLANS = [
+const PLAN_CONFIGS = [
     {
         id: 'pro',
         icon: <Zap size={22} />,
         name: 'Pro',
         price: '₩4,900',
-        period: '/월',
         color: '#4338ca',
         borderColor: '#e0e7ff',
         bgColor: '#f5f3ff',
-        features: [
-            '발음 평가 월 500회',
-            '개발자 API 사용 (키 불필요)',
-            '모든 탭 무제한 이용',
-        ],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3'],
     },
     {
         id: 'premium',
         icon: <Crown size={22} />,
         name: 'Premium',
         price: '₩16,900',
-        period: '/월',
         color: '#b45309',
         borderColor: '#fde68a',
         bgColor: '#fffbeb',
         badge: 'BEST',
-        features: [
-            '발음 평가 무제한',
-            '개발자 API 사용 (키 불필요)',
-            '광고 없음',
-            '모든 탭 무제한 이용',
-        ],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
     },
 ];
 
-const UpgradeModal = ({ onClose }) => {
+const UpgradeModal = ({ onClose, sourceLang }) => {
     const { user, profile } = useAuth();
+    const t = useT(sourceLang);
     const [loadingTier, setLoadingTier] = useState(null);
     const [error, setError] = useState('');
 
@@ -53,7 +44,6 @@ const UpgradeModal = ({ onClose }) => {
         setError('');
         try {
             const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-            // customerKey = Firebase UID (구독자 식별자)
             const billing = tossPayments.billing({ customerKey: user.uid });
             await billing.requestBillingAuth({
                 method: 'CARD',
@@ -62,9 +52,8 @@ const UpgradeModal = ({ onClose }) => {
                 customerEmail: user.email || undefined,
                 customerName:  user.displayName || undefined,
             });
-            // requestBillingAuth는 페이지를 리디렉트하므로 이 아래 코드는 실행되지 않음
         } catch (e) {
-            setError('결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+            setError(t('upgrade.paymentError'));
             setLoadingTier(null);
         }
     };
@@ -81,8 +70,8 @@ const UpgradeModal = ({ onClose }) => {
 
                 <div className="upgrade-header">
                     <div className="upgrade-header-emoji">✨</div>
-                    <h2>플랜 업그레이드</h2>
-                    <p>더 많은 연습으로 빠르게 실력을 키우세요</p>
+                    <h2>{t('upgrade.modalTitle')}</h2>
+                    <p>{t('upgrade.modalSubtitle')}</p>
                 </div>
 
                 {error && (
@@ -90,7 +79,7 @@ const UpgradeModal = ({ onClose }) => {
                 )}
 
                 <div className="upgrade-plans">
-                    {PLANS.map(plan => {
+                    {PLAN_CONFIGS.map(plan => {
                         const isCurrentPlan = currentTier === plan.id;
                         return (
                             <div
@@ -114,15 +103,15 @@ const UpgradeModal = ({ onClose }) => {
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                        <span className="upgrade-plan-period">{plan.period}</span>
+                                        <span className="upgrade-plan-period">{t('upgrade.period')}</span>
                                     </div>
                                 </div>
 
                                 <ul className="upgrade-plan-features">
-                                    {plan.features.map((f, i) => (
+                                    {plan.featureKeys.map((key, i) => (
                                         <li key={i}>
                                             <Check size={14} style={{ color: plan.color, flexShrink: 0 }} />
-                                            <span>{f}</span>
+                                            <span>{t(key)}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -138,10 +127,10 @@ const UpgradeModal = ({ onClose }) => {
                                     disabled={isCurrentPlan || loadingTier !== null}
                                 >
                                     {loadingTier === plan.id
-                                        ? '처리 중...'
+                                        ? t('upgrade.processing')
                                         : isCurrentPlan
-                                            ? '현재 플랜'
-                                            : `${plan.name} 시작하기`}
+                                            ? t('upgrade.currentPlan')
+                                            : `${plan.name} ${t('upgrade.startPlan')}`}
                                 </button>
                             </div>
                         );
@@ -149,11 +138,11 @@ const UpgradeModal = ({ onClose }) => {
                 </div>
 
                 {isSubscribed && (
-                    <CancelSubscriptionButton userId={user?.uid} />
+                    <CancelSubscriptionButton userId={user?.uid} t={t} />
                 )}
 
                 <p className="upgrade-footer-note">
-                    언제든지 취소 가능 · 카드 정보는 토스페이먼츠에서 안전하게 처리됩니다
+                    {t('upgrade.footerNote')}
                 </p>
             </div>
         </div>
@@ -162,11 +151,11 @@ const UpgradeModal = ({ onClose }) => {
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-function CancelSubscriptionButton({ userId }) {
+function CancelSubscriptionButton({ userId, t }) {
     const [loading, setLoading] = useState(false);
 
     const handleCancel = async () => {
-        if (!confirm('구독을 취소하시겠습니까? 즉시 Free Trial로 변경됩니다.')) return;
+        if (!confirm(t('upgrade.cancelConfirm'))) return;
         setLoading(true);
         try {
             await fetch(`${SERVER_URL}/api/cancel-subscription`, {
@@ -175,7 +164,7 @@ function CancelSubscriptionButton({ userId }) {
                 body: JSON.stringify({ userId }),
             });
         } catch (e) {
-            alert('취소 처리에 실패했습니다. 다시 시도해 주세요.');
+            alert(t('upgrade.cancelFailed'));
         } finally {
             setLoading(false);
         }
@@ -183,7 +172,7 @@ function CancelSubscriptionButton({ userId }) {
 
     return (
         <button className="upgrade-manage-btn" onClick={handleCancel} disabled={loading}>
-            {loading ? '처리 중...' : '구독 취소'}
+            {loading ? t('upgrade.processing') : t('upgrade.cancelBtn')}
         </button>
     );
 }

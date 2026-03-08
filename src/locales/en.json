@@ -126,6 +126,29 @@
       "advanced": "Advanced"
     }
   },
+  "upgrade": {
+    "modalTitle": "Upgrade Your Plan",
+    "modalSubtitle": "Practice more and improve faster",
+    "period": "/mo",
+    "processing": "Processing...",
+    "currentPlan": "Current Plan",
+    "startPlan": "Get Started",
+    "footerNote": "Cancel anytime · Payments securely processed by TossPayments",
+    "paymentError": "Could not open payment page. Please try again later.",
+    "cancelConfirm": "Cancel your subscription? You will be moved to Free Trial immediately.",
+    "cancelFailed": "Cancellation failed. Please try again.",
+    "cancelBtn": "Cancel Subscription",
+    "btnLabel": "Upgrade",
+    "toastSuccess": "🎉 Payment complete! Your plan is being upgraded.",
+    "toastFail": "Payment failed or was cancelled.",
+    "proFeature1": "500 pronunciation assessments/mo",
+    "proFeature2": "Developer API (no key needed)",
+    "proFeature3": "Unlimited access to all tabs",
+    "premiumFeature1": "Unlimited pronunciation assessments",
+    "premiumFeature2": "Developer API (no key needed)",
+    "premiumFeature3": "No ads",
+    "premiumFeature4": "Unlimited access to all tabs"
+  },
   "daily": {
     "goalComplete": "Today's Goal Complete!",
     "keepGoing": "Great job! Keep going 💪",

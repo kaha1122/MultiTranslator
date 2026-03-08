@@ -87,7 +87,7 @@ const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
                                     customerName:  user.displayName || undefined,
                                 });
                             } catch (e) {
-                                alert('결제 페이지를 열 수 없습니다. 잠시 후 다시 시도해 주세요.');
+                                alert(t('upgrade.paymentError'));
                                 setIsLoading(false);
                             }
                         }}
