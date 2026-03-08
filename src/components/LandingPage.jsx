@@ -17,30 +17,10 @@ const detectLang = () => {
 
 const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall }) => {
   const bottomRef = useRef(null);
-  const uspCardRefs = useRef([]);
   const [showInstallPopup, setShowInstallPopup] = useState(false);
 
   const langCode = detectLang();
   const c = (locales[langCode] || locales['en'])?.landing;
-
-  // overflow-x:hidden 이 scroll container를 생성하므로 window.scroll 대신
-  // document capture 페이즈로 어느 컨테이너에서든 scroll 이벤트를 잡는다
-  useEffect(() => {
-    const reveal = () => {
-      uspCardRefs.current.forEach(card => {
-        if (!card || card.classList.contains('lp-usp-revealed')) return;
-        const rect = card.getBoundingClientRect();
-        if (rect.top < window.innerHeight - 40) {
-          card.classList.add('lp-usp-revealed');
-        }
-      });
-    };
-    // 한 프레임 뒤에 즉시 체크 (레이아웃 완료 보장)
-    requestAnimationFrame(reveal);
-    // capture:true → lp-root든 window든 어느 스크롤 컨테이너에서 발생해도 캐치
-    document.addEventListener('scroll', reveal, { passive: true, capture: true });
-    return () => document.removeEventListener('scroll', reveal, { capture: true });
-  }, []);
 
   // 스크롤 끝 감지 → 설치 팝업
   useEffect(() => {
@@ -113,7 +93,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
           <div
             className="lp-usp-card"
             key={i}
-            ref={el => uspCardRefs.current[i] = el}
+            style={{ animationDelay: `${i * 0.12}s` }}
           >
             <span className="lp-usp-num">0{i + 1}</span>
             <h3 className="lp-usp-title">{usp.title}</h3>
