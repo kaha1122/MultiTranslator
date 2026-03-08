@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Award, Mic, MicOff, RotateCcw, Star, Volume2 } from 'lucide-react';
+import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
@@ -54,65 +54,77 @@ const LANG_NAMES = {
 };
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
-function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t }) {
+function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80 }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         startRecording, stopRecording, errorMsg,
     } = useAudioRecorder(generated.sentence, langCode, sourceLang, onTrialLimitReached);
 
+    const playMyRecording = () => {
+        if (assessmentResult?.audioUrl) {
+            new Audio(assessmentResult.audioUrl).play();
+        }
+    };
+
     return (
-        <div className="scene-card">
-            {/* 씬 힌트 */}
-            <div className="scene-card-hint">
-                <span className="scene-card-hint-icon">🎬</span>
-                <p>{generated.scene_hint}</p>
-            </div>
-
-            {/* 생성 문장 */}
-            <div className="scene-card-sentence">{generated.sentence}</div>
-
-            {/* 번역 */}
-            <div className="scene-card-translation">{generated.translation}</div>
-
-            {/* 학습 팁 */}
-            {generated.learning_tip && (
-                <div className="scene-card-tip">
-                    <span>💡</span>
-                    <p>{generated.learning_tip}</p>
-                </div>
-            )}
-
-            {/* 발음 평가 결과 */}
-            {assessmentResult && (
-                <>
-                    <div className="score-badge">
-                        <Award size={12} /> {assessmentResult.pronunciationScore}Pt
+        <div className="library-card-wrapper">
+            <div className="scene-card">
+                {/* 카드 헤더: 씬 힌트(좌) + TTS 재생버튼(우) */}
+                <div className="scene-card-header">
+                    <div className="scene-card-hint">
+                        <span className="scene-card-hint-icon">🎬</span>
+                        <p>{generated.scene_hint}</p>
                     </div>
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
-                </>
-            )}
-
-            {/* AI 코치 팁 */}
-            {coachTip && (
-                <div className="scene-coach-tip">
-                    <span>🤖</span>
-                    <p>{coachTip}</p>
+                    <button
+                        className="speak-button"
+                        onClick={() => onSpeak(generated.sentence, langCode)}
+                        title="Listen"
+                    >
+                        <Play size={22} fill="white" stroke="white" />
+                    </button>
                 </div>
-            )}
 
-            {/* 에러 메시지 */}
-            {errorMsg && <p className="scene-error-msg">{errorMsg}</p>}
+                {/* 생성 문장 */}
+                <div className="scene-card-sentence">{generated.sentence}</div>
 
-            {/* 액션 버튼 */}
-            <div className="scene-card-actions">
-                <button
-                    className="scene-tts-btn"
-                    onClick={() => onSpeak(generated.sentence, langCode)}
-                    title="Listen"
-                >
-                    <Volume2 size={20} />
-                </button>
+                {/* 발음 표기 (중국어 병음 / 일본어 히라가나) — 평가 전에만 표시 */}
+                {generated.pronunciation && !assessmentResult && (
+                    <p className="scene-card-pronunciation">{generated.pronunciation}</p>
+                )}
 
+                {/* 번역 */}
+                <div className="scene-card-translation">{generated.translation}</div>
+
+                {/* 학습 팁 */}
+                {generated.learning_tip && (
+                    <div className="scene-card-tip">
+                        <span>💡</span>
+                        <p>{generated.learning_tip}</p>
+                    </div>
+                )}
+
+                {/* 발음 평가 결과 */}
+                {assessmentResult && (
+                    <>
+                        <div className="score-badge">
+                            <Award size={12} /> {assessmentResult.pronunciationScore}Pt
+                        </div>
+                        <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                    </>
+                )}
+
+                {/* AI 코치 팁 */}
+                {coachTip && (
+                    <div className="scene-coach-tip">
+                        <span>🤖</span>
+                        <p>{coachTip}</p>
+                    </div>
+                )}
+
+                {/* 에러 메시지 */}
+                {errorMsg && <p className="scene-error-msg">{errorMsg}</p>}
+
+                {/* 발음 연습 녹음 버튼 (중앙 배치) */}
                 <div className="scene-record-wrap">
                     {isRecording && <p className="scene-recording-status">{t('card.recording')}</p>}
                     {isAnalyzing && <p className="scene-analyzing-status">{t('card.analyzing')}</p>}
@@ -130,22 +142,46 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                         }
                     </button>
                 </div>
+            </div>
 
-                <button
-                    className={`scene-star-btn ${isSaved ? 'saved' : ''}`}
-                    onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
-                    disabled={isSaved}
-                    title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
-                >
-                    <Star size={20} />
-                </button>
+            {/* 하단 액션바 — Library와 동일한 구조 */}
+            <div className="card-action-bar">
+                <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
+                    <span className="stat-text" title="목표 점수">🎯 <strong>{targetGoal}</strong></span>
+                    <span className="stat-divider">·</span>
+                    <span className="stat-text" title="내 점수">⭐️ <strong>{assessmentResult?.pronunciationScore ?? '-'}</strong></span>
+                    <span className="stat-divider">·</span>
+                    <span className="stat-text" title="달성 여부">
+                        {assessmentResult?.pronunciationScore != null && assessmentResult.pronunciationScore >= targetGoal ? '✅' : '❌'}
+                    </span>
+                    <span className="stat-divider">·</span>
+                    <button
+                        className="stat-icon-btn"
+                        title={assessmentResult?.audioUrl ? '내 발음 다시 듣기' : '녹음 후 활성화됩니다'}
+                        onClick={playMyRecording}
+                        disabled={!assessmentResult?.audioUrl}
+                        style={{ background: 'none', border: 'none', outline: 'none', cursor: assessmentResult?.audioUrl ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: assessmentResult?.audioUrl ? 1 : 0.3, color: 'var(--text-secondary)' }}
+                    >
+                        <Volume2 size={16} />
+                    </button>
+                </div>
+                <div className="action-right">
+                    <button
+                        className={`scene-star-btn ${isSaved ? 'saved' : ''}`}
+                        onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
+                        disabled={isSaved}
+                        title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
+                    >
+                        <Star size={20} />
+                    </button>
+                </div>
             </div>
         </div>
     );
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {} }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -422,6 +458,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     isSaved={isSaved}
                     onSpeak={onSpeak}
                     t={t}
+                    targetGoal={languageGoals[selectedLang] || 80}
                 />
             )}
 
@@ -436,6 +473,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     isSaved={isAnswerSaved}
                     onSpeak={onSpeak}
                     t={t}
+                    targetGoal={languageGoals[selectedLang] || 80}
                 />
             )}
         </div>

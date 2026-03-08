@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper, Youtube } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper, Youtube, Volume2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -981,24 +981,49 @@ function App() {
             <div className="cards-grid">
               {targetLangs.map((langCode) => {
                 const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                const practiceResult = practiceResults[langCode];
+                const goal = languageGoals[langCode] || 80;
                 return (
-                  <TranslationCard
-                    key={langCode}
-                    language={lang?.name}
-                    langCode={langCode}
-                    sourceLangCode={sourceLang}
-                    text={translations[langCode]}
-                    pronunciation={pronunciations[langCode]}
-                    learningTip={learningTips[langCode]}
-                    badgeColor={lang?.color}
-                    badgeTextColor={lang?.textColor}
-                    onSpeak={() => handleSpeak(translations[langCode], langCode)}
-                    onSave={() => handleStarSave(langCode)}
-                    isSaved={savedLangCodes.has(langCode)}
-                    onPracticeResult={handlePracticeResult}
-                    onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                    targetGoal={languageGoals[langCode] || 80}
-                  />
+                  <div key={langCode} className="library-card-wrapper">
+                    <TranslationCard
+                      language={lang?.name}
+                      langCode={langCode}
+                      sourceLangCode={sourceLang}
+                      text={translations[langCode]}
+                      pronunciation={pronunciations[langCode]}
+                      learningTip={learningTips[langCode]}
+                      badgeColor={lang?.color}
+                      badgeTextColor={lang?.textColor}
+                      onSpeak={() => handleSpeak(translations[langCode], langCode)}
+                      onSave={() => handleStarSave(langCode)}
+                      isSaved={savedLangCodes.has(langCode)}
+                      onPracticeResult={handlePracticeResult}
+                      onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      targetGoal={goal}
+                    />
+                    {/* 하단 액션바 — Library와 동일한 구조 */}
+                    <div className="card-action-bar">
+                      <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
+                        <span className="stat-text" title="목표 점수">🎯 <strong>{goal}</strong></span>
+                        <span className="stat-divider">·</span>
+                        <span className="stat-text" title="내 점수">⭐️ <strong>{practiceResult?.pronunciationScore ?? '-'}</strong></span>
+                        <span className="stat-divider">·</span>
+                        <span className="stat-text" title="달성 여부">
+                          {practiceResult?.pronunciationScore != null && practiceResult.pronunciationScore >= goal ? '✅' : '❌'}
+                        </span>
+                        <span className="stat-divider">·</span>
+                        <button
+                          className="stat-icon-btn"
+                          title={practiceResult?.audioUrl ? '내 발음 다시 듣기' : '녹음 후 활성화됩니다'}
+                          onClick={() => { if (practiceResult?.audioUrl) new Audio(practiceResult.audioUrl).play(); }}
+                          disabled={!practiceResult?.audioUrl}
+                          style={{ background: 'none', border: 'none', outline: 'none', cursor: practiceResult?.audioUrl ? 'pointer' : 'default', padding: 0, display: 'flex', alignItems: 'center', opacity: practiceResult?.audioUrl ? 1 : 0.3, color: 'var(--text-secondary)' }}
+                        >
+                          <Volume2 size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
                 );
               })}
               {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
@@ -1041,6 +1066,7 @@ function App() {
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
+            languageGoals={languageGoals}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />

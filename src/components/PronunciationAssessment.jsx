@@ -11,7 +11,12 @@ const PronunciationAssessment = ({ data, sourceLangCode }) => {
 
     if (!data) return null;
 
-    const { pronunciationScore = 0, fluencyScore = 0, prosodyScore = 0, words = [] } = data;
+    // Azure 필드 매핑:
+    // pronunciationScore = Azure 종합(Overall) 점수 → 배지(XPt)에 사용
+    // accuracyScore      = 개별 발음 정확도 점수   → 정확도 게이지에 사용
+    // fluencyScore       = 유창성 점수
+    // prosodyScore       = 운율감 점수 (미지원 언어는 서버에서 추정값 제공)
+    const { pronunciationScore = 0, accuracyScore = 0, fluencyScore = 0, prosodyScore = 0, words = [] } = data;
 
     const getScoreColor = (score) => {
         if (score >= 80) return '#10b981';
@@ -35,8 +40,8 @@ const PronunciationAssessment = ({ data, sourceLangCode }) => {
             {/* 🏆 영역 A: 종합 점수 대시보드 */}
             <div className="score-dashboard">
                 <div className="score-card">
-                    <div className="score-circle" style={{ '--score': pronunciationScore, '--color': getScoreColor(pronunciationScore) }}>
-                        <span>{pronunciationScore}</span>
+                    <div className="score-circle" style={{ '--score': accuracyScore, '--color': getScoreColor(accuracyScore) }}>
+                        <span>{accuracyScore}</span>
                     </div>
                     <span className="score-label">{t('scores.accuracy')}</span>
                 </div>

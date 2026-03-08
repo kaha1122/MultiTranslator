@@ -714,6 +714,7 @@ Return ONLY valid JSON (no markdown):
 {
   "sentence": "<sentence in ${targetLangName}>",
   "translation": "<translation in ${sourceLangName}>",
+  "pronunciation": "<For zh-CN/zh: pinyin with tone marks (e.g. 'xǐ shǒu jiān'). For ja: hiragana reading (e.g. 'こんにちは'). For all other languages: empty string ''>",
   "scene_hint": "<one sentence in ${sourceLangName} describing the exact moment — e.g., '수하물을 못 찾아 직원에게 말하는 상황'>",
   "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
 }`;
@@ -774,6 +775,7 @@ Return ONLY valid JSON (no markdown):
 {
   "sentence": "<reply sentence in ${targetLangName}>",
   "translation": "<translation in ${sourceLangName}>",
+  "pronunciation": "<For zh-CN/zh: pinyin with tone marks (e.g. 'xǐ shǒu jiān'). For ja: hiragana reading (e.g. 'こんにちは'). For all other languages: empty string ''>",
   "scene_hint": "<one sentence in ${sourceLangName} describing who is speaking and what they mean>",
   "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
 }`;
