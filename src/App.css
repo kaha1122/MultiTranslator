@@ -69,8 +69,8 @@ body {
 
 .hamburger-btn {
   flex-shrink: 0;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   padding: 0;
   background: none;
   border: none;
@@ -79,7 +79,7 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  border-radius: 10px;
+  border-radius: 12px;
   transition: background 0.2s;
 }
 
@@ -89,7 +89,7 @@ body {
 
 .header-spacer {
   flex-shrink: 0;
-  width: 40px;
+  width: 48px;
 }
 
 /* 탭 컨텍스트 바 — 로고 아래 풀너비 */
@@ -210,7 +210,7 @@ body {
 .sidebar {
   position: fixed;
   top: 0; left: 0; bottom: 0;
-  width: min(192px, 40vw);
+  width: min(260px, 75vw);
   background: white;
   z-index: 2001;
   display: flex;

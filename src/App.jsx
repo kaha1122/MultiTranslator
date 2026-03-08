@@ -1063,7 +1063,7 @@ function App() {
       <header className="app-header">
         <div className="app-header-row">
           <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-            <Menu size={22} />
+            <Menu size={26} strokeWidth={2.5} />
           </button>
 
           <h1 className="main-logo-3d">
