@@ -187,5 +187,46 @@
     "terms": "Terms of Service",
     "contact": "Contact",
     "settings": "Settings"
+  },
+  "landing": {
+    "login": "Log In",
+    "signUp": "Sign Up",
+    "otherLogin": "Other sign-in options",
+    "usps": [
+      { "title": "The fastest way to master\nnative-level pronunciation — free", "sub": "AI translates, scores, and coaches you. 8 languages, completely free." },
+      { "title": "Listen · Repeat · Get scored\nand perfect your accent", "sub": "See accuracy, fluency, and prosody across 5 metrics to pinpoint the gap with native speakers." },
+      { "title": "Your smart vocabulary note —\nsave and practice again", "sub": "One tap to save, then pull it back for pronunciation drills anytime." },
+      { "title": "AI-tailored sentences for\nreal-world language practice", "sub": "AI generates sentences by location and situation, reads them aloud, and guides you through pronunciation drills." }
+    ],
+    "tagline": "AI Pronunciation Coach · 8 Languages · Free",
+    "heroTitle": "The fastest way to master\nnative-level pronunciation",
+    "heroSub": "AI translates, scores, and coaches you. ",
+    "heroSubEm": "8 languages, completely free.",
+    "ctaStart": "Start with Google",
+    "stats": [
+      { "num": "8", "label": "Languages" },
+      { "num": "100", "label": "Point scoring" },
+      { "num": "Free", "label": "Always free" }
+    ],
+    "sectionLabel": "Key Features",
+    "sectionTitle": "Why PronunFit?",
+    "features": [
+      { "icon": "🆓", "num": "01 · Completely Free", "title": "AI pronunciation in 8 languages,<br />zero cost", "desc": "English · Korean · Japanese · Chinese · Vietnamese · French · German · Spanish. No ads, no hidden fees — sign up and unlock everything for free.", "tag": "✓ No credit card required" },
+      { "icon": "🎙️", "num": "02 · AI Pronunciation Coach", "title": "Listen → Repeat →<br />Get your score", "desc": "AI reads the sentence aloud — you repeat it. Get real-time analysis of accuracy, fluency, and prosody across 5 dimensions, visualized in a graph.", "tag": "✓ Powered by Azure AI Speech" },
+      { "icon": "📚", "num": "03 · Smart Vocabulary Note", "title": "Save, review,<br />and drill again", "desc": "Star any translated sentence to save it instantly. Open your library anytime and jump straight into pronunciation practice.", "tag": "✓ Auto-saved learning history" },
+      { "icon": "🌍", "num": "04 · Scene Practice", "title": "Practice by location & situation<br />with AI-generated sentences", "desc": "Select a scene — airport, hotel, restaurant, and more. AI generates and reads sentences aloud. Practice real-world pronunciation in context.", "tag": "✓ AI scene-based learning" }
+    ],
+    "appLabel": "Explore the App",
+    "appTitle": "Here's what's waiting for you",
+    "appCards": [
+      { "badge": "Pronunciation Analysis", "title": "AI scores you down to<br />individual phonemes", "desc": "Get your score instantly after speaking. See per-word and per-phoneme accuracy color-coded like a traffic light, plus personalized coaching tips from AI.", "img": "/mockup_pronunciation.png", "imgAlt": "Pronunciation analysis screen" },
+      { "badge": "Language & Goal Setup", "title": "Set your languages<br />and target score", "desc": "Pick up to 3 of 8 languages and set your target score — AI tailors its coaching to match. Change your settings anytime.", "img": "/mockup_multilang.png", "imgAlt": "Multi-language settings screen" },
+      { "badge": "Scene Practice", "title": "AI generates and reads<br />scene-based sentences", "desc": "Choose from airports, hotels, restaurants and more. AI creates sentences for your scene and reads them aloud. Repeat, get scored, and master real-world pronunciation.", "img": "/mockup_scene.svg", "imgAlt": "Scene practice screen" }
+    ],
+    "ctaTitle": "Start right now.",
+    "ctaHighlight": "Free. Instant.",
+    "ctaSub": "30 seconds to sign up. Your AI pronunciation coach in 8 languages is ready.",
+    "footerNote": "PronunFit · AI Pronunciation Coach · Free from day one",
+    "installPopup": "📲 Install the app\nfor instant access"
   }
 }

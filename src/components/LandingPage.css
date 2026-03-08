@@ -191,6 +191,7 @@
     line-height: 1.15;
     letter-spacing: -1px;
     margin-bottom: 1.2rem;
+    white-space: pre-line;
     animation: lpFadeInUp 0.9s ease 0.15s both;
 }
 
@@ -296,9 +297,71 @@
 }
 
 /* ================================================================
-   USP 섹션 - Feature Cards
+   USP 카드 섹션 (스크롤 진입 애니메이션)
    ================================================================ */
 .lp-usp-section {
+    padding: 3rem 5%;
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 1rem;
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.lp-usp-card {
+    background: var(--lp-dark-card);
+    border: 1px solid var(--lp-card-border);
+    border-radius: 20px;
+    padding: 1.8rem 2rem;
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    opacity: 0;
+    transform: translateY(32px);
+    transition: opacity 0.55s ease, transform 0.55s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.lp-usp-visible .lp-usp-card {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.lp-usp-card:hover {
+    border-color: rgba(16, 185, 129, 0.4);
+    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.1);
+}
+
+.lp-usp-num {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--lp-green);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.75rem;
+}
+
+.lp-usp-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: var(--lp-text-main);
+    line-height: 1.35;
+    letter-spacing: -0.3px;
+    margin-bottom: 0.65rem;
+    white-space: pre-line;
+}
+
+.lp-usp-sub {
+    font-size: 0.9rem;
+    color: var(--lp-text-muted);
+    line-height: 1.65;
+}
+
+/* ================================================================
+   Feature Cards 섹션
+   ================================================================ */
+.lp-features-section {
     padding: 4rem 5% 2rem;
     position: relative;
     z-index: 1;
@@ -703,6 +766,16 @@
         font-size: 2.2rem;
     }
 
+    .lp-usp-section {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1.2rem;
+        padding: 3.5rem 6%;
+    }
+
+    .lp-usp-title {
+        font-size: 1.35rem;
+    }
+
     .lp-features-grid {
         grid-template-columns: repeat(2, 1fr);
         gap: 1.2rem;
@@ -734,6 +807,11 @@
 
     .lp-hero-subtitle {
         font-size: 1.2rem;
+    }
+
+    .lp-usp-section {
+        grid-template-columns: repeat(4, 1fr);
+        padding: 4rem 6%;
     }
 
     .lp-features-grid {

@@ -11,7 +11,7 @@ import es   from '../locales/es.json';
 
 // 언어 코드 → JSON 매핑
 // zh-CN, zh-TW 등 파생 코드를 모두 zh-CN 파일로 연결합니다.
-const locales = {
+export const locales = {
     ko,
     en,
     ja,
