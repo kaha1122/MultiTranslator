@@ -34,6 +34,8 @@ import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress } from './hooks/useDailyProgress';
+import AppGuide from './components/AppGuide';
+import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 
@@ -210,6 +212,40 @@ function App() {
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
+
+  // 첫 방문 탭 튜토리얼 상태
+  const [tutorialTab, setTutorialTab] = useState(null);
+  const [tutorialStep, setTutorialStep] = useState(0);
+
+  // viewMode 변경 시 첫 방문이면 튜토리얼 표시
+  React.useEffect(() => {
+    if (!TAB_TUTORIALS[viewMode]) return;
+    const key = `pronunfit_tutorial_${viewMode}`;
+    if (!localStorage.getItem(key)) {
+      const timer = setTimeout(() => {
+        setTutorialTab(viewMode);
+        setTutorialStep(0);
+      }, 700);
+      return () => clearTimeout(timer);
+    }
+  }, [viewMode]);
+
+  const handleTutorialNext = () => {
+    const total = TAB_TUTORIALS[tutorialTab]?.length || 2;
+    if (tutorialStep < total - 1) {
+      setTutorialStep(tutorialStep + 1);
+    } else {
+      localStorage.setItem(`pronunfit_tutorial_${tutorialTab}`, 'seen');
+      setTutorialTab(null);
+      setTutorialStep(0);
+    }
+  };
+
+  const handleTutorialSkip = () => {
+    localStorage.setItem(`pronunfit_tutorial_${tutorialTab}`, 'seen');
+    setTutorialTab(null);
+    setTutorialStep(0);
+  };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
   const TAB_ORDER = ['scene', 'translation', 'library', 'voa', 'ted', 'settings'];
@@ -922,6 +958,7 @@ function App() {
   if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
+  if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} />;
 
 
   // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
@@ -1040,7 +1077,7 @@ function App() {
               {qaMenuOpen && (
                 <div className="sidebar-submenu">
                   <button className="sidebar-submenu-item"
-                    onClick={() => { setSidebarOpen(false); window.open('https://github.com/kaha1122/MultiTranslator', '_blank'); }}>
+                    onClick={() => { setSidebarOpen(false); setViewMode('guide'); }}>
                     {getT(sourceLang, 'nav.qaUsage')}
                   </button>
                   <button className="sidebar-submenu-item"
@@ -1742,6 +1779,17 @@ function App() {
       )}
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
+
+      {/* 첫 방문 탭 튜토리얼 */}
+      {tutorialTab && TAB_TUTORIALS[tutorialTab] && (
+        <TabTutorial
+          tab={tutorialTab}
+          step={tutorialStep}
+          total={TAB_TUTORIALS[tutorialTab].length}
+          onNext={handleTutorialNext}
+          onSkip={handleTutorialSkip}
+        />
+      )}
 
       {/* 탭 위치 표시 도트 인디케이터 */}
       {TAB_ORDER.includes(viewMode) && (

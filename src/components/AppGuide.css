@@ -1,0 +1,174 @@
+/* ── App Guide Full Page ─────────────────────────────────── */
+.guide-page {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: #f8fafc;
+  padding-bottom: 60px;
+}
+
+.guide-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #f1f5f9;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+.guide-back-btn {
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: #f1f5f9;
+  border-radius: 10px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #475569;
+  flex-shrink: 0;
+}
+
+.guide-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+
+.guide-intro {
+  padding: 14px 16px;
+  font-size: 0.875rem;
+  color: #64748b;
+  background: linear-gradient(135deg, #ecfdf5, #eff6ff);
+  border-bottom: 1px solid #e2e8f0;
+  line-height: 1.5;
+}
+
+/* ── 섹션 ─────────────────────────────────────── */
+.guide-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  padding: 12px 12px 0;
+  gap: 8px;
+}
+
+.guide-section {
+  background: white;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1.5px solid #f1f5f9;
+  transition: border-color 0.2s;
+}
+
+.guide-section.open {
+  border-color: var(--sec-color);
+  box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+
+.guide-section-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: white;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 12px;
+}
+
+.guide-section.open .guide-section-header {
+  background: var(--sec-bg);
+}
+
+.guide-section-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.guide-section-emoji {
+  font-size: 1.5rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.guide-section-name {
+  font-size: 1rem;
+  font-weight: 700;
+  color: #0f172a;
+}
+
+.guide-section-sub {
+  font-size: 0.76rem;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ── 섹션 콘텐츠 ─────────────────────────────── */
+.guide-section-body {
+  padding: 4px 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.guide-step {
+  display: flex;
+  gap: 12px;
+  padding-top: 12px;
+}
+
+.guide-step-icon {
+  font-size: 1.25rem;
+  line-height: 1.4;
+  flex-shrink: 0;
+  width: 28px;
+  text-align: center;
+}
+
+.guide-step-content {
+  flex: 1;
+}
+
+.guide-step-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--sec-color);
+  margin-bottom: 4px;
+}
+
+.guide-step-desc {
+  font-size: 0.85rem;
+  color: #334155;
+  line-height: 1.6;
+  white-space: pre-line;
+}
+
+/* ── 팁 박스 ─────────────────────────────────── */
+.guide-tips-box {
+  background: var(--sec-bg);
+  border-left: 3px solid var(--sec-color);
+  border-radius: 0 10px 10px 0;
+  padding: 10px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.guide-tip-item {
+  margin: 0;
+  font-size: 0.82rem;
+  color: #475569;
+  line-height: 1.5;
+}
