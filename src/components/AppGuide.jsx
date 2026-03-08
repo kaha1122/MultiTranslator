@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import './AppGuide.css';
 
@@ -308,6 +308,14 @@ const SECTIONS = [
 export default function AppGuide({ onBack }) {
   const [openId, setOpenId] = useState('nav');
 
+  useEffect(() => {
+    const handleKey = (e) => {
+      if (e.key === 'Backspace' || e.key === 'Escape') onBack();
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [onBack]);
+
   return (
     <div className="guide-page">
       {/* 헤더 */}
@@ -377,7 +385,9 @@ export default function AppGuide({ onBack }) {
         })}
       </div>
 
-      <div style={{ height: 24 }} />
+      <div style={{ height: 8 }} />
+      <button className="guide-close-btn" onClick={onBack}>← 돌아가기</button>
+      <div style={{ height: 32 }} />
     </div>
   );
 }

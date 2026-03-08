@@ -172,3 +172,20 @@
   color: #475569;
   line-height: 1.5;
 }
+
+/* ── 하단 돌아가기 버튼 ────────────────────────── */
+.guide-close-btn {
+  display: block;
+  margin: 12px auto 0;
+  padding: 12px 32px;
+  background: #00a884;
+  color: white;
+  border: none;
+  border-radius: 14px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
+  transition: background 0.2s;
+}
+.guide-close-btn:hover { background: #008f72; }
