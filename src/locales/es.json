@@ -75,7 +75,8 @@
     "tierByokFree": "Gratis (Mi API)",
     "tierSilver": "Plata",
     "tierPro": "Pro",
-    "tierPremium": "Premium"
+    "tierPremium": "Premium",
+    "logout": "Cerrar sesión"
   },
   "scene": {
     "tabTitle": "Práctica de Escenas",

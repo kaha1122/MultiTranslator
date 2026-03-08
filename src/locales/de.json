@@ -75,7 +75,8 @@
     "tierByokFree": "Kostenlos (Mein API)",
     "tierSilver": "Silber",
     "tierPro": "Pro",
-    "tierPremium": "Premium"
+    "tierPremium": "Premium",
+    "logout": "Abmelden"
   },
   "scene": {
     "tabTitle": "Szenen-Übung",

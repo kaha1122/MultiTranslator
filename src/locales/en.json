@@ -75,7 +75,8 @@
     "tierByokFree": "Free (My API)",
     "tierSilver": "Silver",
     "tierPro": "Pro",
-    "tierPremium": "Premium"
+    "tierPremium": "Premium",
+    "logout": "Logout"
   },
   "scene": {
     "tabTitle": "Scene Practice",

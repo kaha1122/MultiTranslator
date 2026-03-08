@@ -75,7 +75,8 @@
     "tierByokFree": "Gratuit (mon API)",
     "tierSilver": "Silver",
     "tierPro": "Pro",
-    "tierPremium": "Premium"
+    "tierPremium": "Premium",
+    "logout": "Se déconnecter"
   },
   "scene": {
     "tabTitle": "Pratique Scène",

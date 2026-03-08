@@ -75,7 +75,8 @@
     "tierByokFree": "免费（我的API）",
     "tierSilver": "银牌",
     "tierPro": "专业版",
-    "tierPremium": "高级版"
+    "tierPremium": "高级版",
+    "logout": "退出登录"
   },
   "scene": {
     "tabTitle": "场景练习",

@@ -75,7 +75,8 @@
     "tierByokFree": "無料（自分のAPI）",
     "tierSilver": "シルバー",
     "tierPro": "プロ",
-    "tierPremium": "プレミアム"
+    "tierPremium": "プレミアム",
+    "logout": "ログアウト"
   },
   "scene": {
     "tabTitle": "シーン練習",

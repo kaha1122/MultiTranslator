@@ -75,7 +75,8 @@
     "tierByokFree": "무료 (내 API)",
     "tierSilver": "실버",
     "tierPro": "프로",
-    "tierPremium": "프리미엄"
+    "tierPremium": "프리미엄",
+    "logout": "로그아웃"
   },
   "scene": {
     "tabTitle": "씬 연습",

@@ -75,7 +75,8 @@
     "tierByokFree": "Miễn phí (API của tôi)",
     "tierSilver": "Bạc",
     "tierPro": "Pro",
-    "tierPremium": "Premium"
+    "tierPremium": "Premium",
+    "logout": "Đăng xuất"
   },
   "scene": {
     "tabTitle": "Luyện Tình Huống",
