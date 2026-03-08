@@ -126,6 +126,18 @@
       "advanced": "Nâng cao"
     }
   },
+  "daily": {
+    "goalComplete": "Hoàn thành mục tiêu hôm nay! 🎉",
+    "keepGoing": "Tốt lắm! Tiếp tục cố lên 💪",
+    "cardsToday": "Hôm nay",
+    "streakSuffix": "ngày liên tiếp!",
+    "days": "T2,T3,T4,T5,T6,T7,CN",
+    "settingsTitle": "Mục tiêu học hàng ngày 🎯",
+    "settingsDesc": "Đặt số thẻ bạn muốn hoàn thành mỗi ngày.",
+    "settingsLabel": "Hàng ngày",
+    "settingsUnit": "thẻ",
+    "counterUnit": "thẻ"
+  },
   "tabTag": {
     "scene": "Chọn tình huống và luyện hội thoại thực tế với AI",
     "translation": "Dịch từ và câu, sau đó luyện phát âm",

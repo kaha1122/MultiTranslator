@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
@@ -60,7 +60,7 @@ const LANG_NAMES = {
 };
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
-function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80 }) {
+function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80, onTargetAchieved }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         startRecording, stopRecording, errorMsg,
@@ -71,6 +71,19 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
             new Audio(assessmentResult.audioUrl).play();
         }
     };
+
+    // 발음 점수가 목표에 도달하면 daily progress 카운트
+    const prevAnalyzing = useRef(isAnalyzing);
+    useEffect(() => {
+        if (prevAnalyzing.current && !isAnalyzing && assessmentResult) {
+            const score = assessmentResult.pronunciationScore || 0;
+            if (score >= targetGoal) {
+                const key = `scene-${langCode}-${(generated.sentence || '').slice(0, 50)}`;
+                onTargetAchieved?.(key);
+            }
+        }
+        prevAnalyzing.current = isAnalyzing;
+    }, [isAnalyzing, assessmentResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="library-card-wrapper">
@@ -187,7 +200,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {} }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onTargetAchieved }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -513,6 +526,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     onSpeak={onSpeak}
                     t={t}
                     targetGoal={languageGoals[selectedLang] || 80}
+                    onTargetAchieved={onTargetAchieved}
                 />
             )}
 
@@ -528,6 +542,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     onSpeak={onSpeak}
                     t={t}
                     targetGoal={languageGoals[selectedLang] || 80}
+                    onTargetAchieved={onTargetAchieved}
                 />
             )}
         </div>

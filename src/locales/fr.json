@@ -126,6 +126,18 @@
       "advanced": "Avancé"
     }
   },
+  "daily": {
+    "goalComplete": "Objectif du jour atteint ! 🎉",
+    "keepGoing": "Bravo ! Continuez 💪",
+    "cardsToday": "Fiches aujourd'hui",
+    "streakSuffix": "jours consécutifs !",
+    "days": "Lun,Mar,Mer,Jeu,Ven,Sam,Dim",
+    "settingsTitle": "Objectif quotidien 🎯",
+    "settingsDesc": "Définissez le nombre de fiches à réaliser par jour.",
+    "settingsLabel": "Par jour",
+    "settingsUnit": "fiches",
+    "counterUnit": "fiche"
+  },
   "tabTag": {
     "scene": "Choisissez une scène et entraînez-vous avec l'IA",
     "translation": "Traduisez et pratiquez la prononciation",

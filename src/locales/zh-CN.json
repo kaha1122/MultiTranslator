@@ -126,6 +126,18 @@
       "advanced": "高级"
     }
   },
+  "daily": {
+    "goalComplete": "今日目标达成！🎉",
+    "keepGoing": "很好！继续加油 💪",
+    "cardsToday": "今日达成",
+    "streakSuffix": "天连续达成！",
+    "days": "周一,周二,周三,周四,周五,周六,周日",
+    "settingsTitle": "每日学习目标 🎯",
+    "settingsDesc": "设置每天想要达成的卡片数量。",
+    "settingsLabel": "每日",
+    "settingsUnit": "张",
+    "counterUnit": "张"
+  },
   "tabTag": {
     "scene": "选择场景，与AI练习真实对话",
     "translation": "翻译单词和句子，练习发音",

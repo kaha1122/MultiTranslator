@@ -126,6 +126,18 @@
       "advanced": "Advanced"
     }
   },
+  "daily": {
+    "goalComplete": "Today's Goal Complete!",
+    "keepGoing": "Great job! Keep going 💪",
+    "cardsToday": "Cards Today",
+    "streakSuffix": "day streak!",
+    "days": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+    "settingsTitle": "Daily Learning Goal 🎯",
+    "settingsDesc": "Set how many cards you want to achieve per day.",
+    "settingsLabel": "Daily",
+    "settingsUnit": "Cards",
+    "counterUnit": "Card"
+  },
   "tabTag": {
     "scene": "Pick a scene and practice real conversations with AI",
     "translation": "Translate words & sentences, then practice pronunciation",

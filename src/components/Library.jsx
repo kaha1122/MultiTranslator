@@ -5,7 +5,7 @@ import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2, PenLine } from 'lucide-react';
 import { useT } from '../utils/i18n';
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
     // 상태 초기값을 브라우저 저장소(localStorage)에서 먼저 찾아보고 없으면 기본값을 씁니다.
@@ -146,7 +146,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
         ));
     };
 
-    const handlePracticeResult = async (id, _langCode, result) => {
+    const handlePracticeResult = async (id, langCode, result) => {
         if (result.audioUrl) {
             setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
         }
@@ -157,6 +157,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                     ? { ...card, pronunciationScore: result.pronunciationScore }
                     : card
             ));
+            // 목표 달성 시 daily progress 카운트
+            const targetGoal = languageGoals[langCode] || 80;
+            if (result.pronunciationScore >= targetGoal) {
+                onTargetAchieved?.(`library-${id}`);
+            }
             try {
                 await updateDoc(doc(db, "savedCards", id), {
                     pronunciationScore: result.pronunciationScore,
@@ -241,6 +246,21 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                     onChange={(e) => setSearchTerm(e.target.value)}
                     style={{ width: '100%', padding: '12px 12px 12px 38px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '1rem', outline: 'none' }}
                 />
+            </div>
+
+            {/* 오늘 학습 진도 카운터 */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#6366f1' }}>
+                    🎯 {todayCount}/{dailyGoal} {t('daily.counterUnit')}
+                </span>
+                <div style={{ width: '80px', height: '6px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+                    <div style={{
+                        height: '100%', borderRadius: '99px',
+                        width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
+                        background: todayCount >= dailyGoal ? '#10b981' : '#6366f1',
+                        transition: 'width 0.4s ease'
+                    }} />
+                </div>
             </div>
 
             {/* [신규] 사진처럼 필터들을 하나의 예쁜 뒷배경 박스로 묶어줍니다 */}
@@ -345,6 +365,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {} }) => {
                                 isInSelectionMode={false}
                                 isLibraryView={true}
                                 onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}
+                                onTargetAchieved={onTargetAchieved}
                                 targetGoal={languageGoals[card.langCode] || 80}
                                 cardId={card.id}
                                 memos={card.memos || []}

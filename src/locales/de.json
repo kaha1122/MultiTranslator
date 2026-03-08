@@ -126,6 +126,18 @@
       "advanced": "Fortgeschritten"
     }
   },
+  "daily": {
+    "goalComplete": "Tagesziel erreicht! 🎉",
+    "keepGoing": "Super! Weiter so 💪",
+    "cardsToday": "Heute erreicht",
+    "streakSuffix": "Tage in Folge!",
+    "days": "Mo,Di,Mi,Do,Fr,Sa,So",
+    "settingsTitle": "Tägliches Lernziel 🎯",
+    "settingsDesc": "Legen Sie fest, wie viele Karten Sie täglich erreichen möchten.",
+    "settingsLabel": "Täglich",
+    "settingsUnit": "Karten",
+    "counterUnit": "Karte"
+  },
   "tabTag": {
     "scene": "Wähle eine Szene und übe echte Gespräche mit KI",
     "translation": "Übersetze Wörter & Sätze, dann übe die Aussprache",

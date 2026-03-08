@@ -53,6 +53,7 @@ const TranslationCard = ({
     isSaved,
     onPracticeResult,
     onTrialLimitReached,
+    onTargetAchieved,
     isLibraryView,
     targetGoal = 80,
     // 메모 & 어노테이션 (Library에서만 사용)
@@ -215,12 +216,17 @@ Return only these 2 lines.`;
             const score = assessmentResult.pronunciationScore || 0;
             if (score >= targetGoal) {
                 playSuccessSound();
+                // 달성 키: Library 카드는 cardId, Translation 탭은 텍스트+언어 조합
+                const key = cardId
+                    ? `library-${cardId}`
+                    : `translate-${langCode}-${(text || '').slice(0, 50)}`;
+                onTargetAchieved?.(key);
             } else {
                 playAlertSound();
             }
         }
         prevAnalyzing.current = isAnalyzing;
-    }, [isAnalyzing, assessmentResult, targetGoal]);
+    }, [isAnalyzing, assessmentResult, targetGoal]); // eslint-disable-line react-hooks/exhaustive-deps
 
     const handleStarClick = (e) => {
         e.stopPropagation();

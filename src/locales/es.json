@@ -126,6 +126,18 @@
       "advanced": "Avanzado"
     }
   },
+  "daily": {
+    "goalComplete": "¡Objetivo diario alcanzado! 🎉",
+    "keepGoing": "¡Muy bien! Sigue adelante 💪",
+    "cardsToday": "Tarjetas hoy",
+    "streakSuffix": "días seguidos!",
+    "days": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom",
+    "settingsTitle": "Meta de aprendizaje diaria 🎯",
+    "settingsDesc": "Establece cuántas tarjetas quieres lograr por día.",
+    "settingsLabel": "Diario",
+    "settingsUnit": "tarjetas",
+    "counterUnit": "tarjeta"
+  },
   "tabTag": {
     "scene": "Elige una escena y practica conversaciones reales con IA",
     "translation": "Traduce palabras y frases, luego practica la pronunciación",

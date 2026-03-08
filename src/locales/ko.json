@@ -126,6 +126,18 @@
       "advanced": "고급"
     }
   },
+  "daily": {
+    "goalComplete": "오늘 목표 달성! 🎉",
+    "keepGoing": "잘하고 있어요! 계속 해봐요 💪",
+    "cardsToday": "오늘 달성",
+    "streakSuffix": "일 연속 달성!",
+    "days": "월,화,수,목,금,토,일",
+    "settingsTitle": "하루 학습 목표 🎯",
+    "settingsDesc": "하루에 달성할 카드 수를 설정하세요.",
+    "settingsLabel": "하루",
+    "settingsUnit": "장",
+    "counterUnit": "장"
+  },
   "tabTag": {
     "scene": "실전 상황을 골라 AI와 대화를 연습하세요",
     "translation": "단어·문장을 번역하고 발음을 연습하세요",

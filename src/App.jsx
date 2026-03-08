@@ -29,6 +29,8 @@ import UpgradeModal from './components/UpgradeModal';
 import VoaReader from './components/VoaReader';
 import TedReader from './components/TedReader';
 import ScenePractice from './components/ScenePractice';
+import DailyProgressPopup from './components/DailyProgressPopup';
+import { useDailyProgress } from './hooks/useDailyProgress';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 
@@ -158,6 +160,24 @@ function App() {
       return {};
     }
   });
+
+  // 하루 학습 목표 카드 수 (기본 10장)
+  const [dailyGoal, setDailyGoal] = useState(() => {
+    try { return parseInt(localStorage.getItem('dailyGoal') || '10', 10); }
+    catch (e) { return 10; }
+  });
+
+  // Daily progress hook
+  const { todayCount, weeklyData, incrementAchievement } = useDailyProgress(user, dailyGoal);
+
+  // 발음 목표 달성 팝업 상태
+  const [showProgressPopup, setShowProgressPopup] = useState(false);
+
+  // 목표 달성 콜백 — TranslationCard / ScenePractice / Library에서 호출
+  const handleTargetAchieved = async (key) => {
+    const wasNew = await incrementAchievement(key);
+    if (wasNew) setShowProgressPopup(true);
+  };
 
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
@@ -350,10 +370,11 @@ function App() {
       localStorage.setItem('learningTips', JSON.stringify(learningTips));
       localStorage.setItem('pronunciations', JSON.stringify(pronunciations));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals)); // [신규] 언어 목표 점수 자동 저장
+      localStorage.setItem('dailyGoal', String(dailyGoal)); // [신규] 일일 학습 목표 자동 저장
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals]);
+  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
 
   // [신규] sourceLang이나 targetLangs가 바뀔 때, inputLang이 사용 가능한 언어 조합에 없다면 기본값(sourceLang)으로 되돌립니다.
   useEffect(() => {
@@ -916,6 +937,23 @@ function App() {
           </AnimatePresence>
         </div>
 
+        {/* 미니 일일 진도 바 */}
+        {user && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#6366f1', whiteSpace: 'nowrap' }}>
+              🎯 {todayCount}/{dailyGoal}
+            </span>
+            <div style={{ flex: 1, height: '4px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: '99px',
+                width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
+                background: todayCount >= dailyGoal ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)',
+                transition: 'width 0.5s ease'
+              }} />
+            </div>
+          </div>
+        )}
+
         {/* 광고: 로고 아래 전체 너비 배너 — slot은 AdSense 심사 통과 후 채우세요 */}
         <AdBanner slot="TODO" style={{ width: '100%', margin: '4px 0 0' }} />
       </header>
@@ -999,6 +1037,7 @@ function App() {
                       isSaved={savedLangCodes.has(langCode)}
                       onPracticeResult={handlePracticeResult}
                       onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
                     />
                     {/* 하단 액션바 — Library와 동일한 구조 */}
@@ -1067,6 +1106,7 @@ function App() {
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
+            onTargetAchieved={handleTargetAchieved}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
@@ -1081,6 +1121,9 @@ function App() {
             sourceLang={sourceLang}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
+            todayCount={todayCount}
+            dailyGoal={dailyGoal}
+            onTargetAchieved={handleTargetAchieved}
           />
         </div>
 
@@ -1285,6 +1328,28 @@ function App() {
               </div>
             </div>
 
+            {/* [신규] 하루 학습 목표 카드 수 */}
+            <div className="settings-group">
+              <label className="settings-label">{getT(sourceLang, 'daily.settingsTitle')}</label>
+              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
+                {getT(sourceLang, 'daily.settingsDesc')}
+              </p>
+              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
+                <span style={{ width: '60px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.9rem' }}>{getT(sourceLang, 'daily.settingsLabel')}</span>
+                <input
+                  type="range"
+                  min="1"
+                  max="20"
+                  value={dailyGoal}
+                  onChange={(e) => setDailyGoal(parseInt(e.target.value))}
+                  style={{ flex: 1, margin: '0 15px', accentColor: '#6366f1' }}
+                />
+                <span style={{ minWidth: '80px', textAlign: 'right', fontWeight: 'bold', color: '#6366f1', fontSize: '1.1rem' }}>
+                  {dailyGoal} {getT(sourceLang, 'daily.settingsUnit')}
+                </span>
+              </div>
+            </div>
+
             <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
               Save Settings & Return
             </button>
@@ -1457,6 +1522,17 @@ function App() {
             style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px', flexShrink: 0 }}
           >✕</button>
         </div>
+      )}
+
+      {/* 발음 목표 달성 팝업 */}
+      {showProgressPopup && (
+        <DailyProgressPopup
+          todayCount={todayCount}
+          dailyGoal={dailyGoal}
+          weeklyData={weeklyData}
+          onClose={() => setShowProgressPopup(false)}
+          sourceLang={sourceLang}
+        />
       )}
 
       {/* 화면 하단에 고정된 메뉴바 (네비게이션) - 아이콘 전용 */}
