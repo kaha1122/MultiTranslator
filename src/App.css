@@ -37,15 +37,16 @@ body {
   width: 100%;
   max-width: 480px;
   margin: 0 auto;
-  min-height: 100vh;
+  height: 100vh;
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
   padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
-  overflow-x: clip;
-  /* clip: 가로 overflow 차단하면서 sticky 포지션 정상 동작 (hidden과 달리 scroll context 미생성) */
+  overflow-x: hidden;
+  overflow-y: auto;
+  /* 컨테이너 자체가 스크롤 컨텍스트 → overflow-x: hidden이 sticky를 깨지 않음 */
 }
 
 /* Header Section */
