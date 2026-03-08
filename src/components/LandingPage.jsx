@@ -17,22 +17,29 @@ const detectLang = () => {
 
 const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall }) => {
   const bottomRef = useRef(null);
-  const uspSectionRef = useRef(null);
+  const uspCardRefs = useRef([]);
   const [showInstallPopup, setShowInstallPopup] = useState(false);
-  const [uspVisible, setUspVisible] = useState(false);
 
   const langCode = detectLang();
   const c = (locales[langCode] || locales['en']).landing;
 
-  // USP 카드 섹션 뷰포트 진입 감지
+  // 각 USP 카드마다 개별 IntersectionObserver — 카드가 뷰포트에 들어올 때 revealed 클래스 추가
   useEffect(() => {
-    if (!uspSectionRef.current) return;
-    const observer = new IntersectionObserver(
-      ([entry]) => { if (entry.isIntersecting) setUspVisible(true); },
-      { threshold: 0.1 }
-    );
-    observer.observe(uspSectionRef.current);
-    return () => observer.disconnect();
+    const observers = uspCardRefs.current.map(card => {
+      if (!card) return null;
+      const obs = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.isIntersecting) {
+            card.classList.add('lp-usp-revealed');
+            obs.disconnect();
+          }
+        },
+        { threshold: 0.15 }
+      );
+      obs.observe(card);
+      return obs;
+    });
+    return () => observers.forEach(obs => obs?.disconnect());
   }, []);
 
   // 스크롤 끝 감지 → 설치 팝업
@@ -98,16 +105,13 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
         </div>
       </header>
 
-      {/* ── USP 카드 섹션 (스크롤 진입 시 표시) ── */}
-      <section
-        className={`lp-usp-section${uspVisible ? ' lp-usp-visible' : ''}`}
-        ref={uspSectionRef}
-      >
+      {/* ── USP 카드 섹션 (각 카드 개별 스크롤 진입 애니메이션) ── */}
+      <section className="lp-usp-section">
         {c.usps.map((usp, i) => (
           <div
             className="lp-usp-card"
             key={i}
-            style={{ transitionDelay: `${i * 0.1}s` }}
+            ref={el => uspCardRefs.current[i] = el}
           >
             <span className="lp-usp-num">0{i + 1}</span>
             <h3 className="lp-usp-title">{usp.title}</h3>
