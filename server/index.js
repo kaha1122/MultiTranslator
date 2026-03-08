@@ -81,13 +81,24 @@ async function analyzePronunciation(audioPath, referenceText, langCode, azureKey
 
         recognizer.recognizeOnceAsync(result => {
             const pronResult = sdk.PronunciationAssessmentResult.fromResult(result);
+            const realProsody = pronResult.prosodyScore;
+            const displayProsody = realProsody > 0
+                ? realProsody
+                : Math.round((pronResult.fluencyScore + pronResult.accuracyScore) / 2);
             const output = {
-                pronunciationScore: pronResult.pronunciationScore,
+                // [수정] prosody 미지원 언어(0 리턴)일 경우 fallback prosody로 pronunciationScore 재계산하여 badge와 UI 원형 점수를 일치시킴
+                pronunciationScore: realProsody > 0
+                    ? pronResult.pronunciationScore
+                    : Math.round(
+                        pronResult.accuracyScore * 0.4 +
+                        pronResult.completenessScore * 0.2 +
+                        pronResult.fluencyScore * 0.2 +
+                        displayProsody * 0.2
+                      ),
                 accuracyScore: pronResult.accuracyScore,
                 fluencyScore: pronResult.fluencyScore,
                 completenessScore: pronResult.completenessScore,
-                // [수정] Azure API가 운율감(prosody)을 지원하지 않는 언어(0 리턴)일 경우, 유창성과 정확성을 바탕으로 추정값을 제공합니다.
-                prosodyScore: pronResult.prosodyScore > 0 ? pronResult.prosodyScore : Math.round((pronResult.fluencyScore + pronResult.accuracyScore) / 2),
+                prosodyScore: displayProsody,
                 words: pronResult.detailResult.Words.map(w => ({
                     word: w.Word,
                     accuracyScore: w.PronunciationAssessment.AccuracyScore,
