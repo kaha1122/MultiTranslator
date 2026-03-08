@@ -1165,18 +1165,21 @@ function App() {
           })()}
         </AnimatePresence>
 
-        {/* 미니 일일 진도 바 */}
+        {/* 미니 일일 진도 바 — 숫자 없이 게이지만 */}
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px' }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#6366f1', whiteSpace: 'nowrap' }}>
-              🎯 {todayCount}/{dailyGoal}
-            </span>
-            <div style={{ flex: 1, height: '4px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+            <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
+            <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
               <div style={{
                 height: '100%', borderRadius: '99px',
                 width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                background: todayCount >= dailyGoal ? 'linear-gradient(90deg,#10b981,#059669)' : 'linear-gradient(90deg,#6366f1,#8b5cf6)',
-                transition: 'width 0.5s ease'
+                background: todayCount >= dailyGoal
+                  ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
+                  : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
+                transition: 'width 0.5s ease',
+                boxShadow: todayCount >= dailyGoal
+                  ? '0 0 6px rgba(16,185,129,0.5)'
+                  : '0 0 6px rgba(99,102,241,0.4)',
               }} />
             </div>
           </div>

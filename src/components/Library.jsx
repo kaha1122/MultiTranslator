@@ -250,27 +250,16 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 flexDirection: 'column',
                 gap: '10px',
             }}>
-                {/* 검색바 + 게이지 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <div style={{ position: 'relative', flex: 1 }}>
-                        <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                        <input
-                            type="text"
-                            placeholder="검색..."
-                            value={searchTerm}
-                            onChange={(e) => setSearchTerm(e.target.value)}
-                            style={{ width: '100%', padding: '9px 12px 9px 34px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.9rem', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
-                        />
-                    </div>
-                    {/* 게이지 바만 (숫자 없음) */}
-                    <div style={{ flexShrink: 0, width: '48px', height: '6px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
-                        <div style={{
-                            height: '100%', borderRadius: '99px',
-                            width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                            background: todayCount >= dailyGoal ? '#10b981' : '#6366f1',
-                            transition: 'width 0.4s ease'
-                        }} />
-                    </div>
+                {/* 검색바 */}
+                <div style={{ position: 'relative' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    <input
+                        type="text"
+                        placeholder="검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px 9px 34px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.9rem', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
                 </div>
 
                 {/* 언어 필터 탭 */}
