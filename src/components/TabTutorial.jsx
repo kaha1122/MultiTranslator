@@ -85,6 +85,8 @@ export default function TabTutorial({ tab, step, total, onNext, onSkip }) {
   const isLast = step === total - 1;
 
   return (
+    <>
+    <div className="tutorial-backdrop" onClick={onSkip} />
     <div className="tutorial-overlay" onClick={(e) => e.stopPropagation()}>
       <div className="tutorial-card">
         {/* 상단: 아이콘 + 닫기 */}
@@ -113,5 +115,6 @@ export default function TabTutorial({ tab, step, total, onNext, onSkip }) {
         </div>
       </div>
     </div>
+    </>
   );
 }
