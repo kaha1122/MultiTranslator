@@ -45,8 +45,8 @@ body {
   padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
-  overflow-x: hidden;
-  /* Added to prevent horizontal scroll */
+  overflow-x: clip;
+  /* clip: 가로 overflow 차단하면서 sticky 포지션 정상 동작 (hidden과 달리 scroll context 미생성) */
 }
 
 /* Header Section */
