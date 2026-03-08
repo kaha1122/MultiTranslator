@@ -211,6 +211,31 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
 
+  // 스와이프로 탭 이동 — 메인 탭 순서
+  const TAB_ORDER = ['scene', 'translation', 'library', 'voa', 'ted', 'settings'];
+  const swipeStartX = React.useRef(null);
+  const swipeStartY = React.useRef(null);
+
+  const handleTouchStart = useCallback((e) => {
+    swipeStartX.current = e.touches[0].clientX;
+    swipeStartY.current = e.touches[0].clientY;
+  }, []);
+
+  const handleTouchEnd = useCallback((e) => {
+    if (swipeStartX.current === null) return;
+    const dx = e.changedTouches[0].clientX - swipeStartX.current;
+    const dy = e.changedTouches[0].clientY - swipeStartY.current;
+    swipeStartX.current = null;
+    swipeStartY.current = null;
+    // 수평 이동이 수직보다 크고 60px 이상일 때만 탭 전환
+    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
+    if (sidebarOpen) return; // 드로어 열린 상태에서는 무시
+    const cur = TAB_ORDER.indexOf(viewMode);
+    if (cur === -1) return;
+    if (dx < 0 && cur < TAB_ORDER.length - 1) setViewMode(TAB_ORDER[cur + 1]); // 왼쪽 스와이프 → 다음
+    if (dx > 0 && cur > 0) setViewMode(TAB_ORDER[cur - 1]);                     // 오른쪽 스와이프 → 이전
+  }, [viewMode, sidebarOpen]);
+
   // 사용자가 입력한 번역할 텍스트
   const [inputText, setInputText] = useState(() => {
     try {
@@ -941,7 +966,7 @@ function App() {
 
   // 로그인이 되어있을 때 보여주는 메인 앱 화면
   return (
-    <div className="app-container">
+    <div className="app-container" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
       {/* Vercel 분석 도구 (성능 및 방문자 통계용) */}
       <Analytics />
 
@@ -1717,6 +1742,20 @@ function App() {
       )}
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
+
+      {/* 탭 위치 표시 도트 인디케이터 */}
+      {TAB_ORDER.includes(viewMode) && (
+        <div className="tab-dots">
+          {TAB_ORDER.map((tab) => (
+            <button
+              key={tab}
+              className={`tab-dot ${viewMode === tab ? 'active' : ''}`}
+              onClick={() => setViewMode(tab)}
+              aria-label={tab}
+            />
+          ))}
+        </div>
+      )}
 
       {/* Trial 한도 도달 모달 */}
       {showTrialLimitModal && (
