@@ -95,7 +95,7 @@ const CONTENT = {
     sectionLabel: '主な機能',
     sectionTitle: 'なぜPronunFitなのか？',
     features: [
-      { icon: '🆓', num: '01 · 完全無料', title: '8言語のAI発音アプリ、<br />0円でスタート', desc: '英語・韓国語・日本語・中国語・ベトナム語・フランス語・ドイツ語・スペイン語。広告なし、隠れた費用なし — 登録だけですべての機能が無料に。', tag: '✓ クレジットカード不要' },
+      { icon: '🆓', num: '01 · 完全無料', title: '8言語のAI発音  、<br />0円でスタート', desc: '英語・韓国語・日本語・中国語・ベトナム語・フランス語・ドイツ語・スペイン語。広告なし、隠れた費用なし — 登録だけですべての機能が無料に。', tag: '✓ クレジットカード不要' },
       { icon: '🎙️', num: '02 · AI発音コーチ', title: '聞いて → まねして →<br />点数をもらう', desc: 'AIが文を読み上げるのを聞いてまねてください。正確さ・流暢さ・韻律など5項目をリアルタイムで分析してグラフで表示します。', tag: '✓ Azure AI音声分析' },
       { icon: '📚', num: '03 · スマート単語帳', title: '保存して・確認して・<br />また練習できる単語帳', desc: '翻訳した文をワンタップで保存するだけ。保管庫からいつでも取り出して発音練習まで続けられます。', tag: '✓ 学習履歴自動保存' },
       { icon: '🌍', num: '04 · シーン練習', title: '場所と状況別の<br />実践的な語学学習', desc: '空港・ホテル・レストランなど場面を選択。AIが学習文章を生成し音声で再生します。実戦的な発音練習が可能です。', tag: '✓ 場所・状況別語学学習' },
@@ -336,7 +336,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
         titleRef.current.style.opacity = '1';
         subRef.current.style.opacity = '1';
       }, 500);
-    }, 5000);
+    }, 8000);
     return () => clearInterval(interval);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
