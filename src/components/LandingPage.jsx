@@ -67,15 +67,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
           <span className="lp-hero-sub-em">{c.heroSubEm}</span>
         </p>
 
-        <div className="lp-cta-group">
-          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>
-            {c.ctaStart}
-          </button>
-          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>
-            {c.otherLogin}
-          </button>
-        </div>
-
         {/* 신뢰 지표 */}
         <div className="lp-hero-stats">
           {c.stats.map((s, i) => (
