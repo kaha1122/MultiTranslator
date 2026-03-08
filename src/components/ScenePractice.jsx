@@ -5,7 +5,13 @@ import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playStarSound } from '../utils/soundEffects';
+import { db } from '../firebase/config';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import './ScenePractice.css';
+
+// Firebase sceneHistory 문서 ID 생성 (특수문자 없는 복합키)
+const makeHistoryKey = (sceneId, difficulty, style, lang) =>
+    `${sceneId}--${difficulty}--${style}--${lang}`;
 
 const getServerUrl = () => {
     try {
@@ -197,8 +203,41 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const [isAnswerSaved, setIsAnswerSaved] = useState(false);
 
     const t = useT(sourceLang);
-    const { byokGeminiKey } = useAuth();
+    const { byokGeminiKey, user } = useAuth();
     const SERVER_URL = getServerUrl();
+
+    // 세션 + Firebase 중복 방지 이력 캐시 { historyKey → string[] }
+    const [historyCache, setHistoryCache] = useState({});
+
+    // Firebase에서 해당 키의 이력 읽어 캐시에 저장 (생성 직전 호출)
+    const loadHistory = async (key) => {
+        if (!user) return [];
+        if (historyCache[key]) return historyCache[key]; // 이미 캐시된 경우 재사용
+        try {
+            const snap = await getDoc(doc(db, `users/${user.uid}/sceneHistory`, key));
+            const sentences = snap.exists() ? (snap.data().sentences || []) : [];
+            setHistoryCache(prev => ({ ...prev, [key]: sentences }));
+            return sentences;
+        } catch {
+            return [];
+        }
+    };
+
+    // 생성 성공 후 이력에 추가 (최신 30개 유지) — Firebase 쓰기는 백그라운드
+    const appendHistory = (key, sentence) => {
+        setHistoryCache(prev => {
+            const existing = prev[key] || [];
+            const updated = [...existing, sentence].slice(-30); // 최신 30개
+            // Firebase 백그라운드 쓰기 (로그인 시)
+            if (user) {
+                setDoc(doc(db, `users/${user.uid}/sceneHistory`, key), {
+                    sentences: updated,
+                    updatedAt: serverTimestamp(),
+                }, { merge: true }).catch(console.error);
+            }
+            return { ...prev, [key]: updated };
+        });
+    };
 
     const switchCategory = (cat) => {
         setCategory(cat);
@@ -232,7 +271,11 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setIsSaved(false);
         setIsAnswerSaved(false);
         try {
+            const sceneId = isCustomSelected ? 'custom' : selectedScene.id;
             const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
+            const historyKey = makeHistoryKey(sceneId, difficulty, speechStyle, selectedLang);
+            const avoidSentences = await loadHistory(historyKey);
+
             const res = await fetch(`${SERVER_URL}/api/scene-sentence`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -244,11 +287,14 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     difficulty,
                     speechStyle,
                     byokGeminiKey: byokGeminiKey || undefined,
+                    avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
                 }),
             });
             if (!res.ok) throw new Error('Server error');
             const data = await res.json();
             setGenerated(data);
+            // 생성 성공 → 이력 추가 (최신 30개 cap)
+            if (data.sentence) appendHistory(historyKey, data.sentence);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -263,7 +309,12 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setGeneratedAnswer(null);
         setIsAnswerSaved(false);
         try {
+            const sceneId = isCustomSelected ? 'custom' : selectedScene.id;
             const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
+            // 답변은 별도 키 (scene--difficulty--style--lang--answer)
+            const historyKey = makeHistoryKey(`${sceneId}-answer`, difficulty, speechStyle, selectedLang);
+            const avoidSentences = await loadHistory(historyKey);
+
             const res = await fetch(`${SERVER_URL}/api/scene-answer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -275,11 +326,14 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     difficulty,
                     speechStyle,
                     byokGeminiKey: byokGeminiKey || undefined,
+                    avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
                 }),
             });
             if (!res.ok) throw new Error('Server error');
             const data = await res.json();
             setGeneratedAnswer(data);
+            // 생성 성공 → 이력 추가 (최신 30개 cap)
+            if (data.sentence) appendHistory(historyKey, data.sentence);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {

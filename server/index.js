@@ -680,7 +680,7 @@ const STYLE_DESC = {
 };
 
 app.post('/api/scene-sentence', async (req, res) => {
-    const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey } = req.body;
+    const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
     }
@@ -693,6 +693,10 @@ app.post('/api/scene-sentence', async (req, res) => {
     const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
+    const avoidBlock = (avoidSentences && avoidSentences.length > 0)
+        ? `\nIMPORTANT — The learner has already practiced the following sentences. You MUST generate a sentence that is completely different in structure and vocabulary from ALL of these:\n${avoidSentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`
+        : '';
+
     const prompt = `You are a language learning coach. Generate a single natural QUESTION sentence for a learner to practice speaking in a real-life context.
 
 Context:
@@ -701,14 +705,12 @@ Context:
 - Learner's native language: ${sourceLangName}
 - Difficulty: ${diffDesc}
 - Speech style: ${styleDesc}
-
+${avoidBlock}
 Rules:
 1. The sentence must be a QUESTION the LEARNER asks (e.g., asking staff, locals, or a counterpart in the scene)
 2. Length: 8–18 words — short enough to practice in one breath
 3. Match the difficulty and speech style exactly
 4. The sentence must end with a question mark
-5. CRITICAL: DO NOT always start the sentence with boring greetings like "Excuse me," "Hello," or "Hey,". 
-6. Be highly creative with sentence starters! Jump directly into the main point, or use varied natural openings (e.g., "I was wondering if...", "Could you possibly...", "Hi there, do you...", "Sorry to bother you, but...").
 
 Return ONLY valid JSON (no markdown):
 {
@@ -722,7 +724,10 @@ Return ONLY valid JSON (no markdown):
     try {
         const response = await axios.post(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-            { contents: [{ parts: [{ text: prompt }] }] }
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 1.8, topK: 64, topP: 0.95 },
+            }
         );
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
@@ -740,7 +745,7 @@ Return ONLY valid JSON (no markdown):
  * Body: { question, scene, targetLang, sourceLang, byokGeminiKey? }
  */
 app.post('/api/scene-answer', async (req, res) => {
-    const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey } = req.body;
+    const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
         return res.status(400).json({ error: 'Missing question or targetLang' });
     }
@@ -753,6 +758,10 @@ app.post('/api/scene-answer', async (req, res) => {
     const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
+    const avoidBlock = (avoidSentences && avoidSentences.length > 0)
+        ? `\nIMPORTANT — The learner has already practiced the following reply sentences. You MUST generate a reply that is completely different in structure and vocabulary from ALL of these:\n${avoidSentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`
+        : '';
+
     const prompt = `You are a language learning coach. A learner just practiced saying a question in ${targetLangName}. Now generate a natural REPLY that the other person would say in response.
 
 Context:
@@ -762,14 +771,12 @@ Context:
 - Learner's native language: ${sourceLangName}
 - Difficulty: ${diffDesc}
 - Speech style: ${styleDesc}
-
+${avoidBlock}
 Rules:
 1. The sentence must be the OTHER PERSON'S natural reply to the question above
 2. Length: 8–18 words — short enough to practice in one breath
 3. Match the difficulty and speech style exactly
 4. Make the reply directly relevant to the question asked
-5. CRITICAL: DO NOT always start the reply with "Yes," "Sure," "Hello," or "Here is". 
-6. Vary the sentence drastically! Make it sound like a real native speaker responding naturally (e.g., start with "Oh, of course...", "Actually, we...", "Let me check that for you...", or just jump straight into the answer).
 
 Return ONLY valid JSON (no markdown):
 {
@@ -783,7 +790,10 @@ Return ONLY valid JSON (no markdown):
     try {
         const response = await axios.post(
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
-            { contents: [{ parts: [{ text: prompt }] }] }
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 1.8, topK: 64, topP: 0.95 },
+            }
         );
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
