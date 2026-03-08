@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { ArrowLeft, Mail, Shield, FileText } from 'lucide-react';
 import './LegalPages.css';
 
@@ -14,6 +14,25 @@ import './LegalPages.css';
 
 // ── 공통 레이아웃: 뒤로가기 버튼 + 제목 헤더 ──────────────────────────────────
 function LegalLayout({ icon: Icon, title, onBack, children }) {
+    useEffect(() => {
+        history.pushState({ page: 'legal' }, '');
+        const handlePop = () => onBack();
+        const handleKey = (e) => {
+            const tag = e.target.tagName;
+            if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+            if (e.key === 'Backspace' || e.key === 'Escape') {
+                e.preventDefault();
+                history.back();
+            }
+        };
+        window.addEventListener('popstate', handlePop);
+        window.addEventListener('keydown', handleKey);
+        return () => {
+            window.removeEventListener('popstate', handlePop);
+            window.removeEventListener('keydown', handleKey);
+        };
+    }, [onBack]);
+
     return (
         <div className="legal-container">
             {/* 상단 뒤로가기 헤더 */}
