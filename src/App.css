@@ -42,7 +42,7 @@ body {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(36px + env(safe-area-inset-bottom, 8px)) 0;
+  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
@@ -998,18 +998,21 @@ body {
 /* ── 탭 위치 도트 인디케이터 ─────────────────────────────────────── */
 .tab-dots {
   position: fixed;
-  bottom: calc(6px + env(safe-area-inset-bottom, 0px));
+  bottom: 0;
   left: 50%;
   transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  height: calc(36px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
   z-index: 900;
-  padding: 6px 12px;
-  background: rgba(255,255,255,0.75);
-  backdrop-filter: blur(8px);
-  border-radius: 20px;
-  box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
 }
 
 .tab-dot {
@@ -1025,7 +1028,7 @@ body {
 }
 
 .tab-dot.active {
-  width: 20px;
+  width: 22px;
   border-radius: 4px;
   background: var(--primary-color);
   box-shadow: 0 2px 6px rgba(0, 168, 132, 0.4);
