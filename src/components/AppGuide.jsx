@@ -310,16 +310,26 @@ export default function AppGuide({ onBack }) {
   const sectionRefs = useRef({});
 
   useEffect(() => {
+    // 히스토리 항목을 쌓아서 브라우저/Android 뒤로 버튼이 앱을 닫지 않고 여기서 멈추도록
+    history.pushState({ page: 'guide' }, '');
+
+    const handlePop = () => onBack();
+    window.addEventListener('popstate', handlePop);
+
     const handleKey = (e) => {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
       if (e.key === 'Backspace' || e.key === 'Escape') {
         e.preventDefault();
-        onBack();
+        history.back(); // popstate → handlePop → onBack()
       }
     };
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+
+    return () => {
+      window.removeEventListener('popstate', handlePop);
+      window.removeEventListener('keydown', handleKey);
+    };
   }, [onBack]);
 
   const handleToggle = (secId, isOpen) => {
