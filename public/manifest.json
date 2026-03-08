@@ -4,6 +4,11 @@
     "description": "AI 기반 다국어 번역 및 발음 연습 앱. 언제 어디서든 언어 장벽을 허물어보세요!",
     "icons": [
         {
+            "src": "icon-64.png",
+            "sizes": "64x64",
+            "type": "image/png"
+        },
+        {
             "src": "icon-192.png",
             "sizes": "192x192",
             "type": "image/png",
