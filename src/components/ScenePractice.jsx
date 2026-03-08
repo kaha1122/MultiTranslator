@@ -60,7 +60,7 @@ const LANG_NAMES = {
 };
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
-function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80, onTargetAchieved }) {
+function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         startRecording, stopRecording, errorMsg,
@@ -72,14 +72,13 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
         }
     };
 
-    // 발음 점수가 목표에 도달하면 daily progress 카운트
+    // 발음 점수가 목표에 도달하면 북마크 유도 팝업 표시 (저장 시 카운트)
     const prevAnalyzing = useRef(isAnalyzing);
     useEffect(() => {
         if (prevAnalyzing.current && !isAnalyzing && assessmentResult) {
             const score = assessmentResult.pronunciationScore || 0;
-            if (score >= targetGoal) {
-                const key = `scene-${langCode}-${(generated.sentence || '').slice(0, 50)}`;
-                onTargetAchieved?.(key);
+            if (score >= targetGoal && !isSaved) {
+                onBookmarkPrompt?.(score, () => onSave(score));
             }
         }
         prevAnalyzing.current = isAnalyzing;
@@ -200,7 +199,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onTargetAchieved }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -526,7 +525,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     onSpeak={onSpeak}
                     t={t}
                     targetGoal={languageGoals[selectedLang] || 80}
-                    onTargetAchieved={onTargetAchieved}
+                    onBookmarkPrompt={onBookmarkPrompt}
                 />
             )}
 
@@ -542,7 +541,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     onSpeak={onSpeak}
                     t={t}
                     targetGoal={languageGoals[selectedLang] || 80}
-                    onTargetAchieved={onTargetAchieved}
+                    onBookmarkPrompt={onBookmarkPrompt}
                 />
             )}
         </div>

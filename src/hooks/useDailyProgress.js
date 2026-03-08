@@ -28,52 +28,58 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
 
     useEffect(() => {
-        if (!user) {
+        const uid = user?.uid;
+        if (!uid) {
             setTodayCount(0);
             setWeeklyData([]);
             achievedKeysRef.current = new Set();
+            todayCountRef.current = 0;
             return;
         }
 
         const loadData = async () => {
-            const today = getToday();
-            const weekDates = getWeekDates();
+            try {
+                const today = getToday();
+                const weekDates = getWeekDates();
 
-            // Load today's progress doc
-            const todayRef = doc(db, 'users', user.uid, 'dailyProgress', today);
-            const todaySnap = await getDoc(todayRef);
-            if (todaySnap.exists()) {
-                const data = todaySnap.data();
-                const cnt = data.count || 0;
-                setTodayCount(cnt);
-                todayCountRef.current = cnt;
-                achievedKeysRef.current = new Set(data.achievedKeys || []);
-            } else {
-                setTodayCount(0);
-                todayCountRef.current = 0;
-                achievedKeysRef.current = new Set();
-            }
-
-            // Load this week's docs
-            const weekSnaps = await Promise.all(
-                weekDates.map(date => getDoc(doc(db, 'users', user.uid, 'dailyProgress', date)))
-            );
-            setWeeklyData(weekDates.map((date, i) => {
-                if (weekSnaps[i].exists()) {
-                    const d = weekSnaps[i].data();
-                    const cnt = d.count || 0;
-                    const goal = d.dailyGoal || dailyGoal;
-                    return { date, count: cnt, goal, achieved: cnt >= goal };
+                // Load today's progress doc
+                const todayRef = doc(db, 'users', uid, 'dailyProgress', today);
+                const todaySnap = await getDoc(todayRef);
+                if (todaySnap.exists()) {
+                    const data = todaySnap.data();
+                    const cnt = data.count || 0;
+                    setTodayCount(cnt);
+                    todayCountRef.current = cnt;
+                    achievedKeysRef.current = new Set(data.achievedKeys || []);
+                } else {
+                    setTodayCount(0);
+                    todayCountRef.current = 0;
+                    achievedKeysRef.current = new Set();
                 }
-                return { date, count: 0, goal: dailyGoal, achieved: false };
-            }));
+
+                // Load this week's docs
+                const weekSnaps = await Promise.all(
+                    weekDates.map(date => getDoc(doc(db, 'users', uid, 'dailyProgress', date)))
+                );
+                setWeeklyData(weekDates.map((date, i) => {
+                    if (weekSnaps[i].exists()) {
+                        const d = weekSnaps[i].data();
+                        const cnt = d.count || 0;
+                        const goal = d.dailyGoal || dailyGoal;
+                        return { date, count: cnt, goal, achieved: cnt >= goal };
+                    }
+                    return { date, count: 0, goal: dailyGoal, achieved: false };
+                }));
+            } catch (e) {
+                console.error('[useDailyProgress] Firestore 로드 실패 (보안 규칙 확인 필요):', e);
+            }
         };
 
         loadData();
-    }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
+    }, [user?.uid]); // uid만 의존 — 토큰 갱신 시 user 객체 레퍼런스 변경으로 인한 재실행 방지
 
     const incrementAchievement = useCallback(async (key) => {
-        if (!user) return false;
+        if (!user?.uid) return false;
         // Deduplication: skip if this key was already counted today
         if (achievedKeysRef.current.has(key)) return false;
 
@@ -101,7 +107,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                 { merge: true }
             );
         } catch (e) {
-            console.error('Failed to save daily progress:', e);
+            console.error('[useDailyProgress] Firestore 저장 실패:', e);
         }
 
         return true; // signals "first time this key achieved today" → trigger popup

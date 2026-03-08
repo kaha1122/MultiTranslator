@@ -30,6 +30,7 @@ import VoaReader from './components/VoaReader';
 import TedReader from './components/TedReader';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
+import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress } from './hooks/useDailyProgress';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
@@ -173,10 +174,29 @@ function App() {
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
 
-  // 목표 달성 콜백 — TranslationCard / ScenePractice / Library에서 호출
+  // 북마크 유도 팝업 상태 (비Library 탭에서 목표 달성 시)
+  const [bookmarkPrompt, setBookmarkPrompt] = useState(null); // { score, saveFn }
+
+  // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
+  const [savedCardIds, setSavedCardIds] = useState({});
+
+  // Library 전용 — 직접 카운트
   const handleTargetAchieved = async (key) => {
     const wasNew = await incrementAchievement(key);
     if (wasNew) setShowProgressPopup(true);
+  };
+
+  // 비Library 탭에서 목표 달성 시 — 북마크 유도 팝업 표시
+  const handleBookmarkPrompt = useCallback((score, saveFn) => {
+    setBookmarkPrompt({ score, saveFn });
+  }, []);
+
+  // 팝업에서 "북마크하기" 클릭 → 저장 실행 (저장 함수 내부에서 카운트)
+  const handleBookmarkConfirm = async () => {
+    if (!bookmarkPrompt?.saveFn) return;
+    const { saveFn } = bookmarkPrompt;
+    setBookmarkPrompt(null);
+    await saveFn();
   };
 
   // --- 1. 상태 관리 (State Management) ---
@@ -644,19 +664,28 @@ function App() {
         createdAt: serverTimestamp()
       };
 
-      await addDoc(collection(db, "savedCards"), cardData);
+      const docRef = await addDoc(collection(db, "savedCards"), cardData);
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      return { status: "success" };
+      return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
       return { status: "error" };
     }
   };
 
-  // 별 버튼 저장 함수
+  // 별 버튼 저장 함수 — 저장 성공 시 목표 달성 점수면 daily progress 카운트
   const handleStarSave = async (langCode) => {
     const result = await saveToFirebase(langCode);
-    if (result.status === "success" || result.status === "duplicate") {
+    if (result.status === "success") {
+      setSavedLangCodes(prev => new Set([...prev, langCode]));
+      setSavedCardIds(prev => ({ ...prev, [langCode]: result.id }));
+      const score = practiceResults[langCode]?.pronunciationScore;
+      const goal = languageGoals[langCode] || 80;
+      if (score != null && score >= goal) {
+        const wasNew = await incrementAchievement(`library-${result.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
+    } else if (result.status === "duplicate") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
     }
   };
@@ -670,7 +699,7 @@ function App() {
       return;
     }
     try {
-      await addDoc(collection(db, "savedCards"), {
+      const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
         sourceText: sentenceText,
@@ -688,6 +717,12 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
+      // 목표 달성 점수로 저장된 경우 daily progress 카운트
+      const goal = languageGoals['en'] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
     } catch (error) {
       console.error("VOA 카드 저장 오류:", error);
     }
@@ -735,7 +770,7 @@ function App() {
     }
     const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     try {
-      await addDoc(collection(db, "savedCards"), {
+      const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
         sourceText: sceneHint || scene || '',
@@ -753,6 +788,12 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
+      // 목표 달성 점수로 저장된 경우 daily progress 카운트
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
     } catch (error) {
       console.error("Scene 카드 저장 오류:", error);
     }
@@ -1035,8 +1076,10 @@ function App() {
                       onSpeak={() => handleSpeak(translations[langCode], langCode)}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
+                      savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
                       onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
                     />
@@ -1083,6 +1126,8 @@ function App() {
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onSaveToLibrary={saveVoaCard}
+            onBookmarkPrompt={handleBookmarkPrompt}
+            languageGoals={languageGoals}
           />
         </div>
 
@@ -1106,7 +1151,7 @@ function App() {
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
-            onTargetAchieved={handleTargetAchieved}
+            onBookmarkPrompt={handleBookmarkPrompt}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
@@ -1531,6 +1576,16 @@ function App() {
           dailyGoal={dailyGoal}
           weeklyData={weeklyData}
           onClose={() => setShowProgressPopup(false)}
+          sourceLang={sourceLang}
+        />
+      )}
+
+      {/* 비Library 탭 — 목표 달성 북마크 유도 팝업 */}
+      {bookmarkPrompt && (
+        <BookmarkPromptModal
+          score={bookmarkPrompt.score}
+          onBookmark={handleBookmarkConfirm}
+          onDismiss={() => setBookmarkPrompt(null)}
           sourceLang={sourceLang}
         />
       )}

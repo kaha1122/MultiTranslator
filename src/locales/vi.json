@@ -159,7 +159,11 @@
     "settingsDesc": "Đặt số thẻ bạn muốn hoàn thành mỗi ngày.",
     "settingsLabel": "Hàng ngày",
     "settingsUnit": "thẻ",
-    "counterUnit": "thẻ"
+    "counterUnit": "thẻ",
+    "bookmarkPromptTitle": "Đạt điểm mục tiêu! Lưu thẻ này không?",
+    "bookmarkPromptDesc": "Lưu câu này vào thư viện để tính vào mục tiêu học hôm nay.",
+    "bookmarkNow": "Đánh dấu ngay",
+    "bookmarkLater": "Để sau"
   },
   "tabTag": {
     "scene": "Chọn tình huống và luyện hội thoại thực tế với AI",

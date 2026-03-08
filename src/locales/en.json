@@ -159,7 +159,11 @@
     "settingsDesc": "Set how many cards you want to achieve per day.",
     "settingsLabel": "Daily",
     "settingsUnit": "Cards",
-    "counterUnit": "Card"
+    "counterUnit": "Card",
+    "bookmarkPromptTitle": "Goal Reached! Save this card?",
+    "bookmarkPromptDesc": "Save this sentence to your library and it will count toward today's learning goal.",
+    "bookmarkNow": "Bookmark Now",
+    "bookmarkLater": "Later"
   },
   "tabTag": {
     "scene": "Pick a scene and practice real conversations with AI",

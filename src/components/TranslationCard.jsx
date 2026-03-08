@@ -53,7 +53,9 @@ const TranslationCard = ({
     isSaved,
     onPracticeResult,
     onTrialLimitReached,
-    onTargetAchieved,
+    onTargetAchieved,   // Library 전용 + Translation 탭 이미저장 카드
+    onBookmarkPrompt,   // 비Library 탭 미저장 카드 전용 (score, saveFn) => void
+    savedCardId,        // Translation 탭에서 저장 후 받은 Firestore docId
     isLibraryView,
     targetGoal = 80,
     // 메모 & 어노테이션 (Library에서만 사용)
@@ -216,11 +218,16 @@ Return only these 2 lines.`;
             const score = assessmentResult.pronunciationScore || 0;
             if (score >= targetGoal) {
                 playSuccessSound();
-                // 달성 키: Library 카드는 cardId, Translation 탭은 텍스트+언어 조합
-                const key = cardId
-                    ? `library-${cardId}`
-                    : `translate-${langCode}-${(text || '').slice(0, 50)}`;
-                onTargetAchieved?.(key);
+                if (isLibraryView) {
+                    // Library: 카드 ID 기반으로 바로 카운트
+                    onTargetAchieved?.(`library-${cardId}`);
+                } else if (isSaved && savedCardId) {
+                    // Translation 탭 — 이미 저장된 카드: docId 기반으로 바로 카운트
+                    onTargetAchieved?.(`library-${savedCardId}`);
+                } else if (!isSaved) {
+                    // 비Library 미저장: 북마크 유도 팝업 → 저장 시 카운트
+                    onBookmarkPrompt?.(score, () => { playStarSound(); onSave?.(); });
+                }
             } else {
                 playAlertSound();
             }

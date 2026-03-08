@@ -159,7 +159,11 @@
     "settingsDesc": "1日に達成したいカード数を設定してください。",
     "settingsLabel": "1日",
     "settingsUnit": "枚",
-    "counterUnit": "枚"
+    "counterUnit": "枚",
+    "bookmarkPromptTitle": "目標スコア達成！保存しますか？",
+    "bookmarkPromptDesc": "このフレーズをライブラリに保存すると、今日の学習カードとして記録されます。",
+    "bookmarkNow": "ブックマークする",
+    "bookmarkLater": "あとで"
   },
   "tabTag": {
     "scene": "シーンを選んでAIと実践会話を練習しよう",

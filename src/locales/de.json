@@ -159,7 +159,11 @@
     "settingsDesc": "Legen Sie fest, wie viele Karten Sie täglich erreichen möchten.",
     "settingsLabel": "Täglich",
     "settingsUnit": "Karten",
-    "counterUnit": "Karte"
+    "counterUnit": "Karte",
+    "bookmarkPromptTitle": "Ziel erreicht! Karte speichern?",
+    "bookmarkPromptDesc": "Speichere diesen Satz in deiner Bibliothek, damit er als heutiger Lernfortschritt zählt.",
+    "bookmarkNow": "Jetzt speichern",
+    "bookmarkLater": "Später"
   },
   "tabTag": {
     "scene": "Wähle eine Szene und übe echte Gespräche mit KI",

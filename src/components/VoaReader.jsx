@@ -29,11 +29,23 @@ const LEVEL_COLORS = {
  * SentencePracticeCard
  * TranslationCard와 동일한 녹음 버튼 + PronunciationAssessment 게이지 사용
  */
-function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSave, isSaved, t }) {
+function SentencePracticeCard({ sentence, sourceLang, onTrialLimitReached, onSave, isSaved, t, onBookmarkPrompt, targetGoal = 80 }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         startRecording, stopRecording, errorMsg,
     } = useAudioRecorder(sentence.text, 'en', sourceLang, onTrialLimitReached);
+
+    // 발음 점수가 목표에 도달하면 북마크 유도 팝업 표시
+    const prevAnalyzing = useRef(isAnalyzing);
+    useEffect(() => {
+        if (prevAnalyzing.current && !isAnalyzing && assessmentResult) {
+            const score = assessmentResult.pronunciationScore || 0;
+            if (score >= targetGoal && !isSaved) {
+                onBookmarkPrompt?.(score, () => onSave(score));
+            }
+        }
+        prevAnalyzing.current = isAnalyzing;
+    }, [isAnalyzing, assessmentResult]); // eslint-disable-line react-hooks/exhaustive-deps
 
     return (
         <div className="voa-sentence-practice">
@@ -113,7 +125,7 @@ function getSessionRotationOffset() {
     return offset;
 }
 
-export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLibrary }) {
+export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLibrary, onBookmarkPrompt, languageGoals = {} }) {
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
     const rotationOffset = useRef(getSessionRotationOffset());
@@ -367,6 +379,8 @@ export default function VoaReader({ sourceLang, onTrialLimitReached, onSaveToLib
                                         onSave={(score) => handleSave(sentence, idx, score)}
                                         isSaved={savedSet.has(idx)}
                                         t={t}
+                                        onBookmarkPrompt={onBookmarkPrompt}
+                                        targetGoal={languageGoals['en'] || 80}
                                     />
                                 )}
                             </div>

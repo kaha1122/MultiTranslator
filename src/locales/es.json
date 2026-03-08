@@ -159,7 +159,11 @@
     "settingsDesc": "Establece cuántas tarjetas quieres lograr por día.",
     "settingsLabel": "Diario",
     "settingsUnit": "tarjetas",
-    "counterUnit": "tarjeta"
+    "counterUnit": "tarjeta",
+    "bookmarkPromptTitle": "¡Meta alcanzada! ¿Guardar esta tarjeta?",
+    "bookmarkPromptDesc": "Guarda esta frase en tu biblioteca para que cuente en tu progreso de hoy.",
+    "bookmarkNow": "Marcar ahora",
+    "bookmarkLater": "Más tarde"
   },
   "tabTag": {
     "scene": "Elige una escena y practica conversaciones reales con IA",

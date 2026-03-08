@@ -159,7 +159,11 @@
     "settingsDesc": "设置每天想要达成的卡片数量。",
     "settingsLabel": "每日",
     "settingsUnit": "张",
-    "counterUnit": "张"
+    "counterUnit": "张",
+    "bookmarkPromptTitle": "达到目标分数！要保存吗？",
+    "bookmarkPromptDesc": "将这个句子保存到库中，即可记录为今天的学习卡片。",
+    "bookmarkNow": "立即收藏",
+    "bookmarkLater": "稍后再说"
   },
   "tabTag": {
     "scene": "选择场景，与AI练习真实对话",

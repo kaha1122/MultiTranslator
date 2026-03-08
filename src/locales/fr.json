@@ -159,7 +159,11 @@
     "settingsDesc": "Définissez le nombre de fiches à réaliser par jour.",
     "settingsLabel": "Par jour",
     "settingsUnit": "fiches",
-    "counterUnit": "fiche"
+    "counterUnit": "fiche",
+    "bookmarkPromptTitle": "Objectif atteint ! Sauvegarder ?",
+    "bookmarkPromptDesc": "Enregistrez cette phrase dans votre bibliothèque pour qu'elle compte dans votre objectif du jour.",
+    "bookmarkNow": "Mettre en favori",
+    "bookmarkLater": "Plus tard"
   },
   "tabTag": {
     "scene": "Choisissez une scène et entraînez-vous avec l'IA",

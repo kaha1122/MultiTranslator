@@ -1,0 +1,89 @@
+.bpm-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1100;
+    animation: bpm-fade-in 0.2s ease;
+}
+
+@keyframes bpm-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.bpm-card {
+    background: #fff;
+    border-radius: 20px;
+    padding: 28px 24px 24px;
+    max-width: 320px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    animation: bpm-slide-up 0.25s ease;
+}
+
+@keyframes bpm-slide-up {
+    from { transform: translateY(30px); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+.bpm-score-badge {
+    display: inline-block;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    font-size: 1.3rem;
+    font-weight: 700;
+    padding: 8px 22px;
+    border-radius: 999px;
+    margin-bottom: 16px;
+}
+
+.bpm-title {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0 0 8px;
+}
+
+.bpm-desc {
+    font-size: 0.88rem;
+    color: #64748b;
+    margin: 0 0 22px;
+    line-height: 1.55;
+}
+
+.bpm-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.bpm-btn-bookmark {
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    border-radius: 12px;
+    padding: 13px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.15s;
+}
+
+.bpm-btn-bookmark:hover { opacity: 0.88; }
+
+.bpm-btn-later {
+    background: #f1f5f9;
+    color: #64748b;
+    border: none;
+    border-radius: 12px;
+    padding: 11px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.bpm-btn-later:hover { background: #e2e8f0; }
