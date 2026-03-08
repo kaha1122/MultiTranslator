@@ -238,114 +238,100 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     return (
         <div className="library-container library-theme">
-            {/* [신규] 와일드카드(Like) 검색창 */}
-            <div className="search-bar-container" style={{ marginBottom: '1rem', position: 'relative' }}>
-                <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
-                <input
-                    type="text"
-                    placeholder=""
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{ width: '100%', padding: '12px 12px 12px 38px', borderRadius: '12px', border: '1px solid #e5e7eb', fontSize: '1rem', outline: 'none' }}
-                />
-            </div>
-
-            {/* 오늘 학습 진도 카운터 */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', marginBottom: '8px', gap: '8px' }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#6366f1' }}>
-                    🎯 {todayCount}/{dailyGoal} {t('daily.counterUnit')}
-                </span>
-                <div style={{ width: '80px', height: '6px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
-                    <div style={{
-                        height: '100%', borderRadius: '99px',
-                        width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                        background: todayCount >= dailyGoal ? '#10b981' : '#6366f1',
-                        transition: 'width 0.4s ease'
-                    }} />
-                </div>
-            </div>
-
-            {/* [신규] 사진처럼 필터들을 하나의 예쁜 뒷배경 박스로 묶어줍니다 */}
-            <div className="filters-container" style={{
-                background: '#ffffff', // 사용자가 요청한 하얀색 바탕
+            {/* 검색 + 필터 통합 컨테이너 */}
+            <div style={{
+                background: '#ffffff',
                 borderRadius: '16px',
-                padding: '12px 16px', // 상하 여백을 16px에서 12px로 줄임
-                marginBottom: '1rem', // 모든 여백을 1rem으로 통일
-                border: '1px solid rgba(0, 0, 0, 0.05)', // 테두리를 아주 연하게 변경
-                boxShadow: '0 4px 12px rgba(0, 0, 0, 0.03)',
+                padding: '12px 14px',
+                marginBottom: '1rem',
+                border: '1px solid #e2e8f0',
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px' // 1층과 2층 사이의 간격을 타이트하게(12px) 고정합니다.
+                gap: '10px',
             }}>
-                {/* 1층: 언어 필터 탭 */}
+                {/* 검색바 */}
+                <div style={{ position: 'relative' }}>
+                    <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+                    <input
+                        type="text"
+                        placeholder="검색..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ width: '100%', padding: '9px 12px 9px 34px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.9rem', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
+                    />
+                </div>
+
+                {/* 언어 필터 탭 */}
                 <div className="filter-tabs" style={{ margin: 0, padding: 0 }}>
                     {availableLangs.map(lang => (
                         <button
                             key={lang}
                             className={`filter-tab ${filterLang === lang ? 'active' : ''}`}
                             onClick={() => setFilterLang(lang)}
-                            style={{ margin: 0 }} // 외부 마진 제거
+                            style={{ margin: 0 }}
                         >
                             {lang === 'all' ? 'All' : lang.toUpperCase()}
                         </button>
                     ))}
                 </div>
 
-                {/* 2층: 단어/문장 필터 버튼 그룹 + 목표 미달 체크박스 */}
-                <div style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
-                    <div className="type-filter-group" style={{ display: 'flex', gap: '8px', margin: 0, padding: 0 }}>
-                        <button
-                            className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
-                            onClick={() => {
-                                const newSet = new Set(filterTypes);
-                                if (newSet.has('W')) newSet.delete('W');
-                                else newSet.add('W');
-                                setFilterTypes(newSet);
-                            }}
-                            style={{ background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
-                        >
-                            # Word
-                        </button>
-                        <button
-                            className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
-                            onClick={() => {
-                                const newSet = new Set(filterTypes);
-                                if (newSet.has('S')) newSet.delete('S');
-                                else newSet.add('S');
-                                setFilterTypes(newSet);
-                            }}
-                            style={{ background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
-                        >
-                            # Sentence
-                        </button>
-                    </div>
-
-                    {/* [신규] 목표 미달(과락) 카드 필터 UI */}
+                {/* Word/Sentence 필터 + 목표 미달 체크 + 진도바 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <button
+                        className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
+                        onClick={() => {
+                            const newSet = new Set(filterTypes);
+                            if (newSet.has('W')) newSet.delete('W'); else newSet.add('W');
+                            setFilterTypes(newSet);
+                        }}
+                        style={{ margin: 0, background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
+                    >
+                        # Word
+                    </button>
+                    <button
+                        className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
+                        onClick={() => {
+                            const newSet = new Set(filterTypes);
+                            if (newSet.has('S')) newSet.delete('S'); else newSet.add('S');
+                            setFilterTypes(newSet);
+                        }}
+                        style={{ margin: 0, background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
+                    >
+                        # Sentence
+                    </button>
                     <label style={{
-                        marginLeft: 'auto', // 우측 끝으로 자연스럽게 밀어냅니다.
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.875rem',
-                        fontWeight: '600',
-                        color: filterTargetMissed ? '#ef4444' : '#64748b',
-                        padding: '6px 12px',
+                        display: 'flex', alignItems: 'center', gap: '4px',
+                        cursor: 'pointer', fontSize: '0.8rem', fontWeight: '700',
+                        color: filterTargetMissed ? '#ef4444' : '#94a3b8',
+                        padding: '6px 10px',
                         backgroundColor: filterTargetMissed ? '#fef2f2' : 'white',
                         border: `1px solid ${filterTargetMissed ? '#fca5a5' : '#e2e8f0'}`,
-                        borderRadius: '20px',
-                        transition: 'all 0.2s',
-                        userSelect: 'none',
-                        boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                        borderRadius: '20px', transition: 'all 0.2s', userSelect: 'none',
                     }}>
                         <input
                             type="checkbox"
                             checked={filterTargetMissed}
                             onChange={(e) => setFilterTargetMissed(e.target.checked)}
-                            style={{ cursor: 'pointer', accentColor: '#ef4444', width: '16px', height: '16px' }}
+                            style={{ cursor: 'pointer', accentColor: '#ef4444', width: '14px', height: '14px' }}
                         />
-                        <span style={{ color: filterTargetMissed ? '#ef4444' : '#fca5a5', fontWeight: '900', fontSize: '1.1rem', lineHeight: '1' }}>X</span>
+                        <span style={{ fontWeight: '900', fontSize: '1rem', lineHeight: '1' }}>✕</span>
                     </label>
+
+                    {/* 진도바 — 오른쪽 정렬 */}
+                    <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+                        <span style={{ fontSize: '0.75rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#6366f1', whiteSpace: 'nowrap' }}>
+                            🎯 {todayCount}/{dailyGoal}
+                        </span>
+                        <div style={{ width: '52px', height: '5px', background: '#f1f5f9', borderRadius: '99px', overflow: 'hidden' }}>
+                            <div style={{
+                                height: '100%', borderRadius: '99px',
+                                width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
+                                background: todayCount >= dailyGoal ? '#10b981' : '#6366f1',
+                                transition: 'width 0.4s ease'
+                            }} />
+                        </div>
+                    </div>
                 </div>
             </div>
 
