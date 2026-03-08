@@ -1167,7 +1167,7 @@ function App() {
 
         {/* 미니 일일 진도 바 — 숫자 없이 게이지만 */}
         {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', width: '100%' }}>
             <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
             <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
               <div style={{
