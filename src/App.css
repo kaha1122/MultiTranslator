@@ -29,8 +29,7 @@ body {
   justify-content: center;
   align-items: flex-start;
   /* Start from top to prevent clipping */
-  padding-top: 20px;
-  /* Space for desktop viewing */
+  padding-top: 0;
 }
 
 /* Global Mobile App Layout */
