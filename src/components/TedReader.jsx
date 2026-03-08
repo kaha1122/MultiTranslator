@@ -13,6 +13,32 @@ const getServerUrl = () => {
     return 'http://localhost:5000';
 };
 
+// YouTube RSS를 클라이언트에서 직접 파싱 (Render 서버 IP 차단 우회)
+const TED_CHANNEL_ID = 'UCsooa4yRKGN_zEE8iknghZA';
+const TED_RSS_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${TED_CHANNEL_ID}`;
+
+async function fetchTedVideosDirect() {
+    const proxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(TED_RSS_URL)}`;
+    const res = await fetch(proxyUrl, { signal: AbortSignal.timeout(12000) });
+    if (!res.ok) throw new Error(`proxy HTTP ${res.status}`);
+    const xml = await res.text();
+    const doc = new DOMParser().parseFromString(xml, 'application/xml');
+    const entries = Array.from(doc.querySelectorAll('entry'));
+    return entries.map(entry => {
+        const vid =
+            entry.getElementsByTagNameNS('http://www.youtube.com/xml/schemas/2015', 'videoId')[0]?.textContent
+            || extractVideoId(entry.querySelector('link')?.getAttribute('href') || '');
+        if (!vid) return null;
+        return {
+            id: vid,
+            title: entry.querySelector('title')?.textContent || '',
+            videoId: vid,
+            url: `https://www.youtube.com/watch?v=${vid}`,
+            thumbnail: `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`,
+        };
+    }).filter(Boolean);
+}
+
 function extractVideoId(url) {
     const patterns = [
         /[?&]v=([^&]+)/,
@@ -43,18 +69,31 @@ export default function TedReader({ sourceLang }) {
     const [selected, setSelected] = useState(null); // { videoId, title, url }
     const selectedRef = useRef(null);
 
-    // TED 채널 최신 영상 로드
+    // TED 채널 최신 영상 로드 — 백엔드 우선, 실패 시 클라이언트 직접 fetch
     useEffect(() => {
         (async () => {
             setLoadingVideos(true);
             setVideosError('');
             try {
-                const res = await fetch(`${SERVER_URL}/api/ted-videos`);
+                // 1차: 백엔드 서버
+                const res = await fetch(`${SERVER_URL}/api/ted-videos`,
+                    { signal: AbortSignal.timeout(8000) }
+                );
                 if (!res.ok) throw new Error(`HTTP ${res.status}`);
                 const data = await res.json();
-                setVideos(data.videos || []);
+                if ((data.videos || []).length > 0) {
+                    setVideos(data.videos);
+                    return;
+                }
+                throw new Error('empty');
             } catch {
-                setVideosError(t('ted.videosError'));
+                // 2차: 클라이언트 직접 fetch (CORS 프록시)
+                try {
+                    const videos = await fetchTedVideosDirect();
+                    setVideos(videos);
+                } catch {
+                    setVideosError(t('ted.videosError'));
+                }
             } finally {
                 setLoadingVideos(false);
             }
