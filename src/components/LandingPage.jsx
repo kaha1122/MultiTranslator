@@ -21,25 +21,22 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
   const [showInstallPopup, setShowInstallPopup] = useState(false);
 
   const langCode = detectLang();
-  const c = (locales[langCode] || locales['en']).landing;
+  const c = (locales[langCode] || locales['en'])?.landing;
 
-  // 각 USP 카드마다 개별 IntersectionObserver — 카드가 뷰포트에 들어올 때 revealed 클래스 추가
+  // scroll 이벤트 + 마운트 즉시 체크로 각 USP 카드 reveal
   useEffect(() => {
-    const observers = uspCardRefs.current.map(card => {
-      if (!card) return null;
-      const obs = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.isIntersecting) {
-            card.classList.add('lp-usp-revealed');
-            obs.disconnect();
-          }
-        },
-        { threshold: 0.15 }
-      );
-      obs.observe(card);
-      return obs;
-    });
-    return () => observers.forEach(obs => obs?.disconnect());
+    const reveal = () => {
+      uspCardRefs.current.forEach(card => {
+        if (!card || card.classList.contains('lp-usp-revealed')) return;
+        const rect = card.getBoundingClientRect();
+        if (rect.top < window.innerHeight - 40) {
+          card.classList.add('lp-usp-revealed');
+        }
+      });
+    };
+    reveal(); // 마운트 시 이미 뷰포트 안에 있는 카드 즉시 표시
+    window.addEventListener('scroll', reveal, { passive: true });
+    return () => window.removeEventListener('scroll', reveal);
   }, []);
 
   // 스크롤 끝 감지 → 설치 팝업
@@ -52,6 +49,8 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
     observer.observe(bottomRef.current);
     return () => observer.disconnect();
   }, [showInstall]);
+
+  if (!c) return null;
 
   return (
     <div className="lp-root">
