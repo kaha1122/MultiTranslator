@@ -50,44 +50,15 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
         </div>
       </nav>
 
-      {/* ── HERO 섹션 ── */}
-      <header className="lp-hero">
-        <div className="lp-tagline-wrap">
-          <div className="lp-hero-free-badge">FREE</div>
-          <div className="lp-tagline">
-            <span className="lp-tagline-dot" />
-            {c.tagline}
-          </div>
-        </div>
-
-        <h1 className="lp-hero-title">{c.heroTitle}</h1>
-
-        <p className="lp-hero-subtitle">
-          {c.heroSub}
-          <span className="lp-hero-sub-em">{c.heroSubEm}</span>
-        </p>
-
-        {/* 신뢰 지표 */}
-        <div className="lp-hero-stats">
-          {c.stats.map((s, i) => (
-            <div className="lp-stat" key={i}>
-              <span className="lp-stat-num">{s.num}</span>
-              <span className="lp-stat-label">{s.label}</span>
-            </div>
-          ))}
-        </div>
-      </header>
-
-      {/* ── USP 카드 섹션 (각 카드 개별 스크롤 진입 애니메이션) ── */}
+      {/* ── USP 카드 섹션 — 각 카드가 전체 화면을 채움 ── */}
       <section className="lp-usp-section">
         {c.usps.map((usp, i) => (
-          <div
-            className="lp-usp-card"
-            key={i}
-          >
-            <span className="lp-usp-num">0{i + 1}</span>
-            <h3 className="lp-usp-title">{usp.title}</h3>
-            <p className="lp-usp-sub">{usp.sub}</p>
+          <div className="lp-usp-card" key={i}>
+            <div className="lp-usp-card-inner">
+              <span className="lp-usp-num">0{i + 1}</span>
+              <h2 className="lp-usp-title">{usp.title}</h2>
+              <p className="lp-usp-sub">{usp.sub}</p>
+            </div>
           </div>
         ))}
       </section>
