@@ -317,7 +317,6 @@
     padding: 1.8rem 2rem;
     backdrop-filter: blur(12px);
     -webkit-backdrop-filter: blur(12px);
-    animation: lpFadeInUp 0.65s ease both;
     transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 

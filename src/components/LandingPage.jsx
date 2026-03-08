@@ -93,7 +93,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
           <div
             className="lp-usp-card"
             key={i}
-            style={{ animationDelay: `${i * 0.12}s` }}
           >
             <span className="lp-usp-num">0{i + 1}</span>
             <h3 className="lp-usp-title">{usp.title}</h3>
