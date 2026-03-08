@@ -13,6 +13,10 @@ import './ScenePractice.css';
 const makeHistoryKey = (sceneId, difficulty, style, lang) =>
     `${sceneId}--${difficulty}--${style}--${lang}`;
 
+// Custom 씬 키: 입력 텍스트를 포함해 씬별로 이력 분리 (최대 30자, 공백→_)
+const makeCustomSceneId = (text) =>
+    `custom-${text.trim().slice(0, 30).replace(/\s+/g, '_')}`;
+
 const getServerUrl = () => {
     try {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
@@ -218,37 +222,34 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const { byokGeminiKey, user } = useAuth();
     const SERVER_URL = getServerUrl();
 
-    // 세션 + Firebase 중복 방지 이력 캐시 { historyKey → string[] }
-    const [historyCache, setHistoryCache] = useState({});
+    // 세션 + Firebase 중복 방지 이력 캐시 — ref로 관리 (렌더 트리거 없음, 동기 읽기 보장)
+    const historyCacheRef = useRef({});
 
-    // Firebase에서 해당 키의 이력 읽어 캐시에 저장 (생성 직전 호출)
+    // Firebase에서 해당 키의 이력 읽어 ref에 저장 (생성 직전 호출)
     const loadHistory = async (key) => {
         if (!user) return [];
-        if (historyCache[key]) return historyCache[key]; // 이미 캐시된 경우 재사용
+        if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key]; // 캐시 히트
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/sceneHistory`, key));
             const sentences = snap.exists() ? (snap.data().sentences || []) : [];
-            setHistoryCache(prev => ({ ...prev, [key]: sentences }));
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: sentences };
             return sentences;
         } catch {
             return [];
         }
     };
 
-    // 생성 성공 후 이력에 추가 (최신 30개 유지) — Firebase 쓰기는 백그라운드
+    // 생성 성공 후 이력에 추가 (최신 30개 유지) — state updater 밖에서 setDoc 호출
     const appendHistory = (key, sentence) => {
-        setHistoryCache(prev => {
-            const existing = prev[key] || [];
-            const updated = [...existing, sentence].slice(-30); // 최신 30개
-            // Firebase 백그라운드 쓰기 (로그인 시)
-            if (user) {
-                setDoc(doc(db, `users/${user.uid}/sceneHistory`, key), {
-                    sentences: updated,
-                    updatedAt: serverTimestamp(),
-                }, { merge: true }).catch(console.error);
-            }
-            return { ...prev, [key]: updated };
-        });
+        const existing = historyCacheRef.current[key] || [];
+        const updated = [...existing, sentence].slice(-30);
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/sceneHistory`, key), {
+                sentences: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(console.error);
+        }
     };
 
     const switchCategory = (cat) => {
@@ -283,12 +284,13 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setIsSaved(false);
         setIsAnswerSaved(false);
         try {
-            const sceneId = isCustomSelected ? 'custom' : selectedScene.id;
+            // Custom 씬은 입력 텍스트를 키에 포함 → 씬별 이력 분리
+            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
             const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
             const historyKey = makeHistoryKey(sceneId, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
 
-            const res = await fetch(`${SERVER_URL}/api/scene-sentence`, {
+            const fetchSentence = () => fetch(`${SERVER_URL}/api/scene-sentence`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -302,10 +304,18 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
                 }),
             });
+
+            let res = await fetchSentence();
             if (!res.ok) throw new Error('Server error');
-            const data = await res.json();
+            let data = await res.json();
+
+            // LLM이 avoid 지시를 무시하고 중복 생성한 경우 1회 재시도
+            if (data.sentence && avoidSentences.includes(data.sentence)) {
+                const res2 = await fetchSentence();
+                if (res2.ok) data = await res2.json();
+            }
+
             setGenerated(data);
-            // 생성 성공 → 이력 추가 (최신 30개 cap)
             if (data.sentence) appendHistory(historyKey, data.sentence);
         } catch (e) {
             setError(t('scene.loadError'));
@@ -321,13 +331,13 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setGeneratedAnswer(null);
         setIsAnswerSaved(false);
         try {
-            const sceneId = isCustomSelected ? 'custom' : selectedScene.id;
+            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
             const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
             // 답변은 별도 키 (scene--difficulty--style--lang--answer)
             const historyKey = makeHistoryKey(`${sceneId}-answer`, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
 
-            const res = await fetch(`${SERVER_URL}/api/scene-answer`, {
+            const fetchAnswer = () => fetch(`${SERVER_URL}/api/scene-answer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -341,10 +351,18 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
                 }),
             });
+
+            let res = await fetchAnswer();
             if (!res.ok) throw new Error('Server error');
-            const data = await res.json();
+            let data = await res.json();
+
+            // LLM이 avoid 지시를 무시하고 중복 생성한 경우 1회 재시도
+            if (data.sentence && avoidSentences.includes(data.sentence)) {
+                const res2 = await fetchAnswer();
+                if (res2.ok) data = await res2.json();
+            }
+
             setGeneratedAnswer(data);
-            // 생성 성공 → 이력 추가 (최신 30개 cap)
             if (data.sentence) appendHistory(historyKey, data.sentence);
         } catch (e) {
             setError(t('scene.loadError'));
