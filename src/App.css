@@ -54,9 +54,14 @@ body {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 6px 14px 0;
+  padding: 6px 14px 6px;
   width: 100%;
   box-sizing: border-box;
+  position: sticky;
+  top: 0;
+  z-index: 500;
+  background: var(--bg-primary);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
 }
 
 /* 햄버거 버튼 + 가운데 로고 + 오른쪽 스페이서 row */
