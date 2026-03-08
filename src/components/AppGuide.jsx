@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { ArrowLeft, ChevronDown, ChevronUp } from 'lucide-react';
 import './AppGuide.css';
 
@@ -307,14 +307,31 @@ const SECTIONS = [
 
 export default function AppGuide({ onBack }) {
   const [openId, setOpenId] = useState('nav');
+  const sectionRefs = useRef({});
 
   useEffect(() => {
     const handleKey = (e) => {
-      if (e.key === 'Backspace' || e.key === 'Escape') onBack();
+      const tag = e.target.tagName;
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+      if (e.key === 'Backspace' || e.key === 'Escape') {
+        e.preventDefault();
+        onBack();
+      }
     };
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [onBack]);
+
+  const handleToggle = (secId, isOpen) => {
+    if (isOpen) {
+      setOpenId(null);
+    } else {
+      setOpenId(secId);
+      requestAnimationFrame(() => {
+        sectionRefs.current[secId]?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+      });
+    }
+  };
 
   return (
     <div className="guide-page">
@@ -338,13 +355,14 @@ export default function AppGuide({ onBack }) {
           return (
             <div
               key={sec.id}
+              ref={el => sectionRefs.current[sec.id] = el}
               className={`guide-section ${isOpen ? 'open' : ''}`}
               style={{ '--sec-color': sec.color, '--sec-bg': sec.bgColor }}
             >
               {/* 섹션 헤더 */}
               <button
                 className="guide-section-header"
-                onClick={() => setOpenId(isOpen ? null : sec.id)}
+                onClick={() => handleToggle(sec.id, isOpen)}
               >
                 <div className="guide-section-header-left">
                   <span className="guide-section-emoji">{sec.emoji}</span>
