@@ -1165,7 +1165,7 @@ function App() {
           })()}
         </AnimatePresence>
 
-        {/* 미니 일일 진도 바 — 숫자 없이 게이지만 */}
+        {/* 미니 일일 진도 바 */}
         {user && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', width: '100%' }}>
             <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
@@ -1182,6 +1182,9 @@ function App() {
                   : '0 0 6px rgba(99,102,241,0.4)',
               }} />
             </div>
+            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, minWidth: '28px', textAlign: 'right' }}>
+              {todayCount}/{dailyGoal}
+            </span>
           </div>
         )}
 
