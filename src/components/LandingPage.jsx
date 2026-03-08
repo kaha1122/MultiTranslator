@@ -23,7 +23,8 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
   const langCode = detectLang();
   const c = (locales[langCode] || locales['en'])?.landing;
 
-  // scroll 이벤트 + 마운트 즉시 체크로 각 USP 카드 reveal
+  // overflow-x:hidden 이 scroll container를 생성하므로 window.scroll 대신
+  // document capture 페이즈로 어느 컨테이너에서든 scroll 이벤트를 잡는다
   useEffect(() => {
     const reveal = () => {
       uspCardRefs.current.forEach(card => {
@@ -34,9 +35,11 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall 
         }
       });
     };
-    reveal(); // 마운트 시 이미 뷰포트 안에 있는 카드 즉시 표시
-    window.addEventListener('scroll', reveal, { passive: true });
-    return () => window.removeEventListener('scroll', reveal);
+    // 한 프레임 뒤에 즉시 체크 (레이아웃 완료 보장)
+    requestAnimationFrame(reveal);
+    // capture:true → lp-root든 window든 어느 스크롤 컨테이너에서 발생해도 캐치
+    document.addEventListener('scroll', reveal, { passive: true, capture: true });
+    return () => document.removeEventListener('scroll', reveal, { capture: true });
   }, []);
 
   // 스크롤 끝 감지 → 설치 팝업
