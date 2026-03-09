@@ -237,8 +237,7 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
 // ─────────────────────────────────────────────────────
 const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-// 언어별 × 카테고리별 큐레이션 채널 (공신력 있는 공식 채널)
-// ⚠️ 채널 ID 확인 필요한 항목은 최초 배포 후 검증 예정
+// 언어별 × 카테고리별 큐레이션 채널 (공식 채널, 2026-03-09 검증 완료)
 const CURATED_CHANNELS = {
     en: {
         news:          [{ id: 'UCupvZG-5ko_eiXAupbDfxWw', name: 'CNN' }, { id: 'UC16niRr50-MSBwiO3YDb3RA', name: 'BBC News' }],
@@ -248,45 +247,45 @@ const CURATED_CHANNELS = {
     },
     ja: {
         news:          [{ id: 'UCGCZAYq5Xxojl_tSXcVJhiQ', name: 'ANNnewsCH' }],
-        culture:       [{ id: 'UCkKVQ_GNjd8FbAuT6xhl7eg', name: 'テレ東BIZ' }],
-        entertainment: [{ id: 'UC1oPBUd3bVHkuY9jOHqiktQ', name: 'しくじり先生' }],
-        sports:        [{ id: 'UCAnIalCSkauMhO0s7LkfN8Q', name: 'DAZN Japan' }],
+        culture:       [{ id: 'UCSPEjw8F2nQDtmUKPFNF7_A', name: 'NHK WORLD-JAPAN' }],
+        entertainment: [{ id: 'UCfgQFWzaw7HfaKN-uVIf73Q', name: 'ABEMA' }],
+        sports:        [{ id: 'UCoFLB_Gw_AoxUuuzKjXrc_Q', name: 'DAZN Japan' }],
     },
     ko: {
         news:          [{ id: 'UCcQTRi69dsVYHN3exePtZ1A', name: 'KBS News' }],
-        culture:       [{ id: 'UCFVXsGx232hfnuynMFprbtA', name: 'EBS 다큐멘터리' }],
-        entertainment: [{ id: 'UCVy7e2rKXMoTA8v1Vi2fBYA', name: 'SBS NOW' }],
-        sports:        [{ id: 'UC0KjKLxg45UL_aMHOgtnDlA', name: 'KBS Sports' }],
+        culture:       [{ id: 'UCFCtZJTuJhE18k8IXwmXTYQ', name: 'EBSDocumentary' }],
+        entertainment: [{ id: 'UCmjNKt6kITwaZTqvWuaSPLg', name: 'SBS Entertainment' }],
+        sports:        [{ id: 'UCtm_QoN2SIxwCE-59shX7Qg', name: 'SPOTV' }],
     },
     'zh-CN': {
         news:          [{ id: 'UCcLK3j-XWdGBnt5bR9NJHaQ', name: 'CCTV' }],
-        culture:       [{ id: 'UCKjkjESmXFJn2NGtNB_cNsA', name: '一条 Yit' }],
-        entertainment: [{ id: 'UCtEPFHG37TBR8VrgtWJbCeg', name: '浙江卫视' }],
+        culture:       [{ id: 'UCulFhrW_YCwkq_BP16C82mA', name: '一条Yit' }],
+        entertainment: [{ id: 'UC1pHFqCMAIHP8gr4lYGtNLA', name: 'MangoTV 芒果TV' }],
         sports:        [{ id: 'UC09IvZwjpunzrdHH1EHok-w', name: '央视体育' }],
     },
     fr: {
         news:          [{ id: 'UCCCPCZNChQdGa9EkATeye4g', name: 'FRANCE 24' }],
-        culture:       [{ id: 'UCL_cZf5sHKQHMRIEax5o3rg', name: 'Arte' }],
-        entertainment: [{ id: 'UC3BOBaUKIrieXZM23GfCe0Q', name: 'France Télévisions' }],
-        sports:        [{ id: 'UCOchO7W1rXjE74MrpMiRFNg', name: "L'Équipe" }],
+        culture:       [{ id: 'UCwI-JbGNsojunnHbFAc0M4Q', name: 'ARTE' }],
+        entertainment: [{ id: 'UCh4o9ioiqbUveUrCLP8Wv6A', name: 'france tv' }],
+        sports:        [{ id: 'UCyIV8rkza5Uk_sJIhqilBvQ', name: "L'ÉQUIPE" }],
     },
     de: {
         news:          [{ id: 'UC5NOEUbkLheQcaaRldYW5GA', name: 'tagesschau' }],
         culture:       [{ id: 'UCMIgOXM2JEQ2Pv2d0_PVfcg', name: 'DW Deutsch' }],
-        entertainment: [{ id: 'UC_EnhVnNQpPGLHIiGB0oSig', name: 'ZDF' }],
-        sports:        [{ id: 'UCGBg1R2KSfFRrVSWxcoF2Nw', name: 'Bundesliga' }],
+        entertainment: [{ id: 'UCeqKIgPQfNInOswGRWt48kQ', name: 'ZDFheute' }],
+        sports:        [{ id: 'UC6UL29enLNe4mqwTfAyeNuw', name: 'Bundesliga' }],
     },
     es: {
-        news:          [{ id: 'UCf5u4MhbjLAk3iGiqhv2LPg', name: 'RTVE Noticias' }],
-        culture:       [{ id: 'UCT2VGk-S_PM1Y1Y-1MUgodw', name: 'DW Español' }],
-        entertainment: [{ id: 'UCup00HgCUk7Xv-5eorIHJ1g', name: 'Atresmedia' }],
-        sports:        [{ id: 'UCshmOm7GR3VU0QTBX5Sb5Bw', name: 'LaLiga' }],
+        news:          [{ id: 'UC7QZIf0dta-XPXsp9Hv4dTw', name: 'RTVE Noticias' }],
+        culture:       [{ id: 'UCT4Jg8h03dD0iN3Pb5L0PMA', name: 'DW Español' }],
+        entertainment: [{ id: 'UCA7a5OB6RYTvoQr-1gOkfKQ', name: 'Atresmedia' }],
+        sports:        [{ id: 'UCTv-XvfzLX3i4IGWAm4sbmA', name: 'LaLiga' }],
     },
     vi: {
-        news:          [{ id: 'UCR1TJPMhmGsmM4JbFz86XxA', name: 'VTV24' }],
-        culture:       [{ id: 'UCuFGhMEokJbiyF9rUKJFMLQ', name: 'VTV Giải Trí' }],
+        news:          [{ id: 'UCabsTV34JwALXKGMqHpvUiA', name: 'VTV24' }],
+        culture:       [{ id: 'UCuJ5k3GndbHnXLYyiIR6Z8Q', name: 'VTV Giải Trí' }],
         entertainment: [{ id: 'UCruaM4824Rr_ry7fsD5Jwag', name: 'THVL Giải Trí' }],
-        sports:        [{ id: 'UCVVkGFg3XsMnUvs6GQKCD9A', name: 'VTV Thể Thao' }],
+        sports:        [{ id: 'UCrI4iNMPZ2vT_G-TqRO6yrw', name: 'VTV Thể Thao' }],
     },
 };
 
