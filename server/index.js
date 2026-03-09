@@ -7,7 +7,17 @@ const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
 const { YoutubeTranscript } = require('youtube-transcript');
-const { Innertube } = require('youtubei.js');
+// youtubei.js는 ESM 전용 → 동적 import 사용
+let Innertube = null;
+(async () => {
+    try {
+        const mod = await import('youtubei.js');
+        Innertube = mod.Innertube;
+        console.log('[YT] youtubei.js loaded OK');
+    } catch (e) {
+        console.error('[YT] Failed to load youtubei.js:', e.message);
+    }
+})();
 const admin = require('firebase-admin');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 require('dotenv').config();
@@ -525,6 +535,7 @@ async function fetchTranscriptFromPage(videoId, lang = 'en') {
 // Innertube 인스턴스 (서버 시작 시 초기화, 재사용)
 let _ytInstance = null;
 async function getYtInstance() {
+    if (!Innertube) throw new Error('youtubei.js not loaded yet');
     if (!_ytInstance) {
         _ytInstance = await Innertube.create({ generate_session_locally: true });
     }
