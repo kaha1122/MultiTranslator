@@ -33,7 +33,21 @@
     "deleteCancel": "取消",
     "deleteOk": "删除",
     "loadingMore": "加载更多... 📚",
-    "reachedEnd": "您已到达词库末尾！ ✨"
+    "reachedEnd": "您已到达词库末尾！ ✨",
+    "searchPlaceholder": "搜索...",
+    "filterAll": "全部",
+    "filterLang": "语言",
+    "filterSource": "来源",
+    "filterTargetMiss": "未达标",
+    "filterStarred": "重要",
+    "filterThisWeek": "本周",
+    "typeWord": "单词",
+    "typeSentence": "句子",
+    "srcTranslation": "翻译",
+    "srcScene": "场景",
+    "srcVocab": "词汇",
+    "srcVideo": "视频",
+    "dateClear": "清除"
   },
   "save": {
     "savedSuccess": "保存成功！",

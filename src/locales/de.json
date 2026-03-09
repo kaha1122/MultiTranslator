@@ -33,7 +33,21 @@
     "deleteCancel": "Abbrechen",
     "deleteOk": "Löschen",
     "loadingMore": "Mehr Karten laden... 📚",
-    "reachedEnd": "Sie haben das Ende Ihrer Bibliothek erreicht! ✨"
+    "reachedEnd": "Sie haben das Ende Ihrer Bibliothek erreicht! ✨",
+    "searchPlaceholder": "Suchen...",
+    "filterAll": "Alle",
+    "filterLang": "Sprache",
+    "filterSource": "Quelle",
+    "filterTargetMiss": "Nicht erreicht",
+    "filterStarred": "Wichtig",
+    "filterThisWeek": "Diese Woche",
+    "typeWord": "Wort",
+    "typeSentence": "Satz",
+    "srcTranslation": "Übersetzung",
+    "srcScene": "Szene",
+    "srcVocab": "Vokabeln",
+    "srcVideo": "Video",
+    "dateClear": "Löschen"
   },
   "save": {
     "savedSuccess": "Gespeichert!",

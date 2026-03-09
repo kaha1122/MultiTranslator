@@ -2,172 +2,138 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2, Volume2, PenLine } from 'lucide-react';
+import { Search, Trash2, Volume2, PenLine, ChevronDown, Star } from 'lucide-react';
 import { useT } from '../utils/i18n';
+import './Library.css';
+
+// ── 이번주 월요일 00:00 (현지시간) 계산 ──
+function getThisWeekMonday() {
+    const now = new Date();
+    const day = now.getDay(); // 0=Sun
+    const diff = day === 0 ? 6 : day - 1; // Mon=0
+    const mon = new Date(now.getFullYear(), now.getMonth(), now.getDate() - diff);
+    mon.setHours(0, 0, 0, 0);
+    return mon;
+}
 
 const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
-    // 상태 초기값을 브라우저 저장소(localStorage)에서 먼저 찾아보고 없으면 기본값을 씁니다.
-    const [filterLang, setFilterLang] = useState(() => {
-        return localStorage.getItem('library_filterLang') || 'all';
-    });
-    // [신규] 'W' (단어), 'S' (문장) 다중 선택 필터 상태 (배열을 Set으로 변환)
+
+    // ── 필터 상태 (localStorage 복원) ──
+    const [filterLang, setFilterLang] = useState(() => localStorage.getItem('library_filterLang') || 'all');
     const [filterTypes, setFilterTypes] = useState(() => {
         const saved = localStorage.getItem('library_filterTypes');
         const parsed = saved ? JSON.parse(saved) : null;
-        // 빈 배열이 저장된 경우(버그 복구) 기본값 ['W','S']로 초기화
         return (parsed && parsed.length > 0) ? new Set(parsed) : new Set(['W', 'S']);
     });
-    // [신규] 목표 점수 미달 카드만 보기 필터 상태
-    const [filterTargetMissed, setFilterTargetMissed] = useState(() => {
-        return localStorage.getItem('library_filterTargetMissed') === 'true';
+    const [filterTargetMissed, setFilterTargetMissed] = useState(() => localStorage.getItem('library_filterTargetMissed') === 'true');
+    const [filterSource, setFilterSource] = useState(() => localStorage.getItem('library_filterSource') || 'all');
+    const [filterStarred, setFilterStarred] = useState(() => localStorage.getItem('library_filterStarred') === 'true');
+    const [filterThisWeek, setFilterThisWeek] = useState(() => {
+        const saved = localStorage.getItem('library_filterThisWeek');
+        return saved === null ? true : saved === 'true'; // 기본 ON
     });
+    const [dateFrom, setDateFrom] = useState(() => localStorage.getItem('library_dateFrom') || '');
+    const [dateTo, setDateTo] = useState(() => localStorage.getItem('library_dateTo') || '');
+
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [limitCount, setLimitCount] = useState(10);
+    const [hasMore, setHasMore] = useState(true);
+    const observerTarget = useRef(null);
+    const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+    const [sessionAudioUrls, setSessionAudioUrls] = useState({});
+    const [memoOpenId, setMemoOpenId] = useState(null);
 
-    // [신규] 필터 상태가 바뀔 때마다 브라우저 로컬 스토리지에 자동 저장하여 다음 접속 시 기억하게 합니다.
+    // ── 바텀시트 상태 ──
+    const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source'
+
+    // ── localStorage 동기화 ──
     useEffect(() => {
         localStorage.setItem('library_filterLang', filterLang);
         localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
         localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
-    }, [filterLang, filterTypes, filterTargetMissed]);
+        localStorage.setItem('library_filterSource', filterSource);
+        localStorage.setItem('library_filterStarred', filterStarred.toString());
+        localStorage.setItem('library_filterThisWeek', filterThisWeek.toString());
+        localStorage.setItem('library_dateFrom', dateFrom);
+        localStorage.setItem('library_dateTo', dateTo);
+    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterStarred, filterThisWeek, dateFrom, dateTo]);
 
-    // 무한 스크롤 및 검색 관련 상태 변수
-    const [limitCount, setLimitCount] = useState(10);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [hasMore, setHasMore] = useState(true);
-    const observerTarget = useRef(null);
-    const [deleteConfirmId, setDeleteConfirmId] = useState(null); // [신규] 커스텀 삭제 모달을 위한 ID 상태
-    const [sessionAudioUrls, setSessionAudioUrls] = useState({}); // 세션 내 녹음 Blob URL 맵 { cardId → url }
-    const [memoOpenId, setMemoOpenId] = useState(null); // 메모 팝업이 열려있는 카드 ID
-
-    // 1. Firebase에서 내가 저장한 카드 실시간으로 가져오기 (무한 스크롤 & 검색 대응)
+    // ── Firebase 실시간 구독 ──
     useEffect(() => {
         if (!user) return;
-
         let q;
-        // 검색어가 있을 때는 전체 목록을 가져와 클라이언트 필터링(Like 검색)을 지원하여 한계를 극복합니다.
         if (searchTerm.trim() !== '') {
-            q = query(
-                collection(db, "savedCards"),
-                where("userId", "==", user.uid),
-                orderBy("createdAt", "desc")
-            );
+            q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
         } else {
-            // 평소에는 지정된 개수(limitCount)만큼만 가져옵니다.
-            q = query(
-                collection(db, "savedCards"),
-                where("userId", "==", user.uid),
-                orderBy("createdAt", "desc"),
-                limit(limitCount)
-            );
+            q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(limitCount));
         }
-
-        const unsubscribe = onSnapshot(
-            q,
-            (snapshot) => {
-                const cards = snapshot.docs
-                    .map(doc => ({ id: doc.id, ...doc.data() }))
-                    .filter(card => !card.isDeleted);
-                setSavedCards(cards);
-
-                // 만약 가져온 개수가 현재 제한값보다 적다면 더 이상 데이터가 없다는 뜻입니다.
-                if (!searchTerm && cards.length < limitCount) {
-                    setHasMore(false);
-                } else {
-                    setHasMore(true);
-                }
-
-                setIsLoading(false);
-                setErrorMsg(null);
-            },
-            (error) => {
-                console.error("Error loading library:", error);
-                setErrorMsg(t('library.loadError'));
-                setIsLoading(false);
-            }
-        );
-
+        const unsubscribe = onSnapshot(q, (snapshot) => {
+            const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(card => !card.isDeleted);
+            setSavedCards(cards);
+            if (!searchTerm && cards.length < limitCount) setHasMore(false); else setHasMore(true);
+            setIsLoading(false);
+            setErrorMsg(null);
+        }, (error) => {
+            console.error("Error loading library:", error);
+            setErrorMsg(t('library.loadError'));
+            setIsLoading(false);
+        });
         return () => unsubscribe();
     }, [user, limitCount, searchTerm]);
 
-    // [신규] 무한 스크롤 스크롤 감지 (Intersection Observer)
+    // ── 무한 스크롤 ──
     useEffect(() => {
-        const observer = new IntersectionObserver(
-            entries => {
-                // 맨 아래 요소가 보이고, 더 불러올 데이터가 있고, 검색중이 아닐 때만 10장 추가!
-                if (entries[0].isIntersecting && hasMore && !searchTerm) {
-                    setLimitCount(prev => prev + 10);
-                }
-            },
-            { threshold: 1.0 }
-        );
-
-        if (observerTarget.current) {
-            observer.observe(observerTarget.current);
-        }
-
-        return () => {
-            if (observerTarget.current) observer.unobserve(observerTarget.current);
-        };
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore && !searchTerm) setLimitCount(prev => prev + 10);
+        }, { threshold: 1.0 });
+        if (observerTarget.current) observer.observe(observerTarget.current);
+        return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
     }, [hasMore, searchTerm]);
 
-    // 2. 카드 삭제 기능 (커스텀 팝업으로 변경)
-    const triggerDelete = (id) => {
-        setDeleteConfirmId(id);
-    };
-
+    // ── 카드 삭제 ──
+    const triggerDelete = (id) => setDeleteConfirmId(id);
     const confirmDelete = async () => {
         if (!deleteConfirmId) return;
         const card = savedCards.find(c => c.id === deleteConfirmId);
         try {
-            await updateDoc(doc(db, "savedCards", deleteConfirmId), {
-                isDeleted: true,
-                deletedAt: serverTimestamp(),
-            });
+            await updateDoc(doc(db, "savedCards", deleteConfirmId), { isDeleted: true, deletedAt: serverTimestamp() });
             onCardDeleted?.(card?.langCode, card?.sourceText);
             setDeleteConfirmId(null);
         } catch (error) {
             console.error("Delete failed:", error);
-            alert(`카드 삭제에 실패했습니다! 😥\n\n에러 메시지: ${error.message}`);
             setDeleteConfirmId(null);
         }
     };
+    const cancelDelete = () => setDeleteConfirmId(null);
 
-    const cancelDelete = () => {
-        setDeleteConfirmId(null);
+    // ── 중요 마크 토글 ──
+    const toggleStarred = async (cardId, currentVal) => {
+        const newVal = !currentVal;
+        setSavedCards(prev => prev.map(c => c.id === cardId ? { ...c, starred: newVal } : c));
+        try {
+            await updateDoc(doc(db, "savedCards", cardId), { starred: newVal });
+        } catch (e) {
+            console.error("Star toggle failed:", e);
+            setSavedCards(prev => prev.map(c => c.id === cardId ? { ...c, starred: currentVal } : c));
+        }
     };
 
-    // 2-1. 메모/어노테이션/노트 로컬 상태 즉시 반영 (Firestore 쓰기는 TranslationCard에서 직접 처리)
     const handleMemoUpdate = (cardId, newMemos, newAnnotations, newUserNotes) => {
-        setSavedCards(prev => prev.map(card =>
-            card.id === cardId
-                ? { ...card, memos: newMemos, annotations: newAnnotations, userNotes: newUserNotes ?? card.userNotes }
-                : card
-        ));
+        setSavedCards(prev => prev.map(card => card.id === cardId ? { ...card, memos: newMemos, annotations: newAnnotations, userNotes: newUserNotes ?? card.userNotes } : card));
     };
 
     const handlePracticeResult = async (id, langCode, result) => {
-        if (result.audioUrl) {
-            setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
-        }
+        if (result.audioUrl) setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
         if (result.pronunciationScore != null) {
-            // 로컬 상태 즉시 업데이트 → action bar 즉시 반영
-            setSavedCards(prev => prev.map(card =>
-                card.id === id
-                    ? { ...card, pronunciationScore: result.pronunciationScore }
-                    : card
-            ));
-            // 목표 달성 시 daily progress 카운트
+            setSavedCards(prev => prev.map(card => card.id === id ? { ...card, pronunciationScore: result.pronunciationScore } : card));
             const targetGoal = languageGoals[langCode] || 80;
-            if (result.pronunciationScore >= targetGoal) {
-                onTargetAchieved?.(`library-${id}`);
-            }
+            if (result.pronunciationScore >= targetGoal) onTargetAchieved?.(`library-${id}`);
             try {
-                await updateDoc(doc(db, "savedCards", id), {
-                    pronunciationScore: result.pronunciationScore,
-                });
+                await updateDoc(doc(db, "savedCards", id), { pronunciationScore: result.pronunciationScore });
             } catch (error) {
                 console.error("Failed to update pronunciation score:", error);
             }
@@ -179,57 +145,96 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         new Audio(url).play().catch(e => console.error("Audio play failed:", e));
     };
 
-    // 3. 언어 및 검색어(Like) 필터링 로직
+    // ── 필터링 로직 ──
     let filteredCards = savedCards;
 
-    if (filterLang !== 'all') {
-        filteredCards = filteredCards.filter(card => card.langCode === filterLang);
-    }
+    if (filterLang !== 'all') filteredCards = filteredCards.filter(card => card.langCode === filterLang);
 
-    // [신규] 단어(W) / 문장(S) 타입 다중 필터 적용
-    if (filterTypes.size === 0) {
-        // 둘 다 해제 = 전체 보기 (size===0은 localStorage 복구 후에도 발생 가능하므로 빈 결과 대신 전체 표시)
-    } else if (filterTypes.size === 1) {
-        // 둘 중 하나만 체크되었다면 해당 타입만 보여줍니다. (과거 버전의 데이터는 기본적으로 'S'로 취급)
-        filteredCards = filteredCards.filter(card => filterTypes.has(card.inputType || 'S'));
+    if (filterTypes.size === 1) filteredCards = filteredCards.filter(card => filterTypes.has(card.inputType || 'S'));
+
+    if (filterSource !== 'all') {
+        filteredCards = filteredCards.filter(card => {
+            const src = card.sourceType || 'translation';
+            return src === filterSource;
+        });
     }
 
     if (searchTerm.trim() !== '') {
         const lowerSearch = searchTerm.toLowerCase();
         filteredCards = filteredCards.filter(card => {
-            // 단어나 알파벳이 문장, 번역, 발음에 포함되어 있는지(Like) 검사
-            const matchSource = card.sourceText?.toLowerCase().includes(lowerSearch);
-            const matchTrans = card.translatedText?.toLowerCase().includes(lowerSearch);
-            const matchPronun = card.pronunciation?.toLowerCase().includes(lowerSearch);
-            return matchSource || matchTrans || matchPronun;
+            return card.sourceText?.toLowerCase().includes(lowerSearch) ||
+                   card.translatedText?.toLowerCase().includes(lowerSearch) ||
+                   card.pronunciation?.toLowerCase().includes(lowerSearch);
         });
     }
 
-    // [신규] 목표 점수 미달 필터 적용 (체크된 경우)
     if (filterTargetMissed) {
         filteredCards = filteredCards.filter(card => {
-            const targetGoal = languageGoals[card.langCode] || 80; // 기본 목표는 80점
-            // 평가 점수가 아예 없거나(한 번도 안 함), 목표 점수 미만인 경우만 남김
+            const targetGoal = languageGoals[card.langCode] || 80;
             return !card.pronunciationScore || card.pronunciationScore < targetGoal;
         });
     }
 
-    // 저장된 카드들 중 존재하는 언어 목록 추출 (필터 탭용)
-    const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
+    if (filterStarred) filteredCards = filteredCards.filter(card => card.starred);
 
-    if (isLoading) {
-        return <div className="loading-container">{t('library.loading')}</div>;
+    if (filterThisWeek) {
+        const monday = getThisWeekMonday();
+        filteredCards = filteredCards.filter(card => {
+            if (!card.createdAt) return false;
+            const cardDate = card.createdAt.toDate ? card.createdAt.toDate() : new Date(card.createdAt);
+            return cardDate >= monday;
+        });
     }
 
-    // 통신 오류 발생 시 나타날 부드러운 에러 화면 UI를 추가합니다.
+    if (dateFrom || dateTo) {
+        filteredCards = filteredCards.filter(card => {
+            if (!card.createdAt) return false;
+            const cardDate = card.createdAt.toDate ? card.createdAt.toDate() : new Date(card.createdAt);
+            if (dateFrom && cardDate < new Date(dateFrom)) return false;
+            if (dateTo) {
+                const toEnd = new Date(dateTo);
+                toEnd.setHours(23, 59, 59, 999);
+                if (cardDate > toEnd) return false;
+            }
+            return true;
+        });
+    }
+
+    // 언어 목록 추출
+    const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
+
+    // 소스 목록
+    const SOURCE_OPTIONS = [
+        { value: 'all', label: t('library.filterAll') },
+        { value: 'translation', label: t('library.srcTranslation') },
+        { value: 'scene', label: t('library.srcScene') },
+        { value: 'vocab', label: t('library.srcVocab') },
+        { value: 'youtube', label: t('library.srcVideo') },
+    ];
+
+    // W/S 옵션
+    const WS_OPTIONS = [
+        { value: 'all', label: t('library.filterAll') },
+        { value: 'W', label: t('library.typeWord') },
+        { value: 'S', label: t('library.typeSentence') },
+    ];
+
+    // 현재 선택된 드롭다운 라벨
+    const getLangLabel = () => filterLang === 'all' ? t('library.filterAll') : filterLang.toUpperCase();
+    const getWsLabel = () => {
+        if (filterTypes.size === 2 || filterTypes.size === 0) return t('library.filterAll');
+        if (filterTypes.has('W')) return t('library.typeWord');
+        return t('library.typeSentence');
+    };
+    const getSourceLabel = () => SOURCE_OPTIONS.find(o => o.value === filterSource)?.label || t('library.filterAll');
+
+    if (isLoading) return <div className="loading-container">{t('library.loading')}</div>;
+
     if (errorMsg) {
         return (
             <div className="error-container" style={{ textAlign: 'center', padding: '2rem', color: '#ef4444' }}>
                 <p>⚠️ {errorMsg}</p>
-                <button
-                    onClick={() => window.location.reload()}
-                    style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}
-                >
+                <button onClick={() => window.location.reload()} style={{ marginTop: '1rem', padding: '0.5rem 1rem', borderRadius: '8px', border: '1px solid #ef4444', background: 'transparent', color: '#ef4444', cursor: 'pointer' }}>
                     {t('library.refresh')}
                 </button>
             </div>
@@ -238,94 +243,104 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     return (
         <div className="library-container library-theme">
-            {/* 검색 + 필터 통합 컨테이너 */}
-            <div style={{
-                background: '#ffffff',
-                borderRadius: '16px',
-                padding: '12px 14px',
-                marginBottom: '1rem',
-                border: '1px solid #e2e8f0',
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.04)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-            }}>
-                {/* 검색바 */}
-                <div style={{ position: 'relative' }}>
-                    <Search size={16} style={{ position: 'absolute', left: '11px', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af' }} />
+            {/* ── 필터 박스 ── */}
+            <div className="lib-filter-box">
+                {/* 1) 검색바 */}
+                <div className="lib-search-wrap">
+                    <Search size={16} className="lib-search-icon" />
                     <input
                         type="text"
-                        placeholder="검색..."
+                        className="lib-search-input"
+                        placeholder={t('library.searchPlaceholder')}
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ width: '100%', padding: '9px 12px 9px 34px', borderRadius: '10px', border: '1px solid #e5e7eb', fontSize: '0.9rem', outline: 'none', background: '#f8fafc', boxSizing: 'border-box' }}
                     />
                 </div>
 
-                {/* 언어 필터 탭 */}
-                <div className="filter-tabs" style={{ margin: 0, padding: 0 }}>
-                    {availableLangs.map(lang => (
-                        <button
-                            key={lang}
-                            className={`filter-tab ${filterLang === lang ? 'active' : ''}`}
-                            onClick={() => setFilterLang(lang)}
-                            style={{ margin: 0 }}
-                        >
-                            {lang === 'all' ? 'All' : lang.toUpperCase()}
-                        </button>
-                    ))}
+                {/* Row 1: 드롭다운들 */}
+                <div className="lib-filter-row">
+                    {/* 2) 언어 */}
+                    <button
+                        className={`lib-dropdown-btn ${filterLang !== 'all' ? 'active' : ''}`}
+                        onClick={() => setBottomSheet('lang')}
+                    >
+                        {t('library.filterLang')} : {getLangLabel()} <ChevronDown size={12} className="chevron" />
+                    </button>
+
+                    {/* 3) W/S */}
+                    <button
+                        className={`lib-dropdown-btn ${(filterTypes.size === 1) ? 'active' : ''}`}
+                        onClick={() => setBottomSheet('ws')}
+                    >
+                        W/S : {getWsLabel()} <ChevronDown size={12} className="chevron" />
+                    </button>
+
+                    {/* 5) 소스 */}
+                    <button
+                        className={`lib-dropdown-btn ${filterSource !== 'all' ? 'active' : ''}`}
+                        onClick={() => setBottomSheet('source')}
+                    >
+                        {t('library.filterSource')} : {getSourceLabel()} <ChevronDown size={12} className="chevron" />
+                    </button>
                 </div>
 
-                {/* Word/Sentence 필터 + 목표 미달 체크 + 진도바 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                {/* Row 2: 토글 칩들 */}
+                <div className="lib-filter-row">
+                    {/* 4) 목표 미달 */}
                     <button
-                        className={`filter-tab ${filterTypes.has('W') ? 'active' : ''}`}
-                        onClick={() => {
-                            const newSet = new Set(filterTypes);
-                            if (newSet.has('W')) newSet.delete('W'); else newSet.add('W');
-                            setFilterTypes(newSet);
-                        }}
-                        style={{ margin: 0, background: filterTypes.has('W') ? '#10b981' : 'white', borderColor: filterTypes.has('W') ? '#10b981' : '#f1f5f9', color: filterTypes.has('W') ? 'white' : '#64748b' }}
+                        className={`lib-toggle-chip target-miss ${filterTargetMissed ? 'on' : ''}`}
+                        onClick={() => setFilterTargetMissed(v => !v)}
                     >
-                        # Word
+                        <span className="chip-dot" />
+                        {t('library.filterTargetMiss')}
                     </button>
-                    <button
-                        className={`filter-tab ${filterTypes.has('S') ? 'active' : ''}`}
-                        onClick={() => {
-                            const newSet = new Set(filterTypes);
-                            if (newSet.has('S')) newSet.delete('S'); else newSet.add('S');
-                            setFilterTypes(newSet);
-                        }}
-                        style={{ margin: 0, background: filterTypes.has('S') ? '#3b82f6' : 'white', borderColor: filterTypes.has('S') ? '#3b82f6' : '#f1f5f9', color: filterTypes.has('S') ? 'white' : '#64748b' }}
-                    >
-                        # Sentence
-                    </button>
-                    <label style={{
-                        display: 'flex', alignItems: 'center', gap: '4px',
-                        cursor: 'pointer', fontSize: '0.8rem', fontWeight: '700',
-                        color: filterTargetMissed ? '#ef4444' : '#94a3b8',
-                        padding: '6px 10px',
-                        backgroundColor: filterTargetMissed ? '#fef2f2' : 'white',
-                        border: `1px solid ${filterTargetMissed ? '#fca5a5' : '#e2e8f0'}`,
-                        borderRadius: '20px', transition: 'all 0.2s', userSelect: 'none',
-                    }}>
-                        <input
-                            type="checkbox"
-                            checked={filterTargetMissed}
-                            onChange={(e) => setFilterTargetMissed(e.target.checked)}
-                            style={{ cursor: 'pointer', accentColor: '#ef4444', width: '14px', height: '14px' }}
-                        />
-                        <span style={{ fontWeight: '900', fontSize: '1rem', lineHeight: '1' }}>✕</span>
-                    </label>
 
+                    {/* 6) 중요 */}
+                    <button
+                        className={`lib-toggle-chip ${filterStarred ? 'on' : ''}`}
+                        onClick={() => setFilterStarred(v => !v)}
+                    >
+                        <span className="chip-dot" />
+                        {t('library.filterStarred')}
+                    </button>
+
+                    {/* 7) 이번주 */}
+                    <button
+                        className={`lib-toggle-chip this-week ${filterThisWeek ? 'on' : ''}`}
+                        onClick={() => setFilterThisWeek(v => !v)}
+                    >
+                        <span className="chip-dot" />
+                        {t('library.filterThisWeek')}
+                    </button>
                 </div>
+
+                {/* Row 3: 기간 (이번주 OFF일 때만 표시) */}
+                {!filterThisWeek && (
+                    <div className="lib-date-row">
+                        <input type="date" className="lib-date-input" value={dateFrom} onChange={e => setDateFrom(e.target.value)} />
+                        <span className="lib-date-sep">~</span>
+                        <input type="date" className="lib-date-input" value={dateTo} onChange={e => setDateTo(e.target.value)} />
+                        {(dateFrom || dateTo) && (
+                            <button className="lib-date-clear" onClick={() => { setDateFrom(''); setDateTo(''); }}>
+                                {t('library.dateClear')}
+                            </button>
+                        )}
+                    </div>
+                )}
             </div>
 
-            {/* 카드 목록 정렬 */}
+            {/* ── 카드 목록 ── */}
             <div className="cards-grid">
                 {filteredCards.length > 0 ? (
                     filteredCards.map(card => (
                         <div key={card.id} className="library-card-wrapper">
+                            {/* 중요 마크 (카드 최상단 중앙) */}
+                            <div className="lib-star-row">
+                                <button className="lib-star-btn" onClick={() => toggleStarred(card.id, card.starred)} title={t('library.filterStarred')}>
+                                    <Star size={20} fill={card.starred ? '#facc15' : 'none'} color={card.starred ? '#facc15' : '#d1d5db'} />
+                                </button>
+                            </div>
+
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}
@@ -350,7 +365,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 onMemoClose={() => setMemoOpenId(null)}
                             />
 
-                            {/* [신규] 아이콘화된 하단 액션바 */}
+                            {/* 하단 액션바 */}
                             <div className="card-action-bar">
                                 <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
                                     <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 80}</strong></span>
@@ -383,10 +398,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 <div className="action-right">
                                     <button
                                         className="action-icon-btn delete-action"
-                                        onClick={(e) => {
-                                            e.stopPropagation();
-                                            triggerDelete(card.id);
-                                        }}
+                                        onClick={(e) => { e.stopPropagation(); triggerDelete(card.id); }}
                                         title="Delete from Library"
                                     >
                                         <Trash2 size={22} />
@@ -403,21 +415,79 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 )}
             </div>
 
-            {/* [신규] 무한 스크롤 관찰용 빈 타겟 (화면 끝에 닿으면 감지됨) */}
+            {/* 무한 스크롤 */}
             {!searchTerm && hasMore && filteredCards.length > 0 && (
                 <div ref={observerTarget} style={{ height: '40px', display: 'flex', justifyContent: 'center', alignItems: 'center', marginTop: '1rem' }}>
                     <span style={{ color: '#9ca3af', fontSize: '0.875rem' }}>{t('library.loadingMore')}</span>
                 </div>
             )}
-
-            {/* 데이터 끝에 도달했을 때 안내 */}
             {!hasMore && filteredCards.length > 0 && !searchTerm && (
                 <div style={{ textAlign: 'center', color: '#9ca3af', marginTop: '1rem', fontSize: '0.875rem', paddingBottom: '1rem' }}>
                     {t('library.reachedEnd')}
                 </div>
             )}
 
-            {/* [신규] 세련된 영어 커스텀 삭제 확인 모달 */}
+            {/* ── 바텀시트: 언어 선택 ── */}
+            {bottomSheet === 'lang' && (
+                <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
+                    <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="lib-bs-handle" />
+                        <div className="lib-bs-title">{t('library.filterLang')}</div>
+                        {availableLangs.map(lang => (
+                            <button key={lang} className={`lib-bs-option ${filterLang === lang ? 'selected' : ''}`}
+                                onClick={() => { setFilterLang(lang); setBottomSheet(null); }}>
+                                <span>{lang === 'all' ? t('library.filterAll') : lang.toUpperCase()}</span>
+                                {filterLang === lang && <span className="bs-check">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 바텀시트: W/S 선택 ── */}
+            {bottomSheet === 'ws' && (
+                <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
+                    <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="lib-bs-handle" />
+                        <div className="lib-bs-title">W / S</div>
+                        {WS_OPTIONS.map(opt => {
+                            const isSelected = opt.value === 'all'
+                                ? (filterTypes.size === 2 || filterTypes.size === 0)
+                                : (filterTypes.size === 1 && filterTypes.has(opt.value));
+                            return (
+                                <button key={opt.value} className={`lib-bs-option ${isSelected ? 'selected' : ''}`}
+                                    onClick={() => {
+                                        if (opt.value === 'all') setFilterTypes(new Set(['W', 'S']));
+                                        else setFilterTypes(new Set([opt.value]));
+                                        setBottomSheet(null);
+                                    }}>
+                                    <span>{opt.label}</span>
+                                    {isSelected && <span className="bs-check">✓</span>}
+                                </button>
+                            );
+                        })}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 바텀시트: 소스 선택 ── */}
+            {bottomSheet === 'source' && (
+                <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
+                    <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="lib-bs-handle" />
+                        <div className="lib-bs-title">{t('library.filterSource')}</div>
+                        {SOURCE_OPTIONS.map(opt => (
+                            <button key={opt.value} className={`lib-bs-option ${filterSource === opt.value ? 'selected' : ''}`}
+                                onClick={() => { setFilterSource(opt.value); setBottomSheet(null); }}>
+                                <span>{opt.label}</span>
+                                {filterSource === opt.value && <span className="bs-check">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* 삭제 확인 모달 */}
             {deleteConfirmId && (
                 <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
                     <div className="modal-content" style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
@@ -425,10 +495,10 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                             {t('library.deleteConfirm')}
                         </p>
                         <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                            <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s' }}>
+                            <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer' }}>
                                 {t('library.deleteCancel')}
                             </button>
-                            <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', transition: 'background-color 0.2s', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
+                            <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
                                 {t('library.deleteOk')}
                             </button>
                         </div>

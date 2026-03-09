@@ -755,6 +755,7 @@ function App() {
         pronunciationScore: practiceResults[langCode]?.pronunciationScore || null,
         pronunciationAudioUrl: practiceResults[langCode]?.audioUrl || null,
         geminiKeySource: byokGeminiKey ? 'byok' : 'app', // 어떤 Gemini 키로 번역했는지
+        sourceType: 'translation',
         createdAt: serverTimestamp()
       };
 

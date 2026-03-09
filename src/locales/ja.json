@@ -33,7 +33,21 @@
     "deleteCancel": "キャンセル",
     "deleteOk": "削除",
     "loadingMore": "さらに読み込み中... 📚",
-    "reachedEnd": "ライブラリの最後に達しました！ ✨"
+    "reachedEnd": "ライブラリの最後に達しました！ ✨",
+    "searchPlaceholder": "検索...",
+    "filterAll": "全て",
+    "filterLang": "言語",
+    "filterSource": "ソース",
+    "filterTargetMiss": "未達成",
+    "filterStarred": "重要",
+    "filterThisWeek": "今週",
+    "typeWord": "単語",
+    "typeSentence": "文章",
+    "srcTranslation": "翻訳",
+    "srcScene": "シーン",
+    "srcVocab": "単語帳",
+    "srcVideo": "動画",
+    "dateClear": "クリア"
   },
   "save": {
     "savedSuccess": "保存完了！",

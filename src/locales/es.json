@@ -33,7 +33,21 @@
     "deleteCancel": "Cancelar",
     "deleteOk": "Eliminar",
     "loadingMore": "Cargando más tarjetas... 📚",
-    "reachedEnd": "¡Has llegado al final de tu biblioteca! ✨"
+    "reachedEnd": "¡Has llegado al final de tu biblioteca! ✨",
+    "searchPlaceholder": "Buscar...",
+    "filterAll": "Todo",
+    "filterLang": "Idioma",
+    "filterSource": "Fuente",
+    "filterTargetMiss": "No alcanzado",
+    "filterStarred": "Importante",
+    "filterThisWeek": "Esta semana",
+    "typeWord": "Palabra",
+    "typeSentence": "Oración",
+    "srcTranslation": "Traducción",
+    "srcScene": "Escena",
+    "srcVocab": "Vocabulario",
+    "srcVideo": "Video",
+    "dateClear": "Borrar"
   },
   "save": {
     "savedSuccess": "¡Guardado con éxito!",

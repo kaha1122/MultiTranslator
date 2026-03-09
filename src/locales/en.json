@@ -33,7 +33,21 @@
     "deleteCancel": "Cancel",
     "deleteOk": "Delete",
     "loadingMore": "Loading more cards... 📚",
-    "reachedEnd": "You've reached the end of your library! ✨"
+    "reachedEnd": "You've reached the end of your library! ✨",
+    "searchPlaceholder": "Search...",
+    "filterAll": "All",
+    "filterLang": "Lang",
+    "filterSource": "Source",
+    "filterTargetMiss": "Missed",
+    "filterStarred": "Starred",
+    "filterThisWeek": "This Week",
+    "typeWord": "Word",
+    "typeSentence": "Sentence",
+    "srcTranslation": "Translation",
+    "srcScene": "Scene",
+    "srcVocab": "Vocabulary",
+    "srcVideo": "Video",
+    "dateClear": "Clear"
   },
   "save": {
     "savedSuccess": "Saved successfully!",

@@ -33,7 +33,21 @@
     "deleteCancel": "취소",
     "deleteOk": "삭제",
     "loadingMore": "더 불러오는 중... 📚",
-    "reachedEnd": "모든 카드를 확인했습니다! ✨"
+    "reachedEnd": "모든 카드를 확인했습니다! ✨",
+    "searchPlaceholder": "검색...",
+    "filterAll": "전체",
+    "filterLang": "언어",
+    "filterSource": "소스",
+    "filterTargetMiss": "목표 미달",
+    "filterStarred": "중요",
+    "filterThisWeek": "이번주",
+    "typeWord": "단어",
+    "typeSentence": "문장",
+    "srcTranslation": "번역",
+    "srcScene": "장소/상황",
+    "srcVocab": "단어장",
+    "srcVideo": "동영상",
+    "dateClear": "초기화"
   },
   "save": {
     "savedSuccess": "저장 완료!",

@@ -33,7 +33,21 @@
     "deleteCancel": "Hủy",
     "deleteOk": "Xóa",
     "loadingMore": "Đang tải thêm... 📚",
-    "reachedEnd": "Bạn đã đến cuối thư viện! ✨"
+    "reachedEnd": "Bạn đã đến cuối thư viện! ✨",
+    "searchPlaceholder": "Tìm kiếm...",
+    "filterAll": "Tất cả",
+    "filterLang": "Ngôn ngữ",
+    "filterSource": "Nguồn",
+    "filterTargetMiss": "Chưa đạt",
+    "filterStarred": "Quan trọng",
+    "filterThisWeek": "Tuần này",
+    "typeWord": "Từ",
+    "typeSentence": "Câu",
+    "srcTranslation": "Dịch",
+    "srcScene": "Cảnh",
+    "srcVocab": "Từ vựng",
+    "srcVideo": "Video",
+    "dateClear": "Xóa"
   },
   "save": {
     "savedSuccess": "Đã lưu!",
