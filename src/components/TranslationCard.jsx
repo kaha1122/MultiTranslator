@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star } from 'lucide-react';
+import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star, Flag } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import PronunciationAssessment from './PronunciationAssessment';
@@ -64,6 +64,9 @@ const TranslationCard = ({
     annotations = [],
     userNotes = [],
     onMemoUpdate,
+    // Library 중요 마크
+    starred = false,
+    onToggleStarred,
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
     onMemoClose,
@@ -252,6 +255,17 @@ Return only these 2 lines.`;
                 >
                     {fullLanguage || language}
                 </span>
+
+                {/* Library 중요 마크 (card-header 중앙) */}
+                {isLibraryView && onToggleStarred && (
+                    <button
+                        className="lib-flag-btn"
+                        onClick={(e) => { e.stopPropagation(); onToggleStarred(); }}
+                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.2s' }}
+                    >
+                        <Flag size={20} fill={starred ? '#f59e0b' : 'none'} color={starred ? '#f59e0b' : '#d1d5db'} />
+                    </button>
+                )}
 
                 <div className="card-header-actions">
                     {!isLibraryView && (

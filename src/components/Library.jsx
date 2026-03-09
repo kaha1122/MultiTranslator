@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2, Volume2, PenLine, ChevronDown, Star } from 'lucide-react';
+import { Search, Trash2, Volume2, PenLine, ChevronDown } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import './Library.css';
 
@@ -334,13 +334,6 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 {filteredCards.length > 0 ? (
                     filteredCards.map(card => (
                         <div key={card.id} className="library-card-wrapper">
-                            {/* 중요 마크 (카드 최상단 중앙) */}
-                            <div className="lib-star-row">
-                                <button className="lib-star-btn" onClick={() => toggleStarred(card.id, card.starred)} title={t('library.filterStarred')}>
-                                    <Star size={20} fill={card.starred ? '#facc15' : 'none'} color={card.starred ? '#facc15' : '#d1d5db'} />
-                                </button>
-                            </div>
-
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}
@@ -361,6 +354,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 annotations={card.annotations || []}
                                 userNotes={card.userNotes || []}
                                 onMemoUpdate={(newMemos, newAnnotations, newUserNotes) => handleMemoUpdate(card.id, newMemos, newAnnotations, newUserNotes)}
+                                starred={card.starred || false}
+                                onToggleStarred={() => toggleStarred(card.id, card.starred)}
                                 memoPopupOpen={memoOpenId === card.id}
                                 onMemoClose={() => setMemoOpenId(null)}
                             />
