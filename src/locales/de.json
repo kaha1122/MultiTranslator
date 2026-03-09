@@ -98,33 +98,23 @@
     "loginRequired": "Bitte einloggen.",
     "customPlaceholder": "Eigenen Ort oder Situation eingeben"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "YouTube-URL hier einfügen",
-    "loadBtn": "Abspielen",
-    "loadingVideos": "Neueste TED-Videos werden geladen...",
-    "videosError": "TED-Videoliste konnte nicht geladen werden.",
-    "sectionTitle": "Neueste TED-Talks",
-    "watchHint": "Aktiviere den CC-Button (Untertitel) auf YouTube, um englische Untertitel anzuzeigen. Schau und höre zu, um natürliche Aussprache und Ausdrücke aufzunehmen."
-  },
-  "voa": {
-    "tabTitle": "VOA Nachrichten",
-    "loading": "Artikel werden geladen...",
-    "loadError": "Artikel konnten nicht geladen werden. Bitte erneut versuchen.",
-    "articleLoading": "Artikelinhalt wird analysiert...",
-    "articleLoadError": "Artikel konnten nicht geladen werden. Bitte erneut versuchen.",
-    "selectPrompt": "Wähle einen Artikel für satzweises Aussprachetraining 🎙️",
-    "practicePrompt": "Tippe auf einen Satz, um zu üben",
-    "playAudio": "Ganzen Artikel anhören",
-    "openArticle": "Artikel öffnen",
-    "practiceBtn": "Üben",
+  "video": {
+    "tabTitle": "Video",
+    "loading": "Videos werden geladen...",
+    "loadError": "Videos konnten nicht geladen werden. Bitte versuchen Sie es erneut.",
+    "transcriptLoading": "Untertitel werden geladen...",
+    "transcriptError": "Untertitel für dieses Video konnten nicht geladen werden.",
+    "noTranscript": "Für dieses Video sind keine Untertitel verfügbar.",
+    "practicePrompt": "Tippen Sie auf einen Satz, um mit dem Üben zu beginnen",
     "saveToLibrary": "In Bibliothek speichern",
     "savedToLibrary": "Gespeichert ✅",
     "loginRequired": "Anmeldung erforderlich.",
+    "pronUnsupported": "Ausspracheübung für diese Sprache nicht verfügbar",
     "categories": {
-      "beginner": "Anfänger",
-      "intermediate": "Mittelstufe",
-      "advanced": "Fortgeschritten"
+      "news": "Nachrichten",
+      "culture": "Kultur",
+      "entertainment": "Unterhaltung",
+      "sports": "Sport"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "Wähle eine Szene und übe echte Gespräche mit KI",
     "translation": "Übersetze Wörter & Sätze, dann übe die Aussprache",
-    "voa": "Trainiere deine Aussprache mit VOA-Englisch-News",
-    "ted": "Schau Videos und erlerne natürliches Englisch",
+    "video": "Videos ansehen und mehrsprachige Aussprache üben",
     "library": "Gespeicherte Karten wiederholen und Notizen hinzufügen",
     "settings": "Lernsprache und API-Umgebung einstellen"
   },
@@ -178,8 +167,7 @@
     "scene": "Nach Ort / Situation",
     "translation": "Wörterbuch",
     "library": "Vokabelheft",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "Video",
     "qa": "F&A",
     "qaUsage": "App-Anleitung",
     "qaApiTip": "API-Einrichtungstipps",

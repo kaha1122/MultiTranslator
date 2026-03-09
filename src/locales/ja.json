@@ -98,33 +98,23 @@
     "loginRequired": "ログインしてください。",
     "customPlaceholder": "場所や状況を直接入力してください"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "YouTube URLを貼り付けてください",
-    "loadBtn": "再生",
-    "loadingVideos": "最新のTED動画を読み込み中...",
-    "videosError": "TED動画リストを読み込めませんでした。",
-    "sectionTitle": "最新TED講演",
-    "watchHint": "CCボタンで英語字幕を表示できます。動画を視聴して自然な発音と表現を身につけましょう。"
-  },
-  "voa": {
-    "tabTitle": "VOAニュース",
-    "loading": "記事を読み込み中...",
-    "loadError": "記事を読み込めませんでした。もう一度お試しください。",
-    "articleLoading": "記事を解析中...",
-    "articleLoadError": "記事を読み込めませんでした。もう一度お試しください。",
-    "selectPrompt": "記事を選択して文ごとの発音練習を始めましょう 🎙️",
-    "practicePrompt": "文をタップして発音練習を始める",
-    "playAudio": "記事全体を聴く",
-    "openArticle": "記事を開く",
-    "practiceBtn": "発音練習",
+  "video": {
+    "tabTitle": "動画",
+    "loading": "動画を読み込み中...",
+    "loadError": "動画を読み込めませんでした。もう一度お試しください。",
+    "transcriptLoading": "字幕を読み込み中...",
+    "transcriptError": "この動画の字幕を読み込めませんでした。",
+    "noTranscript": "この動画には字幕がありません。",
+    "practicePrompt": "文をタップして発音練習を始めましょう",
     "saveToLibrary": "ライブラリに保存",
     "savedToLibrary": "保存済み ✅",
     "loginRequired": "ログインが必要です。",
+    "pronUnsupported": "この言語は発音練習に対応していません",
     "categories": {
-      "beginner": "初級",
-      "intermediate": "中級",
-      "advanced": "上級"
+      "news": "ニュース",
+      "culture": "文化",
+      "entertainment": "エンタメ",
+      "sports": "スポーツ"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "シーンを選んでAIと実践会話を練習しよう",
     "translation": "単語・文章を翻訳して発音を練習しよう",
-    "voa": "VOA英語ニュースで実践的な発音を鍛えよう",
-    "ted": "動画を見て自然な英語を身につけよう",
+    "video": "動画を見ながら多言語の発音を練習しよう",
     "library": "保存したカードを復習してメモも書き込もう",
     "settings": "学習言語とAPI環境を設定しよう"
   },
@@ -178,8 +167,7 @@
     "scene": "場所別 / 状況別",
     "translation": "辞書",
     "library": "単語帳",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "動画",
     "qa": "Q&A",
     "qaUsage": "アプリの使い方",
     "qaApiTip": "APIの設定ヒント",

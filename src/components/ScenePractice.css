@@ -556,7 +556,7 @@
     cursor: default;
 }
 
-/* spin 애니메이션 (VoaReader와 공유) */
+/* spin 애니메이션 (공유) */
 .spin {
     animation: spin 1s linear infinite;
 }

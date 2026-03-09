@@ -98,33 +98,23 @@
     "loginRequired": "Vui lòng đăng nhập.",
     "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "Dán URL YouTube vào đây",
-    "loadBtn": "Phát",
-    "loadingVideos": "Đang tải video TED mới nhất...",
-    "videosError": "Không thể tải danh sách video TED.",
-    "sectionTitle": "Bài giảng TED mới nhất",
-    "watchHint": "Bật nút CC (Phụ đề) trên YouTube để hiển thị phụ đề tiếng Anh. Xem và lắng nghe để học phát âm và cách diễn đạt tự nhiên."
-  },
-  "voa": {
-    "tabTitle": "Tin tức VOA",
-    "loading": "Đang tải bài viết...",
-    "loadError": "Không thể tải bài viết. Vui lòng thử lại.",
-    "articleLoading": "Đang phân tích nội dung bài viết...",
-    "articleLoadError": "Không thể tải bài viết. Vui lòng thử lại.",
-    "selectPrompt": "Chọn một bài viết để bắt đầu luyện phát âm từng câu 🎙️",
-    "practicePrompt": "Nhấn vào câu để bắt đầu luyện tập",
-    "playAudio": "Nghe toàn bộ bài viết",
-    "openArticle": "Mở bài viết",
-    "practiceBtn": "Luyện phát âm",
-    "saveToLibrary": "Lưu vào Library",
+  "video": {
+    "tabTitle": "Video",
+    "loading": "Đang tải video...",
+    "loadError": "Không thể tải video. Vui lòng thử lại.",
+    "transcriptLoading": "Đang tải phụ đề...",
+    "transcriptError": "Không thể tải phụ đề cho video này.",
+    "noTranscript": "Video này không có phụ đề.",
+    "practicePrompt": "Nhấn vào câu để bắt đầu luyện phát âm",
+    "saveToLibrary": "Lưu vào Thư viện",
     "savedToLibrary": "Đã lưu ✅",
-    "loginRequired": "Yêu cầu đăng nhập.",
+    "loginRequired": "Vui lòng đăng nhập.",
+    "pronUnsupported": "Ngôn ngữ này không hỗ trợ luyện phát âm",
     "categories": {
-      "beginner": "Sơ cấp",
-      "intermediate": "Trung cấp",
-      "advanced": "Nâng cao"
+      "news": "Tin tức",
+      "culture": "Văn hóa",
+      "entertainment": "Giải trí",
+      "sports": "Thể thao"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "Chọn tình huống và luyện hội thoại thực tế với AI",
     "translation": "Dịch từ và câu, sau đó luyện phát âm",
-    "voa": "Rèn luyện phát âm với tin tức tiếng Anh VOA",
-    "ted": "Xem video và tiếp thu tiếng Anh tự nhiên",
+    "video": "Xem video và luyện phát âm đa ngôn ngữ",
     "library": "Ôn tập thẻ đã lưu và thêm ghi chú của bạn",
     "settings": "Cài đặt ngôn ngữ học và môi trường API"
   },
@@ -178,8 +167,7 @@
     "scene": "Theo địa điểm / tình huống",
     "translation": "Từ điển",
     "library": "Sổ từ vựng",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "Video",
     "qa": "Hỏi & Đáp",
     "qaUsage": "Hướng dẫn sử dụng",
     "qaApiTip": "Mẹo cài đặt API",

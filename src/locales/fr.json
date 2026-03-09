@@ -98,33 +98,23 @@
     "loginRequired": "Veuillez vous connecter.",
     "customPlaceholder": "Entrez votre propre lieu ou situation"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "Collez une URL YouTube ici",
-    "loadBtn": "Lire",
-    "loadingVideos": "Chargement des dernières vidéos TED...",
-    "videosError": "Impossible de charger la liste des vidéos TED.",
-    "sectionTitle": "Dernières conférences TED",
-    "watchHint": "Activez le bouton CC (Sous-titres) sur YouTube pour afficher les sous-titres en anglais. Regardez et écoutez pour absorber la prononciation et les expressions naturelles."
-  },
-  "voa": {
-    "tabTitle": "Actualités VOA",
-    "loading": "Chargement des articles...",
-    "loadError": "Impossible de charger les articles. Réessayez.",
-    "articleLoading": "Analyse de l'article en cours...",
-    "articleLoadError": "Impossible de charger l'article. Réessayez.",
-    "selectPrompt": "Sélectionnez un article pour pratiquer la prononciation phrase par phrase 🎙️",
-    "practicePrompt": "Appuyez sur une phrase pour commencer",
-    "playAudio": "Écouter l'article en entier",
-    "openArticle": "Ouvrir l'article",
-    "practiceBtn": "Pratiquer",
+  "video": {
+    "tabTitle": "Vidéo",
+    "loading": "Chargement des vidéos...",
+    "loadError": "Impossible de charger les vidéos. Veuillez réessayer.",
+    "transcriptLoading": "Chargement des sous-titres...",
+    "transcriptError": "Impossible de charger les sous-titres de cette vidéo.",
+    "noTranscript": "Aucun sous-titre disponible pour cette vidéo.",
+    "practicePrompt": "Appuyez sur une phrase pour commencer à pratiquer",
     "saveToLibrary": "Enregistrer dans la bibliothèque",
     "savedToLibrary": "Enregistré ✅",
     "loginRequired": "Connexion requise.",
+    "pronUnsupported": "La pratique de la prononciation n'est pas disponible pour cette langue",
     "categories": {
-      "beginner": "Débutant",
-      "intermediate": "Intermédiaire",
-      "advanced": "Avancé"
+      "news": "Actualités",
+      "culture": "Culture",
+      "entertainment": "Divertissement",
+      "sports": "Sports"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "Choisissez une scène et entraînez-vous avec l'IA",
     "translation": "Traduisez et pratiquez la prononciation",
-    "voa": "Entraînez votre prononciation avec les news VOA",
-    "ted": "Regardez des vidéos et absorbez l'anglais naturel",
+    "video": "Regardez des vidéos et pratiquez la prononciation multilingue",
     "library": "Révisez vos cartes et ajoutez vos propres notes",
     "settings": "Configurez votre langue d'apprentissage et l'API"
   },
@@ -178,8 +167,7 @@
     "scene": "Par lieu / situation",
     "translation": "Dictionnaire",
     "library": "Carnet de mots",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "Vidéo",
     "qa": "Q&R",
     "qaUsage": "Guide d'utilisation",
     "qaApiTip": "Conseils API",

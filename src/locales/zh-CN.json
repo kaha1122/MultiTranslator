@@ -98,33 +98,23 @@
     "loginRequired": "请先登录。",
     "customPlaceholder": "请输入您的场景或情境"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "在此粘贴YouTube链接",
-    "loadBtn": "播放",
-    "loadingVideos": "正在加载最新TED视频...",
-    "videosError": "无法加载TED视频列表。",
-    "sectionTitle": "TED最新演讲",
-    "watchHint": "开启YouTube CC字幕按钮即可显示英文字幕。边看边听，学习自然发音和表达方式。"
-  },
-  "voa": {
-    "tabTitle": "VOA新闻",
-    "loading": "正在加载文章...",
-    "loadError": "无法加载文章，请重试。",
-    "articleLoading": "正在解析文章内容...",
-    "articleLoadError": "无法加载文章，请重试。",
-    "selectPrompt": "选择一篇文章开始逐句发音练习 🎙️",
-    "practicePrompt": "点击句子开始练习发音",
-    "playAudio": "收听完整文章",
-    "openArticle": "打开文章",
-    "practiceBtn": "发音练习",
-    "saveToLibrary": "保存到Library",
+  "video": {
+    "tabTitle": "视频",
+    "loading": "正在加载视频...",
+    "loadError": "无法加载视频，请重试。",
+    "transcriptLoading": "正在加载字幕...",
+    "transcriptError": "无法加载此视频的字幕。",
+    "noTranscript": "此视频没有字幕。",
+    "practicePrompt": "点击句子开始发音练习",
+    "saveToLibrary": "保存到收藏夹",
     "savedToLibrary": "已保存 ✅",
-    "loginRequired": "需要登录。",
+    "loginRequired": "请先登录。",
+    "pronUnsupported": "此语言不支持发音练习",
     "categories": {
-      "beginner": "初级",
-      "intermediate": "中级",
-      "advanced": "高级"
+      "news": "新闻",
+      "culture": "文化",
+      "entertainment": "娱乐",
+      "sports": "体育"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "选择场景，与AI练习真实对话",
     "translation": "翻译单词和句子，练习发音",
-    "voa": "用VOA英语新闻训练实战发音",
-    "ted": "通过视频学习自然英语",
+    "video": "观看视频，练习多语言发音",
     "library": "复习保存的卡片，还可以添加笔记",
     "settings": "设置学习语言和API环境"
   },
@@ -178,8 +167,7 @@
     "scene": "场景练习",
     "translation": "词典",
     "library": "单词本",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "视频",
     "qa": "问答",
     "qaUsage": "使用指南",
     "qaApiTip": "API 设置技巧",

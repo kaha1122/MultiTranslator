@@ -1,6 +1,6 @@
-/* ── VoaReader.css ── */
+/* ── VideoReader.css ── */
 
-.voa-container {
+.vid-container {
     display: flex;
     flex-direction: column;
     height: 100%;
@@ -8,17 +8,49 @@
     background: #f1f5f9;
 }
 
-/* ── 레벨 탭 ── */
-.voa-category-tabs {
+/* ── Target Language 선택 바 ── */
+.vid-lang-selector {
+    display: flex;
+    gap: 6px;
+    padding: 10px 16px;
+    background: white;
+    border-bottom: 1px solid #e2e8f0;
+    flex-shrink: 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+.vid-lang-selector::-webkit-scrollbar { display: none; }
+
+.vid-lang-pill {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    border-radius: 20px;
+    border: 1.5px solid #e2e8f0;
+    background: white;
+    font-size: 12px;
+    font-weight: 600;
+    color: #64748b;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+}
+.vid-lang-pill.active {
+    background: #1e293b;
+    border-color: #1e293b;
+    color: white;
+}
+
+/* ── 카테고리 탭 ── */
+.vid-category-tabs {
     display: flex;
     gap: 8px;
-    padding: 12px 16px;
+    padding: 10px 16px;
     background: white;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
 }
 
-.voa-cat-btn {
+.vid-cat-btn {
     flex: 1;
     display: flex;
     align-items: center;
@@ -28,7 +60,7 @@
     border-radius: 12px;
     border: 1.5px solid #e2e8f0;
     background: white;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 600;
     white-space: nowrap;
     cursor: pointer;
@@ -36,57 +68,74 @@
     transition: all 0.2s;
 }
 
-.voa-level-dot {
+.vid-cat-dot {
     width: 7px;
     height: 7px;
     border-radius: 50%;
     flex-shrink: 0;
 }
 
-/* ── 기사 목록 ── */
-.voa-article-list {
+/* ── 영상 목록 ── */
+.vid-video-list {
     flex: 1;
     overflow-y: auto;
-    padding: 14px 16px 80px;
+    padding: 12px 16px 80px;
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 14px;
 }
 
-/* ── 기사 카드 (이미지 중심) ── */
-.voa-article-card {
+/* ── 영상 카드 ── */
+.vid-video-card {
     background: white;
     border-radius: 18px;
     overflow: hidden;
     box-shadow: 0 2px 16px rgba(0, 0, 0, 0.08);
+    cursor: pointer;
     transition: transform 0.15s, box-shadow 0.15s;
 }
-.voa-article-card:active {
+.vid-video-card:active {
     transform: scale(0.99);
     box-shadow: 0 1px 6px rgba(0, 0, 0, 0.06);
 }
 
-/* 썸네일 이미지 영역 */
-.voa-article-img {
+/* 썸네일 (16:9) */
+.vid-thumbnail {
     position: relative;
     width: 100%;
-    height: 190px;
+    padding-top: 56.25%;
     background-size: cover;
     background-position: center;
-    background-color: #e2e8f0;
+    background-color: #1a1a1a;
 }
 
-.voa-img-placeholder {
-    width: 100%;
-    height: 100%;
+.vid-play-overlay {
+    position: absolute;
+    inset: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
+    background: rgba(0, 0, 0, 0.15);
+    transition: background 0.2s;
+}
+.vid-video-card:hover .vid-play-overlay {
+    background: rgba(0, 0, 0, 0.3);
+}
+.vid-play-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    background: rgba(59, 130, 246, 0.9);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 20px;
+    padding-left: 4px;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
 }
 
-/* 레벨 배지 (이미지 왼쪽 상단 오버레이) */
-.voa-level-badge {
+.vid-channel-badge {
     position: absolute;
     top: 10px;
     left: 12px;
@@ -94,99 +143,50 @@
     font-weight: 700;
     padding: 3px 10px;
     border-radius: 20px;
+    color: white;
     letter-spacing: 0.3px;
+    z-index: 1;
+    max-width: 60%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
-/* 텍스트 영역 */
-.voa-article-body {
-    padding: 14px 16px 16px;
+.vid-card-body {
+    padding: 12px 16px 14px;
 }
 
-.voa-article-date {
-    font-size: 11px;
-    color: #94a3b8;
-    margin: 0 0 6px 0;
-}
-
-.voa-article-title {
-    font-size: 15px;
-    font-weight: 700;
+.vid-card-title {
+    font-size: 14px;
+    font-weight: 600;
     color: #1e293b;
-    line-height: 1.45;
-    margin: 0 0 8px 0;
-}
-
-.voa-article-summary {
-    font-size: 13px;
-    color: #64748b;
-    margin: 0 0 12px 0;
     line-height: 1.5;
+    margin: 0;
     display: -webkit-box;
     -webkit-line-clamp: 2;
     -webkit-box-orient: vertical;
     overflow: hidden;
 }
 
-/* 액션 버튼 행 */
-.voa-article-actions {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-}
-
-.voa-action-btn {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    padding: 7px 13px;
-    border-radius: 10px;
-    font-size: 12px;
-    font-weight: 600;
-    cursor: pointer;
-    text-decoration: none;
-    border: none;
-    transition: opacity 0.15s;
-}
-.voa-action-btn:active { opacity: 0.75; }
-
-.voa-listen-btn {
-    background: #f1f5f9;
-    color: #475569;
-    padding: 7px 11px;
-}
-
-.voa-link-btn {
-    background: #f1f5f9;
-    color: #475569;
-}
-
-.voa-practice-btn {
-    color: white;
-    margin-left: auto;
-}
-
-/* ── 기사 본문 뷰 ── */
-.voa-article-view {
+/* ── 영상 상세 뷰 ── */
+.vid-detail-view {
     flex: 1;
     overflow-y: auto;
     display: flex;
     flex-direction: column;
 }
 
-.voa-article-header {
+.vid-detail-header {
     display: flex;
-    align-items: flex-start;
+    align-items: center;
     gap: 10px;
     padding: 12px 16px;
     background: white;
     border-bottom: 1px solid #e2e8f0;
     flex-shrink: 0;
-    position: sticky;
-    top: 0;
-    z-index: 1;
 }
 
-.voa-back-btn {
+.vid-back-btn {
     flex-shrink: 0;
     background: none;
     border: none;
@@ -197,47 +197,68 @@
     align-items: center;
 }
 
-.voa-article-heading {
+.vid-detail-heading {
     flex: 1;
-    font-size: 15px;
+    font-size: 14px;
     font-weight: 700;
     color: #1e293b;
     margin: 0;
     line-height: 1.4;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
 }
 
-.voa-audio-btn {
+.vid-yt-link {
     flex-shrink: 0;
-    width: 36px;
-    height: 36px;
+    width: 34px;
+    height: 34px;
     border-radius: 50%;
-    border: none;
     background: #f1f5f9;
-    color: #3b82f6;
+    color: #64748b;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
+    text-decoration: none;
     transition: background 0.2s;
 }
-.voa-audio-btn:hover { background: #dbeafe; }
+.vid-yt-link:hover { background: #e2e8f0; }
 
-/* ── 문장 목록 ── */
-.voa-sentence-list {
+/* YouTube iframe */
+.vid-video-wrapper {
+    position: relative;
+    width: 100%;
+    padding-top: 56.25%;
+    flex-shrink: 0;
+    background: #000;
+}
+
+.vid-iframe {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    border: none;
+}
+
+/* ── 문장 리스트 ── */
+.vid-sentence-list {
     padding: 12px 16px 80px;
     display: flex;
     flex-direction: column;
     gap: 8px;
 }
 
-.voa-sentence-item {
+.vid-sentence-item {
     background: white;
     border-radius: 12px;
     overflow: hidden;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
 }
 
-.voa-sentence-text {
+.vid-sentence-text {
     display: flex;
     align-items: flex-start;
     gap: 10px;
@@ -248,13 +269,13 @@
     line-height: 1.6;
     transition: background 0.15s;
 }
-.voa-sentence-text:hover { background: #f8fafc; }
-.voa-sentence-text.expanded {
+.vid-sentence-text:hover { background: #f8fafc; }
+.vid-sentence-text.expanded {
     background: #eff6ff;
     border-bottom: 1px solid #dbeafe;
 }
 
-.voa-sentence-num {
+.vid-sentence-num {
     flex-shrink: 0;
     font-size: 11px;
     font-weight: 700;
@@ -270,7 +291,7 @@
 }
 
 /* ── 발음 연습 영역 ── */
-.voa-sentence-practice {
+.vid-sentence-practice {
     padding: 14px 16px 16px;
     background: #f8fafc;
     display: flex;
@@ -278,41 +299,46 @@
     gap: 12px;
 }
 
-/* 녹음 버튼 행 */
-.voa-practice-actions {
+.vid-practice-actions {
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 10px;
 }
 
-.voa-practice-left {
+.vid-practice-left {
     display: flex;
     align-items: center;
     gap: 12px;
 }
 
-/* 녹음 상태 텍스트 */
-.voa-recording-status {
+.vid-recording-status {
     font-size: 13px;
     color: #ef4444;
     font-weight: 600;
     margin: 0;
-    animation: voa-pulse-text 1.5s infinite;
+    animation: vid-pulse-text 1.5s infinite;
 }
-.voa-analyzing-status {
+.vid-analyzing-status {
     font-size: 13px;
     color: #6366f1;
     font-weight: 600;
     margin: 0;
 }
-@keyframes voa-pulse-text {
+@keyframes vid-pulse-text {
     0%, 100% { opacity: 1; }
     50%       { opacity: 0.5; }
 }
 
-/* 북마크 버튼 — 테두리/배경 없이 아이콘만 */
-.voa-bookmark-btn {
+.vid-pron-unsupported {
+    font-size: 12px;
+    color: #94a3b8;
+    margin: 0;
+    font-style: italic;
+}
+
+/* 북마크 버튼 */
+.vid-bookmark-btn {
     width: 44px;
     height: 44px;
     border-radius: 50%;
@@ -327,21 +353,12 @@
     flex-shrink: 0;
     padding: 0;
 }
-.voa-bookmark-btn:hover {
-    color: #facc15;
-}
-.voa-bookmark-btn.saved {
-    color: #facc15;
-}
-.voa-bookmark-btn:disabled { cursor: default; }
-
-.voa-score-detail {
-    font-size: 12px;
-    color: #64748b;
-}
+.vid-bookmark-btn:hover { color: #facc15; }
+.vid-bookmark-btn.saved { color: #facc15; }
+.vid-bookmark-btn:disabled { cursor: default; }
 
 /* ── 코치 팁 ── */
-.voa-coach-tip {
+.vid-coach-tip {
     font-size: 13px;
     color: #1e293b;
     background: #fffbeb;
@@ -353,7 +370,7 @@
 }
 
 /* ── 공통 상태 메시지 ── */
-.voa-status-msg {
+.vid-status-msg {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -363,7 +380,7 @@
     justify-content: center;
 }
 
-.voa-error-msg {
+.vid-error-msg {
     display: flex;
     align-items: center;
     gap: 6px;
@@ -375,17 +392,17 @@
     margin: 0 16px;
 }
 
-.voa-select-prompt {
+.vid-select-prompt {
     text-align: center;
     font-size: 13px;
     color: #94a3b8;
     padding: 12px 16px;
 }
 
-/* ── 로딩 스피너 ── */
-.voa-spin {
-    animation: voa-spin-anim 1s linear infinite;
+/* ── 스피너 ── */
+.vid-spin {
+    animation: vid-spin-anim 1s linear infinite;
 }
-@keyframes voa-spin-anim {
+@keyframes vid-spin-anim {
     to { transform: rotate(360deg); }
 }

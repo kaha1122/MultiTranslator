@@ -98,33 +98,23 @@
     "loginRequired": "Please log in.",
     "customPlaceholder": "Enter your own location or situation"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "Paste a YouTube URL here",
-    "loadBtn": "Play",
-    "loadingVideos": "Loading latest TED talks...",
-    "videosError": "Could not load TED video list.",
-    "sectionTitle": "Latest TED Talks",
-    "watchHint": "Turn on the CC (Captions) button to see English subtitles. Watch and listen to absorb natural pronunciation and expressions."
-  },
-  "voa": {
-    "tabTitle": "VOA News",
-    "loading": "Loading articles...",
-    "loadError": "Failed to load articles. Please try again.",
-    "articleLoading": "Parsing article content...",
-    "articleLoadError": "Failed to load article. Please try again.",
-    "selectPrompt": "Select an article to start sentence-by-sentence pronunciation practice 🎙️",
+  "video": {
+    "tabTitle": "Video",
+    "loading": "Loading videos...",
+    "loadError": "Failed to load videos. Please try again.",
+    "transcriptLoading": "Loading subtitles...",
+    "transcriptError": "Could not load subtitles for this video.",
+    "noTranscript": "No subtitles available for this video.",
     "practicePrompt": "Tap a sentence to start practicing",
-    "playAudio": "Listen to Full Article",
-    "openArticle": "Open Article",
-    "practiceBtn": "Practice",
     "saveToLibrary": "Save to Library",
     "savedToLibrary": "Saved ✅",
     "loginRequired": "Login required.",
+    "pronUnsupported": "Pronunciation practice not available for this language",
     "categories": {
-      "beginner": "Beginner",
-      "intermediate": "Intermediate",
-      "advanced": "Advanced"
+      "news": "News",
+      "culture": "Culture",
+      "entertainment": "Entertainment",
+      "sports": "Sports"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "Pick a scene and practice real conversations with AI",
     "translation": "Translate words & sentences, then practice pronunciation",
-    "voa": "Train your pronunciation with VOA English news",
-    "ted": "Watch videos and absorb natural English",
+    "video": "Watch videos and practice pronunciation in any language",
     "library": "Review your saved cards and add your own notes",
     "settings": "Set your learning language and API environment"
   },
@@ -178,8 +167,7 @@
     "scene": "Scene Practice",
     "translation": "Dictionary",
     "library": "Word Book",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "Video",
     "qa": "Q&A",
     "qaUsage": "How to Use",
     "qaApiTip": "API Setup Tips",

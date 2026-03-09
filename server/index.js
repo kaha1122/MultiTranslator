@@ -6,8 +6,6 @@ const cors = require('cors');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegInstaller = require('@ffmpeg-installer/ffmpeg');
-const RssParser = require('rss-parser');
-const { parse: parseHtml } = require('node-html-parser');
 const { YoutubeTranscript } = require('youtube-transcript');
 const admin = require('firebase-admin');
 ffmpeg.setFfmpegPath(ffmpegInstaller.path);
@@ -235,145 +233,142 @@ app.post('/analyze', upload.single('audio'), async (req, res) => {
     }
 });
 
-/**
- * VOA Learning English — 기사 목록 & 본문 제공 엔드포인트
- * 저작권: 미국 정부 제작물(VOA)은 공공 도메인이므로 상업적 사용 가능
- */
-const rssParser = new RssParser({ timeout: 8000 });
+// ─────────────────────────────────────────────────────
+// Video Feed — 큐레이션 채널 기반 YouTube 영상 목록 API
+// ─────────────────────────────────────────────────────
+const YOUTUBE_API_KEY = process.env.YOUTUBE_API_KEY;
 
-const VOA_FEEDS = {
-    beginner: 'https://learningenglish.voanews.com/api/zti_qvl-vomx-tpekgvqr', // Ask a Teacher
-    intermediate: 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q',    // Health & Lifestyle
-    advanced: 'https://learningenglish.voanews.com/api/zyg__l-vomx-tpetmty',    // American Stories
+// 언어별 × 카테고리별 큐레이션 채널 (공신력 있는 공식 채널)
+// ⚠️ 채널 ID 확인 필요한 항목은 최초 배포 후 검증 예정
+const CURATED_CHANNELS = {
+    en: {
+        news:          [{ id: 'UCupvZG-5ko_eiXAupbDfxWw', name: 'CNN' }, { id: 'UC16niRr50-MSBwiO3YDb3RA', name: 'BBC News' }],
+        culture:       [{ id: 'UCpVm7bg6pXKo1Pr6k5kxG9A', name: 'National Geographic' }],
+        entertainment: [{ id: 'UC8-Th83bH_thdKZDJCrn88g', name: 'The Tonight Show' }],
+        sports:        [{ id: 'UCiWLfSweyRNmLpgEHekhoAg', name: 'ESPN' }],
+    },
+    ja: {
+        news:          [{ id: 'UCGCZAYq5Xxojl_tSXcVJhiQ', name: 'ANNnewsCH' }],
+        culture:       [{ id: 'UCkKVQ_GNjd8FbAuT6xhl7eg', name: 'テレ東BIZ' }],
+        entertainment: [{ id: 'UC1oPBUd3bVHkuY9jOHqiktQ', name: 'しくじり先生' }],
+        sports:        [{ id: 'UCAnIalCSkauMhO0s7LkfN8Q', name: 'DAZN Japan' }],
+    },
+    ko: {
+        news:          [{ id: 'UCcQTRi69dsVYHN3exePtZ1A', name: 'KBS News' }],
+        culture:       [{ id: 'UCFVXsGx232hfnuynMFprbtA', name: 'EBS 다큐멘터리' }],
+        entertainment: [{ id: 'UCVy7e2rKXMoTA8v1Vi2fBYA', name: 'SBS NOW' }],
+        sports:        [{ id: 'UC0KjKLxg45UL_aMHOgtnDlA', name: 'KBS Sports' }],
+    },
+    'zh-CN': {
+        news:          [{ id: 'UCcLK3j-XWdGBnt5bR9NJHaQ', name: 'CCTV' }],
+        culture:       [{ id: 'UCKjkjESmXFJn2NGtNB_cNsA', name: '一条 Yit' }],
+        entertainment: [{ id: 'UCtEPFHG37TBR8VrgtWJbCeg', name: '浙江卫视' }],
+        sports:        [{ id: 'UC09IvZwjpunzrdHH1EHok-w', name: '央视体育' }],
+    },
+    fr: {
+        news:          [{ id: 'UCCCPCZNChQdGa9EkATeye4g', name: 'FRANCE 24' }],
+        culture:       [{ id: 'UCL_cZf5sHKQHMRIEax5o3rg', name: 'Arte' }],
+        entertainment: [{ id: 'UC3BOBaUKIrieXZM23GfCe0Q', name: 'France Télévisions' }],
+        sports:        [{ id: 'UCOchO7W1rXjE74MrpMiRFNg', name: "L'Équipe" }],
+    },
+    de: {
+        news:          [{ id: 'UC5NOEUbkLheQcaaRldYW5GA', name: 'tagesschau' }],
+        culture:       [{ id: 'UCMIgOXM2JEQ2Pv2d0_PVfcg', name: 'DW Deutsch' }],
+        entertainment: [{ id: 'UC_EnhVnNQpPGLHIiGB0oSig', name: 'ZDF' }],
+        sports:        [{ id: 'UCGBg1R2KSfFRrVSWxcoF2Nw', name: 'Bundesliga' }],
+    },
+    es: {
+        news:          [{ id: 'UCf5u4MhbjLAk3iGiqhv2LPg', name: 'RTVE Noticias' }],
+        culture:       [{ id: 'UCT2VGk-S_PM1Y1Y-1MUgodw', name: 'DW Español' }],
+        entertainment: [{ id: 'UCup00HgCUk7Xv-5eorIHJ1g', name: 'Atresmedia' }],
+        sports:        [{ id: 'UCshmOm7GR3VU0QTBX5Sb5Bw', name: 'LaLiga' }],
+    },
+    vi: {
+        news:          [{ id: 'UCR1TJPMhmGsmM4JbFz86XxA', name: 'VTV24' }],
+        culture:       [{ id: 'UCuFGhMEokJbiyF9rUKJFMLQ', name: 'VTV Giải Trí' }],
+        entertainment: [{ id: 'UCruaM4824Rr_ry7fsD5Jwag', name: 'THVL Giải Trí' }],
+        sports:        [{ id: 'UCVVkGFg3XsMnUvs6GQKCD9A', name: 'VTV Thể Thao' }],
+    },
 };
 
-// 주 URL이 실패했을 때 사용하는 검증된 대체 RSS 피드
-const VOA_FALLBACK = 'https://learningenglish.voanews.com/api/zmmpql-vomx-tpey-_q';
-
-// 메모리 캐시 — 당일 자정까지 유지 (매일 새 10개 선택 보장)
-const voaCache = new Map();
-
-function getCached(key) {
-    const entry = voaCache.get(key);
-    if (!entry) return null;
-    // 캐시된 날짜(YYYYMMDD)가 오늘과 다르면 무효
-    if (entry.dateSeed !== getDailySeed()) { voaCache.delete(key); return null; }
-    return entry.data;
+// UC → UU 변환 (채널 업로드 재생목록)
+function channelToUploads(channelId) {
+    return channelId.startsWith('UC') ? 'UU' + channelId.slice(2) : channelId;
 }
 
-const isImageUrl = (url) => !!(url && (/\.(jpe?g|png|webp|gif)/i.test(url) || url.includes('gdb.voanews.com')));
-
-// 날짜 기반 시드 LCG 랜덤 — 하루 동안 동일한 순서, 매일 다른 10개 선택
-function seededShuffle(arr, seed) {
-    const a = [...arr];
-    let s = seed;
-    for (let i = a.length - 1; i > 0; i--) {
-        s = (s * 1664525 + 1013904223) & 0xffffffff;
-        const j = Math.abs(s) % (i + 1);
-        [a[i], a[j]] = [a[j], a[i]];
-    }
-    return a;
-}
+// 메모리 캐시 — 당일 자정까지 유지
+const videoCache = new Map();
 
 function getDailySeed() {
     const d = new Date();
-    // YYYYMMDD 형태의 정수를 시드로 사용
     return d.getUTCFullYear() * 10000 + (d.getUTCMonth() + 1) * 100 + d.getUTCDate();
 }
 
-// GET /api/voa-news?category=intermediate
-app.get('/api/voa-news', async (req, res) => {
-    const category = VOA_FEEDS[req.query.category] ? req.query.category : 'intermediate';
-    const cacheKey = `news:${category}`;
-    const cached = getCached(cacheKey);
-    if (cached) return res.json(cached);
+function getVideoCached(key) {
+    const entry = videoCache.get(key);
+    if (!entry) return null;
+    if (entry.dateSeed !== getDailySeed()) { videoCache.delete(key); return null; }
+    return entry.data;
+}
 
-    try {
-        let feedUrl = VOA_FEEDS[category];
-        let feed;
-        try {
-            feed = await rssParser.parseURL(feedUrl);
-        } catch (primaryErr) {
-            // 카테고리별 피드 실패 시 메인 피드로 fallback
-            console.warn(`[VOA] Primary feed failed (${feedUrl}): ${primaryErr.message} — trying fallback`);
-            feed = await rssParser.parseURL(VOA_FALLBACK);
-        }
-        const rawArticles = (feed.items || []).map(item => {
-            const encUrl = item.enclosure?.url || '';
-            return {
-                id: encodeURIComponent(item.link || item.guid || item.title),
-                title: item.title || '',
-                summary: item.contentSnippet || item.summary || '',
-                articleUrl: item.link || '',
-                imageUrl: isImageUrl(encUrl) ? encUrl : '',
-                audioUrl: encUrl && !isImageUrl(encUrl) ? encUrl : '',
-            };
-        });
+// GET /api/video-feed?lang=en&category=news
+app.get('/api/video-feed', async (req, res) => {
+    const lang = req.query.lang || 'en';
+    const category = req.query.category || 'news';
 
-        // 프로그램 로고(반복 이미지)를 가진 항목 제거 — 동일 이미지 URL이 3회 이상이면 오디오 전용 프로그램으로 판단
-        const imgFreq = {};
-        rawArticles.forEach(a => { if (a.imageUrl) imgFreq[a.imageUrl] = (imgFreq[a.imageUrl] || 0) + 1; });
-        const pool = rawArticles.filter(a => !a.imageUrl || imgFreq[a.imageUrl] < 3);
-
-        // 날짜+카테고리 기반 시드로 매일 다른 10개 선택
-        const seed = getDailySeed() + category.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-        const articles = seededShuffle(pool, seed).slice(0, 10);
-
-        const result = { articles };
-        voaCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
-        res.json(result);
-    } catch (err) {
-        console.error('[VOA] Feed fetch error:', err.message);
-        res.status(502).json({ error: 'Failed to fetch VOA feed', details: err.message });
+    const channels = CURATED_CHANNELS[lang]?.[category];
+    if (!channels?.length) {
+        return res.status(400).json({ error: `No channels for lang=${lang}, category=${category}` });
     }
-});
+    if (!YOUTUBE_API_KEY) {
+        return res.status(500).json({ error: 'YOUTUBE_API_KEY not configured' });
+    }
 
-// GET /api/voa-article?url=<encodedUrl>
-app.get('/api/voa-article', async (req, res) => {
-    const articleUrl = req.query.url;
-    if (!articleUrl) return res.status(400).json({ error: 'Missing url parameter' });
-
-    const cacheKey = `article:${articleUrl}`;
-    const cached = getCached(cacheKey);
+    const cacheKey = `video:${lang}:${category}`;
+    const cached = getVideoCached(cacheKey);
     if (cached) return res.json(cached);
 
     try {
-        const response = await axios.get(articleUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0' },
-            timeout: 10000,
-        });
-        const root = parseHtml(response.data);
+        // 각 채널의 uploads 재생목록에서 최신 영상 가져오기 (1 unit/요청)
+        const allVideos = [];
+        for (const ch of channels) {
+            try {
+                const playlistId = channelToUploads(ch.id);
+                const { data } = await axios.get('https://www.googleapis.com/youtube/v3/playlistItems', {
+                    params: {
+                        part: 'snippet',
+                        playlistId,
+                        maxResults: 10,
+                        key: YOUTUBE_API_KEY,
+                    },
+                    timeout: 10000,
+                });
+                const items = (data.items || []).map(item => ({
+                    id: item.snippet.resourceId.videoId,
+                    videoId: item.snippet.resourceId.videoId,
+                    title: item.snippet.title,
+                    thumbnail: item.snippet.thumbnails?.medium?.url
+                        || item.snippet.thumbnails?.default?.url
+                        || `https://i.ytimg.com/vi/${item.snippet.resourceId.videoId}/mqdefault.jpg`,
+                    channelTitle: ch.name,
+                    publishedAt: item.snippet.publishedAt,
+                }));
+                allVideos.push(...items);
+            } catch (chErr) {
+                console.warn(`[VideoFeed] Channel ${ch.name} (${ch.id}) failed:`, chErr.message);
+            }
+        }
 
-        // VOA 기사 본문 선택자 (순서대로 시도)
-        const bodyEl = root.querySelector('div.article-body')
-            || root.querySelector('div.wsw')
-            || root.querySelector('div[class*="body"]')
-            || root.querySelector('article');
+        // 최신순 정렬, 최대 15개
+        allVideos.sort((a, b) => new Date(b.publishedAt) - new Date(a.publishedAt));
+        const videos = allVideos.slice(0, 15);
 
-        const title = root.querySelector('h1')?.text?.trim() || '';
-        const audioUrl = root.querySelector('audio source')?.getAttribute('src')
-            || root.querySelector('meta[property="og:audio"]')?.getAttribute('content')
-            || '';
-
-        const paragraphs = bodyEl ? bodyEl.querySelectorAll('p') : [];
-        const rawText = [...paragraphs].map(p => p.text.trim()).join(' ');
-
-        // 문장 분리: 마침표/느낌표/물음표 뒤 공백 기준
-        const sentenceRaw = rawText.split(/(?<=[.!?])\s+/);
-        const SKIP_PATTERNS = /originally appeared|subscribe to|follow us|copyright|©|visit our|for more|no media source/i;
-
-        const sentences = sentenceRaw
-            .map(s => s.replace(/\s+/g, ' ').trim())
-            .filter(s => s.length >= 15 && s.length <= 200 && !SKIP_PATTERNS.test(s))
-            .slice(0, 25)
-            .map((text, id) => ({ id, text }));
-
-        const result = { title, audioUrl, sentences };
-        voaCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
+        const result = { videos };
+        videoCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
         res.json(result);
     } catch (err) {
-        console.error('[VOA] Article fetch error:', err.message);
-        res.status(502).json({ error: 'Failed to fetch article', details: err.message });
+        console.error('[VideoFeed] Error:', err.message);
+        res.status(502).json({ error: 'Failed to fetch video feed', details: err.message });
     }
 });
 
@@ -394,20 +389,24 @@ function extractVideoId(url) {
     return null;
 }
 
-// 짧은 자막 조각 → 문장 단위 병합
-function mergeToSentences(items) {
+// 짧은 자막 조각 → 문장 단위 병합 (다국어 지원)
+function mergeToSentences(items, lang = 'en') {
     const sentences = [];
     let current = '';
     let startSec = 0;
     const SKIP = /^\[.+\]$|^♪/; // [Music], [Applause], ♪ 등 제거
+    // CJK 언어는 。！？도 문장 종결로 인식
+    const isCJK = ['ja', 'zh-CN', 'zh', 'ko'].includes(lang);
+    const sentenceEnd = isCJK ? /[.!?。！？]$/ : /[.!?]$/;
 
     for (const item of items) {
         const text = (item.text || '').replace(/\n/g, ' ').replace(/\s+/g, ' ').trim();
         if (!text || SKIP.test(text)) continue;
         if (!current) startSec = Math.round((item.offset || 0) / 1000);
-        current += (current ? ' ' : '') + text;
+        // CJK는 공백 없이 이어붙임, 나머지는 공백 구분
+        current += (current ? (isCJK ? '' : ' ') : '') + text;
 
-        if (/[.!?]$/.test(current) && current.length >= 20) {
+        if (sentenceEnd.test(current) && current.length >= (isCJK ? 10 : 20)) {
             sentences.push({ id: sentences.length, text: current, start: startSec });
             current = '';
         } else if (current.length > 220) {
@@ -415,10 +414,11 @@ function mergeToSentences(items) {
             current = '';
         }
     }
-    if (current.length >= 15) {
+    if (current.length >= (isCJK ? 8 : 15)) {
         sentences.push({ id: sentences.length, text: current, start: startSec });
     }
-    return sentences.filter(s => s.text.length >= 15 && s.text.length <= 250).slice(0, 40);
+    const minLen = isCJK ? 8 : 15;
+    return sentences.filter(s => s.text.length >= minLen && s.text.length <= 250).slice(0, 40);
 }
 
 // 브래킷 균형 탐색으로 JSON 배열 안전하게 추출
@@ -447,11 +447,11 @@ function extractJsonArray(html, marker) {
     return null;
 }
 
-// captionTracks → 실제 자막 아이템 배열
-async function fetchCaptionItems(tracks) {
-    const track = tracks.find(t => t.languageCode === 'en' && t.kind !== 'asr')
-        || tracks.find(t => t.languageCode === 'en')
-        || tracks.find(t => t.kind === 'asr')
+// captionTracks → 실제 자막 아이템 배열 (다국어 지원)
+async function fetchCaptionItems(tracks, lang = 'en') {
+    const track = tracks.find(t => t.languageCode === lang && t.kind !== 'asr')
+        || tracks.find(t => t.languageCode === lang)
+        || tracks.find(t => t.kind !== 'asr')
         || tracks[0];
     if (!track?.baseUrl) throw new Error('No usable caption track');
 
@@ -471,7 +471,7 @@ async function fetchCaptionItems(tracks) {
 }
 
 // [Method 2] InnerTube Android 클라이언트 — 봇 감지 우회에 효과적
-async function fetchTranscriptInnerTube(videoId) {
+async function fetchTranscriptInnerTube(videoId, lang = 'en') {
     const { data: player } = await axios.post(
         'https://www.youtube.com/youtubei/v1/player',
         {
@@ -501,11 +501,11 @@ async function fetchTranscriptInnerTube(videoId) {
     );
     const tracks = player?.captions?.playerCaptionsTracklistRenderer?.captionTracks;
     if (!tracks?.length) throw new Error('No captions in InnerTube response');
-    return fetchCaptionItems(tracks);
+    return fetchCaptionItems(tracks, lang);
 }
 
 // [Method 3] 웹 페이지 스크래핑 (브래킷 균형 파싱)
-async function fetchTranscriptFromPage(videoId) {
+async function fetchTranscriptFromPage(videoId, lang = 'en') {
     const { data: html } = await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
         headers: {
             'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
@@ -518,12 +518,13 @@ async function fetchTranscriptFromPage(videoId) {
     });
     const tracks = extractJsonArray(html, '"captionTracks":');
     if (!tracks?.length) throw new Error(`captionTracks not found (html ${html.length} chars)`);
-    return fetchCaptionItems(tracks);
+    return fetchCaptionItems(tracks, lang);
 }
 
-// GET /api/youtube-transcript?url=<encodedYouTubeUrl>
+// GET /api/youtube-transcript?url=<encodedYouTubeUrl>&lang=en
 app.get('/api/youtube-transcript', async (req, res) => {
     const url = req.query.url;
+    const lang = req.query.lang || 'en';
     if (!url) return res.status(400).json({ error: 'Missing url parameter' });
 
     const videoId = extractVideoId(url);
@@ -532,10 +533,10 @@ app.get('/api/youtube-transcript', async (req, res) => {
     const errors = [];
     let rawItems = null;
 
-    // Method 1a: youtube-transcript 패키지 (영어 지정)
+    // Method 1a: youtube-transcript 패키지 (지정 언어)
     try {
-        rawItems = await YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' });
-        console.log(`[YT] M1a OK (${rawItems.length})`);
+        rawItems = await YoutubeTranscript.fetchTranscript(videoId, { lang });
+        console.log(`[YT] M1a OK lang=${lang} (${rawItems.length})`);
     } catch (e1) {
         errors.push(`m1a: ${e1.message}`);
         // Method 1b: 언어 무관
@@ -546,13 +547,13 @@ app.get('/api/youtube-transcript', async (req, res) => {
             errors.push(`m1b: ${e2.message}`);
             // Method 2: InnerTube Android API
             try {
-                rawItems = await fetchTranscriptInnerTube(videoId);
+                rawItems = await fetchTranscriptInnerTube(videoId, lang);
                 console.log(`[YT] M2-InnerTube OK (${rawItems.length})`);
             } catch (e3) {
                 errors.push(`m2: ${e3.message}`);
                 // Method 3: 페이지 스크래핑
                 try {
-                    rawItems = await fetchTranscriptFromPage(videoId);
+                    rawItems = await fetchTranscriptFromPage(videoId, lang);
                     console.log(`[YT] M3-Scrape OK (${rawItems.length})`);
                 } catch (e4) {
                     errors.push(`m3: ${e4.message}`);
@@ -566,56 +567,11 @@ app.get('/api/youtube-transcript', async (req, res) => {
         return res.status(502).json({ error: 'Failed to fetch transcript', details: errors.join(' | ') });
     }
 
-    const sentences = mergeToSentences(rawItems);
+    const sentences = mergeToSentences(rawItems, lang);
     if (!sentences.length) {
         return res.status(404).json({ error: 'No captions found for this video' });
     }
     res.json({ videoId, sentences });
-});
-
-// ─────────────────────────────────────────────────────
-// TED 채널 최신 영상 목록 API  (일 1회 캐시)
-// ─────────────────────────────────────────────────────
-// TED YouTube 채널 ID (youtube.com/@TED)
-const TED_CHANNEL_ID = 'UCsooa4yRKGN_zEE8iknghZA';
-const TED_FEED_URL = `https://www.youtube.com/feeds/videos.xml?channel_id=${TED_CHANNEL_ID}`;
-const tedCache = new Map();
-
-const rssParserYT = new RssParser({
-    customFields: { item: [['yt:videoId', 'videoId'], ['media:group', 'mediaGroup']] },
-    timeout: 10000,
-});
-
-// GET /api/ted-videos
-app.get('/api/ted-videos', async (req, res) => {
-    const cacheKey = 'ted:videos';
-    const cached = tedCache.get(cacheKey);
-    if (cached && cached.dateSeed === getDailySeed()) {
-        return res.json(cached.data);
-    }
-
-    try {
-        const feed = await rssParserYT.parseURL(TED_FEED_URL);
-        const videos = (feed.items || []).map(item => {
-            const vid = item.videoId || extractVideoId(item.link || '');
-            if (!vid) return null;
-            return {
-                id: vid,
-                title: item.title || '',
-                videoId: vid,
-                url: `https://www.youtube.com/watch?v=${vid}`,
-                thumbnail: `https://i.ytimg.com/vi/${vid}/mqdefault.jpg`,
-                pubDate: item.pubDate || item.isoDate || '',
-            };
-        }).filter(Boolean);
-
-        const result = { videos };
-        tedCache.set(cacheKey, { data: result, dateSeed: getDailySeed() });
-        res.json(result);
-    } catch (err) {
-        console.error('[TED] Feed fetch error:', err.message);
-        res.status(502).json({ error: 'Failed to fetch TED channel', details: err.message });
-    }
 });
 
 /**

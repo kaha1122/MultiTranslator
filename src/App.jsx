@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Newspaper, Youtube, Volume2 } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -28,8 +28,7 @@ import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이�
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
-import VoaReader from './components/VoaReader';
-import TedReader from './components/TedReader';
+import VideoReader from './components/VideoReader';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
@@ -248,7 +247,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['scene', 'translation', 'library', 'voa', 'ted', 'settings'];
+  const TAB_ORDER = ['scene', 'translation', 'library', 'video', 'settings'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -775,77 +774,45 @@ function App() {
     }
   };
 
-  // 5. VOA 문장을 Library에 저장하는 함수
-  const saveVoaCard = async (sentenceText, articleTitle, pronunciationScore = null) => {
-    if (!user) { alert(getT(sourceLang, 'voa.loginRequired')); return; }
+  // 5. Video 탭 문장을 Library에 저장하는 함수 (다국어 지원)
+  const saveVideoCard = async (sentenceText, videoTitle, langCode, pronunciationScore = null) => {
+    if (!user) { alert(getT(sourceLang, 'video.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
       setShowTrialLimitModal(true);
       return;
     }
+    const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     try {
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
         sourceText: sentenceText,
         translatedText: sentenceText,
-        langCode: 'en',
-        language: 'English',
-        inputLang: 'en',
+        langCode,
+        language: langInfo?.name || langCode,
+        inputLang: langCode,
         inputType: 'S',
         sourceLang,
-        sourceType: 'voa',
-        articleTitle,
+        sourceType: 'youtube',
+        articleTitle: videoTitle,
         learningTip: [],
         pronunciation: '',
         pronunciationScore,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      // 목표 달성 점수로 저장된 경우 daily progress 카운트
-      const goal = languageGoals['en'] || 80;
+      const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
         if (wasNew) setShowProgressPopup(true);
       }
     } catch (error) {
-      console.error("VOA 카드 저장 오류:", error);
+      console.error("Video 카드 저장 오류:", error);
     }
   };
 
-  // 6. YouTube(TED) 문장을 Library에 저장하는 함수
-  const saveTedCard = async (sentenceText, videoUrl) => {
-    if (!user) { alert(getT(sourceLang, 'ted.loginRequired')); return; }
-    if (isTrialSavedCardLimitReached) {
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return;
-    }
-    try {
-      await addDoc(collection(db, "savedCards"), {
-        userId: user.uid,
-        userEmail: user.email,
-        sourceText: sentenceText,
-        translatedText: sentenceText,
-        langCode: 'en',
-        language: 'English',
-        inputLang: 'en',
-        inputType: 'S',
-        sourceLang,
-        sourceType: 'youtube',
-        articleTitle: videoUrl,
-        learningTip: [],
-        pronunciation: '',
-        pronunciationScore: null,
-        createdAt: serverTimestamp(),
-      });
-      incrementSavedCard();
-    } catch (error) {
-      console.error("YouTube 카드 저장 오류:", error);
-    }
-  };
-
-  // 7. Scene 카드를 Library에 저장하는 함수
+  // 6. Scene 카드를 Library에 저장하는 함수
   const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip, pronunciationScore = null }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
@@ -1055,16 +1022,10 @@ function App() {
                 {getT(sourceLang, 'nav.library')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'voa' ? 'active' : ''}`}
-                onClick={() => { setViewMode('voa'); setSidebarOpen(false); }}>
-                <span className="sidebar-nav-icon"><Newspaper size={16} /></span>
-                {getT(sourceLang, 'nav.voa')}
-              </button>
-
-              <button className={`sidebar-nav-item ${viewMode === 'ted' ? 'active' : ''}`}
-                onClick={() => { setViewMode('ted'); setSidebarOpen(false); }}>
+              <button className={`sidebar-nav-item ${viewMode === 'video' ? 'active' : ''}`}
+                onClick={() => { setViewMode('video'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Youtube size={16} /></span>
-                {getT(sourceLang, 'nav.ted')}
+                {getT(sourceLang, 'nav.video')}
               </button>
 
               {/* Q&A 서브메뉴 */}
@@ -1142,8 +1103,7 @@ function App() {
             const TAB_CONTEXT = {
               scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
               translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
-              voa:         { icon: '📰', text: getT(sourceLang, 'tabTag.voa') },
-              ted:         { icon: '🎬', text: getT(sourceLang, 'tabTag.ted') },
+              video:       { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
               library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
               settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
             };
@@ -1313,26 +1273,15 @@ function App() {
           </>
         </div>
 
-        {/* VOA 탭 — 항상 마운트 유지 (탭 전환 시 기사 재로딩 방지) */}
-        <div style={{ display: viewMode === 'voa' ? 'block' : 'none', width: '100%' }}>
-          <VoaReader
+        {/* Video 탭 — 다국어 YouTube 동영상 학습 */}
+        <div style={{ display: viewMode === 'video' ? 'block' : 'none', width: '100%', height: '100%' }}>
+          <VideoReader
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onSaveToLibrary={saveVoaCard}
+            onSaveToLibrary={saveVideoCard}
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
           />
-        </div>
-
-        {/* YouTube(TED) 탭 */}
-        <div style={{ display: viewMode === 'ted' ? 'block' : 'none', width: '100%', height: '100%' }}>
-          <TedReader
-            sourceLang={sourceLang}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onSaveToLibrary={saveTedCard}
-          />
-          {/* 광고: TED 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
-          <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Scene 탭 */}

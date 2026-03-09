@@ -98,33 +98,23 @@
     "loginRequired": "로그인이 필요합니다.",
     "customPlaceholder": "장소나 상황을 직접 입력하세요"
   },
-  "ted": {
-    "tabTitle": "YouTube",
-    "placeholder": "YouTube URL을 붙여넣기 하세요",
-    "loadBtn": "재생",
-    "loadingVideos": "TED 최신 영상을 불러오는 중...",
-    "videosError": "TED 영상 목록을 불러올 수 없습니다.",
-    "sectionTitle": "TED 최신 강연",
-    "watchHint": "YouTube CC 버튼(자막)을 켜면 영어 자막이 표시됩니다. 영상을 들으며 발음과 표현을 익혀보세요."
-  },
-  "voa": {
-    "tabTitle": "VOA 뉴스",
-    "loading": "기사를 불러오는 중...",
-    "loadError": "기사를 불러올 수 없습니다. 다시 시도해 주세요.",
-    "articleLoading": "기사 내용을 분석 중...",
-    "articleLoadError": "기사를 불러올 수 없습니다. 다시 시도해 주세요.",
-    "selectPrompt": "기사를 선택하면 문장별 발음 연습을 시작할 수 있습니다 🎙️",
+  "video": {
+    "tabTitle": "동영상",
+    "loading": "영상을 불러오는 중...",
+    "loadError": "영상을 불러올 수 없습니다. 다시 시도해 주세요.",
+    "transcriptLoading": "자막을 불러오는 중...",
+    "transcriptError": "이 영상의 자막을 불러올 수 없습니다.",
+    "noTranscript": "이 영상에는 자막이 없습니다.",
     "practicePrompt": "문장을 탭하여 발음 연습을 시작하세요",
-    "playAudio": "기사 전체 듣기",
-    "openArticle": "기사 열기",
-    "practiceBtn": "발음 연습",
     "saveToLibrary": "Library에 저장",
     "savedToLibrary": "저장됨 ✅",
     "loginRequired": "로그인이 필요합니다.",
+    "pronUnsupported": "이 언어는 발음 연습을 지원하지 않습니다",
     "categories": {
-      "beginner": "입문",
-      "intermediate": "중급",
-      "advanced": "고급"
+      "news": "뉴스",
+      "culture": "문화",
+      "entertainment": "예능",
+      "sports": "스포츠"
     }
   },
   "upgrade": {
@@ -169,8 +159,7 @@
   "tabTag": {
     "scene": "실전 상황을 골라 AI와 대화를 연습하세요",
     "translation": "단어·문장을 번역하고 발음을 연습하세요",
-    "voa": "VOA 영어 뉴스로 실전 발음을 훈련하세요",
-    "ted": "영상을 보며 자연스러운 영어를 익히세요",
+    "video": "동영상을 보며 다국어 발음을 연습하세요",
     "library": "저장된 카드를 복습하고 메모도 달아보세요",
     "settings": "학습 언어와 API 환경을 설정하세요"
   },
@@ -178,8 +167,7 @@
     "scene": "장소별 / 상황별",
     "translation": "사전",
     "library": "단어장",
-    "voa": "Voice of America",
-    "ted": "YouTube (TED)",
+    "video": "동영상",
     "qa": "Q&A",
     "qaUsage": "앱 활용법",
     "qaApiTip": "API 설정 Tip",
