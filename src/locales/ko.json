@@ -315,6 +315,7 @@
     "library": "단어장",
     "vocab": "단어",
     "video": "동영상",
+    "stats": "통계",
     "qa": "Q&A",
     "qaUsage": "앱 활용법",
     "qaApiTip": "API 설정 Tip",
@@ -322,6 +323,14 @@
     "terms": "이용약관",
     "contact": "연락처",
     "settings": "설정"
+  },
+  "stats": {
+    "weekRate": "주간 달성률",
+    "monthDays": "월간 달성일",
+    "monthRate": "월간 달성률",
+    "achieved": "달성",
+    "partial": "미달성",
+    "noActivity": "활동 없음"
   },
   "landing": {
     "login": "로그인",

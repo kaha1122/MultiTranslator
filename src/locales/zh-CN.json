@@ -315,6 +315,7 @@
     "library": "词库",
     "vocab": "词汇",
     "video": "视频",
+    "stats": "统计",
     "qa": "问答",
     "qaUsage": "使用指南",
     "qaApiTip": "API 设置技巧",
@@ -322,6 +323,14 @@
     "terms": "服务条款",
     "contact": "联系我们",
     "settings": "设置"
+  },
+  "stats": {
+    "weekRate": "周达成率",
+    "monthDays": "月达成天数",
+    "monthRate": "月达成率",
+    "achieved": "已达成",
+    "partial": "未达成",
+    "noActivity": "无活动"
   },
   "landing": {
     "login": "登录",

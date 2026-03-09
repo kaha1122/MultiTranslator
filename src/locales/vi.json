@@ -315,6 +315,7 @@
     "library": "Thư viện",
     "vocab": "Từ vựng",
     "video": "Video",
+    "stats": "Thống kê",
     "qa": "Hỏi & Đáp",
     "qaUsage": "Hướng dẫn sử dụng",
     "qaApiTip": "Mẹo cài đặt API",
@@ -322,6 +323,14 @@
     "terms": "Điều khoản dịch vụ",
     "contact": "Liên hệ",
     "settings": "Cài đặt"
+  },
+  "stats": {
+    "weekRate": "Tỷ lệ tuần",
+    "monthDays": "Ngày đạt/tháng",
+    "monthRate": "Tỷ lệ tháng",
+    "achieved": "Đạt",
+    "partial": "Chưa đạt",
+    "noActivity": "Không hoạt động"
   },
   "landing": {
     "login": "Đăng nhập",

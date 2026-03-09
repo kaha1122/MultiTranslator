@@ -315,6 +315,7 @@
     "library": "Biblioteca",
     "vocab": "Vocabulario",
     "video": "Video",
+    "stats": "Estadísticas",
     "qa": "Preguntas frecuentes",
     "qaUsage": "Guía de uso",
     "qaApiTip": "Consejos de API",
@@ -322,6 +323,14 @@
     "terms": "Términos de servicio",
     "contact": "Contacto",
     "settings": "Configuración"
+  },
+  "stats": {
+    "weekRate": "Tasa semanal",
+    "monthDays": "Días del mes",
+    "monthRate": "Tasa mensual",
+    "achieved": "Logrado",
+    "partial": "Parcial",
+    "noActivity": "Sin actividad"
   },
   "landing": {
     "login": "Iniciar sesión",

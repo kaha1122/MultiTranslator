@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -32,6 +32,7 @@ import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
+import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import AppGuide from './components/AppGuide';
@@ -974,6 +975,7 @@ function App() {
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} />;
+  if (viewMode === 'stats') return <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} onBack={() => setViewMode('scene')} />;
 
 
   // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
@@ -1080,6 +1082,15 @@ function App() {
                 onClick={() => { setViewMode('video'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Youtube size={16} /></span>
                 {getT(sourceLang, 'nav.video')}
+              </button>
+
+              <div className="sidebar-divider" />
+
+              {/* 통계 */}
+              <button className={`sidebar-nav-item ${viewMode === 'stats' ? 'active' : ''}`}
+                onClick={() => { setViewMode('stats'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><BarChart3 size={16} /></span>
+                {getT(sourceLang, 'nav.stats')}
               </button>
 
               {/* Q&A 서브메뉴 */}

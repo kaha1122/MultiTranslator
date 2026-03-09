@@ -315,6 +315,7 @@
     "library": "単語帳",
     "vocab": "単語",
     "video": "動画",
+    "stats": "統計",
     "qa": "Q&A",
     "qaUsage": "アプリの使い方",
     "qaApiTip": "APIの設定ヒント",
@@ -322,6 +323,14 @@
     "terms": "利用規約",
     "contact": "お問い合わせ",
     "settings": "設定"
+  },
+  "stats": {
+    "weekRate": "週間達成率",
+    "monthDays": "月間達成日",
+    "monthRate": "月間達成率",
+    "achieved": "達成",
+    "partial": "未達成",
+    "noActivity": "活動なし"
   },
   "landing": {
     "login": "ログイン",

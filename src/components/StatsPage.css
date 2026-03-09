@@ -1,0 +1,200 @@
+/* ============================================================
+   StatsPage — 통계 페이지
+   ============================================================ */
+.stats-page {
+  padding: 0 1rem 2rem;
+  animation: fadeIn 0.3s ease;
+}
+
+.stats-loading {
+  display: flex;
+  justify-content: center;
+  padding: 4rem;
+  color: #6366f1;
+  font-weight: 700;
+}
+
+/* ── 헤더 ── */
+.stats-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0 16px;
+}
+
+.stats-back-btn {
+  background: none;
+  border: none;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+}
+
+.stats-title {
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0;
+}
+
+/* ── 요약 카드 ── */
+.stats-summary {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.stats-card {
+  flex: 1;
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 14px;
+  padding: 14px 8px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stats-card-num {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #6366f1;
+  line-height: 1.1;
+}
+
+.stats-card-num small {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+.stats-card-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+}
+
+/* ── 캘린더 박스 ── */
+.stats-cal-box {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.stats-cal-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.stats-cal-arrow {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 10px;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+
+.stats-cal-arrow:active {
+  background: #f1f5f9;
+}
+
+.stats-cal-month {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #1e293b;
+}
+
+/* ── 캘린더 그리드 ── */
+.stats-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+}
+
+.stats-cal-header {
+  margin-bottom: 4px;
+}
+
+.stats-cal-day-label {
+  text-align: center;
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #94a3b8;
+  text-transform: uppercase;
+  padding: 4px 0;
+}
+
+/* ── 캘린더 셀 ── */
+.stats-cal-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 0;
+  border-radius: 8px;
+  min-height: 40px;
+  transition: background 0.15s;
+}
+
+.stats-cal-cell.empty {
+  min-height: 0;
+}
+
+.stats-cal-cell.today {
+  background: #eef2ff;
+  border: 1.5px solid #c7d2fe;
+}
+
+.stats-cal-cell.future {
+  opacity: 0.3;
+}
+
+.stats-cal-cell.achieved {
+  background: #ecfdf5;
+}
+
+.stats-cal-cell.partial {
+  background: #fefce8;
+}
+
+.stats-cal-num {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #475569;
+  line-height: 1;
+}
+
+.stats-cal-cell.today .stats-cal-num {
+  color: #6366f1;
+  font-weight: 800;
+}
+
+.stats-cal-icon {
+  font-size: 0.75rem;
+  line-height: 1;
+  margin-top: 2px;
+}
+
+/* ── 범례 ── */
+.stats-legend {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  padding: 8px 0;
+}
+
+.stats-legend-item {
+  font-size: 0.7rem;
+  color: #64748b;
+  font-weight: 600;
+}
