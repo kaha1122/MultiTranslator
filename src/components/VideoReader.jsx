@@ -123,10 +123,10 @@ export default function VideoReader({
         window.history.back();
     };
 
-    // 메모를 번역 탭으로 전송 (자동 번역 포함)
+    // 메모를 번역 탭으로 전송 (자동 번역 포함, 영상 언어도 전달)
     const handleSendToTranslation = () => {
         if (!memo.trim()) return;
-        onSendToTranslation?.(memo.trim());
+        onSendToTranslation?.(memo.trim(), targetLang);
     };
 
     const cc = CATEGORY_COLORS[category] || CATEGORY_COLORS.news;

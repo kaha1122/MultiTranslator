@@ -1291,8 +1291,9 @@ function App() {
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
             targetLangs={targetLangs}
-            onSendToTranslation={(text) => {
+            onSendToTranslation={(text, langCode) => {
               setInputText(text);
+              setInputLang(langCode);
               pendingTranslateRef.current = true;
               setViewMode('translation');
             }}
