@@ -110,6 +110,8 @@
     "savedToLibrary": "已保存 ✅",
     "loginRequired": "请先登录。",
     "pronUnsupported": "此语言不支持发音练习",
+    "memoPlaceholder": "观看视频时记录笔记...\n点击下方按钮可翻译笔记。",
+    "sendToTranslation": "翻译笔记",
     "categories": {
       "news": "新闻",
       "culture": "文化",

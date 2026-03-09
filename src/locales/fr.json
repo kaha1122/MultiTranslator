@@ -110,6 +110,8 @@
     "savedToLibrary": "Enregistré ✅",
     "loginRequired": "Connexion requise.",
     "pronUnsupported": "La pratique de la prononciation n'est pas disponible pour cette langue",
+    "memoPlaceholder": "Prenez des notes en regardant la vidéo...\nAppuyez sur le bouton ci-dessous pour traduire vos notes.",
+    "sendToTranslation": "Traduire les notes",
     "categories": {
       "news": "Actualités",
       "culture": "Culture",

@@ -1,9 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Award, ChevronLeft, Mic, MicOff, RotateCcw, Star, AlertCircle, ExternalLink } from 'lucide-react';
-import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
 import { useT } from '../utils/i18n';
-import { playStarSound } from '../utils/soundEffects';
-import PronunciationAssessment from './PronunciationAssessment';
 import './VideoReader.css';
 import AdBanner from './AdBanner';
 
@@ -26,98 +23,6 @@ const CATEGORY_COLORS = {
     sports:        { bg: '#dcfce7', text: '#166534', border: '#16a34a', dot: '#22c55e' },
 };
 
-// Azure 발음 평가 지원 언어 (vi는 미지원)
-const PRON_SUPPORTED = new Set(['en', 'ja', 'ko', 'zh-CN', 'fr', 'de', 'es']);
-
-/**
- * SentencePracticeCard — 문장별 발음 연습 (VOA 패턴 재활용, langCode 동적)
- */
-function SentencePracticeCard({ sentence, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, t, onBookmarkPrompt, targetGoal = 80 }) {
-    const pronSupported = PRON_SUPPORTED.has(langCode);
-    const {
-        isRecording, isAnalyzing, assessmentResult, coachTip,
-        startRecording, stopRecording, errorMsg,
-    } = useAudioRecorder(
-        pronSupported ? sentence.text : '',
-        pronSupported ? langCode : 'en',
-        sourceLang,
-        onTrialLimitReached
-    );
-
-    // 발음 점수가 목표에 도달하면 북마크 유도 팝업
-    const prevAnalyzing = useRef(isAnalyzing);
-    useEffect(() => {
-        if (prevAnalyzing.current && !isAnalyzing && assessmentResult) {
-            const score = assessmentResult.pronunciationScore || 0;
-            if (score >= targetGoal && !isSaved) {
-                onBookmarkPrompt?.(score, () => onSave(score));
-            }
-        }
-        prevAnalyzing.current = isAnalyzing;
-    }, [isAnalyzing, assessmentResult]); // eslint-disable-line react-hooks/exhaustive-deps
-
-    return (
-        <div className="vid-sentence-practice">
-            {assessmentResult && (
-                <>
-                    <div className="score-badge">
-                        <Award size={12} /> {assessmentResult.pronunciationScore}Pt
-                    </div>
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
-                </>
-            )}
-
-            {coachTip && (
-                <div className="vid-coach-tip">💡 {coachTip}</div>
-            )}
-
-            <div className="vid-practice-actions">
-                <div className="vid-practice-left">
-                    {isRecording && (
-                        <p className="vid-recording-status">{t('card.recording')}</p>
-                    )}
-                    {isAnalyzing && (
-                        <p className="vid-analyzing-status">{t('card.analyzing')}</p>
-                    )}
-                    {pronSupported ? (
-                        <button
-                            className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-                            onClick={() => isRecording ? stopRecording() : startRecording()}
-                            disabled={isAnalyzing}
-                            title="Practice pronunciation"
-                        >
-                            {isAnalyzing
-                                ? <RotateCcw size={20} className="spin" />
-                                : isRecording
-                                    ? <MicOff size={20} />
-                                    : <Mic size={20} />
-                            }
-                        </button>
-                    ) : (
-                        <p className="vid-pron-unsupported">{t('video.pronUnsupported')}</p>
-                    )}
-                </div>
-
-                <button
-                    className={`vid-bookmark-btn ${isSaved ? 'saved' : ''}`}
-                    onClick={() => { playStarSound(); onSave(assessmentResult?.pronunciationScore ?? null); }}
-                    disabled={isSaved}
-                    title={isSaved ? t('video.savedToLibrary') : t('video.saveToLibrary')}
-                >
-                    <Star size={26} color={isSaved ? '#facc15' : '#94a3b8'} fill={isSaved ? '#facc15' : 'none'} />
-                </button>
-            </div>
-
-            {errorMsg && (
-                <p className="vid-error-msg"><AlertCircle size={14} /> {errorMsg}</p>
-            )}
-        </div>
-    );
-}
-
-/**
- * VideoReader — 다국어 YouTube 동영상 학습 탭
- */
 const SUPPORTED_LANGUAGES = [
     { code: 'en', name: 'English' },
     { code: 'ja', name: '日本語' },
@@ -129,22 +34,34 @@ const SUPPORTED_LANGUAGES = [
     { code: 'vi', name: 'Tiếng Việt' },
 ];
 
-export default function VideoReader({ sourceLang, onTrialLimitReached, onSaveToLibrary, onBookmarkPrompt, languageGoals = {} }) {
+/**
+ * VideoReader — 다국어 YouTube 동영상 학습 탭
+ *
+ * [2026-03-09] 자막/transcript 기능 제거 결정:
+ * YouTube는 서버 IP(Render 등 클라우드)에서의 자막 크롤링을 봇 감지로 차단함.
+ * youtubei.js, youtube-transcript 등 모든 npm 패키지가 서버 환경에서 작동 불가.
+ * YouTube Data API captions.download는 OAuth 필요(영상 소유자만 가능).
+ * 앱 안정성을 위해 자막 기능 대신 메모 → 번역 탭 연동으로 대체.
+ */
+export default function VideoReader({
+    sourceLang, onTrialLimitReached, onSaveToLibrary, onBookmarkPrompt,
+    languageGoals = {}, targetLangs = [], setViewMode, setInputText,
+}) {
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
 
-    const [targetLang, setTargetLang] = useState('en');
+    // Settings의 targetLangs 첫 번째 값으로 초기화, 없으면 'en'
+    const [targetLang, setTargetLang] = useState(() => {
+        if (targetLangs.length > 0) return targetLangs[0];
+        return 'en';
+    });
     const [category, setCategory]     = useState('news');
     const [videos, setVideos]         = useState([]);
     const [loadingVideos, setLoadingVideos] = useState(true);
     const [videosError, setVideosError]     = useState('');
 
-    const [selected, setSelected]           = useState(null);
-    const [sentences, setSentences]         = useState([]);
-    const [loadingSentences, setLoadingSentences] = useState(false);
-    const [sentenceError, setSentenceError] = useState('');
-    const [expandedIdx, setExpandedIdx]     = useState(null);
-    const [savedSet, setSavedSet]           = useState(new Set());
+    const [selected, setSelected]     = useState(null);
+    const [memo, setMemo]             = useState('');
 
     const selectedRef = useRef(null);
 
@@ -154,8 +71,6 @@ export default function VideoReader({ sourceLang, onTrialLimitReached, onSaveToL
         setVideosError('');
         setSelected(null);
         selectedRef.current = null;
-        setSentences([]);
-        setExpandedIdx(null);
         try {
             const res = await fetch(`${SERVER_URL}/api/video-feed?lang=${lang}&category=${cat}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -176,47 +91,31 @@ export default function VideoReader({ sourceLang, onTrialLimitReached, onSaveToL
             if (selectedRef.current) {
                 selectedRef.current = null;
                 setSelected(null);
-                setSentences([]);
             }
         };
         window.addEventListener('popstate', handlePop);
         return () => window.removeEventListener('popstate', handlePop);
     }, []);
 
-    // 영상 선택 → 자막 로드
-    const openVideo = async (video) => {
+    // 영상 선택 → 자동 재생
+    const openVideo = (video) => {
         window.history.pushState({ video: true }, '');
         selectedRef.current = video;
         setSelected(video);
-        setSentences([]);
-        setExpandedIdx(null);
-        setSavedSet(new Set());
-        setSentenceError('');
-        setLoadingSentences(true);
-        try {
-            const url = `https://www.youtube.com/watch?v=${video.videoId}`;
-            const res = await fetch(`${SERVER_URL}/api/youtube-transcript?url=${encodeURIComponent(url)}&lang=${targetLang}`);
-            if (!res.ok) throw new Error(`HTTP ${res.status}`);
-            const data = await res.json();
-            setSentences(data.sentences || []);
-            if ((data.sentences || []).length > 0) setExpandedIdx(0);
-        } catch {
-            setSentenceError(t('video.transcriptError'));
-        } finally {
-            setLoadingSentences(false);
-        }
+        setMemo('');
     };
 
     const handleBack = () => {
         selectedRef.current = null;
         setSelected(null);
-        setSentences([]);
         window.history.back();
     };
 
-    const handleSave = async (sentence, idx, pronunciationScore = null) => {
-        await onSaveToLibrary(sentence.text, selected?.title || '', targetLang, pronunciationScore);
-        setSavedSet(prev => new Set([...prev, idx]));
+    // 메모를 번역 탭으로 전송
+    const handleSendToTranslation = () => {
+        if (!memo.trim()) return;
+        setInputText(memo.trim());
+        setViewMode('translation');
     };
 
     const cc = CATEGORY_COLORS[category] || CATEGORY_COLORS.news;
@@ -322,64 +221,37 @@ export default function VideoReader({ sourceLang, onTrialLimitReached, onSaveToL
                         </a>
                     </div>
 
-                    {/* YouTube 플레이어 */}
+                    {/* YouTube 플레이어 (autoplay) */}
                     <div className="vid-video-wrapper">
                         <iframe
                             className="vid-iframe"
-                            src={`https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0`}
+                            src={`https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0&autoplay=1`}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             allowFullScreen
                             title={selected.title || 'YouTube'}
                         />
                     </div>
 
-                    {/* 자막 문장 리스트 */}
-                    {loadingSentences && (
-                        <p className="vid-status-msg">
-                            <RotateCcw size={16} className="spin" /> {t('video.transcriptLoading')}
-                        </p>
-                    )}
-                    {sentenceError && (
-                        <p className="vid-error-msg" style={{ margin: '8px 16px' }}>
-                            <AlertCircle size={14} /> {sentenceError}
-                        </p>
-                    )}
-                    {!loadingSentences && sentences.length === 0 && !sentenceError && (
-                        <p className="vid-status-msg" style={{ color: '#94a3b8' }}>
-                            {t('video.noTranscript')}
-                        </p>
-                    )}
-
-                    <div className="vid-sentence-list">
-                        {sentences.map((sentence, idx) => (
-                            <div key={sentence.id} className="vid-sentence-item">
-                                <div
-                                    className={`vid-sentence-text ${expandedIdx === idx ? 'expanded' : ''}`}
-                                    onClick={() => setExpandedIdx(expandedIdx === idx ? null : idx)}
-                                >
-                                    <span className="vid-sentence-num">{idx + 1}</span>
-                                    <span>{sentence.text}</span>
-                                </div>
-                                {expandedIdx === idx && (
-                                    <SentencePracticeCard
-                                        sentence={sentence}
-                                        langCode={targetLang}
-                                        sourceLang={sourceLang}
-                                        onTrialLimitReached={onTrialLimitReached}
-                                        onSave={(score) => handleSave(sentence, idx, score)}
-                                        isSaved={savedSet.has(idx)}
-                                        t={t}
-                                        onBookmarkPrompt={onBookmarkPrompt}
-                                        targetGoal={languageGoals[targetLang] || 80}
-                                    />
-                                )}
-                            </div>
-                        ))}
-                        {!loadingSentences && sentences.length > 0 && (
-                            <p className="vid-select-prompt">{t('video.practicePrompt')}</p>
-                        )}
-                        <AdBanner slot="TODO" style={{ margin: '16px 0 8px' }} />
+                    {/* 메모 + 번역 전송 */}
+                    <div className="vid-memo-section">
+                        <textarea
+                            className="vid-memo-textarea"
+                            value={memo}
+                            onChange={(e) => setMemo(e.target.value)}
+                            placeholder={t('video.memoPlaceholder')}
+                            rows={6}
+                        />
+                        <button
+                            className="vid-translate-btn"
+                            onClick={handleSendToTranslation}
+                            disabled={!memo.trim()}
+                        >
+                            <Send size={18} />
+                            {t('video.sendToTranslation')}
+                        </button>
                     </div>
+
+                    <AdBanner slot="TODO" style={{ margin: '16px 16px 8px' }} />
                 </div>
             )}
         </div>

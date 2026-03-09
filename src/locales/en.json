@@ -110,6 +110,8 @@
     "savedToLibrary": "Saved ✅",
     "loginRequired": "Login required.",
     "pronUnsupported": "Pronunciation practice not available for this language",
+    "memoPlaceholder": "Take notes while watching the video...\nTap the button below to translate your notes.",
+    "sendToTranslation": "Translate Notes",
     "categories": {
       "news": "News",
       "culture": "Culture",

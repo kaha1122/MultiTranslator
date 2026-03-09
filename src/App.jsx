@@ -1281,6 +1281,9 @@ function App() {
             onSaveToLibrary={saveVideoCard}
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
+            targetLangs={targetLangs}
+            setViewMode={setViewMode}
+            setInputText={setInputText}
           />
         </div>
 

@@ -110,6 +110,8 @@
     "savedToLibrary": "Đã lưu ✅",
     "loginRequired": "Vui lòng đăng nhập.",
     "pronUnsupported": "Ngôn ngữ này không hỗ trợ luyện phát âm",
+    "memoPlaceholder": "Ghi chú trong khi xem video...\nNhấn nút bên dưới để dịch ghi chú.",
+    "sendToTranslation": "Dịch ghi chú",
     "categories": {
       "news": "Tin tức",
       "culture": "Văn hóa",

@@ -110,6 +110,8 @@
     "savedToLibrary": "保存済み ✅",
     "loginRequired": "ログインが必要です。",
     "pronUnsupported": "この言語は発音練習に対応していません",
+    "memoPlaceholder": "動画を見ながらメモを取りましょう...\n下のボタンを押してメモを翻訳できます。",
+    "sendToTranslation": "メモを翻訳",
     "categories": {
       "news": "ニュース",
       "culture": "文化",

@@ -110,6 +110,8 @@
     "savedToLibrary": "Gespeichert ✅",
     "loginRequired": "Anmeldung erforderlich.",
     "pronUnsupported": "Ausspracheübung für diese Sprache nicht verfügbar",
+    "memoPlaceholder": "Machen Sie sich Notizen beim Anschauen...\nDrücken Sie die Taste unten, um Ihre Notizen zu übersetzen.",
+    "sendToTranslation": "Notizen übersetzen",
     "categories": {
       "news": "Nachrichten",
       "culture": "Kultur",

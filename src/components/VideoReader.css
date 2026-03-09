@@ -35,9 +35,10 @@
     transition: all 0.2s;
 }
 .vid-lang-pill.active {
-    background: #1e293b;
-    border-color: #1e293b;
+    background: var(--primary-color, #00a884);
+    border-color: var(--primary-color, #00a884);
     color: white;
+    font-weight: 600;
 }
 
 /* ── 카테고리 탭 ── */
@@ -243,130 +244,58 @@
     border: none;
 }
 
-/* ── 문장 리스트 ── */
-.vid-sentence-list {
-    padding: 12px 16px 80px;
+/* ── 메모 + 번역 전송 ── */
+.vid-memo-section {
+    padding: 16px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
 }
 
-.vid-sentence-item {
-    background: white;
-    border-radius: 12px;
-    overflow: hidden;
-    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.06);
-}
-
-.vid-sentence-text {
-    display: flex;
-    align-items: flex-start;
-    gap: 10px;
+.vid-memo-textarea {
+    width: 100%;
+    min-height: 140px;
     padding: 14px 16px;
-    cursor: pointer;
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    background: white;
+    font-size: 15px;
+    line-height: 1.7;
     color: #1e293b;
-    font-size: 14px;
-    line-height: 1.6;
-    transition: background 0.15s;
+    resize: vertical;
+    outline: none;
+    transition: border-color 0.2s;
+    font-family: inherit;
+    box-sizing: border-box;
 }
-.vid-sentence-text:hover { background: #f8fafc; }
-.vid-sentence-text.expanded {
-    background: #eff6ff;
-    border-bottom: 1px solid #dbeafe;
+.vid-memo-textarea:focus {
+    border-color: var(--primary-color, #00a884);
+}
+.vid-memo-textarea::placeholder {
+    color: #94a3b8;
 }
 
-.vid-sentence-num {
-    flex-shrink: 0;
-    font-size: 11px;
-    font-weight: 700;
-    color: #3b82f6;
-    background: #eff6ff;
-    border-radius: 50%;
-    width: 22px;
-    height: 22px;
+.vid-translate-btn {
     display: flex;
     align-items: center;
     justify-content: center;
-    margin-top: 1px;
-}
-
-/* ── 발음 연습 영역 ── */
-.vid-sentence-practice {
-    padding: 14px 16px 16px;
-    background: #f8fafc;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-}
-
-.vid-practice-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 10px;
-}
-
-.vid-practice-left {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-}
-
-.vid-recording-status {
-    font-size: 13px;
-    color: #ef4444;
-    font-weight: 600;
-    margin: 0;
-    animation: vid-pulse-text 1.5s infinite;
-}
-.vid-analyzing-status {
-    font-size: 13px;
-    color: #6366f1;
-    font-weight: 600;
-    margin: 0;
-}
-@keyframes vid-pulse-text {
-    0%, 100% { opacity: 1; }
-    50%       { opacity: 0.5; }
-}
-
-.vid-pron-unsupported {
-    font-size: 12px;
-    color: #94a3b8;
-    margin: 0;
-    font-style: italic;
-}
-
-/* 북마크 버튼 */
-.vid-bookmark-btn {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
+    gap: 8px;
+    padding: 14px 20px;
+    border-radius: 14px;
     border: none;
-    background: transparent;
-    color: #94a3b8;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background: var(--primary-color, #00a884);
+    color: white;
+    font-size: 15px;
+    font-weight: 700;
     cursor: pointer;
-    transition: color 0.2s;
-    flex-shrink: 0;
-    padding: 0;
+    transition: opacity 0.2s;
 }
-.vid-bookmark-btn:hover { color: #facc15; }
-.vid-bookmark-btn.saved { color: #facc15; }
-.vid-bookmark-btn:disabled { cursor: default; }
-
-/* ── 코치 팁 ── */
-.vid-coach-tip {
-    font-size: 13px;
-    color: #1e293b;
-    background: #fffbeb;
-    border-left: 3px solid #f59e0b;
-    padding: 8px 12px;
-    border-radius: 0 8px 8px 0;
-    margin: 0;
-    line-height: 1.5;
+.vid-translate-btn:disabled {
+    opacity: 0.4;
+    cursor: default;
+}
+.vid-translate-btn:not(:disabled):hover {
+    opacity: 0.9;
 }
 
 /* ── 공통 상태 메시지 ── */
@@ -390,19 +319,4 @@
     background: #fee2e2;
     border-radius: 8px;
     margin: 0 16px;
-}
-
-.vid-select-prompt {
-    text-align: center;
-    font-size: 13px;
-    color: #94a3b8;
-    padding: 12px 16px;
-}
-
-/* ── 스피너 ── */
-.vid-spin {
-    animation: vid-spin-anim 1s linear infinite;
-}
-@keyframes vid-spin-anim {
-    to { transform: rotate(360deg); }
 }
