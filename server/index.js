@@ -542,32 +542,40 @@ async function getYtInstance() {
     return _ytInstance;
 }
 
-// [Primary] youtubei.js 로 자막 가져오기
+// [Primary] youtubei.js 로 자막 가져오기 (20초 타임아웃)
 async function fetchTranscriptYoutubei(videoId, lang = 'en') {
-    const yt = await getYtInstance();
-    const info = await yt.getInfo(videoId);
-    const tracks = info.captions?.caption_tracks;
-    if (!tracks?.length) throw new Error('No caption tracks');
+    const timeout = new Promise((_, reject) =>
+        setTimeout(() => reject(new Error('youtubei timeout (20s)')), 20000)
+    );
+    return Promise.race([timeout, (async () => {
+        const yt = await getYtInstance();
+        console.log(`[YT] getInfo(${videoId})...`);
+        const info = await yt.getInfo(videoId);
+        const tracks = info.captions?.caption_tracks;
+        console.log(`[YT] tracks: ${tracks?.length || 0}`);
+        if (!tracks?.length) throw new Error('No caption tracks');
 
-    const prefix = lang.split('-')[0];
-    const track = tracks.find(t => t.language_code === lang && t.kind !== 'asr')
-        || tracks.find(t => t.language_code === lang)
-        || tracks.find(t => t.language_code.startsWith(prefix) && t.kind !== 'asr')
-        || tracks.find(t => t.language_code.startsWith(prefix))
-        || tracks.find(t => t.kind !== 'asr')
-        || tracks[0];
-    if (!track?.base_url) throw new Error('No usable caption track');
+        const prefix = lang.split('-')[0];
+        const track = tracks.find(t => t.language_code === lang && t.kind !== 'asr')
+            || tracks.find(t => t.language_code === lang)
+            || tracks.find(t => t.language_code.startsWith(prefix) && t.kind !== 'asr')
+            || tracks.find(t => t.language_code.startsWith(prefix))
+            || tracks.find(t => t.kind !== 'asr')
+            || tracks[0];
+        if (!track?.base_url) throw new Error('No usable caption track');
 
-    const url = track.base_url + '&fmt=json3';
-    const { data } = await axios.get(url, { timeout: 10000 });
-    return (data.events || [])
-        .filter(e => e.segs)
-        .map(e => ({
-            text: e.segs.map(s => s.utf8 || '').join(''),
-            offset: e.tStartMs || 0,
-            duration: e.dDurationMs || 0,
-        }))
-        .filter(item => item.text.trim());
+        console.log(`[YT] downloading captions: ${track.language_code} ${track.kind || 'manual'}`);
+        const url = track.base_url + '&fmt=json3';
+        const { data } = await axios.get(url, { timeout: 15000 });
+        return (data.events || [])
+            .filter(e => e.segs)
+            .map(e => ({
+                text: e.segs.map(s => s.utf8 || '').join(''),
+                offset: e.tStartMs || 0,
+                duration: e.dDurationMs || 0,
+            }))
+            .filter(item => item.text.trim());
+    })()]);
 }
 
 // GET /api/youtube-transcript?url=<encodedYouTubeUrl>&lang=en
@@ -587,14 +595,18 @@ app.get('/api/youtube-transcript', async (req, res) => {
         rawItems = await fetchTranscriptYoutubei(videoId, lang);
         if (rawItems?.length) console.log(`[YT] M1-youtubei OK lang=${lang} (${rawItems.length})`);
     } catch (e1) {
-        errors.push(`m1-youtubei: ${e1.message}`);
+        const msg1 = e1?.message || String(e1);
+        console.error(`[YT] M1 failed: ${msg1}`);
+        errors.push(`m1-youtubei: ${msg1}`);
         // 인스턴스 리셋 (세션 만료 시 재생성)
         _ytInstance = null;
         try {
             rawItems = await fetchTranscriptYoutubei(videoId, lang);
-            if (rawItems?.length) console.log(`[YT] M1-youtubei-retry OK (${rawItems.length})`);
+            if (rawItems?.length) console.log(`[YT] M1-retry OK (${rawItems.length})`);
         } catch (e1b) {
-            errors.push(`m1-retry: ${e1b.message}`);
+            const msg1b = e1b?.message || String(e1b);
+            console.error(`[YT] M1-retry failed: ${msg1b}`);
+            errors.push(`m1-retry: ${msg1b}`);
         }
     }
 
