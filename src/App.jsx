@@ -33,7 +33,7 @@ import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
-import { useDailyProgress } from './hooks/useDailyProgress';
+import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
@@ -1180,28 +1180,65 @@ function App() {
           })()}
         </AnimatePresence>
 
-        {/* 미니 일일 진도 바 */}
-        {user && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px', width: '100%' }}>
-            <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
-            <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-              <div style={{
-                height: '100%', borderRadius: '99px',
-                width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                background: todayCount >= dailyGoal
-                  ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
-                  : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
-                transition: 'width 0.5s ease',
-                boxShadow: todayCount >= dailyGoal
-                  ? '0 0 6px rgba(16,185,129,0.5)'
-                  : '0 0 6px rgba(99,102,241,0.4)',
-              }} />
+        {/* 미니 일일 진도 바 + 주간 캘린더 */}
+        {user && (() => {
+          const today = getToday();
+          const dayLabels = getT(sourceLang, 'daily.days').split(',');
+          return (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', width: '100%' }}>
+              {/* 좌측: 게이지 바 */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto', width: '38%' }}>
+                <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
+                <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
+                  <div style={{
+                    height: '100%', borderRadius: '99px',
+                    width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
+                    background: todayCount >= dailyGoal
+                      ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
+                      : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
+                    transition: 'width 0.5s ease',
+                    boxShadow: todayCount >= dailyGoal
+                      ? '0 0 6px rgba(16,185,129,0.5)'
+                      : '0 0 6px rgba(99,102,241,0.4)',
+                  }} />
+                </div>
+                <span style={{ fontSize: '0.65rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                  {todayCount}/{dailyGoal}
+                </span>
+              </div>
+
+              {/* 우측: 주간 캘린더 */}
+              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', gap: '2px' }}>
+                {weeklyData.map((d, i) => {
+                  const isToday = d.date === today;
+                  const isFuture = d.date > today;
+                  let icon = '○';
+                  if (d.achieved) icon = '✅';
+                  else if (!isFuture && d.date < today) icon = '🌙';
+                  return (
+                    <div key={d.date} style={{
+                      display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1,
+                      padding: '2px 0', borderRadius: '6px',
+                      background: isToday ? '#eef2ff' : 'transparent',
+                      border: isToday ? '1px solid #c7d2fe' : '1px solid transparent',
+                      opacity: isFuture ? 0.35 : 1,
+                    }}>
+                      <span style={{ fontSize: '0.5rem', fontWeight: 700, color: isToday ? '#6366f1' : '#94a3b8', lineHeight: 1 }}>
+                        {dayLabels[i] || ''}
+                      </span>
+                      <span style={{ fontSize: '0.65rem', lineHeight: 1, marginTop: '1px' }}>{icon}</span>
+                      {!isFuture && (
+                        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: '#64748b', lineHeight: 1, marginTop: '1px' }}>
+                          {d.count || 0}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
             </div>
-            <span style={{ fontSize: '0.7rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, minWidth: '28px', textAlign: 'right' }}>
-              {todayCount}/{dailyGoal}
-            </span>
-          </div>
-        )}
+          );
+        })()}
 
         {/* 광고: 로고 아래 전체 너비 배너 — slot은 AdSense 심사 통과 후 채우세요 */}
         <AdBanner slot="TODO" style={{ width: '100%', margin: '4px 0 0' }} />
