@@ -247,9 +247,9 @@ const CURATED_CHANNELS = {
     },
     ja: {
         news:          [{ id: 'UCGCZAYq5Xxojl_tSXcVJhiQ', name: 'ANNnewsCH' }],
-        culture:       [{ id: 'UCSPEjw8F2nQDtmUKPFNF7_A', name: 'NHK WORLD-JAPAN' }],
+        culture:       [{ id: 'UCJD2Br_xC-3vY4nkJ9YPYDA', name: 'Nippon TV' }],
         entertainment: [{ id: 'UCfgQFWzaw7HfaKN-uVIf73Q', name: 'ABEMA' }],
-        sports:        [{ id: 'UCoFLB_Gw_AoxUuuzKjXrc_Q', name: 'DAZN Japan' }],
+        sports:        [{ id: 'UCWc-XpFHPK1SwGcvpFPZ8NA', name: 'Jリーグ公式' }],
     },
     ko: {
         news:          [{ id: 'UCcQTRi69dsVYHN3exePtZ1A', name: 'KBS News' }],
