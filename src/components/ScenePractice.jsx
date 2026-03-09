@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
-import { useT } from '../utils/i18n';
+import { useT, getT } from '../utils/i18n';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playStarSound } from '../utils/soundEffects';
 import { db } from '../firebase/config';
@@ -27,34 +27,32 @@ const getServerUrl = () => {
     return 'http://localhost:5000';
 };
 
-const SUPPORTED_SCENE_LANGS = ['ko','en','ja','zh-CN','vi','fr','de','es'];
-
 const SCENES = {
     locations: [
-        { id: 'airport',    icon: '✈️',  en: 'Airport & In-flight',     ko: '공항 & 기내',        ja: '空港・機内',          'zh-CN': '机场 & 航班',    vi: 'Sân bay & Máy bay',  fr: 'Aéroport & Vol',          de: 'Flughafen & Flug',         es: 'Aeropuerto & Vuelo'   },
-        { id: 'hotel',      icon: '🏨',  en: 'Hotel & Stay',            ko: '호텔 & 숙소',        ja: 'ホテル・宿泊',        'zh-CN': '酒店 & 住宿',    vi: 'Khách sạn',          fr: 'Hôtel & Hébergement',     de: 'Hotel & Unterkunft',       es: 'Hotel & Alojamiento'  },
-        { id: 'restaurant', icon: '🍽️', en: 'Restaurant & Cafe',       ko: '레스토랑 & 카페',    ja: 'レストラン & カフェ', 'zh-CN': '餐厅 & 咖啡厅',  vi: 'Nhà hàng & Cafe',    fr: 'Restaurant & Café',       de: 'Restaurant & Café',        es: 'Restaurante & Café'   },
-        { id: 'transport',  icon: '🚌',  en: 'Public Transport',        ko: '대중교통',           ja: '公共交通',            'zh-CN': '公共交通',       vi: 'Giao thông',         fr: 'Transport public',        de: 'Öffentl. Verkehr',         es: 'Transporte público'   },
-        { id: 'shopping',   icon: '🛍️', en: 'Shopping & Market',       ko: '쇼핑몰 & 마트',      ja: 'ショッピング',        'zh-CN': '购物 & 超市',    vi: 'Mua sắm',            fr: 'Shopping & Marché',       de: 'Einkaufen',                es: 'Compras & Mercado'    },
-        { id: 'hospital',   icon: '🏥',  en: 'Hospital & Pharmacy',     ko: '병원 & 약국',        ja: '病院・薬局',          'zh-CN': '医院 & 药店',    vi: 'Bệnh viện',          fr: 'Hôpital & Pharmacie',     de: 'Krankenhaus & Apotheke',   es: 'Hospital & Farmacia'  },
-        { id: 'tourist',    icon: '🗺️', en: 'Tourist Spots',           ko: '관광지',             ja: '観光地',              'zh-CN': '旅游景点',       vi: 'Du lịch',            fr: 'Sites touristiques',      de: 'Sehenswürdigkeiten',       es: 'Lugares turísticos'   },
-        { id: 'office',     icon: '💼',  en: 'Office & Work',           ko: '회사 & 사무실',      ja: 'オフィス・職場',      'zh-CN': '办公室 & 职场',  vi: 'Văn phòng',          fr: 'Bureau & Travail',        de: 'Büro & Arbeitsplatz',      es: 'Oficina & Trabajo'    },
-        { id: 'bank',       icon: '🏦',  en: 'Bank',                    ko: '은행',               ja: '銀行',                'zh-CN': '银行',           vi: 'Ngân hàng',          fr: 'Banque',                  de: 'Bank',                     es: 'Banco'                },
-        { id: 'gym',        icon: '💪',  en: 'Gym',                     ko: '피트니스 센터',      ja: 'ジム',                'zh-CN': '健身房',         vi: 'Phòng tập',          fr: 'Salle de sport',          de: 'Fitnessstudio',            es: 'Gimnasio'             },
-        { id: 'custom',     icon: '✏️',  en: 'Custom',                  ko: '직접입력',           ja: '直接入力',            'zh-CN': '自定义',         vi: 'Tùy chỉnh',          fr: 'Personnalisé',            de: 'Eigene Eingabe',           es: 'Personalizado'        },
+        { id: 'airport',    icon: '✈️' },
+        { id: 'hotel',      icon: '🏨' },
+        { id: 'restaurant', icon: '🍽️' },
+        { id: 'transport',  icon: '🚌' },
+        { id: 'shopping',   icon: '🛍️' },
+        { id: 'hospital',   icon: '🏥' },
+        { id: 'tourist',    icon: '🗺️' },
+        { id: 'office',     icon: '💼' },
+        { id: 'bank',       icon: '🏦' },
+        { id: 'gym',        icon: '💪' },
+        { id: 'custom',     icon: '✏️' },
     ],
     situations: [
-        { id: 'smalltalk',  icon: '💬',  en: 'Small Talk',              ko: '스몰토크',           ja: '世間話',              'zh-CN': '闲聊',           vi: 'Nói chuyện',         fr: 'Discussion',              de: 'Small Talk',               es: 'Conversación'         },
-        { id: 'lost',       icon: '🆘',  en: 'Lost Item',               ko: '물건 분실 & 신고',   ja: '落とし物',            'zh-CN': '失物报告',       vi: 'Đồ thất lạc',        fr: 'Objet perdu',             de: 'Fundsachen',               es: 'Objeto perdido'       },
-        { id: 'reservation',icon: '📅',  en: 'Reservation Change',      ko: '예약 변경 & 취소',   ja: '予約変更',            'zh-CN': '预约变更',       vi: 'Đặt chỗ',            fr: 'Réservation',             de: 'Reservierung',             es: 'Reserva'              },
-        { id: 'disagree',   icon: '🤝',  en: 'Negotiation',             ko: '의견 차이 조율',     ja: '意見調整',            'zh-CN': '协商分歧',       vi: 'Thương lượng',       fr: 'Négociation',             de: 'Verhandlung',              es: 'Negociación'          },
-        { id: 'problem',    icon: '🔧',  en: 'Problem Solving',         ko: '문제 해결 요청',     ja: '問題解決',            'zh-CN': '解决问题',       vi: 'Giải quyết vấn đề', fr: 'Résolution',              de: 'Problemlösung',            es: 'Resolución'           },
-        { id: 'directions', icon: '🧭',  en: 'Asking Directions',       ko: '길 찾기 & 방향 안내', ja: '道案内',             'zh-CN': '问路 & 导航',    vi: 'Hỏi đường',          fr: 'Demander le chemin',      de: 'Wegbeschreibung',          es: 'Pedir direcciones'    },
-        { id: 'intro',      icon: '🎤',  en: 'Self-introduction',       ko: '자기소개 & 비전 공유', ja: '自己紹介',           'zh-CN': '自我介绍',       vi: 'Tự giới thiệu',      fr: 'Se présenter',            de: 'Selbstvorstellung',        es: 'Presentación'         },
-        { id: 'compliment', icon: '🙏',  en: 'Compliments',             ko: '칭찬 & 감사 표현',   ja: '感謝・褒め言葉',      'zh-CN': '称赞 & 感谢',    vi: 'Khen ngợi',          fr: 'Compliments',             de: 'Komplimente',              es: 'Cumplidos'            },
-        { id: 'decline',    icon: '🚫',  en: 'Declining Politely',      ko: '거절하기',           ja: '断り方',              'zh-CN': '礼貌拒绝',       vi: 'Từ chối lịch sự',   fr: 'Refuser poliment',        de: 'Höflich ablehnen',         es: 'Declinar'             },
-        { id: 'advice',     icon: '💡',  en: 'Asking for Advice',       ko: '조언 구하기',        ja: 'アドバイス',          'zh-CN': '寻求建议',       vi: 'Xin lời khuyên',     fr: 'Demander conseil',        de: 'Um Rat bitten',            es: 'Pedir consejo'        },
-        { id: 'custom',     icon: '✏️',  en: 'Custom',                  ko: '직접입력',           ja: '直接入力',            'zh-CN': '自定义',         vi: 'Tùy chỉnh',          fr: 'Personnalisé',            de: 'Eigene Eingabe',           es: 'Personalizado'        },
+        { id: 'smalltalk',  icon: '💬' },
+        { id: 'lost',       icon: '🆘' },
+        { id: 'reservation',icon: '📅' },
+        { id: 'disagree',   icon: '🤝' },
+        { id: 'problem',    icon: '🔧' },
+        { id: 'directions', icon: '🧭' },
+        { id: 'intro',      icon: '🎤' },
+        { id: 'compliment', icon: '🙏' },
+        { id: 'decline',    icon: '🚫' },
+        { id: 'advice',     icon: '💡' },
+        { id: 'custom',     icon: '✏️' },
     ],
 };
 
@@ -286,7 +284,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         try {
             // Custom 씬은 입력 텍스트를 키에 포함 → 씬별 이력 분리
             const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
-            const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
+            const sceneText = isCustomSelected ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
             const historyKey = makeHistoryKey(sceneId, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
 
@@ -332,7 +330,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         setIsAnswerSaved(false);
         try {
             const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
-            const sceneText = isCustomSelected ? customInput.trim() : selectedScene.en;
+            const sceneText = isCustomSelected ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
             // 답변은 별도 키 (scene--difficulty--style--lang--answer)
             const historyKey = makeHistoryKey(`${sceneId}-answer`, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
@@ -404,7 +402,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     };
 
     const currentScenes = SCENES[category];
-    const sceneLabelKey = SUPPORTED_SCENE_LANGS.includes(sourceLang) ? sourceLang : 'en';
+    const sceneI18nPrefix = category === 'locations' ? 'sceneLoc' : 'sceneSit';
 
     return (
         <div className="scene-root">
@@ -433,7 +431,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                         onClick={() => selectScene(scene)}
                     >
                         <span className="scene-icon">{scene.icon}</span>
-                        <span className="scene-name">{scene[sceneLabelKey]}</span>
+                        <span className="scene-name">{t(`${sceneI18nPrefix}.${scene.id}`)}</span>
                     </button>
                 ))}
             </div>

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2 } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -29,6 +29,7 @@ import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
 import VideoReader from './components/VideoReader';
+import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
@@ -247,7 +248,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['scene', 'translation', 'library', 'video', 'settings'];
+  const TAB_ORDER = ['scene', 'translation', 'library', 'vocab', 'video', 'settings'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -860,6 +861,43 @@ function App() {
     }
   };
 
+  // 7. Vocab 카드를 Library에 저장하는 함수
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic }) => {
+    if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return;
+    }
+    const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+    try {
+      const tips = [];
+      if (example) tips.push(example);
+      if (exampleTranslation) tips.push(exampleTranslation);
+
+      const docRef = await addDoc(collection(db, "savedCards"), {
+        userId: user.uid,
+        userEmail: user.email,
+        sourceText: meaning,          // 뜻 (모국어)
+        translatedText: word,         // 단어 (학습 언어)
+        langCode,
+        language: langInfo?.name || langCode,
+        inputLang: langCode,
+        inputType: 'W',               // 단어
+        sourceLang,
+        sourceType: 'vocab',
+        scene: topic || '',
+        learningTip: tips,
+        pronunciation: pronunciation || '',
+        pronunciationScore: null,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+    } catch (error) {
+      console.error("Vocab 카드 저장 오류:", error);
+    }
+  };
+
   // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
   // Web Speech API fallback (오프라인 / Azure 실패 시)
   const handleSpeakFallback = (text, langCode) => {
@@ -1031,6 +1069,12 @@ function App() {
                 {getT(sourceLang, 'nav.library')}
               </button>
 
+              <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
+                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
+                {getT(sourceLang, 'nav.vocab')}
+              </button>
+
               <button className={`sidebar-nav-item ${viewMode === 'video' ? 'active' : ''}`}
                 onClick={() => { setViewMode('video'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Youtube size={16} /></span>
@@ -1112,6 +1156,7 @@ function App() {
             const TAB_CONTEXT = {
               scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
               translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
+              vocab:       { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
               video:       { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
               library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
               settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
@@ -1280,6 +1325,20 @@ function App() {
             {/* 광고: 번역 결과 카드 아래 — slot은 AdSense 심사 통과 후 채우세요 */}
             <AdBanner slot="TODO" style={{ margin: '12px 0 4px' }} />
           </>
+        </div>
+
+        {/* Vocab 탭 — AI 단어 학습 */}
+        <div style={{ display: viewMode === 'vocab' ? 'block' : 'none', width: '100%' }}>
+          <VocabTab
+            sourceLang={sourceLang}
+            targetLangs={targetLangs}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onSaveToLibrary={saveVocabCard}
+            onSpeak={handleSpeak}
+            languageGoals={languageGoals}
+            onBookmarkPrompt={handleBookmarkPrompt}
+          />
+          <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Video 탭 — 다국어 YouTube 동영상 학습 */}

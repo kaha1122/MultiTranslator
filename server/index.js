@@ -654,6 +654,81 @@ app.post('/api/cancel-subscription', async (req, res) => {
     }
 });
 
+/**
+ * Vocabulary Word Generation
+ * POST /api/vocab-words
+ * Body: { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey?, avoidWords? }
+ */
+app.post('/api/vocab-words', async (req, res) => {
+    const { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
+    if (!topic || !targetLang) {
+        return res.status(400).json({ error: 'Missing topic or targetLang' });
+    }
+
+    const geminiKey = byokGeminiKey || GEMINI_API_KEY;
+    if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
+    const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
+
+    const levelDesc = {
+        basic: 'beginner level — most common, everyday words that a complete beginner should learn first',
+        intermediate: 'intermediate level — useful vocabulary for daily conversations and practical situations',
+        advanced: 'advanced level — sophisticated, nuanced, or specialized vocabulary for fluent expression',
+    }[level] || 'intermediate level';
+
+    const avoidBlock = (avoidWords && avoidWords.length > 0)
+        ? `\nIMPORTANT — The learner has already learned the following words. You MUST generate completely different words:\n${avoidWords.map((w, i) => `${i + 1}. "${w}"`).join('\n')}\n`
+        : '';
+
+    const prompt = `You are a vocabulary teacher for language learners.
+
+Context:
+- Topic: ${topicLabel || topic} (Category: ${category || ''})
+- Target language: ${targetLangName}
+- Learner's native language: ${sourceLangName}
+- Level: ${levelDesc}
+${avoidBlock}
+Generate exactly 5 vocabulary words/phrases related to this topic.
+
+Rules:
+1. Each word must be practical and commonly used in real life for this topic
+2. Match the difficulty level exactly
+3. Include a clear, concise meaning and one natural example sentence
+4. For zh-CN: include pinyin. For ja: include hiragana reading. For others: include romanization if applicable
+5. All meanings, tips, and example translations must be in ${sourceLangName}
+
+Return ONLY valid JSON (no markdown):
+{
+  "words": [
+    {
+      "word": "<word/phrase in ${targetLangName}>",
+      "pronunciation": "<pinyin/hiragana/romanization or empty string>",
+      "meaning": "<concise meaning in ${sourceLangName}>",
+      "example": "<example sentence in ${targetLangName}>",
+      "exampleTranslation": "<example translation in ${sourceLangName}>"
+    }
+  ]
+}`;
+
+    try {
+        const response = await axios.post(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 1.5, topK: 64, topP: 0.95 },
+            }
+        );
+        const raw = response.data.candidates[0].content.parts[0].text;
+        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+        const parsed = JSON.parse(jsonStr);
+        res.json(parsed);
+    } catch (e) {
+        console.error('[VocabWords] Error:', e.response?.data || e.message);
+        res.status(500).json({ error: 'Failed to generate vocabulary' });
+    }
+});
+
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 // 클라우드 서비스(Render 등)는 접속이 없으면 잠들어버리는데, 앱 접속 시 이 주소를 몰래 찔러서 깨웁니다.
 app.get('/ping', (req, res) => {
