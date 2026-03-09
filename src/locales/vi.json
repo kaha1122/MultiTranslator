@@ -310,9 +310,9 @@
     "settings": "Cài đặt ngôn ngữ học và môi trường API"
   },
   "nav": {
-    "scene": "Theo địa điểm / tình huống",
+    "scene": "Hội thoại",
     "translation": "Từ điển",
-    "library": "Sổ từ vựng",
+    "library": "Thư viện",
     "vocab": "Từ vựng",
     "video": "Video",
     "qa": "Hỏi & Đáp",

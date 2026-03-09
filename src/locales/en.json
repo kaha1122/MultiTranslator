@@ -310,9 +310,9 @@
     "settings": "Set your learning language and API environment"
   },
   "nav": {
-    "scene": "Scene Practice",
+    "scene": "Dialogue",
     "translation": "Dictionary",
-    "library": "Word Book",
+    "library": "Library",
     "vocab": "Vocabulary",
     "video": "Video",
     "qa": "Q&A",

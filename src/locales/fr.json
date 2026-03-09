@@ -310,9 +310,9 @@
     "settings": "Configurez votre langue d'apprentissage et l'API"
   },
   "nav": {
-    "scene": "Par lieu / situation",
+    "scene": "Dialogue",
     "translation": "Dictionnaire",
-    "library": "Carnet de mots",
+    "library": "Bibliothèque",
     "vocab": "Vocabulaire",
     "video": "Vidéo",
     "qa": "Q&R",

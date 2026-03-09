@@ -310,10 +310,10 @@
     "settings": "학습 언어와 API 환경을 설정하세요"
   },
   "nav": {
-    "scene": "장소별 / 상황별",
+    "scene": "대화",
     "translation": "사전",
     "library": "단어장",
-    "vocab": "단어장",
+    "vocab": "단어",
     "video": "동영상",
     "qa": "Q&A",
     "qaUsage": "앱 활용법",

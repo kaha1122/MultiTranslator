@@ -310,9 +310,9 @@
     "settings": "Lernsprache und API-Umgebung einstellen"
   },
   "nav": {
-    "scene": "Nach Ort / Situation",
+    "scene": "Dialog",
     "translation": "Wörterbuch",
-    "library": "Vokabelheft",
+    "library": "Bibliothek",
     "vocab": "Vokabeln",
     "video": "Video",
     "qa": "F&A",

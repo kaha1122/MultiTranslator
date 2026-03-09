@@ -310,10 +310,10 @@
     "settings": "学習言語とAPI環境を設定しよう"
   },
   "nav": {
-    "scene": "場所別 / 状況別",
+    "scene": "会話",
     "translation": "辞書",
     "library": "単語帳",
-    "vocab": "単語帳",
+    "vocab": "単語",
     "video": "動画",
     "qa": "Q&A",
     "qaUsage": "アプリの使い方",

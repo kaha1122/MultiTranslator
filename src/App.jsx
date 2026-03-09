@@ -248,7 +248,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['scene', 'translation', 'library', 'vocab', 'video', 'settings'];
+  const TAB_ORDER = ['scene', 'vocab', 'translation', 'library', 'video', 'settings'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -1058,6 +1058,12 @@ function App() {
                 {getT(sourceLang, 'nav.scene')}
               </button>
 
+              <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
+                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
+                {getT(sourceLang, 'nav.vocab')}
+              </button>
+
               <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
                 onClick={() => { setViewMode('translation'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Languages size={16} /></span>
@@ -1068,12 +1074,6 @@ function App() {
                 onClick={() => { setViewMode('library'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
                 {getT(sourceLang, 'nav.library')}
-              </button>
-
-              <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
-                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); }}>
-                <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
-                {getT(sourceLang, 'nav.vocab')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'video' ? 'active' : ''}`}
