@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
@@ -696,6 +696,15 @@ function App() {
     }
   };
 
+  // Video 탭에서 메모 전송 시 자동 번역 트리거
+  const pendingTranslateRef = useRef(false);
+  useEffect(() => {
+    if (pendingTranslateRef.current && viewMode === 'translation' && inputText.trim()) {
+      pendingTranslateRef.current = false;
+      handleTranslate();
+    }
+  }, [viewMode, inputText]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // --- 보관함 저장 로직 ---
 
   // Firebase Firestore에 실제 데이터를 저장하는 공통 함수
@@ -1282,8 +1291,11 @@ function App() {
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
             targetLangs={targetLangs}
-            setViewMode={setViewMode}
-            setInputText={setInputText}
+            onSendToTranslation={(text) => {
+              setInputText(text);
+              pendingTranslateRef.current = true;
+              setViewMode('translation');
+            }}
           />
         </div>
 

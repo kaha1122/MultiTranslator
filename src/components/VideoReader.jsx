@@ -45,16 +45,28 @@ const SUPPORTED_LANGUAGES = [
  */
 export default function VideoReader({
     sourceLang, onTrialLimitReached, onSaveToLibrary, onBookmarkPrompt,
-    languageGoals = {}, targetLangs = [], setViewMode, setInputText,
+    languageGoals = {}, targetLangs = [], onSendToTranslation,
 }) {
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
+
+    // Settings에서 설정한 학습 언어만 표시
+    const visibleLanguages = SUPPORTED_LANGUAGES.filter(
+        lang => targetLangs.includes(lang.code)
+    );
 
     // Settings의 targetLangs 첫 번째 값으로 초기화, 없으면 'en'
     const [targetLang, setTargetLang] = useState(() => {
         if (targetLangs.length > 0) return targetLangs[0];
         return 'en';
     });
+    // targetLangs가 변경되면 현재 선택이 유효한지 확인
+    useEffect(() => {
+        if (targetLangs.length > 0 && !targetLangs.includes(targetLang)) {
+            setTargetLang(targetLangs[0]);
+        }
+    }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
+
     const [category, setCategory]     = useState('news');
     const [videos, setVideos]         = useState([]);
     const [loadingVideos, setLoadingVideos] = useState(true);
@@ -111,11 +123,10 @@ export default function VideoReader({
         window.history.back();
     };
 
-    // 메모를 번역 탭으로 전송
+    // 메모를 번역 탭으로 전송 (자동 번역 포함)
     const handleSendToTranslation = () => {
         if (!memo.trim()) return;
-        setInputText(memo.trim());
-        setViewMode('translation');
+        onSendToTranslation?.(memo.trim());
     };
 
     const cc = CATEGORY_COLORS[category] || CATEGORY_COLORS.news;
@@ -124,7 +135,7 @@ export default function VideoReader({
         <div className="vid-container">
             {/* Target Language 선택 */}
             <div className="vid-lang-selector">
-                {SUPPORTED_LANGUAGES.map(lang => (
+                {visibleLanguages.map(lang => (
                     <button
                         key={lang.code}
                         className={`vid-lang-pill ${targetLang === lang.code ? 'active' : ''}`}
