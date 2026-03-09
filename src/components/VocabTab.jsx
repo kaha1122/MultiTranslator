@@ -143,13 +143,17 @@ export default function VocabTab({
 
             {/* Level Selector */}
             <div className="vocab-level-row">
-                {['basic', 'intermediate', 'advanced'].map(lv => (
+                {[
+                    { value: 'basic', key: 'diffBasic' },
+                    { value: 'intermediate', key: 'diffIntermediate' },
+                    { value: 'advanced', key: 'diffHigh' },
+                ].map(lv => (
                     <button
-                        key={lv}
-                        className={`vocab-level-btn ${level === lv ? 'active' : ''}`}
-                        onClick={() => setLevel(lv)}
+                        key={lv.value}
+                        className={`vocab-level-btn ${level === lv.value ? 'active' : ''}`}
+                        onClick={() => setLevel(lv.value)}
                     >
-                        {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
+                        {t(`scene.${lv.key}`)}
                     </button>
                 ))}
             </div>
