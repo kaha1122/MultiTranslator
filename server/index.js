@@ -384,6 +384,51 @@ app.get('/api/video-feed', async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────
+// [DEBUG] YouTube 페이지 진단 (임시)
+app.get('/api/yt-debug', async (req, res) => {
+    const videoId = req.query.v || 'NKliN5SBKCE';
+    try {
+        const { data: html } = await axios.get(`https://www.youtube.com/watch?v=${videoId}`, {
+            headers: {
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36',
+                'Accept-Language': 'en-US,en;q=0.9',
+                'Cookie': 'CONSENT=YES+cb.20210328-17-p0.en+FX+409;',
+            },
+            timeout: 15000,
+        });
+        const hasCaptionTracks = html.includes('"captionTracks"');
+        const hasPlayerResponse = html.includes('ytInitialPlayerResponse');
+        const hasConsentForm = html.includes('consent.youtube.com');
+        const hasBotCheck = html.includes('recaptcha') || html.includes('captcha');
+        const titleMatch = html.match(/<title>(.*?)<\/title>/);
+
+        // Find playerResponse in different formats
+        const hasPlayerConfig = html.includes('ytInitialPlayerResponse');
+        const hasEmbeddedPlayer = html.includes('ytcfg.set');
+
+        res.json({
+            htmlLength: html.length,
+            pageTitle: titleMatch?.[1] || 'unknown',
+            hasCaptionTracks,
+            hasPlayerResponse,
+            hasConsentForm,
+            hasBotCheck,
+            hasPlayerConfig,
+            hasEmbeddedPlayer,
+            // Search for caption-related strings
+            captionTrackIdx: html.indexOf('"captionTracks"'),
+            playerCaptionsIdx: html.indexOf('playerCaptionsTracklistRenderer'),
+            // First 200 chars around captionTracks if found
+            captionSnippet: hasCaptionTracks
+                ? html.substring(html.indexOf('"captionTracks"'), html.indexOf('"captionTracks"') + 300)
+                : null,
+        });
+    } catch (e) {
+        res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────
 // YouTube 자막 추출 API  (3단계 폴백)
 // ─────────────────────────────────────────────────────
 function extractVideoId(url) {
