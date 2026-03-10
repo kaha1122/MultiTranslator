@@ -480,6 +480,13 @@ function App() {
     }
   }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
 
+  // Translation 탭을 벗어나면 inputText를 비워줍니다 (카드 내역은 유지)
+  useEffect(() => {
+    if (viewMode !== 'translation') {
+      setInputText('');
+    }
+  }, [viewMode]);
+
   // [신규] sourceLang이나 targetLangs가 바뀔 때, inputLang이 사용 가능한 언어 조합에 없다면 기본값(sourceLang)으로 되돌립니다.
   useEffect(() => {
     const availableLangs = [sourceLang, ...targetLangs];
@@ -1164,7 +1171,13 @@ function App() {
             ))}
           </h1>
 
-          <div className="header-spacer" />
+          {(viewMode === 'scene' || viewMode === 'vocab') ? (
+            <button className="header-dict-btn" onClick={() => setViewMode('translation')}>
+              {getT(sourceLang, 'nav.translation')}
+            </button>
+          ) : (
+            <div className="header-spacer" />
+          )}
         </div>
 
         <AnimatePresence mode="wait">
