@@ -1,815 +1,893 @@
 /* ==========================================================
-   LandingPage.css — Mobile-First Responsive
+   LandingPage.css — Mobile-First Responsive (v2)
    테마: 다크(#0B0C10) + 에메랄드 그린(#10b981) + 블루(#4A90E2)
-   브레이크포인트: 모바일(기본) → 768px → 1024px
    ========================================================== */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
 
 /* ── CSS 변수 ── */
 .lp-root {
-    --lp-green: #10b981;
-    --lp-green-light: #34d399;
-    --lp-green-dark: #059669;
-    --lp-blue: #4A90E2;
-    --lp-purple: #9013FE;
-    --lp-dark-bg: #0B0C10;
-    --lp-dark-card: rgba(16, 185, 129, 0.05);
-    --lp-card-border: rgba(16, 185, 129, 0.15);
-    --lp-text-main: #FFFFFF;
-    --lp-text-muted: #94a3b8;
-    --lp-glass-border: rgba(255, 255, 255, 0.08);
+  --lp-green: #10b981;
+  --lp-green-light: #34d399;
+  --lp-green-dark: #059669;
+  --lp-blue: #4A90E2;
+  --lp-dark-bg: #0B0C10;
+  --lp-text-main: #FFFFFF;
+  --lp-text-muted: #94a3b8;
+  --lp-glass-border: rgba(255, 255, 255, 0.08);
+  --lp-card-border: rgba(16, 185, 129, 0.15);
 
-    background-color: var(--lp-dark-bg);
-    color: var(--lp-text-main);
-    width: 100%;
-    min-height: 100vh;
-    overflow-x: clip;
-    line-height: 1.6;
-    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
-    position: relative;
+  background-color: var(--lp-dark-bg);
+  color: var(--lp-text-main);
+  width: 100%;
+  min-height: 100vh;
+  overflow-x: clip;
+  line-height: 1.6;
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, sans-serif;
+  position: relative;
 }
 
 /* ── 배경 앰비언트 ── */
 .lp-ambient {
-    position: fixed;
-    border-radius: 50%;
-    z-index: 0;
-    pointer-events: none;
+  position: fixed;
+  border-radius: 50%;
+  z-index: 0;
+  pointer-events: none;
 }
-
 .lp-ambient-1 {
-    top: -20vh;
-    left: -20vw;
-    width: 70vw;
-    height: 70vw;
-    background: radial-gradient(circle, rgba(16, 185, 129, 0.12) 0%, transparent 70%);
+  top: -20vh; left: -20vw; width: 70vw; height: 70vw;
+  background: radial-gradient(circle, rgba(16,185,129,0.12) 0%, transparent 70%);
 }
-
 .lp-ambient-2 {
-    bottom: -20vh;
-    right: -20vw;
-    width: 70vw;
-    height: 70vw;
-    background: radial-gradient(circle, rgba(74, 144, 226, 0.10) 0%, transparent 70%);
+  bottom: -20vh; right: -20vw; width: 70vw; height: 70vw;
+  background: radial-gradient(circle, rgba(74,144,226,0.10) 0%, transparent 70%);
 }
 
 /* ================================================================
    네비게이션
    ================================================================ */
 .lp-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 1.1rem 5%;
-    position: fixed;
-    width: 100%;
-    top: 0;
-    z-index: 100;
-    background: rgba(11, 12, 16, 0.85);
-    backdrop-filter: blur(16px);
-    -webkit-backdrop-filter: blur(16px);
-    border-bottom: 1px solid var(--lp-glass-border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.1rem 5%;
+  position: fixed;
+  width: 100%;
+  top: 0;
+  z-index: 100;
+  background: rgba(11,12,16,0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--lp-glass-border);
 }
-
 .lp-logo {
-    font-size: 1.3rem;
-    font-weight: 800;
-    background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    letter-spacing: -0.5px;
+  font-size: 1.3rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
-
-.lp-nav-actions {
-    display: flex;
-    align-items: center;
-    gap: 0.6rem;
-}
-
+.lp-nav-actions { display: flex; align-items: center; gap: 0.6rem; }
 .lp-install-btn {
-    padding: 0.5rem 1.1rem;
-    border-radius: 20px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-family: inherit;
-    color: #0B0C10;
-    background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
-    border: none;
-    transition: all 0.2s;
-    white-space: nowrap;
+  padding: 0.5rem 1.1rem;
+  border-radius: 20px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: #0B0C10;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
+  border: none;
+  transition: all 0.2s;
+  white-space: nowrap;
 }
-
-.lp-install-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-}
-
+.lp-install-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
 .lp-login-btn {
-    padding: 0.5rem 1.2rem;
-    border-radius: 20px;
-    font-weight: 600;
-    color: var(--lp-text-main);
-    background: none;
-    border: 1px solid var(--lp-glass-border);
-    cursor: pointer;
-    font-family: inherit;
-    font-size: 0.9rem;
-    transition: all 0.2s;
+  padding: 0.5rem 1.2rem;
+  border-radius: 20px;
+  font-weight: 600;
+  color: var(--lp-text-main);
+  background: none;
+  border: 1px solid var(--lp-glass-border);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.9rem;
+  transition: all 0.2s;
 }
-
-.lp-login-btn:hover {
-    border-color: var(--lp-green);
-    color: var(--lp-green-light);
-}
+.lp-login-btn:hover { border-color: var(--lp-green); color: var(--lp-green-light); }
 
 /* ================================================================
-   HERO 섹션
+   Hero 섹션
    ================================================================ */
 .lp-hero {
-    min-height: 100svh;
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-    align-items: center;
-    text-align: center;
-    padding: 5.5rem 6% 3rem;
-    position: relative;
-    z-index: 1;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  padding: 5.5rem 6% 3rem;
+  position: relative;
+  z-index: 1;
 }
-
-.lp-tagline-wrap {
-    position: relative;
-    display: inline-block;
-    margin-bottom: 1.5rem;
-    animation: lpFadeInDown 0.9s ease both;
+.lp-hero-block {
+  max-width: 600px;
+  animation: lpFadeInUp 0.9s ease both;
 }
-
-.lp-hero-free-badge {
-    position: absolute;
-    top: -24px;
-    left: 50%;
-    transform: translateX(-50%);
-    background: #FFD700;
-    color: #0B0C10;
-    font-weight: 800;
-    font-size: 0.75rem;
-    padding: 0.2rem 0.6rem;
-    border-radius: 4px;
-    letter-spacing: 0.08em;
-    z-index: 10;
+.lp-hero-block:nth-child(2) { animation-delay: 0.15s; }
+.lp-hero-text {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--lp-text-main);
+  line-height: 1.8;
+  white-space: pre-line;
+  word-break: keep-all;
 }
-
-.lp-tagline {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.4rem;
-    padding: 0.4rem 1rem;
-    background: rgba(16, 185, 129, 0.1);
-    border: 1px solid rgba(16, 185, 129, 0.3);
-    border-radius: 100px;
-    color: var(--lp-green-light);
-    font-size: 0.82rem;
-    font-weight: 700;
-    letter-spacing: 0.03em;
-    text-transform: uppercase;
+.lp-hero-divider {
+  width: 60px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
+  margin: 1.8rem auto;
+  border-radius: 2px;
+  animation: lpFadeInUp 0.9s ease 0.3s both;
 }
-
-.lp-tagline-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--lp-green);
-    display: inline-block;
-    animation: lpPulse 2s infinite;
+.lp-hero-cta {
+  margin-top: 2rem;
+  padding: 1rem 2.5rem;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0B0C10;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+  transition: all 0.25s;
+  animation: lpFadeInUp 0.9s ease 0.45s both;
+  font-family: inherit;
 }
-
-.lp-hero-title {
-    font-size: 2.4rem;
-    font-weight: 900;
-    line-height: 1.15;
-    letter-spacing: -1px;
-    margin-bottom: 1.2rem;
-    white-space: pre-line;
-    animation: lpFadeInUp 0.9s ease 0.15s both;
-}
-
-.lp-title-plain {
-    color: var(--lp-text-main);
-}
-
-.lp-highlight {
-    background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, var(--lp-blue) 100%);
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    display: inline-block;
-}
-
-.lp-hero-subtitle {
-    font-size: 1rem;
-    color: var(--lp-text-muted);
-    max-width: 480px;
-    margin: 0 auto 2.5rem;
-    line-height: 1.7;
-    animation: lpFadeInUp 0.9s ease 0.3s both;
-}
-
-.lp-hero-sub-em {
-    color: var(--lp-green-light);
-    font-weight: 600;
-}
-
-/* ── CTA 버튼 그룹 ── */
-.lp-cta-group {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-    max-width: 320px;
-    animation: lpFadeInUp 0.9s ease 0.45s both;
-}
-
-.lp-btn {
-    padding: 0.9rem 1.5rem;
-    border-radius: 100px;
-    font-weight: 700;
-    font-size: 1rem;
-    cursor: pointer;
-    border: none;
-    transition: all 0.25s ease;
-    font-family: inherit;
-    width: 100%;
-    letter-spacing: 0.01em;
-}
-
-.lp-btn-primary {
-    background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
-    background-size: 200%;
-    color: white;
-    box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
-}
-
-.lp-btn-primary:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
-}
-
-.lp-btn-secondary {
-    background: transparent;
-    color: var(--lp-text-main);
-    border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.lp-btn-secondary:hover {
-    border-color: var(--lp-green);
-    color: var(--lp-green-light);
-    transform: translateY(-2px);
-}
-
-/* ── 히어로 하단 신뢰 지표 ── */
-.lp-hero-stats {
-    display: flex;
-    gap: 2rem;
-    margin-top: 3rem;
-    animation: lpFadeInUp 0.9s ease 0.6s both;
-}
-
-.lp-stat {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.25rem;
-}
-
-.lp-stat-num {
-    font-size: 1.4rem;
-    font-weight: 800;
-    background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-}
-
-.lp-stat-label {
-    font-size: 0.75rem;
-    color: var(--lp-text-muted);
-    font-weight: 500;
-}
+.lp-hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(16,185,129,0.5); }
 
 /* ================================================================
-   USP 카드 섹션 — 각 카드가 전체 화면 채움
+   Scene Demo 섹션
    ================================================================ */
-.lp-usp-section {
-    position: relative;
-    z-index: 1;
+.lp-demo {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 5% 2.5rem;
+  border-top: 1px solid var(--lp-glass-border);
+}
+.lp-demo-title {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--lp-text-main);
+  margin-bottom: 1.5rem;
+  letter-spacing: -0.5px;
 }
 
-.lp-usp-card {
-    min-height: 100svh;
-    display: flex;
-    align-items: center;
-    padding: 5rem 8% 3rem;
-    border-bottom: 1px solid var(--lp-card-border);
-    position: relative;
+/* 카테고리 토글 */
+.lp-demo-toggle {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.lp-demo-toggle button {
+  padding: 0.55rem 1.2rem;
+  border-radius: 100px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.1);
+  background: rgba(255,255,255,0.04);
+  color: var(--lp-text-muted);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.lp-demo-toggle button.active {
+  background: rgba(16,185,129,0.15);
+  border-color: var(--lp-green);
+  color: var(--lp-green-light);
 }
 
-.lp-usp-card:nth-child(even) {
-    background: rgba(16, 185, 129, 0.03);
+/* 씬 칩 */
+.lp-demo-chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-bottom: 1.2rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.lp-demo-chip {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.4rem 0.8rem;
+  border-radius: 100px;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--lp-text-muted);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.lp-demo-chip.active {
+  background: rgba(16,185,129,0.15);
+  border-color: var(--lp-green);
+  color: var(--lp-green-light);
 }
 
-.lp-usp-card-inner {
-    max-width: 640px;
+/* 난이도 / 말투 옵션 */
+.lp-demo-options {
+  max-width: 500px;
+  margin: 0 auto 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+.lp-demo-option-row {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+.lp-demo-option-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--lp-text-muted);
+  min-width: 48px;
+  flex-shrink: 0;
+}
+.lp-demo-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.lp-demo-pill {
+  padding: 0.3rem 0.75rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--lp-text-muted);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.lp-demo-pill.active {
+  background: rgba(16,185,129,0.12);
+  border-color: rgba(16,185,129,0.5);
+  color: var(--lp-green-light);
 }
 
-.lp-usp-num {
-    display: block;
-    font-size: 1rem;
-    font-weight: 800;
-    color: var(--lp-green);
-    letter-spacing: 0.15em;
-    text-transform: uppercase;
-    margin-bottom: 1.5rem;
+/* 언어 선택 */
+.lp-demo-langs {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-bottom: 1.2rem;
+  max-width: 500px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.lp-demo-lang {
+  padding: 0.35rem 0.7rem;
+  border-radius: 100px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.03);
+  color: var(--lp-text-muted);
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.lp-demo-lang.active {
+  background: rgba(74,144,226,0.15);
+  border-color: var(--lp-blue);
+  color: #93c5fd;
 }
 
-.lp-usp-title {
-    font-size: 2.6rem;
-    font-weight: 900;
-    color: var(--lp-text-main);
-    line-height: 1.2;
-    letter-spacing: -1px;
-    margin-bottom: 1.2rem;
-    white-space: pre-line;
+/* 생성 버튼 */
+.lp-demo-generate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 0 auto 1rem;
+  padding: 0.85rem 2rem;
+  font-size: 1rem;
+  font-weight: 800;
+  color: #0B0C10;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  box-shadow: 0 6px 20px rgba(16,185,129,0.3);
+  transition: all 0.25s;
+  font-family: inherit;
+  min-width: 200px;
+}
+.lp-demo-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(16,185,129,0.45); }
+.lp-demo-generate:disabled { opacity: 0.5; cursor: default; }
+.lp-demo-error-msg {
+  text-align: center;
+  color: #f87171;
+  font-size: 0.85rem;
+  margin-bottom: 0.5rem;
 }
 
-.lp-usp-sub {
-    font-size: 1.1rem;
-    color: var(--lp-text-muted);
-    line-height: 1.7;
-    max-width: 480px;
+/* ── Demo Card ── */
+.lp-demo-card {
+  max-width: 500px;
+  margin: 1rem auto 0;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 20px;
+  padding: 1.2rem;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
+.lp-demo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+.lp-demo-card-hint {
+  display: flex;
+  gap: 0.4rem;
+  align-items: flex-start;
+  flex: 1;
+}
+.lp-demo-card-hint span { font-size: 1rem; flex-shrink: 0; }
+.lp-demo-card-hint p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--lp-text-muted);
+  line-height: 1.4;
+}
+.lp-demo-tts-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(16,185,129,0.2);
+  border: 1px solid rgba(16,185,129,0.4);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 0;
+  transition: all 0.2s;
+  color: white;
+}
+.lp-demo-tts-btn:hover { background: rgba(16,185,129,0.35); }
+.lp-demo-card-sentence {
+  font-size: 1.25rem;
+  font-weight: 800;
+  color: var(--lp-text-main);
+  text-align: center;
+  margin-bottom: 0.5rem;
+  line-height: 1.4;
+}
+.lp-demo-card-pronunciation {
+  text-align: center;
+  font-size: 0.85rem;
+  color: var(--lp-text-muted);
+  margin: 0 0 0.5rem;
+}
+.lp-demo-card-translation {
+  text-align: center;
+  font-size: 0.92rem;
+  color: #a5b4c8;
+  margin-bottom: 0.8rem;
+}
+.lp-demo-card-tip {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  background: rgba(234,179,8,0.08);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin-bottom: 0.8rem;
+}
+.lp-demo-card-tip span { font-size: 0.9rem; flex-shrink: 0; }
+.lp-demo-card-tip p { margin: 0; font-size: 0.82rem; color: #fbbf24; line-height: 1.5; }
+
+.lp-demo-score-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: rgba(16,185,129,0.15);
+  color: var(--lp-green-light);
+  font-weight: 800;
+  font-size: 0.9rem;
+  padding: 0.3rem 0.8rem;
+  border-radius: 100px;
+  margin-bottom: 0.5rem;
+}
+
+.lp-demo-coach-tip {
+  display: flex;
+  gap: 0.5rem;
+  align-items: flex-start;
+  background: rgba(74,144,226,0.1);
+  border-radius: 10px;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.5rem;
+}
+.lp-demo-coach-tip span { font-size: 0.9rem; flex-shrink: 0; }
+.lp-demo-coach-tip p { margin: 0; font-size: 0.82rem; color: #93c5fd; line-height: 1.5; }
+
+.lp-demo-error { text-align: center; color: #f87171; font-size: 0.82rem; margin-top: 0.5rem; }
+
+/* 녹음 버튼 */
+.lp-demo-record-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.lp-demo-status {
+  font-size: 0.82rem;
+  font-weight: 600;
+  margin: 0;
+}
+.lp-demo-status.recording { color: #f87171; }
+.lp-demo-status.analyzing { color: var(--lp-green-light); }
+
+.lp-demo-record-btn {
+  width: 56px;
+  height: 56px;
+  border-radius: 50%;
+  border: 2px solid var(--lp-green);
+  background: rgba(16,185,129,0.12);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--lp-green-light);
+  transition: all 0.2s;
+  padding: 0;
+}
+.lp-demo-record-btn:hover:not(:disabled) { background: rgba(16,185,129,0.25); }
+.lp-demo-record-btn.recording {
+  border-color: #f87171;
+  background: rgba(248,113,113,0.15);
+  color: #f87171;
+  animation: lpPulse 1.5s infinite;
+}
+.lp-demo-record-btn.analyzing {
+  border-color: var(--lp-green-light);
+  opacity: 0.7;
+  cursor: default;
+}
+.lp-demo-record-btn:disabled { cursor: default; }
 
 /* ================================================================
-   Feature Cards 섹션
+   Guide Carousel
    ================================================================ */
-.lp-features-section {
-    padding: 4rem 5% 2rem;
-    position: relative;
-    z-index: 1;
+.lp-guide {
+  position: relative;
+  z-index: 1;
+  padding: 3rem 0 2rem;
+  border-top: 1px solid var(--lp-glass-border);
+}
+.lp-guide-title {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: var(--lp-text-main);
+  margin-bottom: 1.5rem;
+  padding: 0 5%;
+  letter-spacing: -0.5px;
 }
 
-.lp-section-label {
-    text-align: center;
-    font-size: 0.78rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.12em;
-    color: var(--lp-green);
-    margin-bottom: 0.75rem;
+/* 가로 스크롤 컨테이너 */
+.lp-guide-scroll {
+  display: flex;
+  gap: 1rem;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  padding: 0 5% 1rem;
+  scrollbar-width: none;
+}
+.lp-guide-scroll::-webkit-scrollbar { display: none; }
+
+/* 카드 */
+.lp-guide-card {
+  flex: 0 0 85%;
+  max-width: 400px;
+  scroll-snap-align: center;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 3px solid var(--gc-color);
+  border-radius: 16px;
+  padding: 1.2rem;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+.lp-guide-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+.lp-guide-card-emoji { font-size: 1.5rem; flex-shrink: 0; }
+.lp-guide-card-name { font-size: 1rem; font-weight: 700; color: var(--lp-text-main); }
+.lp-guide-card-sub { font-size: 0.75rem; color: var(--lp-text-muted); margin-top: 2px; }
+
+.lp-guide-card-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+}
+.lp-guide-step {
+  display: flex;
+  gap: 0.6rem;
+  align-items: flex-start;
+}
+.lp-guide-step-icon { font-size: 1rem; flex-shrink: 0; width: 22px; text-align: center; padding-top: 1px; }
+.lp-guide-step-label {
+  font-size: 0.78rem;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+.lp-guide-step-desc {
+  font-size: 0.78rem;
+  color: var(--lp-text-muted);
+  line-height: 1.55;
+  white-space: pre-line;
 }
 
-.lp-section-title {
-    text-align: center;
-    font-size: 1.8rem;
-    font-weight: 800;
-    letter-spacing: -0.5px;
-    line-height: 1.25;
-    margin-bottom: 2.5rem;
-    color: var(--lp-text-main);
+/* 팁 박스 */
+.lp-guide-tips {
+  border-left: 3px solid;
+  border-radius: 0 8px 8px 0;
+  padding: 0.6rem 0.8rem;
+  margin-top: 0.8rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+.lp-guide-tip {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--lp-text-muted);
+  line-height: 1.5;
 }
 
-.lp-features-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1rem;
-    max-width: 1200px;
-    margin: 0 auto;
+/* Dots */
+.lp-guide-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.4rem;
+  margin-top: 1rem;
+  padding: 0 5%;
 }
-
-.lp-feature-card {
-    background: var(--lp-dark-card);
-    border: 1px solid var(--lp-card-border);
-    border-radius: 20px;
-    padding: 1.8rem;
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    transition: all 0.35s ease;
-    position: relative;
-    overflow: hidden;
+.lp-guide-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 100px;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.3s;
 }
-
-.lp-feature-card::after {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 3px;
-    background: linear-gradient(90deg, var(--lp-green-dark), var(--lp-green-light));
-    transform: scaleX(0);
-    transform-origin: left;
-    transition: transform 0.35s ease;
-}
-
-.lp-feature-card:hover {
-    transform: translateY(-6px);
-    border-color: rgba(16, 185, 129, 0.4);
-    box-shadow: 0 16px 40px rgba(16, 185, 129, 0.12);
-}
-
-.lp-feature-card:hover::after {
-    transform: scaleX(1);
-}
-
-.lp-feature-icon-wrap {
-    width: 48px;
-    height: 48px;
-    border-radius: 14px;
-    background: rgba(16, 185, 129, 0.12);
-    border: 1px solid rgba(16, 185, 129, 0.2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.5rem;
-    margin-bottom: 1.2rem;
-}
-
-.lp-feature-number {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: var(--lp-green);
-    letter-spacing: 0.08em;
-    text-transform: uppercase;
-    margin-bottom: 0.5rem;
-    display: block;
-}
-
-.lp-feature-title {
-    font-size: 1.2rem;
-    font-weight: 700;
-    color: var(--lp-text-main);
-    margin-bottom: 0.7rem;
-    letter-spacing: -0.3px;
-    line-height: 1.35;
-}
-
-.lp-feature-desc {
-    color: var(--lp-text-muted);
-    font-size: 0.92rem;
-    line-height: 1.65;
-    margin-bottom: 1.2rem;
-}
-
-.lp-feature-tag {
-    display: inline-flex;
-    align-items: center;
-    gap: 0.3rem;
-    font-size: 0.78rem;
-    color: var(--lp-green-light);
-    font-weight: 600;
-    padding: 0.3rem 0.7rem;
-    background: rgba(16, 185, 129, 0.08);
-    border-radius: 100px;
-    border: 1px solid rgba(16, 185, 129, 0.15);
+.lp-guide-dot.active {
+  width: 22px;
 }
 
 /* ================================================================
-   앱 스크린샷 섹션
-   ================================================================ */
-.lp-app-section {
-    padding: 3rem 5% 4rem;
-    position: relative;
-    z-index: 1;
-}
-
-.lp-app-grid {
-    display: grid;
-    grid-template-columns: 1fr;
-    gap: 1.5rem;
-    max-width: 1100px;
-    margin: 0 auto;
-}
-
-.lp-app-card {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid var(--lp-glass-border);
-    border-radius: 24px;
-    overflow: hidden;
-    transition: all 0.35s ease;
-}
-
-.lp-app-card:hover {
-    border-color: rgba(16, 185, 129, 0.3);
-    box-shadow: 0 16px 48px rgba(16, 185, 129, 0.1);
-    transform: translateY(-4px);
-}
-
-.lp-app-card-body {
-    padding: 1.5rem 1.5rem 0;
-}
-
-.lp-app-card-badge {
-    display: inline-block;
-    font-size: 0.72rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--lp-green);
-    background: rgba(16, 185, 129, 0.1);
-    border-radius: 100px;
-    padding: 0.25rem 0.7rem;
-    margin-bottom: 0.75rem;
-}
-
-.lp-app-card-title {
-    font-size: 1.25rem;
-    font-weight: 700;
-    color: var(--lp-text-main);
-    margin-bottom: 0.5rem;
-    letter-spacing: -0.3px;
-}
-
-.lp-app-card-desc {
-    font-size: 0.9rem;
-    color: var(--lp-text-muted);
-    line-height: 1.65;
-    margin-bottom: 1.2rem;
-}
-
-.lp-app-card-img {
-    width: 100%;
-    display: block;
-    border-radius: 0;
-    object-fit: cover;
-}
-
-/* ================================================================
-   하단 CTA 섹션
+   CTA 섹션
    ================================================================ */
 .lp-cta-section {
-    padding: 4rem 6%;
-    text-align: center;
-    position: relative;
-    z-index: 1;
-    border-top: 1px solid var(--lp-glass-border);
+  padding: 4rem 6%;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+  border-top: 1px solid var(--lp-glass-border);
 }
-
 .lp-cta-title {
-    font-size: 1.9rem;
-    font-weight: 900;
-    letter-spacing: -0.5px;
-    line-height: 1.2;
-    margin-bottom: 1rem;
+  font-size: 1.9rem;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+  margin-bottom: 1rem;
 }
-
+.lp-highlight {
+  background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, var(--lp-blue) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  display: inline-block;
+}
 .lp-cta-sub {
-    font-size: 0.95rem;
-    color: var(--lp-text-muted);
-    margin-bottom: 2rem;
-    max-width: 400px;
-    margin-left: auto;
-    margin-right: auto;
+  font-size: 0.95rem;
+  color: var(--lp-text-muted);
+  margin-bottom: 2rem;
+  max-width: 400px;
+  margin-left: auto;
+  margin-right: auto;
 }
-
 .lp-cta-btn-wrap {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    max-width: 320px;
-    margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 320px;
+  margin: 0 auto;
 }
+.lp-btn {
+  padding: 0.9rem 1.5rem;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 1rem;
+  cursor: pointer;
+  border: none;
+  transition: all 0.25s ease;
+  font-family: inherit;
+  width: 100%;
+  letter-spacing: 0.01em;
+}
+.lp-btn-primary {
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+  background-size: 200%;
+  color: white;
+  box-shadow: 0 8px 24px rgba(16,185,129,0.35);
+}
+.lp-btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(16,185,129,0.5); }
+.lp-btn-secondary {
+  background: transparent;
+  color: var(--lp-text-main);
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.lp-btn-secondary:hover { border-color: var(--lp-green); color: var(--lp-green-light); transform: translateY(-2px); }
 
-.lp-footer-note {
-    margin-top: 1.5rem;
-    font-size: 0.8rem;
-    color: var(--lp-text-muted);
+/* ================================================================
+   Footer
+   ================================================================ */
+.lp-footer {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 5% 3rem;
+  text-align: center;
+  border-top: 1px solid var(--lp-glass-border);
+}
+.lp-footer-brand {
+  font-size: 0.8rem;
+  color: var(--lp-text-muted);
+  margin-bottom: 0.8rem;
+}
+.lp-footer-links {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.8rem;
+  flex-wrap: wrap;
+}
+.lp-footer-links button {
+  background: none;
+  border: none;
+  color: var(--lp-text-muted);
+  font-size: 0.78rem;
+  cursor: pointer;
+  padding: 0;
+  font-family: inherit;
+  transition: color 0.2s;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lp-footer-links button:hover { color: var(--lp-green-light); }
+.lp-footer-links span { color: rgba(255,255,255,0.2); font-size: 0.7rem; }
+.lp-footer-copy {
+  font-size: 0.72rem;
+  color: rgba(255,255,255,0.25);
+  margin: 0;
 }
 
 /* ================================================================
-   설치 팝업 (스크롤 끝 도달 시)
+   Login Modal
+   ================================================================ */
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 300;
+  background: rgba(0,0,0,0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  animation: lpFadeIn 0.2s ease;
+}
+.lp-modal {
+  background: #1a1d24;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 24px;
+  padding: 2rem 1.5rem;
+  width: min(340px, 90vw);
+  text-align: center;
+  position: relative;
+}
+.lp-modal-close {
+  position: absolute;
+  top: 0.8rem;
+  right: 1rem;
+  background: none;
+  border: none;
+  color: var(--lp-text-muted);
+  cursor: pointer;
+  font-size: 1rem;
+  padding: 0;
+}
+.lp-modal-emoji {
+  font-size: 2.5rem;
+  margin-bottom: 0.5rem;
+}
+.lp-modal-title {
+  font-size: 1.3rem;
+  font-weight: 800;
+  color: var(--lp-text-main);
+  margin: 0 0 0.5rem;
+}
+.lp-modal-msg {
+  font-size: 0.92rem;
+  color: var(--lp-text-muted);
+  margin-bottom: 1.5rem;
+}
+.lp-modal-google {
+  display: block;
+  width: 100%;
+  padding: 0.85rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #0B0C10;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+  border: none;
+  border-radius: 100px;
+  cursor: pointer;
+  font-family: inherit;
+  margin-bottom: 0.6rem;
+  box-shadow: 0 6px 20px rgba(16,185,129,0.3);
+  transition: all 0.2s;
+}
+.lp-modal-google:hover { transform: translateY(-1px); box-shadow: 0 8px 24px rgba(16,185,129,0.45); }
+.lp-modal-other {
+  display: block;
+  width: 100%;
+  padding: 0.75rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--lp-text-muted);
+  background: transparent;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 100px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.lp-modal-other:hover { border-color: var(--lp-green); color: var(--lp-green-light); }
+
+/* ================================================================
+   Install Popup
    ================================================================ */
 .lp-install-popup {
-    position: fixed;
-    bottom: 1.5rem;
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 200;
-    background: rgba(16, 18, 24, 0.96);
-    border: 1px solid rgba(16, 185, 129, 0.35);
-    border-radius: 20px;
-    padding: 1.3rem 1.5rem 1.2rem;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 0.9rem;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(16, 185, 129, 0.1);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    animation: lpSlideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) both;
-    width: min(280px, 80vw);
-    text-align: center;
+  position: fixed;
+  bottom: 1.5rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 200;
+  background: rgba(16,18,24,0.96);
+  border: 1px solid rgba(16,185,129,0.35);
+  border-radius: 20px;
+  padding: 1.3rem 1.5rem 1.2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.9rem;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.5), 0 0 0 1px rgba(16,185,129,0.1);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  animation: lpSlideUp 0.4s cubic-bezier(0.34,1.56,0.64,1) both;
+  width: min(280px, 80vw);
+  text-align: center;
 }
-
 .lp-popup-close {
-    position: absolute;
-    top: 0.7rem;
-    right: 0.9rem;
-    background: none;
-    border: none;
-    color: var(--lp-text-muted);
-    cursor: pointer;
-    font-size: 0.8rem;
-    padding: 0;
-    line-height: 1;
+  position: absolute;
+  top: 0.7rem;
+  right: 0.9rem;
+  background: none;
+  border: none;
+  color: var(--lp-text-muted);
+  cursor: pointer;
+  font-size: 0.8rem;
+  padding: 0;
+  line-height: 1;
 }
-
-.lp-popup-close:hover {
-    color: var(--lp-text-main);
-}
-
+.lp-popup-close:hover { color: var(--lp-text-main); }
 .lp-popup-msg {
-    font-size: 0.92rem;
-    color: var(--lp-text-main);
-    font-weight: 500;
-    line-height: 1.55;
-    word-break: keep-all;
+  font-size: 0.92rem;
+  color: var(--lp-text-main);
+  font-weight: 500;
+  line-height: 1.55;
+  word-break: keep-all;
 }
-
 .lp-popup-install-btn {
-    padding: 0.45rem 1.1rem;
-    border-radius: 100px;
-    font-weight: 700;
-    font-size: 0.85rem;
-    cursor: pointer;
-    font-family: inherit;
-    color: #0B0C10;
-    background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
-    border: none;
-    flex-shrink: 0;
-    transition: all 0.2s;
+  padding: 0.45rem 1.1rem;
+  border-radius: 100px;
+  font-weight: 700;
+  font-size: 0.85rem;
+  cursor: pointer;
+  font-family: inherit;
+  color: #0B0C10;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
+  border: none;
+  flex-shrink: 0;
+  transition: all 0.2s;
 }
-
-.lp-popup-install-btn:hover {
-    transform: translateY(-1px);
-    box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
-}
-
-@keyframes lpSlideUp {
-    from {
-        opacity: 0;
-        transform: translateX(-50%) translateY(24px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateX(-50%) translateY(0);
-    }
-}
+.lp-popup-install-btn:hover { transform: translateY(-1px); box-shadow: 0 4px 14px rgba(16,185,129,0.4); }
 
 /* ================================================================
-   키프레임 애니메이션
+   Animations
    ================================================================ */
 @keyframes lpFadeInUp {
-    from {
-        opacity: 0;
-        transform: translateY(24px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+  from { opacity: 0; transform: translateY(24px); }
+  to { opacity: 1; transform: translateY(0); }
 }
-
-@keyframes lpFadeInDown {
-    from {
-        opacity: 0;
-        transform: translateY(-16px);
-    }
-
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
+@keyframes lpFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
-
 @keyframes lpPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.7; transform: scale(0.92); }
+}
+@keyframes lpSlideUp {
+  from { opacity: 0; transform: translateX(-50%) translateY(24px); }
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
 
-    0%,
-    100% {
-        opacity: 1;
-        transform: scale(1);
-    }
-
-    50% {
-        opacity: 0.5;
-        transform: scale(0.8);
-    }
+/* spin animation for RotateCcw */
+.lp-demo-generate .spin,
+.lp-demo-record-btn .spin {
+  animation: lpSpin 1s linear infinite;
+}
+@keyframes lpSpin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
 }
 
 /* ================================================================
-   태블릿 (768px+)
+   Tablet (768px+)
    ================================================================ */
 @media (min-width: 768px) {
-    .lp-logo {
-        font-size: 1.5rem;
-    }
-
-    .lp-nav {
-        padding: 1.3rem 6%;
-    }
-
-    .lp-hero {
-        padding: 7rem 8% 4rem;
-    }
-
-    .lp-hero-title {
-        font-size: 3.4rem;
-        letter-spacing: -1.5px;
-    }
-
-    .lp-hero-subtitle {
-        font-size: 1.1rem;
-        max-width: 560px;
-    }
-
-    .lp-cta-group {
-        flex-direction: row;
-        width: auto;
-        max-width: none;
-    }
-
-    .lp-btn {
-        width: auto;
-        padding: 0.9rem 2rem;
-    }
-
-    .lp-hero-stats {
-        gap: 3rem;
-        margin-top: 3.5rem;
-    }
-
-    .lp-stat-num {
-        font-size: 1.8rem;
-    }
-
-    .lp-section-title {
-        font-size: 2.2rem;
-    }
-
-    .lp-usp-title {
-        font-size: 3rem;
-    }
-
-    .lp-features-grid {
-        grid-template-columns: repeat(2, 1fr);
-        gap: 1.2rem;
-    }
-
-    .lp-app-grid {
-        grid-template-columns: repeat(2, 1fr);
-    }
-
-    .lp-cta-title {
-        font-size: 2.4rem;
-    }
-
-    .lp-cta-btn-wrap {
-        flex-direction: row;
-        max-width: none;
-        justify-content: center;
-    }
+  .lp-logo { font-size: 1.5rem; }
+  .lp-nav { padding: 1.3rem 6%; }
+  .lp-hero { padding: 7rem 8% 4rem; }
+  .lp-hero-text { font-size: 1.5rem; }
+  .lp-demo-title { font-size: 2rem; }
+  .lp-guide-title { font-size: 2rem; }
+  .lp-guide-card { flex: 0 0 55%; max-width: 440px; }
+  .lp-cta-title { font-size: 2.4rem; }
+  .lp-cta-btn-wrap { flex-direction: row; max-width: none; justify-content: center; }
+  .lp-btn { width: auto; padding: 0.9rem 2rem; }
 }
 
 /* ================================================================
-   데스크탑 (1024px+)
+   Desktop (1024px+)
    ================================================================ */
 @media (min-width: 1024px) {
-    .lp-hero-title {
-        font-size: 4.2rem;
-        letter-spacing: -2px;
-    }
-
-    .lp-hero-subtitle {
-        font-size: 1.2rem;
-    }
-
-    .lp-usp-title {
-        font-size: 3.6rem;
-    }
-
-    .lp-usp-card {
-        padding: 5rem 12% 3rem;
-    }
-
-    .lp-features-grid {
-        grid-template-columns: repeat(4, 1fr);
-    }
-
-    .lp-feature-card {
-        padding: 2rem;
-    }
-
-    .lp-cta-title {
-        font-size: 2.8rem;
-    }
+  .lp-hero-text { font-size: 1.65rem; }
+  .lp-guide-card { flex: 0 0 38%; max-width: 460px; }
+  .lp-cta-title { font-size: 2.8rem; }
 }

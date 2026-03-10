@@ -1009,6 +1009,10 @@ function App() {
         onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
         onInstall={handleInstallClick}
         showInstall={showInstallBanner}
+        onSpeak={handleSpeak}
+        onPrivacy={() => setViewMode('privacy')}
+        onTerms={() => setViewMode('terms')}
+        onContact={() => setViewMode('contact')}
       />;
     }
     return authMode === 'login' ? (

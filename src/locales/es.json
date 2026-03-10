@@ -466,104 +466,22 @@
     "login": "Iniciar sesión",
     "signUp": "Registrarse",
     "otherLogin": "Otras opciones de inicio de sesión",
-    "usps": [
-      {
-        "title": "La forma más rápida de dominar la pronunciación nativa — gratis",
-        "sub": "La IA traduce, puntúa y te entrena. 8 idiomas, completamente gratis."
-      },
-      {
-        "title": "Escuchar · Repetir · Recibir puntos y perfeccionar tu acento",
-        "sub": "Ve la precisión, fluidez y prosodia en 5 métricas para identificar la brecha con los hablantes nativos."
-      },
-      {
-        "title": "Tu vocabulario inteligente — guardar y practicar de nuevo",
-        "sub": "Un toque para guardar, luego sácalo para practicar pronunciación cuando quieras."
-      },
-      {
-        "title": "La IA propone frases según la escena para una práctica real",
-        "sub": "La IA genera frases según el lugar y la situación, las lee en voz alta para guiar tu práctica de pronunciación."
-      }
-    ],
-    "tagline": "Coach de pronunciación IA · 8 idiomas · Gratis",
-    "heroTitle": "La forma más rápida de dominar\nla pronunciación nativa",
-    "heroSub": "La IA traduce, puntúa y te entrena. ",
-    "heroSubEm": "8 idiomas, completamente gratis.",
-    "ctaStart": "Empezar con Google",
-    "stats": [
-      {
-        "num": "8",
-        "label": "Idiomas"
-      },
-      {
-        "num": "100",
-        "label": "Puntuación"
-      },
-      {
-        "num": "Gratis",
-        "label": "Siempre gratis"
-      }
-    ],
-    "sectionLabel": "Características clave",
-    "sectionTitle": "¿Por qué PronunFit?",
-    "features": [
-      {
-        "icon": "🆓",
-        "num": "01 · Completamente gratis",
-        "title": "Pronunciación IA en 8 idiomas,<br />cero costo",
-        "desc": "Inglés · Coreano · Japonés · Chino · Vietnamita · Francés · Alemán · Español. Sin anuncios, sin tarifas ocultas — regístrate y accede a todo gratis.",
-        "tag": "✓ No se requiere tarjeta de crédito"
-      },
-      {
-        "icon": "🎙️",
-        "num": "02 · Coach de pronunciación IA",
-        "title": "Escuchar → Repetir →<br />Recibir puntuación",
-        "desc": "La IA lee la frase en voz alta — tú la repites. Análisis en tiempo real de precisión, fluidez y prosodia en 5 dimensiones, visualizadas en un gráfico.",
-        "tag": "✓ Desarrollado con Azure AI Speech"
-      },
-      {
-        "icon": "📚",
-        "num": "03 · Vocabulario inteligente",
-        "title": "Guardar, revisar,<br />y practicar de nuevo",
-        "desc": "Marca cualquier frase traducida para guardarla al instante. Abre tu biblioteca y comienza a practicar pronunciación directamente.",
-        "tag": "✓ Historial de aprendizaje guardado automáticamente"
-      },
-      {
-        "icon": "🌍",
-        "num": "04 · Práctica por escena",
-        "title": "Aprendizaje real<br />por lugar y situación",
-        "desc": "Elige una escena — aeropuerto, hotel, restaurante y más. La IA genera frases y las lee en voz alta. Practica pronunciación en contextos reales.",
-        "tag": "✓ Aprendizaje por escenas"
-      }
-    ],
-    "appLabel": "Explorar la app",
-    "appTitle": "Esto es lo que te espera",
-    "appCards": [
-      {
-        "badge": "Análisis de pronunciación",
-        "title": "La IA te puntúa hasta los<br />fonemas individuales",
-        "desc": "Obtén tu puntuación inmediatamente después de hablar. Ve la precisión por palabra y fonema codificada por colores como un semáforo, más consejos de coaching personalizados de la IA.",
-        "img": "/mockup_pronunciation.png",
-        "imgAlt": "Pantalla de análisis de pronunciación"
-      },
-      {
-        "badge": "Configuración de idioma y objetivo",
-        "title": "Configura tus idiomas<br />y puntuación objetivo",
-        "desc": "Elige hasta 3 de 8 idiomas y establece tu puntuación objetivo — la IA adapta su coaching. Cambia la configuración en cualquier momento.",
-        "img": "/mockup_multilang.png",
-        "imgAlt": "Pantalla de configuración multilingüe"
-      },
-      {
-        "badge": "Práctica por escena",
-        "title": "La IA genera frases<br />según la escena y las lee",
-        "desc": "Elige aeropuerto, hotel, restaurante y más. La IA crea frases y las lee en voz alta. Repite, recibe puntuación y domina la pronunciación en la vida real.",
-        "img": "/mockup_scene.svg",
-        "imgAlt": "Pantalla de práctica por escena"
-      }
-    ],
+    "hero1": "¿Qué idioma estás estudiando? Sea cual sea el idioma, practicar hablando es lo más importante, ¿verdad?\n¡¡La era de la IA!! ¿Qué te parece una app que te permite escuchar, hablar y analizar tu pronunciación con IA?",
+    "hero2": "¿Estudias inglés? ¿Chino? ¿Japonés? ¿Francés, alemán, español, vietnamita?\nHay una app donde puedes estudiar cualquier idioma que quieras con IA.",
+    "heroCta": "¿Quieres probarlo?",
+    "demoTitle": "¡Pruébalo tú mismo!",
+    "demoGenerate": "✨ Generar frase",
+    "demoLoginTitle": "Prueba gratuita",
+    "demoLoginMsg": "¡Regístrate para practicar pronunciación sin límites!",
+    "demoLoginGoogle": "Comenzar con Google",
+    "demoLoginOther": "Otras opciones de inicio de sesión",
+    "guideTitle": "Esto es lo que te espera",
+    "ctaStart": "Comenzar con Google",
     "ctaTitle": "Empieza ahora mismo.",
-    "ctaHighlight": "Gratis. Instantáneo.",
-    "ctaSub": "30 segundos para registrarse. Tu coach de pronunciación IA en 8 idiomas está listo.",
-    "footerNote": "PronunFit · Coach de pronunciación IA · Gratis desde el primer día",
+    "ctaHighlight": "Gratis. Al instante.",
+    "ctaSub": "Registro en 30 segundos. Tu coach de pronunciación IA en 8 idiomas te espera.",
+    "footerNote": "PronunFit · Coach de pronunciación IA · Gratis desde el registro",
+    "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Instala la app\npara acceso instantáneo"
   }
 }

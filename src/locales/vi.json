@@ -465,105 +465,23 @@
   "landing": {
     "login": "Đăng nhập",
     "signUp": "Đăng ký",
-    "otherLogin": "Phương thức đăng nhập khác",
-    "usps": [
-      {
-        "title": "Cách nhanh nhất để luyện phát âm chuẩn bản ngữ — miễn phí",
-        "sub": "AI dịch, chấm điểm và huấn luyện bạn. 8 ngôn ngữ, hoàn toàn miễn phí."
-      },
-      {
-        "title": "Nghe · Lặp lại · Nhận điểm và hoàn thiện phát âm",
-        "sub": "Xem độ chính xác, sự trôi chảy và ngữ điệu qua 5 chỉ số để biết khoảng cách với người bản ngữ."
-      },
-      {
-        "title": "Kho từ vựng thông minh — lưu và luyện tập lại",
-        "sub": "Một chạm để lưu, lấy ra luyện phát âm bất cứ lúc nào."
-      },
-      {
-        "title": "AI gợi ý câu theo tình huống cho luyện ngôn ngữ thực tế",
-        "sub": "AI tạo câu theo địa điểm và tình huống, đọc to để hướng dẫn luyện phát âm."
-      }
-    ],
-    "tagline": "Huấn luyện phát âm AI · 8 ngôn ngữ · Miễn phí",
-    "heroTitle": "Cách nhanh nhất để luyện\nphát âm chuẩn bản ngữ",
-    "heroSub": "AI dịch, chấm điểm và huấn luyện bạn. ",
-    "heroSubEm": "8 ngôn ngữ, hoàn toàn miễn phí.",
+    "otherLogin": "Đăng nhập bằng cách khác",
+    "hero1": "Bạn đang học ngôn ngữ nào? Dù học ngôn ngữ nào, luyện nói là quan trọng nhất, đúng không?\nThời đại AI!! Một ứng dụng cùng AI nghe, nói và phân tích phát âm, bạn thấy sao?",
+    "hero2": "Bạn đang học tiếng Anh? Tiếng Trung? Tiếng Nhật? Tiếng Pháp, Đức, Tây Ban Nha, Việt Nam?\nCó một ứng dụng giúp bạn học bất kỳ ngôn ngữ nào cùng AI.",
+    "heroCta": "Bạn muốn thử không?",
+    "demoTitle": "Hãy trải nghiệm ngay!",
+    "demoGenerate": "✨ Tạo câu",
+    "demoLoginTitle": "Dùng thử miễn phí",
+    "demoLoginMsg": "Đăng ký ngay để luyện phát âm không giới hạn!",
+    "demoLoginGoogle": "Bắt đầu với Google",
+    "demoLoginOther": "Đăng nhập bằng cách khác",
+    "guideTitle": "Các tính năng có sẵn",
     "ctaStart": "Bắt đầu với Google",
-    "stats": [
-      {
-        "num": "8",
-        "label": "Ngôn ngữ"
-      },
-      {
-        "num": "100",
-        "label": "Thang điểm"
-      },
-      {
-        "num": "Miễn phí",
-        "label": "Luôn miễn phí"
-      }
-    ],
-    "sectionLabel": "Tính năng chính",
-    "sectionTitle": "Tại sao chọn PronunFit?",
-    "features": [
-      {
-        "icon": "🆓",
-        "num": "01 · Hoàn toàn miễn phí",
-        "title": "Ứng dụng phát âm AI 8 ngôn ngữ,<br />không tốn chi phí",
-        "desc": "Tiếng Anh · Hàn · Nhật · Trung · Việt · Pháp · Đức · Tây Ban Nha. Không quảng cáo, không phí ẩn — đăng ký là dùng được toàn bộ tính năng miễn phí.",
-        "tag": "✓ Không cần thẻ tín dụng"
-      },
-      {
-        "icon": "🎙️",
-        "num": "02 · Huấn luyện phát âm AI",
-        "title": "Nghe → Lặp lại →<br />Nhận điểm",
-        "desc": "AI đọc câu — bạn lặp lại. Phân tích thời gian thực về độ chính xác, sự trôi chảy và ngữ điệu qua 5 chiều, hiển thị dạng biểu đồ.",
-        "tag": "✓ Hỗ trợ bởi Azure AI Speech"
-      },
-      {
-        "icon": "📚",
-        "num": "03 · Kho từ vựng thông minh",
-        "title": "Lưu, xem lại,<br />và luyện tập lại",
-        "desc": "Gắn sao bất kỳ câu dịch nào để lưu ngay lập tức. Mở thư viện bất cứ lúc nào và luyện phát âm ngay.",
-        "tag": "✓ Tự động lưu lịch sử học"
-      },
-      {
-        "icon": "🌍",
-        "num": "04 · Luyện theo tình huống",
-        "title": "Học ngôn ngữ thực tế<br />theo địa điểm và tình huống",
-        "desc": "Chọn cảnh như sân bay, khách sạn, nhà hàng. AI tạo câu học và phát âm thanh. Luyện phát âm trong bối cảnh thực tế.",
-        "tag": "✓ Học ngôn ngữ theo tình huống"
-      }
-    ],
-    "appLabel": "Khám phá ứng dụng",
-    "appTitle": "Đây là những gì đang chờ bạn",
-    "appCards": [
-      {
-        "badge": "Kết quả phân tích phát âm",
-        "title": "AI chấm điểm đến từng<br />âm vị",
-        "desc": "Nhận điểm ngay sau khi nói. Xem độ chính xác theo từng từ và âm vị với màu sắc đèn giao thông, cùng gợi ý coaching cá nhân từ AI.",
-        "img": "/mockup_pronunciation.png",
-        "imgAlt": "Màn hình phân tích phát âm"
-      },
-      {
-        "badge": "Cài đặt ngôn ngữ & mục tiêu",
-        "title": "Đặt ngôn ngữ<br />và điểm mục tiêu",
-        "desc": "Chọn tối đa 3 trong 8 ngôn ngữ và đặt điểm mục tiêu — AI điều chỉnh coaching phù hợp. Thay đổi cài đặt bất cứ lúc nào.",
-        "img": "/mockup_multilang.png",
-        "imgAlt": "Màn hình cài đặt đa ngôn ngữ"
-      },
-      {
-        "badge": "Luyện theo tình huống",
-        "title": "AI tạo câu theo tình huống<br />và đọc to cho bạn nghe",
-        "desc": "Chọn sân bay, khách sạn, nhà hàng và nhiều hơn nữa. AI tạo câu và đọc to. Lặp lại, nhận điểm và thành thạo phát âm thực tế.",
-        "img": "/mockup_scene.svg",
-        "imgAlt": "Màn hình luyện theo tình huống"
-      }
-    ],
     "ctaTitle": "Bắt đầu ngay bây giờ.",
     "ctaHighlight": "Miễn phí. Ngay lập tức.",
-    "ctaSub": "30 giây để đăng ký. Huấn luyện viên phát âm AI 8 ngôn ngữ đã sẵn sàng.",
-    "footerNote": "PronunFit · Huấn luyện phát âm AI · Miễn phí từ ngày đầu",
+    "ctaSub": "Đăng ký 30 giây. Huấn luyện viên phát âm AI 8 ngôn ngữ đang chờ bạn.",
+    "footerNote": "PronunFit · Huấn luyện viên phát âm AI · Miễn phí ngay khi đăng ký",
+    "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay"
   }
 }

@@ -465,105 +465,23 @@
   "landing": {
     "login": "Anmelden",
     "signUp": "Registrieren",
-    "otherLogin": "Andere Anmeldemethoden",
-    "usps": [
-      {
-        "title": "Der schnellste Weg zur muttersprachlichen Aussprache — kostenlos",
-        "sub": "KI übersetzt, bewertet und coacht Sie. 8 Sprachen, völlig kostenlos."
-      },
-      {
-        "title": "Hören · Nachsprechen · Punkte sammeln und Akzent perfektionieren",
-        "sub": "Sehen Sie Genauigkeit, Flüssigkeit und Prosodie in 5 Metriken, um den Unterschied zu Muttersprachlern zu erkennen."
-      },
-      {
-        "title": "Ihr smartes Vokabelheft — speichern und wieder üben",
-        "sub": "Ein Tipp zum Speichern, dann jederzeit für Ausspracheübungen wieder aufrufen."
-      },
-      {
-        "title": "KI empfiehlt Sätze je nach Szene für echte Sprachpraxis",
-        "sub": "KI generiert Sätze nach Ort und Situation und liest sie vor — üben Sie Aussprache im Alltag."
-      }
-    ],
-    "tagline": "KI-Aussprache-Coach · 8 Sprachen · Kostenlos",
-    "heroTitle": "Der schnellste Weg zur\nmuttersprachlichen Aussprache",
-    "heroSub": "KI übersetzt, bewertet und coacht Sie. ",
-    "heroSubEm": "8 Sprachen, völlig kostenlos.",
+    "otherLogin": "Andere Anmeldeoptionen",
+    "hero1": "Welche Sprache lernst du? Egal welche Sprache — Sprechen ist das Wichtigste, oder?\nDas KI-Zeitalter!! Eine App, mit der du mit KI hörst, sprichst und deine Aussprache analysierst — wie klingt das?",
+    "hero2": "Lernst du Englisch? Chinesisch? Japanisch? Französisch, Deutsch, Spanisch, Vietnamesisch?\nEs gibt eine App, mit der du jede gewünschte Sprache mit KI lernen kannst.",
+    "heroCta": "Möchtest du es testen?",
+    "demoTitle": "Probier es selbst aus!",
+    "demoGenerate": "✨ Satz generieren",
+    "demoLoginTitle": "Kostenlos testen",
+    "demoLoginMsg": "Melde dich an für unbegrenztes Aussprachetraining!",
+    "demoLoginGoogle": "Mit Google starten",
+    "demoLoginOther": "Andere Anmeldeoptionen",
+    "guideTitle": "Das erwartet dich",
     "ctaStart": "Mit Google starten",
-    "stats": [
-      {
-        "num": "8",
-        "label": "Sprachen"
-      },
-      {
-        "num": "100",
-        "label": "Punkte"
-      },
-      {
-        "num": "Gratis",
-        "label": "Immer kostenlos"
-      }
-    ],
-    "sectionLabel": "Kernfunktionen",
-    "sectionTitle": "Warum PronunFit?",
-    "features": [
-      {
-        "icon": "🆓",
-        "num": "01 · Völlig kostenlos",
-        "title": "KI-Aussprache in 8 Sprachen,<br />null Kosten",
-        "desc": "Englisch · Koreanisch · Japanisch · Chinesisch · Vietnamesisch · Französisch · Deutsch · Spanisch. Keine Werbung, keine versteckten Kosten — registrieren Sie sich und erhalten Sie alles kostenlos.",
-        "tag": "✓ Keine Kreditkarte erforderlich"
-      },
-      {
-        "icon": "🎙️",
-        "num": "02 · KI-Aussprache-Coach",
-        "title": "Hören → Nachsprechen →<br />Punkte erhalten",
-        "desc": "KI liest den Satz vor — Sie sprechen nach. Echtzeit-Analyse von Genauigkeit, Flüssigkeit und Prosodie in 5 Dimensionen, visualisiert als Diagramm.",
-        "tag": "✓ Unterstützt von Azure AI Speech"
-      },
-      {
-        "icon": "📚",
-        "num": "03 · Smartes Vokabelheft",
-        "title": "Speichern, überprüfen,<br />und wieder üben",
-        "desc": "Markieren Sie einen beliebigen übersetzten Satz mit einem Stern zum sofortigen Speichern. Öffnen Sie Ihre Bibliothek und üben Sie direkt Aussprache.",
-        "tag": "✓ Lernverlauf automatisch gespeichert"
-      },
-      {
-        "icon": "🌍",
-        "num": "04 · Szenen-Übungen",
-        "title": "Lebendiges Sprachlernen<br />nach Ort und Situation",
-        "desc": "Wählen Sie eine Szene — Flughafen, Hotel, Restaurant und mehr. KI generiert Sätze und liest sie vor. Üben Sie Aussprache im realen Kontext.",
-        "tag": "✓ Szenbasiertes Sprachlernen"
-      }
-    ],
-    "appLabel": "App erkunden",
-    "appTitle": "Das erwartet Sie",
-    "appCards": [
-      {
-        "badge": "Ausspracheanalyse",
-        "title": "KI bewertet Sie bis zu<br />einzelnen Phonemen",
-        "desc": "Erhalten Sie Ihren Score sofort nach dem Sprechen. Sehen Sie Wort- und Phonemgenauigkeit farbcodiert wie eine Ampel, plus personalisierte Coaching-Tipps der KI.",
-        "img": "/mockup_pronunciation.png",
-        "imgAlt": "Bildschirm Ausspracheanalyse"
-      },
-      {
-        "badge": "Sprach- und Zieleinstellung",
-        "title": "Legen Sie Ihre Sprachen<br />und Zielpunkte fest",
-        "desc": "Wählen Sie bis zu 3 von 8 Sprachen und legen Sie Ihren Zielscore fest — KI passt das Coaching an. Einstellungen jederzeit änderbar.",
-        "img": "/mockup_multilang.png",
-        "imgAlt": "Mehrsprachiger Einstellungsbildschirm"
-      },
-      {
-        "badge": "Szenen-Übungen",
-        "title": "KI generiert szenbasierte<br />Sätze und liest vor",
-        "desc": "Wählen Sie Flughafen, Hotel, Restaurant und mehr. KI erstellt Sätze und liest sie vor. Wiederholen, bewerten lassen und alltagstaugliche Aussprache meistern.",
-        "img": "/mockup_scene.svg",
-        "imgAlt": "Bildschirm Szenen-Übungen"
-      }
-    ],
-    "ctaTitle": "Jetzt sofort anfangen.",
+    "ctaTitle": "Jetzt sofort starten.",
     "ctaHighlight": "Kostenlos. Sofort.",
-    "ctaSub": "30 Sekunden zur Anmeldung. Ihr KI-Aussprache-Coach in 8 Sprachen ist bereit.",
-    "footerNote": "PronunFit · KI-Aussprache-Coach · Ab dem ersten Tag kostenlos",
-    "installPopup": "📲 Installieren Sie die App\nfür sofortigen Zugang"
+    "ctaSub": "Anmeldung in 30 Sekunden. Dein KI-Aussprachecoach in 8 Sprachen wartet.",
+    "footerNote": "PronunFit · KI-Aussprachecoach · Ab Registrierung kostenlos",
+    "footerCopy": "© 2026 PronunFit. All rights reserved.",
+    "installPopup": "📲 App installieren\nfür sofortigen Zugang"
   }
 }

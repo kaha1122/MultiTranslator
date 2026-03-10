@@ -463,107 +463,25 @@
     }
   },
   "landing": {
-    "login": "Connexion",
+    "login": "Se connecter",
     "signUp": "S'inscrire",
     "otherLogin": "Autres options de connexion",
-    "usps": [
-      {
-        "title": "La façon la plus rapide de maîtriser la prononciation native — gratuit",
-        "sub": "L'IA traduit, note et vous entraîne. 8 langues, entièrement gratuit."
-      },
-      {
-        "title": "Écouter · Répéter · Obtenir une note et perfectionner votre accent",
-        "sub": "Voyez la précision, la fluidité et la prosodie sur 5 métriques pour identifier l'écart avec les locuteurs natifs."
-      },
-      {
-        "title": "Votre carnet de vocabulaire intelligent — enregistrer et pratiquer encore",
-        "sub": "Un tap pour enregistrer, puis reprenez-le pour des exercices de prononciation."
-      },
-      {
-        "title": "L'IA propose des phrases selon la scène pour une pratique réelle",
-        "sub": "L'IA génère des phrases selon le lieu et la situation, les lit à voix haute pour guider votre pratique de prononciation."
-      }
-    ],
-    "tagline": "Coach de prononciation IA · 8 langues · Gratuit",
-    "heroTitle": "La façon la plus rapide de maîtriser\nla prononciation native",
-    "heroSub": "L'IA traduit, note et vous entraîne. ",
-    "heroSubEm": "8 langues, entièrement gratuit.",
+    "hero1": "Quelle langue apprenez-vous ? Peu importe la langue, la pratique orale est essentielle, non ?\nL'ère de l'IA !! Une appli qui vous permet d'écouter, parler et analyser votre prononciation avec l'IA, ça vous dit ?",
+    "hero2": "Vous apprenez l'anglais ? Le chinois ? Le japonais ? Le français, l'allemand, l'espagnol, le vietnamien ?\nIl existe une appli pour apprendre n'importe quelle langue avec l'IA.",
+    "heroCta": "Envie d'essayer ?",
+    "demoTitle": "Essayez par vous-même !",
+    "demoGenerate": "✨ Générer une phrase",
+    "demoLoginTitle": "Essai gratuit",
+    "demoLoginMsg": "Inscrivez-vous pour une pratique de prononciation illimitée !",
+    "demoLoginGoogle": "Commencer avec Google",
+    "demoLoginOther": "Autres options de connexion",
+    "guideTitle": "Voici ce qui vous attend",
     "ctaStart": "Commencer avec Google",
-    "stats": [
-      {
-        "num": "8",
-        "label": "Langues"
-      },
-      {
-        "num": "100",
-        "label": "Points"
-      },
-      {
-        "num": "Gratuit",
-        "label": "Toujours gratuit"
-      }
-    ],
-    "sectionLabel": "Fonctionnalités clés",
-    "sectionTitle": "Pourquoi PronunFit ?",
-    "features": [
-      {
-        "icon": "🆓",
-        "num": "01 · Entièrement gratuit",
-        "title": "Prononciation IA en 8 langues,<br />zéro coût",
-        "desc": "Anglais · Coréen · Japonais · Chinois · Vietnamien · Français · Allemand · Espagnol. Pas de pubs, pas de frais cachés — inscrivez-vous et accédez à tout gratuitement.",
-        "tag": "✓ Pas de carte de crédit requise"
-      },
-      {
-        "icon": "🎙️",
-        "num": "02 · Coach de prononciation IA",
-        "title": "Écouter → Répéter →<br />Obtenir votre note",
-        "desc": "L'IA lit la phrase à voix haute — vous la répétez. Analyse en temps réel de la précision, de la fluidité et de la prosodie sur 5 dimensions, visualisées en graphique.",
-        "tag": "✓ Propulsé par Azure AI Speech"
-      },
-      {
-        "icon": "📚",
-        "num": "03 · Carnet de vocabulaire intelligent",
-        "title": "Enregistrer, réviser,<br />et pratiquer encore",
-        "desc": "Mettez une étoile sur n'importe quelle phrase traduite pour la sauvegarder instantanément. Ouvrez votre bibliothèque et commencez à pratiquer la prononciation.",
-        "tag": "✓ Historique d'apprentissage auto-sauvegardé"
-      },
-      {
-        "icon": "🌍",
-        "num": "04 · Pratique par scène",
-        "title": "Apprentissage vivant<br />par lieu et situation",
-        "desc": "Choisissez une scène — aéroport, hôtel, restaurant et plus encore. L'IA génère et lit les phrases à voix haute pour guider votre pratique de prononciation.",
-        "tag": "✓ Apprentissage par scènes"
-      }
-    ],
-    "appLabel": "Explorer l'application",
-    "appTitle": "Voici ce qui vous attend",
-    "appCards": [
-      {
-        "badge": "Analyse de prononciation",
-        "title": "L'IA vous note jusqu'aux<br />phonèmes individuels",
-        "desc": "Obtenez votre score immédiatement après avoir parlé. Voyez la précision par mot et par phonème codée en couleurs comme un feu de circulation, plus des conseils personnalisés de l'IA.",
-        "img": "/mockup_pronunciation.png",
-        "imgAlt": "Écran d'analyse de prononciation"
-      },
-      {
-        "badge": "Paramètres de langue et objectif",
-        "title": "Définissez vos langues<br />et votre score cible",
-        "desc": "Choisissez jusqu'à 3 langues parmi 8 et définissez votre score cible — l'IA adapte son coaching. Modifiez vos paramètres à tout moment.",
-        "img": "/mockup_multilang.png",
-        "imgAlt": "Écran de paramètres multilingues"
-      },
-      {
-        "badge": "Pratique par scène",
-        "title": "L'IA génère des phrases<br />adaptées à la scène",
-        "desc": "Choisissez aéroport, hôtel, restaurant et plus. L'IA crée des phrases et les lit à voix haute. Répétez, notez-vous et maîtrisez la prononciation en contexte réel.",
-        "img": "/mockup_scene.svg",
-        "imgAlt": "Écran de pratique par scène"
-      }
-    ],
     "ctaTitle": "Commencez maintenant.",
-    "ctaHighlight": "Gratuit. Instantané.",
-    "ctaSub": "30 secondes pour s'inscrire. Votre coach de prononciation IA en 8 langues est prêt.",
-    "footerNote": "PronunFit · Coach de prononciation IA · Gratuit dès le premier jour",
-    "installPopup": "📲 Installez l'application\npour un accès instantané"
+    "ctaHighlight": "Gratuit. Immédiat.",
+    "ctaSub": "Inscription en 30 secondes. Votre coach de prononciation IA en 8 langues est prêt.",
+    "footerNote": "PronunFit · Coach de prononciation IA · Gratuit dès l'inscription",
+    "footerCopy": "© 2026 PronunFit. All rights reserved.",
+    "installPopup": "📲 Installez l'appli\npour un accès instantané"
   }
 }
