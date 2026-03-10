@@ -140,8 +140,20 @@ body {
   font-weight: 500;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   line-height: 1.4;
+  flex: 1;
+  min-width: 0;
+}
+
+.tab-context-text .marquee-inner {
+  display: inline-block;
+  animation: marquee-scroll 12s linear infinite;
+  padding-left: 100%;
+}
+
+@keyframes marquee-scroll {
+  0%   { transform: translateX(0); }
+  100% { transform: translateX(-100%); }
 }
 
 .main-logo-3d {

@@ -1202,7 +1202,9 @@ function App() {
                 transition={{ duration: 0.2 }}
               >
                 <span className="tab-context-icon">{ctx.icon}</span>
-                <span className="tab-context-text">{ctx.text}</span>
+                <span className="tab-context-text">
+                  <span className="marquee-inner">{ctx.text}</span>
+                </span>
               </motion.div>
             );
           })()}
