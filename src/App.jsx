@@ -974,7 +974,7 @@ function App() {
   if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
-  if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} />;
+  if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} sourceLang={sourceLang} />;
   if (viewMode === 'stats') return <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} onBack={() => setViewMode('scene')} />;
 
 
