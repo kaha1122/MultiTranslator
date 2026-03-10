@@ -100,7 +100,6 @@ function App() {
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [showLanding, setShowLanding] = useState(true);
-  const [loginInProgress, setLoginInProgress] = useState(false);
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
@@ -986,7 +985,6 @@ function App() {
       || (/Android/.test(ua) && /wv\)/.test(ua))
       || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
     if (isInApp) { setShowLanding(false); return; } // Login 화면이 인앱 경고 처리
-    setLoginInProgress(true); // 스플래시 표시
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
@@ -999,15 +997,11 @@ function App() {
       await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') console.error('Google login error:', err);
-      setLoginInProgress(false); // 실패/취소 시 LandingPage로 복원
     }
   };
 
   // 로그인이 되어있지 않으면 랜딩 → 로그인/회원가입 화면을 보여줍니다.
   if (!user) {
-    if (loginInProgress) {
-      return <SplashScreen onFinish={() => {}} />;
-    }
     if (showLanding) {
       return <LandingPage
         onGoogleLogin={handleGoogleLoginFromLanding}
