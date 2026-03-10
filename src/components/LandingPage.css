@@ -197,27 +197,34 @@
   color: var(--lp-green-light);
 }
 
-/* 씬 칩 */
+/* 씬 그리드 (ScenePractice 스타일) */
 .lp-demo-chips {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
   margin-bottom: 1.2rem;
 }
 .lp-demo-chip {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 0.3rem;
-  padding: 0.4rem 0.8rem;
-  border-radius: 100px;
-  font-size: 0.8rem;
+  gap: 4px;
+  padding: 10px 4px;
+  border-radius: 12px;
+  font-size: 0.62rem;
   font-weight: 600;
   cursor: pointer;
   border: 1px solid rgba(255,255,255,0.08);
-  background: rgba(255,255,255,0.03);
+  background: rgba(255,255,255,0.05);
   color: var(--lp-text-muted);
   transition: all 0.2s;
   font-family: inherit;
+  text-align: center;
+  line-height: 1.2;
+  word-break: keep-all;
+}
+.lp-demo-chip span:first-child {
+  font-size: 1.4rem;
 }
 .lp-demo-chip.active {
   background: rgba(16,185,129,0.15);
