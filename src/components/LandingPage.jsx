@@ -271,9 +271,10 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         <div className="lp-hero-block">
           <p className="lp-hero-text">{c.hero2}</p>
         </div>
-        <button className="lp-hero-cta" onClick={handleScrollToDemo}>
-          {c.heroCta}
-        </button>
+        <div className="lp-hero-btn-wrap">
+          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
+          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
+        </div>
       </section>
 
       {/* ── Scene Demo ── */}
@@ -438,8 +439,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       {/* ── CTA ── */}
       <section className="lp-cta-section">
         <h2 className="lp-cta-title">
-          {c.ctaTitle}<br />
-          <span className="lp-highlight">{c.ctaHighlight}</span>
+          <span className="lp-highlight">{c.ctaTitle2}</span>
         </h2>
         <p className="lp-cta-sub">{c.ctaSub}</p>
         <div className="lp-cta-btn-wrap">

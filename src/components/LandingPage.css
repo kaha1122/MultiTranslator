@@ -132,22 +132,15 @@
   border-radius: 2px;
   animation: lpFadeInUp 0.9s ease 0.3s both;
 }
-.lp-hero-cta {
+.lp-hero-btn-wrap {
   margin-top: 2rem;
-  padding: 1rem 2.5rem;
-  font-size: 1.15rem;
-  font-weight: 800;
-  color: #0B0C10;
-  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
-  border: none;
-  border-radius: 100px;
-  cursor: pointer;
-  box-shadow: 0 8px 24px rgba(16,185,129,0.35);
-  transition: all 0.25s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.7rem;
+  width: 100%;
+  max-width: 320px;
   animation: lpFadeInUp 0.9s ease 0.45s both;
-  font-family: inherit;
 }
-.lp-hero-cta:hover { transform: translateY(-2px); box-shadow: 0 12px 32px rgba(16,185,129,0.5); }
 
 /* ================================================================
    Scene Demo 섹션
