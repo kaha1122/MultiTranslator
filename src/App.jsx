@@ -214,6 +214,11 @@ function App() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
 
+  // 로그인 시 사이드바 닫기 (이전 상태 잔류 방지)
+  React.useEffect(() => {
+    if (user) setSidebarOpen(false);
+  }, [user]);
+
   // 첫 방문 탭 튜토리얼 상태
   const [tutorialTab, setTutorialTab] = useState(null);
   const [tutorialStep, setTutorialStep] = useState(0);
