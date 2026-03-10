@@ -159,11 +159,18 @@
   border-top: 1px solid var(--lp-glass-border);
 }
 .lp-demo-title {
+  text-align: center;
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--lp-text-main);
-  margin-bottom: 1.5rem;
+  margin-bottom: 0.3rem;
   letter-spacing: -0.5px;
+}
+.lp-demo-sub {
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--lp-text-muted);
+  margin-bottom: 1.5rem;
 }
 
 /* 카테고리 토글 */
@@ -261,7 +268,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.4rem;
-  margin-bottom: 1.2rem;
+  margin-bottom: 1.8rem;
 }
 .lp-demo-lang {
   padding: 0.35rem 0.7rem;

@@ -155,7 +155,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
 
   // Scene demo state
   const [category, setCategory] = useState('locations');
-  const [selectedScene, setSelectedScene] = useState(null);
+  const [selectedScene, setSelectedScene] = useState({ id: 'restaurant', icon: '🍽️' });
   const [selectedLang, setSelectedLang] = useState('en');
   const [difficulty, setDifficulty] = useState('intermediate');
   const [speechStyle, setSpeechStyle] = useState('formal');
@@ -264,6 +264,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       {/* ── Scene Demo ── */}
       <section className="lp-demo" ref={demoRef}>
         <h2 className="lp-demo-title">{c.demoTitle}</h2>
+        <p className="lp-demo-sub">{c.demoSub}</p>
 
         {/* 카테고리 토글 */}
         <div className="lp-demo-toggle">
