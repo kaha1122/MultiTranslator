@@ -985,6 +985,7 @@ function App() {
       || (/Android/.test(ua) && /wv\)/.test(ua))
       || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
     if (isInApp) { setShowLanding(false); return; } // Login 화면이 인앱 경고 처리
+    setShowLanding(false); // 로그인 진행 중 LandingPage 숨기기
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
@@ -997,6 +998,7 @@ function App() {
       await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
     } catch (err) {
       if (err.code !== 'auth/popup-closed-by-user') console.error('Google login error:', err);
+      setShowLanding(true); // 실패/취소 시 LandingPage로 복원
     }
   };
 
