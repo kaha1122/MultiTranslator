@@ -206,7 +206,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
     const [selectedLang, setSelectedLang]   = useState(targetLangs?.[0] || 'en');
-    const [difficulty, setDifficulty]       = useState('intermediate');
+    const [difficulty, setDifficulty]       = useState('basic');
     const [speechStyle, setSpeechStyle]     = useState('formal');
     const [generated, setGenerated]         = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);
@@ -219,6 +219,8 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const t = useT(sourceLang);
     const { byokGeminiKey, user } = useAuth();
     const SERVER_URL = getServerUrl();
+    const questionCardRef = useRef(null);
+    const answerCardRef = useRef(null);
 
     // 세션 + Firebase 중복 방지 이력 캐시 — ref로 관리 (렌더 트리거 없음, 동기 읽기 보장)
     const historyCacheRef = useRef({});
@@ -315,6 +317,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             setGenerated(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
+            setTimeout(() => questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -362,6 +365,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             setGeneratedAnswer(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
+            setTimeout(() => answerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -531,6 +535,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             {/* 질문 카드 */}
             {generated && (
+                <div ref={questionCardRef}>
                 <ScenePracticeCard
                     generated={generated}
                     langCode={selectedLang}
@@ -543,10 +548,12 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     targetGoal={languageGoals[selectedLang] || 80}
                     onBookmarkPrompt={onBookmarkPrompt}
                 />
+                </div>
             )}
 
             {/* 답변 카드 */}
             {generatedAnswer && (
+                <div ref={answerCardRef}>
                 <ScenePracticeCard
                     generated={generatedAnswer}
                     langCode={selectedLang}
@@ -559,6 +566,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     targetGoal={languageGoals[selectedLang] || 80}
                     onBookmarkPrompt={onBookmarkPrompt}
                 />
+                </div>
             )}
         </div>
     );
