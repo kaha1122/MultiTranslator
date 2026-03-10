@@ -64,12 +64,27 @@ const GUIDE_SECTIONS = [
 ];
 
 /* ── Demo Card (발음 평가 포함) ── */
-function DemoCard({ generated, langCode, sourceLang, onSpeak }) {
+function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) {
   const t = useT(sourceLang);
+  const ttsCountRef = useRef(0);
+  const recordCountRef = useRef(0);
   const {
     isRecording, isAnalyzing, assessmentResult, coachTip,
     startRecording, stopRecording, errorMsg,
   } = useAudioRecorder(generated.sentence, langCode, sourceLang, null);
+
+  const handleSpeak = () => {
+    if (ttsCountRef.current >= 1) { onLimitReached(); return; }
+    ttsCountRef.current += 1;
+    onSpeak(generated.sentence, langCode);
+  };
+
+  const handleRecord = () => {
+    if (isRecording) { stopRecording(); return; }
+    if (recordCountRef.current >= 1) { onLimitReached(); return; }
+    recordCountRef.current += 1;
+    startRecording();
+  };
 
   return (
     <div className="lp-demo-card">
@@ -79,7 +94,7 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak }) {
           <span>🎬</span>
           <p>{generated.scene_hint}</p>
         </div>
-        <button className="lp-demo-tts-btn" onClick={() => onSpeak(generated.sentence, langCode)}>
+        <button className="lp-demo-tts-btn" onClick={handleSpeak}>
           <Play size={20} fill="white" stroke="white" />
         </button>
       </div>
@@ -129,7 +144,7 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak }) {
         {isAnalyzing && <p className="lp-demo-status analyzing">{t('card.analyzing')}</p>}
         <button
           className={`lp-demo-record-btn ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-          onClick={() => isRecording ? stopRecording() : startRecording()}
+          onClick={handleRecord}
           disabled={isAnalyzing}
         >
           {isAnalyzing
@@ -342,13 +357,16 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         </div>
 
         {/* 생성 버튼 */}
-        <button
-          className="lp-demo-generate"
-          onClick={handleGenerate}
-          disabled={loading || !selectedScene}
-        >
-          {loading ? <RotateCcw size={18} className="spin" /> : c.demoGenerate}
-        </button>
+        <div className="lp-demo-generate-wrap">
+          <button
+            className="lp-demo-generate"
+            onClick={handleGenerate}
+            disabled={loading || !selectedScene}
+          >
+            {loading ? <RotateCcw size={18} className="spin" /> : c.demoGenerate}
+          </button>
+          <p className="lp-demo-hint">{c.demoHint}</p>
+        </div>
 
         {error && <p className="lp-demo-error-msg">{error}</p>}
 
@@ -359,6 +377,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
             langCode={selectedLang}
             sourceLang={langCode}
             onSpeak={onSpeak}
+            onLimitReached={() => setShowLoginModal(true)}
           />
         )}
       </section>

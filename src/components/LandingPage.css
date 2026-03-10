@@ -288,13 +288,18 @@
   color: #93c5fd;
 }
 
-/* 생성 버튼 */
+/* 생성 버튼 wrap */
+.lp-demo-generate-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 1rem;
+}
 .lp-demo-generate {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin: 0 0 1rem;
   padding: 0.85rem 2rem;
   font-size: 1rem;
   font-weight: 800;
@@ -307,6 +312,12 @@
   transition: all 0.25s;
   font-family: inherit;
   min-width: 200px;
+}
+.lp-demo-hint {
+  margin: 0.6rem 0 0;
+  font-size: 0.76rem;
+  color: var(--lp-text-muted);
+  text-align: center;
 }
 .lp-demo-generate:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 10px 28px rgba(16,185,129,0.45); }
 .lp-demo-generate:disabled { opacity: 0.5; cursor: default; }
