@@ -353,7 +353,7 @@
       "s3Desc": "Los puntos ● ● ● ● ● ● en la parte inferior muestran tu posición actual. Toca un punto para ir a esa pestaña. La pestaña activa se muestra como una cápsula verde alargada (━)."
     },
     "scene": {
-      "title": "Scene Practice",
+      "title": "Dialogue",
       "subtitle": "Elige una escena real y practica con IA",
       "s1Label": "PASO 1 — Elegir lugar / situación",
       "s1Desc": "Toca [📍 Lugares] o [🌟 Situaciones] arriba para cambiar de categoría, luego toca el elemento deseado (ej: Restaurante, Hospital).\nSi no encuentras la escena, toca [✏️ Personalizar] para escribirla tú mismo.",
@@ -370,7 +370,7 @@
       "tip3": "💡 Prueba escribir situaciones específicas como \"entrevista de trabajo\" o \"primera cita\""
     },
     "translation": {
-      "title": "Diccionario (Translation)",
+      "title": "Dictionary",
       "subtitle": "Traducción de palabras y frases + consejos IA",
       "s1Label": "PASO 1 — Introducir texto",
       "s1Desc": "Toca el campo de entrada central y escribe la palabra o frase a traducir. Usa los botones de idioma arriba (ej: [Español] [English]) para seleccionar el idioma de origen.",
@@ -405,7 +405,7 @@
       "tip2": "💡 Las puntuaciones de prosodia varían según el idioma (soporte limitado para coreano, vietnamita, etc.)"
     },
     "library": {
-      "title": "Biblioteca (Library)",
+      "title": "Library",
       "subtitle": "Revisar y gestionar tarjetas guardadas",
       "s1Label": "Búsqueda",
       "s1Desc": "Escribe parte de una palabra o frase en la barra de búsqueda para búsqueda en tiempo real en todas las tarjetas guardadas.",

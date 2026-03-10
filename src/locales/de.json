@@ -353,7 +353,7 @@
       "s3Desc": "Die ● ● ● ● ● ● Punkte am unteren Bildschirmrand zeigen Ihre Position. Tippen Sie auf einen Punkt, um zum Tab zu springen. Der aktive Tab wird als längliche grüne Kapsel (━) angezeigt."
     },
     "scene": {
-      "title": "Scene Practice",
+      "title": "Dialogue",
       "subtitle": "Wählen Sie eine Szene und üben Sie mit KI",
       "s1Label": "SCHRITT 1 — Ort / Situation wählen",
       "s1Desc": "Tippen Sie oben auf [📍 Orte] oder [🌟 Situationen], um die Kategorie zu wechseln, dann wählen Sie den gewünschten Eintrag (z.B. Restaurant, Krankenhaus).\nWenn die Szene fehlt, tippen Sie auf [✏️ Eigene Eingabe] und geben Sie sie selbst ein.",
@@ -370,7 +370,7 @@
       "tip3": "💡 Geben Sie spezifische Situationen wie ‚Vorstellungsgespräch' oder ‚erstes Date' ein"
     },
     "translation": {
-      "title": "Wörterbuch (Translation)",
+      "title": "Dictionary",
       "subtitle": "Wort- & Satzübersetzung + KI-Lerntipps",
       "s1Label": "SCHRITT 1 — Text eingeben",
       "s1Desc": "Tippen Sie auf das Eingabefeld und geben Sie das zu übersetzende Wort oder den Satz ein. Wählen Sie die Quellsprache über die Sprachbuttons (z.B. [Deutsch] [English]).",
@@ -405,7 +405,7 @@
       "tip2": "💡 Prosodie-Scores variieren je nach Sprache (eingeschränkte Unterstützung für Koreanisch, Vietnamesisch etc.)"
     },
     "library": {
-      "title": "Bibliothek (Library)",
+      "title": "Library",
       "subtitle": "Gespeicherte Karten wiederholen & verwalten",
       "s1Label": "Suche",
       "s1Desc": "Geben Sie einen Teil eines Wortes oder Satzes in die Suchleiste ein für Echtzeitsuche über alle gespeicherten Karten.",

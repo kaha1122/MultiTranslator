@@ -353,7 +353,7 @@
       "s3Desc": "At the bottom of the screen, ● ● ● ● ● ● dots show your current position. Tap a dot to jump to that tab. The active tab is shown as an elongated green capsule (━)."
     },
     "scene": {
-      "title": "Scene Practice",
+      "title": "Dialogue",
       "subtitle": "Pick a real-world scene and practice with AI",
       "s1Label": "STEP 1 — Choose Location / Situation",
       "s1Desc": "Tap [📍 Locations] or [🌟 Situations] at the top to switch categories, then tap your desired item (e.g., Restaurant, Hospital).\nIf you don't see the scene you want, tap [✏️ Custom] and type it yourself.",
@@ -370,7 +370,7 @@
       "tip3": "💡 Try typing specific situations like \"job interview\" or \"first date\" in Custom input"
     },
     "translation": {
-      "title": "Dictionary (Translation)",
+      "title": "Dictionary",
       "subtitle": "Translate words & sentences + AI learning tips",
       "s1Label": "STEP 1 — Enter Text",
       "s1Desc": "Tap the center input field and type the word or sentence to translate. Use the language buttons above the input (e.g., [Korean] [English]) to select the source language.",

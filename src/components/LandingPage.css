@@ -480,6 +480,20 @@
 /* ================================================================
    Guide Accordion
    ================================================================ */
+/* 중간 로그인 CTA */
+.lp-mid-cta {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 5%;
+}
+.lp-mid-cta .lp-cta-btn-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-width: 320px;
+  margin: 0 auto;
+}
+
 .lp-guide {
   position: relative;
   z-index: 1;

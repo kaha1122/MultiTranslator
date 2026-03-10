@@ -353,7 +353,7 @@
       "s3Desc": "Les points ● ● ● ● ● ● en bas de l'écran indiquent votre position. Appuyez sur un point pour accéder directement à l'onglet. L'onglet actif est affiché sous forme de capsule verte allongée (━)."
     },
     "scene": {
-      "title": "Scene Practice",
+      "title": "Dialogue",
       "subtitle": "Choisissez une scène réelle et pratiquez avec l'IA",
       "s1Label": "ÉTAPE 1 — Choisir un lieu / une situation",
       "s1Desc": "Appuyez sur [📍 Lieux] ou [🌟 Situations] en haut pour changer de catégorie, puis appuyez sur l'élément souhaité (ex : Restaurant, Hôpital).\nSi la scène souhaitée n'existe pas, appuyez sur [✏️ Personnaliser] pour la saisir vous-même.",
@@ -370,7 +370,7 @@
       "tip3": "💡 Essayez de saisir des situations spécifiques comme « entretien d'embauche » ou « premier rendez-vous »"
     },
     "translation": {
-      "title": "Dictionnaire (Translation)",
+      "title": "Dictionary",
       "subtitle": "Traduction de mots et phrases + conseils IA",
       "s1Label": "ÉTAPE 1 — Saisir le texte",
       "s1Desc": "Appuyez sur le champ de saisie central et tapez le mot ou la phrase à traduire. Utilisez les boutons de langue au-dessus (ex : [Français] [English]) pour sélectionner la langue source.",
@@ -405,7 +405,7 @@
       "tip2": "💡 Les scores de prosodie varient selon la langue (support limité pour le coréen, vietnamien, etc.)"
     },
     "library": {
-      "title": "Bibliothèque (Library)",
+      "title": "Library",
       "subtitle": "Réviser et gérer les cartes sauvegardées",
       "s1Label": "Recherche",
       "s1Desc": "Tapez une partie d'un mot ou d'une phrase dans la barre de recherche pour une recherche en temps réel dans toutes les cartes.",

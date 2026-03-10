@@ -53,7 +53,6 @@ const ALL_LANGS = [
 
 /* ── Guide 섹션 메타 (AppGuide.jsx와 동일) ── */
 const GUIDE_SECTIONS = [
-  { id: 'nav', emoji: '☰', color: '#6366f1', stepIcons: ['☰','👆','⬤'], stepCount: 3, tipCount: 0 },
   { id: 'scene', emoji: '🎭', color: '#059669', stepIcons: ['📍','⚙️','✨','🎙️','☆'], stepCount: 5, tipCount: 3 },
   { id: 'translation', emoji: '🔤', color: '#2563eb', stepIcons: ['⌨️','🌐','💡','🔊','🎙️','☆'], stepCount: 6, tipCount: 3 },
   { id: 'pronunciation', emoji: '🎙️', color: '#dc2626', stepIcons: ['🎯','🌊','🎭','🔬','🎧'], stepCount: 5, tipCount: 2 },
@@ -61,6 +60,7 @@ const GUIDE_SECTIONS = [
   { id: 'vocab', emoji: '📖', color: '#8b5cf6', stepIcons: ['🗂️','⚙️','✨','📇','☆'], stepCount: 5, tipCount: 3 },
   { id: 'video', emoji: '🎬', color: '#0891b2', stepIcons: ['🌐','▶️','📝','🌐'], stepCount: 4, tipCount: 3 },
   { id: 'goal', emoji: '🎯', color: '#db2777', stepIcons: ['⚙️','📊','🎉','🎯'], stepCount: 4, tipCount: 2 },
+  { id: 'nav', emoji: '☰', color: '#6366f1', stepIcons: ['☰','👆','⬤'], stepCount: 3, tipCount: 0 },
 ];
 
 /* ── Demo Card (발음 평가 포함) ── */
@@ -381,6 +381,14 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
             onLimitReached={() => setShowLoginModal(true)}
           />
         )}
+      </section>
+
+      {/* ── 중간 로그인 CTA ── */}
+      <section className="lp-mid-cta">
+        <div className="lp-cta-btn-wrap">
+          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
+          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
+        </div>
       </section>
 
       {/* ── Guide Accordion ── */}

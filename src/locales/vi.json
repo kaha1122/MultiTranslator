@@ -353,7 +353,7 @@
       "s3Desc": "Các chấm ● ● ● ● ● ● ở cuối màn hình hiển thị vị trí hiện tại. Chạm vào chấm để nhảy đến tab đó. Tab hiện tại hiển thị dạng viên nang xanh lá dài (━)."
     },
     "scene": {
-      "title": "Scene Practice",
+      "title": "Dialogue",
       "subtitle": "Chọn tình huống thực tế để luyện hội thoại với AI",
       "s1Label": "STEP 1 — Chọn địa điểm / tình huống",
       "s1Desc": "Chạm tab [📍 Địa điểm] hoặc [🌟 Tình huống] ở trên để chuyển danh mục, rồi chạm mục mong muốn (ví dụ: Nhà hàng, Bệnh viện).\nNếu không có tình huống phù hợp, chạm [✏️ Tùy chỉnh] để tự nhập.",
@@ -370,7 +370,7 @@
       "tip3": "💡 Thử nhập các tình huống cụ thể như \"phỏng vấn xin việc\" hoặc \"buổi hẹn đầu tiên\" vào ô tùy chỉnh"
     },
     "translation": {
-      "title": "Từ điển (Translation)",
+      "title": "Dictionary",
       "subtitle": "Dịch từ & câu + mẹo học từ AI",
       "s1Label": "STEP 1 — Nhập văn bản",
       "s1Desc": "Chạm ô nhập ở giữa và gõ từ hoặc câu cần dịch. Dùng các nút ngôn ngữ phía trên ô nhập (ví dụ: [Tiếng Việt] [English]) để chọn ngôn ngữ nguồn.",
@@ -405,7 +405,7 @@
       "tip2": "💡 Điểm ngữ điệu khác nhau theo ngôn ngữ (hỗ trợ hạn chế cho tiếng Hàn, tiếng Việt, v.v.)"
     },
     "library": {
-      "title": "Thư viện (Library)",
+      "title": "Library",
       "subtitle": "Ôn tập & quản lý thẻ đã lưu",
       "s1Label": "Tìm kiếm",
       "s1Desc": "Nhập một phần từ hoặc câu vào thanh tìm kiếm ở trên để tìm kiếm thời gian thực trong tất cả thẻ đã lưu.",
