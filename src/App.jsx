@@ -1871,6 +1871,7 @@ function App() {
           total={TAB_TUTORIALS[tutorialTab].length}
           onNext={handleTutorialNext}
           onSkip={handleTutorialSkip}
+          sourceLang={sourceLang}
         />
       )}
 
