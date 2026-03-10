@@ -90,7 +90,14 @@
     "tierSilver": "Silver",
     "tierPro": "Pro",
     "tierPremium": "Premium",
-    "logout": "Se déconnecter"
+    "logout": "Se déconnecter",
+    "selectSource": "Sélectionner la langue maternelle",
+    "selectTarget": "Sélectionner les langues cibles (Max 3)",
+    "targetCount": "Actuellement {n}/3 sélectionnées",
+    "scoreGoals": "Objectifs de score",
+    "scoreGoalsDesc": "Définissez votre score cible de prononciation pour chaque langue.",
+    "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
+    "saveReturn": "Enregistrer & Retour"
   },
   "scene": {
     "tabTitle": "Pratique Scène",

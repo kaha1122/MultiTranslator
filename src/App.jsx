@@ -1577,7 +1577,7 @@ function App() {
             {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
             <div className="settings-group">
               <label className="settings-label">
-                <ArrowLeft size={18} /> Select Source Language
+                <ArrowLeft size={18} /> {getT(sourceLang, 'settings.selectSource')}
               </label>
               <div className="lang-grid">
                 {SUPPORTED_LANGUAGES.map((lang) => (
@@ -1596,9 +1596,9 @@ function App() {
             {/* 도착 언어(번역될 언어)를 바꾸는 곳 */}
             <div className="settings-group">
               <label className="settings-label">
-                Select Target Languages (Max 3)
+                {getT(sourceLang, 'settings.selectTarget')}
               </label>
-              <p className="target-limit-msg">Currently {targetLangs.length}/3 selected</p>
+              <p className="target-limit-msg">{getT(sourceLang, 'settings.targetCount').replace('{n}', targetLangs.length)}</p>
               <div className="lang-grid">
                 {SUPPORTED_LANGUAGES.map((lang) => (
                   <div
@@ -1615,9 +1615,9 @@ function App() {
 
             {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
             <div className="settings-group">
-              <label className="settings-label">Target Score Goals 🎯</label>
-              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
-                Set your pronunciation target score for each language.
+              <label className="settings-label">{getT(sourceLang, 'settings.scoreGoals')} 🎯</label>
+              <p className="target-limit-msg" style={{ marginBottom: '0.6rem', color: 'var(--text-secondary)' }}>
+                {getT(sourceLang, 'settings.scoreGoalsDesc')}
               </p>
               <div className="goal-sliders">
                 {targetLangs.map(code => {
@@ -1639,7 +1639,7 @@ function App() {
                   );
                 })}
                 {targetLangs.length === 0 && (
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>Please select a target language above first.</p>
+                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)' }}>{getT(sourceLang, 'settings.noTarget')}</p>
                 )}
               </div>
             </div>
@@ -1667,7 +1667,7 @@ function App() {
             </div>
 
             <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
-              Save Settings & Return
+              {getT(sourceLang, 'settings.saveReturn')}
             </button>
 
             {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}

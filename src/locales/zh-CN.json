@@ -90,7 +90,14 @@
     "tierSilver": "银牌",
     "tierPro": "专业版",
     "tierPremium": "高级版",
-    "logout": "退出登录"
+    "logout": "退出登录",
+    "selectSource": "选择母语",
+    "selectTarget": "选择学习语言（最多3个）",
+    "targetCount": "当前已选 {n}/3",
+    "scoreGoals": "目标分数设置",
+    "scoreGoalsDesc": "设置各语言的发音目标分数。",
+    "noTarget": "请先在上方选择学习语言。",
+    "saveReturn": "保存设置并返回"
   },
   "scene": {
     "tabTitle": "场景练习",

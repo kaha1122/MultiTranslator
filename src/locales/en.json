@@ -90,7 +90,14 @@
     "tierSilver": "Silver",
     "tierPro": "Pro",
     "tierPremium": "Premium",
-    "logout": "Logout"
+    "logout": "Logout",
+    "selectSource": "Select Source Language",
+    "selectTarget": "Select Target Languages (Max 3)",
+    "targetCount": "Currently {n}/3 selected",
+    "scoreGoals": "Target Score Goals",
+    "scoreGoalsDesc": "Set your pronunciation target score for each language.",
+    "noTarget": "Please select a target language above first.",
+    "saveReturn": "Save Settings & Return"
   },
   "scene": {
     "tabTitle": "Scene Practice",

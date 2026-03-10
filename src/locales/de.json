@@ -90,7 +90,14 @@
     "tierSilver": "Silber",
     "tierPro": "Pro",
     "tierPremium": "Premium",
-    "logout": "Abmelden"
+    "logout": "Abmelden",
+    "selectSource": "Muttersprache auswählen",
+    "selectTarget": "Lernsprachen auswählen (Max. 3)",
+    "targetCount": "Aktuell {n}/3 ausgewählt",
+    "scoreGoals": "Zielscore-Einstellungen",
+    "scoreGoalsDesc": "Setze dein Aussprache-Ziel für jede Sprache.",
+    "noTarget": "Bitte wähle zuerst oben eine Zielsprache aus.",
+    "saveReturn": "Einstellungen speichern & Zurück"
   },
   "scene": {
     "tabTitle": "Szenen-Übung",

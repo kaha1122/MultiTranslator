@@ -90,7 +90,14 @@
     "tierSilver": "Plata",
     "tierPro": "Pro",
     "tierPremium": "Premium",
-    "logout": "Cerrar sesión"
+    "logout": "Cerrar sesión",
+    "selectSource": "Seleccionar idioma nativo",
+    "selectTarget": "Seleccionar idiomas de estudio (Máx. 3)",
+    "targetCount": "Actualmente {n}/3 seleccionados",
+    "scoreGoals": "Objetivos de puntuación",
+    "scoreGoalsDesc": "Establece tu puntuación objetivo de pronunciación para cada idioma.",
+    "noTarget": "Por favor, selecciona primero un idioma objetivo arriba.",
+    "saveReturn": "Guardar ajustes y volver"
   },
   "scene": {
     "tabTitle": "Práctica de Escenas",

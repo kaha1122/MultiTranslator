@@ -90,7 +90,14 @@
     "tierSilver": "Bạc",
     "tierPro": "Pro",
     "tierPremium": "Premium",
-    "logout": "Đăng xuất"
+    "logout": "Đăng xuất",
+    "selectSource": "Chọn ngôn ngữ mẹ đẻ",
+    "selectTarget": "Chọn ngôn ngữ học (Tối đa 3)",
+    "targetCount": "Đã chọn {n}/3",
+    "scoreGoals": "Mục tiêu điểm số",
+    "scoreGoalsDesc": "Đặt điểm mục tiêu phát âm cho từng ngôn ngữ.",
+    "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
+    "saveReturn": "Lưu cài đặt & Quay lại"
   },
   "scene": {
     "tabTitle": "Luyện Tình Huống",
