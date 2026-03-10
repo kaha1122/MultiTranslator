@@ -468,7 +468,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
             <button className="lp-modal-close" onClick={() => setShowLoginModal(false)}>✕</button>
             <div className="lp-modal-emoji">🎯</div>
             <h3 className="lp-modal-title">{c.demoLoginTitle}</h3>
-            <p className="lp-modal-msg">{c.demoLoginMsg}</p>
             <button className="lp-modal-google" onClick={onGoogleLogin}>{c.demoLoginGoogle}</button>
             <button className="lp-modal-other" onClick={onLogin}>{c.demoLoginOther}</button>
           </div>
