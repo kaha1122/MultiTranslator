@@ -148,7 +148,6 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak }) {
 const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
   const bottomRef = useRef(null);
   const demoRef = useRef(null);
-  const guideScrollRef = useRef(null);
   const demoCountRef = useRef(0);
 
   const [showInstallPopup, setShowInstallPopup] = useState(false);
@@ -164,8 +163,8 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Guide carousel
-  const [activeGuide, setActiveGuide] = useState(0);
+  // Guide accordion
+  const [openGuide, setOpenGuide] = useState('scene');
 
   const langCode = detectLang();
   const t = useT(langCode);
@@ -182,26 +181,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
     return () => obs.disconnect();
   }, [showInstall]);
 
-  // Guide carousel dot tracking
-  useEffect(() => {
-    const el = guideScrollRef.current;
-    if (!el) return;
-    const cards = el.querySelectorAll('.lp-guide-card');
-    if (!cards.length) return;
-    const obs = new IntersectionObserver(
-      (entries) => {
-        entries.forEach(entry => {
-          if (entry.isIntersecting) {
-            const idx = Number(entry.target.dataset.idx);
-            if (!isNaN(idx)) setActiveGuide(idx);
-          }
-        });
-      },
-      { root: el, threshold: 0.6 }
-    );
-    cards.forEach(c => obs.observe(c));
-    return () => obs.disconnect();
-  }, []);
 
   const handleScrollToDemo = () => {
     demoRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -245,11 +224,8 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
     }
   };
 
-  const handleGuideScroll = (idx) => {
-    const el = guideScrollRef.current;
-    if (!el) return;
-    const card = el.children[idx];
-    if (card) card.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+  const handleGuideToggle = (secId) => {
+    setOpenGuide(openGuide === secId ? null : secId);
   };
 
   if (!c) return null;
@@ -386,60 +362,56 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         )}
       </section>
 
-      {/* ── Guide Carousel ── */}
+      {/* ── Guide Accordion ── */}
       <section className="lp-guide">
         <h2 className="lp-guide-title">{c.guideTitle}</h2>
-        <div className="lp-guide-scroll" ref={guideScrollRef}>
-          {GUIDE_SECTIONS.map((sec, idx) => {
+        <div className="lp-guide-list">
+          {GUIDE_SECTIONS.map((sec) => {
             const prefix = `guide.${sec.id}`;
+            const isOpen = openGuide === sec.id;
             return (
               <div
                 key={sec.id}
-                className="lp-guide-card"
-                data-idx={idx}
+                className={`lp-guide-card ${isOpen ? 'open' : ''}`}
                 style={{ '--gc-color': sec.color }}
               >
-                <div className="lp-guide-card-header">
-                  <span className="lp-guide-card-emoji">{sec.emoji}</span>
-                  <div>
-                    <div className="lp-guide-card-name">{t(`${prefix}.title`)}</div>
-                    {t(`${prefix}.subtitle`) !== `${prefix}.subtitle` && (
-                      <div className="lp-guide-card-sub">{t(`${prefix}.subtitle`)}</div>
-                    )}
-                  </div>
-                </div>
-                <div className="lp-guide-card-steps">
-                  {Array.from({ length: sec.stepCount }, (_, i) => (
-                    <div key={i} className="lp-guide-step">
-                      <span className="lp-guide-step-icon">{sec.stepIcons[i]}</span>
-                      <div>
-                        <div className="lp-guide-step-label" style={{ color: sec.color }}>{t(`${prefix}.s${i + 1}Label`)}</div>
-                        <div className="lp-guide-step-desc">{t(`${prefix}.s${i + 1}Desc`)}</div>
-                      </div>
+                <button className="lp-guide-card-header" onClick={() => handleGuideToggle(sec.id)}>
+                  <div className="lp-guide-card-header-left">
+                    <span className="lp-guide-card-emoji">{sec.emoji}</span>
+                    <div>
+                      <div className="lp-guide-card-name">{t(`${prefix}.title`)}</div>
+                      {t(`${prefix}.subtitle`) !== `${prefix}.subtitle` && (
+                        <div className="lp-guide-card-sub">{t(`${prefix}.subtitle`)}</div>
+                      )}
                     </div>
-                  ))}
-                </div>
-                {sec.tipCount > 0 && (
-                  <div className="lp-guide-tips" style={{ borderColor: sec.color, background: `${sec.color}15` }}>
-                    {Array.from({ length: sec.tipCount }, (_, i) => (
-                      <p key={i} className="lp-guide-tip">{t(`${prefix}.tip${i + 1}`)}</p>
-                    ))}
+                  </div>
+                  <span className="lp-guide-chevron">{isOpen ? '▲' : '▼'}</span>
+                </button>
+                {isOpen && (
+                  <div className="lp-guide-card-body">
+                    <div className="lp-guide-card-steps">
+                      {Array.from({ length: sec.stepCount }, (_, i) => (
+                        <div key={i} className="lp-guide-step">
+                          <span className="lp-guide-step-icon">{sec.stepIcons[i]}</span>
+                          <div>
+                            <div className="lp-guide-step-label" style={{ color: sec.color }}>{t(`${prefix}.s${i + 1}Label`)}</div>
+                            <div className="lp-guide-step-desc">{t(`${prefix}.s${i + 1}Desc`)}</div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    {sec.tipCount > 0 && (
+                      <div className="lp-guide-tips" style={{ borderColor: sec.color, background: `${sec.color}15` }}>
+                        {Array.from({ length: sec.tipCount }, (_, i) => (
+                          <p key={i} className="lp-guide-tip">{t(`${prefix}.tip${i + 1}`)}</p>
+                        ))}
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
             );
           })}
-        </div>
-        {/* Dots */}
-        <div className="lp-guide-dots">
-          {GUIDE_SECTIONS.map((sec, idx) => (
-            <button
-              key={idx}
-              className={`lp-guide-dot ${activeGuide === idx ? 'active' : ''}`}
-              style={activeGuide === idx ? { background: sec.color } : {}}
-              onClick={() => handleGuideScroll(idx)}
-            />
-          ))}
         </div>
       </section>
 
@@ -459,7 +431,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
 
       {/* ── Footer ── */}
       <footer className="lp-footer">
-        <p className="lp-footer-brand">{c.footerNote}</p>
         <div className="lp-footer-links">
           <button onClick={onPrivacy}>{t('nav.privacy')}</button>
           <span>·</span>

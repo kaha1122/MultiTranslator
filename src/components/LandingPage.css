@@ -117,10 +117,10 @@
 }
 .lp-hero-block:nth-child(2) { animation-delay: 0.15s; }
 .lp-hero-text {
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.55rem;
+  font-weight: 700;
   color: var(--lp-text-main);
-  line-height: 1.8;
+  line-height: 1.75;
   white-space: pre-line;
   word-break: keep-all;
 }
@@ -159,7 +159,6 @@
   border-top: 1px solid var(--lp-glass-border);
 }
 .lp-demo-title {
-  text-align: center;
   font-size: 1.6rem;
   font-weight: 800;
   color: var(--lp-text-main);
@@ -170,7 +169,6 @@
 /* 카테고리 토글 */
 .lp-demo-toggle {
   display: flex;
-  justify-content: center;
   gap: 0.5rem;
   margin-bottom: 1rem;
 }
@@ -196,12 +194,8 @@
 .lp-demo-chips {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.5rem;
   margin-bottom: 1.2rem;
-  max-width: 600px;
-  margin-left: auto;
-  margin-right: auto;
 }
 .lp-demo-chip {
   display: flex;
@@ -226,8 +220,7 @@
 
 /* 난이도 / 말투 옵션 */
 .lp-demo-options {
-  max-width: 500px;
-  margin: 0 auto 1rem;
+  margin: 0 0 1rem;
   display: flex;
   flex-direction: column;
   gap: 0.6rem;
@@ -267,12 +260,8 @@
 .lp-demo-langs {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: 0.4rem;
   margin-bottom: 1.2rem;
-  max-width: 500px;
-  margin-left: auto;
-  margin-right: auto;
 }
 .lp-demo-lang {
   padding: 0.35rem 0.7rem;
@@ -298,7 +287,7 @@
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  margin: 0 auto 1rem;
+  margin: 0 0 1rem;
   padding: 0.85rem 2rem;
   font-size: 1rem;
   font-weight: 800;
@@ -471,12 +460,12 @@
 .lp-demo-record-btn:disabled { cursor: default; }
 
 /* ================================================================
-   Guide Carousel
+   Guide Accordion
    ================================================================ */
 .lp-guide {
   position: relative;
   z-index: 1;
-  padding: 3rem 0 2rem;
+  padding: 3rem 5% 2rem;
   border-top: 1px solid var(--lp-glass-border);
 }
 .lp-guide-title {
@@ -485,51 +474,62 @@
   font-weight: 800;
   color: var(--lp-text-main);
   margin-bottom: 1.5rem;
-  padding: 0 5%;
   letter-spacing: -0.5px;
 }
 
-/* 가로 스크롤 컨테이너 */
-.lp-guide-scroll {
+.lp-guide-list {
   display: flex;
-  gap: 1rem;
-  overflow-x: auto;
-  scroll-snap-type: x mandatory;
-  -webkit-overflow-scrolling: touch;
-  padding: 0 5% 1rem;
-  scrollbar-width: none;
+  flex-direction: column;
+  gap: 0.5rem;
 }
-.lp-guide-scroll::-webkit-scrollbar { display: none; }
 
-/* 카드 */
 .lp-guide-card {
-  flex: 0 0 85%;
-  max-width: 400px;
-  scroll-snap-align: center;
   background: rgba(255,255,255,0.04);
   border: 1px solid rgba(255,255,255,0.08);
-  border-left: 3px solid var(--gc-color);
-  border-radius: 16px;
-  padding: 1.2rem;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
+  border-radius: 14px;
+  overflow: hidden;
+  transition: border-color 0.2s;
 }
+.lp-guide-card.open {
+  border-color: var(--gc-color);
+}
+
 .lp-guide-card-header {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  gap: 0.75rem;
+  color: inherit;
+  font-family: inherit;
+}
+.lp-guide-card.open .lp-guide-card-header {
+  background: rgba(255,255,255,0.03);
+}
+.lp-guide-card-header-left {
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  margin-bottom: 1rem;
-  padding-bottom: 0.8rem;
-  border-bottom: 1px solid rgba(255,255,255,0.06);
 }
-.lp-guide-card-emoji { font-size: 1.5rem; flex-shrink: 0; }
-.lp-guide-card-name { font-size: 1rem; font-weight: 700; color: var(--lp-text-main); }
-.lp-guide-card-sub { font-size: 0.75rem; color: var(--lp-text-muted); margin-top: 2px; }
+.lp-guide-card-emoji { font-size: 1.4rem; flex-shrink: 0; }
+.lp-guide-card-name { font-size: 0.95rem; font-weight: 700; color: var(--lp-text-main); }
+.lp-guide-card-sub { font-size: 0.72rem; color: var(--lp-text-muted); margin-top: 2px; }
+.lp-guide-chevron { font-size: 0.65rem; color: var(--lp-text-muted); flex-shrink: 0; }
 
+.lp-guide-card-body {
+  padding: 0.2rem 1rem 1rem;
+  border-top: 1px solid rgba(255,255,255,0.05);
+}
 .lp-guide-card-steps {
   display: flex;
   flex-direction: column;
   gap: 0.7rem;
+  padding-top: 0.5rem;
 }
 .lp-guide-step {
   display: flex;
@@ -564,28 +564,6 @@
   font-size: 0.76rem;
   color: var(--lp-text-muted);
   line-height: 1.5;
-}
-
-/* Dots */
-.lp-guide-dots {
-  display: flex;
-  justify-content: center;
-  gap: 0.4rem;
-  margin-top: 1rem;
-  padding: 0 5%;
-}
-.lp-guide-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 100px;
-  border: none;
-  background: rgba(255,255,255,0.15);
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.3s;
-}
-.lp-guide-dot.active {
-  width: 22px;
 }
 
 /* ================================================================
@@ -661,11 +639,6 @@
   padding: 2rem 5% 3rem;
   text-align: center;
   border-top: 1px solid var(--lp-glass-border);
-}
-.lp-footer-brand {
-  font-size: 0.8rem;
-  color: var(--lp-text-muted);
-  margin-bottom: 0.8rem;
 }
 .lp-footer-links {
   display: flex;
@@ -874,10 +847,9 @@
   .lp-logo { font-size: 1.5rem; }
   .lp-nav { padding: 1.3rem 6%; }
   .lp-hero { padding: 7rem 8% 4rem; }
-  .lp-hero-text { font-size: 1.5rem; }
+  .lp-hero-text { font-size: 1.8rem; }
   .lp-demo-title { font-size: 2rem; }
   .lp-guide-title { font-size: 2rem; }
-  .lp-guide-card { flex: 0 0 55%; max-width: 440px; }
   .lp-cta-title { font-size: 2.4rem; }
   .lp-cta-btn-wrap { flex-direction: row; max-width: none; justify-content: center; }
   .lp-btn { width: auto; padding: 0.9rem 2rem; }
@@ -887,7 +859,6 @@
    Desktop (1024px+)
    ================================================================ */
 @media (min-width: 1024px) {
-  .lp-hero-text { font-size: 1.65rem; }
-  .lp-guide-card { flex: 0 0 38%; max-width: 460px; }
+  .lp-hero-text { font-size: 2rem; }
   .lp-cta-title { font-size: 2.8rem; }
 }
