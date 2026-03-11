@@ -129,9 +129,10 @@ export default function VocabTab({
             difficulty: level === 'advanced' ? 'high' : level,
         });
 
+        if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
-        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
+        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     // ── Render ───────────────────────────────────────────────────────

@@ -376,7 +376,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     };
 
     const handleSave = async (pronunciationScore = null) => {
-        if (!generated || !selectedScene) return;
+        if (!generated || !selectedScene || isSaved) return;
         const cardId = await onSaveToLibrary({
             sentence:          generated.sentence,
             translation:       generated.translation,
@@ -388,14 +388,14 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             pronunciationScore,
             difficulty,
         });
+        if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
         setIsSaved(true);
-        setTimeout(() => setIsSaved(false), 1200);
-        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
+        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     const handleAnswerSave = async (pronunciationScore = null) => {
-        if (!generatedAnswer || !selectedScene) return;
+        if (!generatedAnswer || !selectedScene || isAnswerSaved) return;
         const cardId = await onSaveToLibrary({
             sentence:          generatedAnswer.sentence,
             translation:       generatedAnswer.translation,
@@ -407,10 +407,10 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             pronunciationScore,
             difficulty,
         });
+        if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
         setIsAnswerSaved(true);
-        setTimeout(() => setIsAnswerSaved(false), 1200);
-        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
+        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     const currentScenes = SCENES[category];

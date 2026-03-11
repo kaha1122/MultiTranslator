@@ -879,6 +879,19 @@ function App() {
       setShowTrialLimitModal(true);
       return;
     }
+    // 중복 체크: 같은 문장이 이미 저장되어 있으면 기존 ID 반환
+    try {
+      const dupQ = query(
+        collection(db, "savedCards"),
+        where("userId", "==", user.uid),
+        where("translatedText", "==", sentence),
+        where("sourceType", "==", "scene")
+      );
+      const dupSnap = await getDocs(dupQ);
+      const active = dupSnap.docs.find(d => !d.data().isDeleted);
+      if (active) return null; // 이미 저장됨 → 중복 방지
+    } catch (e) { console.error("Scene duplicate check failed:", e); }
+
     const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     try {
       const docRef = await addDoc(collection(db, "savedCards"), {
@@ -922,6 +935,19 @@ function App() {
       setShowTrialLimitModal(true);
       return;
     }
+    // 중복 체크: 같은 단어가 이미 저장되어 있으면 기존 ID 반환
+    try {
+      const dupQ = query(
+        collection(db, "savedCards"),
+        where("userId", "==", user.uid),
+        where("translatedText", "==", word),
+        where("sourceType", "==", "vocab")
+      );
+      const dupSnap = await getDocs(dupQ);
+      const active = dupSnap.docs.find(d => !d.data().isDeleted);
+      if (active) return null; // 이미 저장됨 → 중복 방지
+    } catch (e) { console.error("Vocab duplicate check failed:", e); }
+
     const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     try {
       const tips = [];
