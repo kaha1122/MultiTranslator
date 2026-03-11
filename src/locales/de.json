@@ -122,7 +122,8 @@
     "generate": "Wörter generieren",
     "regenerate": "Andere Wörter",
     "generating": "Vokabeln werden generiert...",
-    "selectTopic": "Wähle oben ein Thema, um Vokabelkarten zu erstellen"
+    "selectTopic": "Wähle oben ein Thema, um Vokabelkarten zu erstellen",
+    "backToVocab": "Zurück zu Vokabeln"
   },
   "sceneLoc": {
     "airport": "Flughafen & Flug",

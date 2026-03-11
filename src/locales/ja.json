@@ -122,7 +122,8 @@
     "generate": "単語を生成",
     "regenerate": "他の単語",
     "generating": "単語を生成中...",
-    "selectTopic": "上のトピックを選ぶと単語カードが作られます"
+    "selectTopic": "上のトピックを選ぶと単語カードが作られます",
+    "backToVocab": "単語学習に戻る"
   },
   "sceneLoc": {
     "airport": "空港・機内",

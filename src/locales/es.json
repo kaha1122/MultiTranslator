@@ -122,7 +122,8 @@
     "generate": "Generar palabras",
     "regenerate": "Otras palabras",
     "generating": "Generando vocabulario...",
-    "selectTopic": "Selecciona un tema arriba para generar tarjetas de vocabulario"
+    "selectTopic": "Selecciona un tema arriba para generar tarjetas de vocabulario",
+    "backToVocab": "Volver a Vocabulario"
   },
   "sceneLoc": {
     "airport": "Aeropuerto & Vuelo",

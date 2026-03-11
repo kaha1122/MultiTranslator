@@ -29,6 +29,7 @@ export default function VocabTab({
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
+    onNavigateToLibrary,
 }) {
     const { byokGeminiKey } = useAuth();
     const t = useT(sourceLang);
@@ -114,7 +115,7 @@ export default function VocabTab({
         if (savedWords.has(index)) return;
         if (!onSaveToLibrary) return;
 
-        await onSaveToLibrary({
+        const cardId = await onSaveToLibrary({
             word: wordObj.word,
             meaning: wordObj.meaning,
             example: wordObj.example,
@@ -126,6 +127,7 @@ export default function VocabTab({
         });
 
         setSavedWords(prev => new Set([...prev, index]));
+        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     // ── Render ───────────────────────────────────────────────────────

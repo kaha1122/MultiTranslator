@@ -2,6 +2,39 @@
    Library Filter — 바텀시트 + 드롭다운 + 토글칩 스타일
    ============================================================ */
 
+/* ── Vocab에서 넘어온 경우 Back 버튼 바 ── */
+.library-back-bar {
+  display: flex;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.library-back-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: #f1f5f9;
+  border: 1px solid #e2e8f0;
+  border-radius: 20px;
+  color: #334155;
+  font-size: 0.85rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.library-back-btn:hover {
+  background: #e2e8f0;
+}
+
+/* ── 카드 포커스 하이라이트 애니메이션 ── */
+.library-card-highlight {
+  animation: cardHighlight 2s ease-out;
+}
+@keyframes cardHighlight {
+  0%   { box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.6); }
+  100% { box-shadow: none; }
+}
+
 /* ── 필터 컨테이너 ── */
 .lib-filter-box {
   background: #ffffff;

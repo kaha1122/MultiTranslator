@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
-import { Search, Trash2, Volume2, PenLine, ChevronDown } from 'lucide-react';
+import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import './Library.css';
 
@@ -16,7 +16,7 @@ function getThisWeekMonday() {
     return mon;
 }
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 
@@ -93,6 +93,40 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         if (observerTarget.current) observer.observe(observerTarget.current);
         return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
     }, [hasMore, searchTerm]);
+
+    // ── Vocab에서 넘어온 카드 포커스: 필터 초기화 + 스크롤 ──
+    const focusCardPending = useRef(null);
+    useEffect(() => {
+        if (!focusCardId) return;
+        // 필터를 초기화하여 방금 생성된 카드가 반드시 보이도록
+        focusCardPending.current = focusCardId;
+        setFilterSource('all');
+        setFilterLang('all');
+        setFilterStarred(false);
+        setFilterTargetMissed(false);
+        setSearchTerm('');
+    }, [focusCardId]);
+
+    useEffect(() => {
+        if (!focusCardPending.current || savedCards.length === 0) return;
+        const el = document.getElementById(`library-card-${focusCardPending.current}`);
+        if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.classList.add('library-card-highlight');
+            setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
+            focusCardPending.current = null;
+            if (onFocusCardHandled) onFocusCardHandled();
+        }
+    }, [savedCards]);
+
+    // ── Vocab에서 넘어온 경우 모바일 뒤로가기 지원 ──
+    useEffect(() => {
+        if (!libraryBackTo || !onBack) return;
+        history.pushState({ page: 'library-from-vocab' }, '');
+        const handlePop = () => onBack();
+        window.addEventListener('popstate', handlePop);
+        return () => window.removeEventListener('popstate', handlePop);
+    }, [libraryBackTo, onBack]);
 
     // ── 카드 삭제 ──
     const triggerDelete = (id) => setDeleteConfirmId(id);
@@ -242,6 +276,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     return (
         <div className="library-container library-theme">
+            {/* ── Vocab에서 넘어온 경우 Back 버튼 ── */}
+            {libraryBackTo && onBack && (
+                <div className="library-back-bar">
+                    <button className="library-back-btn" onClick={onBack}>
+                        <ArrowLeft size={20} />
+                        <span>{t('vocab.backToVocab')}</span>
+                    </button>
+                </div>
+            )}
             {/* ── 필터 박스 ── */}
             <div className="lib-filter-box">
                 {/* 1) 검색바 */}
@@ -332,7 +375,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             <div className="cards-grid">
                 {filteredCards.length > 0 ? (
                     filteredCards.map(card => (
-                        <div key={card.id} className="library-card-wrapper">
+                        <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}

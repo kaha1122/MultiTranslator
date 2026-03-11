@@ -122,7 +122,8 @@
     "generate": "Tạo từ vựng",
     "regenerate": "Từ khác",
     "generating": "Đang tạo từ vựng...",
-    "selectTopic": "Chọn chủ đề ở trên để tạo thẻ từ vựng"
+    "selectTopic": "Chọn chủ đề ở trên để tạo thẻ từ vựng",
+    "backToVocab": "Quay lại Từ vựng"
   },
   "sceneLoc": {
     "airport": "Sân bay & Máy bay",

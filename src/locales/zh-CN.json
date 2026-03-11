@@ -122,7 +122,8 @@
     "generate": "生成词汇",
     "regenerate": "换一批",
     "generating": "正在生成词汇...",
-    "selectTopic": "选择上方主题即可生成词汇卡片"
+    "selectTopic": "选择上方主题即可生成词汇卡片",
+    "backToVocab": "返回词汇学习"
   },
   "sceneLoc": {
     "airport": "机场 & 航班",

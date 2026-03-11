@@ -122,7 +122,8 @@
     "generate": "단어 생성",
     "regenerate": "다른 단어",
     "generating": "단어를 생성하는 중...",
-    "selectTopic": "위에서 주제를 선택하면 단어 카드가 생성됩니다"
+    "selectTopic": "위에서 주제를 선택하면 단어 카드가 생성됩니다",
+    "backToVocab": "단어 학습으로 돌아가기"
   },
   "sceneLoc": {
     "airport": "공항 & 기내",

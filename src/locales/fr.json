@@ -122,7 +122,8 @@
     "generate": "Générer des mots",
     "regenerate": "Autres mots",
     "generating": "Génération du vocabulaire...",
-    "selectTopic": "Sélectionnez un thème ci-dessus pour générer des mots"
+    "selectTopic": "Sélectionnez un thème ci-dessus pour générer des mots",
+    "backToVocab": "Retour au Vocabulaire"
   },
   "sceneLoc": {
     "airport": "Aéroport & Vol",

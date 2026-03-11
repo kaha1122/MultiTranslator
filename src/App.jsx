@@ -210,6 +210,8 @@ function App() {
 
   // 현재 화면 모드 — 기본 홈은 'scene'
   const [viewMode, setViewMode] = useState('scene');
+  const [focusCardId, setFocusCardId] = useState(null);
+  const [libraryBackTo, setLibraryBackTo] = useState(null);
 
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -924,8 +926,10 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
+      return docRef.id;
     } catch (error) {
       console.error("Vocab 카드 저장 오류:", error);
+      return null;
     }
   };
 
@@ -1428,6 +1432,11 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={incrementVocabGenerate}
+            onNavigateToLibrary={(cardId) => {
+              setFocusCardId(cardId);
+              setLibraryBackTo('vocab');
+              setViewMode('library');
+            }}
           />
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
@@ -1479,6 +1488,13 @@ function App() {
             dailyGoal={dailyGoal}
             onTargetAchieved={handleTargetAchieved}
             onCardDeleted={handleCardDeleted}
+            focusCardId={focusCardId}
+            onFocusCardHandled={() => setFocusCardId(null)}
+            libraryBackTo={libraryBackTo}
+            onBack={() => {
+              setLibraryBackTo(null);
+              setViewMode('vocab');
+            }}
           />
         </div>
 
