@@ -1,10 +1,16 @@
 import { useState, useEffect, useRef } from 'react';
 import { ChevronRight, Sparkles, Volume2, Star, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { db } from '../firebase/config';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { playStarSound } from '../utils/soundEffects';
 import './VocabTab.css';
+
+// Vocab history 문서 ID: {topicId}--{level}--{lang}
+const makeVocabHistoryKey = (topicId, level, lang) =>
+    `${topicId}--${level}--${lang}`;
 
 const LANG_NAMES = {
     ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
@@ -32,7 +38,7 @@ export default function VocabTab({
     onGenerate,
     onNavigateToLibrary,
 }) {
-    const { byokGeminiKey } = useAuth();
+    const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
 
     // ── State ────────────────────────────────────────────────────────
@@ -44,7 +50,35 @@ export default function VocabTab({
     const [words, setWords] = useState([]); // generated word cards
     const [isLoading, setIsLoading] = useState(false);
     const [savedWords, setSavedWords] = useState(new Set()); // saved word indices
-    const avoidWordsRef = useRef([]); // duplicate avoidance
+    const avoidWordsRef = useRef([]); // duplicate avoidance (세션 + Firebase 병합)
+    const historyCacheRef = useRef({}); // Firebase vocabHistory 캐시
+
+    // Firebase에서 해당 키의 이력 읽기 (생성 직전 호출)
+    const loadVocabHistory = async (key) => {
+        if (!user) return [];
+        if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
+        try {
+            const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
+            const words = snap.exists() ? (snap.data().words || []) : [];
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: words };
+            return words;
+        } catch {
+            return [];
+        }
+    };
+
+    // 생성 성공 후 이력에 추가 (무제한 — 중복 생성 완전 방지)
+    const appendVocabHistory = (key, newWords) => {
+        const existing = historyCacheRef.current[key] || [];
+        const updated = [...existing, ...newWords];
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/vocabHistory`, key), {
+                words: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(console.error);
+        }
+    };
 
     // visibleLanguages: Settings에서 선택한 targetLangs만 표시
     const visibleLanguages = targetLangs.filter(code =>
@@ -74,6 +108,13 @@ export default function VocabTab({
         const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
         const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
 
+        // Firebase에서 영구 이력 로드 + 세션 avoidWords 병합
+        const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
+        const persistedWords = await loadVocabHistory(historyKey);
+        const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
+        // Gemini에는 최근 200개만 전송 (토큰/속도 최적화)
+        const avoidForApi = allAvoid.slice(-200);
+
         try {
             const res = await fetch(`${getServerUrl()}/api/vocab-words`, {
                 method: 'POST',
@@ -86,7 +127,7 @@ export default function VocabTab({
                     targetLang: selectedLang,
                     sourceLang,
                     byokGeminiKey: byokGeminiKey || undefined,
-                    avoidWords: avoidWordsRef.current,
+                    avoidWords: avoidForApi,
                 }),
             });
 
@@ -97,11 +138,11 @@ export default function VocabTab({
                 setWords(data.words);
                 setSavedWords(new Set());
                 if (onGenerate) onGenerate();
-                // avoidWords에 새 단어들 추가
-                avoidWordsRef.current = [
-                    ...avoidWordsRef.current,
-                    ...data.words.map(w => w.word),
-                ];
+                const newWordTexts = data.words.map(w => w.word);
+                // 세션 avoidWords 업데이트
+                avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
+                // Firebase에 영구 저장 (중복 생성 완전 방지)
+                appendVocabHistory(historyKey, newWordTexts);
             }
         } catch (e) {
             console.error('[VocabTab] Generate error:', e);
