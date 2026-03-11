@@ -239,10 +239,10 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         }
     };
 
-    // 생성 성공 후 이력에 추가 (최신 30개 유지) — state updater 밖에서 setDoc 호출
+    // 생성 성공 후 이력에 추가 (무제한 — 중복 생성 완전 방지) — state updater 밖에서 setDoc 호출
     const appendHistory = (key, sentence) => {
         const existing = historyCacheRef.current[key] || [];
-        const updated = [...existing, sentence].slice(-30);
+        const updated = [...existing, sentence];
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/sceneHistory`, key), {
@@ -289,6 +289,8 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             const sceneText = isCustomSelected ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
             const historyKey = makeHistoryKey(sceneId, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
+            // Gemini에는 최근 200개만 전송 (토큰/속도 최적화, Firestore에는 전체 보관)
+            const avoidForApi = avoidSentences.slice(-200);
 
             const fetchSentence = () => fetch(`${SERVER_URL}/api/scene-sentence`, {
                 method: 'POST',
@@ -301,7 +303,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     difficulty,
                     speechStyle,
                     byokGeminiKey: byokGeminiKey || undefined,
-                    avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
+                    avoidSentences: avoidForApi.length > 0 ? avoidForApi : undefined,
                 }),
             });
 
@@ -338,6 +340,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             // 답변은 별도 키 (scene--difficulty--style--lang--answer)
             const historyKey = makeHistoryKey(`${sceneId}-answer`, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
+            const avoidForApi = avoidSentences.slice(-200);
 
             const fetchAnswer = () => fetch(`${SERVER_URL}/api/scene-answer`, {
                 method: 'POST',
@@ -350,7 +353,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     difficulty,
                     speechStyle,
                     byokGeminiKey: byokGeminiKey || undefined,
-                    avoidSentences: avoidSentences.length > 0 ? avoidSentences : undefined,
+                    avoidSentences: avoidForApi.length > 0 ? avoidForApi : undefined,
                 }),
             });
 
