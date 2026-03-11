@@ -1255,10 +1255,7 @@ function App() {
               {getT(sourceLang, 'nav.translation')}
             </button>
           ) : (viewMode === 'translation' && dictBackTo) ? (
-            <button className="header-dict-btn" onClick={() => {
-              setDictBackTo(null);
-              history.back();
-            }}>
+            <button className="header-dict-btn" onClick={() => history.back()}>
               Back
             </button>
           ) : (viewMode === 'library' && libraryBackTo) ? (
