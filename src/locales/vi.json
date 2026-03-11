@@ -59,17 +59,9 @@
     "audioSaved": "Bản ghi phát âm đã được lưu thành công! ✅"
   },
   "trial": {
-    "limitTitle": "Đã đạt giới hạn dùng thử!",
+    "limitTitle": "Đã hết giới hạn dùng thử!",
     "limitDesc": "Bạn đã dùng 10 thẻ và 30 lần kiểm tra phát âm.",
-    "optionProTitle": "Đăng ký Pro",
-    "optionProPrice": "₩4,900 / tháng",
-    "optionProFeature1": "500 lần gọi API / tháng",
-    "optionProFeature2": "Có quảng cáo",
-    "optionProBtn": "Bắt đầu ngay",
-    "optionByokTitle": "Dùng API key của tôi (Miễn phí)",
-    "optionByokDesc": "Đăng ký Azure + Gemini key",
-    "optionByokFeature": "Hoàn toàn miễn phí · Hướng dẫn 5 phút",
-    "optionByokBtn": "Thiết lập API Key"
+    "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {
     "title": "Thiết lập API Key",
@@ -89,7 +81,7 @@
     "apiKeys": "API Key",
     "myTier": "Gói của tôi",
     "tierTrial": "Dùng thử miễn phí",
-    "tierByokFree": "Miễn phí (API của tôi)",
+    "tierAdmin": "Quản trị",
     "tierSilver": "Bạc",
     "tierPro": "Pro",
     "tierPremium": "Premium",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "Nâng cấp gói của bạn",
     "modalSubtitle": "Luyện tập nhiều hơn, tiến bộ nhanh hơn",
-    "period": "/tháng",
+    "period1m": "/tháng",
+    "period3m": "3 tháng",
+    "oneTime": "một lần",
+    "perMonth": "tháng",
     "processing": "Đang xử lý...",
     "currentPlan": "Gói hiện tại",
     "startPlan": "Bắt đầu",
@@ -293,8 +288,9 @@
     "proFeature3": "Không giới hạn tất cả tab",
     "premiumFeature1": "Đánh giá phát âm không giới hạn",
     "premiumFeature2": "Dùng API nhà phát triển (không cần khóa)",
-    "premiumFeature3": "Không có quảng cáo",
-    "premiumFeature4": "Không giới hạn tất cả tab"
+    "premiumFeature3": "Không giới hạn tất cả tab",
+    "premiumFeature4": "Hỗ trợ Premium",
+    "discount": "Giảm"
   },
   "daily": {
     "goalComplete": "Hoàn thành mục tiêu hôm nay! 🎉",

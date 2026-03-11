@@ -19,8 +19,6 @@ export const AuthProvider = ({ children }) => {
                 setUser(authenticatedUser);
                 if (analytics) setUserId(analytics, authenticatedUser.uid);
 
-                // Firestore에서 프로필 정보를 실시간으로 구독(onSnapshot)합니다.
-                // 이렇게 하면 구글 가입 직후 데이터가 생겨나는 것도 즉시 감지하여 App.jsx로 전달합니다.
                 const docRef = doc(db, 'users', authenticatedUser.uid);
                 unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
                     if (docSnap.exists()) {
@@ -65,19 +63,56 @@ export const AuthProvider = ({ children }) => {
     };
 
     // ── Tier / Trial 관리 ─────────────────────────────────────────────────────
-    const tier = profile?.tier || 'trial';
+    // byok_free → admin 하위호환 매핑
+    const rawTier = profile?.tier || 'trial';
+    const tier = rawTier === 'byok_free' ? 'admin' : rawTier;
+
     const TRIAL_CARD_LIMIT = 10;
     const TRIAL_PRON_LIMIT = 30;
+    const PRO_PRON_LIMIT = 500;
 
     // 번역 클릭 누적 횟수 (분석용 — 삭제해도 감소하지 않음)
     const trialCardCount = profile?.trialCardCount || 0;
     // Library 저장 누적 횟수 (Trial 한도 기준 — 삭제해도 감소하지 않음)
     const savedCardCount = profile?.savedCardCount || 0;
-    // 발음 평가 누적 횟수
+    // Trial 발음 평가 누적 횟수
     const trialPronCount = profile?.trialPronCount || 0;
+    // Pro 발음 평가 월별 횟수
+    const proPronCount = profile?.proPronCount || 0;
+    const proPronResetMonth = profile?.proPronResetMonth || '';
 
     const isTrialSavedCardLimitReached = tier === 'trial' && savedCardCount >= TRIAL_CARD_LIMIT;
     const isTrialPronLimitReached = tier === 'trial' && trialPronCount >= TRIAL_PRON_LIMIT;
+    const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
+
+    // Pro 월별 카운터 리셋: 현재 월이 저장된 월과 다르면 리셋
+    useEffect(() => {
+        if (!user || tier !== 'pro') return;
+        const currentMonth = new Date().toISOString().slice(0, 7); // "2026-03"
+        if (proPronResetMonth && proPronResetMonth === currentMonth) return;
+        updateDoc(doc(db, 'users', user.uid), {
+            proPronCount: 0,
+            proPronResetMonth: currentMonth,
+        }).catch(e => console.error("Pro pron reset failed:", e));
+    }, [user, tier, proPronResetMonth]);
+
+    // 구독 만료 체크 (일시불 3개월 등): 만료일이 지나면 trial로 복귀
+    useEffect(() => {
+        if (!user || !profile?.subscriptionExpiresAt) return;
+        if (tier !== 'pro' && tier !== 'premium') return;
+        const expiresAt = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
+        if (new Date() > expiresAt) {
+            updateDoc(doc(db, 'users', user.uid), {
+                tier: 'trial',
+                planId: null,
+                subscriptionMonths: null,
+                tossBillingKey: null,
+                tossCustomerKey: null,
+                subscriptionExpiresAt: null,
+                tierUpdatedAt: new Date(),
+            }).catch(e => console.error("Subscription expiry downgrade failed:", e));
+        }
+    }, [user, tier, profile?.subscriptionExpiresAt]);
 
     // 번역 클릭 카운터 (분석용, 모든 tier에서 기록)
     const incrementTrialCard = async () => {
@@ -99,11 +134,17 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementSavedCard failed:", e); }
     };
 
-    const incrementTrialPron = async () => {
-        if (!user || tier !== 'trial') return;
+    // 발음 평가 카운터: trial이면 trialPronCount, pro이면 proPronCount 증가
+    const incrementPronCount = async () => {
+        if (!user) return;
         try {
-            await updateDoc(doc(db, 'users', user.uid), { trialPronCount: increment(1) });
-        } catch (e) { console.error("incrementTrialPron failed:", e); }
+            if (tier === 'trial') {
+                await updateDoc(doc(db, 'users', user.uid), { trialPronCount: increment(1) });
+            } else if (tier === 'pro') {
+                await updateDoc(doc(db, 'users', user.uid), { proPronCount: increment(1) });
+            }
+            // premium, admin은 카운터 없음 (무제한)
+        } catch (e) { console.error("incrementPronCount failed:", e); }
     };
 
     // Scene 생성 카운터 (분석용, 모든 tier에서 기록 — Question/Answer 각각 +1)
@@ -128,14 +169,14 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementVocabGenerate failed:", e); }
     };
 
-    // BYOK 키 저장 + tier를 'byok_free'로 전환
+    // Admin 전용: BYOK 키 저장 + tier를 'admin'으로 전환
     const saveByokKeys = async (geminiKey, azureKey, azureRegion) => {
         if (!user) return;
         await updateUserProfile({
             byokGeminiKey: geminiKey,
             byokAzureKey: azureKey,
             byokAzureRegion: azureRegion || '',
-            tier: 'byok_free',
+            tier: 'admin',
         });
     };
 
@@ -149,9 +190,11 @@ export const AuthProvider = ({ children }) => {
             user, profile, loading, updateUserProfile,
             tier,
             trialCardCount, savedCardCount, trialPronCount,
+            proPronCount, PRO_PRON_LIMIT,
             TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
             isTrialSavedCardLimitReached, isTrialPronLimitReached,
-            incrementTrialCard, incrementSavedCard, incrementTrialPron,
+            isProPronLimitReached,
+            incrementTrialCard, incrementSavedCard, incrementPronCount,
             incrementSceneGenerate, incrementVocabGenerate,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,

@@ -60,16 +60,8 @@
   },
   "trial": {
     "limitTitle": "Testlimit erreicht!",
-    "limitDesc": "Sie haben 10 Karten und 30 Aussprache-Tests verwendet.",
-    "optionProTitle": "Pro-Abonnement",
-    "optionProPrice": "₩4.900 / Monat",
-    "optionProFeature1": "500 API-Aufrufe / Monat",
-    "optionProFeature2": "Werbung enthalten",
-    "optionProBtn": "Jetzt starten",
-    "optionByokTitle": "Eigene API-Schlüssel verwenden (Kostenlos)",
-    "optionByokDesc": "Azure + Gemini-Schlüssel registrieren",
-    "optionByokFeature": "Völlig kostenlos · 5-Min-Einrichtungsanleitung",
-    "optionByokBtn": "API-Schlüssel einrichten"
+    "limitDesc": "Sie haben 10 Karten und 30 Aussprachetests verwendet.",
+    "upgradeBtn": "Plan upgraden"
   },
   "apiSetup": {
     "title": "API-Schlüssel einrichten",
@@ -89,7 +81,7 @@
     "apiKeys": "API-Schlüssel",
     "myTier": "Mein Plan",
     "tierTrial": "Kostenlose Testversion",
-    "tierByokFree": "Kostenlos (Mein API)",
+    "tierAdmin": "Admin",
     "tierSilver": "Silber",
     "tierPro": "Pro",
     "tierPremium": "Premium",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "Plan upgraden",
     "modalSubtitle": "Mehr üben, schneller verbessern",
-    "period": "/Mo.",
+    "period1m": "/Mo.",
+    "period3m": "3 Monate",
+    "oneTime": "einmalig",
+    "perMonth": "Mo.",
     "processing": "Wird verarbeitet...",
     "currentPlan": "Aktueller Plan",
     "startPlan": "Jetzt starten",
@@ -293,8 +288,9 @@
     "proFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
     "premiumFeature2": "Entwickler-API (kein Schlüssel nötig)",
-    "premiumFeature3": "Keine Werbung",
-    "premiumFeature4": "Unbegrenzt alle Tabs nutzen"
+    "premiumFeature3": "Unbegrenzt alle Tabs nutzen",
+    "premiumFeature4": "Premium-Support",
+    "discount": "Rabatt"
   },
   "daily": {
     "goalComplete": "Tagesziel erreicht! 🎉",

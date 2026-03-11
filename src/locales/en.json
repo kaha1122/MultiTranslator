@@ -61,15 +61,7 @@
   "trial": {
     "limitTitle": "Trial Limit Reached!",
     "limitDesc": "You've used 10 cards and 30 pronunciation tests.",
-    "optionProTitle": "Pro Subscription",
-    "optionProPrice": "₩4,900 / month",
-    "optionProFeature1": "500 API calls / month",
-    "optionProFeature2": "Ads included",
-    "optionProBtn": "Start Now",
-    "optionByokTitle": "Use My Own API Keys (Free)",
-    "optionByokDesc": "Register Azure + Gemini keys",
-    "optionByokFeature": "Completely free · 5-min setup guide",
-    "optionByokBtn": "Set Up API Keys"
+    "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {
     "title": "API Key Setup",
@@ -89,7 +81,7 @@
     "apiKeys": "API Keys",
     "myTier": "My Plan",
     "tierTrial": "Free Trial",
-    "tierByokFree": "Free (My API)",
+    "tierAdmin": "Admin",
     "tierSilver": "Silver",
     "tierPro": "Pro",
     "tierPremium": "Premium",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "Upgrade Your Plan",
     "modalSubtitle": "Practice more and improve faster",
-    "period": "/mo",
+    "period1m": "/mo",
+    "period3m": "3 months",
+    "oneTime": "one-time",
+    "perMonth": "mo",
     "processing": "Processing...",
     "currentPlan": "Current Plan",
     "startPlan": "Get Started",
@@ -293,8 +288,9 @@
     "proFeature3": "Unlimited access to all tabs",
     "premiumFeature1": "Unlimited pronunciation assessments",
     "premiumFeature2": "Developer API (no key needed)",
-    "premiumFeature3": "No ads",
-    "premiumFeature4": "Unlimited access to all tabs"
+    "premiumFeature3": "Unlimited access to all tabs",
+    "premiumFeature4": "Premium support",
+    "discount": "OFF"
   },
   "daily": {
     "goalComplete": "Today's Goal Complete!",

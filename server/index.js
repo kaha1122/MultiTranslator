@@ -579,15 +579,25 @@ Return ONLY valid JSON (no markdown):
 // 흐름: 프론트(requestBillingAuth) → 토스 카드 입력 → successUrl?authKey=xxx
 //       → 앱이 이 엔드포인트 호출 → 빌링키 발급 → 첫 결제 → Firestore 업데이트
 app.post('/api/toss-confirm-billing', async (req, res) => {
-    const { authKey, customerKey, tier, userEmail } = req.body;
+    const { authKey, customerKey, tier, planId, months = 1, userEmail } = req.body;
     if (!authKey || !customerKey || !tier) {
         return res.status(400).json({ error: 'authKey, customerKey, tier are required' });
     }
 
-    const AMOUNTS = { pro: 4900, premium: 16900 };
-    const ORDER_NAMES = { pro: 'PronunFit Pro', premium: 'PronunFit Premium' };
-    const amount = AMOUNTS[tier];
-    if (!amount) return res.status(400).json({ error: `Unknown tier: ${tier}` });
+    const AMOUNTS = {
+        pro_1: 9900, pro_3: 16500,
+        premium_1: 19900, premium_3: 55000,
+        // 레거시 호환
+        pro: 9900, premium: 19900,
+    };
+    const ORDER_NAMES = {
+        pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
+        premium_1: 'PronunFit Premium 1개월', premium_3: 'PronunFit Premium 3개월',
+        pro: 'PronunFit Pro', premium: 'PronunFit Premium',
+    };
+    const resolvedPlanId = planId || tier;
+    const amount = AMOUNTS[resolvedPlanId];
+    if (!amount) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
 
     try {
         // 1단계: authKey로 빌링키 발급
@@ -598,7 +608,7 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
         );
         const { billingKey } = billingRes.data;
 
-        // 2단계: 빌링키로 첫 달 결제
+        // 2단계: 빌링키로 결제
         const orderId = `order_${Date.now()}_${customerKey.slice(0, 8)}`;
         await axios.post(
             `https://api.tosspayments.com/v1/billing/${billingKey}`,
@@ -606,22 +616,30 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
                 customerKey,
                 amount,
                 orderId,
-                orderName: ORDER_NAMES[tier],
+                orderName: ORDER_NAMES[resolvedPlanId] || `PronunFit ${tier}`,
                 customerEmail: userEmail || undefined,
             },
             { headers: { Authorization: TOSS_AUTH_HEADER() } }
         );
 
         // 3단계: Firestore 업데이트 (customerKey === userId)
+        const resolvedMonths = parseInt(months) || 1;
+        const expiresAt = new Date();
+        expiresAt.setMonth(expiresAt.getMonth() + resolvedMonths);
+
         if (adminDb) {
-            await adminDb.collection('users').doc(customerKey).update({
+            const updateData = {
                 tier,
+                planId: resolvedPlanId,
+                subscriptionMonths: resolvedMonths,
                 tossBillingKey: billingKey,
                 tossCustomerKey: customerKey,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
-            });
-            console.log(`[Toss] billing confirmed: ${customerKey} → ${tier}`);
+                subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+            };
+            await adminDb.collection('users').doc(customerKey).update(updateData);
+            console.log(`[Toss] billing confirmed: ${customerKey} → ${resolvedPlanId} (${resolvedMonths}mo, expires ${expiresAt.toISOString().slice(0,10)})`);
         }
 
         res.json({ success: true, orderId });
@@ -639,10 +657,30 @@ app.post('/api/cancel-subscription', async (req, res) => {
 
     try {
         if (adminDb) {
+            // 1단계: 기존 빌링키 조회 후 토스페이먼츠에서 폐기
+            const userDoc = await adminDb.collection('users').doc(userId).get();
+            const billingKey = userDoc.data()?.tossBillingKey;
+            if (billingKey) {
+                try {
+                    await axios.post(
+                        `https://api.tosspayments.com/v1/billing/authorizations/revoke`,
+                        { billingKey },
+                        { headers: { Authorization: TOSS_AUTH_HEADER() } }
+                    );
+                    console.log(`[Toss] billingKey revoked: ${billingKey}`);
+                } catch (revokeErr) {
+                    console.warn('[Toss] billingKey revoke failed (continuing):', revokeErr.response?.data?.message || revokeErr.message);
+                }
+            }
+
+            // 2단계: Firestore 업데이트
             await adminDb.collection('users').doc(userId).update({
                 tier: 'trial',
+                planId: null,
+                subscriptionMonths: null,
                 tossBillingKey: null,
                 tossCustomerKey: null,
+                subscriptionExpiresAt: null,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             console.log(`[Toss] subscription cancelled: ${userId}`);

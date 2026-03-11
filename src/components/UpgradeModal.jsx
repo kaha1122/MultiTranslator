@@ -10,24 +10,63 @@ const FRONTEND_URL = window.location.origin;
 
 const PLAN_CONFIGS = [
     {
-        id: 'pro',
+        id: 'pro_1',
+        tier: 'pro',
+        months: 1,
         icon: <Zap size={22} />,
         name: 'Pro',
-        price: '₩4,900',
+        price: '₩9,900',
+        priceNum: 9900,
+        perMonth: '₩9,900',
         color: '#4338ca',
         borderColor: '#e0e7ff',
         bgColor: '#f5f3ff',
         featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3'],
     },
     {
-        id: 'premium',
+        id: 'pro_3',
+        tier: 'pro',
+        months: 3,
+        icon: <Zap size={22} />,
+        name: 'Pro',
+        price: '₩16,500',
+        priceNum: 16500,
+        perMonth: '₩5,500',
+        discount: 44,
+        badge: 'BEST',
+        color: '#4338ca',
+        borderColor: '#c7d2fe',
+        bgColor: '#eef2ff',
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3'],
+    },
+    {
+        id: 'premium_1',
+        tier: 'premium',
+        months: 1,
         icon: <Crown size={22} />,
         name: 'Premium',
-        price: '₩16,900',
+        price: '₩19,900',
+        priceNum: 19900,
+        perMonth: '₩19,900',
         color: '#b45309',
         borderColor: '#fde68a',
         bgColor: '#fffbeb',
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
+    },
+    {
+        id: 'premium_3',
+        tier: 'premium',
+        months: 3,
+        icon: <Crown size={22} />,
+        name: 'Premium',
+        price: '₩55,000',
+        priceNum: 55000,
+        perMonth: '~₩18,333',
+        discount: 8,
         badge: 'BEST',
+        color: '#b45309',
+        borderColor: '#fcd34d',
+        bgColor: '#fef9c3',
         featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
     },
 ];
@@ -35,30 +74,31 @@ const PLAN_CONFIGS = [
 const UpgradeModal = ({ onClose, sourceLang }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
-    const [loadingTier, setLoadingTier] = useState(null);
+    const [loadingPlan, setLoadingPlan] = useState(null);
     const [error, setError] = useState('');
 
-    const handleUpgrade = async (tierId) => {
+    const handleUpgrade = async (plan) => {
         if (!user) return;
-        setLoadingTier(tierId);
+        setLoadingPlan(plan.id);
         setError('');
         try {
             const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
             const billing = tossPayments.billing({ customerKey: user.uid });
             await billing.requestBillingAuth({
                 method: 'CARD',
-                successUrl: `${FRONTEND_URL}?billing=success&tier=${tierId}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
+                successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
                 failUrl:    `${FRONTEND_URL}?billing=fail`,
                 customerEmail: user.email || undefined,
                 customerName:  user.displayName || undefined,
             });
         } catch (e) {
             setError(t('upgrade.paymentError'));
-            setLoadingTier(null);
+            setLoadingPlan(null);
         }
     };
 
     const currentTier = profile?.tier || 'trial';
+    const currentPlanId = profile?.planId || null;
     const isSubscribed = currentTier === 'pro' || currentTier === 'premium';
 
     return (
@@ -78,63 +118,139 @@ const UpgradeModal = ({ onClose, sourceLang }) => {
                     <div className="upgrade-error">{error}</div>
                 )}
 
-                <div className="upgrade-plans">
-                    {PLAN_CONFIGS.map(plan => {
-                        const isCurrentPlan = currentTier === plan.id;
-                        return (
-                            <div
-                                key={plan.id}
-                                className={`upgrade-plan-card ${isCurrentPlan ? 'current' : ''}`}
-                                style={{ borderColor: plan.borderColor, background: plan.bgColor }}
-                            >
-                                {plan.badge && (
-                                    <span className="upgrade-plan-badge" style={{ background: plan.color }}>
-                                        {plan.badge}
-                                    </span>
-                                )}
-                                <div className="upgrade-plan-header">
-                                    <span className="upgrade-plan-icon" style={{ color: plan.color }}>
-                                        {plan.icon}
-                                    </span>
-                                    <span className="upgrade-plan-name" style={{ color: plan.color }}>
-                                        {plan.name}
-                                    </span>
-                                    <div className="upgrade-plan-price">
+                {/* Pro Plans */}
+                <div className="upgrade-tier-group">
+                    <div className="upgrade-tier-label" style={{ color: '#4338ca' }}>
+                        <Zap size={16} /> Pro
+                    </div>
+                    <div className="upgrade-plans-row">
+                        {PLAN_CONFIGS.filter(p => p.tier === 'pro').map(plan => {
+                            const isCurrentPlan = currentPlanId === plan.id || (currentTier === plan.tier && !currentPlanId && plan.months === 1);
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={`upgrade-plan-card ${isCurrentPlan ? 'current' : ''}`}
+                                    style={{ borderColor: plan.borderColor, background: plan.bgColor }}
+                                >
+                                    {plan.badge && (
+                                        <span className="upgrade-plan-badge" style={{ background: plan.color }}>
+                                            {plan.badge}
+                                        </span>
+                                    )}
+                                    <div className="upgrade-plan-duration">
+                                        {plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}
+                                        {plan.months === 3 && <span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span>}
+                                    </div>
+                                    <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                        <span className="upgrade-plan-period">{t('upgrade.period')}</span>
+                                        {plan.discount && (
+                                            <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                        )}
                                     </div>
+                                    {plan.months === 3 && (
+                                        <div className="upgrade-plan-permonth">
+                                            {plan.perMonth}/{t('upgrade.perMonth')}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        className="upgrade-plan-btn"
+                                        style={{
+                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            color: isCurrentPlan ? '#94a3b8' : 'white',
+                                            cursor: isCurrentPlan ? 'default' : 'pointer',
+                                        }}
+                                        onClick={() => !isCurrentPlan && handleUpgrade(plan)}
+                                        disabled={isCurrentPlan || loadingPlan !== null}
+                                    >
+                                        {loadingPlan === plan.id
+                                            ? t('upgrade.processing')
+                                            : isCurrentPlan
+                                                ? t('upgrade.currentPlan')
+                                                : t('upgrade.startPlan')}
+                                    </button>
                                 </div>
+                            );
+                        })}
+                    </div>
+                    {/* Pro features (shared) */}
+                    <ul className="upgrade-plan-features">
+                        {PLAN_CONFIGS[0].featureKeys.map((key, i) => (
+                            <li key={i}>
+                                <Check size={14} style={{ color: '#4338ca', flexShrink: 0 }} />
+                                <span>{t(key)}</span>
+                            </li>
+                        ))}
+                    </ul>
+                </div>
 
-                                <ul className="upgrade-plan-features">
-                                    {plan.featureKeys.map((key, i) => (
-                                        <li key={i}>
-                                            <Check size={14} style={{ color: plan.color, flexShrink: 0 }} />
-                                            <span>{t(key)}</span>
-                                        </li>
-                                    ))}
-                                </ul>
-
-                                <button
-                                    className="upgrade-plan-btn"
-                                    style={{
-                                        background: isCurrentPlan ? '#e2e8f0' : plan.color,
-                                        color: isCurrentPlan ? '#94a3b8' : 'white',
-                                        cursor: isCurrentPlan ? 'default' : 'pointer',
-                                    }}
-                                    onClick={() => !isCurrentPlan && handleUpgrade(plan.id)}
-                                    disabled={isCurrentPlan || loadingTier !== null}
+                {/* Premium Plans */}
+                <div className="upgrade-tier-group" style={{ marginTop: '16px' }}>
+                    <div className="upgrade-tier-label" style={{ color: '#b45309' }}>
+                        <Crown size={16} /> Premium
+                    </div>
+                    <div className="upgrade-plans-row">
+                        {PLAN_CONFIGS.filter(p => p.tier === 'premium').map(plan => {
+                            const isCurrentPlan = currentPlanId === plan.id || (currentTier === plan.tier && !currentPlanId && plan.months === 1);
+                            return (
+                                <div
+                                    key={plan.id}
+                                    className={`upgrade-plan-card ${isCurrentPlan ? 'current' : ''}`}
+                                    style={{ borderColor: plan.borderColor, background: plan.bgColor }}
                                 >
-                                    {loadingTier === plan.id
-                                        ? t('upgrade.processing')
-                                        : isCurrentPlan
-                                            ? t('upgrade.currentPlan')
-                                            : `${plan.name} ${t('upgrade.startPlan')}`}
-                                </button>
-                            </div>
-                        );
-                    })}
+                                    {plan.badge && (
+                                        <span className="upgrade-plan-badge" style={{ background: plan.color }}>
+                                            {plan.badge}
+                                        </span>
+                                    )}
+                                    <div className="upgrade-plan-duration">
+                                        {plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}
+                                        {plan.months === 3 && <span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span>}
+                                    </div>
+                                    <div className="upgrade-plan-price-block">
+                                        <span className="upgrade-plan-amount" style={{ color: plan.color }}>
+                                            {plan.price}
+                                        </span>
+                                        {plan.discount && (
+                                            <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                        )}
+                                    </div>
+                                    {plan.months === 3 && (
+                                        <div className="upgrade-plan-permonth">
+                                            {plan.perMonth}/{t('upgrade.perMonth')}
+                                        </div>
+                                    )}
+
+                                    <button
+                                        className="upgrade-plan-btn"
+                                        style={{
+                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            color: isCurrentPlan ? '#94a3b8' : 'white',
+                                            cursor: isCurrentPlan ? 'default' : 'pointer',
+                                        }}
+                                        onClick={() => !isCurrentPlan && handleUpgrade(plan)}
+                                        disabled={isCurrentPlan || loadingPlan !== null}
+                                    >
+                                        {loadingPlan === plan.id
+                                            ? t('upgrade.processing')
+                                            : isCurrentPlan
+                                                ? t('upgrade.currentPlan')
+                                                : t('upgrade.startPlan')}
+                                    </button>
+                                </div>
+                            );
+                        })}
+                    </div>
+                    <ul className="upgrade-plan-features">
+                        {PLAN_CONFIGS[2].featureKeys.map((key, i) => (
+                            <li key={i}>
+                                <Check size={14} style={{ color: '#b45309', flexShrink: 0 }} />
+                                <span>{t(key)}</span>
+                            </li>
+                        ))}
+                    </ul>
                 </div>
 
                 {isSubscribed && (

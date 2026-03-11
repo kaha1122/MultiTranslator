@@ -120,15 +120,17 @@ function App() {
     const billing = params.get('billing');
     const authKey = params.get('authKey');
     const customerKey = params.get('customerKey');
-    const tier = params.get('tier');
+    const tierParam = params.get('tier');
+    const planId = params.get('planId');
+    const months = params.get('months');
     const email = params.get('email');
 
-    if (billing === 'success' && authKey && customerKey && tier) {
+    if (billing === 'success' && authKey && customerKey && tierParam) {
       window.history.replaceState({}, '', window.location.pathname);
       fetch(`${SERVER_URL_FOR_BILLING}/api/toss-confirm-billing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authKey, customerKey, tier, userEmail: email ? decodeURIComponent(email) : '' }),
+        body: JSON.stringify({ authKey, customerKey, tier: tierParam, planId: planId || tierParam, months: parseInt(months) || 1, userEmail: email ? decodeURIComponent(email) : '' }),
       })
         .then(r => r.json())
         .then(data => {
@@ -1804,14 +1806,14 @@ function App() {
                 <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
                   {{
                     trial: `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 ${savedCardCount}/${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
-                    byok_free: `✅ ${getT(sourceLang, 'settings.tierByokFree')}`,
+                    admin: `🛡️ ${getT(sourceLang, 'settings.tierAdmin')}`,
                     silver: `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
                     pro: `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
                     premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
                   }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
                 </span>
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  {(tier === 'trial' || tier === 'byok_free') && (
+                  {tier === 'trial' && (
                     <button
                       onClick={() => setShowUpgradeModal(true)}
                       style={{
@@ -1823,16 +1825,18 @@ function App() {
                       ✨ {getT(sourceLang, 'upgrade.btnLabel')}
                     </button>
                   )}
-                  <button
-                    onClick={() => setShowApiKeyWizard(true)}
-                    style={{
-                      padding: '8px 14px', background: '#6366f1', color: 'white',
-                      border: 'none', borderRadius: '8px', fontWeight: 'bold',
-                      cursor: 'pointer', fontSize: '0.82rem'
-                    }}
-                  >
-                    🔑 {getT(sourceLang, 'settings.apiKeys')}
-                  </button>
+                  {tier === 'admin' && (
+                    <button
+                      onClick={() => setShowApiKeyWizard(true)}
+                      style={{
+                        padding: '8px 14px', background: '#6366f1', color: 'white',
+                        border: 'none', borderRadius: '8px', fontWeight: 'bold',
+                        cursor: 'pointer', fontSize: '0.82rem'
+                      }}
+                    >
+                      🔑 {getT(sourceLang, 'settings.apiKeys')}
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -2022,7 +2026,7 @@ function App() {
           sourceLang={sourceLang}
           cardCount={trialCardCurrentCount}
           onClose={() => setShowTrialLimitModal(false)}
-          onSetupByok={() => { setShowTrialLimitModal(false); setShowApiKeyWizard(true); }}
+          onUpgrade={() => { setShowTrialLimitModal(false); setShowUpgradeModal(true); }}
         />
       )}
 

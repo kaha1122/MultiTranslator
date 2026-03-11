@@ -33,7 +33,7 @@ const getApiUrl = () => {
 const hashCode = (s) => Math.abs(s.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0)).toString();
 
 export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitReached) => {
-    const { user, tier, isTrialPronLimitReached, incrementTrialPron, byokAzureKey, byokAzureRegion } = useAuth();
+    const { user, tier, isTrialPronLimitReached, isProPronLimitReached, incrementPronCount, byokAzureKey, byokAzureRegion } = useAuth();
     const [isRecording, setIsRecording] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
     const [assessmentResult, setAssessmentResult] = useState(null);
@@ -52,8 +52,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         setErrorMsg(null);
         setSaveMessage(null);
 
-        // Trial 발음 횟수 제한 체크
-        if (isTrialPronLimitReached) {
+        // 발음 횟수 제한 체크 (Trial 30회 / Pro 500회)
+        if (isTrialPronLimitReached || isProPronLimitReached) {
             onTrialLimitReached?.();
             return;
         }
@@ -225,8 +225,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setAssessmentResult(assessment);
             setCoachTip(coaching?.tip || null);
 
-            // Trial 카운터 증가 (tier === 'trial'인 경우만 내부에서 처리)
-            incrementTrialPron();
+            // 발음 카운터 증가 (trial: trialPronCount, pro: proPronCount)
+            incrementPronCount();
 
             // [성능 혁신] 서버에서 분석 결과를 받자마자! 빙글빙글 도는 스피너를 즉시 멈춥니다.
             // 사용자는 점수를 바로 볼 수 있고, 3번의 Firebase 클라우드 저장은 티 나지 않게 백그라운드에서 조용히 진행됩니다.

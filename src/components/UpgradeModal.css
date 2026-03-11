@@ -68,23 +68,41 @@
     margin-bottom: 14px;
 }
 
-.upgrade-plans {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+/* ── Tier Group ── */
+.upgrade-tier-group {
+    background: #fafafa;
+    border-radius: 16px;
+    padding: 14px;
 }
 
-.upgrade-plan-card {
+.upgrade-tier-label {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-weight: 800;
+    font-size: 1rem;
+    margin-bottom: 10px;
+}
+
+/* ── Plans Row (1mo / 3mo side by side) ── */
+.upgrade-plans-row {
+    display: flex;
+    gap: 10px;
+}
+
+.upgrade-plans-row .upgrade-plan-card {
+    flex: 1;
     border: 2px solid;
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 14px 12px;
     position: relative;
+    text-align: center;
 }
 
 .upgrade-plan-badge {
     position: absolute;
     top: -10px;
-    right: 14px;
+    right: 10px;
     padding: 2px 10px;
     border-radius: 20px;
     font-size: 0.7rem;
@@ -93,28 +111,32 @@
     letter-spacing: 0.05em;
 }
 
-.upgrade-plan-header {
+.upgrade-plan-duration {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #475569;
+    margin-bottom: 6px;
     display: flex;
     align-items: center;
-    gap: 8px;
-    margin-bottom: 12px;
+    justify-content: center;
+    gap: 6px;
 }
 
-.upgrade-plan-icon {
-    display: flex;
-    align-items: center;
+.upgrade-plan-onetag {
+    font-size: 0.65rem;
+    background: #e2e8f0;
+    color: #64748b;
+    padding: 1px 6px;
+    border-radius: 8px;
+    font-weight: 600;
 }
 
-.upgrade-plan-name {
-    font-weight: 800;
-    font-size: 1rem;
-    flex: 1;
-}
-
-.upgrade-plan-price {
+.upgrade-plan-price-block {
     display: flex;
     align-items: baseline;
-    gap: 2px;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 4px;
 }
 
 .upgrade-plan-amount {
@@ -122,35 +144,48 @@
     font-weight: 800;
 }
 
-.upgrade-plan-period {
-    font-size: 0.8rem;
-    color: #94a3b8;
+.upgrade-plan-discount {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #dc2626;
+    background: #fef2f2;
+    padding: 1px 6px;
+    border-radius: 8px;
 }
 
+.upgrade-plan-permonth {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    margin-bottom: 8px;
+}
+
+/* ── Shared Features ── */
 .upgrade-plan-features {
     list-style: none;
-    margin: 0 0 14px;
+    margin: 10px 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 6px;
+    gap: 5px;
 }
 
 .upgrade-plan-features li {
     display: flex;
     align-items: center;
     gap: 7px;
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #475569;
 }
 
+/* ── Buttons ── */
 .upgrade-plan-btn {
     width: 100%;
-    padding: 11px;
+    padding: 10px;
     border: none;
     border-radius: 10px;
     font-weight: 700;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    margin-top: 8px;
     transition: opacity 0.2s;
 }
 

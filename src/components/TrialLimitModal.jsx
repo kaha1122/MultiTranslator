@@ -1,15 +1,10 @@
-import { useState } from 'react';
 import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
-import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 
-const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
-
-const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
+const TrialLimitModal = ({ sourceLang, cardCount, onClose, onUpgrade }) => {
     const t = useT(sourceLang);
-    const { user, trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT } = useAuth();
-    const [isLoading, setIsLoading] = useState(false);
+    const { trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT } = useAuth();
 
     return (
         <div
@@ -55,80 +50,17 @@ const TrialLimitModal = ({ sourceLang, cardCount, onClose, onSetupByok }) => {
                     </div>
                 </div>
 
-                {/* 옵션 1: Pro */}
-                <div style={{
-                    border: '2px solid #e0e7ff', borderRadius: '16px', padding: '16px',
-                    marginBottom: '12px', background: '#fafafa'
-                }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                        <span style={{ fontWeight: '800', color: '#4338ca', fontSize: '1rem' }}>
-                            {t('trial.optionProTitle')}
-                        </span>
-                        <span style={{ fontWeight: '800', color: '#4338ca', fontSize: '1rem' }}>
-                            {t('trial.optionProPrice')}
-                        </span>
-                    </div>
-                    <ul style={{ margin: '0 0 12px', padding: '0 0 0 18px', color: '#475569', fontSize: '0.875rem' }}>
-                        <li>{t('trial.optionProFeature1')}</li>
-                        <li>{t('trial.optionProFeature2')}</li>
-                    </ul>
-                    <button
-                        onClick={async () => {
-                            if (!user) return;
-                            setIsLoading(true);
-                            try {
-                                const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-                                const billing = tossPayments.billing({ customerKey: user.uid });
-                                await billing.requestBillingAuth({
-                                    method: 'CARD',
-                                    successUrl: `${window.location.origin}?billing=success&tier=pro&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
-                                    failUrl:    `${window.location.origin}?billing=fail`,
-                                    customerEmail: user.email || undefined,
-                                    customerName:  user.displayName || undefined,
-                                });
-                            } catch (e) {
-                                alert(t('upgrade.paymentError'));
-                                setIsLoading(false);
-                            }
-                        }}
-                        disabled={isLoading}
-                        style={{
-                            width: '100%', padding: '12px', background: '#4338ca', color: 'white',
-                            border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer',
-                            fontSize: '0.95rem', opacity: isLoading ? 0.7 : 1
-                        }}
-                    >
-                        {isLoading ? '처리 중...' : t('trial.optionProBtn')}
-                    </button>
-                </div>
-
-                {/* 옵션 2: BYOK */}
-                <div style={{
-                    border: '2px solid #d1fae5', borderRadius: '16px', padding: '16px',
-                    background: '#f0fdf4'
-                }}>
-                    <div style={{ marginBottom: '8px' }}>
-                        <span style={{ fontWeight: '800', color: '#059669', fontSize: '1rem' }}>
-                            {t('trial.optionByokTitle')}
-                        </span>
-                    </div>
-                    <p style={{ margin: '0 0 6px', color: '#475569', fontSize: '0.875rem' }}>
-                        {t('trial.optionByokDesc')}
-                    </p>
-                    <p style={{ margin: '0 0 12px', color: '#059669', fontSize: '0.8rem', fontWeight: '600' }}>
-                        ✅ {t('trial.optionByokFeature')}
-                    </p>
-                    <button
-                        onClick={onSetupByok}
-                        style={{
-                            width: '100%', padding: '12px', background: '#059669', color: 'white',
-                            border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer',
-                            fontSize: '0.95rem'
-                        }}
-                    >
-                        {t('trial.optionByokBtn')}
-                    </button>
-                </div>
+                {/* 업그레이드 버튼 */}
+                <button
+                    onClick={onUpgrade}
+                    style={{
+                        width: '100%', padding: '14px', background: '#4338ca', color: 'white',
+                        border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer',
+                        fontSize: '1rem'
+                    }}
+                >
+                    ✨ {t('trial.upgradeBtn')}
+                </button>
             </div>
         </div>
     );

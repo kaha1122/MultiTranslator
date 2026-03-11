@@ -59,17 +59,9 @@
     "audioSaved": "発音記録が正常に保存されました！ ✅"
   },
   "trial": {
-    "limitTitle": "体験制限に達しました！",
+    "limitTitle": "体験の上限に達しました！",
     "limitDesc": "カード10枚・発音30回の体験が完了しました。",
-    "optionProTitle": "Proサブスクリプション",
-    "optionProPrice": "₩4,900 / 月",
-    "optionProFeature1": "APIコール500回 / 月",
-    "optionProFeature2": "広告あり",
-    "optionProBtn": "今すぐ始める",
-    "optionByokTitle": "自分のAPIキーで無料使用",
-    "optionByokDesc": "Azure + Geminiキーを登録",
-    "optionByokFeature": "完全無料 · 5分セットアップガイド",
-    "optionByokBtn": "APIキーを設定する"
+    "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {
     "title": "APIキーの設定",
@@ -89,7 +81,7 @@
     "apiKeys": "APIキー",
     "myTier": "プラン",
     "tierTrial": "無料トライアル",
-    "tierByokFree": "無料（自分のAPI）",
+    "tierAdmin": "管理者",
     "tierSilver": "シルバー",
     "tierPro": "プロ",
     "tierPremium": "プレミアム",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "プランをアップグレード",
     "modalSubtitle": "より多く練習して、速く上達しましょう",
-    "period": "/月",
+    "period1m": "/月",
+    "period3m": "3ヶ月",
+    "oneTime": "一括払い",
+    "perMonth": "月",
     "processing": "処理中...",
     "currentPlan": "現在のプラン",
     "startPlan": "始める",
@@ -293,8 +288,9 @@
     "proFeature3": "すべてのタブ無制限",
     "premiumFeature1": "発音評価無制限",
     "premiumFeature2": "開発者API使用（キー不要）",
-    "premiumFeature3": "広告なし",
-    "premiumFeature4": "すべてのタブ無制限"
+    "premiumFeature3": "すべてのタブ無制限",
+    "premiumFeature4": "プレミアム専用サポート",
+    "discount": "割引"
   },
   "daily": {
     "goalComplete": "今日の目標達成！🎉",

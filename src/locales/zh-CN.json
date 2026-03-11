@@ -59,17 +59,9 @@
     "audioSaved": "发音记录已成功保存！ ✅"
   },
   "trial": {
-    "limitTitle": "体验限额已达！",
-    "limitDesc": "您已完成10张卡片和30次发音测试。",
-    "optionProTitle": "Pro订阅",
-    "optionProPrice": "₩4,900 / 月",
-    "optionProFeature1": "每月500次API调用",
-    "optionProFeature2": "含广告",
-    "optionProBtn": "立即开始",
-    "optionByokTitle": "使用我的API密钥（免费）",
-    "optionByokDesc": "注册Azure + Gemini密钥",
-    "optionByokFeature": "完全免费 · 5分钟设置指南",
-    "optionByokBtn": "设置API密钥"
+    "limitTitle": "试用额度已用完！",
+    "limitDesc": "已使用10张卡片和30次发音测试。",
+    "upgradeBtn": "升级套餐"
   },
   "apiSetup": {
     "title": "API密钥设置",
@@ -89,7 +81,7 @@
     "apiKeys": "API密钥",
     "myTier": "我的方案",
     "tierTrial": "免费试用",
-    "tierByokFree": "免费（我的API）",
+    "tierAdmin": "管理员",
     "tierSilver": "银牌",
     "tierPro": "专业版",
     "tierPremium": "高级版",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "升级您的方案",
     "modalSubtitle": "更多练习，更快进步",
-    "period": "/月",
+    "period1m": "/月",
+    "period3m": "3个月",
+    "oneTime": "一次性",
+    "perMonth": "月",
     "processing": "处理中...",
     "currentPlan": "当前方案",
     "startPlan": "立即开始",
@@ -293,8 +288,9 @@
     "proFeature3": "所有标签页无限使用",
     "premiumFeature1": "无限发音评估",
     "premiumFeature2": "使用开发者API（无需密钥）",
-    "premiumFeature3": "无广告",
-    "premiumFeature4": "所有标签页无限使用"
+    "premiumFeature3": "所有标签页无限使用",
+    "premiumFeature4": "高级专属支持",
+    "discount": "折扣"
   },
   "daily": {
     "goalComplete": "今日目标达成！🎉",

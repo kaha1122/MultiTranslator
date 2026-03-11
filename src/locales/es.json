@@ -61,15 +61,7 @@
   "trial": {
     "limitTitle": "¡Límite de prueba alcanzado!",
     "limitDesc": "Has usado 10 tarjetas y 30 pruebas de pronunciación.",
-    "optionProTitle": "Suscripción Pro",
-    "optionProPrice": "₩4.900 / mes",
-    "optionProFeature1": "500 llamadas API / mes",
-    "optionProFeature2": "Anuncios incluidos",
-    "optionProBtn": "Comenzar ahora",
-    "optionByokTitle": "Usar mis propias claves API (Gratis)",
-    "optionByokDesc": "Registrar claves Azure + Gemini",
-    "optionByokFeature": "Completamente gratis · Guía de 5 min",
-    "optionByokBtn": "Configurar claves API"
+    "upgradeBtn": "Mejorar plan"
   },
   "apiSetup": {
     "title": "Configuración de claves API",
@@ -89,7 +81,7 @@
     "apiKeys": "Claves API",
     "myTier": "Mi plan",
     "tierTrial": "Prueba gratuita",
-    "tierByokFree": "Gratis (Mi API)",
+    "tierAdmin": "Admin",
     "tierSilver": "Plata",
     "tierPro": "Pro",
     "tierPremium": "Premium",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "Actualizar tu plan",
     "modalSubtitle": "Practica más y mejora más rápido",
-    "period": "/mes",
+    "period1m": "/mes",
+    "period3m": "3 meses",
+    "oneTime": "pago único",
+    "perMonth": "mes",
     "processing": "Procesando...",
     "currentPlan": "Plan actual",
     "startPlan": "Comenzar",
@@ -293,8 +288,9 @@
     "proFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
     "premiumFeature2": "API del desarrollador (sin clave)",
-    "premiumFeature3": "Sin anuncios",
-    "premiumFeature4": "Acceso ilimitado a todas las pestañas"
+    "premiumFeature3": "Acceso ilimitado a todas las pestañas",
+    "premiumFeature4": "Soporte Premium",
+    "discount": "Descuento"
   },
   "daily": {
     "goalComplete": "¡Objetivo diario alcanzado! 🎉",

@@ -61,15 +61,7 @@
   "trial": {
     "limitTitle": "체험 한도에 도달했습니다!",
     "limitDesc": "카드 10개 · 발음 30회 체험을 완료했습니다.",
-    "optionProTitle": "Pro 구독",
-    "optionProPrice": "₩4,900 / 월",
-    "optionProFeature1": "서비스 API 500회 / 월",
-    "optionProFeature2": "광고 있음",
-    "optionProBtn": "지금 시작하기",
-    "optionByokTitle": "내 API 키로 무료 사용",
-    "optionByokDesc": "Azure + Gemini 키 등록",
-    "optionByokFeature": "완전 무료 · 5분 설정 가이드 제공",
-    "optionByokBtn": "API 키 설정 시작"
+    "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {
     "title": "API 키 설정",
@@ -89,7 +81,7 @@
     "apiKeys": "API 키",
     "myTier": "내 등급",
     "tierTrial": "무료 체험",
-    "tierByokFree": "무료 (내 API)",
+    "tierAdmin": "관리자",
     "tierSilver": "실버",
     "tierPro": "프로",
     "tierPremium": "프리미엄",
@@ -276,7 +268,10 @@
   "upgrade": {
     "modalTitle": "플랜 업그레이드",
     "modalSubtitle": "더 많은 연습으로 빠르게 실력을 키우세요",
-    "period": "/월",
+    "period1m": "/월",
+    "period3m": "3개월",
+    "oneTime": "일시불",
+    "perMonth": "월",
     "processing": "처리 중...",
     "currentPlan": "현재 플랜",
     "startPlan": "시작하기",
@@ -293,8 +288,9 @@
     "proFeature3": "모든 탭 무제한 이용",
     "premiumFeature1": "발음 평가 무제한",
     "premiumFeature2": "개발자 API 사용 (키 불필요)",
-    "premiumFeature3": "광고 없음",
-    "premiumFeature4": "모든 탭 무제한 이용"
+    "premiumFeature3": "모든 탭 무제한 이용",
+    "premiumFeature4": "프리미엄 전용 지원",
+    "discount": "할인"
   },
   "daily": {
     "goalComplete": "오늘 목표 달성! 🎉",
