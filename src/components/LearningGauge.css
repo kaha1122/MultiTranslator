@@ -9,11 +9,71 @@
   margin-top: 12px;
 }
 
+/* ── Header (타이틀 + 토글) ── */
+.gauge-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
 .gauge-title {
   font-size: 1rem;
   font-weight: 800;
   color: #1e293b;
-  margin: 0 0 12px;
+  margin: 0;
+}
+
+.gauge-period-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gauge-period-label {
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.gauge-period-label.active {
+  color: #1e293b;
+  font-weight: 700;
+}
+
+/* 토글 트랙 */
+.gauge-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  background: #e2e8f0;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s;
+}
+
+.gauge-toggle-track.on {
+  background: #10b981;
+}
+
+/* 토글 썸 */
+.gauge-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.25s;
+}
+
+.gauge-toggle-track.on .gauge-toggle-thumb {
+  transform: translateX(16px);
 }
 
 /* ── Tab (Dialogue / Vocabulary) ── */
@@ -49,7 +109,7 @@
 .gauge-diff-row {
   display: flex;
   gap: 6px;
-  margin-bottom: 8px;
+  margin-bottom: 12px;
 }
 
 .gauge-diff-btn {
@@ -69,32 +129,6 @@
   border-color: #6366f1;
   color: #6366f1;
   background: #eef2ff;
-}
-
-/* ── Period ── */
-.gauge-period-row {
-  display: flex;
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.gauge-period-btn {
-  flex: 1;
-  padding: 5px 0;
-  border: 1.5px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 0.72rem;
-  font-weight: 700;
-  color: #64748b;
-  background: white;
-  cursor: pointer;
-  transition: all 0.15s;
-}
-
-.gauge-period-btn.active {
-  border-color: #10b981;
-  color: #10b981;
-  background: #ecfdf5;
 }
 
 /* ── Summary ── */

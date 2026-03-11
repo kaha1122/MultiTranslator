@@ -162,7 +162,21 @@ const LearningGauge = ({ user, sourceLang }) => {
 
     return (
         <div className="gauge-container">
-            <h3 className="gauge-title">{t('gauge.title')}</h3>
+            {/* Header: 타이틀 + 기간 토글 */}
+            <div className="gauge-header">
+                <h3 className="gauge-title">{t('gauge.title')}</h3>
+                <div className="gauge-period-toggle">
+                    <span className={`gauge-period-label ${period === 'week' ? 'active' : ''}`}>{t('gauge.thisWeek')}</span>
+                    <button
+                        className={`gauge-toggle-track ${period === 'month' ? 'on' : ''}`}
+                        onClick={() => setPeriod(period === 'week' ? 'month' : 'week')}
+                        aria-label="Toggle period"
+                    >
+                        <span className="gauge-toggle-thumb" />
+                    </button>
+                    <span className={`gauge-period-label ${period === 'month' ? 'active' : ''}`}>{t('gauge.thisMonth')}</span>
+                </div>
+            </div>
 
             {/* Tab: Dialogue / Vocabulary */}
             <div className="gauge-tabs">
@@ -191,22 +205,6 @@ const LearningGauge = ({ user, sourceLang }) => {
                         {t(`scene.diff${d === 'basic' ? 'Basic' : d === 'intermediate' ? 'Intermediate' : 'High'}`)}
                     </button>
                 ))}
-            </div>
-
-            {/* Period */}
-            <div className="gauge-period-row">
-                <button
-                    className={`gauge-period-btn ${period === 'week' ? 'active' : ''}`}
-                    onClick={() => setPeriod('week')}
-                >
-                    {t('gauge.thisWeek')}
-                </button>
-                <button
-                    className={`gauge-period-btn ${period === 'month' ? 'active' : ''}`}
-                    onClick={() => setPeriod('month')}
-                >
-                    {t('gauge.thisMonth')}
-                </button>
             </div>
 
             {/* Summary */}
