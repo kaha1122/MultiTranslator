@@ -29,6 +29,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     });
     const [filterTargetMissed, setFilterTargetMissed] = useState(() => localStorage.getItem('library_filterTargetMissed') === 'true');
     const [filterSource, setFilterSource] = useState(() => localStorage.getItem('library_filterSource') || 'all');
+    const [filterDifficulty, setFilterDifficulty] = useState(() => localStorage.getItem('library_filterDifficulty') || 'all');
     const [filterStarred, setFilterStarred] = useState(() => localStorage.getItem('library_filterStarred') === 'true');
     const [filterThisWeek, setFilterThisWeek] = useState(() => {
         const saved = localStorage.getItem('library_filterThisWeek');
@@ -48,7 +49,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     const [memoOpenId, setMemoOpenId] = useState(null);
 
     // ── 바텀시트 상태 ──
-    const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source'
+    const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source' | 'difficulty'
 
     // ── localStorage 동기화 ──
     useEffect(() => {
@@ -56,11 +57,12 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
         localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
         localStorage.setItem('library_filterSource', filterSource);
+        localStorage.setItem('library_filterDifficulty', filterDifficulty);
         localStorage.setItem('library_filterStarred', filterStarred.toString());
         localStorage.setItem('library_filterThisWeek', filterThisWeek.toString());
         localStorage.setItem('library_dateFrom', dateFrom);
         localStorage.setItem('library_dateTo', dateTo);
-    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterStarred, filterThisWeek, dateFrom, dateTo]);
+    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
 
     // ── Firebase 실시간 구독 ──
     useEffect(() => {
@@ -101,6 +103,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         // 필터를 초기화하여 방금 생성된 카드가 반드시 보이도록
         focusCardPending.current = focusCardId;
         setFilterSource('all');
+        setFilterDifficulty('all');
         setFilterLang('all');
         setFilterStarred(false);
         setFilterTargetMissed(false);
@@ -193,6 +196,10 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         });
     }
 
+    if (filterDifficulty !== 'all') {
+        filteredCards = filteredCards.filter(card => (card.difficulty || 'basic') === filterDifficulty);
+    }
+
     if (searchTerm.trim() !== '') {
         const lowerSearch = searchTerm.toLowerCase();
         filteredCards = filteredCards.filter(card => {
@@ -245,6 +252,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'translation', label: t('library.srcTranslation') },
     ];
 
+    // 난이도 목록
+    const DIFF_OPTIONS = [
+        { value: 'all', label: t('library.filterAll') },
+        { value: 'basic', label: t('scene.diffBasic') },
+        { value: 'intermediate', label: t('scene.diffIntermediate') },
+        { value: 'high', label: t('scene.diffHigh') },
+    ];
+
     // W/S 옵션
     const WS_OPTIONS = [
         { value: 'all', label: t('library.filterAll') },
@@ -260,6 +275,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         return t('library.typeSentence');
     };
     const getSourceLabel = () => SOURCE_OPTIONS.find(o => o.value === filterSource)?.label || t('library.filterAll');
+    const getDiffLabel = () => DIFF_OPTIONS.find(o => o.value === filterDifficulty)?.label || t('library.filterAll');
 
     if (isLoading) return <div className="loading-container">{t('library.loading')}</div>;
 
@@ -323,6 +339,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         onClick={() => setBottomSheet('source')}
                     >
                         {t('library.filterSource')} : {getSourceLabel()} <ChevronDown size={12} className="chevron" />
+                    </button>
+
+                    {/* 6) 난이도 */}
+                    <button
+                        className={`lib-dropdown-btn ${filterDifficulty !== 'all' ? 'active' : ''}`}
+                        onClick={() => setBottomSheet('difficulty')}
+                    >
+                        {t('library.filterDiff')} : {getDiffLabel()} <ChevronDown size={12} className="chevron" />
                     </button>
                 </div>
 
@@ -518,6 +542,23 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 onClick={() => { setFilterSource(opt.value); setBottomSheet(null); }}>
                                 <span>{opt.label}</span>
                                 {filterSource === opt.value && <span className="bs-check">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 바텀시트: 난이도 선택 ── */}
+            {bottomSheet === 'difficulty' && (
+                <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
+                    <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="lib-bs-handle" />
+                        <div className="lib-bs-title">{t('library.filterDiff')}</div>
+                        {DIFF_OPTIONS.map(opt => (
+                            <button key={opt.value} className={`lib-bs-option ${filterDifficulty === opt.value ? 'selected' : ''}`}
+                                onClick={() => { setFilterDifficulty(opt.value); setBottomSheet(null); }}>
+                                <span>{opt.label}</span>
+                                {filterDifficulty === opt.value && <span className="bs-check">✓</span>}
                             </button>
                         ))}
                     </div>

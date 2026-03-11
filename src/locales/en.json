@@ -38,6 +38,7 @@
     "filterAll": "All",
     "filterLang": "Lang",
     "filterSource": "Source",
+    "filterDiff": "Level",
     "filterTargetMiss": "Missed",
     "filterStarred": "Starred",
     "filterThisWeek": "This Week",

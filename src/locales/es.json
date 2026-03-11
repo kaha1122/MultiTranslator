@@ -38,6 +38,7 @@
     "filterAll": "Todo",
     "filterLang": "Idioma",
     "filterSource": "Fuente",
+    "filterDiff": "Nivel",
     "filterTargetMiss": "No alcanzado",
     "filterStarred": "Importante",
     "filterThisWeek": "Esta semana",
