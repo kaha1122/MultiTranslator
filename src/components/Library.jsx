@@ -16,7 +16,7 @@ function getThisWeekMonday() {
     return mon;
 }
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack, progressPopupOpen }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 
@@ -112,6 +112,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     useEffect(() => {
         if (!focusCardPending.current || savedCards.length === 0) return;
+        if (progressPopupOpen) return; // 팝업이 열려 있으면 스크롤 대기
         const el = document.getElementById(`library-card-${focusCardPending.current}`);
         if (el) {
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -120,7 +121,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             focusCardPending.current = null;
             if (onFocusCardHandled) onFocusCardHandled();
         }
-    }, [savedCards]);
+    }, [savedCards, progressPopupOpen]);
 
     // ── 다른 탭에서 넘어온 경우 모바일 뒤로가기 지원 ──
     useEffect(() => {

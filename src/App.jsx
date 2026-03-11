@@ -1555,6 +1555,7 @@ function App() {
             onCardDeleted={handleCardDeleted}
             focusCardId={focusCardId}
             onFocusCardHandled={() => setFocusCardId(null)}
+            progressPopupOpen={showProgressPopup}
             libraryBackTo={libraryBackTo}
             onBack={() => {
               const target = libraryBackTo || 'vocab';
