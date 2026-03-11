@@ -85,6 +85,7 @@ export const AuthProvider = ({ children }) => {
         try {
             await updateDoc(doc(db, 'users', user.uid), {
                 trialCardCount: increment(1),
+                translationGenerateCount: increment(1),
                 totalGenerateCount: increment(1),
             });
         } catch (e) { console.error("incrementTrialCard failed:", e); }
