@@ -15,13 +15,13 @@
 }
 
 .vocab-lang-pill {
-  padding: 7px 16px;
-  border-radius: 20px;
+  padding: 5px 12px;
+  border-radius: 16px;
   border: 1.5px solid #e2e8f0;
   background: white;
   color: #64748b;
   font-weight: 700;
-  font-size: 0.82rem;
+  font-size: 0.75rem;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
@@ -37,19 +37,19 @@
 /* ── Level Selector ──────────────────────────────────────────────── */
 .vocab-level-row {
   display: flex;
-  gap: 8px;
-  margin: 8px 0 12px;
+  gap: 6px;
+  margin: 6px 0 10px;
 }
 
 .vocab-level-btn {
   flex: 1;
-  padding: 8px 0;
-  border-radius: 10px;
+  padding: 6px 0;
+  border-radius: 8px;
   border: 1.5px solid #e2e8f0;
   background: white;
   color: #64748b;
   font-weight: 700;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
 }
