@@ -138,36 +138,6 @@ export default function VocabTab({
     // ── Render ───────────────────────────────────────────────────────
     return (
         <div className="vocab-container">
-            {/* Language Pills */}
-            <div className="vocab-lang-row">
-                {visibleLanguages.map(code => (
-                    <button
-                        key={code}
-                        className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
-                        onClick={() => setSelectedLang(code)}
-                    >
-                        {LANG_NAMES[code] || code}
-                    </button>
-                ))}
-            </div>
-
-            {/* Level Selector */}
-            <div className="vocab-level-row">
-                {[
-                    { value: 'basic', key: 'diffBasic' },
-                    { value: 'intermediate', key: 'diffIntermediate' },
-                    { value: 'advanced', key: 'diffHigh' },
-                ].map(lv => (
-                    <button
-                        key={lv.value}
-                        className={`vocab-level-btn ${level === lv.value ? 'active' : ''}`}
-                        onClick={() => setLevel(lv.value)}
-                    >
-                        {t(`scene.${lv.key}`)}
-                    </button>
-                ))}
-            </div>
-
             {/* Category Accordion */}
             {VOCAB_CATEGORIES.map(cat => {
                 const isOpen = openCat === cat.id;
@@ -227,6 +197,36 @@ export default function VocabTab({
                     if (e.target.value.trim()) setSelectedTopic(null);
                 }}
             />
+
+            {/* Language Pills */}
+            <div className="vocab-lang-row">
+                {visibleLanguages.map(code => (
+                    <button
+                        key={code}
+                        className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
+                        onClick={() => setSelectedLang(code)}
+                    >
+                        {LANG_NAMES[code] || code}
+                    </button>
+                ))}
+            </div>
+
+            {/* Level Selector */}
+            <div className="vocab-level-row">
+                {[
+                    { value: 'basic', key: 'diffBasic' },
+                    { value: 'intermediate', key: 'diffIntermediate' },
+                    { value: 'advanced', key: 'diffHigh' },
+                ].map(lv => (
+                    <button
+                        key={lv.value}
+                        className={`vocab-level-btn ${level === lv.value ? 'active' : ''}`}
+                        onClick={() => setLevel(lv.value)}
+                    >
+                        {t(`scene.${lv.key}`)}
+                    </button>
+                ))}
+            </div>
 
             {/* Generate Button */}
             <div className="vocab-generate-row">
