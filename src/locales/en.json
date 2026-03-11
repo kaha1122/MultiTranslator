@@ -318,6 +318,7 @@
     "vocab": "Build vocabulary with AI-generated word cards by topic",
     "video": "Watch videos and practice pronunciation in any language",
     "library": "Review your saved cards and add your own notes",
+    "stats": "Check your learning statistics and achievement rates",
     "settings": "Set your learning language and API environment"
   },
   "nav": {

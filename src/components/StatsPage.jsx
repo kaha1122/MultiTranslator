@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, getDocs } from 'firebase/firestore';
-import { ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import LearningGauge from './LearningGauge';
 import './StatsPage.css';
@@ -28,7 +27,7 @@ const getMonthDates = (year, month) => {
     return dates;
 };
 
-const StatsPage = ({ user, dailyGoal, sourceLang, onBack }) => {
+const StatsPage = ({ user, dailyGoal, sourceLang }) => {
     const t = useT(sourceLang);
     const [allData, setAllData] = useState({}); // { 'YYYY-MM-DD': { count, dailyGoal, achieved } }
     const [isLoading, setIsLoading] = useState(true);
@@ -129,14 +128,6 @@ const StatsPage = ({ user, dailyGoal, sourceLang, onBack }) => {
 
     return (
         <div className="stats-page">
-            {/* 헤더 */}
-            <div className="stats-header">
-                <button className="stats-back-btn" onClick={onBack}>
-                    <ArrowLeft size={20} />
-                </button>
-                <h2 className="stats-title">{t('nav.stats')}</h2>
-            </div>
-
             {/* 요약 카드들 */}
             <div className="stats-summary">
                 <div className="stats-card">

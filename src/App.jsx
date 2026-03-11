@@ -269,7 +269,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['scene', 'vocab', 'translation', 'library', 'video', 'settings'];
+  const TAB_ORDER = ['scene', 'vocab', 'translation', 'library', 'video', 'stats'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -1057,7 +1057,7 @@ function App() {
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} />;
   if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} sourceLang={sourceLang} />;
-  if (viewMode === 'stats') return <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} onBack={() => setViewMode('scene')} />;
+  // stats는 이제 메인 탭이므로 여기서 early return하지 않음
 
 
   // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
@@ -1170,13 +1170,19 @@ function App() {
                 {getT(sourceLang, 'nav.video')}
               </button>
 
-              <div className="sidebar-divider" />
-
-              {/* 통계 */}
               <button className={`sidebar-nav-item ${viewMode === 'stats' ? 'active' : ''}`}
                 onClick={() => { setViewMode('stats'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><BarChart3 size={16} /></span>
                 {getT(sourceLang, 'nav.stats')}
+              </button>
+
+              <div className="sidebar-divider" />
+
+              {/* 설정 */}
+              <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
+                onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
+                <span className="sidebar-nav-icon"><SettingsIcon size={16} /></span>
+                {getT(sourceLang, 'nav.settings')}
               </button>
 
               {/* Q&A 서브메뉴 */}
@@ -1214,13 +1220,6 @@ function App() {
                 </button>
               </div>
 
-              <div className="sidebar-divider" />
-
-              <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
-                onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
-                <span className="sidebar-nav-icon"><SettingsIcon size={16} /></span>
-                {getT(sourceLang, 'nav.settings')}
-              </button>
             </nav>
 
             {/* 로그아웃 */}
@@ -1275,7 +1274,7 @@ function App() {
               vocab:       { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
               video:       { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
               library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
-              settings:    { icon: '⚙️', text: getT(sourceLang, 'tabTag.settings') },
+              stats:       { icon: '📊', text: getT(sourceLang, 'tabTag.stats') },
             };
             const ctx = TAB_CONTEXT[viewMode];
             if (!ctx) return null;
@@ -1875,6 +1874,11 @@ function App() {
               ))}
             </div>
           </div>
+        </div>
+
+        {/* Stats 탭 (메인 탭) */}
+        <div style={{ display: viewMode === 'stats' ? 'block' : 'none', width: '100%' }}>
+          <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} />
         </div>
       </main>
 
