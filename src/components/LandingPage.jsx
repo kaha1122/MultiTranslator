@@ -74,14 +74,14 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) 
   } = useAudioRecorder(generated.sentence, langCode, sourceLang, null);
 
   const handleSpeak = () => {
-    if (ttsCountRef.current >= 1) { onLimitReached(); return; }
+    if (ttsCountRef.current >= 3) { onLimitReached(); return; }
     ttsCountRef.current += 1;
     onSpeak(generated.sentence, langCode);
   };
 
   const handleRecord = () => {
     if (isRecording) { stopRecording(); return; }
-    if (recordCountRef.current >= 1) { onLimitReached(); return; }
+    if (recordCountRef.current >= 3) { onLimitReached(); return; }
     recordCountRef.current += 1;
     startRecording();
   };
