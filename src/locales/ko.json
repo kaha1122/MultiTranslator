@@ -43,10 +43,9 @@
     "filterThisWeek": "이번주",
     "typeWord": "단어",
     "typeSentence": "문장",
-    "srcTranslation": "번역",
-    "srcScene": "장소/상황",
+    "srcTranslation": "사전",
+    "srcScene": "대화",
     "srcVocab": "단어장",
-    "srcVideo": "동영상",
     "dateClear": "초기화"
   },
   "save": {

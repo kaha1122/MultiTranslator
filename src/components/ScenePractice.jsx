@@ -201,7 +201,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -317,6 +317,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             setGenerated(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
+            if (onGenerate) onGenerate();
             setTimeout(() => questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
@@ -365,6 +366,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             setGeneratedAnswer(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
+            if (onGenerate) onGenerate();
             setTimeout(() => answerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
@@ -383,6 +385,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             sceneHint:         generated.scene_hint,
             learningTip:       generated.learning_tip,
             pronunciationScore,
+            difficulty,
         });
         playStarSound();
         setIsSaved(true);
@@ -399,6 +402,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             sceneHint:         generatedAnswer.scene_hint,
             learningTip:       generatedAnswer.learning_tip,
             pronunciationScore,
+            difficulty,
         });
         playStarSound();
         setIsAnswerSaved(true);

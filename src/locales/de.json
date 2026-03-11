@@ -43,10 +43,9 @@
     "filterThisWeek": "Diese Woche",
     "typeWord": "Wort",
     "typeSentence": "Satz",
-    "srcTranslation": "Übersetzung",
-    "srcScene": "Szene",
+    "srcTranslation": "Wörterbuch",
+    "srcScene": "Dialog",
     "srcVocab": "Vokabeln",
-    "srcVideo": "Video",
     "dateClear": "Löschen"
   },
   "save": {

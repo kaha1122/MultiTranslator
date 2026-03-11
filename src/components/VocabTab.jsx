@@ -28,6 +28,7 @@ export default function VocabTab({
     onSpeak,
     languageGoals = {},
     onBookmarkPrompt,
+    onGenerate,
 }) {
     const { byokGeminiKey } = useAuth();
     const t = useT(sourceLang);
@@ -93,6 +94,7 @@ export default function VocabTab({
             if (data.words && Array.isArray(data.words)) {
                 setWords(data.words);
                 setSavedWords(new Set());
+                if (onGenerate) onGenerate();
                 // avoidWords에 새 단어들 추가
                 avoidWordsRef.current = [
                     ...avoidWordsRef.current,
@@ -120,6 +122,7 @@ export default function VocabTab({
             pronunciation: wordObj.pronunciation,
             langCode: selectedLang,
             topic: selectedTopic ? getT(sourceLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim(),
+            difficulty: level === 'advanced' ? 'high' : level,
         });
 
         setSavedWords(prev => new Set([...prev, index]));

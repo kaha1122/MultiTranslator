@@ -209,7 +209,6 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'translation', label: t('library.srcTranslation') },
         { value: 'scene', label: t('library.srcScene') },
         { value: 'vocab', label: t('library.srcVocab') },
-        { value: 'youtube', label: t('library.srcVideo') },
     ];
 
     // W/S 옵션

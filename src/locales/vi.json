@@ -43,10 +43,9 @@
     "filterThisWeek": "Tuần này",
     "typeWord": "Từ",
     "typeSentence": "Câu",
-    "srcTranslation": "Dịch",
-    "srcScene": "Cảnh",
+    "srcTranslation": "Từ điển",
+    "srcScene": "Hội thoại",
     "srcVocab": "Từ vựng",
-    "srcVideo": "Video",
     "dateClear": "Xóa"
   },
   "save": {

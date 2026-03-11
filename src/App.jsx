@@ -96,6 +96,7 @@ function App() {
     TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
     isTrialSavedCardLimitReached,
     incrementTrialCard, incrementSavedCard,
+    incrementSceneGenerate, incrementVocabGenerate,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
@@ -383,6 +384,7 @@ function App() {
       return 'S';
     }
   });
+  const [translationDifficulty, setTranslationDifficulty] = useState('basic');
 
   // 발음 연습 결과가 나올 때마다 호출되는 함수
   const handlePracticeResult = (langCode, result) => {
@@ -626,9 +628,16 @@ function App() {
         [Task 4: Pronunciation]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / others: Romanization
 
+        [Task 5: Difficulty Classification]
+        Classify the source text difficulty as one of: "basic", "intermediate", "high".
+        - "basic": simple everyday words/phrases a beginner would learn first
+        - "intermediate": natural daily expressions, moderate vocabulary
+        - "high": complex structures, idioms, nuanced or specialized language
+
         [Output — valid JSON only, no markdown]
         {
           "type": "word" | "sentence",
+          "difficulty": "basic" | "intermediate" | "high",
           "tips": [
             ${targetLangNames.map(name => `["${sourceLangName} tip about ${name} translation", "${sourceLangName} tip 2"]`).join(',\n            ')}
           ],
@@ -666,6 +675,11 @@ function App() {
 
       if (result.type) {
         setInputType(result.type.toLowerCase() === 'word' ? 'W' : 'S');
+      }
+      if (result.difficulty) {
+        setTranslationDifficulty(result.difficulty);
+      } else {
+        setTranslationDifficulty('basic');
       }
 
       const newTranslations = {};
@@ -769,6 +783,7 @@ function App() {
         pronunciationAudioUrl: practiceResults[langCode]?.audioUrl || null,
         geminiKeySource: byokGeminiKey ? 'byok' : 'app', // 어떤 Gemini 키로 번역했는지
         sourceType: 'translation',
+        difficulty: translationDifficulty,
         createdAt: serverTimestamp()
       };
 
@@ -818,7 +833,7 @@ function App() {
         inputLang: langCode,
         inputType: 'S',
         sourceLang,
-        sourceType: 'youtube',
+        sourceType: 'translation',
         articleTitle: videoTitle,
         learningTip: [],
         pronunciation: '',
@@ -837,7 +852,7 @@ function App() {
   };
 
   // 6. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip, pronunciationScore = null }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -857,6 +872,7 @@ function App() {
         inputType: 'S',
         sourceLang,
         sourceType: 'scene',
+        difficulty,
         scene,
         learningTip: learningTip ? [{ type: 'tip', content: learningTip }] : [],
         pronunciation: '',
@@ -876,7 +892,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic, difficulty = 'basic' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -900,6 +916,7 @@ function App() {
         inputType: 'W',               // 단어
         sourceLang,
         sourceType: 'vocab',
+        difficulty,
         scene: topic || '',
         learningTip: tips,
         pronunciation: pronunciation || '',
@@ -1410,6 +1427,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
+            onGenerate={incrementVocabGenerate}
           />
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
@@ -1442,6 +1460,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
+            onGenerate={incrementSceneGenerate}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />

@@ -43,10 +43,9 @@
     "filterThisWeek": "本周",
     "typeWord": "单词",
     "typeSentence": "句子",
-    "srcTranslation": "翻译",
-    "srcScene": "场景",
+    "srcTranslation": "词典",
+    "srcScene": "对话",
     "srcVocab": "词汇",
-    "srcVideo": "视频",
     "dateClear": "清除"
   },
   "save": {

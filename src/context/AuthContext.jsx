@@ -83,7 +83,10 @@ export const AuthProvider = ({ children }) => {
     const incrementTrialCard = async () => {
         if (!user) return;
         try {
-            await updateDoc(doc(db, 'users', user.uid), { trialCardCount: increment(1) });
+            await updateDoc(doc(db, 'users', user.uid), {
+                trialCardCount: increment(1),
+                totalGenerateCount: increment(1),
+            });
         } catch (e) { console.error("incrementTrialCard failed:", e); }
     };
 
@@ -100,6 +103,28 @@ export const AuthProvider = ({ children }) => {
         try {
             await updateDoc(doc(db, 'users', user.uid), { trialPronCount: increment(1) });
         } catch (e) { console.error("incrementTrialPron failed:", e); }
+    };
+
+    // Scene 생성 카운터 (분석용, 모든 tier에서 기록 — Question/Answer 각각 +1)
+    const incrementSceneGenerate = async () => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                sceneGenerateCount: increment(1),
+                totalGenerateCount: increment(1),
+            });
+        } catch (e) { console.error("incrementSceneGenerate failed:", e); }
+    };
+
+    // Vocab 생성 카운터 (분석용, 모든 tier에서 기록)
+    const incrementVocabGenerate = async () => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                vocabGenerateCount: increment(1),
+                totalGenerateCount: increment(1),
+            });
+        } catch (e) { console.error("incrementVocabGenerate failed:", e); }
     };
 
     // BYOK 키 저장 + tier를 'byok_free'로 전환
@@ -126,6 +151,7 @@ export const AuthProvider = ({ children }) => {
             TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
             isTrialSavedCardLimitReached, isTrialPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementTrialPron,
+            incrementSceneGenerate, incrementVocabGenerate,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
         }}>
