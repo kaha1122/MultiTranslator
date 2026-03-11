@@ -201,7 +201,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -377,7 +377,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
     const handleSave = async (pronunciationScore = null) => {
         if (!generated || !selectedScene) return;
-        await onSaveToLibrary({
+        const cardId = await onSaveToLibrary({
             sentence:          generated.sentence,
             translation:       generated.translation,
             langCode:          selectedLang,
@@ -391,11 +391,12 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         playStarSound();
         setIsSaved(true);
         setTimeout(() => setIsSaved(false), 1200);
+        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     const handleAnswerSave = async (pronunciationScore = null) => {
         if (!generatedAnswer || !selectedScene) return;
-        await onSaveToLibrary({
+        const cardId = await onSaveToLibrary({
             sentence:          generatedAnswer.sentence,
             translation:       generatedAnswer.translation,
             langCode:          selectedLang,
@@ -409,6 +410,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         playStarSound();
         setIsAnswerSaved(true);
         setTimeout(() => setIsAnswerSaved(false), 1200);
+        if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
     const currentScenes = SCENES[category];

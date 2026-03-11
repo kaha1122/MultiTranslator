@@ -122,10 +122,10 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         }
     }, [savedCards]);
 
-    // ── Vocab에서 넘어온 경우 모바일 뒤로가기 지원 ──
+    // ── 다른 탭에서 넘어온 경우 모바일 뒤로가기 지원 ──
     useEffect(() => {
         if (!libraryBackTo || !onBack) return;
-        history.pushState({ page: 'library-from-vocab' }, '');
+        history.pushState({ page: `library-from-${libraryBackTo}` }, '');
         const handlePop = () => onBack();
         window.addEventListener('popstate', handlePop);
         return () => window.removeEventListener('popstate', handlePop);
@@ -292,12 +292,12 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     return (
         <div className="library-container library-theme">
-            {/* ── Vocab에서 넘어온 경우 Back 버튼 ── */}
+            {/* ── 다른 탭에서 넘어온 경우 Back 버튼 ── */}
             {libraryBackTo && onBack && (
                 <div className="library-back-bar">
                     <button className="library-back-btn" onClick={onBack}>
                         <ArrowLeft size={20} />
-                        <span>{t('vocab.backToVocab')}</span>
+                        <span>{t(`library.backTo_${libraryBackTo}`)}</span>
                     </button>
                 </div>
             )}

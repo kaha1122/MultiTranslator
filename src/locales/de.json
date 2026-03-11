@@ -47,7 +47,10 @@
     "srcTranslation": "Wörterbuch",
     "srcScene": "Dialog",
     "srcVocab": "Vokabeln",
-    "dateClear": "Löschen"
+    "dateClear": "Löschen",
+    "backTo_vocab": "Zurück zu Vokabeln",
+    "backTo_scene": "Zurück zum Dialog",
+    "backTo_translation": "Zurück zum Wörterbuch"
   },
   "save": {
     "savedSuccess": "Gespeichert!",

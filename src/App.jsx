@@ -810,6 +810,12 @@ function App() {
         const wasNew = await incrementAchievement(`library-${result.id}`);
         if (wasNew) setShowProgressPopup(true);
       }
+      // Library로 이동하여 저장된 카드 포커스
+      if (result.id) {
+        setFocusCardId(result.id);
+        setLibraryBackTo('translation');
+        setViewMode('library');
+      }
     } else if (result.status === "duplicate") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
     }
@@ -889,8 +895,10 @@ function App() {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
         if (wasNew) setShowProgressPopup(true);
       }
+      return docRef.id;
     } catch (error) {
       console.error("Scene 카드 저장 오류:", error);
+      return null;
     }
   };
 
@@ -1473,6 +1481,11 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={incrementSceneGenerate}
+            onNavigateToLibrary={(cardId) => {
+              setFocusCardId(cardId);
+              setLibraryBackTo('scene');
+              setViewMode('library');
+            }}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
@@ -1495,8 +1508,9 @@ function App() {
             onFocusCardHandled={() => setFocusCardId(null)}
             libraryBackTo={libraryBackTo}
             onBack={() => {
+              const target = libraryBackTo || 'vocab';
               setLibraryBackTo(null);
-              setViewMode('vocab');
+              setViewMode(target);
             }}
           />
         </div>

@@ -47,7 +47,10 @@
     "srcTranslation": "Từ điển",
     "srcScene": "Hội thoại",
     "srcVocab": "Từ vựng",
-    "dateClear": "Xóa"
+    "dateClear": "Xóa",
+    "backTo_vocab": "Quay lại Từ vựng",
+    "backTo_scene": "Quay lại Hội thoại",
+    "backTo_translation": "Quay lại Từ điển"
   },
   "save": {
     "savedSuccess": "Đã lưu!",

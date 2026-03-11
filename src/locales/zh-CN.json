@@ -47,7 +47,10 @@
     "srcTranslation": "词典",
     "srcScene": "对话",
     "srcVocab": "词汇",
-    "dateClear": "清除"
+    "dateClear": "清除",
+    "backTo_vocab": "返回词汇学习",
+    "backTo_scene": "返回对话练习",
+    "backTo_translation": "返回词典"
   },
   "save": {
     "savedSuccess": "保存成功！",

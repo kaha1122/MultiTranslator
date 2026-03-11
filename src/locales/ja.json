@@ -47,7 +47,10 @@
     "srcTranslation": "辞書",
     "srcScene": "会話",
     "srcVocab": "単語",
-    "dateClear": "クリア"
+    "dateClear": "クリア",
+    "backTo_vocab": "単語学習に戻る",
+    "backTo_scene": "会話練習に戻る",
+    "backTo_translation": "辞書に戻る"
   },
   "save": {
     "savedSuccess": "保存完了！",

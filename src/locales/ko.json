@@ -47,7 +47,10 @@
     "srcTranslation": "사전",
     "srcScene": "대화",
     "srcVocab": "단어",
-    "dateClear": "초기화"
+    "dateClear": "초기화",
+    "backTo_vocab": "단어 학습으로 돌아가기",
+    "backTo_scene": "대화 연습으로 돌아가기",
+    "backTo_translation": "사전으로 돌아가기"
   },
   "save": {
     "savedSuccess": "저장 완료!",

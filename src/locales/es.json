@@ -47,7 +47,10 @@
     "srcTranslation": "Diccionario",
     "srcScene": "Diálogo",
     "srcVocab": "Vocabulario",
-    "dateClear": "Borrar"
+    "dateClear": "Borrar",
+    "backTo_vocab": "Volver a Vocabulario",
+    "backTo_scene": "Volver a Diálogo",
+    "backTo_translation": "Volver a Diccionario"
   },
   "save": {
     "savedSuccess": "¡Guardado con éxito!",
