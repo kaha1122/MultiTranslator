@@ -3,6 +3,7 @@ import { ChevronRight, Sparkles, Volume2, Star, RefreshCw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
+import { playStarSound } from '../utils/soundEffects';
 import './VocabTab.css';
 
 const LANG_NAMES = {
@@ -128,6 +129,7 @@ export default function VocabTab({
             difficulty: level === 'advanced' ? 'high' : level,
         });
 
+        playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
         if (cardId && onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
