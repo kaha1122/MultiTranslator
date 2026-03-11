@@ -292,15 +292,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     return (
         <div className="library-container library-theme">
-            {/* ── 다른 탭에서 넘어온 경우 Back 버튼 ── */}
-            {libraryBackTo && onBack && (
-                <div className="library-back-bar">
-                    <button className="library-back-btn" onClick={onBack}>
-                        <ArrowLeft size={20} />
-                        <span>{t(`library.backTo_${libraryBackTo}`)}</span>
-                    </button>
-                </div>
-            )}
+            {/* Back 버튼은 App 헤더 우측 상단으로 이동 */}
             {/* ── 필터 박스 ── */}
             <div className="lib-filter-box">
                 {/* 1) 검색바 */}

@@ -212,6 +212,18 @@ function App() {
   const [viewMode, setViewMode] = useState('scene');
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
+  const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
+
+  // 사전(Translation) 이동 시 모바일 back 지원
+  React.useEffect(() => {
+    if (!dictBackTo) return;
+    const handlePop = () => {
+      setViewMode(dictBackTo);
+      setDictBackTo(null);
+    };
+    window.addEventListener('popstate', handlePop);
+    return () => window.removeEventListener('popstate', handlePop);
+  }, [dictBackTo]);
 
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -1103,25 +1115,25 @@ function App() {
             {/* 메뉴 목록 */}
             <nav className="sidebar-nav">
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-                onClick={() => { setViewMode('scene'); setSidebarOpen(false); }}>
+                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><MapPin size={16} /></span>
                 {getT(sourceLang, 'nav.scene')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
-                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); }}>
+                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
                 {getT(sourceLang, 'nav.vocab')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
-                onClick={() => { setViewMode('translation'); setSidebarOpen(false); }}>
+                onClick={() => { setViewMode('translation'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><Languages size={16} /></span>
                 {getT(sourceLang, 'nav.translation')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
-                onClick={() => { setViewMode('library'); setSidebarOpen(false); }}>
+                onClick={() => { setViewMode('library'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
                 {getT(sourceLang, 'nav.library')}
               </button>
@@ -1209,8 +1221,23 @@ function App() {
           </h1>
 
           {(viewMode === 'scene' || viewMode === 'vocab') ? (
-            <button className="header-dict-btn" onClick={() => setViewMode('translation')}>
+            <button className="header-dict-btn" onClick={() => {
+              setDictBackTo(viewMode);
+              history.pushState({ page: `dict-from-${viewMode}` }, '');
+              setViewMode('translation');
+            }}>
               {getT(sourceLang, 'nav.translation')}
+            </button>
+          ) : (viewMode === 'translation' && dictBackTo) ? (
+            <button className="header-dict-btn" onClick={() => {
+              setDictBackTo(null);
+              history.back();
+            }}>
+              Back
+            </button>
+          ) : (viewMode === 'library' && libraryBackTo) ? (
+            <button className="header-dict-btn" onClick={() => history.back()}>
+              Back
             </button>
           ) : (
             <div className="header-spacer" />
