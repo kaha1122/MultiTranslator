@@ -277,9 +277,10 @@
     "startPlan": "Jetzt starten",
     "footerNote": "Jederzeit kündbar · Zahlung sicher über TossPayments",
     "paymentError": "Zahlungsseite konnte nicht geöffnet werden. Bitte erneut versuchen.",
-    "cancelConfirm": "Abonnement kündigen? Sie werden sofort zum Free Trial gewechselt.",
+    "cancelConfirm": "Automatische Verlängerung stoppen? Sie können den Service bis zum Ende des aktuellen Zeitraums weiter nutzen.",
+    "cancelledNotice": "Automatische Verlängerung gestoppt. Service verfügbar bis:",
     "cancelFailed": "Kündigung fehlgeschlagen. Bitte erneut versuchen.",
-    "cancelBtn": "Abonnement kündigen",
+    "cancelBtn": "Auto-Verlängerung stoppen",
     "btnLabel": "Upgraden",
     "toastSuccess": "🎉 Zahlung abgeschlossen! Ihr Plan wird aktualisiert.",
     "toastFail": "Zahlung fehlgeschlagen oder abgebrochen.",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · KI-Aussprachecoach · Ab Registrierung kostenlos",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 App installieren\nfür sofortigen Zugang"
+  },
+  "renewal": {
+    "title": "Abonnement läuft bald ab",
+    "daysLeft": "Ihr Abonnement läuft in {days} Tagen ab",
+    "actionNeeded": "Bitte überprüfen Sie Ihre Zahlungsinformationen, um den Service weiter zu nutzen.",
+    "renewBtn": "Abonnement verlängern",
+    "later": "Später"
   }
 }

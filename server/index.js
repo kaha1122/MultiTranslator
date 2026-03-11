@@ -624,7 +624,18 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
 
         // 3단계: Firestore 업데이트 (customerKey === userId)
         const resolvedMonths = parseInt(months) || 1;
-        const expiresAt = new Date();
+
+        // 기존 구독이 남아있으면 그 만료일부터 연장, 아니면 오늘부터
+        let baseDate = new Date();
+        if (adminDb) {
+            const userDoc = await adminDb.collection('users').doc(customerKey).get();
+            const existingExpiry = userDoc.data()?.subscriptionExpiresAt;
+            if (existingExpiry) {
+                const existingDate = existingExpiry.toDate ? existingExpiry.toDate() : new Date(existingExpiry);
+                if (existingDate > baseDate) baseDate = existingDate;
+            }
+        }
+        const expiresAt = new Date(baseDate);
         expiresAt.setMonth(expiresAt.getMonth() + resolvedMonths);
 
         if (adminDb) {
@@ -634,6 +645,7 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
                 subscriptionMonths: resolvedMonths,
                 tossBillingKey: billingKey,
                 tossCustomerKey: customerKey,
+                autoRenew: true,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
@@ -650,44 +662,115 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
     }
 });
 
-// ── TossPayments 구독 취소 ────────────────────────────────────────────────────
+// ── TossPayments 구독 취소 (자동 연장 중지, 만료일까지 서비스 유지) ──────────
 app.post('/api/cancel-subscription', async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
     try {
         if (adminDb) {
-            // 1단계: 기존 빌링키 조회 후 토스페이먼츠에서 폐기
-            const userDoc = await adminDb.collection('users').doc(userId).get();
-            const billingKey = userDoc.data()?.tossBillingKey;
-            if (billingKey) {
-                try {
-                    await axios.post(
-                        `https://api.tosspayments.com/v1/billing/authorizations/revoke`,
-                        { billingKey },
-                        { headers: { Authorization: TOSS_AUTH_HEADER() } }
-                    );
-                    console.log(`[Toss] billingKey revoked: ${billingKey}`);
-                } catch (revokeErr) {
-                    console.warn('[Toss] billingKey revoke failed (continuing):', revokeErr.response?.data?.message || revokeErr.message);
-                }
-            }
-
-            // 2단계: Firestore 업데이트
             await adminDb.collection('users').doc(userId).update({
-                tier: 'trial',
-                planId: null,
-                subscriptionMonths: null,
-                tossBillingKey: null,
-                tossCustomerKey: null,
-                subscriptionExpiresAt: null,
+                autoRenew: false,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
-            console.log(`[Toss] subscription cancelled: ${userId}`);
+            console.log(`[Toss] auto-renew disabled: ${userId} (service continues until expiry)`);
         }
         res.json({ success: true });
     } catch (err) {
         console.error('[Toss] cancel-subscription error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
+// ── Cron: 자동 갱신 (만료된 구독 재결제 + 연장) ─────────────────────────────
+// Render cron이나 외부 스케줄러에서 매일 1회 호출: POST /api/cron/renew-subscriptions
+app.post('/api/cron/renew-subscriptions', async (req, res) => {
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    const AMOUNTS = {
+        pro_1: 9900, pro_3: 16500,
+        premium_1: 19900, premium_3: 55000,
+    };
+    const ORDER_NAMES = {
+        pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
+        premium_1: 'PronunFit Premium 1개월', premium_3: 'PronunFit Premium 3개월',
+    };
+
+    try {
+        const now = admin.firestore.Timestamp.now();
+        // autoRenew === true이고 만료일이 지난 사용자 조회
+        const snapshot = await adminDb.collection('users')
+            .where('autoRenew', '==', true)
+            .where('subscriptionExpiresAt', '<=', now)
+            .get();
+
+        let renewed = 0, failed = 0;
+        for (const doc of snapshot.docs) {
+            const data = doc.data();
+            const { tossBillingKey, tossCustomerKey, planId, subscriptionMonths } = data;
+            if (!tossBillingKey || !planId) {
+                failed++;
+                continue;
+            }
+
+            const amount = AMOUNTS[planId];
+            if (!amount) { failed++; continue; }
+
+            const months = subscriptionMonths || (planId.endsWith('_3') ? 3 : 1);
+            try {
+                // 빌링키로 재결제
+                const orderId = `renew_${Date.now()}_${doc.id.slice(0, 8)}`;
+                await axios.post(
+                    `https://api.tosspayments.com/v1/billing/${tossBillingKey}`,
+                    {
+                        customerKey: tossCustomerKey || doc.id,
+                        amount,
+                        orderId,
+                        orderName: ORDER_NAMES[planId] || `PronunFit ${planId}`,
+                    },
+                    { headers: { Authorization: TOSS_AUTH_HEADER() } }
+                );
+
+                // 만료일 연장
+                const currentExpiry = data.subscriptionExpiresAt.toDate
+                    ? data.subscriptionExpiresAt.toDate() : new Date(data.subscriptionExpiresAt);
+                const newExpiry = new Date(currentExpiry);
+                newExpiry.setMonth(newExpiry.getMonth() + months);
+
+                await adminDb.collection('users').doc(doc.id).update({
+                    subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(newExpiry),
+                    lastRenewedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[Cron] renewed: ${doc.id} → ${planId} (expires ${newExpiry.toISOString().slice(0,10)})`);
+                renewed++;
+            } catch (chargeErr) {
+                // 결제 실패 → 자동갱신 중지, 빌링키 폐기, trial로 전환
+                console.error(`[Cron] charge failed for ${doc.id}:`, chargeErr.response?.data?.message || chargeErr.message);
+                try {
+                    await axios.post(
+                        `https://api.tosspayments.com/v1/billing/authorizations/revoke`,
+                        { billingKey: tossBillingKey },
+                        { headers: { Authorization: TOSS_AUTH_HEADER() } }
+                    );
+                } catch (_) {}
+                await adminDb.collection('users').doc(doc.id).update({
+                    tier: 'trial',
+                    autoRenew: false,
+                    planId: null,
+                    subscriptionMonths: null,
+                    tossBillingKey: null,
+                    tossCustomerKey: null,
+                    subscriptionExpiresAt: null,
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                failed++;
+            }
+        }
+
+        console.log(`[Cron] renew-subscriptions done: ${renewed} renewed, ${failed} failed`);
+        res.json({ success: true, renewed, failed, total: snapshot.size });
+    } catch (err) {
+        console.error('[Cron] renew-subscriptions error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

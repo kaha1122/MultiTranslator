@@ -253,8 +253,20 @@ const UpgradeModal = ({ onClose, sourceLang }) => {
                     </ul>
                 </div>
 
-                {isSubscribed && (
+                {isSubscribed && profile?.autoRenew === true && (
                     <CancelSubscriptionButton userId={user?.uid} t={t} />
+                )}
+                {isSubscribed && profile?.autoRenew === false && profile?.subscriptionExpiresAt && (
+                    <div className="upgrade-cancel-notice">
+                        {t('upgrade.cancelledNotice')} {
+                            (() => {
+                                const d = profile.subscriptionExpiresAt.toDate
+                                    ? profile.subscriptionExpiresAt.toDate()
+                                    : new Date(profile.subscriptionExpiresAt);
+                                return d.toLocaleDateString();
+                            })()
+                        }
+                    </div>
                 )}
 
                 <p className="upgrade-footer-note">

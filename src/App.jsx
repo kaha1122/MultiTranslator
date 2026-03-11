@@ -32,6 +32,7 @@ import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
+import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
@@ -2046,6 +2047,12 @@ function App() {
           onClose={() => setShowUpgradeModal(false)}
         />
       )}
+
+      {/* 구독 만료 예정 알림 팝업 */}
+      <RenewalReminderPopup
+        sourceLang={sourceLang}
+        onUpgrade={() => setShowUpgradeModal(true)}
+      />
 
       {/* Stripe 결제 결과 토스트 */}
       {paymentToast && (

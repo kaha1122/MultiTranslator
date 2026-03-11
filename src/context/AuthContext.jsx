@@ -96,14 +96,18 @@ export const AuthProvider = ({ children }) => {
         }).catch(e => console.error("Pro pron reset failed:", e));
     }, [user, tier, proPronResetMonth]);
 
-    // 구독 만료 체크 (일시불 3개월 등): 만료일이 지나면 trial로 복귀
+    // 구독 만료 체크: autoRenew가 false이고 만료일이 지나면 trial로 복귀
+    // autoRenew가 true면 서버 cron이 재결제 처리하므로 클라이언트에서 다운그레이드하지 않음
     useEffect(() => {
         if (!user || !profile?.subscriptionExpiresAt) return;
         if (tier !== 'pro' && tier !== 'premium') return;
+        if (profile?.autoRenew === true) return; // cron이 처리
         const expiresAt = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
         if (new Date() > expiresAt) {
+            // 빌링키 폐기는 서버에서 처리되므로 클라이언트는 Firestore만 정리
             updateDoc(doc(db, 'users', user.uid), {
                 tier: 'trial',
+                autoRenew: false,
                 planId: null,
                 subscriptionMonths: null,
                 tossBillingKey: null,
@@ -112,7 +116,7 @@ export const AuthProvider = ({ children }) => {
                 tierUpdatedAt: new Date(),
             }).catch(e => console.error("Subscription expiry downgrade failed:", e));
         }
-    }, [user, tier, profile?.subscriptionExpiresAt]);
+    }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
 
     // 번역 클릭 카운터 (분석용, 모든 tier에서 기록)
     const incrementTrialCard = async () => {

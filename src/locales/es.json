@@ -277,9 +277,10 @@
     "startPlan": "Comenzar",
     "footerNote": "Cancela en cualquier momento · Pago seguro con TossPayments",
     "paymentError": "No se pudo abrir la página de pago. Por favor, inténtalo más tarde.",
-    "cancelConfirm": "¿Cancelar suscripción? Pasarás al Free Trial inmediatamente.",
+    "cancelConfirm": "¿Detener la renovación automática? Podrás seguir usando el servicio hasta el final del período actual.",
+    "cancelledNotice": "La renovación automática ha sido detenida. Servicio disponible hasta:",
     "cancelFailed": "Cancelación fallida. Por favor, inténtalo de nuevo.",
-    "cancelBtn": "Cancelar suscripción",
+    "cancelBtn": "Detener renovación",
     "btnLabel": "Actualizar",
     "toastSuccess": "🎉 ¡Pago completado! Tu plan está siendo actualizado.",
     "toastFail": "Pago fallido o cancelado.",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · Coach de pronunciación IA · Gratis desde el registro",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Instala la app\npara acceso instantáneo"
+  },
+  "renewal": {
+    "title": "Suscripción por expirar",
+    "daysLeft": "Tu suscripción expira en {days} días",
+    "actionNeeded": "Verifica tu información de pago para seguir usando el servicio.",
+    "renewBtn": "Renovar suscripción",
+    "later": "Más tarde"
   }
 }

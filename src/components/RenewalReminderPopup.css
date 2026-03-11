@@ -1,0 +1,98 @@
+.renewal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2100;
+    padding: 20px;
+}
+
+.renewal-popup {
+    background: white;
+    border-radius: 20px;
+    padding: 28px 24px 20px;
+    width: 100%;
+    max-width: 340px;
+    text-align: center;
+    position: relative;
+    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+}
+
+.renewal-close {
+    position: absolute;
+    top: 12px; right: 12px;
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    color: #9ca3af;
+    display: flex;
+}
+
+/* ── urgency 색상 ── */
+.renewal-info .renewal-icon { color: #3b82f6; }
+.renewal-info .renewal-btn { background: #3b82f6; }
+
+.renewal-warning .renewal-icon { color: #f59e0b; }
+.renewal-warning .renewal-btn { background: #f59e0b; }
+
+.renewal-urgent .renewal-icon { color: #ef4444; }
+.renewal-urgent .renewal-btn { background: #ef4444; }
+
+.renewal-icon {
+    margin-bottom: 12px;
+}
+
+.renewal-title {
+    margin: 0 0 8px;
+    font-size: 1.15rem;
+    font-weight: 800;
+    color: #1e293b;
+}
+
+.renewal-desc {
+    margin: 0 0 4px;
+    font-size: 0.92rem;
+    color: #334155;
+    font-weight: 600;
+}
+
+.renewal-sub {
+    margin: 0 0 18px;
+    font-size: 0.82rem;
+    color: #64748b;
+}
+
+.renewal-btn {
+    width: 100%;
+    padding: 12px;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-weight: 700;
+    font-size: 0.92rem;
+    cursor: pointer;
+    transition: opacity 0.2s;
+}
+
+.renewal-btn:hover {
+    opacity: 0.88;
+}
+
+.renewal-dismiss {
+    width: 100%;
+    margin-top: 8px;
+    padding: 10px;
+    background: none;
+    border: none;
+    color: #94a3b8;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.renewal-dismiss:hover {
+    color: #64748b;
+}

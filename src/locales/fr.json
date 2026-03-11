@@ -277,9 +277,10 @@
     "startPlan": "Commencer",
     "footerNote": "Annulation à tout moment · Paiement sécurisé via TossPayments",
     "paymentError": "Impossible d'ouvrir la page de paiement. Veuillez réessayer.",
-    "cancelConfirm": "Annuler l'abonnement ? Vous passerez immédiatement en Free Trial.",
+    "cancelConfirm": "Arrêter le renouvellement automatique ? Vous pourrez utiliser le service jusqu'à la fin de la période en cours.",
+    "cancelledNotice": "Le renouvellement automatique a été arrêté. Service disponible jusqu'au :",
     "cancelFailed": "Annulation échouée. Veuillez réessayer.",
-    "cancelBtn": "Annuler l'abonnement",
+    "cancelBtn": "Arrêter le renouvellement",
     "btnLabel": "Mettre à niveau",
     "toastSuccess": "🎉 Paiement effectué ! Votre plan est en cours de mise à niveau.",
     "toastFail": "Paiement échoué ou annulé.",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · Coach de prononciation IA · Gratuit dès l'inscription",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Installez l'appli\npour un accès instantané"
+  },
+  "renewal": {
+    "title": "Abonnement bientôt expiré",
+    "daysLeft": "Votre abonnement expire dans {days} jours",
+    "actionNeeded": "Veuillez vérifier vos informations de paiement pour continuer à utiliser le service.",
+    "renewBtn": "Renouveler l'abonnement",
+    "later": "Plus tard"
   }
 }

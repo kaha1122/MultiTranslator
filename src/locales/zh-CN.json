@@ -277,9 +277,10 @@
     "startPlan": "立即开始",
     "footerNote": "随时可取消 · 支付信息由TossPayments安全处理",
     "paymentError": "无法打开支付页面，请稍后再试。",
-    "cancelConfirm": "确定取消订阅？将立即切换至Free Trial。",
+    "cancelConfirm": "确定停止自动续费？当前周期内仍可继续使用服务。",
+    "cancelledNotice": "自动续费已停止。服务可用至：",
     "cancelFailed": "取消失败，请重试。",
-    "cancelBtn": "取消订阅",
+    "cancelBtn": "停止自动续费",
     "btnLabel": "升级",
     "toastSuccess": "🎉 支付成功！方案正在升级中。",
     "toastFail": "支付失败或已取消。",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · AI发音教练 · 注册即可免费使用",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 安装应用后，\n即可直接访问"
+  },
+  "renewal": {
+    "title": "订阅即将到期",
+    "daysLeft": "您的订阅将在{days}天后到期",
+    "actionNeeded": "请确认您的支付信息以继续使用服务。",
+    "renewBtn": "续订",
+    "later": "稍后"
   }
 }

@@ -277,9 +277,10 @@
     "startPlan": "始める",
     "footerNote": "いつでもキャンセル可能 · カード情報はTossPaymentsで安全に処理されます",
     "paymentError": "決済ページを開けません。しばらくしてからお試しください。",
-    "cancelConfirm": "サブスクリプションをキャンセルしますか？即座にFree Trialに変更されます。",
+    "cancelConfirm": "自動更新を停止しますか？現在の期間が終了するまでサービスをご利用いただけます。",
+    "cancelledNotice": "自動更新が停止されました。サービス利用可能期間:",
     "cancelFailed": "キャンセルに失敗しました。再度お試しください。",
-    "cancelBtn": "サブスクリプション解約",
+    "cancelBtn": "自動更新を停止",
     "btnLabel": "アップグレード",
     "toastSuccess": "🎉 お支払い完了！プランがアップグレードされます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · AI発音コーチ · 登録後すぐに無料利用",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 アプリをインストールすると、\nすぐにアクセスできます"
+  },
+  "renewal": {
+    "title": "サブスクリプション期限間近",
+    "daysLeft": "あと{days}日でサブスクリプションが期限切れになります",
+    "actionNeeded": "サービスを引き続きご利用いただくには、お支払い情報をご確認ください。",
+    "renewBtn": "サブスクリプションを更新",
+    "later": "後で"
   }
 }

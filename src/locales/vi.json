@@ -277,9 +277,10 @@
     "startPlan": "Bắt đầu",
     "footerNote": "Hủy bất cứ lúc nào · Thanh toán bảo mật qua TossPayments",
     "paymentError": "Không thể mở trang thanh toán. Vui lòng thử lại sau.",
-    "cancelConfirm": "Hủy đăng ký? Bạn sẽ chuyển về Free Trial ngay lập tức.",
+    "cancelConfirm": "Dừng tự động gia hạn? Bạn vẫn có thể sử dụng dịch vụ đến hết kỳ hiện tại.",
+    "cancelledNotice": "Tự động gia hạn đã dừng. Dịch vụ khả dụng đến:",
     "cancelFailed": "Hủy thất bại. Vui lòng thử lại.",
-    "cancelBtn": "Hủy đăng ký",
+    "cancelBtn": "Dừng tự động gia hạn",
     "btnLabel": "Nâng cấp",
     "toastSuccess": "🎉 Thanh toán thành công! Gói của bạn đang được nâng cấp.",
     "toastFail": "Thanh toán thất bại hoặc đã bị hủy.",
@@ -531,5 +532,12 @@
     "footerNote": "PronunFit · Huấn luyện viên phát âm AI · Miễn phí ngay khi đăng ký",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay"
+  },
+  "renewal": {
+    "title": "Đăng ký sắp hết hạn",
+    "daysLeft": "Đăng ký của bạn sẽ hết hạn sau {days} ngày",
+    "actionNeeded": "Vui lòng kiểm tra thông tin thanh toán để tiếp tục sử dụng dịch vụ.",
+    "renewBtn": "Gia hạn đăng ký",
+    "later": "Để sau"
   }
 }
