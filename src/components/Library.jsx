@@ -240,9 +240,9 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     // 소스 목록
     const SOURCE_OPTIONS = [
         { value: 'all', label: t('library.filterAll') },
-        { value: 'translation', label: t('library.srcTranslation') },
         { value: 'scene', label: t('library.srcScene') },
         { value: 'vocab', label: t('library.srcVocab') },
+        { value: 'translation', label: t('library.srcTranslation') },
     ];
 
     // W/S 옵션
