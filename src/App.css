@@ -939,6 +939,7 @@ body {
   border: 1px solid #f1f5f9;
   display: flex;
   flex-direction: column;
+  scroll-margin-top: 120px;
 }
 
 /* TranslationCard 내부의 기본 그림자와 마진, 테두리를 Library 영역에선 제거해서 액션바와 일체형으로 만듭니다. */

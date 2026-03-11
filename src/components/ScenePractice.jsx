@@ -320,7 +320,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             setGenerated(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setTimeout(() => questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            setTimeout(() => questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -370,7 +370,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             setGeneratedAnswer(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setTimeout(() => answerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 100);
+            setTimeout(() => answerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -546,7 +546,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             {/* 질문 카드 */}
             {generated && (
-                <div ref={questionCardRef}>
+                <div ref={questionCardRef} style={{ scrollMarginTop: 120 }}>
                 <ScenePracticeCard
                     generated={generated}
                     langCode={selectedLang}
@@ -564,7 +564,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             {/* 답변 카드 */}
             {generatedAnswer && (
-                <div ref={answerCardRef}>
+                <div ref={answerCardRef} style={{ scrollMarginTop: 120 }}>
                 <ScenePracticeCard
                     generated={generatedAnswer}
                     langCode={selectedLang}

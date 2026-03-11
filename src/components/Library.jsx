@@ -114,7 +114,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         if (!focusCardPending.current || savedCards.length === 0) return;
         const el = document.getElementById(`library-card-${focusCardPending.current}`);
         if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             el.classList.add('library-card-highlight');
             setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
             focusCardPending.current = null;
