@@ -339,6 +339,14 @@
     "partial": "미달성",
     "noActivity": "활동 없음"
   },
+  "gauge": {
+    "title": "학습 게이지",
+    "thisWeek": "이번 주",
+    "thisMonth": "이번 달",
+    "cards": "카드",
+    "items": "항목",
+    "custom": "기타"
+  },
   "guide": {
     "pageTitle": "앱 활용 가이드",
     "intro": "PronunFit의 모든 기능을 200% 활용하는 방법을 안내합니다 🚀",

@@ -339,6 +339,14 @@
     "partial": "Partial",
     "noActivity": "No activity"
   },
+  "gauge": {
+    "title": "Learning Gauge",
+    "thisWeek": "This Week",
+    "thisMonth": "This Month",
+    "cards": "cards",
+    "items": "items",
+    "custom": "Custom"
+  },
   "guide": {
     "pageTitle": "App Usage Guide",
     "intro": "Learn how to make the most of every PronunFit feature 🚀",

@@ -854,7 +854,7 @@ function App() {
   };
 
   // 6. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic' }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -876,6 +876,7 @@ function App() {
         sourceType: 'scene',
         difficulty,
         scene,
+        category,
         learningTip: learningTip ? [{ type: 'tip', content: learningTip }] : [],
         pronunciation: '',
         pronunciationScore,
@@ -894,7 +895,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic, difficulty = 'basic' }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -919,6 +920,8 @@ function App() {
         sourceLang,
         sourceType: 'vocab',
         difficulty,
+        categoryId,
+        topicId,
         scene: topic || '',
         learningTip: tips,
         pronunciation: pronunciation || '',

@@ -1,0 +1,204 @@
+/* ============================================================
+   LearningGauge — 학습 게이지
+   ============================================================ */
+.gauge-container {
+  background: white;
+  border: 1px solid #e2e8f0;
+  border-radius: 16px;
+  padding: 16px;
+  margin-top: 12px;
+}
+
+.gauge-title {
+  font-size: 1rem;
+  font-weight: 800;
+  color: #1e293b;
+  margin: 0 0 12px;
+}
+
+/* ── Tab (Dialogue / Vocabulary) ── */
+.gauge-tabs {
+  display: flex;
+  gap: 4px;
+  background: #f1f5f9;
+  border-radius: 10px;
+  padding: 3px;
+  margin-bottom: 10px;
+}
+
+.gauge-tab {
+  flex: 1;
+  padding: 7px 0;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #64748b;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.gauge-tab.active {
+  background: white;
+  color: #6366f1;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+}
+
+/* ── Difficulty ── */
+.gauge-diff-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 8px;
+}
+
+.gauge-diff-btn {
+  flex: 1;
+  padding: 5px 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gauge-diff-btn.active {
+  border-color: #6366f1;
+  color: #6366f1;
+  background: #eef2ff;
+}
+
+/* ── Period ── */
+.gauge-period-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.gauge-period-btn {
+  flex: 1;
+  padding: 5px 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #64748b;
+  background: white;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.gauge-period-btn.active {
+  border-color: #10b981;
+  color: #10b981;
+  background: #ecfdf5;
+}
+
+/* ── Summary ── */
+.gauge-summary {
+  margin-bottom: 14px;
+}
+
+.gauge-summary-bar-wrap {
+  height: 10px;
+  background: #f1f5f9;
+  border-radius: 5px;
+  overflow: hidden;
+  margin-bottom: 6px;
+}
+
+.gauge-summary-bar {
+  height: 100%;
+  background: linear-gradient(90deg, #6366f1, #8b5cf6);
+  border-radius: 5px;
+  transition: width 0.4s ease;
+  min-width: 0;
+}
+
+.gauge-summary-text {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.gauge-summary-pct {
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: #6366f1;
+}
+
+.gauge-summary-detail {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #94a3b8;
+}
+
+/* ── Group Label (장소 / 상황) ── */
+.gauge-group-label {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #6366f1;
+  padding: 8px 0 4px;
+  border-bottom: 1px solid #eef2ff;
+  margin-bottom: 4px;
+}
+
+/* ── Item Rows ── */
+.gauge-items {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gauge-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0;
+}
+
+.gauge-row-label {
+  width: 80px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex-shrink: 0;
+}
+
+.gauge-row-bar-wrap {
+  flex: 1;
+  height: 7px;
+  background: #f1f5f9;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.gauge-row-bar {
+  height: 100%;
+  border-radius: 4px;
+  transition: width 0.3s ease;
+  min-width: 0;
+}
+
+.gauge-row-bar.partial {
+  background: #fbbf24;
+}
+
+.gauge-row-bar.complete {
+  background: #10b981;
+}
+
+.gauge-row-count {
+  width: 38px;
+  font-size: 0.62rem;
+  font-weight: 600;
+  color: #94a3b8;
+  text-align: right;
+  flex-shrink: 0;
+}

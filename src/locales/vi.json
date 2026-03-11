@@ -339,6 +339,14 @@
     "partial": "Chưa đạt",
     "noActivity": "Không hoạt động"
   },
+  "gauge": {
+    "title": "Tiến độ học tập",
+    "thisWeek": "Tuần này",
+    "thisMonth": "Tháng này",
+    "cards": "thẻ",
+    "items": "mục",
+    "custom": "Khác"
+  },
   "guide": {
     "pageTitle": "Hướng dẫn sử dụng",
     "intro": "Tìm hiểu cách tận dụng 200% mọi tính năng của PronunFit 🚀",

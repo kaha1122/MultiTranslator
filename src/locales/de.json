@@ -339,6 +339,14 @@
     "partial": "Teilweise",
     "noActivity": "Keine Aktivität"
   },
+  "gauge": {
+    "title": "Lernfortschritt",
+    "thisWeek": "Diese Woche",
+    "thisMonth": "Dieser Monat",
+    "cards": "Karten",
+    "items": "Elemente",
+    "custom": "Sonstige"
+  },
   "guide": {
     "pageTitle": "App-Nutzungsanleitung",
     "intro": "Erfahren Sie, wie Sie alle PronunFit-Funktionen zu 200% nutzen 🚀",

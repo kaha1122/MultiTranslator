@@ -339,6 +339,14 @@
     "partial": "未达成",
     "noActivity": "无活动"
   },
+  "gauge": {
+    "title": "学习进度",
+    "thisWeek": "本周",
+    "thisMonth": "本月",
+    "cards": "卡片",
+    "items": "项目",
+    "custom": "其他"
+  },
   "guide": {
     "pageTitle": "应用使用指南",
     "intro": "了解如何200%活用PronunFit的所有功能 🚀",

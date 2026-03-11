@@ -339,6 +339,14 @@
     "partial": "Partiel",
     "noActivity": "Aucune activité"
   },
+  "gauge": {
+    "title": "Jauge d'apprentissage",
+    "thisWeek": "Cette semaine",
+    "thisMonth": "Ce mois",
+    "cards": "cartes",
+    "items": "éléments",
+    "custom": "Autre"
+  },
   "guide": {
     "pageTitle": "Guide d'utilisation",
     "intro": "Découvrez comment exploiter à 200% toutes les fonctionnalités de PronunFit 🚀",

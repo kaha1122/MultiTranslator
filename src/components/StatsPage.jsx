@@ -3,6 +3,7 @@ import { db } from '../firebase/config';
 import { collection, query, getDocs } from 'firebase/firestore';
 import { ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
+import LearningGauge from './LearningGauge';
 import './StatsPage.css';
 
 // ── 유틸 ──
@@ -208,6 +209,9 @@ const StatsPage = ({ user, dailyGoal, sourceLang, onBack }) => {
                 <span className="stats-legend-item">🌙 {t('stats.partial')}</span>
                 <span className="stats-legend-item">· {t('stats.noActivity')}</span>
             </div>
+
+            {/* 학습 게이지 */}
+            <LearningGauge user={user} sourceLang={sourceLang} />
         </div>
     );
 };

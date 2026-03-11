@@ -339,6 +339,14 @@
     "partial": "未達成",
     "noActivity": "活動なし"
   },
+  "gauge": {
+    "title": "学習ゲージ",
+    "thisWeek": "今週",
+    "thisMonth": "今月",
+    "cards": "カード",
+    "items": "項目",
+    "custom": "その他"
+  },
   "guide": {
     "pageTitle": "アプリ活用ガイド",
     "intro": "PronunFitの全機能を200%活用する方法をご案内します 🚀",

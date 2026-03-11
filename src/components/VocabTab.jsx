@@ -123,6 +123,8 @@ export default function VocabTab({
             pronunciation: wordObj.pronunciation,
             langCode: selectedLang,
             topic: selectedTopic ? getT(sourceLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim(),
+            categoryId: selectedTopic?.catId || 'custom',
+            topicId: selectedTopic?.topicId || 'custom',
             difficulty: level === 'advanced' ? 'high' : level,
         });
 

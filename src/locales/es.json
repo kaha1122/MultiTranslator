@@ -339,6 +339,14 @@
     "partial": "Parcial",
     "noActivity": "Sin actividad"
   },
+  "gauge": {
+    "title": "Progreso de aprendizaje",
+    "thisWeek": "Esta semana",
+    "thisMonth": "Este mes",
+    "cards": "tarjetas",
+    "items": "elementos",
+    "custom": "Otro"
+  },
   "guide": {
     "pageTitle": "Guía de uso",
     "intro": "Aprende a aprovechar al 200% todas las funciones de PronunFit 🚀",
