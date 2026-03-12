@@ -159,7 +159,7 @@ function App() {
   const [profileFormData, setProfileFormData] = useState({
     nickname: '',
     phone: '',
-    phoneCountry: getCountryByLang(sourceLang)
+    phoneCountry: 'KR'
   });
   // 이메일 인증 & 비밀번호 변경 상태
   const [emailVerifSent, setEmailVerifSent] = useState(false);
