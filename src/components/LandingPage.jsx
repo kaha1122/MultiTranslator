@@ -457,7 +457,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       <footer className="lp-footer">
         <div className="lp-footer-biz">
           <p className="lp-footer-biz-name">아리젬스 | 대표 하승우</p>
-          <p>사업자번호 : 457-34-01424</p>
+          <p>사업자번호 : 746-11-03230</p>
           <p>경기 김포시 걸포2로 83</p>
           <p>SystemAdmin@PronunFit.com | 050-6754-5465</p>
         </div>
