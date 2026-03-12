@@ -383,14 +383,14 @@ app.get('/api/video-feed', async (req, res) => {
  * Returns: audio/mpeg binary
  */
 const AZURE_TTS_VOICE_MAP = {
-    'en':    'en-US-JennyNeural',
-    'ja':    'ja-JP-NanamiNeural',
-    'zh-CN': 'zh-CN-XiaoxiaoNeural',
-    'vi':    'vi-VN-HoaiMyNeural',
-    'fr':    'fr-FR-DeniseNeural',
-    'de':    'de-DE-KatjaNeural',
-    'es':    'es-ES-ElviraNeural',
-    'ko':    'ko-KR-SunHiNeural',
+    'en':    { voice: 'en-US-JennyNeural',      style: 'chat' },
+    'ja':    { voice: 'ja-JP-NanamiNeural',      style: 'chat' },
+    'zh-CN': { voice: 'zh-CN-XiaoxiaoNeural',    style: 'chat' },
+    'vi':    { voice: 'vi-VN-HoaiMyNeural',       style: null },
+    'fr':    { voice: 'fr-FR-DeniseNeural',       style: null },
+    'de':    { voice: 'de-DE-KatjaNeural',        style: null },
+    'es':    { voice: 'es-ES-ElviraNeural',       style: null },
+    'ko':    { voice: 'ko-KR-SunHiNeural',        style: 'chat' },
 };
 
 app.post('/api/azure-tts', async (req, res) => {
@@ -401,10 +401,17 @@ app.post('/api/azure-tts', async (req, res) => {
     const azureRegion = byokAzureRegion || AZURE_REGION;
     if (!azureKey || !azureRegion) return res.status(500).json({ error: 'Azure TTS not configured' });
 
-    const voiceName = AZURE_TTS_VOICE_MAP[langCode] || 'en-US-JennyNeural';
-    const locale    = voiceName.split('-').slice(0, 2).join('-'); // e.g. "en-US"
-    const escaped   = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
-    const ssml      = `<speak version='1.0' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${escaped}</voice></speak>`;
+    const voiceInfo  = AZURE_TTS_VOICE_MAP[langCode] || { voice: 'en-US-JennyNeural', style: 'chat' };
+    const voiceName  = voiceInfo.voice;
+    const voiceStyle = voiceInfo.style;
+    const locale     = voiceName.split('-').slice(0, 2).join('-'); // e.g. "en-US"
+    const escaped    = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+
+    // style이 지원되는 음성은 mstts:express-as로 자연스러운 대화체 적용
+    const innerContent = voiceStyle
+        ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
+        : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${innerContent}</voice></speak>`;
 
     try {
         const response = await axios.post(
@@ -414,7 +421,7 @@ app.post('/api/azure-tts', async (req, res) => {
                 headers: {
                     'Ocp-Apim-Subscription-Key': azureKey,
                     'Content-Type': 'application/ssml+xml',
-                    'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
+                    'X-Microsoft-OutputFormat': 'audio-48khz-192kbitrate-mono-mp3',
                 },
                 responseType: 'arraybuffer',
             }
