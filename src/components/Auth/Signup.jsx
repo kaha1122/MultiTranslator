@@ -4,6 +4,7 @@ import { createUserWithEmailAndPassword, signInWithPopup, getAdditionalUserInfo 
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserPlus, Mail, Lock, AlertCircle, User, Phone, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
+import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from '../../utils/phoneFormat';
 import './Auth.css';
 
 const detectInAppBrowser = () => {
@@ -21,8 +22,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [phone, setPhone] = useState('');
+    const [phoneCountry, setPhoneCountry] = useState(getCountryByLang(sourceLang));
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
+
+    const selectedCountry = COUNTRY_PHONES.find(c => c.code === phoneCountry) || COUNTRY_PHONES[0];
 
     const handleSignup = async (e) => {
         e.preventDefault();
@@ -34,11 +38,13 @@ function Signup({ onSwitchToLogin, sourceLang }) {
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+            const rawDigits = phone.replace(/\D/g, '');
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
                 email: email,
                 displayName: nickname,
-                phoneNumber: phone || '',
+                phoneNumber: rawDigits ? `${selectedCountry.dial}${rawDigits}` : '',
+                phoneCountry: phoneCountry,
                 membership: 'Free',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -141,13 +147,23 @@ function Signup({ onSwitchToLogin, sourceLang }) {
 
                     <div className="input-wrapper">
                         <label className="input-label">{t('auth.phone')}</label>
-                        <div className="input-group">
+                        <div className="input-group" style={{ gap: 0 }}>
                             <Phone size={18} className="input-icon" />
+                            <select
+                                value={phoneCountry}
+                                onChange={(e) => { setPhoneCountry(e.target.value); setPhone(''); }}
+                                className="phone-country-select"
+                            >
+                                {COUNTRY_PHONES.map(c => (
+                                    <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+                                ))}
+                            </select>
                             <input
                                 type="tel"
                                 placeholder={t('auth.phonePlaceholder')}
                                 value={phone}
-                                onChange={(e) => setPhone(e.target.value)}
+                                onChange={(e) => setPhone(formatPhoneByCountry(e.target.value, phoneCountry))}
+                                style={{ flex: 1 }}
                             />
                         </div>
                     </div>

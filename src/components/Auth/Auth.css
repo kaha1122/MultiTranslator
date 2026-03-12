@@ -210,6 +210,32 @@
     text-decoration: underline;
 }
 
+.phone-country-select {
+    padding: 8px 4px 8px 36px;
+    border: 1.5px solid #f1f5f9;
+    border-right: none;
+    border-radius: 10px 0 0 10px;
+    background: #f1f5f9;
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: #374151;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 90px;
+}
+
+.phone-country-select:focus {
+    border-color: var(--primary-color);
+    background: #fff;
+}
+
+.input-group .phone-country-select + input {
+    border-radius: 0 10px 10px 0;
+    padding-left: 10px;
+}
+
 /* Mobile specific */
 @media (max-width: 480px) {
     .auth-card {

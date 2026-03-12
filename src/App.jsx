@@ -40,6 +40,7 @@ import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
+import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -157,7 +158,8 @@ function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileFormData, setProfileFormData] = useState({
     nickname: '',
-    phone: ''
+    phone: '',
+    phoneCountry: getCountryByLang(sourceLang)
   });
   // 이메일 인증 & 비밀번호 변경 상태
   const [emailVerifSent, setEmailVerifSent] = useState(false);
@@ -546,9 +548,15 @@ function App() {
       alert('Profile is loading. Please try again in a moment.');
       return;
     }
+    const savedCountry = profile.phoneCountry || getCountryByLang(sourceLang);
+    const savedPhone = profile.phoneNumber || '';
+    // Strip country dial code from stored number for display
+    const dialPrefix = (COUNTRY_PHONES.find(c => c.code === savedCountry) || COUNTRY_PHONES[0]).dial;
+    const localDigits = savedPhone.startsWith(dialPrefix) ? savedPhone.slice(dialPrefix.length) : savedPhone.replace(/\D/g, '');
     setProfileFormData({
       nickname: profile.displayName || user?.displayName || 'Google User',
-      phone: profile.phoneNumber || ''
+      phone: localDigits ? formatPhoneByCountry(localDigits, savedCountry) : '',
+      phoneCountry: savedCountry
     });
     setEmailVerifSent(false);
     setPwChangeMode(false);
@@ -562,9 +570,12 @@ function App() {
     e.preventDefault();
     if (!profileFormData.nickname.trim()) return;
     try {
+      const rawDigits = profileFormData.phone.replace(/\D/g, '');
+      const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
       await updateUserProfile({
         displayName: profileFormData.nickname,
-        phoneNumber: profileFormData.phone,
+        phoneNumber: rawDigits ? `${dialCode}${rawDigits}` : '',
+        phoneCountry: profileFormData.phoneCountry,
         updatedAt: serverTimestamp()
       });
       setShowProfileModal(false);
@@ -1742,13 +1753,23 @@ function App() {
                       {/* 전화번호 */}
                       <div className="input-wrapper">
                         <label className="input-label">{getT(sourceLang, 'auth.phone')}</label>
-                        <div className="input-group">
+                        <div className="input-group" style={{ gap: 0 }}>
                           <Phone size={18} className="input-icon" />
+                          <select
+                            value={profileFormData.phoneCountry}
+                            onChange={(e) => setProfileFormData({ ...profileFormData, phoneCountry: e.target.value, phone: '' })}
+                            className="phone-country-select"
+                          >
+                            {COUNTRY_PHONES.map(c => (
+                              <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+                            ))}
+                          </select>
                           <input
                             type="tel"
                             placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
                             value={profileFormData.phone}
-                            onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
+                            onChange={(e) => setProfileFormData({ ...profileFormData, phone: formatPhoneByCountry(e.target.value, profileFormData.phoneCountry) })}
+                            style={{ flex: 1 }}
                           />
                         </div>
                       </div>
