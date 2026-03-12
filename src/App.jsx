@@ -1891,9 +1891,10 @@ function App() {
               <div className="goal-sliders">
                 {targetLangs.map(code => {
                   const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-                  const currentGoal = languageGoals[code] || 80;
+                  const rawGoal = languageGoals[code];
+                  const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 80 : rawGoal;
                   const sliderColor = lang?.textColor || 'var(--primary-color)';
-                  const pct = currentGoal;
+                  const pct = sliderGoal;
                   return (
                     <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
                       <span style={{ width: '72px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{lang?.name}</span>
@@ -1901,7 +1902,7 @@ function App() {
                         type="range"
                         min="0"
                         max="100"
-                        value={currentGoal}
+                        value={sliderGoal}
                         className="custom-slider"
                         onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
                         style={{ flex: 1, margin: '0 10px', '--slider-color': sliderColor, background: `linear-gradient(to right, ${sliderColor} ${pct}%, #e2e8f0 ${pct}%)` }}
@@ -1910,11 +1911,21 @@ function App() {
                         type="number"
                         min="0"
                         max="100"
-                        value={currentGoal}
+                        value={rawGoal === '' ? '' : sliderGoal}
                         className="slider-value-input"
                         onChange={(e) => {
-                          const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
-                          setLanguageGoals({ ...languageGoals, [code]: v });
+                          const raw = e.target.value;
+                          if (raw === '') {
+                            setLanguageGoals({ ...languageGoals, [code]: '' });
+                          } else {
+                            const v = Math.max(0, Math.min(100, parseInt(raw)));
+                            if (!isNaN(v)) setLanguageGoals({ ...languageGoals, [code]: v });
+                          }
+                        }}
+                        onBlur={() => {
+                          if (rawGoal === '' || rawGoal === undefined) {
+                            setLanguageGoals({ ...languageGoals, [code]: 80 });
+                          }
                         }}
                         style={{ '--slider-color': sliderColor, color: sliderColor }}
                       />
@@ -1939,20 +1950,28 @@ function App() {
                   type="range"
                   min="1"
                   max="100"
-                  value={dailyGoal}
+                  value={dailyGoal === '' ? 10 : dailyGoal}
                   className="custom-slider"
                   onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${dailyGoal}%, #e2e8f0 ${dailyGoal}%)` }}
+                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${dailyGoal === '' ? 10 : dailyGoal}%, #e2e8f0 ${dailyGoal === '' ? 10 : dailyGoal}%)` }}
                 />
                 <input
                   type="number"
                   min="1"
                   max="100"
-                  value={dailyGoal}
+                  value={dailyGoal === '' ? '' : dailyGoal}
                   className="slider-value-input"
                   onChange={(e) => {
-                    const v = Math.max(1, Math.min(100, parseInt(e.target.value) || 1));
-                    setDailyGoal(v);
+                    const raw = e.target.value;
+                    if (raw === '') {
+                      setDailyGoal('');
+                    } else {
+                      const v = Math.max(1, Math.min(100, parseInt(raw)));
+                      if (!isNaN(v)) setDailyGoal(v);
+                    }
+                  }}
+                  onBlur={() => {
+                    if (dailyGoal === '' || dailyGoal === undefined) setDailyGoal(10);
                   }}
                   style={{ '--slider-color': '#6366f1', color: '#6366f1' }}
                 />
