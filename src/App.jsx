@@ -1741,25 +1741,39 @@ function App() {
             {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
             <div className="settings-group">
               <label className="settings-label">{getT(sourceLang, 'settings.scoreGoals')} 🎯</label>
-              <p className="target-limit-msg" style={{ marginBottom: '0.6rem', color: 'var(--text-secondary)' }}>
+              <p className="target-limit-msg" style={{ marginBottom: '0.2rem', color: 'var(--text-secondary)' }}>
                 {getT(sourceLang, 'settings.scoreGoalsDesc')}
               </p>
               <div className="goal-sliders">
                 {targetLangs.map(code => {
                   const lang = SUPPORTED_LANGUAGES.find(l => l.code === code);
-                  const currentGoal = languageGoals[code] || 80; // 기본값 80
+                  const currentGoal = languageGoals[code] || 80;
+                  const sliderColor = lang?.textColor || 'var(--primary-color)';
+                  const pct = currentGoal;
                   return (
-                    <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '1rem', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
-                      <span style={{ width: '80px', fontWeight: 'bold', color: 'var(--text-primary)' }}>{lang?.name}</span>
+                    <div key={code} className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
+                      <span style={{ width: '72px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{lang?.name}</span>
                       <input
                         type="range"
                         min="0"
                         max="100"
                         value={currentGoal}
+                        className="custom-slider"
                         onChange={(e) => setLanguageGoals({ ...languageGoals, [code]: parseInt(e.target.value) })}
-                        style={{ flex: 1, margin: '0 15px', accentColor: lang?.textColor || 'var(--primary-color)' }}
+                        style={{ flex: 1, margin: '0 10px', '--slider-color': sliderColor, background: `linear-gradient(to right, ${sliderColor} ${pct}%, #e2e8f0 ${pct}%)` }}
                       />
-                      <span style={{ minWidth: '40px', textAlign: 'right', fontWeight: 'bold', color: lang?.textColor || 'var(--primary-color)' }}>{currentGoal}</span>
+                      <input
+                        type="number"
+                        min="0"
+                        max="100"
+                        value={currentGoal}
+                        className="slider-value-input"
+                        onChange={(e) => {
+                          const v = Math.max(0, Math.min(100, parseInt(e.target.value) || 0));
+                          setLanguageGoals({ ...languageGoals, [code]: v });
+                        }}
+                        style={{ '--slider-color': sliderColor, color: sliderColor }}
+                      />
                     </div>
                   );
                 })}
@@ -1771,22 +1785,35 @@ function App() {
 
             {/* [신규] 하루 학습 목표 카드 수 */}
             <div className="settings-group">
-              <label className="settings-label">{getT(sourceLang, 'daily.settingsTitle')}</label>
-              <p className="target-limit-msg" style={{ marginBottom: '1rem' }}>
+              <label className="settings-label">{getT(sourceLang, 'daily.settingsTitle')} 🎯</label>
+              <p className="target-limit-msg" style={{ marginBottom: '0.4rem' }}>
                 {getT(sourceLang, 'daily.settingsDesc')}
               </p>
-              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '10px 15px', borderRadius: '12px' }}>
-                <span style={{ width: '60px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.9rem' }}>{getT(sourceLang, 'daily.settingsLabel')}</span>
+              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
+                <span style={{ width: '42px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{getT(sourceLang, 'daily.settingsLabel')}</span>
                 <input
                   type="range"
                   min="1"
-                  max="20"
+                  max="100"
                   value={dailyGoal}
+                  className="custom-slider"
                   onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                  style={{ flex: 1, margin: '0 15px', accentColor: '#6366f1' }}
+                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${dailyGoal}%, #e2e8f0 ${dailyGoal}%)` }}
                 />
-                <span style={{ minWidth: '80px', textAlign: 'right', fontWeight: 'bold', color: '#6366f1', fontSize: '1.1rem' }}>
-                  {dailyGoal} {getT(sourceLang, 'daily.settingsUnit')}
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={dailyGoal}
+                  className="slider-value-input"
+                  onChange={(e) => {
+                    const v = Math.max(1, Math.min(100, parseInt(e.target.value) || 1));
+                    setDailyGoal(v);
+                  }}
+                  style={{ '--slider-color': '#6366f1', color: '#6366f1' }}
+                />
+                <span style={{ marginLeft: '4px', fontWeight: '600', color: '#6366f1', fontSize: '0.85rem' }}>
+                  {getT(sourceLang, 'daily.settingsUnit')}
                 </span>
               </div>
             </div>
@@ -1796,7 +1823,7 @@ function App() {
             </button>
 
             {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
-            <div className="settings-group" style={{ marginTop: '8px' }}>
+            <div className="settings-group" style={{ marginTop: '4px' }}>
               <label className="settings-label">
                 <Lock size={16} /> {getT(sourceLang, 'settings.apiKeys')} · {getT(sourceLang, 'settings.myTier')}
               </label>
