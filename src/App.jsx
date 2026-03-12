@@ -14,7 +14,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'fire
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { signOut, signInWithPopup, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, doc } from 'firebase/firestore';
 import { useAuth } from './context/AuthContext';
@@ -159,6 +159,11 @@ function App() {
     nickname: '',
     phone: ''
   });
+  // 이메일 인증 & 비밀번호 변경 상태
+  const [emailVerifSent, setEmailVerifSent] = useState(false);
+  const [pwChangeMode, setPwChangeMode] = useState(false);
+  const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
+  const [pwMsg, setPwMsg] = useState({ type: '', text: '' });
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
   const [languageGoals, setLanguageGoals] = useState(() => {
@@ -545,6 +550,10 @@ function App() {
       nickname: profile.displayName || user?.displayName || 'Google User',
       phone: profile.phoneNumber || ''
     });
+    setEmailVerifSent(false);
+    setPwChangeMode(false);
+    setPwForm({ current: '', newPw: '', confirm: '' });
+    setPwMsg({ type: '', text: '' });
     setShowProfileModal(true);
   };
 
@@ -563,6 +572,50 @@ function App() {
       alert("Failed to update profile. Please try again.");
     }
   };
+
+  // 이메일 인증 메일 발송
+  const handleSendEmailVerification = async () => {
+    try {
+      await sendEmailVerification(auth.currentUser);
+      setEmailVerifSent(true);
+    } catch (e) {
+      if (e.code === 'auth/too-many-requests') {
+        alert(getT(sourceLang, 'auth.verifTooMany'));
+      } else {
+        alert(getT(sourceLang, 'auth.verifFailed'));
+      }
+    }
+  };
+
+  // 비밀번호 변경
+  const handleChangePassword = async () => {
+    setPwMsg({ type: '', text: '' });
+    if (pwForm.newPw.length < 6) {
+      setPwMsg({ type: 'error', text: getT(sourceLang, 'auth.pwMinLength') });
+      return;
+    }
+    if (pwForm.newPw !== pwForm.confirm) {
+      setPwMsg({ type: 'error', text: getT(sourceLang, 'auth.pwMismatch') });
+      return;
+    }
+    try {
+      const credential = EmailAuthProvider.credential(user.email, pwForm.current);
+      await reauthenticateWithCredential(auth.currentUser, credential);
+      await updatePassword(auth.currentUser, pwForm.newPw);
+      setPwMsg({ type: 'success', text: getT(sourceLang, 'auth.pwChanged') });
+      setPwForm({ current: '', newPw: '', confirm: '' });
+      setTimeout(() => setPwChangeMode(false), 1500);
+    } catch (e) {
+      if (e.code === 'auth/wrong-password' || e.code === 'auth/invalid-credential') {
+        setPwMsg({ type: 'error', text: getT(sourceLang, 'auth.pwWrongCurrent') });
+      } else {
+        setPwMsg({ type: 'error', text: `${getT(sourceLang, 'auth.pwChangeFail')}: ${e.code}` });
+      }
+    }
+  };
+
+  // Google 사용자인지 확인 (비밀번호 변경 UI 숨김용)
+  const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
 
   // [수정] 설정 저장 (홈 화면으로 돌아가기) 및 인앱 브라우저 감지 경고 띄우기
   const handleSaveSettings = () => {
@@ -1097,9 +1150,9 @@ function App() {
       />;
     }
     return authMode === 'login' ? (
-      <Login onSwitchToSignup={() => setAuthMode('signup')} />
+      <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
     ) : (
-      <Signup onSwitchToLogin={() => setAuthMode('login')} />
+      <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
     );
   }
 
@@ -1628,13 +1681,14 @@ function App() {
                       <div className="auth-icon-circle signup-icon">
                         <User size={24} color="white" />
                       </div>
-                      <h2>Edit Profile</h2>
-                      <p>Update your information</p>
+                      <h2>{getT(sourceLang, 'auth.editProfile')}</h2>
+                      <p>{getT(sourceLang, 'auth.editSubtitle')}</p>
                     </div>
 
                     <form onSubmit={handleSaveProfile} className="auth-form">
+                      {/* 이메일 + 인증 상태 */}
                       <div className="input-wrapper">
-                        <label className="input-label">Email address</label>
+                        <label className="input-label">{getT(sourceLang, 'auth.email')}</label>
                         <div className="input-group">
                           <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
                           <input
@@ -1644,15 +1698,40 @@ function App() {
                             style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
                           />
                         </div>
+                        {user.emailVerified ? (
+                          <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                            <CheckCircle2 size={13} /> {getT(sourceLang, 'auth.emailVerified')}
+                          </span>
+                        ) : (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '4px', marginTop: '2px' }}>
+                            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '600' }}>⚠️ {getT(sourceLang, 'auth.emailNotVerified')}</span>
+                            {emailVerifSent ? (
+                              <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>✅ {getT(sourceLang, 'auth.verifEmailSent')}</span>
+                            ) : (
+                              <span
+                                onClick={handleSendEmailVerification}
+                                style={{ fontSize: '0.72rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
+                              >
+                                {getT(sourceLang, 'auth.sendVerifEmail')}
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        {!user.emailVerified && (
+                          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px', marginTop: '1px' }}>
+                            {getT(sourceLang, 'auth.verifEmailHint')}
+                          </p>
+                        )}
                       </div>
 
+                      {/* 닉네임 */}
                       <div className="input-wrapper">
-                        <label className="input-label">Nickname <span className="required-star">*</span></label>
+                        <label className="input-label">{getT(sourceLang, 'auth.nickname')} <span className="required-star">*</span></label>
                         <div className="input-group">
                           <User size={18} className="input-icon" />
                           <input
                             type="text"
-                            placeholder="Nickname"
+                            placeholder={getT(sourceLang, 'auth.nicknamePlaceholder')}
                             value={profileFormData.nickname}
                             onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
                             required
@@ -1660,23 +1739,105 @@ function App() {
                         </div>
                       </div>
 
+                      {/* 전화번호 */}
                       <div className="input-wrapper">
-                        <label className="input-label">Phone</label>
+                        <label className="input-label">{getT(sourceLang, 'auth.phone')}</label>
                         <div className="input-group">
                           <Phone size={18} className="input-icon" />
                           <input
                             type="tel"
-                            placeholder="010-0000-0000"
+                            placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
                             value={profileFormData.phone}
                             onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
                           />
                         </div>
                       </div>
 
-                      <button type="submit" className="auth-submit-btn" style={{ marginTop: '10px' }}>
-                        Save Changes
+                      <button type="submit" className="auth-submit-btn" style={{ marginTop: '6px' }}>
+                        {getT(sourceLang, 'auth.saveChanges')}
                       </button>
                     </form>
+
+                    {/* 비밀번호 변경 섹션 (Email 가입자만) */}
+                    {!isGoogleUser && (
+                      <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                        {!pwChangeMode ? (
+                          <button
+                            onClick={() => setPwChangeMode(true)}
+                            style={{
+                              width: '100%', padding: '10px', background: 'none', border: '1.5px solid #e2e8f0',
+                              borderRadius: '10px', color: '#64748b', fontSize: '0.85rem', fontWeight: '600',
+                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                            }}
+                          >
+                            <Lock size={15} /> {getT(sourceLang, 'auth.changePassword')}
+                          </button>
+                        ) : (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4b5563', marginLeft: '4px' }}>{getT(sourceLang, 'auth.changePassword')}</label>
+                            <div className="input-group">
+                              <Lock size={18} className="input-icon" />
+                              <input
+                                type="password"
+                                placeholder={getT(sourceLang, 'auth.currentPassword')}
+                                value={pwForm.current}
+                                onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
+                              />
+                            </div>
+                            <div className="input-group">
+                              <Lock size={18} className="input-icon" />
+                              <input
+                                type="password"
+                                placeholder={getT(sourceLang, 'auth.newPassword')}
+                                value={pwForm.newPw}
+                                onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
+                              />
+                            </div>
+                            <div className="input-group">
+                              <Lock size={18} className="input-icon" />
+                              <input
+                                type="password"
+                                placeholder={getT(sourceLang, 'auth.confirmNewPassword')}
+                                value={pwForm.confirm}
+                                onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                              />
+                            </div>
+                            {pwMsg.text && (
+                              <div style={{
+                                padding: '8px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '500',
+                                background: pwMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                                color: pwMsg.type === 'error' ? '#dc2626' : '#16a34a',
+                                border: `1px solid ${pwMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`
+                              }}>
+                                {pwMsg.text}
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '8px' }}>
+                              <button
+                                type="button"
+                                onClick={() => { setPwChangeMode(false); setPwMsg({ type: '', text: '' }); }}
+                                style={{
+                                  flex: 1, padding: '9px', background: '#f1f5f9', border: 'none', borderRadius: '10px',
+                                  color: '#64748b', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer'
+                                }}
+                              >
+                                {getT(sourceLang, 'auth.cancel')}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={handleChangePassword}
+                                style={{
+                                  flex: 1, padding: '9px', background: '#6366f1', border: 'none', borderRadius: '10px',
+                                  color: 'white', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer'
+                                }}
+                              >
+                                {getT(sourceLang, 'auth.change')}
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
                   </motion.div>
                 </motion.div>
               )}
