@@ -271,10 +271,6 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         <div className="lp-hero-block">
           <p className="lp-hero-text">{c.hero2}</p>
         </div>
-        <div className="lp-hero-btn-wrap">
-          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
-          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
-        </div>
       </section>
 
       {/* ── Scene Demo ── */}
