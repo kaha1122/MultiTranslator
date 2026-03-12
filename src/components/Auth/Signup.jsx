@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, db, googleProvider } from '../../firebase/config';
 import { createUserWithEmailAndPassword, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { UserPlus, Mail, Lock, AlertCircle, User, Phone, MapPin, Smartphone } from 'lucide-react';
+import { UserPlus, Mail, Lock, AlertCircle, User, Phone, Smartphone } from 'lucide-react';
 import './Auth.css';
 
 // ─────────────────────────────────────────────────────────────
@@ -44,7 +44,6 @@ function Signup({ onSwitchToLogin }) {
     const [password, setPassword] = useState('');
     const [confirmPassword, setConfirmPassword] = useState('');
     const [phone, setPhone] = useState('');
-    const [address, setAddress] = useState('');
     const [error, setError] = useState('');
     const [isLoading, setIsLoading] = useState(false);
 
@@ -68,7 +67,6 @@ function Signup({ onSwitchToLogin }) {
                 email: email,
                 displayName: nickname,
                 phoneNumber: phone || '',
-                address: address || '',
                 membership: 'Free',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
@@ -205,19 +203,6 @@ function Signup({ onSwitchToLogin }) {
                                 placeholder="010-0000-0000"
                                 value={phone}
                                 onChange={(e) => setPhone(e.target.value)}
-                            />
-                        </div>
-                    </div>
-
-                    <div className="input-wrapper">
-                        <label className="input-label">Address</label>
-                        <div className="input-group">
-                            <MapPin size={18} className="input-icon" />
-                            <input
-                                type="text"
-                                placeholder="Seoul, Korea"
-                                value={address}
-                                onChange={(e) => setAddress(e.target.value)}
                             />
                         </div>
                     </div>

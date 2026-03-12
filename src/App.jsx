@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3, ShieldCheck } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -9,7 +9,7 @@ import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
 
 // Firebase & Auth
-import { auth, db } from './firebase/config';
+import { auth, db, RecaptchaVerifier, signInWithPhoneNumber } from './firebase/config';
 import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'firebase/firestore';
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
@@ -157,8 +157,7 @@ function App() {
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [profileFormData, setProfileFormData] = useState({
     nickname: '',
-    phone: '',
-    address: ''
+    phone: ''
   });
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
@@ -543,10 +542,8 @@ function App() {
       return;
     }
     setProfileFormData({
-      // profile이 반드시 존재하는 시점에만 만드니 -> profile.displayName 우선
       nickname: profile.displayName || user?.displayName || 'Google User',
-      phone: profile.phoneNumber || '',
-      address: profile.address || ''
+      phone: profile.phoneNumber || ''
     });
     setShowProfileModal(true);
   };
@@ -559,7 +556,6 @@ function App() {
       await updateUserProfile({
         displayName: profileFormData.nickname,
         phoneNumber: profileFormData.phone,
-        address: profileFormData.address,
         updatedAt: serverTimestamp()
       });
       setShowProfileModal(false);
@@ -1673,19 +1669,6 @@ function App() {
                             placeholder="010-0000-0000"
                             value={profileFormData.phone}
                             onChange={(e) => setProfileFormData({ ...profileFormData, phone: e.target.value })}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="input-wrapper">
-                        <label className="input-label">Address</label>
-                        <div className="input-group">
-                          <MapPin size={18} className="input-icon" />
-                          <input
-                            type="text"
-                            placeholder="Seoul, Korea"
-                            value={profileFormData.address}
-                            onChange={(e) => setProfileFormData({ ...profileFormData, address: e.target.value })}
                           />
                         </div>
                       </div>

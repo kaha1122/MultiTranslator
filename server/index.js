@@ -682,6 +682,26 @@ app.post('/api/cancel-subscription', async (req, res) => {
     }
 });
 
+// ── 전화번호 중복 체크 ──────────────────────────────────────────────────────
+app.post('/api/check-phone', async (req, res) => {
+    const { phoneNumber, userId } = req.body;
+    if (!phoneNumber || !userId) return res.status(400).json({ error: 'phoneNumber and userId required' });
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    try {
+        const snapshot = await adminDb.collection('users')
+            .where('phoneNumber', '==', phoneNumber)
+            .where('phoneVerified', '==', true)
+            .get();
+
+        const otherUser = snapshot.docs.find(doc => doc.id !== userId);
+        res.json({ isDuplicate: !!otherUser });
+    } catch (err) {
+        console.error('[CheckPhone] error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── Cron: 자동 갱신 (만료된 구독 재결제 + 연장) ─────────────────────────────
 // Render cron이나 외부 스케줄러에서 매일 1회 호출: POST /api/cron/renew-subscriptions
 app.post('/api/cron/renew-subscriptions', async (req, res) => {
