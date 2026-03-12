@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.",
     "toastFail": "결제에 실패하거나 취소되었습니다.",
     "proFeature1": "발음 평가 월 500회",
-    "proFeature2": "개발자 API 사용 (키 불필요)",
     "proFeature3": "모든 탭 무제한 이용",
     "premiumFeature1": "발음 평가 무제한",
-    "premiumFeature2": "개발자 API 사용 (키 불필요)",
     "premiumFeature3": "모든 탭 무제한 이용",
     "premiumFeature4": "프리미엄 전용 지원",
     "discount": "할인"

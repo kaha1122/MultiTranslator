@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 Zahlung abgeschlossen! Ihr Plan wird aktualisiert.",
     "toastFail": "Zahlung fehlgeschlagen oder abgebrochen.",
     "proFeature1": "500 Aussprache-Bewertungen/Monat",
-    "proFeature2": "Entwickler-API (kein Schlüssel nötig)",
     "proFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
-    "premiumFeature2": "Entwickler-API (kein Schlüssel nötig)",
     "premiumFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature4": "Premium-Support",
     "discount": "Rabatt"

@@ -144,19 +144,26 @@
     font-weight: 800;
 }
 
+.upgrade-plan-discount-line {
+    text-align: center;
+    min-height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 4px;
+}
+
 .upgrade-plan-discount {
-    font-size: 0.72rem;
-    font-weight: 700;
+    font-size: 0.8rem;
+    font-weight: 800;
     color: #dc2626;
     background: #fef2f2;
-    padding: 1px 6px;
+    padding: 2px 10px;
     border-radius: 8px;
 }
 
-.upgrade-plan-permonth {
-    font-size: 0.75rem;
-    color: #94a3b8;
-    margin-bottom: 8px;
+.upgrade-plan-discount-spacer {
+    font-size: 0.8rem;
 }
 
 /* ── Shared Features ── */

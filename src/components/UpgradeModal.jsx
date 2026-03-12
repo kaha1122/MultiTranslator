@@ -17,11 +17,10 @@ const PLAN_CONFIGS = [
         name: 'Pro',
         price: '₩9,900',
         priceNum: 9900,
-        perMonth: '₩9,900',
         color: '#4338ca',
         borderColor: '#e0e7ff',
         bgColor: '#f5f3ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3'],
     },
     {
         id: 'pro_3',
@@ -31,13 +30,12 @@ const PLAN_CONFIGS = [
         name: 'Pro',
         price: '₩16,500',
         priceNum: 16500,
-        perMonth: '₩5,500',
         discount: 44,
         badge: 'BEST',
         color: '#4338ca',
         borderColor: '#c7d2fe',
         bgColor: '#eef2ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3'],
     },
     {
         id: 'premium_1',
@@ -47,11 +45,10 @@ const PLAN_CONFIGS = [
         name: 'Premium',
         price: '₩19,900',
         priceNum: 19900,
-        perMonth: '₩19,900',
         color: '#b45309',
         borderColor: '#fde68a',
         bgColor: '#fffbeb',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
     },
     {
         id: 'premium_3',
@@ -61,13 +58,12 @@ const PLAN_CONFIGS = [
         name: 'Premium',
         price: '₩55,000',
         priceNum: 55000,
-        perMonth: '~₩18,333',
         discount: 8,
         badge: 'BEST',
         color: '#b45309',
         borderColor: '#fcd34d',
         bgColor: '#fef9c3',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
     },
 ];
 
@@ -145,15 +141,14 @@ const UpgradeModal = ({ onClose, sourceLang }) => {
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                        {plan.discount && (
+                                    </div>
+                                    <div className="upgrade-plan-discount-line">
+                                        {plan.discount ? (
                                             <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                        ) : (
+                                            <span className="upgrade-plan-discount-spacer">&nbsp;</span>
                                         )}
                                     </div>
-                                    {plan.months === 3 && (
-                                        <div className="upgrade-plan-permonth">
-                                            {plan.perMonth}/{t('upgrade.perMonth')}
-                                        </div>
-                                    )}
 
                                     <button
                                         className="upgrade-plan-btn"
@@ -213,15 +208,14 @@ const UpgradeModal = ({ onClose, sourceLang }) => {
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                        {plan.discount && (
+                                    </div>
+                                    <div className="upgrade-plan-discount-line">
+                                        {plan.discount ? (
                                             <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                        ) : (
+                                            <span className="upgrade-plan-discount-spacer">&nbsp;</span>
                                         )}
                                     </div>
-                                    {plan.months === 3 && (
-                                        <div className="upgrade-plan-permonth">
-                                            {plan.perMonth}/{t('upgrade.perMonth')}
-                                        </div>
-                                    )}
 
                                     <button
                                         className="upgrade-plan-btn"

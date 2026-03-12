@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 ¡Pago completado! Tu plan está siendo actualizado.",
     "toastFail": "Pago fallido o cancelado.",
     "proFeature1": "500 evaluaciones de pronunciación/mes",
-    "proFeature2": "API del desarrollador (sin clave)",
     "proFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
-    "premiumFeature2": "API del desarrollador (sin clave)",
     "premiumFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature4": "Soporte Premium",
     "discount": "Descuento"

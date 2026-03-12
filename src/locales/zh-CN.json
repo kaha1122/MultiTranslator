@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 支付成功！方案正在升级中。",
     "toastFail": "支付失败或已取消。",
     "proFeature1": "每月500次发音评估",
-    "proFeature2": "使用开发者API（无需密钥）",
     "proFeature3": "所有标签页无限使用",
     "premiumFeature1": "无限发音评估",
-    "premiumFeature2": "使用开发者API（无需密钥）",
     "premiumFeature3": "所有标签页无限使用",
     "premiumFeature4": "高级专属支持",
     "discount": "折扣"

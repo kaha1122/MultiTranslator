@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 Paiement effectué ! Votre plan est en cours de mise à niveau.",
     "toastFail": "Paiement échoué ou annulé.",
     "proFeature1": "500 évaluations de prononciation/mois",
-    "proFeature2": "API développeur (sans clé)",
     "proFeature3": "Accès illimité à tous les onglets",
     "premiumFeature1": "Évaluations de prononciation illimitées",
-    "premiumFeature2": "API développeur (sans clé)",
     "premiumFeature3": "Accès illimité à tous les onglets",
     "premiumFeature4": "Support Premium",
     "discount": "Réduction"

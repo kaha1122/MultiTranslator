@@ -672,6 +672,23 @@
   text-align: center;
   border-top: 1px solid var(--lp-glass-border);
 }
+.lp-footer-biz {
+  margin-bottom: 1.2rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.lp-footer-biz p {
+  margin: 0;
+  font-size: 0.75rem;
+  color: rgba(255,255,255,0.35);
+  line-height: 1.7;
+}
+.lp-footer-biz-name {
+  font-weight: 700;
+  font-size: 0.8rem !important;
+  color: rgba(255,255,255,0.5) !important;
+  margin-bottom: 4px !important;
+}
 .lp-footer-links {
   display: flex;
   justify-content: center;

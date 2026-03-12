@@ -285,10 +285,8 @@
     "toastSuccess": "🎉 お支払い完了！プランがアップグレードされます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",
     "proFeature1": "発音評価 月500回",
-    "proFeature2": "開発者API使用（キー不要）",
     "proFeature3": "すべてのタブ無制限",
     "premiumFeature1": "発音評価無制限",
-    "premiumFeature2": "開発者API使用（キー不要）",
     "premiumFeature3": "すべてのタブ無制限",
     "premiumFeature4": "プレミアム専用サポート",
     "discount": "割引"
