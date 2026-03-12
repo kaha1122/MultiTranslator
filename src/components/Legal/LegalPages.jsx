@@ -53,7 +53,7 @@ function LegalLayout({ icon: Icon, title, onBack, children }) {
 
             {/* 하단 앱 정보 */}
             <div className="legal-footer">
-                <p>PronunFit · <a href="mailto:PronunFit@yahoo.com">PronunFit@yahoo.com</a></p>
+                <p>PronunFit · <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a></p>
             </div>
         </div>
     );
@@ -138,7 +138,7 @@ export function PrivacyPolicyPage({ onBack }) {
                 <ul>
                     <li>개인정보 열람, 수정, 삭제 요청 가능</li>
                     <li>광고 맞춤 설정 거부 가능</li>
-                    <li>문의: <a href="mailto:PronunFit@yahoo.com">PronunFit@yahoo.com</a></li>
+                    <li>문의: <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a></li>
                 </ul>
             </section>
 
@@ -146,7 +146,7 @@ export function PrivacyPolicyPage({ onBack }) {
                 <h2>7. 문의</h2>
                 <p>
                     개인정보 관련 문의 사항은 아래 이메일로 연락해 주세요.<br />
-                    <a href="mailto:PronunFit@yahoo.com">PronunFit@yahoo.com</a>
+                    <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>
                 </p>
             </section>
         </LegalLayout>
@@ -204,10 +204,43 @@ export function TermsOfServicePage({ onBack }) {
             </section>
 
             <section className="legal-section">
-                <h2>6. 문의</h2>
+                <h2>6. 결제 취소 및 환불</h2>
+                <p>회원은 아래 조건에 따라 결제 취소 및 환불을 요청할 수 있습니다.</p>
+
+                <h3>① 구독 취소</h3>
+                <ul>
+                    <li>회원은 설정 내 "자동 갱신 중지" 버튼을 통해 언제든지 구독을 취소할 수 있습니다.</li>
+                    <li>구독 취소 시 즉시 서비스가 중단되지 않으며, 현재 결제 기간의 만료일까지 서비스를 계속 이용할 수 있습니다.</li>
+                    <li>만료일 이후에는 자동으로 Free Trial 등급으로 전환됩니다.</li>
+                </ul>
+
+                <h3>② 환불 규정</h3>
+                <ul>
+                    <li><strong>1개월 플랜:</strong> 결제일로부터 7일 이내, 발음 평가 기능을 사용하지 않은 경우 전액 환불이 가능합니다.</li>
+                    <li><strong>3개월 플랜:</strong> 결제일로부터 7일 이내, 발음 평가 기능을 사용하지 않은 경우 전액 환불이 가능합니다. 7일 경과 후에는 잔여 기간에 대해 일할 계산하여 환불합니다. (일할 계산 기준: 총 결제금액 ÷ 총 이용일수 × 잔여일수)</li>
+                    <li>발음 평가 기능을 1회 이상 사용한 경우, 이용한 일수를 차감한 잔여 금액에서 위약금 10%를 공제 후 환불합니다.</li>
+                </ul>
+
+                <h3>③ 환불이 불가한 경우</h3>
+                <ul>
+                    <li>구독 기간이 만료된 후 환불 요청하는 경우</li>
+                    <li>회원의 귀책 사유(약관 위반 등)로 서비스 이용이 제한된 경우</li>
+                </ul>
+
+                <h3>④ 예외적 환불</h3>
+                <ul>
+                    <li>회사의 귀책 사유로 결제 오류가 발생한 경우, 전액 환불합니다.</li>
+                    <li>회사의 귀책 사유로 서비스가 장기간(72시간 이상) 중단된 경우, 해당 기간만큼 이용 기간을 연장하거나 일할 환불합니다.</li>
+                </ul>
+
+                <p>환불 요청은 <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>으로 연락해 주시기 바랍니다.</p>
+            </section>
+
+            <section className="legal-section">
+                <h2>7. 문의</h2>
                 <p>
                     이용약관 관련 문의:&nbsp;
-                    <a href="mailto:PronunFit@yahoo.com">PronunFit@yahoo.com</a>
+                    <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>
                 </p>
             </section>
         </LegalLayout>
@@ -231,11 +264,11 @@ export function ContactPage({ onBack }) {
 
                 {/* 이메일 버튼 - 누르면 이메일 앱 열림 */}
                 <a
-                    href="mailto:PronunFit@yahoo.com"
+                    href="mailto:SystemAdmin@PronunFit.com"
                     className="contact-email-btn"
                 >
                     <Mail size={18} />
-                    PronunFit@yahoo.com
+                    SystemAdmin@PronunFit.com
                 </a>
             </div>
 
@@ -250,7 +283,11 @@ export function ContactPage({ onBack }) {
                 </div>
                 <div className="contact-info-item">
                     <span className="contact-info-label">이메일</span>
-                    <span className="contact-info-value">PronunFit@yahoo.com</span>
+                    <span className="contact-info-value">SystemAdmin@PronunFit.com</span>
+                </div>
+                <div className="contact-info-item">
+                    <span className="contact-info-label">전화번호</span>
+                    <span className="contact-info-value">050-6754-5465</span>
                 </div>
                 <div className="contact-info-item">
                     <span className="contact-info-label">응답 시간</span>
