@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
-import { useT, getT } from '../utils/i18n';
+import { useT, getT, tTag } from '../utils/i18n';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playStarSound } from '../utils/soundEffects';
 import { db } from '../firebase/config';
@@ -95,10 +95,10 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                         {(generated.interaction_type || generated.selected_emotion) && (
                             <div className="scene-tag-row">
                                 {generated.interaction_type && (
-                                    <span className="scene-action-tag">{t(`tags.action.${generated.interaction_type}`) || generated.interaction_type}</span>
+                                    <span className="scene-action-tag">{tTag(t, 'tags.action', generated.interaction_type)}</span>
                                 )}
                                 {generated.selected_emotion && (
-                                    <span className="scene-emotion-tag">{t(`tags.emotion.${generated.selected_emotion}`) || generated.selected_emotion}</span>
+                                    <span className="scene-emotion-tag">{tTag(t, 'tags.emotion', generated.selected_emotion)}</span>
                                 )}
                             </div>
                         )}

@@ -5,7 +5,7 @@ import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundEffects';
-import { useT } from '../utils/i18n';
+import { useT, tTag } from '../utils/i18n';
 import { db } from '../firebase/config';
 import { doc, updateDoc } from 'firebase/firestore';
 import './TranslationCard.css';
@@ -295,10 +295,10 @@ Return only these 2 lines.`;
             {(interactionType || selectedEmotion) && (
                 <div className="scene-tag-row" style={{ padding: '0 14px', marginTop: -2 }}>
                     {interactionType && (
-                        <span className="scene-action-tag">{t(`tags.action.${interactionType}`) || interactionType}</span>
+                        <span className="scene-action-tag">{tTag(t, 'tags.action', interactionType)}</span>
                     )}
                     {selectedEmotion && (
-                        <span className="scene-emotion-tag">{t(`tags.emotion.${selectedEmotion}`) || selectedEmotion}</span>
+                        <span className="scene-emotion-tag">{tTag(t, 'tags.emotion', selectedEmotion)}</span>
                     )}
                 </div>
             )}

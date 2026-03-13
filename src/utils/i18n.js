@@ -43,6 +43,15 @@ export const getT = (langCode, key) => {
 };
 
 /**
+ * 태그 번역 헬퍼 — locale에 번역이 없으면 원래 영문 값을 그대로 표시
+ */
+export const tTag = (t, prefix, value) => {
+    if (!value) return '';
+    const result = t(`${prefix}.${value}`);
+    return result && !result.startsWith(prefix) ? result : value;
+};
+
+/**
  * React 훅 — 컴포넌트 내부에서 사용
  * @param {string} sourceLang  sourceLang 상태값
  * @returns {(key: string) => string}  t('errors.micAccess') 형태로 호출
