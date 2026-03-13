@@ -101,45 +101,142 @@
    Hero 섹션
    ================================================================ */
 .lp-hero {
-  min-height: auto;
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: center;
   text-align: center;
-  padding: 5.5rem 6% 1.5rem;
   position: relative;
   z-index: 1;
 }
-.lp-hero-block {
-  max-width: 600px;
-  animation: lpFadeInUp 0.9s ease both;
+.lp-hero-1 {
+  padding: 5.5rem 6% 1rem;
 }
-.lp-hero-block:nth-child(2) { animation-delay: 0.15s; }
-.lp-hero-text {
-  font-size: 1.55rem;
-  font-weight: 700;
-  color: var(--lp-text-main);
-  line-height: 1.75;
+.lp-hero-2 {
+  padding: 2rem 6% 2.5rem;
+  border-top: 1px solid var(--lp-glass-border);
+}
+
+/* 국기 아이콘 띠 */
+.lp-hero-flags {
+  display: flex;
+  gap: 0.6rem;
+  font-size: 1.5rem;
+  margin-bottom: 1.2rem;
+  animation: lpFadeInUp 0.6s ease both;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.lp-hero-flags span {
+  animation: lpFloat 3s ease-in-out infinite;
+}
+.lp-hero-flags span:nth-child(2) { animation-delay: 0.3s; }
+.lp-hero-flags span:nth-child(3) { animation-delay: 0.6s; }
+.lp-hero-flags span:nth-child(4) { animation-delay: 0.9s; }
+.lp-hero-flags span:nth-child(5) { animation-delay: 1.2s; }
+.lp-hero-flags span:nth-child(6) { animation-delay: 1.5s; }
+.lp-hero-flags span:nth-child(7) { animation-delay: 1.8s; }
+.lp-hero-flags span:nth-child(8) { animation-delay: 2.1s; }
+
+/* 말풍선 */
+.lp-hero-bubble {
+  position: relative;
+  background: rgba(16, 185, 129, 0.08);
+  border: 1px solid rgba(16, 185, 129, 0.25);
+  border-radius: 24px;
+  padding: 1.5rem 2rem;
+  margin-bottom: 1rem;
+  animation: lpFadeInUp 0.7s ease 0.1s both;
+}
+.lp-hero-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-top: 10px solid rgba(16, 185, 129, 0.25);
+}
+
+/* 메인 카피 */
+.lp-hero-main {
+  font-size: 1.7rem;
+  font-weight: 900;
+  line-height: 1.4;
   white-space: pre-line;
   word-break: keep-all;
+  margin: 0;
+  background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, #a7f3d0 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
+
+/* 서브 카피 */
+.lp-hero-sub {
+  font-size: 0.9rem;
+  color: var(--lp-text-muted);
+  line-height: 1.7;
+  white-space: pre-line;
+  word-break: keep-all;
+  max-width: 400px;
+  animation: lpFadeInUp 0.8s ease 0.2s both;
+  margin: 0;
+}
+
+/* FREE 배지 */
+.lp-hero-badge {
+  display: inline-block;
+  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
+  color: #0B0C10;
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 0.3rem 1.2rem;
+  border-radius: 100px;
+  margin-bottom: 0.5rem;
+  animation: lpFadeInUp 0.6s ease both;
+  letter-spacing: 1px;
+}
+.lp-hero-badge-sub {
+  font-size: 0.78rem;
+  color: var(--lp-green-light);
+  margin: 0 0 1rem;
+  animation: lpFadeInUp 0.6s ease 0.1s both;
+}
+
+/* 숫자 통계 */
+.lp-hero-stats {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-top: 1.5rem;
+  animation: lpFadeInUp 0.8s ease 0.3s both;
+}
+.lp-hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+.lp-hero-stat-num {
+  font-size: 1.8rem;
+  font-weight: 900;
+  color: var(--lp-text-main);
+}
+.lp-hero-stat-label {
+  font-size: 0.7rem;
+  color: var(--lp-text-muted);
+}
+
 .lp-hero-divider {
   width: 60px;
   height: 2px;
   background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
-  margin: 1.8rem auto;
+  margin: 1.5rem auto 0;
   border-radius: 2px;
   animation: lpFadeInUp 0.9s ease 0.3s both;
-}
-.lp-hero-btn-wrap {
-  margin-top: 2rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  width: 100%;
-  max-width: 320px;
-  animation: lpFadeInUp 0.9s ease 0.45s both;
 }
 
 /* ================================================================
@@ -862,6 +959,10 @@
 /* ================================================================
    Animations
    ================================================================ */
+@keyframes lpFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
 @keyframes lpFadeInUp {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -895,8 +996,11 @@
 @media (min-width: 768px) {
   .lp-logo { font-size: 1.5rem; }
   .lp-nav { padding: 1.3rem 6%; }
-  .lp-hero { padding: 7rem 8% 4rem; }
-  .lp-hero-text { font-size: 1.8rem; }
+  .lp-hero-1 { padding: 7rem 8% 2rem; }
+  .lp-hero-2 { padding: 3rem 8% 3rem; }
+  .lp-hero-main { font-size: 2.2rem; }
+  .lp-hero-sub { font-size: 1rem; }
+  .lp-hero-flags { font-size: 2rem; gap: 1rem; }
   .lp-demo-title { font-size: 2rem; }
   .lp-guide-title { font-size: 2rem; }
   .lp-cta-title { font-size: 2.4rem; }
@@ -908,6 +1012,6 @@
    Desktop (1024px+)
    ================================================================ */
 @media (min-width: 1024px) {
-  .lp-hero-text { font-size: 2rem; }
+  .lp-hero-main { font-size: 2.6rem; }
   .lp-cta-title { font-size: 2.8rem; }
 }
