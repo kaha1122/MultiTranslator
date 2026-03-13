@@ -275,25 +275,13 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
 
       {/* ── Hero 2: 스마트 단어장 ── */}
       <section className="lp-hero lp-hero-2">
-        <div className="lp-hero-vocab-visual">
-          <div className="lp-vocab-card lp-vocab-card-1">
-            <span className="lp-vocab-star">⭐</span>
-            <span className="lp-vocab-word">Hello!</span>
-            <span className="lp-vocab-score">92pt</span>
-          </div>
-          <div className="lp-vocab-card lp-vocab-card-2">
-            <span className="lp-vocab-star">⭐</span>
-            <span className="lp-vocab-word">こんにちは</span>
-            <span className="lp-vocab-score">88pt</span>
-          </div>
-          <div className="lp-vocab-card lp-vocab-card-3">
-            <span className="lp-vocab-star">⭐</span>
-            <span className="lp-vocab-word">Bonjour</span>
-            <span className="lp-vocab-score">95pt</span>
-          </div>
-        </div>
         <h2 className="lp-hero-main">{c.hero2Main}</h2>
         <p className="lp-hero-sub">{c.hero2Sub}</p>
+        <div className="lp-hero-brand">
+          <img src="/logo_circle.png" alt="PronunFit" className="lp-hero-brand-icon" />
+          <span className="lp-hero-brand-name">PronunFit</span>
+          <span className="lp-hero-brand-tag">AI Pronunciation Coach</span>
+        </div>
       </section>
 
       {/* ── Scene Demo ── */}

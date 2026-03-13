@@ -164,52 +164,35 @@
   margin: 0;
 }
 
-/* 단어장 비주얼 카드 */
-.lp-hero-vocab-visual {
+/* 브랜드 로고 + 텍스트 */
+.lp-hero-brand {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
-  width: 100%;
-  max-width: 300px;
-  margin-bottom: 1.5rem;
-  animation: lpFadeInUp 0.7s ease both;
-}
-.lp-vocab-card {
-  display: flex;
   align-items: center;
-  gap: 0.6rem;
-  padding: 0.6rem 1rem;
-  border-radius: 12px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  backdrop-filter: blur(8px);
-  transition: transform 0.3s;
+  gap: 0.5rem;
+  margin-top: 1.8rem;
+  animation: lpFadeInUp 0.8s ease 0.3s both;
 }
-.lp-vocab-card:hover {
-  transform: translateX(4px);
+.lp-hero-brand-icon {
+  width: 72px;
+  height: 72px;
+  border-radius: 20px;
+  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25);
+  animation: lpFloat 4s ease-in-out infinite;
 }
-.lp-vocab-card-1 { animation: lpSlideInLeft 0.6s ease 0.1s both; }
-.lp-vocab-card-2 { animation: lpSlideInLeft 0.6s ease 0.3s both; }
-.lp-vocab-card-3 { animation: lpSlideInLeft 0.6s ease 0.5s both; }
-.lp-vocab-star {
-  font-size: 0.9rem;
-  flex-shrink: 0;
+.lp-hero-brand-name {
+  font-size: 1.6rem;
+  font-weight: 900;
+  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
 }
-.lp-vocab-word {
-  flex: 1;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--lp-text-main);
-  text-align: left;
-}
-.lp-vocab-score {
+.lp-hero-brand-tag {
   font-size: 0.75rem;
-  font-weight: 800;
-  color: var(--lp-green-light);
-  background: rgba(16, 185, 129, 0.15);
-  padding: 0.15rem 0.5rem;
-  border-radius: 100px;
-  flex-shrink: 0;
+  color: var(--lp-text-muted);
+  letter-spacing: 1px;
+  text-transform: uppercase;
 }
 
 .lp-hero-divider {
