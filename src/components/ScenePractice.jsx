@@ -241,7 +241,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
         const ref = scrollTarget === 'question' ? questionCardRef : answerCardRef;
         // requestAnimationFrame으로 브라우저 페인트 직후 실행
         const raf = requestAnimationFrame(() => {
-            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
         });
         setScrollTarget(null);
         return () => cancelAnimationFrame(raf);
