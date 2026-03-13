@@ -597,6 +597,35 @@
     "passwordPlaceholder": "Nhập mật khẩu",
     "confirmPlaceholder": "Xác nhận mật khẩu"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "Biết ơn",
+      "Frustrated": "Bực bội",
+      "Confused": "Bối rối",
+      "Excited": "Phấn khích",
+      "Hesitant": "Do dự",
+      "Urgent": "Khẩn cấp",
+      "Curious": "Tò mò",
+      "Dissatisfied": "Không hài lòng",
+      "Relieved": "Nhẹ nhõm",
+      "Apologetic": "Xin lỗi",
+      "Surprised": "Ngạc nhiên",
+      "Nervous": "Lo lắng",
+      "Helpful": "Sẵn lòng giúp",
+      "Sympathetic": "Đồng cảm",
+      "Cheerful": "Vui vẻ",
+      "Professional": "Chuyên nghiệp",
+      "Reassuring": "Trấn an"
+    },
+    "action": {
+      "Initiating": "Bắt đầu hội thoại",
+      "Responding": "Phản hồi",
+      "Inquiry/Request": "Hỏi/Yêu cầu",
+      "Observation/Opinion": "Quan sát/Ý kiến",
+      "Problem/Complaint": "Vấn đề/Phàn nàn",
+      "Social/Greeting": "Xã giao/Chào hỏi"
+    }
+  },
   "legal": {
     "backLabel": "Quay lại",
     "privacyTitle": "Chính sách bảo mật",

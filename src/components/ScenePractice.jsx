@@ -92,11 +92,20 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                 {/* 카드 헤더: 씬 힌트(좌) + TTS 재생버튼(우) */}
                 <div className="scene-card-header">
                     <div className="scene-card-hint">
-                        <span className="scene-card-hint-icon">🎬</span>
-                        <p>{generated.scene_hint}</p>
-                        {generated.selected_emotion && (
-                            <span className="scene-emotion-tag">{generated.selected_emotion}</span>
+                        {(generated.interaction_type || generated.selected_emotion) && (
+                            <div className="scene-tag-row">
+                                {generated.interaction_type && (
+                                    <span className="scene-action-tag">{t(`tags.action.${generated.interaction_type}`) || generated.interaction_type}</span>
+                                )}
+                                {generated.selected_emotion && (
+                                    <span className="scene-emotion-tag">{t(`tags.emotion.${generated.selected_emotion}`) || generated.selected_emotion}</span>
+                                )}
+                            </div>
                         )}
+                        <div className="scene-card-hint-body">
+                            <span className="scene-card-hint-icon">🎬</span>
+                            <p>{generated.scene_hint}</p>
+                        </div>
                     </div>
                     <button
                         className="speak-button"
@@ -393,6 +402,8 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             learningTip:       generated.learning_tip,
             pronunciationScore,
             difficulty,
+            selectedEmotion:   generated.selected_emotion || '',
+            interactionType:   generated.interaction_type || '',
         });
         if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
@@ -412,6 +423,8 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             learningTip:       generatedAnswer.learning_tip,
             pronunciationScore,
             difficulty,
+            selectedEmotion:   generatedAnswer.selected_emotion || '',
+            interactionType:   generatedAnswer.interaction_type || '',
         });
         if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();

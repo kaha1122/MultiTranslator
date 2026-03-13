@@ -597,6 +597,35 @@
     "passwordPlaceholder": "パスワードを入力",
     "confirmPlaceholder": "パスワードを確認"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "感謝",
+      "Frustrated": "苛立ち",
+      "Confused": "困惑",
+      "Excited": "興奮",
+      "Hesitant": "ためらい",
+      "Urgent": "緊急",
+      "Curious": "好奇心",
+      "Dissatisfied": "不満",
+      "Relieved": "安堵",
+      "Apologetic": "申し訳なさ",
+      "Surprised": "驚き",
+      "Nervous": "緊張",
+      "Helpful": "親切",
+      "Sympathetic": "共感",
+      "Cheerful": "明るさ",
+      "Professional": "プロ意識",
+      "Reassuring": "安心感"
+    },
+    "action": {
+      "Initiating": "会話開始",
+      "Responding": "応答",
+      "Inquiry/Request": "質問/依頼",
+      "Observation/Opinion": "観察/意見",
+      "Problem/Complaint": "問題/苦情",
+      "Social/Greeting": "挨拶/社交"
+    }
+  },
   "legal": {
     "backLabel": "戻る",
     "privacyTitle": "プライバシーポリシー",

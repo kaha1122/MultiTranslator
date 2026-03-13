@@ -913,3 +913,30 @@
     white-space: pre-line;
     line-height: 1.6;
 }
+
+/* Scene 태그 (Action Type / Emotion) */
+.translation-card .scene-tag-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.translation-card .scene-action-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.translation-card .scene-emotion-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #7c3aed;
+    background: #ede9fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}

@@ -554,7 +554,7 @@ ${avoidBlock}
   "sentence": "The generated opening sentence in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
   "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
-  "scene_hint": "In ${sourceLangName}: a vivid description of the micro-situation AND the chosen emotion state (e.g., '비행기가 너무 추워서 담요를 요청하려는 상황 [😰 Hesitant]').",
+  "scene_hint": "In ${sourceLangName}: a vivid description of the micro-situation WITHOUT emotion tags (e.g., '비행기가 너무 추워서 담요를 요청하려는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
 
@@ -660,7 +660,7 @@ ${avoidBlock}
   "sentence": "The generated response in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
   "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
-  "scene_hint": "In ${sourceLangName}: describe who is speaking (role), their emotion, and what they are telling the learner (e.g., '승무원이 친절하게(Helpful) 담요를 가져다주겠다고 안내하는 상황 [😊 Helpful]').",
+  "scene_hint": "In ${sourceLangName}: describe who is speaking (role) and what they are telling the learner, WITHOUT emotion tags (e.g., '승무원이 담요를 가져다주겠다고 안내하는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
 

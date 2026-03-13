@@ -597,6 +597,35 @@
     "passwordPlaceholder": "Enter your password",
     "confirmPlaceholder": "Confirm your password"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "Grateful",
+      "Frustrated": "Frustrated",
+      "Confused": "Confused",
+      "Excited": "Excited",
+      "Hesitant": "Hesitant",
+      "Urgent": "Urgent",
+      "Curious": "Curious",
+      "Dissatisfied": "Dissatisfied",
+      "Relieved": "Relieved",
+      "Apologetic": "Apologetic",
+      "Surprised": "Surprised",
+      "Nervous": "Nervous",
+      "Helpful": "Helpful",
+      "Sympathetic": "Sympathetic",
+      "Cheerful": "Cheerful",
+      "Professional": "Professional",
+      "Reassuring": "Reassuring"
+    },
+    "action": {
+      "Initiating": "Initiating",
+      "Responding": "Responding",
+      "Inquiry/Request": "Inquiry/Request",
+      "Observation/Opinion": "Observation/Opinion",
+      "Problem/Complaint": "Problem/Complaint",
+      "Social/Greeting": "Social/Greeting"
+    }
+  },
   "legal": {
     "backLabel": "Back",
     "privacyTitle": "Privacy Policy",

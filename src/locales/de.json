@@ -597,6 +597,35 @@
     "passwordPlaceholder": "Passwort eingeben",
     "confirmPlaceholder": "Passwort bestätigen"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "Dankbar",
+      "Frustrated": "Frustriert",
+      "Confused": "Verwirrt",
+      "Excited": "Begeistert",
+      "Hesitant": "Zögernd",
+      "Urgent": "Dringend",
+      "Curious": "Neugierig",
+      "Dissatisfied": "Unzufrieden",
+      "Relieved": "Erleichtert",
+      "Apologetic": "Entschuldigend",
+      "Surprised": "Überrascht",
+      "Nervous": "Nervös",
+      "Helpful": "Hilfsbereit",
+      "Sympathetic": "Mitfühlend",
+      "Cheerful": "Fröhlich",
+      "Professional": "Professionell",
+      "Reassuring": "Beruhigend"
+    },
+    "action": {
+      "Initiating": "Gespräch starten",
+      "Responding": "Antworten",
+      "Inquiry/Request": "Frage/Anfrage",
+      "Observation/Opinion": "Beobachtung/Meinung",
+      "Problem/Complaint": "Problem/Beschwerde",
+      "Social/Greeting": "Soziales/Begrüßung"
+    }
+  },
   "legal": {
     "backLabel": "Zurück",
     "privacyTitle": "Datenschutzrichtlinie",

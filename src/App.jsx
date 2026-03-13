@@ -930,7 +930,7 @@ function App() {
   };
 
   // 6. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic' }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -969,6 +969,8 @@ function App() {
         learningTip: learningTip ? [{ type: 'tip', content: learningTip }] : [],
         pronunciation: '',
         pronunciationScore,
+        selectedEmotion,
+        interactionType,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();

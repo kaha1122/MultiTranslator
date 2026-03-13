@@ -597,6 +597,35 @@
     "passwordPlaceholder": "비밀번호를 입력하세요",
     "confirmPlaceholder": "비밀번호를 확인하세요"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "감사",
+      "Frustrated": "좌절",
+      "Confused": "혼란",
+      "Excited": "신남",
+      "Hesitant": "망설임",
+      "Urgent": "긴급",
+      "Curious": "호기심",
+      "Dissatisfied": "불만",
+      "Relieved": "안도",
+      "Apologetic": "미안함",
+      "Surprised": "놀람",
+      "Nervous": "긴장",
+      "Helpful": "도움",
+      "Sympathetic": "공감",
+      "Cheerful": "쾌활",
+      "Professional": "전문적",
+      "Reassuring": "안심"
+    },
+    "action": {
+      "Initiating": "대화 시작",
+      "Responding": "응답",
+      "Inquiry/Request": "질문/요청",
+      "Observation/Opinion": "관찰/의견",
+      "Problem/Complaint": "문제/불만",
+      "Social/Greeting": "인사/사교"
+    }
+  },
   "legal": {
     "backLabel": "뒤로가기",
     "privacyTitle": "개인정보처리방침",

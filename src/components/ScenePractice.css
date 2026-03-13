@@ -374,12 +374,44 @@
 
 .scene-card-hint {
     display: flex;
-    align-items: flex-start;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
     background: #f8fafc;
     border-radius: 10px;
     padding: 10px 12px;
     border-left: 3px solid var(--primary-color, #00a884);
+}
+
+.scene-tag-row {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.scene-action-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #0369a1;
+    background: #e0f2fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.scene-emotion-tag {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #7c3aed;
+    background: #ede9fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+}
+
+.scene-card-hint-body {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
 }
 
 .scene-card-hint-icon {
@@ -393,18 +425,6 @@
     font-size: 0.82rem;
     color: #475569;
     line-height: 1.4;
-}
-
-.scene-emotion-tag {
-    flex-shrink: 0;
-    font-size: 0.7rem;
-    font-weight: 600;
-    color: #7c3aed;
-    background: #ede9fe;
-    padding: 2px 8px;
-    border-radius: 12px;
-    white-space: nowrap;
-    align-self: center;
 }
 
 .scene-card-sentence {

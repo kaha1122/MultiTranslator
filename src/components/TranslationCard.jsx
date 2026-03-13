@@ -70,6 +70,9 @@ const TranslationCard = ({
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
     onMemoClose,
+    // Scene 태그
+    selectedEmotion = '',
+    interactionType = '',
 }) => {
     const t = useT(sourceLangCode);
     const { byokGeminiKey } = useAuth();
@@ -287,6 +290,18 @@ Return only these 2 lines.`;
                     </button>
                 </div>
             </div>
+
+            {/* Scene 태그 (emotion / interaction type) */}
+            {(interactionType || selectedEmotion) && (
+                <div className="scene-tag-row" style={{ padding: '0 14px', marginTop: -2 }}>
+                    {interactionType && (
+                        <span className="scene-action-tag">{t(`tags.action.${interactionType}`) || interactionType}</span>
+                    )}
+                    {selectedEmotion && (
+                        <span className="scene-emotion-tag">{t(`tags.emotion.${selectedEmotion}`) || selectedEmotion}</span>
+                    )}
+                </div>
+            )}
 
             {/* 카드 본문: 번역 문장과 기본 발음 가이드 */}
             <div className="card-body">

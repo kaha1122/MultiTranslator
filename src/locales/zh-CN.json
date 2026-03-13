@@ -597,6 +597,35 @@
     "passwordPlaceholder": "请输入密码",
     "confirmPlaceholder": "请确认密码"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "感激",
+      "Frustrated": "沮丧",
+      "Confused": "困惑",
+      "Excited": "兴奋",
+      "Hesitant": "犹豫",
+      "Urgent": "紧急",
+      "Curious": "好奇",
+      "Dissatisfied": "不满",
+      "Relieved": "释然",
+      "Apologetic": "抱歉",
+      "Surprised": "惊讶",
+      "Nervous": "紧张",
+      "Helpful": "热心",
+      "Sympathetic": "同情",
+      "Cheerful": "愉快",
+      "Professional": "专业",
+      "Reassuring": "安慰"
+    },
+    "action": {
+      "Initiating": "发起对话",
+      "Responding": "回应",
+      "Inquiry/Request": "提问/请求",
+      "Observation/Opinion": "观察/意见",
+      "Problem/Complaint": "问题/投诉",
+      "Social/Greeting": "社交/问候"
+    }
+  },
   "legal": {
     "backLabel": "返回",
     "privacyTitle": "隐私政策",

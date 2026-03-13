@@ -597,6 +597,35 @@
     "passwordPlaceholder": "Entrez votre mot de passe",
     "confirmPlaceholder": "Confirmez votre mot de passe"
   },
+  "tags": {
+    "emotion": {
+      "Grateful": "Reconnaissant",
+      "Frustrated": "Frustré",
+      "Confused": "Confus",
+      "Excited": "Enthousiaste",
+      "Hesitant": "Hésitant",
+      "Urgent": "Urgent",
+      "Curious": "Curieux",
+      "Dissatisfied": "Insatisfait",
+      "Relieved": "Soulagé",
+      "Apologetic": "Désolé",
+      "Surprised": "Surpris",
+      "Nervous": "Nerveux",
+      "Helpful": "Serviable",
+      "Sympathetic": "Compatissant",
+      "Cheerful": "Joyeux",
+      "Professional": "Professionnel",
+      "Reassuring": "Rassurant"
+    },
+    "action": {
+      "Initiating": "Lancer la conversation",
+      "Responding": "Répondre",
+      "Inquiry/Request": "Question/Demande",
+      "Observation/Opinion": "Observation/Avis",
+      "Problem/Complaint": "Problème/Plainte",
+      "Social/Greeting": "Social/Salutation"
+    }
+  },
   "legal": {
     "backLabel": "Retour",
     "privacyTitle": "Politique de confidentialité",
