@@ -1,5 +1,6 @@
 import React, { useEffect } from 'react';
 import { ArrowLeft, Mail, Shield, FileText } from 'lucide-react';
+import { getT } from '../../utils/i18n';
 import './LegalPages.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -12,8 +13,16 @@ import './LegalPages.css';
 // 사용 방법: App.jsx에서 viewMode === 'privacy' / 'terms' / 'contact' 일 때 각각 렌더링
 // ─────────────────────────────────────────────────────────────────────────────
 
+const EMAIL = 'SystemAdmin@PronunFit.com';
+
+// 언어 코드 → toLocaleDateString locale 매핑
+const DATE_LOCALES = {
+    ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', 'zh-CN': 'zh-CN',
+    vi: 'vi-VN', fr: 'fr-FR', de: 'de-DE', es: 'es-ES',
+};
+
 // ── 공통 레이아웃: 뒤로가기 버튼 + 제목 헤더 ──────────────────────────────────
-function LegalLayout({ icon: Icon, title, onBack, children }) {
+function LegalLayout({ icon: Icon, title, onBack, backLabel, children }) {
     useEffect(() => {
         history.pushState({ page: 'legal' }, '');
         const handlePop = () => onBack();
@@ -35,9 +44,8 @@ function LegalLayout({ icon: Icon, title, onBack, children }) {
 
     return (
         <div className="legal-container">
-            {/* 상단 뒤로가기 헤더 */}
             <div className="legal-header">
-                <button className="legal-back-btn" onClick={onBack} aria-label="뒤로가기">
+                <button className="legal-back-btn" onClick={onBack} aria-label={backLabel}>
                     <ArrowLeft size={20} />
                 </button>
                 <div className="legal-title-row">
@@ -46,107 +54,94 @@ function LegalLayout({ icon: Icon, title, onBack, children }) {
                 </div>
             </div>
 
-            {/* 본문 내용 */}
             <div className="legal-body">
                 {children}
             </div>
 
-            {/* 하단 앱 정보 */}
             <div className="legal-footer">
-                <p>PronunFit · <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a></p>
+                <p>PronunFit · <a href={`mailto:${EMAIL}`}>{EMAIL}</a></p>
             </div>
         </div>
     );
 }
 
 // ── 1. 개인정보처리방침 (Privacy Policy) ────────────────────────────────────────
-// AdSense를 달면 Google이 쿠키를 사용하기 때문에 이 페이지가 반드시 있어야 합니다.
-export function PrivacyPolicyPage({ onBack }) {
-    // 오늘 날짜를 "2025년 3월 2일" 형식으로 표기
-    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+export function PrivacyPolicyPage({ onBack, sourceLang = 'ko' }) {
+    const t = (key) => getT(sourceLang, `legal.${key}`);
+    const dateLocale = DATE_LOCALES[sourceLang] || 'en-US';
+    const today = new Date().toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
-        <LegalLayout icon={Shield} title="개인정보처리방침" onBack={onBack}>
-            <p className="legal-date">최종 업데이트: {today}</p>
+        <LegalLayout icon={Shield} title={t('privacyTitle')} onBack={onBack} backLabel={t('backLabel')}>
+            <p className="legal-date">{t('privacyLastUpdate')}: {today}</p>
 
             <section className="legal-section">
-                <h2>1. 수집하는 개인정보</h2>
-                <p>PronunFit은 서비스 제공을 위해 다음 정보를 수집합니다:</p>
+                <h2>{t('privacyS1Title')}</h2>
+                <p>{t('privacyS1Desc')}</p>
                 <ul>
-                    <li>이메일 주소 (회원가입 및 로그인 시)</li>
-                    <li>닉네임, 전화번호, 주소 (선택 입력 사항)</li>
-                    <li>번역 및 발음 연습 기록 (서비스 향상 목적)</li>
-                    <li>기기 정보 및 브라우저 정보 (서비스 개선 목적)</li>
+                    <li>{t('privacyS1Item1')}</li>
+                    <li>{t('privacyS1Item2')}</li>
+                    <li>{t('privacyS1Item3')}</li>
+                    <li>{t('privacyS1Item4')}</li>
                 </ul>
             </section>
 
             <section className="legal-section">
-                <h2>2. 개인정보 이용 목적</h2>
+                <h2>{t('privacyS2Title')}</h2>
                 <ul>
-                    <li>회원 인증 및 계정 관리</li>
-                    <li>번역 · 발음 연습 서비스 제공</li>
-                    <li>학습 기록(보관함) 저장 및 조회</li>
-                    <li>서비스 개선 및 통계 분석</li>
+                    <li>{t('privacyS2Item1')}</li>
+                    <li>{t('privacyS2Item2')}</li>
+                    <li>{t('privacyS2Item3')}</li>
+                    <li>{t('privacyS2Item4')}</li>
                 </ul>
             </section>
 
             <section className="legal-section">
-                <h2>3. 제3자 서비스 및 광고</h2>
-                <p>본 앱은 다음 제3자 서비스를 사용하며, 이들은 독자적인 개인정보처리방침을 가집니다:</p>
+                <h2>{t('privacyS3Title')}</h2>
+                <p>{t('privacyS3Desc')}</p>
                 <ul>
                     <li>
-                        <strong>Google Firebase</strong> – 로그인 인증 및 데이터 저장
-                        (<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">Google 개인정보처리방침</a>)
+                        <strong>Google Firebase</strong> – {t('privacyS3Firebase').replace('Google Firebase – ', '')}
+                        {' '}(<a href="https://policies.google.com/privacy" target="_blank" rel="noreferrer">{t('privacyS3GooglePrivacy')}</a>)
                     </li>
                     <li>
-                        <strong>Google AdSense</strong> – 광고 제공 (쿠키 및 관심 기반 광고 사용)
-                        (<a href="https://policies.google.com/technologies/ads" target="_blank" rel="noreferrer">Google 광고 정책</a>)
+                        <strong>Google AdSense</strong> – {t('privacyS3AdSense').replace('Google AdSense – ', '')}
+                        {' '}(<a href="https://policies.google.com/technologies/ads" target="_blank" rel="noreferrer">{t('privacyS3GoogleAds')}</a>)
                     </li>
-                    <li>
-                        <strong>Vercel Analytics</strong> – 방문자 통계 분석
-                    </li>
-                    <li>
-                        <strong>Google Gemini API</strong> – AI 번역 팁 생성
-                    </li>
+                    <li><strong>Vercel Analytics</strong> – {t('privacyS3Vercel').replace('Vercel Analytics – ', '')}</li>
+                    <li><strong>Google Gemini API</strong> – {t('privacyS3Gemini').replace('Google Gemini API – ', '')}</li>
                 </ul>
                 <p>
-                    Google AdSense는 쿠키(Cookie)를 사용하여 사용자의 관심사에 맞는 광고를 표시할 수 있습니다.
-                    사용자는 <a href="https://adssettings.google.com" target="_blank" rel="noreferrer">Google 광고 설정</a>에서
-                    맞춤형 광고를 비활성화할 수 있습니다.
+                    {t('privacyS3Cookie')}{' '}
+                    <a href="https://adssettings.google.com" target="_blank" rel="noreferrer">{t('privacyS3CookieLink')}</a>
+                    {t('privacyS3CookieSuffix')}
                 </p>
             </section>
 
             <section className="legal-section">
-                <h2>4. 데이터 보관 기간</h2>
-                <p>
-                    회원 탈퇴 요청 시 또는 서비스 종료 시까지 보관하며,
-                    탈퇴 후에는 지체 없이 파기합니다.
-                </p>
+                <h2>{t('privacyS4Title')}</h2>
+                <p>{t('privacyS4Desc')}</p>
             </section>
 
             <section className="legal-section">
-                <h2>5. 쿠키(Cookie) 사용</h2>
-                <p>
-                    본 서비스는 로그인 세션 유지 및 광고 제공을 위해 쿠키를 사용합니다.
-                    브라우저 설정에서 쿠키를 비활성화할 수 있으나,
-                    일부 서비스 기능이 제한될 수 있습니다.
-                </p>
+                <h2>{t('privacyS5Title')}</h2>
+                <p>{t('privacyS5Desc')}</p>
             </section>
 
             <section className="legal-section">
-                <h2>6. 이용자의 권리</h2>
+                <h2>{t('privacyS6Title')}</h2>
                 <ul>
-                    <li>개인정보 열람, 수정, 삭제 요청 가능</li>
-                    <li>광고 맞춤 설정 거부 가능</li>
-                    <li>문의: <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a></li>
+                    <li>{t('privacyS6Item1')}</li>
+                    <li>{t('privacyS6Item2')}</li>
+                    <li>{t('privacyS6Item3')} <a href={`mailto:${EMAIL}`}>{EMAIL}</a></li>
                 </ul>
             </section>
 
             <section className="legal-section">
-                <h2>7. 문의</h2>
+                <h2>{t('privacyS7Title')}</h2>
                 <p>
-                    개인정보 관련 문의 사항은 아래 이메일로 연락해 주세요.<br />
-                    <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>
+                    {t('privacyS7Desc')}<br />
+                    <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </p>
             </section>
         </LegalLayout>
@@ -154,93 +149,88 @@ export function PrivacyPolicyPage({ onBack }) {
 }
 
 // ── 2. 이용약관 (Terms of Service) ────────────────────────────────────────────
-export function TermsOfServicePage({ onBack }) {
-    const today = new Date().toLocaleDateString('ko-KR', { year: 'numeric', month: 'long', day: 'numeric' });
+export function TermsOfServicePage({ onBack, sourceLang = 'ko' }) {
+    const t = (key) => getT(sourceLang, `legal.${key}`);
+    const dateLocale = DATE_LOCALES[sourceLang] || 'en-US';
+    const today = new Date().toLocaleDateString(dateLocale, { year: 'numeric', month: 'long', day: 'numeric' });
 
     return (
-        <LegalLayout icon={FileText} title="이용약관" onBack={onBack}>
-            <p className="legal-date">최종 업데이트: {today}</p>
+        <LegalLayout icon={FileText} title={t('termsTitle')} onBack={onBack} backLabel={t('backLabel')}>
+            <p className="legal-date">{t('termsLastUpdate')}: {today}</p>
 
             <section className="legal-section">
-                <h2>1. 서비스 소개</h2>
-                <p>
-                    PronunFit은 다국어 번역 및 발음 연습을 위한 학습 보조 서비스입니다.
-                    본 약관에 동의하시면 서비스를 이용하실 수 있습니다.
+                <h2>{t('termsS1Title')}</h2>
+                <p>{t('termsS1Desc')}</p>
+            </section>
+
+            <section className="legal-section">
+                <h2>{t('termsS2Title')}</h2>
+                <ul>
+                    <li>{t('termsS2Item1')}</li>
+                    <li>{t('termsS2Item2')}</li>
+                    <li>{t('termsS2Item3')}</li>
+                </ul>
+            </section>
+
+            <section className="legal-section">
+                <h2>{t('termsS3Title')}</h2>
+                <ul>
+                    <li>{t('termsS3Item1')}</li>
+                    <li>{t('termsS3Item2')}</li>
+                    <li>{t('termsS3Item3')}</li>
+                </ul>
+            </section>
+
+            <section className="legal-section">
+                <h2>{t('termsS4Title')}</h2>
+                <p>{t('termsS4Desc')}</p>
+            </section>
+
+            <section className="legal-section">
+                <h2>{t('termsS5Title')}</h2>
+                <p>{t('termsS5Desc')}</p>
+            </section>
+
+            <section className="legal-section">
+                <h2>{t('termsS6Title')}</h2>
+                <p>{t('termsS6Desc')}</p>
+
+                <h3>{t('termsS6Sub1')}</h3>
+                <ul>
+                    <li>{t('termsS6Sub1Item1')}</li>
+                    <li>{t('termsS6Sub1Item2')}</li>
+                    <li>{t('termsS6Sub1Item3')}</li>
+                </ul>
+
+                <h3>{t('termsS6Sub2')}</h3>
+                <ul>
+                    <li>{t('termsS6Sub2Item1')}</li>
+                    <li>{t('termsS6Sub2Item2')}</li>
+                    <li>{t('termsS6Sub2Item3')}</li>
+                </ul>
+
+                <h3>{t('termsS6Sub3')}</h3>
+                <ul>
+                    <li>{t('termsS6Sub3Item1')}</li>
+                    <li>{t('termsS6Sub3Item2')}</li>
+                </ul>
+
+                <h3>{t('termsS6Sub4')}</h3>
+                <ul>
+                    <li>{t('termsS6Sub4Item1')}</li>
+                    <li>{t('termsS6Sub4Item2')}</li>
+                </ul>
+
+                <p>{t('termsS6RefundContact').replace('{email}', '')}
+                    <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </p>
             </section>
 
             <section className="legal-section">
-                <h2>2. 계정 및 가입</h2>
-                <ul>
-                    <li>정확한 정보로 가입해야 하며, 타인 명의 도용은 금지됩니다.</li>
-                    <li>계정 보안(비밀번호 관리)은 사용자 본인의 책임입니다.</li>
-                    <li>만 14세 미만은 법정대리인의 동의가 필요합니다.</li>
-                </ul>
-            </section>
-
-            <section className="legal-section">
-                <h2>3. 서비스 이용 규칙</h2>
-                <ul>
-                    <li>불법적인 목적의 번역 요청은 금지됩니다.</li>
-                    <li>서비스를 악의적으로 사용하거나 시스템에 과부하를 주는 행위는 금지됩니다.</li>
-                    <li>타인의 개인정보를 무단으로 입력하는 행위는 금지됩니다.</li>
-                </ul>
-            </section>
-
-            <section className="legal-section">
-                <h2>4. 서비스 변경 및 중단</h2>
+                <h2>{t('termsS7Title')}</h2>
                 <p>
-                    운영상 필요에 따라 서비스 내용을 변경하거나 일시 중단할 수 있으며,
-                    사전 고지를 원칙으로 합니다.
-                </p>
-            </section>
-
-            <section className="legal-section">
-                <h2>5. 면책 조항</h2>
-                <p>
-                    AI 번역 결과는 참고용이며, 중요한 문서나 업무에 단독으로 사용 시 발생하는
-                    문제에 대해 PronunFit은 책임을 지지 않습니다.
-                </p>
-            </section>
-
-            <section className="legal-section">
-                <h2>6. 결제 취소 및 환불</h2>
-                <p>회원은 아래 조건에 따라 결제 취소 및 환불을 요청할 수 있습니다.</p>
-
-                <h3>① 구독 취소</h3>
-                <ul>
-                    <li>회원은 설정 내 "자동 갱신 중지" 버튼을 통해 언제든지 구독을 취소할 수 있습니다.</li>
-                    <li>구독 취소 시 즉시 서비스가 중단되지 않으며, 현재 결제 기간의 만료일까지 서비스를 계속 이용할 수 있습니다.</li>
-                    <li>만료일 이후에는 자동으로 Free Trial 등급으로 전환됩니다.</li>
-                </ul>
-
-                <h3>② 환불 규정</h3>
-                <ul>
-                    <li><strong>1개월 플랜:</strong> 결제일로부터 7일 이내, 발음 평가 기능을 사용하지 않은 경우 전액 환불이 가능합니다.</li>
-                    <li><strong>3개월 플랜:</strong> 결제일로부터 7일 이내, 발음 평가 기능을 사용하지 않은 경우 전액 환불이 가능합니다. 7일 경과 후에는 잔여 기간에 대해 일할 계산하여 환불합니다. (일할 계산 기준: 총 결제금액 ÷ 총 이용일수 × 잔여일수)</li>
-                    <li>발음 평가 기능을 1회 이상 사용한 경우, 이용한 일수를 차감한 잔여 금액에서 위약금 10%를 공제 후 환불합니다.</li>
-                </ul>
-
-                <h3>③ 환불이 불가한 경우</h3>
-                <ul>
-                    <li>구독 기간이 만료된 후 환불 요청하는 경우</li>
-                    <li>회원의 귀책 사유(약관 위반 등)로 서비스 이용이 제한된 경우</li>
-                </ul>
-
-                <h3>④ 예외적 환불</h3>
-                <ul>
-                    <li>회사의 귀책 사유로 결제 오류가 발생한 경우, 전액 환불합니다.</li>
-                    <li>회사의 귀책 사유로 서비스가 장기간(72시간 이상) 중단된 경우, 해당 기간만큼 이용 기간을 연장하거나 일할 환불합니다.</li>
-                </ul>
-
-                <p>환불 요청은 <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>으로 연락해 주시기 바랍니다.</p>
-            </section>
-
-            <section className="legal-section">
-                <h2>7. 문의</h2>
-                <p>
-                    이용약관 관련 문의:&nbsp;
-                    <a href="mailto:SystemAdmin@PronunFit.com">SystemAdmin@PronunFit.com</a>
+                    {t('termsS7Desc')}{' '}
+                    <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </p>
             </section>
         </LegalLayout>
@@ -248,50 +238,45 @@ export function TermsOfServicePage({ onBack }) {
 }
 
 // ── 3. 연락처 (Contact) ────────────────────────────────────────────────────────
-export function ContactPage({ onBack }) {
+export function ContactPage({ onBack, sourceLang = 'ko' }) {
+    const t = (key) => getT(sourceLang, `legal.${key}`);
+
     return (
-        <LegalLayout icon={Mail} title="연락처" onBack={onBack}>
+        <LegalLayout icon={Mail} title={t('contactTitle')} onBack={onBack} backLabel={t('backLabel')}>
 
             <div className="contact-card">
                 <div className="contact-icon-wrap">
                     <Mail size={32} color="#00a884" />
                 </div>
                 <h2 className="contact-app-name">PronunFit</h2>
-                <p className="contact-desc">
-                    서비스 이용 중 궁금하신 점, 문의 사항, 버그 제보 등 어떤 것이든
-                    아래 이메일로 연락해 주세요. 최대한 빠르게 답변드리겠습니다.
-                </p>
+                <p className="contact-desc">{t('contactDesc')}</p>
 
-                {/* 이메일 버튼 - 누르면 이메일 앱 열림 */}
-                <a
-                    href="mailto:SystemAdmin@PronunFit.com"
-                    className="contact-email-btn"
-                >
+                <a href={`mailto:${EMAIL}`} className="contact-email-btn">
                     <Mail size={18} />
-                    SystemAdmin@PronunFit.com
+                    {EMAIL}
                 </a>
             </div>
 
             <div className="contact-info-grid">
                 <div className="contact-info-item">
-                    <span className="contact-info-label">서비스명</span>
+                    <span className="contact-info-label">{t('contactServiceName')}</span>
                     <span className="contact-info-value">PronunFit</span>
                 </div>
                 <div className="contact-info-item">
-                    <span className="contact-info-label">제공 서비스</span>
-                    <span className="contact-info-value">다국어 번역 · 발음 연습</span>
+                    <span className="contact-info-label">{t('contactServiceDesc')}</span>
+                    <span className="contact-info-value">{t('contactServiceValue')}</span>
                 </div>
                 <div className="contact-info-item">
-                    <span className="contact-info-label">이메일</span>
-                    <span className="contact-info-value">SystemAdmin@PronunFit.com</span>
+                    <span className="contact-info-label">{t('contactEmail')}</span>
+                    <span className="contact-info-value">{EMAIL}</span>
                 </div>
                 <div className="contact-info-item">
-                    <span className="contact-info-label">전화번호</span>
-                    <span className="contact-info-value">050-6754-5465</span>
+                    <span className="contact-info-label">{t('contactPhone')}</span>
+                    <span className="contact-info-value">{t('contactPhoneValue')}</span>
                 </div>
                 <div className="contact-info-item">
-                    <span className="contact-info-label">응답 시간</span>
-                    <span className="contact-info-value">평일 기준 1~2 영업일</span>
+                    <span className="contact-info-label">{t('contactResponseTime')}</span>
+                    <span className="contact-info-value">{t('contactResponseValue')}</span>
                 </div>
             </div>
 
