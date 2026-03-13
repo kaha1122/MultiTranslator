@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc, increment } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
 
 const AuthContext = createContext();
@@ -20,16 +20,24 @@ export const AuthProvider = ({ children }) => {
                 if (analytics) setUserId(analytics, authenticatedUser.uid);
 
                 const docRef = doc(db, 'users', authenticatedUser.uid);
-                unsubscribeProfile = onSnapshot(docRef, (docSnap) => {
+                unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
-                        console.warn(`[AuthContext] Firestore document NOT FOUND for uid=${authenticatedUser.uid}, email=${authenticatedUser.email}`);
-                        setProfile(null);
+                        // 문서가 없는 기존 유저 → 자동 생성 (onSnapshot이 재실행되어 profile 설정됨)
+                        await setDoc(docRef, {
+                            uid: authenticatedUser.uid,
+                            email: authenticatedUser.email,
+                            displayName: authenticatedUser.displayName || 'Google User',
+                            membership: 'Free',
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        });
+                        return; // setDoc 후 onSnapshot이 다시 호출되므로 여기서 리턴
                     }
                     setLoading(false);
                 }, (error) => {
-                    console.error(`[AuthContext] onSnapshot ERROR for uid=${authenticatedUser.uid}, email=${authenticatedUser.email}:`, error);
+                    console.error("Error fetching user profile:", error);
                     setProfile(null);
                     setLoading(false);
                 });

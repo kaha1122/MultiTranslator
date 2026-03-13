@@ -541,12 +541,6 @@ function App() {
 
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
-    // [디버그] profile 상태 확인 — 문제 해결 후 삭제
-    if (!profile) {
-      console.warn('[EditProfile] profile is NULL! user.uid=', user?.uid, 'user.email=', user?.email);
-    } else {
-      console.log('[EditProfile] profile loaded OK:', Object.keys(profile));
-    }
     // profile이 null이면 user 객체(Firebase Auth)의 정보로 폴백
     const p = profile || {};
     const savedCountry = p.phoneCountry || getCountryByLang(sourceLang);
