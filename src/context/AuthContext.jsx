@@ -24,11 +24,12 @@ export const AuthProvider = ({ children }) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
+                        console.warn(`[AuthContext] Firestore document NOT FOUND for uid=${authenticatedUser.uid}, email=${authenticatedUser.email}`);
                         setProfile(null);
                     }
                     setLoading(false);
                 }, (error) => {
-                    console.error("Error fetching user profile:", error);
+                    console.error(`[AuthContext] onSnapshot ERROR for uid=${authenticatedUser.uid}, email=${authenticatedUser.email}:`, error);
                     setProfile(null);
                     setLoading(false);
                 });

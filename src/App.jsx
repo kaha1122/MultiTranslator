@@ -541,20 +541,21 @@ function App() {
 
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
-    // ❗ [Bug 수정] profile이 아직 로딩 중이면 모달을 열지 않습니다.
-    //   이전에는 profile이 null일 때 모달을 열면 Google 원본 이름(user.displayName)으로
-    //   폼이 채워졌고, 모르고 저장하면 커스텀 닉네임이 덮어씨지는 버그가 발생했습니다.
+    // [디버그] profile 상태 확인 — 문제 해결 후 삭제
     if (!profile) {
-      alert('Profile is loading. Please try again in a moment.');
-      return;
+      console.warn('[EditProfile] profile is NULL! user.uid=', user?.uid, 'user.email=', user?.email);
+    } else {
+      console.log('[EditProfile] profile loaded OK:', Object.keys(profile));
     }
-    const savedCountry = profile.phoneCountry || getCountryByLang(sourceLang);
-    const savedPhone = profile.phoneNumber || '';
+    // profile이 null이면 user 객체(Firebase Auth)의 정보로 폴백
+    const p = profile || {};
+    const savedCountry = p.phoneCountry || getCountryByLang(sourceLang);
+    const savedPhone = p.phoneNumber || '';
     // Strip country dial code from stored number for display
     const dialPrefix = (COUNTRY_PHONES.find(c => c.code === savedCountry) || COUNTRY_PHONES[0]).dial;
     const localDigits = savedPhone.startsWith(dialPrefix) ? savedPhone.slice(dialPrefix.length) : savedPhone.replace(/\D/g, '');
     setProfileFormData({
-      nickname: profile.displayName || user?.displayName || 'Google User',
+      nickname: p.displayName || user?.displayName || 'Google User',
       phone: localDigits ? formatPhoneByCountry(localDigits, savedCountry) : '',
       phoneCountry: savedCountry
     });
