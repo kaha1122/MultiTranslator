@@ -268,37 +268,32 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
           <span>🇺🇸</span><span>🇯🇵</span><span>🇨🇳</span><span>🇰🇷</span>
           <span>🇻🇳</span><span>🇫🇷</span><span>🇩🇪</span><span>🇪🇸</span>
         </div>
-        <div className="lp-hero-bubble">
-          <h1 className="lp-hero-main">{c.hero1Main}</h1>
-        </div>
+        <h1 className="lp-hero-main">{c.hero1Main}</h1>
         <p className="lp-hero-sub">{c.hero1Sub}</p>
         <div className="lp-hero-divider" />
       </section>
 
-      {/* ── Hero 2: 단어장 ── */}
+      {/* ── Hero 2: 스마트 단어장 ── */}
       <section className="lp-hero lp-hero-2">
-        <div className="lp-hero-badge">FREE</div>
-        <p className="lp-hero-badge-sub">• 8개 국어 AI 발음 코치 · 무료</p>
+        <div className="lp-hero-vocab-visual">
+          <div className="lp-vocab-card lp-vocab-card-1">
+            <span className="lp-vocab-star">⭐</span>
+            <span className="lp-vocab-word">Hello!</span>
+            <span className="lp-vocab-score">92pt</span>
+          </div>
+          <div className="lp-vocab-card lp-vocab-card-2">
+            <span className="lp-vocab-star">⭐</span>
+            <span className="lp-vocab-word">こんにちは</span>
+            <span className="lp-vocab-score">88pt</span>
+          </div>
+          <div className="lp-vocab-card lp-vocab-card-3">
+            <span className="lp-vocab-star">⭐</span>
+            <span className="lp-vocab-word">Bonjour</span>
+            <span className="lp-vocab-score">95pt</span>
+          </div>
+        </div>
         <h2 className="lp-hero-main">{c.hero2Main}</h2>
         <p className="lp-hero-sub">{c.hero2Sub}</p>
-        <div className="lp-hero-stats">
-          <div className="lp-hero-stat">
-            <span className="lp-hero-stat-num">8</span>
-            <span className="lp-hero-stat-label">지원 언어</span>
-          </div>
-          <div className="lp-hero-stat">
-            <span className="lp-hero-stat-num">100</span>
-            <span className="lp-hero-stat-label">점 만점 채점</span>
-          </div>
-          <div className="lp-hero-stat">
-            <span className="lp-hero-stat-num">0원</span>
-            <span className="lp-hero-stat-label">완전 무료</span>
-          </div>
-        </div>
-        <div className="lp-cta-btn-wrap" style={{ marginTop: '1.5rem' }}>
-          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
-          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
-        </div>
       </section>
 
       {/* ── Scene Demo ── */}

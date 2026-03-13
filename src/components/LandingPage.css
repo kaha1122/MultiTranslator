@@ -137,41 +137,19 @@
 .lp-hero-flags span:nth-child(7) { animation-delay: 1.8s; }
 .lp-hero-flags span:nth-child(8) { animation-delay: 2.1s; }
 
-/* 말풍선 */
-.lp-hero-bubble {
-  position: relative;
-  background: rgba(16, 185, 129, 0.08);
-  border: 1px solid rgba(16, 185, 129, 0.25);
-  border-radius: 24px;
-  padding: 1.5rem 2rem;
-  margin-bottom: 1rem;
-  animation: lpFadeInUp 0.7s ease 0.1s both;
-}
-.lp-hero-bubble::after {
-  content: '';
-  position: absolute;
-  bottom: -10px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 0;
-  height: 0;
-  border-left: 10px solid transparent;
-  border-right: 10px solid transparent;
-  border-top: 10px solid rgba(16, 185, 129, 0.25);
-}
-
 /* 메인 카피 */
 .lp-hero-main {
-  font-size: 1.7rem;
+  font-size: 2rem;
   font-weight: 900;
   line-height: 1.4;
   white-space: pre-line;
   word-break: keep-all;
-  margin: 0;
+  margin: 0 0 1rem;
   background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, #a7f3d0 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   letter-spacing: -0.5px;
+  animation: lpFadeInUp 0.7s ease 0.1s both;
 }
 
 /* 서브 카피 */
@@ -186,48 +164,52 @@
   margin: 0;
 }
 
-/* FREE 배지 */
-.lp-hero-badge {
-  display: inline-block;
-  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green-light));
-  color: #0B0C10;
-  font-size: 0.85rem;
-  font-weight: 900;
-  padding: 0.3rem 1.2rem;
-  border-radius: 100px;
-  margin-bottom: 0.5rem;
-  animation: lpFadeInUp 0.6s ease both;
-  letter-spacing: 1px;
-}
-.lp-hero-badge-sub {
-  font-size: 0.78rem;
-  color: var(--lp-green-light);
-  margin: 0 0 1rem;
-  animation: lpFadeInUp 0.6s ease 0.1s both;
-}
-
-/* 숫자 통계 */
-.lp-hero-stats {
-  display: flex;
-  justify-content: center;
-  gap: 2rem;
-  margin-top: 1.5rem;
-  animation: lpFadeInUp 0.8s ease 0.3s both;
-}
-.lp-hero-stat {
+/* 단어장 비주얼 카드 */
+.lp-hero-vocab-visual {
   display: flex;
   flex-direction: column;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 300px;
+  margin-bottom: 1.5rem;
+  animation: lpFadeInUp 0.7s ease both;
+}
+.lp-vocab-card {
+  display: flex;
   align-items: center;
-  gap: 0.2rem;
+  gap: 0.6rem;
+  padding: 0.6rem 1rem;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(8px);
+  transition: transform 0.3s;
 }
-.lp-hero-stat-num {
-  font-size: 1.8rem;
-  font-weight: 900;
+.lp-vocab-card:hover {
+  transform: translateX(4px);
+}
+.lp-vocab-card-1 { animation: lpSlideInLeft 0.6s ease 0.1s both; }
+.lp-vocab-card-2 { animation: lpSlideInLeft 0.6s ease 0.3s both; }
+.lp-vocab-card-3 { animation: lpSlideInLeft 0.6s ease 0.5s both; }
+.lp-vocab-star {
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+.lp-vocab-word {
+  flex: 1;
+  font-size: 0.95rem;
+  font-weight: 700;
   color: var(--lp-text-main);
+  text-align: left;
 }
-.lp-hero-stat-label {
-  font-size: 0.7rem;
-  color: var(--lp-text-muted);
+.lp-vocab-score {
+  font-size: 0.75rem;
+  font-weight: 800;
+  color: var(--lp-green-light);
+  background: rgba(16, 185, 129, 0.15);
+  padding: 0.15rem 0.5rem;
+  border-radius: 100px;
+  flex-shrink: 0;
 }
 
 .lp-hero-divider {
@@ -963,6 +945,10 @@
   0%, 100% { transform: translateY(0); }
   50% { transform: translateY(-6px); }
 }
+@keyframes lpSlideInLeft {
+  from { opacity: 0; transform: translateX(-30px); }
+  to { opacity: 1; transform: translateX(0); }
+}
 @keyframes lpFadeInUp {
   from { opacity: 0; transform: translateY(24px); }
   to { opacity: 1; transform: translateY(0); }
@@ -998,7 +984,7 @@
   .lp-nav { padding: 1.3rem 6%; }
   .lp-hero-1 { padding: 7rem 8% 2rem; }
   .lp-hero-2 { padding: 3rem 8% 3rem; }
-  .lp-hero-main { font-size: 2.2rem; }
+  .lp-hero-main { font-size: 2.5rem; }
   .lp-hero-sub { font-size: 1rem; }
   .lp-hero-flags { font-size: 2rem; gap: 1rem; }
   .lp-demo-title { font-size: 2rem; }
@@ -1012,6 +998,6 @@
    Desktop (1024px+)
    ================================================================ */
 @media (min-width: 1024px) {
-  .lp-hero-main { font-size: 2.6rem; }
+  .lp-hero-main { font-size: 3rem; }
   .lp-cta-title { font-size: 2.8rem; }
 }
