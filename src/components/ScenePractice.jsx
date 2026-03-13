@@ -109,7 +109,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                     </div>
                     <button
                         className="speak-button"
-                        onClick={() => onSpeak(generated.sentence, langCode)}
+                        onClick={() => onSpeak(generated.sentence, langCode, generated.selected_emotion)}
                         title="Listen"
                     >
                         <Play size={22} fill="white" stroke="white" />

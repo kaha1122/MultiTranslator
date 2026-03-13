@@ -379,35 +379,82 @@ app.get('/api/video-feed', async (req, res) => {
 /**
  * Azure Neural TTS
  * POST /api/azure-tts
- * Body: { text, langCode, byokAzureKey?, byokAzureRegion? }
+ * Body: { text, langCode, emotion?, byokAzureKey?, byokAzureRegion? }
  * Returns: audio/mpeg binary
  */
 const AZURE_TTS_VOICE_MAP = {
-    'en':    { voice: 'en-US-JennyNeural',      style: 'chat' },
-    'ja':    { voice: 'ja-JP-NanamiNeural',      style: 'chat' },
-    'zh-CN': { voice: 'zh-CN-XiaoxiaoNeural',    style: 'chat' },
-    'vi':    { voice: 'vi-VN-HoaiMyNeural',       style: null },
-    'fr':    { voice: 'fr-FR-DeniseNeural',       style: null },
-    'de':    { voice: 'de-DE-KatjaNeural',        style: null },
-    'es':    { voice: 'es-ES-ElviraNeural',       style: null },
-    'ko':    { voice: 'ko-KR-SunHiNeural',        style: 'chat' },
+    'en':    { voice: 'en-US-JennyNeural',      styles: ['chat','cheerful','sad','angry','excited','friendly','hopeful','empathetic'] },
+    'ja':    { voice: 'ja-JP-NanamiNeural',      styles: ['chat'] },
+    'zh-CN': { voice: 'zh-CN-XiaoxiaoNeural',    styles: ['chat','cheerful','sad','angry','fearful','gentle','serious','friendly','empathetic','calm'] },
+    'vi':    { voice: 'vi-VN-HoaiMyNeural',       styles: [] },
+    'fr':    { voice: 'fr-FR-DeniseNeural',       styles: [] },
+    'de':    { voice: 'de-DE-KatjaNeural',        styles: [] },
+    'es':    { voice: 'es-ES-ElviraNeural',       styles: [] },
+    'ko':    { voice: 'ko-KR-SunHiNeural',        styles: ['chat','cheerful','sad','angry','friendly'] },
+};
+
+// Gemini selected_emotion → Azure TTS style 매핑
+const EMOTION_TO_STYLE = {
+    'frustrated':    'angry',
+    'angry':         'angry',
+    'annoyed':       'angry',
+    'impatient':     'angry',
+    'sad':           'sad',
+    'disappointed':  'sad',
+    'homesick':      'sad',
+    'lonely':        'sad',
+    'cheerful':      'cheerful',
+    'excited':       'excited',
+    'happy':         'cheerful',
+    'grateful':      'cheerful',
+    'relieved':      'cheerful',
+    'delighted':     'cheerful',
+    'curious':       'friendly',
+    'friendly':      'friendly',
+    'interested':    'friendly',
+    'surprised':     'friendly',
+    'hopeful':       'hopeful',
+    'optimistic':    'hopeful',
+    'hesitant':      'gentle',
+    'shy':           'gentle',
+    'nervous':       'gentle',
+    'embarrassed':   'gentle',
+    'uncertain':     'gentle',
+    'worried':       'gentle',
+    'calm':          'calm',
+    'confident':     'chat',
+    'apologetic':    'empathetic',
+    'empathetic':    'empathetic',
+    'sympathetic':   'empathetic',
+    'concerned':     'empathetic',
+    'serious':       'serious',
+    'urgent':        'fearful',
+    'fearful':       'fearful',
+    'panicked':      'fearful',
 };
 
 app.post('/api/azure-tts', async (req, res) => {
-    const { text, langCode, byokAzureKey, byokAzureRegion } = req.body;
+    const { text, langCode, emotion, byokAzureKey, byokAzureRegion } = req.body;
     if (!text) return res.status(400).json({ error: 'Missing text' });
 
     const azureKey    = byokAzureKey    || AZURE_KEY;
     const azureRegion = byokAzureRegion || AZURE_REGION;
     if (!azureKey || !azureRegion) return res.status(500).json({ error: 'Azure TTS not configured' });
 
-    const voiceInfo  = AZURE_TTS_VOICE_MAP[langCode] || { voice: 'en-US-JennyNeural', style: 'chat' };
-    const voiceName  = voiceInfo.voice;
-    const voiceStyle = voiceInfo.style;
-    const locale     = voiceName.split('-').slice(0, 2).join('-'); // e.g. "en-US"
-    const escaped    = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
+    const voiceInfo       = AZURE_TTS_VOICE_MAP[langCode] || { voice: 'en-US-JennyNeural', styles: ['chat'] };
+    const voiceName       = voiceInfo.voice;
+    const supportedStyles = voiceInfo.styles;
+    const locale          = voiceName.split('-').slice(0, 2).join('-'); // e.g. "en-US"
+    const escaped         = text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-    // style이 지원되는 음성은 mstts:express-as로 자연스러운 대화체 적용
+    // 감정 기반 style 결정: emotion → 매핑된 style → 해당 음성이 지원하면 사용, 아니면 chat 폴백
+    let voiceStyle = null;
+    if (supportedStyles.length > 0) {
+        const mapped = emotion ? EMOTION_TO_STYLE[emotion.toLowerCase()] : null;
+        voiceStyle = (mapped && supportedStyles.includes(mapped)) ? mapped : (supportedStyles.includes('chat') ? 'chat' : supportedStyles[0]);
+    }
+
+    // style이 지원되는 음성은 mstts:express-as로 감정 반영
     const innerContent = voiceStyle
         ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
         : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
@@ -448,20 +495,20 @@ const LANG_NAMES_FOR_SCENE = {
 // ── 난이도별 상세 가이드라인 (CEFR 기반) ─────────────────────────────────────
 const DIFFICULTY_DESC = {
     basic: `Beginner (A1/A2)
-  - Vocabulary: Top 500 survival words only. Focus on nouns and simple verbs.
-  - Grammar: Simple Present/Past. Patterns like "Can I...?", "Where is...?", "Do you have...?"
+  - Vocabulary: Top 500 high-frequency words only. Simple nouns, verbs, adjectives.
+  - Grammar: Simple present/past tense. One clause per sentence. No subordinate clauses.
   - Length: 5–10 words.
-  - Goal: Direct communication of immediate needs.`,
+  - Goal: Express immediate needs in the simplest form possible.`,
     intermediate: `Intermediate (B1/B2)
-  - Vocabulary: Common phrasal verbs and natural collocations.
-  - Grammar: Modals (Could/Would/Should), conjunctions (but, so, because), polite indirect openers.
+  - Vocabulary: Common phrasal verbs, collocations, everyday idioms.
+  - Grammar: Compound sentences with conjunctions (but, so, because). Modals for politeness. Up to 2 clauses per sentence.
   - Length: 8–15 words.
-  - Goal: Providing context or reasons behind a request.`,
+  - Goal: Express opinions, reasons, and polite requests with context.`,
     high: `Advanced (C1/C2)
   - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated adjectives.
-  - Grammar: Conditionals (If/Unless), relative clauses, passive voice for extreme politeness, subtle negotiation.
+  - Grammar: Complex sentences with 3+ clauses. Conditionals, relative clauses, passive voice, subjunctive mood.
   - Length: 12–25 words.
-  - Goal: Handling social friction or complex requests with native-like nuance.`,
+  - Goal: Handle nuanced social situations with native-level fluency.`,
 };
 
 // ── 어투별 상세 가이드라인 ────────────────────────────────────────────────────
@@ -540,10 +587,12 @@ ${avoidBlock}
 
 ### [Strict Rules]
 1. **Proactive Initiation**: The learner is always the one speaking FIRST. No passive "Yes/No" answers.
-2. **AI Emotion Choice**: You must pick a varied emotion that fits the scene to ensure diversity.
-3. **Anti-Duplication**: Do NOT use the same core verb, topic, or sentence structure as any Previous Sentence.
-4. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
-5. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
+2. **Scenario Alignment**: Generate the most suitable sentence based on the scenario and emotion selected in Phase 1.
+3. **AI Emotion Choice**: You must pick a varied emotion that fits the scene to ensure diversity.
+4. **Anti-Duplication**: Do NOT use the same core verb, topic, or sentence structure as any Previous Sentence.
+5. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
+6. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
+7. **No reading aids**: Do not add furigana/hiragana readings for ja, pinyin/tone marks for zh-CN/zh-TW, or any romanization unless explicitly requested.
 
 ---
 
@@ -659,7 +708,7 @@ ${avoidBlock}
 4. **Anti-Duplication**: Do NOT reuse the same core verb, topic, or sentence structure as any Previous Reply Sentence.
 5. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
 6. **Informative**: Include useful details — a location, a time, a price, a suggestion, empathy — not just "yes" or "no".
-
+7. **No reading aids**: Do not add furigana/hiragana readings for ja, pinyin/tone marks for zh-CN/zh-TW, or any romanization unless explicitly requested.
 ---
 
 ### [Return ONLY valid JSON (no markdown)]

@@ -1053,7 +1053,7 @@ function App() {
   };
 
   // Azure Neural TTS — 모든 탭 공용 (실패 시 Web Speech API로 폴백)
-  const handleSpeak = async (text, langCode) => {
+  const handleSpeak = async (text, langCode, emotion) => {
     if (!text) return;
     const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     try {
@@ -1063,6 +1063,7 @@ function App() {
         body: JSON.stringify({
           text,
           langCode,
+          emotion:         emotion         || undefined,
           byokAzureKey:    byokAzureKey    || undefined,
           byokAzureRegion: byokAzureRegion || undefined,
         }),

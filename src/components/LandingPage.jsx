@@ -76,7 +76,7 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) 
   const handleSpeak = () => {
     if (ttsCountRef.current >= 3) { onLimitReached(); return; }
     ttsCountRef.current += 1;
-    onSpeak(generated.sentence, langCode);
+    onSpeak(generated.sentence, langCode, generated.selected_emotion);
   };
 
   const handleRecord = () => {

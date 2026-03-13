@@ -402,7 +402,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 learningTip={card.learningTip}
                                 badgeColor={card.langCode === 'en' ? '#e0e7ff' : card.langCode === 'ja' ? '#fef2f2' : '#fff7ed'}
                                 badgeTextColor={card.langCode === 'en' ? '#4338ca' : card.langCode === 'ja' ? '#b91c1c' : '#9a3412'}
-                                onSpeak={() => onSpeak(card.translatedText, card.langCode)}
+                                onSpeak={() => onSpeak(card.translatedText, card.langCode, card.selectedEmotion)}
                                 isInSelectionMode={false}
                                 isLibraryView={true}
                                 onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}
@@ -417,6 +417,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 onToggleStarred={() => toggleStarred(card.id, card.starred)}
                                 memoPopupOpen={memoOpenId === card.id}
                                 onMemoClose={() => setMemoOpenId(null)}
+                                selectedEmotion={card.selectedEmotion || ''}
+                                interactionType={card.interactionType || ''}
                             />
 
                             {/* 하단 액션바 */}
