@@ -466,15 +466,12 @@ const DIFFICULTY_DESC = {
 
 // ── 어투별 상세 가이드라인 ────────────────────────────────────────────────────
 const STYLE_DESC = {
-    casual: `Casual / Informal
-  - Used for peers, friends, or relaxed social settings.
-  - Use contractions (don't, I'm), friendly sentence endings, direct phrasing.
-  - Politeness: Use "Thanks" or "Can you...?" instead of heavy formal structures.
-  - NEVER start every sentence with "Excuse me" or "Please". Use them only when the request is intrusive.`,
-    formal: `Formal / Polite
-  - Used for strangers, elders, service staff, or professional environments.
-  - Use indirect questions ("I was wondering if..."), full verb forms, respectful honorifics.
-  - Politeness Strategy: Use "Please" and "Excuse me" STRATEGICALLY — not at the start of every sentence. Place "please" at the end or middle for variety. Use them only when a request is intrusive or heavy.`,
+    casual: `Casual (Informal)
+  - Focus on **Natural Fluency**. Use the language's common everyday forms, contractions, and relaxed sentence endings.
+  - Reflect the chosen emotion **openly and directly** as if speaking to a close friend or peer.`,
+    formal: `Formal (Polite)
+  - Focus on **Social Distance & Respect**. Use standard grammatical structures and appropriate honorifics/polite forms.
+  - Reflect the chosen emotion **gracefully and indirectly**. Ensure the tone remains professional or respectful toward strangers or service staff.`,
 };
 
 app.post('/api/scene-sentence', async (req, res) => {
@@ -511,11 +508,15 @@ You are a highly creative Language Learning Content Architect. Your mission is t
 Before generating the sentence, you MUST autonomously design the emotional context:
 1. **Select an Emotion**: Choose ONE appropriate emotion for "${scene}" from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous. **Vary your choice — do NOT pick the same emotion every time.**
 2. **Design the Micro-Situation**: Aim for specific "pain points" or realistic moments unique to "${scene}". Avoid generic scenarios like "Where is the restroom?" — instead think of compelling, scene-specific moments.
-3. **Choose an Action Type** (one of):
-   - **Inquiry/Request**: Asking for help or information.
-   - **Observation/Opinion**: Commenting on the situation.
-   - **Problem/Complaint**: Addressing an issue or dissatisfaction.
-   - **Social/Greeting**: Opening with a friendly or polite remark.
+3. **Choose an Action Type** (exactly one of these 8):
+   - **Inquiry**: Asking a question to get information.
+   - **Request**: Asking someone to do something for you.
+   - **Observation**: Commenting on or describing the situation.
+   - **Opinion**: Sharing a personal thought or judgment.
+   - **Problem**: Reporting or explaining an issue.
+   - **Complaint**: Expressing dissatisfaction about something.
+   - **Social**: Making small talk or casual conversation.
+   - **Greeting**: Opening with a polite or friendly remark.
 
 ---
 
@@ -549,7 +550,7 @@ ${avoidBlock}
 ### [Return ONLY valid JSON (no markdown)]
 {
   "selected_emotion": "The emotion you chose (e.g., Frustrated, Curious, Hesitant).",
-  "interaction_type": "Initiating",
+  "interaction_type": "The action type you chose: exactly one of 'Inquiry', 'Request', 'Observation', 'Opinion', 'Problem', 'Complaint', 'Social', or 'Greeting'.",
   "internal_scenario_summary": "English description of the chosen emotion, action type, and the specific micro-situation.",
   "sentence": "The generated opening sentence in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
@@ -615,6 +616,15 @@ You are a highly creative Language Learning Content Architect. The learner just 
 ### [Phase 1: Response Situation Design]
 The learner said: "${question}" in the scene "${scene}".
 - **Identify the Initiation Type**: Is the learner asking a question? Making a complaint? Sharing an observation? Greeting someone? Your response must match the type.
+- **Choose a Response Action Type** (exactly one of these 8):
+   - **Inquiry**: Asking a follow-up question.
+   - **Request**: Asking the learner to do something.
+   - **Observation**: Commenting on or describing the situation.
+   - **Opinion**: Sharing a personal thought or judgment.
+   - **Problem**: Pointing out an issue or limitation.
+   - **Complaint**: Expressing dissatisfaction.
+   - **Social**: Making small talk or casual conversation.
+   - **Greeting**: Responding with a polite or friendly remark.
 - **Think about WHO is responding**: a waiter? a flight attendant? a friend? a receptionist? a stranger? The response must match that person's role, knowledge, and emotional tone.
 - **Select a Response Emotion**: Choose an appropriate emotion for the responder (e.g., Helpful, Sympathetic, Apologetic, Cheerful, Professional, Reassuring, Surprised). This should naturally complement the learner's tone.
 - **Be Specific & Informative**: Don't give a generic "Sure!" or "Yes, of course." — give a response that contains USEFUL INFORMATION (directions, explanations, alternatives, empathy, confirmations with details).
@@ -655,7 +665,7 @@ ${avoidBlock}
 ### [Return ONLY valid JSON (no markdown)]
 {
   "selected_emotion": "The responder's emotion (e.g., Helpful, Apologetic, Reassuring).",
-  "interaction_type": "Responding",
+  "interaction_type": "The action type you chose: exactly one of 'Inquiry', 'Request', 'Observation', 'Opinion', 'Problem', 'Complaint', 'Social', or 'Greeting'.",
   "internal_scenario_summary": "English description: who is responding, their emotion, what information they are giving, and why this is a natural response.",
   "sentence": "The generated response in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",

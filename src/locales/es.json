@@ -618,12 +618,14 @@
       "Reassuring": "Tranquilizador"
     },
     "action": {
-      "Initiating": "Iniciar conversación",
-      "Responding": "Responder",
-      "Inquiry/Request": "Pregunta/Solicitud",
-      "Observation/Opinion": "Observación/Opinión",
-      "Problem/Complaint": "Problema/Queja",
-      "Social/Greeting": "Social/Saludo"
+      "Inquiry": "Pregunta",
+      "Request": "Solicitud",
+      "Observation": "Observación",
+      "Opinion": "Opinión",
+      "Problem": "Problema",
+      "Complaint": "Queja",
+      "Social": "Social",
+      "Greeting": "Saludo"
     }
   },
   "legal": {

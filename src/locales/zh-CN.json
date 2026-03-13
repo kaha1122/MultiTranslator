@@ -618,12 +618,14 @@
       "Reassuring": "安慰"
     },
     "action": {
-      "Initiating": "发起对话",
-      "Responding": "回应",
-      "Inquiry/Request": "提问/请求",
-      "Observation/Opinion": "观察/意见",
-      "Problem/Complaint": "问题/投诉",
-      "Social/Greeting": "社交/问候"
+      "Inquiry": "提问",
+      "Request": "请求",
+      "Observation": "观察",
+      "Opinion": "意见",
+      "Problem": "问题",
+      "Complaint": "投诉",
+      "Social": "社交",
+      "Greeting": "问候"
     }
   },
   "legal": {

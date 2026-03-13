@@ -618,12 +618,14 @@
       "Reassuring": "Reassuring"
     },
     "action": {
-      "Initiating": "Initiating",
-      "Responding": "Responding",
-      "Inquiry/Request": "Inquiry/Request",
-      "Observation/Opinion": "Observation/Opinion",
-      "Problem/Complaint": "Problem/Complaint",
-      "Social/Greeting": "Social/Greeting"
+      "Inquiry": "Inquiry",
+      "Request": "Request",
+      "Observation": "Observation",
+      "Opinion": "Opinion",
+      "Problem": "Problem",
+      "Complaint": "Complaint",
+      "Social": "Social",
+      "Greeting": "Greeting"
     }
   },
   "legal": {

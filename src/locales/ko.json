@@ -618,12 +618,14 @@
       "Reassuring": "안심"
     },
     "action": {
-      "Initiating": "대화 시작",
-      "Responding": "응답",
-      "Inquiry/Request": "질문/요청",
-      "Observation/Opinion": "관찰/의견",
-      "Problem/Complaint": "문제/불만",
-      "Social/Greeting": "인사/사교"
+      "Inquiry": "질문",
+      "Request": "요청",
+      "Observation": "관찰",
+      "Opinion": "의견",
+      "Problem": "문제",
+      "Complaint": "불만",
+      "Social": "사교",
+      "Greeting": "인사"
     }
   },
   "legal": {

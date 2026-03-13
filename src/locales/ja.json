@@ -618,12 +618,14 @@
       "Reassuring": "安心感"
     },
     "action": {
-      "Initiating": "会話開始",
-      "Responding": "応答",
-      "Inquiry/Request": "質問/依頼",
-      "Observation/Opinion": "観察/意見",
-      "Problem/Complaint": "問題/苦情",
-      "Social/Greeting": "挨拶/社交"
+      "Inquiry": "質問",
+      "Request": "依頼",
+      "Observation": "観察",
+      "Opinion": "意見",
+      "Problem": "問題",
+      "Complaint": "苦情",
+      "Social": "社交",
+      "Greeting": "挨拶"
     }
   },
   "legal": {

@@ -618,12 +618,14 @@
       "Reassuring": "Trấn an"
     },
     "action": {
-      "Initiating": "Bắt đầu hội thoại",
-      "Responding": "Phản hồi",
-      "Inquiry/Request": "Hỏi/Yêu cầu",
-      "Observation/Opinion": "Quan sát/Ý kiến",
-      "Problem/Complaint": "Vấn đề/Phàn nàn",
-      "Social/Greeting": "Xã giao/Chào hỏi"
+      "Inquiry": "Hỏi",
+      "Request": "Yêu cầu",
+      "Observation": "Quan sát",
+      "Opinion": "Ý kiến",
+      "Problem": "Vấn đề",
+      "Complaint": "Phàn nàn",
+      "Social": "Xã giao",
+      "Greeting": "Chào hỏi"
     }
   },
   "legal": {
