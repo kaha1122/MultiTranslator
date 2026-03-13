@@ -445,14 +445,36 @@ const LANG_NAMES_FOR_SCENE = {
     'fr': 'French', 'de': 'German', 'es': 'Spanish',
 };
 
+// ── 난이도별 상세 가이드라인 (CEFR 기반) ─────────────────────────────────────
 const DIFFICULTY_DESC = {
-    basic: 'beginner level — use only the most common, simple words and very short phrases',
-    intermediate: 'intermediate level — use natural everyday expressions and moderate vocabulary',
-    high: 'advanced level — use complex sentence structures, idiomatic expressions, and nuanced language',
+    basic: `Beginner (A1/A2)
+  - Vocabulary: Top 500 survival words only. Focus on nouns and simple verbs.
+  - Grammar: Simple Present/Past. Patterns like "Can I...?", "Where is...?", "Do you have...?"
+  - Length: 5–10 words.
+  - Goal: Direct communication of immediate needs.`,
+    intermediate: `Intermediate (B1/B2)
+  - Vocabulary: Common phrasal verbs and natural collocations.
+  - Grammar: Modals (Could/Would/Should), conjunctions (but, so, because), polite indirect openers.
+  - Length: 8–15 words.
+  - Goal: Providing context or reasons behind a request.`,
+    high: `Advanced (C1/C2)
+  - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated adjectives.
+  - Grammar: Conditionals (If/Unless), relative clauses, passive voice for extreme politeness, subtle negotiation.
+  - Length: 12–25 words.
+  - Goal: Handling social friction or complex requests with native-like nuance.`,
 };
+
+// ── 어투별 상세 가이드라인 ────────────────────────────────────────────────────
 const STYLE_DESC = {
-    casual: 'casual, informal tone — as if speaking to a close friend; use contractions and relaxed language',
-    formal: 'polite, formal tone — as if speaking to a stranger, staff, or superior; use respectful expressions',
+    casual: `Casual / Informal
+  - Used for peers, friends, or relaxed social settings.
+  - Use contractions (don't, I'm), friendly sentence endings, direct phrasing.
+  - Politeness: Use "Thanks" or "Can you...?" instead of heavy formal structures.
+  - NEVER start every sentence with "Excuse me" or "Please". Use them only when the request is intrusive.`,
+    formal: `Formal / Polite
+  - Used for strangers, elders, service staff, or professional environments.
+  - Use indirect questions ("I was wondering if..."), full verb forms, respectful honorifics.
+  - Politeness Strategy: Use "Please" and "Excuse me" STRATEGICALLY — not at the start of every sentence. Place "please" at the end or middle for variety. Use them only when a request is intrusive or heavy.`,
 };
 
 app.post('/api/scene-sentence', async (req, res) => {
@@ -469,32 +491,64 @@ app.post('/api/scene-sentence', async (req, res) => {
     const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    const avoidBlock = (avoidSentences && avoidSentences.length > 0)
-        ? `\nIMPORTANT — The learner has already practiced the following sentences. You MUST generate a sentence that is completely different in structure and vocabulary from ALL of these:\n${avoidSentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`
-        : '';
+    // 최근 10개는 명시적으로 나열, 나머지는 요약으로 전달
+    let avoidBlock = '';
+    if (avoidSentences && avoidSentences.length > 0) {
+        const recent = avoidSentences.slice(-10);
+        const olderCount = avoidSentences.length - recent.length;
+        avoidBlock = `\n### [Previous Sentences — STRICT EXCLUSION]
+The learner has already practiced ${avoidSentences.length} sentences. Do NOT reuse the same core verb, topic, or sentence structure as ANY of them.
+${olderCount > 0 ? `(${olderCount} older sentences omitted for brevity)\n` : ''}Recent sentences to explicitly avoid:
+${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
+    }
 
-    const prompt = `You are a language learning coach. Generate a single natural QUESTION sentence for a learner to practice speaking in a real-life context.
+    const prompt = `### [Role]
+You are a highly creative Language Learning Content Architect. Your mission is to generate a realistic, context-aware question that a learner would actually say in a specific micro-situation.
 
-Context:
+---
+
+### [Phase 1: Dynamic Situation Design]
+Before generating the sentence, you MUST first design a specific "Micro-Situation" within the given scene.
+- **Priority of Context**: Aim for specific "pain points" or realistic moments unique to "${scene}". (e.g., In an Airplane: seat reclining issues, requesting an arrival card, switching seats — NOT generic "Where is the restroom?")
+- **Reasonable Use of Basics**: You MAY use basic topics like "restroom" or "price" ONLY if the micro-situation makes it compelling (e.g., "I need a restroom with a baby changing table" instead of just "Where is the restroom?").
+- **Avoid Repetitive Logic**: Do not default to the easiest question. Think: "What is a realistic problem or moment a traveler or learner would face HERE?"
+
+---
+
+### [Phase 2: Difficulty Guidelines]
+${diffDesc}
+
+---
+
+### [Phase 3: Speech Style & Politeness]
+${styleDesc}
+
+---
+
+### [Input Variables]
 - Scene: ${scene}
-- Target language: ${targetLangName}
-- Learner's native language: ${sourceLangName}
-- Difficulty: ${diffDesc}
-- Speech style: ${styleDesc}
+- Target Language: ${targetLangName}
+- Learner's Native Language: ${sourceLangName}
 ${avoidBlock}
-Rules:
-1. The sentence must be a QUESTION the LEARNER asks (e.g., asking staff, locals, or a counterpart in the scene)
-2. Length: 8–18 words — short enough to practice in one breath
-3. Match the difficulty and speech style exactly
-4. The sentence must end with a question mark
+---
 
-Return ONLY valid JSON (no markdown):
+### [Strict Rules]
+1. **Speaker Identity**: The learner is always the SPEAKER asking a question.
+2. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
+3. **Anti-Duplication**: Do NOT use the same core verb, topic, or sentence structure as any Previous Sentence.
+4. **Natural Flow**: The sentence must sound like something a native speaker would actually say in 2024, not a textbook from the 1990s.
+5. **Sentence must end with a question mark.**
+
+---
+
+### [Return ONLY valid JSON (no markdown)]
 {
-  "sentence": "<sentence in ${targetLangName}>",
-  "translation": "<translation in ${sourceLangName}>",
-  "pronunciation": "<For zh-CN/zh: pinyin with tone marks (e.g. 'xǐ shǒu jiān'). For ja: hiragana reading (e.g. 'こんにちは'). For all other languages: empty string ''>",
-  "scene_hint": "<one sentence in ${sourceLangName} describing the exact moment — e.g., '수하물을 못 찾아 직원에게 말하는 상황'>",
-  "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
+  "internal_scenario_summary": "English description of the specific micro-situation you designed and WHY this question arises.",
+  "sentence": "The generated question in ${targetLangName}.",
+  "translation": "Natural translation in ${sourceLangName}.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
+  "scene_hint": "In ${sourceLangName}: a vivid, easy-to-understand description of the specific micro-situation so the learner knows exactly when and why to use this sentence.",
+  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain WHY this expression fits the ${styleDesc.split('\n')[0].trim()} style."
 }`;
 
     try {
@@ -502,12 +556,13 @@ Return ONLY valid JSON (no markdown):
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.8, topK: 64, topP: 0.95 },
+                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
             }
         );
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
         const parsed = JSON.parse(jsonStr);
+        // internal_scenario_summary는 Chain-of-Thought용 — 클라이언트에 전달하지 않아도 되지만 디버깅에 유용
         res.json(parsed);
     } catch (e) {
         console.error('[SceneSentence] Error:', e.response?.data || e.message);
@@ -534,33 +589,67 @@ app.post('/api/scene-answer', async (req, res) => {
     const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    const avoidBlock = (avoidSentences && avoidSentences.length > 0)
-        ? `\nIMPORTANT — The learner has already practiced the following reply sentences. You MUST generate a reply that is completely different in structure and vocabulary from ALL of these:\n${avoidSentences.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`
-        : '';
+    // 최근 10개는 명시적으로 나열, 나머지는 요약으로 전달
+    let avoidBlock = '';
+    if (avoidSentences && avoidSentences.length > 0) {
+        const recent = avoidSentences.slice(-10);
+        const olderCount = avoidSentences.length - recent.length;
+        avoidBlock = `\n### [Previous Reply Sentences — STRICT EXCLUSION]
+The learner has already practiced ${avoidSentences.length} reply sentences. Do NOT reuse the same core verb, topic, or sentence structure as ANY of them.
+${olderCount > 0 ? `(${olderCount} older sentences omitted for brevity)\n` : ''}Recent replies to explicitly avoid:
+${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
+    }
 
-    const prompt = `You are a language learning coach. A learner just practiced saying a question in ${targetLangName}. Now generate a natural REPLY that the other person would say in response.
+    const prompt = `### [Role]
+You are a highly creative Language Learning Content Architect. The learner just practiced asking a question. Now generate the most natural, context-appropriate REPLY that the other person (staff, local, friend, etc.) would give.
 
-Context:
+---
+
+### [Phase 1: Reply Situation Design]
+The learner asked: "${question}" in the scene "${scene}".
+- **Think about WHO is replying**: a waiter? a flight attendant? a friend? a receptionist? The reply must match that person's role and knowledge.
+- **Be Specific**: Don't give a generic "Sure!" or "Yes, of course." — give a reply that contains USEFUL INFORMATION the learner can learn from (directions, explanations, alternatives, confirmations with details).
+- **Stay in Character**: The replying person should sound authentic to their role in this scene.
+
+---
+
+### [Phase 2: Difficulty Guidelines — Apply to the REPLY]
+${diffDesc}
+
+---
+
+### [Phase 3: Speech Style & Politeness — Apply to the REPLY]
+The reply should match the same register as the question:
+${styleDesc}
+
+---
+
+### [Input Variables]
 - Scene: ${scene}
-- Question the learner said: "${question}"
-- Target language: ${targetLangName}
-- Learner's native language: ${sourceLangName}
-- Difficulty: ${diffDesc}
-- Speech style: ${styleDesc}
+- Question the learner asked: "${question}"
+- Target Language: ${targetLangName}
+- Learner's Native Language: ${sourceLangName}
 ${avoidBlock}
-Rules:
-1. The sentence must be the OTHER PERSON'S natural reply to the question above
-2. Length: 8–18 words — short enough to practice in one breath
-3. Match the difficulty and speech style exactly
-4. Make the reply directly relevant to the question asked
+---
 
-Return ONLY valid JSON (no markdown):
+### [Strict Rules]
+1. **Speaker Identity**: The OTHER PERSON is speaking — NOT the learner. This is the reply to the learner's question.
+2. **Relevance**: The reply must DIRECTLY answer or respond to the specific question asked. Do not give an unrelated response.
+3. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
+4. **Anti-Duplication**: Do NOT reuse the same core verb, topic, or sentence structure as any Previous Reply Sentence.
+5. **Natural Flow**: The reply must sound like what a real person would actually say in this situation in 2024.
+6. **Informative**: Include useful details — a location, a time, a price, a suggestion — not just "yes" or "no".
+
+---
+
+### [Return ONLY valid JSON (no markdown)]
 {
-  "sentence": "<reply sentence in ${targetLangName}>",
-  "translation": "<translation in ${sourceLangName}>",
-  "pronunciation": "<For zh-CN/zh: pinyin with tone marks (e.g. 'xǐ shǒu jiān'). For ja: hiragana reading (e.g. 'こんにちは'). For all other languages: empty string ''>",
-  "scene_hint": "<one sentence in ${sourceLangName} describing who is speaking and what they mean>",
-  "learning_tip": "<one pronunciation or expression tip in ${sourceLangName}>"
+  "internal_scenario_summary": "English description: who is replying, what information they are giving, and why this is a natural response to the question.",
+  "sentence": "The generated reply in ${targetLangName}.",
+  "translation": "Natural translation in ${sourceLangName}.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
+  "scene_hint": "In ${sourceLangName}: describe who is speaking (e.g., flight attendant, waiter) and what they are telling the learner — so the learner understands the conversation flow.",
+  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this reply. Explain WHY this response style fits the situation."
 }`;
 
     try {
@@ -568,7 +657,7 @@ Return ONLY valid JSON (no markdown):
             `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.8, topK: 64, topP: 0.95 },
+                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
             }
         );
         const raw = response.data.candidates[0].content.parts[0].text;
