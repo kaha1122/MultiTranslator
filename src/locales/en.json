@@ -302,8 +302,9 @@
     "settingsLabel": "Daily",
     "settingsUnit": "Cards",
     "counterUnit": "Card",
-    "bookmarkPromptTitle": "Goal Reached! Save this card?",
-    "bookmarkPromptDesc": "Save this sentence to your library and it will count toward today's learning goal.",
+    "bookmarkPromptTitle": "Goal Reached!",
+    "bookmarkPromptDesc": "Tap the ⭐ button to save this sentence to your library. It will count toward today's learning goal.",
+    "bookmarkConfirm": "OK",
     "bookmarkNow": "Bookmark Now",
     "bookmarkLater": "Later"
   },

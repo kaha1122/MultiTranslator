@@ -302,8 +302,9 @@
     "settingsLabel": "Par jour",
     "settingsUnit": "fiches",
     "counterUnit": "fiche",
-    "bookmarkPromptTitle": "Objectif atteint ! Sauvegarder ?",
-    "bookmarkPromptDesc": "Enregistrez cette phrase dans votre bibliothèque pour qu'elle compte dans votre objectif du jour.",
+    "bookmarkPromptTitle": "Objectif atteint !",
+    "bookmarkPromptDesc": "Appuyez sur le bouton ⭐ pour enregistrer cette phrase dans votre bibliothèque. Elle comptera dans votre objectif du jour.",
+    "bookmarkConfirm": "OK",
     "bookmarkNow": "Mettre en favori",
     "bookmarkLater": "Plus tard"
   },

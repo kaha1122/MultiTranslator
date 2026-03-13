@@ -302,8 +302,9 @@
     "settingsLabel": "Täglich",
     "settingsUnit": "Karten",
     "counterUnit": "Karte",
-    "bookmarkPromptTitle": "Ziel erreicht! Karte speichern?",
-    "bookmarkPromptDesc": "Speichere diesen Satz in deiner Bibliothek, damit er als heutiger Lernfortschritt zählt.",
+    "bookmarkPromptTitle": "Ziel erreicht!",
+    "bookmarkPromptDesc": "Tippe auf den ⭐-Button, um diesen Satz in deiner Bibliothek zu speichern. Er zählt als heutiger Lernfortschritt.",
+    "bookmarkConfirm": "OK",
     "bookmarkNow": "Jetzt speichern",
     "bookmarkLater": "Später"
   },

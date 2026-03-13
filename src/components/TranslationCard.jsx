@@ -231,8 +231,8 @@ Return only these 2 lines.`;
                     // Translation 탭 — 이미 저장된 카드: docId 기반으로 바로 카운트
                     onTargetAchieved?.(`library-${savedCardId}`);
                 } else if (!isSaved) {
-                    // 비Library 미저장: 북마크 유도 팝업 → 저장 시 카운트
-                    onBookmarkPrompt?.(score, () => { playStarSound(); onSave?.(); });
+                    // 비Library 미저장: 북마크 안내 팝업 표시
+                    onBookmarkPrompt?.(score);
                 }
             } else {
                 playAlertSound();

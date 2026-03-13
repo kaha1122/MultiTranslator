@@ -302,8 +302,9 @@
     "settingsLabel": "每日",
     "settingsUnit": "张",
     "counterUnit": "张",
-    "bookmarkPromptTitle": "达到目标分数！要保存吗？",
-    "bookmarkPromptDesc": "将这个句子保存到库中，即可记录为今天的学习卡片。",
+    "bookmarkPromptTitle": "达到目标分数！",
+    "bookmarkPromptDesc": "点击 ⭐ 按钮将这个句子保存到库中，即可记录为今天的学习卡片。",
+    "bookmarkConfirm": "确认",
     "bookmarkNow": "立即收藏",
     "bookmarkLater": "稍后再说"
   },

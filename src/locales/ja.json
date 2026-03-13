@@ -302,8 +302,9 @@
     "settingsLabel": "1日",
     "settingsUnit": "枚",
     "counterUnit": "枚",
-    "bookmarkPromptTitle": "目標スコア達成！保存しますか？",
-    "bookmarkPromptDesc": "このフレーズをライブラリに保存すると、今日の学習カードとして記録されます。",
+    "bookmarkPromptTitle": "目標スコア達成！",
+    "bookmarkPromptDesc": "⭐ ボタンを押してこのフレーズをライブラリに保存してください。今日の学習カードとして記録されます。",
+    "bookmarkConfirm": "OK",
     "bookmarkNow": "ブックマークする",
     "bookmarkLater": "あとで"
   },

@@ -302,8 +302,9 @@
     "settingsLabel": "Diario",
     "settingsUnit": "tarjetas",
     "counterUnit": "tarjeta",
-    "bookmarkPromptTitle": "¡Meta alcanzada! ¿Guardar esta tarjeta?",
-    "bookmarkPromptDesc": "Guarda esta frase en tu biblioteca para que cuente en tu progreso de hoy.",
+    "bookmarkPromptTitle": "¡Meta alcanzada!",
+    "bookmarkPromptDesc": "Toca el botón ⭐ para guardar esta frase en tu biblioteca. Contará en tu progreso de hoy.",
+    "bookmarkConfirm": "OK",
     "bookmarkNow": "Marcar ahora",
     "bookmarkLater": "Más tarde"
   },

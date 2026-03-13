@@ -41,6 +41,7 @@ import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
+import { playSuccessSound } from './utils/soundEffects';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -201,18 +202,11 @@ function App() {
     if (wasNew) setShowProgressPopup(true);
   };
 
-  // 비Library 탭에서 목표 달성 시 — 북마크 유도 팝업 표시
-  const handleBookmarkPrompt = useCallback((score, saveFn) => {
-    setBookmarkPrompt({ score, saveFn });
+  // 비Library 탭에서 목표 달성 시 — 북마크 안내 팝업 표시 + 음향효과
+  const handleBookmarkPrompt = useCallback((score) => {
+    playSuccessSound();
+    setBookmarkPrompt({ score });
   }, []);
-
-  // 팝업에서 "북마크하기" 클릭 → 저장 실행 (저장 함수 내부에서 카운트)
-  const handleBookmarkConfirm = async () => {
-    if (!bookmarkPrompt?.saveFn) return;
-    const { saveFn } = bookmarkPrompt;
-    setBookmarkPrompt(null);
-    await saveFn();
-  };
 
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
@@ -2196,7 +2190,6 @@ function App() {
       {bookmarkPrompt && (
         <BookmarkPromptModal
           score={bookmarkPrompt.score}
-          onBookmark={handleBookmarkConfirm}
           onDismiss={() => setBookmarkPrompt(null)}
           sourceLang={sourceLang}
         />
