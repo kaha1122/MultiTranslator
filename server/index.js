@@ -492,24 +492,81 @@ const LANG_NAMES_FOR_SCENE = {
     'fr': 'French', 'de': 'German', 'es': 'Spanish',
 };
 
-// ── 난이도별 상세 가이드라인 (CEFR 기반) ─────────────────────────────────────
-const DIFFICULTY_DESC = {
-    basic: `Beginner (A1/A2)
-  - Vocabulary: Top 500 high-frequency words only. Simple nouns, verbs, adjectives.
-  - Grammar: Simple present/past tense. One clause per sentence. No subordinate clauses.
-  - Length: 5–10 words.
-  - Goal: Express immediate needs in the simplest form possible.`,
-    intermediate: `Intermediate (B1/B2)
-  - Vocabulary: Common phrasal verbs, collocations, everyday idioms.
-  - Grammar: Compound sentences with conjunctions (but, so, because). Modals for politeness. Up to 2 clauses per sentence.
-  - Length: 8–15 words.
-  - Goal: Express opinions, reasons, and polite requests with context.`,
-    high: `Advanced (C1/C2)
-  - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated adjectives.
-  - Grammar: Complex sentences with 3+ clauses. Conditionals, relative clauses, passive voice, subjunctive mood.
-  - Length: 12–25 words.
-  - Goal: Handle nuanced social situations with native-level fluency.`,
+// ── 언어별 문법/어휘 특성 가이드 ─────────────────────────────────────────────
+const LANG_SPECIFIC_GUIDE = {
+    'en': {
+        basic:  'Use simple SVO sentences. No phrasal verbs or idioms.',
+        inter:  'Use phrasal verbs (e.g., "run into", "figure out"), modals (could/would) for politeness, and common collocations.',
+        adv:    'Use conditionals, relative clauses, passive voice, and subtle idioms.',
+        unit:   'words',
+    },
+    'ja': {
+        basic:  'Use です/ます form only. Simple SOV structure. No compound particles.',
+        inter:  'Use て-form connectors, たり…たり, ～けど/～から for compound sentences. Use 敬語 basics (～ていただけますか).',
+        adv:    'Use 謙譲語/尊敬語, complex て-form chains, ～ものの/～にもかかわらず, and nuanced sentence-ending particles.',
+        unit:   '文節 (bunsetsu)',
+    },
+    'zh-CN': {
+        basic:  'Use simple SVO with 是/有/在. No 把/被 constructions or chengyu.',
+        inter:  'Use 因为…所以, 虽然…但是, 把-construction, and common 成语. Modal verbs like 应该/可以 for politeness.',
+        adv:    'Use 被-passive, 把-disposal, complex 连…都/也, literary 成语, and formal written expressions.',
+        unit:   'characters/words',
+    },
+    'ko': {
+        basic:  'Use 해요체 only. Simple SOV structure. Basic particles (은/는, 이/가, 을/를).',
+        inter:  'Use -지만, -니까, -면 connectors. Appropriate 존댓말 levels. Common 관용구 (e.g., 발이 넓다).',
+        adv:    'Use 격식체/비격식체 register pairs, complex connectors (-음에도 불구하고), 사자성어, and indirect speech (-다고 하다).',
+        unit:   '어절',
+    },
+    'vi': {
+        basic:  'Use simple SVO. Basic classifier-noun pairs (một cái, một con). No complex tense markers.',
+        inter:  'Use conjunctions (nhưng, vì…nên, nếu…thì). Appropriate personal pronouns for social context (anh/chị/em).',
+        adv:    'Use formal registers, proverbs (tục ngữ), Sino-Vietnamese compounds (한자어), and nuanced modal particles (ạ, nhé, đi).',
+        unit:   'words',
+    },
+    'fr': {
+        basic:  'Use présent/passé composé only. Simple SVO. No subjunctive.',
+        inter:  'Use imparfait vs passé composé distinction, pronoms compléments (y, en), and common expressions idiomatiques.',
+        adv:    'Use subjonctif, conditionnel passé, relative clauses with dont/lequel, and literary expressions.',
+        unit:   'words',
+    },
+    'de': {
+        basic:  'Use Präsens only. Main clause word order (SVO). No Nebensätze.',
+        inter:  'Use trennbare Verben (separable verbs), Nebensätze with weil/dass/ob, and Konjunktiv II for politeness (könnte/würde).',
+        adv:    'Use Konjunktiv I (reported speech), complex Relativsätze, Passiv, and idiomatic Redewendungen.',
+        unit:   'words',
+    },
+    'es': {
+        basic:  'Use presente/pretérito perfecto only. Simple SVO. No subjuntivo.',
+        inter:  'Use pretérito vs imperfecto distinction, pronombres de objeto, and common modismos (e.g., "echar de menos").',
+        adv:    'Use subjuntivo in all tenses, condicional compuesto, relative clauses with cuyo, and culturally rich refranes.',
+        unit:   'words',
+    },
 };
+
+// ── 난이도별 상세 가이드라인 (CEFR 기반) ─────────────────────────────────────
+function getDifficultyDesc(level, langCode) {
+    const guide = LANG_SPECIFIC_GUIDE[langCode] || LANG_SPECIFIC_GUIDE['en'];
+    const unit = guide.unit || 'words';
+    const descs = {
+        basic: `Beginner (A1/A2)
+  - Vocabulary: Top 500 high-frequency words only. Simple nouns, verbs, adjectives.
+  - Grammar: ${guide.basic} One clause per sentence. No subordinate clauses.
+  - Length: 3–8 ${unit}.
+  - Goal: Express immediate needs in the simplest form possible.`,
+        intermediate: `Intermediate (B1/B2)
+  - Vocabulary: Common collocations, everyday idioms, and expressions natural to ${LANG_NAMES_FOR_SCENE[langCode] || 'the target language'}.
+  - Grammar: ${guide.inter} Up to 2 clauses per sentence.
+  - Length: 5–12 ${unit}.
+  - Goal: Express opinions, reasons, and polite requests with context.`,
+        high: `Advanced (C1/C2)
+  - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated expressions.
+  - Grammar: ${guide.adv} Complex sentences with 3+ clauses.
+  - Length: 8–20 ${unit}.
+  - Goal: Handle nuanced social situations with native-level fluency.`,
+    };
+    return descs[level] || descs.intermediate;
+}
 
 // ── 어투별 상세 가이드라인 ────────────────────────────────────────────────────
 const STYLE_DESC = {
@@ -532,7 +589,7 @@ app.post('/api/scene-sentence', async (req, res) => {
 
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
-    const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
+    const diffDesc = getDifficultyDesc(difficulty, targetLang);
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
     // 최근 10개는 명시적으로 나열, 나머지는 요약으로 전달
@@ -643,7 +700,7 @@ app.post('/api/scene-answer', async (req, res) => {
 
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
-    const diffDesc = DIFFICULTY_DESC[difficulty] || DIFFICULTY_DESC.intermediate;
+    const diffDesc = getDifficultyDesc(difficulty, targetLang);
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
     // 최근 10개는 명시적으로 나열, 나머지는 요약으로 전달
@@ -979,22 +1036,28 @@ app.post('/api/vocab-words', async (req, res) => {
     const targetLangName = LANG_NAMES_FOR_SCENE[targetLang] || 'English';
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
 
+    const guide = LANG_SPECIFIC_GUIDE[targetLang] || LANG_SPECIFIC_GUIDE['en'];
+    const unit = guide.unit || 'words';
+    const langName = LANG_NAMES_FOR_SCENE[targetLang] || 'the target language';
     const levelDesc = {
         basic: `Beginner (A1/A2)
-  - Single words or 2-word phrases only (no idioms or phrasal verbs).
-  - Top 500 high-frequency words tied to the topic.
+  - Single words or 2-word phrases only. No idioms or advanced expressions.
+  - Top 500 high-frequency words tied to the topic in ${langName}.
   - Concrete nouns, basic verbs, simple adjectives that a complete beginner needs first.
-  - Example sentences: one clause, simple present/past, 5–8 words.`,
+  - ${guide.basic}
+  - Example sentences: one clause, 3–8 ${unit}.`,
         intermediate: `Intermediate (B1/B2)
-  - Mix of single words, phrasal verbs, collocations, and common idioms.
-  - Vocabulary that adds nuance to daily conversations (e.g., "run into" vs "meet", "it depends on" vs "maybe").
+  - Mix of single words, collocations, common idioms, and fixed expressions natural to ${langName}.
+  - Vocabulary that adds nuance to daily conversations — include expressions unique to ${langName} that have no direct equivalent in other languages.
   - Include emotion/situation adjectives and practical fixed expressions.
-  - Example sentences: compound sentences with conjunctions, 8–12 words.`,
+  - ${guide.inter}
+  - Example sentences: compound sentences, 5–12 ${unit}.`,
         advanced: `Advanced (C1/C2)
-  - Sophisticated idioms, proverbs, slang, domain-specific terms, and multi-word expressions.
-  - Nuanced synonyms that native speakers prefer over textbook equivalents.
+  - Sophisticated idioms, proverbs, slang, domain-specific terms, and multi-word expressions in ${langName}.
+  - Nuanced synonyms that native ${langName} speakers prefer over textbook equivalents.
   - Include culturally rich expressions, subtle connotation differences, and formal/informal register pairs.
-  - Example sentences: complex sentences with 2+ clauses, 12–20 words.`,
+  - ${guide.adv}
+  - Example sentences: complex sentences with 2+ clauses, 8–20 ${unit}.`,
     }[level] || 'intermediate level';
 
     const avoidBlock = (avoidWords && avoidWords.length > 0)
@@ -1012,7 +1075,7 @@ ${avoidBlock}
 Generate exactly 5 vocabulary items related to this topic.
 
 Rules:
-1. **Variety of form**: Mix different types — single words, phrasal verbs, collocations, idioms, or fixed expressions — as appropriate for the level. Do NOT generate 5 simple single words unless the level is Beginner.
+1. **Variety of form**: Mix different types — single words, collocations, idioms, fixed expressions, and forms natural to ${targetLangName} — as appropriate for the level. Do NOT generate 5 simple single words unless the level is Beginner.
 2. **Topic relevance**: Every item must be highly relevant and practically useful for the given topic and category.
 3. **Level compliance**: Strictly match the vocabulary complexity and example sentence structure defined in the Level guidelines above.
 4. **Anti-duplication**: Do NOT repeat any word from the exclusion list above.
