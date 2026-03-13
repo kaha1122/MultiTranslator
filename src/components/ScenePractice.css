@@ -395,6 +395,18 @@
     line-height: 1.4;
 }
 
+.scene-emotion-tag {
+    flex-shrink: 0;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #7c3aed;
+    background: #ede9fe;
+    padding: 2px 8px;
+    border-radius: 12px;
+    white-space: nowrap;
+    align-self: center;
+}
+
 .scene-card-sentence {
     font-size: 1.2rem;
     font-weight: 700;

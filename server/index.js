@@ -503,15 +503,19 @@ ${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
     }
 
     const prompt = `### [Role]
-You are a highly creative Language Learning Content Architect. Your mission is to generate a realistic, context-aware question that a learner would actually say in a specific micro-situation.
+You are a highly creative Language Learning Content Architect. Your mission is to generate a realistic sentence (Question, Statement, or Request) that a learner uses to **INITIATE** a conversation in a specific micro-situation.
 
 ---
 
-### [Phase 1: Dynamic Situation Design]
-Before generating the sentence, you MUST first design a specific "Micro-Situation" within the given scene.
-- **Priority of Context**: Aim for specific "pain points" or realistic moments unique to "${scene}". (e.g., In an Airplane: seat reclining issues, requesting an arrival card, switching seats — NOT generic "Where is the restroom?")
-- **Reasonable Use of Basics**: You MAY use basic topics like "restroom" or "price" ONLY if the micro-situation makes it compelling (e.g., "I need a restroom with a baby changing table" instead of just "Where is the restroom?").
-- **Avoid Repetitive Logic**: Do not default to the easiest question. Think: "What is a realistic problem or moment a traveler or learner would face HERE?"
+### [Phase 1: AI-Driven Scenario & Emotion Design]
+Before generating the sentence, you MUST autonomously design the emotional context:
+1. **Select an Emotion**: Choose ONE appropriate emotion for "${scene}" from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous. **Vary your choice — do NOT pick the same emotion every time.**
+2. **Design the Micro-Situation**: Aim for specific "pain points" or realistic moments unique to "${scene}". Avoid generic scenarios like "Where is the restroom?" — instead think of compelling, scene-specific moments.
+3. **Choose an Action Type** (one of):
+   - **Inquiry/Request**: Asking for help or information.
+   - **Observation/Opinion**: Commenting on the situation.
+   - **Problem/Complaint**: Addressing an issue or dissatisfaction.
+   - **Social/Greeting**: Opening with a friendly or polite remark.
 
 ---
 
@@ -522,6 +526,7 @@ ${diffDesc}
 
 ### [Phase 3: Speech Style & Politeness]
 ${styleDesc}
+- **Emotion Integration**: Let the chosen emotion naturally color the tone. If 'Urgent', the phrasing should feel pressing. If 'Hesitant', use softer openers. If 'Frustrated', let mild impatience show through word choice.
 
 ---
 
@@ -533,22 +538,24 @@ ${avoidBlock}
 ---
 
 ### [Strict Rules]
-1. **Speaker Identity**: The learner is always the SPEAKER asking a question.
-2. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
+1. **Proactive Initiation**: The learner is always the one speaking FIRST. No passive "Yes/No" answers.
+2. **AI Emotion Choice**: You must pick a varied emotion that fits the scene to ensure diversity.
 3. **Anti-Duplication**: Do NOT use the same core verb, topic, or sentence structure as any Previous Sentence.
-4. **Natural Flow**: The sentence must sound like something a native speaker would actually say in 2024, not a textbook from the 1990s.
-5. **Sentence must end with a question mark.**
+4. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
+5. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
 
 ---
 
 ### [Return ONLY valid JSON (no markdown)]
 {
-  "internal_scenario_summary": "English description of the specific micro-situation you designed and WHY this question arises.",
-  "sentence": "The generated question in ${targetLangName}.",
+  "selected_emotion": "The emotion you chose (e.g., Frustrated, Curious, Hesitant).",
+  "interaction_type": "Initiating",
+  "internal_scenario_summary": "English description of the chosen emotion, action type, and the specific micro-situation.",
+  "sentence": "The generated opening sentence in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
   "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
-  "scene_hint": "In ${sourceLangName}: a vivid, easy-to-understand description of the specific micro-situation so the learner knows exactly when and why to use this sentence.",
-  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain WHY this expression fits the ${styleDesc.split('\n')[0].trim()} style."
+  "scene_hint": "In ${sourceLangName}: a vivid description of the micro-situation AND the chosen emotion state (e.g., '비행기가 너무 추워서 담요를 요청하려는 상황 [😰 Hesitant]').",
+  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
 
     try {
@@ -571,14 +578,14 @@ ${avoidBlock}
 });
 
 /**
- * Scene Answer Generation
+ * Scene Response Generation
  * POST /api/scene-answer
- * Body: { question, scene, targetLang, sourceLang, byokGeminiKey? }
+ * Body: { question (initiation sentence), scene, targetLang, sourceLang, byokGeminiKey? }
  */
 app.post('/api/scene-answer', async (req, res) => {
     const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
-        return res.status(400).json({ error: 'Missing question or targetLang' });
+        return res.status(400).json({ error: 'Missing initiation sentence or targetLang' });
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
@@ -601,55 +608,60 @@ ${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
     }
 
     const prompt = `### [Role]
-You are a highly creative Language Learning Content Architect. The learner just practiced asking a question. Now generate the most natural, context-appropriate REPLY that the other person (staff, local, friend, etc.) would give.
+You are a highly creative Language Learning Content Architect. The learner just practiced saying an opening sentence (a question, statement, request, or observation). Now generate the most natural, context-appropriate RESPONSE that the other person would give.
 
 ---
 
-### [Phase 1: Reply Situation Design]
-The learner asked: "${question}" in the scene "${scene}".
-- **Think about WHO is replying**: a waiter? a flight attendant? a friend? a receptionist? The reply must match that person's role and knowledge.
-- **Be Specific**: Don't give a generic "Sure!" or "Yes, of course." — give a reply that contains USEFUL INFORMATION the learner can learn from (directions, explanations, alternatives, confirmations with details).
-- **Stay in Character**: The replying person should sound authentic to their role in this scene.
+### [Phase 1: Response Situation Design]
+The learner said: "${question}" in the scene "${scene}".
+- **Identify the Initiation Type**: Is the learner asking a question? Making a complaint? Sharing an observation? Greeting someone? Your response must match the type.
+- **Think about WHO is responding**: a waiter? a flight attendant? a friend? a receptionist? a stranger? The response must match that person's role, knowledge, and emotional tone.
+- **Select a Response Emotion**: Choose an appropriate emotion for the responder (e.g., Helpful, Sympathetic, Apologetic, Cheerful, Professional, Reassuring, Surprised). This should naturally complement the learner's tone.
+- **Be Specific & Informative**: Don't give a generic "Sure!" or "Yes, of course." — give a response that contains USEFUL INFORMATION (directions, explanations, alternatives, empathy, confirmations with details).
+- **Stay in Character**: The responding person should sound authentic to their role in this scene.
 
 ---
 
-### [Phase 2: Difficulty Guidelines — Apply to the REPLY]
+### [Phase 2: Difficulty Guidelines — Apply to the RESPONSE]
 ${diffDesc}
 
 ---
 
-### [Phase 3: Speech Style & Politeness — Apply to the REPLY]
-The reply should match the same register as the question:
+### [Phase 3: Speech Style & Politeness — Apply to the RESPONSE]
+The response should match the same register as the learner's initiation:
 ${styleDesc}
+- **Emotion Integration**: Let the responder's emotion naturally shape the tone. A Helpful flight attendant sounds different from an Apologetic waiter.
 
 ---
 
 ### [Input Variables]
 - Scene: ${scene}
-- Question the learner asked: "${question}"
+- Learner's initiation sentence: "${question}"
 - Target Language: ${targetLangName}
 - Learner's Native Language: ${sourceLangName}
 ${avoidBlock}
 ---
 
 ### [Strict Rules]
-1. **Speaker Identity**: The OTHER PERSON is speaking — NOT the learner. This is the reply to the learner's question.
-2. **Relevance**: The reply must DIRECTLY answer or respond to the specific question asked. Do not give an unrelated response.
+1. **Speaker Identity**: The OTHER PERSON is speaking — NOT the learner. This is the response to the learner's initiation.
+2. **Relevance**: The response must DIRECTLY address the learner's sentence. If it was a question, answer it. If a complaint, acknowledge it. If a greeting, respond warmly.
 3. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
 4. **Anti-Duplication**: Do NOT reuse the same core verb, topic, or sentence structure as any Previous Reply Sentence.
-5. **Natural Flow**: The reply must sound like what a real person would actually say in this situation in 2024.
-6. **Informative**: Include useful details — a location, a time, a price, a suggestion — not just "yes" or "no".
+5. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
+6. **Informative**: Include useful details — a location, a time, a price, a suggestion, empathy — not just "yes" or "no".
 
 ---
 
 ### [Return ONLY valid JSON (no markdown)]
 {
-  "internal_scenario_summary": "English description: who is replying, what information they are giving, and why this is a natural response to the question.",
-  "sentence": "The generated reply in ${targetLangName}.",
+  "selected_emotion": "The responder's emotion (e.g., Helpful, Apologetic, Reassuring).",
+  "interaction_type": "Responding",
+  "internal_scenario_summary": "English description: who is responding, their emotion, what information they are giving, and why this is a natural response.",
+  "sentence": "The generated response in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
   "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
-  "scene_hint": "In ${sourceLangName}: describe who is speaking (e.g., flight attendant, waiter) and what they are telling the learner — so the learner understands the conversation flow.",
-  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this reply. Explain WHY this response style fits the situation."
+  "scene_hint": "In ${sourceLangName}: describe who is speaking (role), their emotion, and what they are telling the learner (e.g., '승무원이 친절하게(Helpful) 담요를 가져다주겠다고 안내하는 상황 [😊 Helpful]').",
+  "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
 
     try {

@@ -94,6 +94,9 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                     <div className="scene-card-hint">
                         <span className="scene-card-hint-icon">🎬</span>
                         <p>{generated.scene_hint}</p>
+                        {generated.selected_emotion && (
+                            <span className="scene-emotion-tag">{generated.selected_emotion}</span>
+                        )}
                     </div>
                     <button
                         className="speak-button"
