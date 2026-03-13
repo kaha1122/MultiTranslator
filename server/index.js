@@ -980,9 +980,21 @@ app.post('/api/vocab-words', async (req, res) => {
     const sourceLangName = LANG_NAMES_FOR_SCENE[sourceLang] || 'Korean';
 
     const levelDesc = {
-        basic: 'beginner level — most common, everyday words that a complete beginner should learn first',
-        intermediate: 'intermediate level — useful vocabulary for daily conversations and practical situations',
-        advanced: 'advanced level — sophisticated, nuanced, or specialized vocabulary for fluent expression',
+        basic: `Beginner (A1/A2)
+  - Single words or 2-word phrases only (no idioms or phrasal verbs).
+  - Top 500 high-frequency words tied to the topic.
+  - Concrete nouns, basic verbs, simple adjectives that a complete beginner needs first.
+  - Example sentences: one clause, simple present/past, 5–8 words.`,
+        intermediate: `Intermediate (B1/B2)
+  - Mix of single words, phrasal verbs, collocations, and common idioms.
+  - Vocabulary that adds nuance to daily conversations (e.g., "run into" vs "meet", "it depends on" vs "maybe").
+  - Include emotion/situation adjectives and practical fixed expressions.
+  - Example sentences: compound sentences with conjunctions, 8–12 words.`,
+        advanced: `Advanced (C1/C2)
+  - Sophisticated idioms, proverbs, slang, domain-specific terms, and multi-word expressions.
+  - Nuanced synonyms that native speakers prefer over textbook equivalents.
+  - Include culturally rich expressions, subtle connotation differences, and formal/informal register pairs.
+  - Example sentences: complex sentences with 2+ clauses, 12–20 words.`,
     }[level] || 'intermediate level';
 
     const avoidBlock = (avoidWords && avoidWords.length > 0)
@@ -997,14 +1009,16 @@ Context:
 - Learner's native language: ${sourceLangName}
 - Level: ${levelDesc}
 ${avoidBlock}
-Generate exactly 5 vocabulary words/phrases related to this topic.
+Generate exactly 5 vocabulary items related to this topic.
 
 Rules:
-1. Each word must be practical and commonly used in real life for this topic
-2. Match the difficulty level exactly
-3. Include a clear, concise meaning and one natural example sentence
-4. For zh-CN: include pinyin. For ja: include hiragana reading. For others: include romanization if applicable
-5. All meanings, tips, and example translations must be in ${sourceLangName}
+1. **Variety of form**: Mix different types — single words, phrasal verbs, collocations, idioms, or fixed expressions — as appropriate for the level. Do NOT generate 5 simple single words unless the level is Beginner.
+2. **Topic relevance**: Every item must be highly relevant and practically useful for the given topic and category.
+3. **Level compliance**: Strictly match the vocabulary complexity and example sentence structure defined in the Level guidelines above.
+4. **Anti-duplication**: Do NOT repeat any word from the exclusion list above.
+5. **Natural examples**: Each example sentence must show the word/phrase used in a realistic, contextually rich situation — not a generic textbook sentence.
+6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For others: include romanization if applicable.
+7. All meanings, tips, and example translations must be in ${sourceLangName}.
 
 Return ONLY valid JSON (no markdown):
 {
