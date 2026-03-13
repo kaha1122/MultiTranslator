@@ -1449,13 +1449,20 @@ function App() {
                   );
                 })}
               </div>
-              <input
-                type="text"
-                value={inputText}
-                onChange={(e) => setInputText(e.target.value)}
-                placeholder="Enter text to translate..."
-                className="text-input"
-              />
+              <div className="text-input-wrapper">
+                <input
+                  type="text"
+                  value={inputText}
+                  onChange={(e) => setInputText(e.target.value)}
+                  placeholder="Enter text to translate"
+                  className="text-input"
+                />
+                {inputText && (
+                  <button className="text-input-clear" onClick={() => setInputText('')} aria-label="Clear">
+                    &times;
+                  </button>
+                )}
+              </div>
               <div className="translate-btn-container">
                 <button
                   className="translate-btn"
