@@ -316,6 +316,10 @@
     border-radius: 8px;
 }
 
+.scene-card-scroll-anchor {
+    scroll-margin-top: 80px;
+}
+
 /* ── 생성 카드 ────────────────────────────────────────────────── */
 
 /* library-card-wrapper 안에서는 scene-card 자체의 그림자·하단 radius 제거 (툴바와 일체형) */

@@ -575,7 +575,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             {/* 질문 카드 */}
             {generated && (
-                <div ref={questionCardRef}>
+                <div ref={questionCardRef} className="scene-card-scroll-anchor">
                 <ScenePracticeCard
                     generated={generated}
                     langCode={selectedLang}
@@ -593,7 +593,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
 
             {/* 답변 카드 */}
             {generatedAnswer && (
-                <div ref={answerCardRef}>
+                <div ref={answerCardRef} className="scene-card-scroll-anchor">
                 <ScenePracticeCard
                     generated={generatedAnswer}
                     langCode={selectedLang}
