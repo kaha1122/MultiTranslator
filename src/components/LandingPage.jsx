@@ -278,9 +278,15 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         <h2 className="lp-hero-main">{c.hero2Main}</h2>
         <p className="lp-hero-sub">{c.hero2Sub}</p>
         <div className="lp-hero-brand">
-          <img src="/logo_circle.png" alt="PronunFit" className="lp-hero-brand-icon" />
-          <span className="lp-hero-brand-name">PronunFit</span>
-          <span className="lp-hero-brand-tag">AI Pronunciation Coach</span>
+          <div className="lp-hero-brand-row">
+            <img src="/logo_circle.png" alt="PronunFit" className="lp-hero-brand-icon" />
+            <span className="lp-hero-brand-name">
+              {'PronunFit'.split('').map((ch, i) => (
+                <span key={i} className="lp-brand-letter" style={{ animationDelay: `${0.6 + i * 0.08}s` }}>{ch}</span>
+              ))}
+            </span>
+          </div>
+          <span className="lp-hero-brand-tag">AI Era!! New Smart Function Cards</span>
         </div>
       </section>
 
