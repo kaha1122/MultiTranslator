@@ -234,6 +234,19 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
     const questionCardRef = useRef(null);
     const answerCardRef = useRef(null);
 
+    // 카드 생성 후 DOM이 확실히 렌더된 시점에 중앙 스크롤
+    const [scrollTarget, setScrollTarget] = useState(null);
+    useEffect(() => {
+        if (!scrollTarget) return;
+        const ref = scrollTarget === 'question' ? questionCardRef : answerCardRef;
+        // requestAnimationFrame으로 브라우저 페인트 직후 실행
+        const raf = requestAnimationFrame(() => {
+            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        });
+        setScrollTarget(null);
+        return () => cancelAnimationFrame(raf);
+    }, [scrollTarget]);
+
     // 세션 + Firebase 중복 방지 이력 캐시 — ref로 관리 (렌더 트리거 없음, 동기 읽기 보장)
     const historyCacheRef = useRef({});
 
@@ -332,7 +345,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             setGenerated(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setTimeout(() => questionCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+            setScrollTarget('question');
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -382,7 +395,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             setGeneratedAnswer(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setTimeout(() => answerCardRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 150);
+            setScrollTarget('answer');
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
