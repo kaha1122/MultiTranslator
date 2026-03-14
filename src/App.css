@@ -119,6 +119,24 @@ body {
   transform: scale(0.95);
   background: rgba(0, 168, 132, 0.15);
 }
+.header-home-btn {
+  flex-shrink: 0;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #1e293b;
+  border-radius: 8px;
+  transition: background 0.15s;
+}
+.header-home-btn:active {
+  background: rgba(0, 0, 0, 0.06);
+}
 
 /* 탭 컨텍스트 바 — 로고 아래 풀너비 */
 .tab-context-bar {

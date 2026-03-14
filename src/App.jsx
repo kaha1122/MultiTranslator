@@ -1445,33 +1445,35 @@ function App() {
             ))}
           </h1>
 
-          {viewMode === 'home' ? (
-            <div className="header-spacer" />
-          ) : (viewMode === 'scene' || viewMode === 'vocab') ? (
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-              <button className="header-dict-btn" style={{ padding: '4px 6px', fontSize: '0.7rem' }} onClick={() => setViewMode('home')}>
-                <Home size={14} />
-              </button>
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {/* Back 버튼 (해당 탭에서만) */}
+            {(viewMode === 'scene' || viewMode === 'vocab') && (
               <button className="header-dict-btn" onClick={() => {
                 setDictBackTo(viewMode);
                 setViewMode('translation');
               }}>
                 {getT(sourceLang, 'nav.translation')}
               </button>
-            </div>
-          ) : (viewMode === 'translation' && dictBackTo) ? (
-            <button className="header-dict-btn" onClick={() => { setViewMode(dictBackTo); setDictBackTo(null); }}>
-              Back
-            </button>
-          ) : (viewMode === 'library' && libraryBackTo) ? (
-            <button className="header-dict-btn" onClick={() => { setViewMode(libraryBackTo); setLibraryBackTo(null); }}>
-              Back
-            </button>
-          ) : (
-            <button className="header-dict-btn" style={{ padding: '4px 6px', fontSize: '0.7rem' }} onClick={() => setViewMode('home')}>
-              <Home size={14} />
-            </button>
-          )}
+            )}
+            {viewMode === 'translation' && dictBackTo && (
+              <button className="header-dict-btn" onClick={() => { setViewMode(dictBackTo); setDictBackTo(null); }}>
+                Back
+              </button>
+            )}
+            {viewMode === 'library' && libraryBackTo && (
+              <button className="header-dict-btn" onClick={() => { setViewMode(libraryBackTo); setLibraryBackTo(null); }}>
+                Back
+              </button>
+            )}
+            {/* 홈 버튼 (홈이 아닐 때 항상 표시) */}
+            {viewMode === 'home' ? (
+              <div className="header-spacer" />
+            ) : (
+              <button className="header-home-btn" onClick={() => setViewMode('home')} aria-label="Home">
+                <Home size={20} strokeWidth={2.2} />
+              </button>
+            )}
+          </div>
         </div>
 
         <AnimatePresence mode="wait">
