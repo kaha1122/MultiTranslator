@@ -167,6 +167,13 @@ function App() {
   const [pwChangeMode, setPwChangeMode] = useState(false);
   const [pwForm, setPwForm] = useState({ current: '', newPw: '', confirm: '' });
   const [pwMsg, setPwMsg] = useState({ type: '', text: '' });
+  // 전화번호 SMS 인증 상태
+  const [phoneVerifStep, setPhoneVerifStep] = useState('idle'); // 'idle' | 'sending' | 'sent' | 'verifying' | 'verified'
+  const [phoneVerifCode, setPhoneVerifCode] = useState('');
+  const [phoneVerifMsg, setPhoneVerifMsg] = useState({ type: '', text: '' });
+  const [phoneConfirmResult, setPhoneConfirmResult] = useState(null);
+  const recaptchaContainerRef = useRef(null);
+  const recaptchaVerifierRef = useRef(null);
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
   const [languageGoals, setLanguageGoals] = useState(() => {
@@ -551,6 +558,10 @@ function App() {
     setPwChangeMode(false);
     setPwForm({ current: '', newPw: '', confirm: '' });
     setPwMsg({ type: '', text: '' });
+    setPhoneVerifStep(profile?.phoneVerified ? 'verified' : 'idle');
+    setPhoneVerifCode('');
+    setPhoneVerifMsg({ type: '', text: '' });
+    setPhoneConfirmResult(null);
     setShowProfileModal(true);
   };
 
@@ -570,6 +581,84 @@ function App() {
       setShowProfileModal(false);
     } catch (e) {
       alert("Failed to update profile. Please try again.");
+    }
+  };
+
+  // 전화번호 SMS 인증 발송
+  const handleSendPhoneVerification = async () => {
+    const rawDigits = profileFormData.phone.replace(/\D/g, '');
+    if (!rawDigits) {
+      setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneRequired') });
+      return;
+    }
+    const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
+    const fullPhone = `${dialCode}${rawDigits}`;
+
+    try {
+      setPhoneVerifStep('sending');
+      setPhoneVerifMsg({ type: '', text: '' });
+
+      // 중복 번호 체크
+      const API = import.meta.env.VITE_API_URL || '';
+      const dupRes = await fetch(`${API}/api/check-phone`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ phoneNumber: fullPhone, userId: user.uid })
+      });
+      const dupData = await dupRes.json();
+      if (dupData.isDuplicate) {
+        setPhoneVerifStep('idle');
+        setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneDuplicate') });
+        return;
+      }
+
+      // reCAPTCHA 초기화
+      if (recaptchaVerifierRef.current) {
+        try { recaptchaVerifierRef.current.clear(); } catch (e) { /* ignore */ }
+      }
+      recaptchaVerifierRef.current = new RecaptchaVerifier(auth, recaptchaContainerRef.current, {
+        size: 'invisible',
+        callback: () => { /* resolved */ }
+      });
+
+      const confirmResult = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifierRef.current);
+      setPhoneConfirmResult(confirmResult);
+      setPhoneVerifStep('sent');
+      setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneCodeSent') });
+    } catch (e) {
+      console.error('[PhoneVerif] error:', e);
+      setPhoneVerifStep('idle');
+      if (e.code === 'auth/too-many-requests') {
+        setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneTooMany') });
+      } else if (e.code === 'auth/invalid-phone-number') {
+        setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneInvalid') });
+      } else {
+        setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneVerifFailed') });
+      }
+    }
+  };
+
+  // SMS 인증 코드 확인
+  const handleVerifyPhoneCode = async () => {
+    if (!phoneVerifCode.trim() || !phoneConfirmResult) return;
+    try {
+      setPhoneVerifStep('verifying');
+      await phoneConfirmResult.confirm(phoneVerifCode);
+      // 인증 성공 → Firestore에 phoneVerified 저장
+      const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
+      const rawDigits = profileFormData.phone.replace(/\D/g, '');
+      await updateUserProfile({
+        phoneNumber: `${dialCode}${rawDigits}`,
+        phoneCountry: profileFormData.phoneCountry,
+        phoneVerified: true,
+        updatedAt: serverTimestamp()
+      });
+      setPhoneVerifStep('verified');
+      setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneVerified') });
+    } catch (e) {
+      console.error('[PhoneVerif] code error:', e);
+      setPhoneVerifStep('sent');
+      setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneCodeWrong') });
     }
   };
 
@@ -2169,29 +2258,106 @@ function App() {
                   </div>
                 </div>
 
-                {/* 전화번호 */}
+                {/* 전화번호 + SMS 인증 */}
                 <div className="input-wrapper">
-                  <label className="input-label">{getT(sourceLang, 'auth.phone')}</label>
-                  <div className="input-group" style={{ gap: 0 }}>
-                    <Phone size={18} className="input-icon" />
-                    <select
-                      value={profileFormData.phoneCountry}
-                      onChange={(e) => setProfileFormData({ ...profileFormData, phoneCountry: e.target.value, phone: '' })}
-                      className="phone-country-select"
-                    >
-                      {COUNTRY_PHONES.map(c => (
-                        <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
-                      ))}
-                    </select>
-                    <input
-                      type="tel"
-                      placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
-                      value={profileFormData.phone}
-                      onChange={(e) => setProfileFormData({ ...profileFormData, phone: formatPhoneByCountry(e.target.value, profileFormData.phoneCountry) })}
-                      style={{ flex: 1 }}
-                    />
+                  <label className="input-label">
+                    {getT(sourceLang, 'auth.phone')}
+                    {phoneVerifStep === 'verified' && (
+                      <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: 600, marginLeft: '6px', display: 'inline-flex', alignItems: 'center', gap: '3px' }}>
+                        <CheckCircle2 size={12} /> {getT(sourceLang, 'auth.phoneVerified')}
+                      </span>
+                    )}
+                  </label>
+                  <div style={{ display: 'flex', gap: '6px', alignItems: 'stretch' }}>
+                    <div className="input-group" style={{ gap: 0, flex: 1 }}>
+                      <Phone size={18} className="input-icon" />
+                      <select
+                        value={profileFormData.phoneCountry}
+                        onChange={(e) => {
+                          setProfileFormData({ ...profileFormData, phoneCountry: e.target.value, phone: '' });
+                          if (phoneVerifStep !== 'verified') { setPhoneVerifStep('idle'); setPhoneVerifMsg({ type: '', text: '' }); }
+                        }}
+                        className="phone-country-select"
+                        disabled={phoneVerifStep === 'verified'}
+                      >
+                        {COUNTRY_PHONES.map(c => (
+                          <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="tel"
+                        placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
+                        value={profileFormData.phone}
+                        onChange={(e) => {
+                          setProfileFormData({ ...profileFormData, phone: formatPhoneByCountry(e.target.value, profileFormData.phoneCountry) });
+                          if (phoneVerifStep !== 'verified') { setPhoneVerifStep('idle'); setPhoneVerifMsg({ type: '', text: '' }); }
+                        }}
+                        style={{ flex: 1 }}
+                        disabled={phoneVerifStep === 'verified'}
+                      />
+                    </div>
+                    {phoneVerifStep !== 'verified' && (
+                      <button
+                        type="button"
+                        onClick={handleSendPhoneVerification}
+                        disabled={phoneVerifStep === 'sending' || !profileFormData.phone.replace(/\D/g, '')}
+                        style={{
+                          padding: '0 12px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                          background: phoneVerifStep === 'sent' ? '#f0fdf4' : 'var(--primary-color)',
+                          color: phoneVerifStep === 'sent' ? '#16a34a' : 'white',
+                          fontSize: '0.75rem', fontWeight: 700, whiteSpace: 'nowrap',
+                          opacity: (phoneVerifStep === 'sending' || !profileFormData.phone.replace(/\D/g, '')) ? 0.5 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {phoneVerifStep === 'sending' ? '...' : phoneVerifStep === 'sent' ? getT(sourceLang, 'auth.phoneResend') : getT(sourceLang, 'auth.phoneSendCode')}
+                      </button>
+                    )}
                   </div>
+
+                  {/* 인증 코드 입력 */}
+                  {(phoneVerifStep === 'sent' || phoneVerifStep === 'verifying') && (
+                    <div style={{ display: 'flex', gap: '6px', marginTop: '6px' }}>
+                      <div className="input-group" style={{ flex: 1 }}>
+                        <ShieldCheck size={18} className="input-icon" />
+                        <input
+                          type="text"
+                          inputMode="numeric"
+                          maxLength={6}
+                          placeholder={getT(sourceLang, 'auth.phoneCodePlaceholder')}
+                          value={phoneVerifCode}
+                          onChange={(e) => setPhoneVerifCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleVerifyPhoneCode}
+                        disabled={phoneVerifStep === 'verifying' || phoneVerifCode.length < 6}
+                        style={{
+                          padding: '0 14px', borderRadius: '10px', border: 'none', cursor: 'pointer',
+                          background: '#6366f1', color: 'white', fontSize: '0.8rem', fontWeight: 700,
+                          opacity: (phoneVerifStep === 'verifying' || phoneVerifCode.length < 6) ? 0.5 : 1,
+                          transition: 'all 0.2s'
+                        }}
+                      >
+                        {phoneVerifStep === 'verifying' ? '...' : getT(sourceLang, 'auth.phoneVerify')}
+                      </button>
+                    </div>
+                  )}
+
+                  {/* 인증 메시지 */}
+                  {phoneVerifMsg.text && phoneVerifStep !== 'verified' && (
+                    <p style={{
+                      fontSize: '0.72rem', marginLeft: '4px', marginTop: '3px', fontWeight: 500,
+                      color: phoneVerifMsg.type === 'error' ? '#dc2626' : '#16a34a'
+                    }}>
+                      {phoneVerifMsg.type === 'error' ? '⚠️ ' : '✅ '}{phoneVerifMsg.text}
+                    </p>
+                  )}
                 </div>
+
+                {/* reCAPTCHA invisible container */}
+                <div ref={recaptchaContainerRef} id="recaptcha-container" />
 
                 <button type="submit" className="auth-submit-btn" style={{ marginTop: '6px' }}>
                   {getT(sourceLang, 'auth.saveChanges')}
