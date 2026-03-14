@@ -294,6 +294,24 @@
     "premiumFeature4": "Hỗ trợ Premium",
     "discount": "Giảm"
   },
+  "home": {
+    "weeklyGoal": "Tiến độ tuần này",
+    "todayProgress": "Tiến độ hôm nay",
+    "folders": "Menu học tập",
+    "sceneTitle": "Luyện hội thoại",
+    "sceneDesc": "Luyện tập hội thoại thực tế với AI",
+    "sceneSubDesc": "Chọn từ 21 tình huống như sân bay, khách sạn, nhà hàng và nhận điểm phát âm.",
+    "vocabTitle": "Học từ vựng",
+    "vocabDesc": "AI tạo thẻ từ vựng theo chủ đề cho bạn",
+    "vocabSubDesc": "Học từ vựng theo 8 danh mục và mức độ khó, luyện cả phát âm.",
+    "translationTitle": "Từ điển",
+    "translationDesc": "Dịch từ và câu kèm mẹo học tập",
+    "translationSubDesc": "AI cung cấp bản dịch kèm giải thích ngữ pháp, ví dụ và hướng dẫn phát âm.",
+    "goBtn": "Bắt đầu",
+    "weeklyStats": "Thống kê tuần này",
+    "dialogue": "Hội thoại",
+    "word": "Từ vựng"
+  },
   "daily": {
     "goalComplete": "Hoàn thành mục tiêu hôm nay! 🎉",
     "keepGoing": "Tốt lắm! Tiếp tục cố lên 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "Để sau"
   },
   "tabTag": {
+    "home": "Xem tiến độ học tập và menu của bạn",
     "scene": "Chọn tình huống và luyện hội thoại thực tế với AI",
     "translation": "Dịch từ và câu, sau đó luyện phát âm",
     "vocab": "AI tạo thẻ từ vựng theo chủ đề",
@@ -321,6 +340,7 @@
     "settings": "Cài đặt ngôn ngữ học và môi trường API"
   },
   "nav": {
+    "home": "Trang chủ",
     "scene": "Hội thoại",
     "translation": "Từ điển",
     "library": "Thư viện",

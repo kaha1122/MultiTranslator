@@ -294,6 +294,24 @@
     "premiumFeature4": "프리미엄 전용 지원",
     "discount": "할인"
   },
+  "home": {
+    "weeklyGoal": "이번 주 학습 현황",
+    "todayProgress": "오늘의 진도",
+    "folders": "학습 메뉴",
+    "sceneTitle": "대화 연습",
+    "sceneDesc": "실전 상황을 골라 AI와 대화를 연습하세요",
+    "sceneSubDesc": "공항, 호텔, 레스토랑 등 21개 상황별 대화를 연습하고 발음 점수를 받을 수 있어요.",
+    "vocabTitle": "단어 학습",
+    "vocabDesc": "AI가 주제별 단어 카드를 만들어드려요",
+    "vocabSubDesc": "8개 카테고리에서 난이도별 단어를 학습하고 발음까지 연습해보세요.",
+    "translationTitle": "사전",
+    "translationDesc": "단어·문장을 번역하고 학습 팁을 확인하세요",
+    "translationSubDesc": "AI가 번역과 함께 문법 설명, 예문, 발음 가이드를 제공합니다.",
+    "goBtn": "시작하기",
+    "weeklyStats": "이번 주 학습 통계",
+    "dialogue": "대화",
+    "word": "단어"
+  },
   "daily": {
     "goalComplete": "오늘 목표 달성! 🎉",
     "keepGoing": "잘하고 있어요! 계속 해봐요 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "나중에"
   },
   "tabTag": {
+    "home": "학습 현황과 메뉴를 한눈에 확인하세요",
     "scene": "실전 상황을 골라 AI와 대화를 연습하세요",
     "translation": "단어·문장을 번역하고 발음을 연습하세요",
     "vocab": "AI가 주제별 단어 카드를 생성합니다",
@@ -321,6 +340,7 @@
     "settings": "학습 언어와 API 환경을 설정하세요"
   },
   "nav": {
+    "home": "홈",
     "scene": "대화",
     "translation": "사전",
     "library": "단어장",

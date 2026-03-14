@@ -1,0 +1,247 @@
+.home-page {
+    padding: 12px 16px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    animation: homeSlideUp 0.35s ease-out;
+}
+@keyframes homeSlideUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Section 공통 */
+.home-section {
+    background: white;
+    border-radius: 16px;
+    padding: 16px;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.04);
+}
+.home-section-title {
+    font-size: 0.9rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 12px;
+}
+
+/* ── 섹션 1: 주간 별 ── */
+.home-weekly-stars {
+    display: flex;
+    justify-content: space-between;
+    gap: 4px;
+}
+.home-star-day {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex: 1;
+    padding: 6px 2px;
+    border-radius: 10px;
+    transition: all 0.2s;
+}
+.home-star-day.today {
+    background: #eef2ff;
+    border: 1.5px solid #c7d2fe;
+}
+.home-star-day.future {
+    opacity: 0.3;
+}
+.home-star-label {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    line-height: 1;
+}
+.home-star-day.today .home-star-label {
+    color: #6366f1;
+}
+.home-star-icon {
+    font-size: 1.1rem;
+    line-height: 1;
+    margin-top: 3px;
+}
+.home-star-count {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #64748b;
+    line-height: 1;
+    margin-top: 2px;
+}
+
+/* ── 섹션 2: 게이지바 ── */
+.home-gauge {
+    padding: 14px 16px;
+}
+.home-gauge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+.home-gauge-label {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #475569;
+}
+.home-gauge-count {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #818cf8;
+}
+.home-gauge-count.complete {
+    color: #059669;
+}
+.home-gauge-track {
+    height: 10px;
+    background: #e2e8f0;
+    border-radius: 99px;
+    overflow: hidden;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.08);
+}
+.home-gauge-fill {
+    height: 100%;
+    border-radius: 99px;
+    background: linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%);
+    box-shadow: 0 0 8px rgba(99,102,241,0.4);
+}
+.home-gauge-fill.complete {
+    background: linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%);
+    box-shadow: 0 0 8px rgba(16,185,129,0.5);
+}
+.home-gauge-msg {
+    text-align: center;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #059669;
+    margin: 6px 0 0;
+}
+
+/* ── 섹션 3: 폴더 카드 ── */
+.home-folders {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.home-folder-wrapper {
+    /* layout animation wrapper */
+}
+.home-folder-card {
+    border: 1.5px solid #e2e8f0;
+    border-radius: 14px;
+    padding: 12px 14px;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s, box-shadow 0.2s;
+}
+.home-folder-card.open {
+    box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+}
+.home-folder-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.home-folder-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+}
+.home-folder-name {
+    flex: 1;
+    font-size: 0.92rem;
+    font-weight: 700;
+}
+.home-folder-chevron {
+    flex-shrink: 0;
+}
+
+/* 확장 영역 */
+.home-folder-body {
+    overflow: hidden;
+    margin-top: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+.home-folder-anim {
+    width: 100%;
+    height: 80px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.home-folder-emoji {
+    font-size: 2.5rem;
+    display: inline-block;
+}
+.home-folder-desc-main {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #1e293b;
+    margin: 0;
+    line-height: 1.5;
+}
+.home-folder-desc-sub {
+    font-size: 0.76rem;
+    color: #64748b;
+    margin: 0;
+    line-height: 1.5;
+}
+.home-folder-cta {
+    width: 100%;
+    padding: 11px 0;
+    border: none;
+    border-radius: 12px;
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    margin-top: 2px;
+}
+.home-folder-cta:active {
+    opacity: 0.8;
+}
+
+/* ── 섹션 4: 통계표 ── */
+.home-stats {
+    padding-bottom: 20px;
+}
+.home-stats-loading {
+    text-align: center;
+    color: #94a3b8;
+    padding: 12px;
+}
+.home-stats-table-wrap {
+    overflow-x: auto;
+}
+.home-stats-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+}
+.home-stats-table th {
+    font-weight: 700;
+    color: #64748b;
+    padding: 6px 8px;
+    text-align: center;
+    border-bottom: 2px solid #e2e8f0;
+    white-space: nowrap;
+}
+.home-stats-table td {
+    padding: 8px;
+    text-align: center;
+    border-bottom: 1px solid #f1f5f9;
+    font-weight: 600;
+    color: #334155;
+    white-space: nowrap;
+}
+.home-stats-row-label {
+    text-align: left !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+}

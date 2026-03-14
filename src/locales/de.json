@@ -294,6 +294,24 @@
     "premiumFeature4": "Premium-Support",
     "discount": "Rabatt"
   },
+  "home": {
+    "weeklyGoal": "Wochenfortschritt",
+    "todayProgress": "Heutiger Fortschritt",
+    "folders": "Lernmenü",
+    "sceneTitle": "Dialogübung",
+    "sceneDesc": "Üben Sie reale Gespräche mit KI in verschiedenen Szenarien",
+    "sceneSubDesc": "Wählen Sie aus 21 Szenen wie Flughafen, Hotel, Restaurant und erhalten Sie Aussprachebewertungen.",
+    "vocabTitle": "Vokabeln",
+    "vocabDesc": "KI erstellt themenbasierte Vokabelkarten für Sie",
+    "vocabSubDesc": "Lernen Sie Vokabeln in 8 Kategorien nach Schwierigkeitsgrad und üben Sie die Aussprache.",
+    "translationTitle": "Wörterbuch",
+    "translationDesc": "Übersetzen Sie Wörter und Sätze mit Lerntipps",
+    "translationSubDesc": "KI liefert Übersetzungen mit Grammatikerklärungen, Beispielen und Ausspracheführern.",
+    "goBtn": "Starten",
+    "weeklyStats": "Wochenstatistik",
+    "dialogue": "Dialog",
+    "word": "Vokabeln"
+  },
   "daily": {
     "goalComplete": "Tagesziel erreicht! 🎉",
     "keepGoing": "Super! Weiter so 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "Später"
   },
   "tabTag": {
+    "home": "Überprüfen Sie Ihren Fortschritt und die Lernmenüs",
     "scene": "Wähle eine Szene und übe echte Gespräche mit KI",
     "translation": "Übersetze Wörter & Sätze, dann übe die Aussprache",
     "vocab": "KI erstellt themenbezogene Vokabelkarten",
@@ -321,6 +340,7 @@
     "settings": "Lernsprache und API-Umgebung einstellen"
   },
   "nav": {
+    "home": "Startseite",
     "scene": "Dialog",
     "translation": "Wörterbuch",
     "library": "Bibliothek",

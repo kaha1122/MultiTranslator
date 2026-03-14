@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -33,6 +33,7 @@ import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
+import HomePage from './components/HomePage';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
@@ -219,8 +220,8 @@ function App() {
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
 
-  // 현재 화면 모드 — 기본 홈은 'scene'
-  const [viewMode, setViewMode] = useState('scene');
+  // 현재 화면 모드 — 기본 홈은 'home'
+  const [viewMode, setViewMode] = useState('home');
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
@@ -280,7 +281,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['scene', 'vocab', 'translation', 'library', 'video', 'stats'];
+  const TAB_ORDER = ['home', 'scene', 'vocab', 'translation', 'library', 'video', 'stats'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -745,8 +746,8 @@ function App() {
       // 인앱 브라우저인 경우, 사용자에게 친절한 모달 팝업을 띄움 (화면 이동은 하지 않음)
       setShowInAppWarning(true);
     } else {
-      // 일반 브라우저인 경우 Scene 홈으로 이동
-      setViewMode('scene');
+      // 일반 브라우저인 경우 홈으로 이동
+      setViewMode('home');
     }
   };
 
@@ -1320,6 +1321,12 @@ function App() {
 
             {/* 메뉴 목록 */}
             <nav className="sidebar-nav">
+              <button className={`sidebar-nav-item ${viewMode === 'home' ? 'active' : ''}`}
+                onClick={() => { setViewMode('home'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><Home size={16} /></span>
+                {getT(sourceLang, 'nav.home')}
+              </button>
+
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
                 onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><MapPin size={16} /></span>
@@ -1425,14 +1432,21 @@ function App() {
             ))}
           </h1>
 
-          {(viewMode === 'scene' || viewMode === 'vocab') ? (
-            <button className="header-dict-btn" onClick={() => {
-              setDictBackTo(viewMode);
-              history.pushState({ page: `dict-from-${viewMode}` }, '');
-              setViewMode('translation');
-            }}>
-              {getT(sourceLang, 'nav.translation')}
-            </button>
+          {viewMode === 'home' ? (
+            <div className="header-spacer" />
+          ) : (viewMode === 'scene' || viewMode === 'vocab') ? (
+            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+              <button className="header-dict-btn" style={{ padding: '4px 6px', fontSize: '0.7rem' }} onClick={() => setViewMode('home')}>
+                <Home size={14} />
+              </button>
+              <button className="header-dict-btn" onClick={() => {
+                setDictBackTo(viewMode);
+                history.pushState({ page: `dict-from-${viewMode}` }, '');
+                setViewMode('translation');
+              }}>
+                {getT(sourceLang, 'nav.translation')}
+              </button>
+            </div>
           ) : (viewMode === 'translation' && dictBackTo) ? (
             <button className="header-dict-btn" onClick={() => history.back()}>
               Back
@@ -1442,13 +1456,16 @@ function App() {
               Back
             </button>
           ) : (
-            <div className="header-spacer" />
+            <button className="header-dict-btn" style={{ padding: '4px 6px', fontSize: '0.7rem' }} onClick={() => setViewMode('home')}>
+              <Home size={14} />
+            </button>
           )}
         </div>
 
         <AnimatePresence mode="wait">
           {(() => {
             const TAB_CONTEXT = {
+              home:        { icon: '🏠', text: getT(sourceLang, 'tabTag.home') },
               scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
               translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
               vocab:       { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
@@ -1476,8 +1493,8 @@ function App() {
           })()}
         </AnimatePresence>
 
-        {/* 미니 일일 진도 바 + 주간 캘린더 */}
-        {user && (() => {
+        {/* 미니 일일 진도 바 + 주간 캘린더 (홈에서는 숨김 — 홈에서 더 크게 표시) */}
+        {user && viewMode !== 'home' && (() => {
           const today = getToday();
           const dayLabels = getT(sourceLang, 'daily.days').split(',');
           return (
@@ -1541,6 +1558,18 @@ function App() {
       </header>
 
       <main className="app-main-content">
+        {/* 홈 탭 */}
+        <div style={{ display: viewMode === 'home' ? 'block' : 'none', width: '100%' }}>
+          <HomePage
+            user={user}
+            weeklyData={weeklyData}
+            todayCount={todayCount}
+            dailyGoal={dailyGoal}
+            sourceLang={sourceLang}
+            onNavigate={(tab) => setViewMode(tab)}
+          />
+        </div>
+
         {/* 번역 탭 */}
         <div style={{ display: viewMode === 'translation' ? 'block' : 'none', width: '100%' }}>
           <>

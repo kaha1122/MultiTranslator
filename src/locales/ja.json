@@ -294,6 +294,24 @@
     "premiumFeature4": "プレミアム専用サポート",
     "discount": "割引"
   },
+  "home": {
+    "weeklyGoal": "今週の学習状況",
+    "todayProgress": "今日の進捗",
+    "folders": "学習メニュー",
+    "sceneTitle": "会話練習",
+    "sceneDesc": "実践的なシーンでAIと会話を練習しましょう",
+    "sceneSubDesc": "空港、ホテル、レストランなど21のシーンで会話を練習し、発音スコアを取得できます。",
+    "vocabTitle": "単語学習",
+    "vocabDesc": "AIがトピック別の単語カードを作成します",
+    "vocabSubDesc": "8つのカテゴリで難易度別に単語を学習し、発音も練習できます。",
+    "translationTitle": "辞書",
+    "translationDesc": "単語・文章を翻訳して学習のヒントを確認",
+    "translationSubDesc": "AIが翻訳と一緒に文法解説、例文、発音ガイドを提供します。",
+    "goBtn": "スタート",
+    "weeklyStats": "今週の学習統計",
+    "dialogue": "会話",
+    "word": "単語"
+  },
   "daily": {
     "goalComplete": "今日の目標達成！🎉",
     "keepGoing": "よくできました！続けましょう 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "あとで"
   },
   "tabTag": {
+    "home": "学習状況とメニューを一目で確認しましょう",
     "scene": "シーンを選んでAIと実践会話を練習しよう",
     "translation": "単語・文章を翻訳して発音を練習しよう",
     "vocab": "AIがトピック別の単語カードを作成します",
@@ -321,6 +340,7 @@
     "settings": "学習言語とAPI環境を設定しよう"
   },
   "nav": {
+    "home": "ホーム",
     "scene": "会話",
     "translation": "辞書",
     "library": "単語帳",

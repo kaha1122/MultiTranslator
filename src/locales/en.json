@@ -294,6 +294,24 @@
     "premiumFeature4": "Premium support",
     "discount": "OFF"
   },
+  "home": {
+    "weeklyGoal": "This Week's Progress",
+    "todayProgress": "Today's Progress",
+    "folders": "Learning Menu",
+    "sceneTitle": "Dialogue Practice",
+    "sceneDesc": "Practice real conversations with AI in various scenarios",
+    "sceneSubDesc": "Choose from 21 scenes like airports, hotels, restaurants and get pronunciation scores.",
+    "vocabTitle": "Vocabulary",
+    "vocabDesc": "AI creates topic-based vocabulary cards for you",
+    "vocabSubDesc": "Study words across 8 categories by difficulty level and practice pronunciation.",
+    "translationTitle": "Dictionary",
+    "translationDesc": "Translate words & sentences with learning tips",
+    "translationSubDesc": "AI provides translations with grammar explanations, examples, and pronunciation guides.",
+    "goBtn": "Start",
+    "weeklyStats": "This Week's Stats",
+    "dialogue": "Dialogue",
+    "word": "Vocabulary"
+  },
   "daily": {
     "goalComplete": "Today's Goal Complete!",
     "keepGoing": "Great job! Keep going 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "Later"
   },
   "tabTag": {
+    "home": "Check your progress and navigate learning menus",
     "scene": "Pick a scene and practice real conversations with AI",
     "translation": "Translate words & sentences, then practice pronunciation",
     "vocab": "Build vocabulary with AI-generated word cards by topic",
@@ -321,6 +340,7 @@
     "settings": "Set your learning language and API environment"
   },
   "nav": {
+    "home": "Home",
     "scene": "Dialogue",
     "translation": "Dictionary",
     "library": "Library",

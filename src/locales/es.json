@@ -294,6 +294,24 @@
     "premiumFeature4": "Soporte Premium",
     "discount": "Descuento"
   },
+  "home": {
+    "weeklyGoal": "Progreso semanal",
+    "todayProgress": "Progreso de hoy",
+    "folders": "Menú de aprendizaje",
+    "sceneTitle": "Práctica de diálogo",
+    "sceneDesc": "Practica conversaciones reales con IA en varios escenarios",
+    "sceneSubDesc": "Elige entre 21 escenas como aeropuerto, hotel, restaurante y obtén puntuaciones de pronunciación.",
+    "vocabTitle": "Vocabulario",
+    "vocabDesc": "La IA crea tarjetas de vocabulario por tema",
+    "vocabSubDesc": "Estudia vocabulario en 8 categorías por nivel de dificultad y practica la pronunciación.",
+    "translationTitle": "Diccionario",
+    "translationDesc": "Traduce palabras y frases con consejos de aprendizaje",
+    "translationSubDesc": "La IA proporciona traducciones con explicaciones gramaticales, ejemplos y guías de pronunciación.",
+    "goBtn": "Comenzar",
+    "weeklyStats": "Estadísticas semanales",
+    "dialogue": "Diálogo",
+    "word": "Vocabulario"
+  },
   "daily": {
     "goalComplete": "¡Objetivo diario alcanzado! 🎉",
     "keepGoing": "¡Muy bien! Sigue adelante 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "Más tarde"
   },
   "tabTag": {
+    "home": "Consulta tu progreso y los menús de aprendizaje",
     "scene": "Elige una escena y practica conversaciones reales con IA",
     "translation": "Traduce palabras y frases, luego practica la pronunciación",
     "vocab": "La IA genera tarjetas de vocabulario por tema",
@@ -321,6 +340,7 @@
     "settings": "Configura tu idioma de aprendizaje y entorno API"
   },
   "nav": {
+    "home": "Inicio",
     "scene": "Diálogo",
     "translation": "Diccionario",
     "library": "Biblioteca",

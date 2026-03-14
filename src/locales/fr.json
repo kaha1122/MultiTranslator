@@ -294,6 +294,24 @@
     "premiumFeature4": "Support Premium",
     "discount": "Réduction"
   },
+  "home": {
+    "weeklyGoal": "Progrès de la semaine",
+    "todayProgress": "Progrès du jour",
+    "folders": "Menu d'apprentissage",
+    "sceneTitle": "Pratique de dialogue",
+    "sceneDesc": "Pratiquez des conversations avec l'IA dans divers scénarios",
+    "sceneSubDesc": "Choisissez parmi 21 scènes comme l'aéroport, l'hôtel, le restaurant et obtenez des scores de prononciation.",
+    "vocabTitle": "Vocabulaire",
+    "vocabDesc": "L'IA crée des cartes de vocabulaire par thème",
+    "vocabSubDesc": "Étudiez le vocabulaire dans 8 catégories par niveau et pratiquez la prononciation.",
+    "translationTitle": "Dictionnaire",
+    "translationDesc": "Traduisez des mots et phrases avec des conseils",
+    "translationSubDesc": "L'IA fournit des traductions avec des explications grammaticales, des exemples et des guides de prononciation.",
+    "goBtn": "Commencer",
+    "weeklyStats": "Stats de la semaine",
+    "dialogue": "Dialogue",
+    "word": "Vocabulaire"
+  },
   "daily": {
     "goalComplete": "Objectif du jour atteint ! 🎉",
     "keepGoing": "Bravo ! Continuez 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "Plus tard"
   },
   "tabTag": {
+    "home": "Consultez vos progrès et les menus d'apprentissage",
     "scene": "Choisissez une scène et entraînez-vous avec l'IA",
     "translation": "Traduisez et pratiquez la prononciation",
     "vocab": "L'IA génère des cartes de vocabulaire par thème",
@@ -321,6 +340,7 @@
     "settings": "Configurez votre langue d'apprentissage et l'API"
   },
   "nav": {
+    "home": "Accueil",
     "scene": "Dialogue",
     "translation": "Dictionnaire",
     "library": "Bibliothèque",

@@ -294,6 +294,24 @@
     "premiumFeature4": "高级专属支持",
     "discount": "折扣"
   },
+  "home": {
+    "weeklyGoal": "本周学习进度",
+    "todayProgress": "今日进度",
+    "folders": "学习菜单",
+    "sceneTitle": "对话练习",
+    "sceneDesc": "选择场景与AI进行实战对话练习",
+    "sceneSubDesc": "在机场、酒店、餐厅等21个场景中练习对话并获得发音评分。",
+    "vocabTitle": "词汇学习",
+    "vocabDesc": "AI为你按主题生成单词卡片",
+    "vocabSubDesc": "在8个类别中按难度学习词汇并练习发音。",
+    "translationTitle": "词典",
+    "translationDesc": "翻译单词和句子，获取学习建议",
+    "translationSubDesc": "AI提供翻译以及语法解释、例句和发音指导。",
+    "goBtn": "开始",
+    "weeklyStats": "本周学习统计",
+    "dialogue": "对话",
+    "word": "词汇"
+  },
   "daily": {
     "goalComplete": "今日目标达成！🎉",
     "keepGoing": "很好！继续加油 💪",
@@ -312,6 +330,7 @@
     "bookmarkLater": "稍后再说"
   },
   "tabTag": {
+    "home": "一目了然查看学习进度和菜单",
     "scene": "选择场景，与AI练习真实对话",
     "translation": "翻译单词和句子，练习发音",
     "vocab": "AI按主题生成词汇卡片",
@@ -321,6 +340,7 @@
     "settings": "设置学习语言和API环境"
   },
   "nav": {
+    "home": "首页",
     "scene": "对话",
     "translation": "词典",
     "library": "词库",
