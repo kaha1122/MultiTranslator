@@ -227,31 +227,18 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // ── 모바일 Back 키 → 종료 확인 팝업 (전역 단일 핸들러) ──
+  // ── 모바일 Back 키 → 종료 확인 팝업 ──
   const [showExitPopup, setShowExitPopup] = useState(false);
-  const exitConfirmedRef = useRef(false);
 
   React.useEffect(() => {
-    // guard 엔트리 삽입 (URL 그대로 유지)
-    window.history.pushState(null, null, window.location.href);
-
-    // onpopstate 직접 할당 — 절대 하나만 존재, 충돌 없음
-    window.onpopstate = function () {
-      if (exitConfirmedRef.current) {
-        exitConfirmedRef.current = false;
-        return;
-      }
-      // guard 재삽입 + 팝업
-      window.history.pushState(null, null, window.location.href);
-      setShowExitPopup(true);
-    };
-
-    return () => { window.onpopstate = null; };
+    const handler = () => setShowExitPopup(true);
+    window.addEventListener('app-back-pressed', handler);
+    return () => window.removeEventListener('app-back-pressed', handler);
   }, []);
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
-    exitConfirmedRef.current = true;
+    window.__exitConfirmed = true;
     window.history.back();
   };
   const handleExitCancel = () => {

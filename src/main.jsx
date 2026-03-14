@@ -32,6 +32,15 @@ class ErrorBoundary extends Component {
   }
 }
 
+// ── 모바일 Back 키 인터셉트 (React 렌더 전에 즉시 설정) ──
+window.__exitConfirmed = false;
+window.history.pushState(null, null, window.location.href);
+window.onpopstate = function () {
+  if (window.__exitConfirmed) return;
+  window.history.pushState(null, null, window.location.href);
+  window.dispatchEvent(new Event('app-back-pressed'));
+};
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <ErrorBoundary>
