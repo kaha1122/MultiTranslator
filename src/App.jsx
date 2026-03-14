@@ -229,29 +229,36 @@ function App() {
   // ── 모바일 Back 키 종료 확인 팝업 ──
   const [showExitPopup, setShowExitPopup] = useState(false);
   const viewModeRef = useRef(viewMode);
+  const userRef = useRef(user);
   React.useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
+  React.useEffect(() => { userRef.current = user; }, [user]);
 
   // Non-Tab 뷰 목록 (이들은 자체 popstate 핸들러가 back을 처리)
   const NON_TAB_VIEWS = ['guide', 'privacy', 'terms', 'contact', 'settings'];
 
+  // 컴포넌트 마운트 시 1회만 등록 (user 변경과 무관하게)
   React.useEffect(() => {
-    if (!user) return;
+    // 초기 히스토리 엔트리 2개 추가 (back 키 인터셉트 여유)
     window.history.pushState({ page: 'app-root' }, '');
+    window.history.pushState({ page: 'app-root' }, '');
+
     const handleBackKey = () => {
+      // 로그인 전이면 무시 (기본 브라우저 동작)
+      if (!userRef.current) return;
       // Non-Tab 페이지는 자체 핸들러가 처리하므로 무시
       if (NON_TAB_VIEWS.includes(viewModeRef.current)) return;
-      // Tab 상태 → 종료 확인 팝업
+      // Tab 상태 → 히스토리 재보충 + 종료 확인 팝업
       window.history.pushState({ page: 'app-root' }, '');
       setShowExitPopup(true);
     };
     window.addEventListener('popstate', handleBackKey);
     return () => window.removeEventListener('popstate', handleBackKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, []);
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
-    window.history.go(-2);
+    window.history.go(-3);
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
