@@ -169,6 +169,18 @@
   background: #10b981;
 }
 
+/* ── 카드 카운트 ── */
+.lib-card-count {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #6366f1;
+  background: #eef2ff;
+  padding: 4px 10px;
+  border-radius: 8px;
+  white-space: nowrap;
+}
+
 /* ── 기간 필터 (date inputs) ── */
 .lib-date-row {
   display: flex;

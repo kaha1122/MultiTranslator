@@ -336,7 +336,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                     </button>
                 </div>
 
-                {/* Row 2: 토글 칩들 */}
+                {/* Row 2: 토글 칩들 + 카드 수 */}
                 <div className="lib-filter-row">
                     {/* 4) 목표 미달 */}
                     <button
@@ -364,6 +364,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         <span className="chip-dot" />
                         {t('library.filterThisWeek')}
                     </button>
+
+                    {/* 8) 필터링 카드 수 / 전체 카드 수 */}
+                    <span className="lib-card-count">
+                        {filteredCards.length}/{savedCards.length}
+                    </span>
                 </div>
 
                 {/* Row 3: 기간 (이번주 OFF일 때만 표시) */}
@@ -384,11 +389,16 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             {/* ── 카드 목록 ── */}
             <div className="cards-grid">
                 {filteredCards.length > 0 ? (
-                    filteredCards.map(card => (
+                    filteredCards.map((card, idx) => {
+                        // 카드 번호: 전체 savedCards에서의 순서 (오래된 카드부터 1번)
+                        const globalIndex = savedCards.indexOf(card);
+                        const cardNumber = globalIndex >= 0 ? savedCards.length - globalIndex : filteredCards.length - idx;
+                        return (
                         <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
                                 language={card.language}
                                 langCode={card.langCode}
+                                cardNumber={cardNumber}
                                 sourceLangCode={card.sourceLang || 'ko'}
                                 text={card.translatedText}
                                 pronunciation={card.pronunciation}
@@ -455,7 +465,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 </div>
                             </div>
                         </div>
-                    ))
+                    )})
                 ) : (
                     <div className="empty-library">
                         <Search size={48} opacity={0.2} />

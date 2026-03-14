@@ -64,6 +64,8 @@ const TranslationCard = ({
     annotations = [],
     userNotes = [],
     onMemoUpdate,
+    // 카드 일련번호 (Library에서 전달)
+    cardNumber,
     // Library 중요 마크
     starred = false,
     onToggleStarred,
@@ -252,6 +254,9 @@ Return only these 2 lines.`;
         <div className="translation-card">
             {/* 카드 상단: 언어 정보, 별 저장 버튼, 읽기 버튼 */}
             <div className="card-header">
+                {cardNumber != null && (
+                    <span className="card-number-badge">No{cardNumber}</span>
+                )}
                 <span
                     className="language-badge"
                     style={{ backgroundColor: badgeColor, color: badgeTextColor }}

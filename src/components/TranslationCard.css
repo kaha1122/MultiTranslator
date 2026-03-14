@@ -112,6 +112,14 @@
     margin-bottom: 20px;
 }
 
+.card-number-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #94a3b8;
+    margin-right: 4px;
+    letter-spacing: -0.02em;
+}
+
 .language-badge {
     font-size: 0.7rem;
     font-weight: 700;
