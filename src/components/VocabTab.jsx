@@ -42,9 +42,9 @@ export default function VocabTab({
     const t = useT(sourceLang);
 
     // ── State ────────────────────────────────────────────────────────
-    const [selectedLang, setSelectedLang] = useState(targetLangs[0] || 'en');
+    const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState('basic');
-    const [openCat, setOpenCat] = useState(null); // category id
+    const [openCat, setOpenCat] = useState('daily'); // 첫 카테고리 기본 열림
     const [selectedTopic, setSelectedTopic] = useState(null); // { catId, subId, topicId }
     const [customInput, setCustomInput] = useState('');
     const [words, setWords] = useState([]); // generated word cards
@@ -179,6 +179,36 @@ export default function VocabTab({
     // ── Render ───────────────────────────────────────────────────────
     return (
         <div className="vocab-container">
+            {/* Language Pills */}
+            <div className="vocab-lang-row">
+                {visibleLanguages.map(code => (
+                    <button
+                        key={code}
+                        className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
+                        onClick={() => setSelectedLang(code)}
+                    >
+                        {LANG_NAMES[code] || code}
+                    </button>
+                ))}
+            </div>
+
+            {/* Level Selector */}
+            <div className="vocab-level-row">
+                {[
+                    { value: 'basic', key: 'diffBasic' },
+                    { value: 'intermediate', key: 'diffIntermediate' },
+                    { value: 'advanced', key: 'diffHigh' },
+                ].map(lv => (
+                    <button
+                        key={lv.value}
+                        className={`vocab-level-btn ${level === lv.value ? 'active' : ''}`}
+                        onClick={() => setLevel(lv.value)}
+                    >
+                        {t(`scene.${lv.key}`)}
+                    </button>
+                ))}
+            </div>
+
             {/* Category Accordion */}
             {VOCAB_CATEGORIES.map(cat => {
                 const isOpen = openCat === cat.id;
@@ -238,36 +268,6 @@ export default function VocabTab({
                     if (e.target.value.trim()) setSelectedTopic(null);
                 }}
             />
-
-            {/* Language Pills */}
-            <div className="vocab-lang-row">
-                {visibleLanguages.map(code => (
-                    <button
-                        key={code}
-                        className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
-                        onClick={() => setSelectedLang(code)}
-                    >
-                        {LANG_NAMES[code] || code}
-                    </button>
-                ))}
-            </div>
-
-            {/* Level Selector */}
-            <div className="vocab-level-row">
-                {[
-                    { value: 'basic', key: 'diffBasic' },
-                    { value: 'intermediate', key: 'diffIntermediate' },
-                    { value: 'advanced', key: 'diffHigh' },
-                ].map(lv => (
-                    <button
-                        key={lv.value}
-                        className={`vocab-level-btn ${level === lv.value ? 'active' : ''}`}
-                        onClick={() => setLevel(lv.value)}
-                    >
-                        {t(`scene.${lv.key}`)}
-                    </button>
-                ))}
-            </div>
 
             {/* Generate Button */}
             <div className="vocab-generate-row">

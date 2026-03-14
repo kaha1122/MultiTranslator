@@ -1,27 +1,28 @@
 /* ── VocabTab ─────────────────────────────────────────────────────── */
 
 .vocab-container {
-  padding: 0 0 20px;
+  padding: 0 8px 20px;
   width: 100%;
+  box-sizing: border-box;
 }
 
 /* ── Language Pills (Scene 탭 스타일) ─────────────────────────────── */
 .vocab-lang-row {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   overflow-x: auto;
-  padding: 0 0 10px;
+  padding: 0 0 6px;
   -webkit-overflow-scrolling: touch;
 }
 
 .vocab-lang-pill {
-  padding: 5px 12px;
-  border-radius: 16px;
+  padding: 3px 10px;
+  border-radius: 12px;
   border: 1.5px solid #e2e8f0;
   background: white;
   color: #64748b;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   cursor: pointer;
   white-space: nowrap;
   transition: all 0.2s;
@@ -37,19 +38,19 @@
 /* ── Level Selector ──────────────────────────────────────────────── */
 .vocab-level-row {
   display: flex;
-  gap: 6px;
-  margin: 6px 0 10px;
+  gap: 5px;
+  margin: 4px 0 8px;
 }
 
 .vocab-level-btn {
   flex: 1;
-  padding: 6px 0;
-  border-radius: 8px;
+  padding: 4px 0;
+  border-radius: 7px;
   border: 1.5px solid #e2e8f0;
   background: white;
   color: #64748b;
   font-weight: 700;
-  font-size: 0.75rem;
+  font-size: 0.68rem;
   cursor: pointer;
   transition: all 0.2s;
 }
