@@ -107,7 +107,7 @@ function VocabWordCard({
                     </button>
                     <button
                         className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
-                        onClick={onSave}
+                        onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
                         title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
                     >
                         <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
@@ -353,7 +353,7 @@ export default function VocabTab({
     };
 
     // ── Save to Library ──────────────────────────────────────────────
-    const handleSave = async (wordObj, index) => {
+    const handleSave = async (wordObj, index, pronunciationScore = null) => {
         if (savedWords.has(index)) return;
         if (!onSaveToLibrary) return;
 
@@ -369,6 +369,7 @@ export default function VocabTab({
             categoryId: selectedTopic?.catId || 'custom',
             topicId: selectedTopic?.topicId || 'custom',
             difficulty: level === 'advanced' ? 'high' : level,
+            pronunciationScore,
         });
 
         if (!cardId) return;
@@ -511,7 +512,7 @@ export default function VocabTab({
                             sourceLang={sourceLang}
                             onSpeak={onSpeak}
                             isSaved={savedWords.has(i)}
-                            onSave={() => handleSave(w, i)}
+                            onSave={(score) => handleSave(w, i, score)}
                             onTrialLimitReached={onTrialLimitReached}
                             targetGoal={languageGoals[selectedLang] || 80}
                             onBookmarkPrompt={onBookmarkPrompt}

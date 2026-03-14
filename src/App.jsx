@@ -1103,7 +1103,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic' }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -1144,10 +1144,16 @@ function App() {
         example: example || '',
         exampleTranslation: exampleTranslation || '',
         pronunciation: pronunciation || '',
-        pronunciationScore: null,
+        pronunciationScore,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
+      // 목표 달성 점수로 저장된 경우 daily progress 카운트
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
       return docRef.id;
     } catch (error) {
       console.error("Vocab 카드 저장 오류:", error);
