@@ -15,12 +15,12 @@ const getMonday = (date) => {
  * 이번 주 savedCards를 sourceType(scene/vocab) × difficulty(basic/intermediate/high)로 집계
  * Returns: { scene: { basic: n, intermediate: n, high: n }, vocab: { basic: n, intermediate: n, high: n }, loading }
  */
-export const useWeeklyCardStats = (user) => {
+export const useWeeklyCardStats = (user, isActive = true) => {
     const [cards, setCards] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        if (!user?.uid) { setLoading(false); return; }
+        if (!user?.uid || !isActive) { setLoading(false); return; }
         const load = async () => {
             try {
                 const snap = await getDocs(
@@ -44,7 +44,7 @@ export const useWeeklyCardStats = (user) => {
             }
         };
         load();
-    }, [user?.uid]);
+    }, [user?.uid, isActive]);
 
     const { weekly, monthly } = useMemo(() => {
         const weekStart = getMonday(new Date());

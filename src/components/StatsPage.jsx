@@ -27,7 +27,7 @@ const getMonthDates = (year, month) => {
     return dates;
 };
 
-const StatsPage = ({ user, dailyGoal, sourceLang }) => {
+const StatsPage = ({ user, dailyGoal, sourceLang, isActive }) => {
     const t = useT(sourceLang);
     const [allData, setAllData] = useState({}); // { 'YYYY-MM-DD': { count, dailyGoal, achieved } }
     const [isLoading, setIsLoading] = useState(true);
@@ -36,9 +36,9 @@ const StatsPage = ({ user, dailyGoal, sourceLang }) => {
         return { year: now.getFullYear(), month: now.getMonth() };
     });
 
-    // Firestore에서 모든 dailyProgress 문서 로드
+    // Firestore에서 모든 dailyProgress 문서 로드 (탭 진입 시마다 갱신)
     useEffect(() => {
-        if (!user?.uid) return;
+        if (!user?.uid || !isActive) return;
         const loadAll = async () => {
             try {
                 const snap = await getDocs(
@@ -59,7 +59,7 @@ const StatsPage = ({ user, dailyGoal, sourceLang }) => {
             }
         };
         loadAll();
-    }, [user?.uid]);
+    }, [user?.uid, isActive]);
 
     const { year, month } = currentMonth;
     const today = formatDate(new Date());
@@ -202,7 +202,7 @@ const StatsPage = ({ user, dailyGoal, sourceLang }) => {
             </div>
 
             {/* 학습 게이지 */}
-            <LearningGauge user={user} sourceLang={sourceLang} />
+            <LearningGauge user={user} sourceLang={sourceLang} isActive={isActive} />
         </div>
     );
 };

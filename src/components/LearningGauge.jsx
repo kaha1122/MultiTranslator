@@ -47,7 +47,7 @@ const getMonthStart = () => {
     return d;
 };
 
-const LearningGauge = ({ user, sourceLang }) => {
+const LearningGauge = ({ user, sourceLang, isActive }) => {
     const t = useT(sourceLang);
     const [tab, setTab] = useState('dialogue'); // 'dialogue' | 'vocabulary'
     const [difficulty, setDifficulty] = useState('basic');
@@ -55,9 +55,9 @@ const LearningGauge = ({ user, sourceLang }) => {
     const [cards, setCards] = useState([]); // all savedCards for this user
     const [isLoading, setIsLoading] = useState(true);
 
-    // Firestore에서 savedCards 로드 (전체 — 클라이언트 필터링)
+    // Firestore에서 savedCards 로드 (탭 진입 시마다 갱신)
     useEffect(() => {
-        if (!user?.uid) return;
+        if (!user?.uid || !isActive) return;
         const load = async () => {
             try {
                 const snap = await getDocs(
@@ -87,7 +87,7 @@ const LearningGauge = ({ user, sourceLang }) => {
             }
         };
         load();
-    }, [user?.uid]);
+    }, [user?.uid, isActive]);
 
     // 기간 필터 날짜 계산
     const dateRange = useMemo(() => {

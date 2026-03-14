@@ -6,11 +6,11 @@ import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavigate }) => {
+const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
-    const { stats, monthly, targets, monthlyTargets, loading: statsLoading } = useWeeklyCardStats(user);
+    const { stats, monthly, targets, monthlyTargets, loading: statsLoading } = useWeeklyCardStats(user, isActive);
     const [openFolder, setOpenFolder] = useState('vocab');
 
     const folders = [

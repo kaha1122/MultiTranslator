@@ -1587,6 +1587,7 @@ function App() {
             dailyGoal={dailyGoal}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
+            isActive={viewMode === 'home'}
           />
         </div>
 
@@ -2062,7 +2063,7 @@ function App() {
 
         {/* Stats 탭 (메인 탭) */}
         <div style={{ display: viewMode === 'stats' ? 'block' : 'none', width: '100%' }}>
-          <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} />
+          <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} isActive={viewMode === 'stats'} />
         </div>
       </main>
 
