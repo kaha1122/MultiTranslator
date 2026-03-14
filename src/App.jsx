@@ -231,23 +231,32 @@ function App() {
   const [showExitPopup, setShowExitPopup] = useState(false);
   const viewModeRef = useRef(viewMode);
   const userRef = useRef(user);
+  const exitConfirmedRef = useRef(false);
   React.useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
   React.useEffect(() => { userRef.current = user; }, [user]);
 
   // Non-Tab 뷰 목록 (이들은 자체 popstate 핸들러가 back을 처리)
   const NON_TAB_VIEWS = ['guide', 'privacy', 'terms', 'contact', 'settings'];
 
-  // 컴포넌트 마운트 시 1회만 등록 (user 변경과 무관하게)
+  // 컴포넌트 마운트 시 popstate 핸들러 등록
   React.useEffect(() => {
-    // 초기 히스토리 엔트리 2개 추가 (back 키 인터셉트 여유)
-    window.history.pushState({ page: 'app-root' }, '');
+    // 히스토리 엔트리 1개 추가
     window.history.pushState({ page: 'app-root' }, '');
 
     const handleBackKey = () => {
-      // 로그인 전이면 무시 (기본 브라우저 동작)
-      if (!userRef.current) return;
-      // Non-Tab 페이지는 자체 핸들러가 처리하므로 무시
-      if (NON_TAB_VIEWS.includes(viewModeRef.current)) return;
+      // 종료 확인 후 실제 나가는 중이면 그대로 통과
+      if (exitConfirmedRef.current) return;
+      // 로그인 전이면 무시
+      if (!userRef.current) {
+        window.history.pushState({ page: 'app-root' }, '');
+        return;
+      }
+      // Non-Tab 페이지는 자체 핸들러가 처리 → 엔트리만 재보충
+      if (NON_TAB_VIEWS.includes(viewModeRef.current)) {
+        // 자체 핸들러가 이미 동작하므로, 약간 딜레이 후 재보충
+        setTimeout(() => window.history.pushState({ page: 'app-root' }, ''), 100);
+        return;
+      }
       // Tab 상태 → 히스토리 재보충 + 종료 확인 팝업
       window.history.pushState({ page: 'app-root' }, '');
       setShowExitPopup(true);
@@ -259,7 +268,11 @@ function App() {
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
-    window.history.go(-3);
+    exitConfirmedRef.current = true;
+    // 실제 종료 시도
+    try { window.close(); } catch (e) {}
+    // window.close()가 안 되는 경우 (직접 URL 입력 등) 빈 페이지로
+    setTimeout(() => { window.location.replace('about:blank'); }, 300);
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
