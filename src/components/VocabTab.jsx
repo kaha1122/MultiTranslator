@@ -123,6 +123,9 @@ function VocabWordCard({
                             <Volume2 size={14} />
                         </button>
                     </p>
+                    {w.examplePronunciation && (
+                        <p className="vocab-word-example-pron">{w.examplePronunciation}</p>
+                    )}
                     {w.exampleTranslation && (
                         <p className="vocab-word-example-trans">{w.exampleTranslation}</p>
                     )}

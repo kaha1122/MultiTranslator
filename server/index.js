@@ -1106,6 +1106,7 @@ Return ONLY valid JSON (no markdown):
       "pronunciation": "<pinyin/hiragana/romanization or empty string>",
       "meaning": "<concise meaning in ${sourceLangName}>",
       "example": "<example sentence in ${targetLangName}>",
+      "examplePronunciation": "<pinyin/hiragana/romanization of the example sentence, or empty string if not applicable>",
       "exampleTranslation": "<example translation in ${sourceLangName}>",
       "learningTip": ["<tip1 in ${sourceLangName}>", "<tip2 in ${sourceLangName}>"]
     }
