@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, BookOpen, Languages } from 'lucide-react';
+import { MapPin, BookOpen, Languages, Video, Library } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
@@ -46,6 +46,28 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
             titleKey: 'home.translationTitle',
             descKey: 'home.translationDesc',
             subDescKey: 'home.translationSubDesc',
+        },
+        {
+            id: 'video',
+            icon: <Video size={24} />,
+            emoji: '🎬',
+            color: '#e11d48',
+            bgColor: '#fff1f2',
+            borderColor: '#fecdd3',
+            titleKey: 'home.videoTitle',
+            descKey: 'home.videoDesc',
+            subDescKey: 'home.videoSubDesc',
+        },
+        {
+            id: 'library',
+            icon: <Library size={24} />,
+            emoji: '📚',
+            color: '#0891b2',
+            bgColor: '#ecfeff',
+            borderColor: '#a5f3fc',
+            titleKey: 'home.libraryTitle',
+            descKey: 'home.libraryDesc',
+            subDescKey: 'home.librarySubDesc',
         },
     ];
 
