@@ -533,14 +533,15 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // 신규 유저 첫 로그인 시 설정 화면으로 이동
+  // 신규 유저 첫 로그인 시 설정 화면으로 이동 (user.uid 변경 시에만 실행)
   useEffect(() => {
     if (!user || !profile) return;
     if (profile.hasCompletedOnboarding === true) return;
     setTargetLangs(['en']);
     setViewMode('settings');
     updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
-  }, [user, profile]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
