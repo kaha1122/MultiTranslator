@@ -317,6 +317,12 @@
     "dialogue": "Diálogo",
     "word": "Vocabulario"
   },
+  "exit": {
+    "confirmTitle": "¿Desea salir de la aplicación?",
+    "homeHint": "Para volver al inicio, toque el ícono de inicio en la esquina superior derecha.",
+    "cancel": "Cancelar",
+    "confirm": "Salir"
+  },
   "daily": {
     "goalComplete": "¡Objetivo diario alcanzado! 🎉",
     "keepGoing": "¡Muy bien! Sigue adelante 💪",

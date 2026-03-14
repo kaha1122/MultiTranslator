@@ -237,6 +237,32 @@ function App() {
     return () => window.removeEventListener('popstate', handlePop);
   }, [dictBackTo]);
 
+  // ── 모바일 Back 키 종료 확인 팝업 ──
+  const [showExitPopup, setShowExitPopup] = useState(false);
+  React.useEffect(() => {
+    if (!user) return;
+    // 초기 히스토리 엔트리 추가 (back 키 인터셉트용)
+    window.history.pushState({ page: 'app-root' }, '');
+    const handleBackKey = () => {
+      // 기존 핸들러가 처리하는 상태면 무시 (dictBackTo, libraryBackTo 등)
+      if (dictBackTo || libraryBackTo) return;
+      // 팝업 표시 + 히스토리 재보충
+      window.history.pushState({ page: 'app-root' }, '');
+      setShowExitPopup(true);
+    };
+    window.addEventListener('popstate', handleBackKey);
+    return () => window.removeEventListener('popstate', handleBackKey);
+  }, [user, dictBackTo, libraryBackTo]);
+
+  const handleExitConfirm = () => {
+    setShowExitPopup(false);
+    window.history.back(); // 실제 종료 (브라우저 이전 페이지로)
+    window.history.back();
+  };
+  const handleExitCancel = () => {
+    setShowExitPopup(false);
+  };
+
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
@@ -2495,6 +2521,44 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 모바일 Back 키 종료 확인 팝업 */}
+      {showExitPopup && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999,
+        }} onClick={handleExitCancel}>
+          <div style={{
+            background: 'white', borderRadius: '18px', padding: '24px 22px 18px',
+            width: '85%', maxWidth: '320px', textAlign: 'center',
+            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
+          }} onClick={e => e.stopPropagation()}>
+            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+              {getT(sourceLang, 'exit.confirmTitle') || '앱을 종료하시겠습니까?'}
+            </p>
+            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 18px', lineHeight: 1.5 }}>
+              {getT(sourceLang, 'exit.homeHint') || 'Home으로 돌아가시려면 우측 상단 홈 아이콘을 누르세요.'}
+            </p>
+            <div style={{ display: 'flex', gap: '10px' }}>
+              <button onClick={handleExitCancel} style={{
+                flex: 1, padding: '10px 0', borderRadius: '10px',
+                border: '1.5px solid #e2e8f0', background: 'white',
+                fontWeight: 700, fontSize: '0.85rem', color: '#64748b', cursor: 'pointer',
+              }}>
+                {getT(sourceLang, 'exit.cancel') || '취소'}
+              </button>
+              <button onClick={handleExitConfirm} style={{
+                flex: 1, padding: '10px 0', borderRadius: '10px',
+                border: 'none', background: '#ef4444',
+                fontWeight: 700, fontSize: '0.85rem', color: 'white', cursor: 'pointer',
+              }}>
+                {getT(sourceLang, 'exit.confirm') || '종료'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Stripe 결제 결과 토스트 */}
       {paymentToast && (

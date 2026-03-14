@@ -317,6 +317,12 @@
     "dialogue": "对话",
     "word": "词汇"
   },
+  "exit": {
+    "confirmTitle": "确定要退出应用吗？",
+    "homeHint": "要返回主页，请点击右上角的主页图标。",
+    "cancel": "取消",
+    "confirm": "退出"
+  },
   "daily": {
     "goalComplete": "今日目标达成！🎉",
     "keepGoing": "很好！继续加油 💪",
