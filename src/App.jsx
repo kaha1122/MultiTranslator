@@ -2522,7 +2522,7 @@ function App() {
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 24px',
           borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
-          zIndex: 9999, whiteSpace: 'nowrap',
+          zIndex: 9999, whiteSpace: 'pre-line', textAlign: 'center',
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
           animation: 'fadeInUp 0.25s ease-out',
         }}>

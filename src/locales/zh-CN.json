@@ -318,7 +318,7 @@
     "word": "词汇"
   },
   "exit": {
-    "backToast": "再按一次退出"
+    "backToast": "再按一次退出。\n点击顶部主页图标返回首页。"
   },
   "daily": {
     "goalComplete": "今日目标达成！🎉",

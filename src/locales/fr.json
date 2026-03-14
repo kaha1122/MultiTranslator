@@ -318,7 +318,7 @@
     "word": "Vocabulaire"
   },
   "exit": {
-    "backToast": "Appuyez à nouveau pour quitter"
+    "backToast": "Appuyez à nouveau pour quitter.\nAppuyez sur l'icône d'accueil en haut pour revenir."
   },
   "daily": {
     "goalComplete": "Objectif du jour atteint ! 🎉",
