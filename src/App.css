@@ -2,6 +2,11 @@
   box-sizing: border-box;
 }
 
+/* reCAPTCHA 배지 숨김 (invisible reCAPTCHA 사용 시) */
+.grecaptcha-badge {
+  visibility: hidden !important;
+}
+
 :root {
   --primary-color: #00a884;
   --primary-light: #f0fdf4;

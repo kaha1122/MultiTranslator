@@ -9,7 +9,8 @@ import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
 
 // Firebase & Auth
-import { auth, db, RecaptchaVerifier, signInWithPhoneNumber } from './firebase/config';
+import { auth, db, RecaptchaVerifier } from './firebase/config';
+import { PhoneAuthProvider } from 'firebase/auth';
 import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'firebase/firestore';
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
@@ -621,8 +622,9 @@ function App() {
         callback: () => { /* resolved */ }
       });
 
-      const confirmResult = await signInWithPhoneNumber(auth, fullPhone, recaptchaVerifierRef.current);
-      setPhoneConfirmResult(confirmResult);
+      const phoneProvider = new PhoneAuthProvider(auth);
+      const verificationId = await phoneProvider.verifyPhoneNumber(fullPhone, recaptchaVerifierRef.current);
+      setPhoneConfirmResult(verificationId);
       setPhoneVerifStep('sent');
       setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneCodeSent') });
     } catch (e) {
@@ -643,7 +645,23 @@ function App() {
     if (!phoneVerifCode.trim() || !phoneConfirmResult) return;
     try {
       setPhoneVerifStep('verifying');
-      await phoneConfirmResult.confirm(phoneVerifCode);
+      // verificationId + code로 credential 생성 후 검증
+      const credential = PhoneAuthProvider.credential(phoneConfirmResult, phoneVerifCode);
+      // 현재 사용자에 전화번호 연결 (로그인 변경 없음)
+      const { linkWithCredential, unlink } = await import('firebase/auth');
+      try {
+        await linkWithCredential(auth.currentUser, credential);
+      } catch (linkErr) {
+        // 이미 다른 전화번호가 연결된 경우 → 해제 후 재연결
+        if (linkErr.code === 'auth/provider-already-linked') {
+          await unlink(auth.currentUser, 'phone');
+          await linkWithCredential(auth.currentUser, credential);
+        } else if (linkErr.code === 'auth/credential-already-in-use') {
+          // 다른 계정에 이미 연결된 번호 — 그래도 Firestore에는 저장
+        } else {
+          throw linkErr;
+        }
+      }
       // 인증 성공 → Firestore에 phoneVerified 저장
       const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
       const rawDigits = profileFormData.phone.replace(/\D/g, '');
