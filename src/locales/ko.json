@@ -317,6 +317,16 @@
     "dialogue": "대화",
     "word": "단어"
   },
+  "onboarding": {
+    "nativeLang": "모국어는 어떤 언어인가요?",
+    "targetLang": "학습하고자 하는 언어는\n어떤 언어인가요?",
+    "moreLang": "함께 학습할 또 다른\n언어가 있나요?",
+    "noMore": "아니오, 충분합니다",
+    "next": "다음",
+    "doneTitle": "언어가 설정되었습니다.",
+    "doneDesc": "변경하시려면, 설정에서 변경하실 수 있습니다.",
+    "doneBtn": "확인"
+  },
   "exit": {
     "backToast": "한 번 더 누르면 종료됩니다.\n홈으로 가시려면 상단 홈키를 눌러주세요."
   },

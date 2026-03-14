@@ -317,6 +317,16 @@
     "dialogue": "会話",
     "word": "単語"
   },
+  "onboarding": {
+    "nativeLang": "母国語は何ですか？",
+    "targetLang": "学びたい言語は何ですか？",
+    "moreLang": "他に学びたい言語は\nありますか？",
+    "noMore": "いいえ、十分です",
+    "next": "次へ",
+    "doneTitle": "言語が設定されました。",
+    "doneDesc": "変更は設定から行えます。",
+    "doneBtn": "OK"
+  },
   "exit": {
     "backToast": "もう一度押すと終了します。\nホームに戻るには上部のホームアイコンをタップしてください。"
   },

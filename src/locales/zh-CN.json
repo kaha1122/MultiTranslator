@@ -317,6 +317,16 @@
     "dialogue": "对话",
     "word": "词汇"
   },
+  "onboarding": {
+    "nativeLang": "您的母语是什么？",
+    "targetLang": "您想学习哪种语言？",
+    "moreLang": "还有其他想学的语言吗？",
+    "noMore": "不了，够了",
+    "next": "下一步",
+    "doneTitle": "语言已设置。",
+    "doneDesc": "如需更改，请在设置中修改。",
+    "doneBtn": "确认"
+  },
   "exit": {
     "backToast": "再按一次退出。\n点击顶部主页图标返回首页。"
   },

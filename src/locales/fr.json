@@ -317,6 +317,16 @@
     "dialogue": "Dialogue",
     "word": "Vocabulaire"
   },
+  "onboarding": {
+    "nativeLang": "Quelle est votre langue maternelle ?",
+    "targetLang": "Quelle langue souhaitez-vous\napprendre ?",
+    "moreLang": "Une autre langue à\napprendre ?",
+    "noMore": "Non, ça suffit",
+    "next": "Suivant",
+    "doneTitle": "Les langues ont été configurées.",
+    "doneDesc": "Vous pouvez les modifier dans les paramètres.",
+    "doneBtn": "OK"
+  },
   "exit": {
     "backToast": "Appuyez à nouveau pour quitter.\nAppuyez sur l'icône d'accueil en haut pour revenir."
   },

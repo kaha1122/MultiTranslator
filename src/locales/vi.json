@@ -317,6 +317,16 @@
     "dialogue": "Hội thoại",
     "word": "Từ vựng"
   },
+  "onboarding": {
+    "nativeLang": "Tiếng mẹ đẻ của bạn là gì?",
+    "targetLang": "Bạn muốn học ngôn ngữ nào?",
+    "moreLang": "Bạn có muốn học thêm\nngôn ngữ nào không?",
+    "noMore": "Không, đủ rồi",
+    "next": "Tiếp",
+    "doneTitle": "Ngôn ngữ đã được thiết lập.",
+    "doneDesc": "Bạn có thể thay đổi trong Cài đặt.",
+    "doneBtn": "OK"
+  },
   "exit": {
     "backToast": "Nhấn lần nữa để thoát.\nNhấn biểu tượng trang chủ ở trên để về Home."
   },

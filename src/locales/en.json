@@ -317,6 +317,16 @@
     "dialogue": "Dialogue",
     "word": "Vocabulary"
   },
+  "onboarding": {
+    "nativeLang": "What is your native language?",
+    "targetLang": "Which language would you\nlike to learn?",
+    "moreLang": "Any other language you\nwould like to learn?",
+    "noMore": "No, that's enough",
+    "next": "Next",
+    "doneTitle": "Languages have been set.",
+    "doneDesc": "You can change them in Settings.",
+    "doneBtn": "OK"
+  },
   "exit": {
     "backToast": "Press back again to exit.\nTap the home icon at top to go Home."
   },

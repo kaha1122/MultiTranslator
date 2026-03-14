@@ -317,6 +317,16 @@
     "dialogue": "Dialog",
     "word": "Vokabeln"
   },
+  "onboarding": {
+    "nativeLang": "Was ist Ihre Muttersprache?",
+    "targetLang": "Welche Sprache möchten Sie\nlernen?",
+    "moreLang": "Noch eine weitere Sprache\nlernen?",
+    "noMore": "Nein, das reicht",
+    "next": "Weiter",
+    "doneTitle": "Sprachen wurden eingestellt.",
+    "doneDesc": "Sie können dies in den Einstellungen ändern.",
+    "doneBtn": "OK"
+  },
   "exit": {
     "backToast": "Erneut drücken zum Beenden.\nTippen Sie oben auf das Home-Symbol."
   },
