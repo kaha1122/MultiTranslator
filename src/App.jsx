@@ -226,37 +226,21 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // 사전(Translation) 이동 시 모바일 back 지원
-  React.useEffect(() => {
-    if (!dictBackTo) return;
-    const handlePop = () => {
-      setViewMode(dictBackTo);
-      setDictBackTo(null);
-    };
-    window.addEventListener('popstate', handlePop);
-    return () => window.removeEventListener('popstate', handlePop);
-  }, [dictBackTo]);
-
   // ── 모바일 Back 키 종료 확인 팝업 ──
   const [showExitPopup, setShowExitPopup] = useState(false);
-  const dictBackToRef = useRef(dictBackTo);
-  const libraryBackToRef = useRef(libraryBackTo);
-  React.useEffect(() => { dictBackToRef.current = dictBackTo; }, [dictBackTo]);
-  React.useEffect(() => { libraryBackToRef.current = libraryBackTo; }, [libraryBackTo]);
+  const viewModeRef = useRef(viewMode);
+  React.useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
 
-  // viewMode 변경 시마다 히스토리 엔트리 보충
+  // Non-Tab 뷰 목록 (이들은 자체 popstate 핸들러가 back을 처리)
+  const NON_TAB_VIEWS = ['guide', 'privacy', 'terms', 'contact', 'settings'];
+
   React.useEffect(() => {
     if (!user) return;
     window.history.pushState({ page: 'app-root' }, '');
-  }, [user, viewMode]);
-
-  // popstate 리스너 (user 변경 시에만 등록/해제)
-  React.useEffect(() => {
-    if (!user) return;
     const handleBackKey = () => {
-      // 기존 핸들러가 처리하는 상태면 무시
-      if (dictBackToRef.current || libraryBackToRef.current) return;
-      // 히스토리 재보충 + 팝업 표시
+      // Non-Tab 페이지는 자체 핸들러가 처리하므로 무시
+      if (NON_TAB_VIEWS.includes(viewModeRef.current)) return;
+      // Tab 상태 → 종료 확인 팝업
       window.history.pushState({ page: 'app-root' }, '');
       setShowExitPopup(true);
     };
@@ -267,7 +251,6 @@ function App() {
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
-    // 보충된 엔트리 + 원본 → 2번 back으로 실제 종료
     window.history.go(-2);
   };
   const handleExitCancel = () => {
@@ -1479,18 +1462,17 @@ function App() {
               </button>
               <button className="header-dict-btn" onClick={() => {
                 setDictBackTo(viewMode);
-                history.pushState({ page: `dict-from-${viewMode}` }, '');
                 setViewMode('translation');
               }}>
                 {getT(sourceLang, 'nav.translation')}
               </button>
             </div>
           ) : (viewMode === 'translation' && dictBackTo) ? (
-            <button className="header-dict-btn" onClick={() => history.back()}>
+            <button className="header-dict-btn" onClick={() => { setViewMode(dictBackTo); setDictBackTo(null); }}>
               Back
             </button>
           ) : (viewMode === 'library' && libraryBackTo) ? (
-            <button className="header-dict-btn" onClick={() => history.back()}>
+            <button className="header-dict-btn" onClick={() => { setViewMode(libraryBackTo); setLibraryBackTo(null); }}>
               Back
             </button>
           ) : (

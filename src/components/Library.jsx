@@ -123,14 +123,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         }
     }, [savedCards, progressPopupOpen]);
 
-    // ── 다른 탭에서 넘어온 경우 모바일 뒤로가기 지원 ──
-    useEffect(() => {
-        if (!libraryBackTo || !onBack) return;
-        history.pushState({ page: `library-from-${libraryBackTo}` }, '');
-        const handlePop = () => onBack();
-        window.addEventListener('popstate', handlePop);
-        return () => window.removeEventListener('popstate', handlePop);
-    }, [libraryBackTo, onBack]);
+    // (Back키는 App.jsx에서 전역 관리 — header Back 버튼으로 복귀)
 
     // ── 카드 삭제 ──
     const triggerDelete = (id) => setDeleteConfirmId(id);
