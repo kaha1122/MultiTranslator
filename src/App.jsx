@@ -1191,7 +1191,7 @@ function App() {
                   <p className="sidebar-user-tier">{tier || 'Free'}</p>
                 </div>
                 <button
-                  onClick={handleEditProfile}
+                  onClick={() => { setSidebarOpen(false); handleEditProfile(); }}
                   style={{
                     fontSize: '0.7rem',
                     color: 'var(--primary-color)',
