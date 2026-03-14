@@ -36,7 +36,10 @@ class ErrorBoundary extends Component {
 window.__exitConfirmed = false;
 window.history.pushState(null, null, window.location.href);
 window.onpopstate = function () {
-  if (window.__exitConfirmed) return;
+  if (window.__exitConfirmed) {
+    window.__exitConfirmed = false; // 리셋 (종료 실패 시 다음 back에서 팝업 다시 표시)
+    return;
+  }
   window.history.pushState(null, null, window.location.href);
   window.dispatchEvent(new Event('app-back-pressed'));
 };

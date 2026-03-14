@@ -239,7 +239,8 @@ function App() {
   const handleExitConfirm = () => {
     setShowExitPopup(false);
     window.__exitConfirmed = true;
-    window.history.back();
+    // guard 엔트리 + 원본 엔트리 = 2개 뒤로 → PWA 종료
+    window.history.go(-2);
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
