@@ -40,15 +40,14 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
       if (availableForTarget.length > 1) {
         setStep(2); // 추가 언어 질문으로
       } else {
-        onComplete(source, [code]);
+        setStep('done');
       }
     } else {
       // 추가 학습 언어
       const newTargets = [...targets, code];
       setTargets(newTargets);
       if (newTargets.length >= 3 || availableForMore.length <= 1) {
-        // 3개 채웠거나 더 이상 선택할 언어 없음
-        onComplete(source, newTargets);
+        setStep('done');
       } else {
         setStep(step + 1); // 다음 추가 언어 질문
       }
@@ -56,6 +55,10 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   };
 
   const handleNoMore = () => {
+    setStep('done');
+  };
+
+  const handleDone = () => {
     onComplete(source, targets);
   };
 
@@ -127,6 +130,33 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
     vi: 'Tiếp', fr: 'Suivant', de: 'Weiter', es: 'Siguiente',
   };
 
+  const doneConfig = {
+    title: {
+      ko: '언어가 설정되었습니다.',
+      en: 'Languages have been set.',
+      ja: '言語が設定されました。',
+      'zh-CN': '语言已设置。',
+      vi: 'Ngôn ngữ đã được thiết lập.',
+      fr: 'Les langues ont été configurées.',
+      de: 'Sprachen wurden eingestellt.',
+      es: 'Los idiomas han sido configurados.',
+    },
+    desc: {
+      ko: '변경하시려면, 설정에서 변경하실 수 있습니다.',
+      en: 'You can change them in Settings.',
+      ja: '変更は設定から行えます。',
+      'zh-CN': '如需更改，请在设置中修改。',
+      vi: 'Bạn có thể thay đổi trong Cài đặt.',
+      fr: 'Vous pouvez les modifier dans les paramètres.',
+      de: 'Sie können dies in den Einstellungen ändern.',
+      es: 'Puede cambiarlos en Configuración.',
+    },
+    btn: {
+      ko: '확인', en: 'OK', ja: 'OK', 'zh-CN': '确认',
+      vi: 'OK', fr: 'OK', de: 'OK', es: 'OK',
+    },
+  };
+
   return (
     <div className="onb-overlay">
       <motion.div
@@ -152,38 +182,56 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
             transition={{ duration: 0.2 }}
             className="onb-body"
           >
-            <h2 className="onb-title">{getTitle()}</h2>
+            {step === 'done' ? (
+              <>
+                <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>✅</div>
+                <h2 className="onb-title">{doneConfig.title[source] || doneConfig.title.en}</h2>
+                <p style={{
+                  color: '#64748b', fontSize: '0.85rem', margin: '8px 0 24px',
+                  lineHeight: 1.6,
+                }}>
+                  {doneConfig.desc[source] || doneConfig.desc.en}
+                </p>
+                <button className="onb-next-btn" onClick={handleDone}>
+                  {doneConfig.btn[source] || doneConfig.btn.en}
+                </button>
+              </>
+            ) : (
+              <>
+                <h2 className="onb-title">{getTitle()}</h2>
 
-            {/* 언어 버튼 그리드 */}
-            <div className="onb-lang-grid">
-              {(step === 0 ? LANGUAGES : (step === 1 ? availableForTarget : availableForMore)).map(lang => {
-                const isSelected = step === 0
-                  ? source === lang.code
-                  : targets.includes(lang.code);
-                return (
-                  <button
-                    key={lang.code}
-                    className={`onb-lang-btn ${isSelected ? 'selected' : ''}`}
-                    onClick={() => step === 0 ? handleSourceSelect(lang.code) : handleTargetSelect(lang.code)}
-                  >
-                    <span className="onb-lang-flag">{lang.flag}</span>
-                    <span className="onb-lang-name">{lang.name}</span>
+                {/* 언어 버튼 그리드 */}
+                <div className="onb-lang-grid">
+                  {(step === 0 ? LANGUAGES : (step === 1 ? availableForTarget : availableForMore)).map(lang => {
+                    const isSelected = step === 0
+                      ? source === lang.code
+                      : targets.includes(lang.code);
+                    return (
+                      <button
+                        key={lang.code}
+                        className={`onb-lang-btn ${isSelected ? 'selected' : ''}`}
+                        onClick={() => step === 0 ? handleSourceSelect(lang.code) : handleTargetSelect(lang.code)}
+                      >
+                        <span className="onb-lang-flag">{lang.flag}</span>
+                        <span className="onb-lang-name">{lang.name}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* 하단 버튼 */}
+                {step === 0 && (
+                  <button className="onb-next-btn" onClick={handleNextFromSource}>
+                    {nextText[source] || nextText.en} →
                   </button>
-                );
-              })}
-            </div>
+                )}
 
-            {/* 하단 버튼 */}
-            {step === 0 && (
-              <button className="onb-next-btn" onClick={handleNextFromSource}>
-                {nextText[source] || nextText.en} →
-              </button>
-            )}
-
-            {step >= 2 && (
-              <button className="onb-skip-btn" onClick={handleNoMore}>
-                {getNoText()}
-              </button>
+                {step >= 2 && (
+                  <button className="onb-skip-btn" onClick={handleNoMore}>
+                    {getNoText()}
+                  </button>
+                )}
+              </>
             )}
           </motion.div>
         </AnimatePresence>
