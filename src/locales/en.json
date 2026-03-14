@@ -318,10 +318,7 @@
     "word": "Vocabulary"
   },
   "exit": {
-    "confirmTitle": "Do you want to exit the app?",
-    "homeHint": "To go back to Home, tap the home icon at the top right.",
-    "cancel": "Cancel",
-    "confirm": "Exit"
+    "backToast": "Press back again to exit"
   },
   "daily": {
     "goalComplete": "Today's Goal Complete!",

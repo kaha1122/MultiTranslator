@@ -227,24 +227,17 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // ── 모바일 Back 키 → 종료 확인 팝업 ──
-  const [showExitPopup, setShowExitPopup] = useState(false);
+  // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
+  const [showExitToast, setShowExitToast] = useState(false);
 
   React.useEffect(() => {
-    const handler = () => setShowExitPopup(true);
+    const handler = () => {
+      setShowExitToast(true);
+      setTimeout(() => setShowExitToast(false), 2000);
+    };
     window.addEventListener('app-back-pressed', handler);
     return () => window.removeEventListener('app-back-pressed', handler);
   }, []);
-
-  const handleExitConfirm = () => {
-    setShowExitPopup(false);
-    window.__exitConfirmed = true;
-    // guard 엔트리 + 원본 엔트리 = 2개 뒤로 → PWA 종료
-    window.history.go(-2);
-  };
-  const handleExitCancel = () => {
-    setShowExitPopup(false);
-  };
 
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -2523,41 +2516,17 @@ function App() {
         />
       )}
 
-      {/* 모바일 Back 키 종료 확인 팝업 */}
-      {showExitPopup && (
+      {/* 모바일 Back 키 → 종료 토스트 */}
+      {showExitToast && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.45)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999,
-        }} onClick={handleExitCancel}>
-          <div style={{
-            background: 'white', borderRadius: '18px', padding: '24px 22px 18px',
-            width: '85%', maxWidth: '320px', textAlign: 'center',
-            boxShadow: '0 8px 32px rgba(0,0,0,0.18)',
-          }} onClick={e => e.stopPropagation()}>
-            <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
-              {getT(sourceLang, 'exit.confirmTitle') || '앱을 종료하시겠습니까?'}
-            </p>
-            <p style={{ fontSize: '0.72rem', color: '#94a3b8', margin: '0 0 18px', lineHeight: 1.5 }}>
-              {getT(sourceLang, 'exit.homeHint') || 'Home으로 돌아가시려면 우측 상단 홈 아이콘을 누르세요.'}
-            </p>
-            <div style={{ display: 'flex', gap: '10px' }}>
-              <button onClick={handleExitCancel} style={{
-                flex: 1, padding: '10px 0', borderRadius: '10px',
-                border: '1.5px solid #e2e8f0', background: 'white',
-                fontWeight: 700, fontSize: '0.85rem', color: '#64748b', cursor: 'pointer',
-              }}>
-                {getT(sourceLang, 'exit.cancel') || '취소'}
-              </button>
-              <button onClick={handleExitConfirm} style={{
-                flex: 1, padding: '10px 0', borderRadius: '10px',
-                border: 'none', background: '#ef4444',
-                fontWeight: 700, fontSize: '0.85rem', color: 'white', cursor: 'pointer',
-              }}>
-                {getT(sourceLang, 'exit.confirm') || '종료'}
-              </button>
-            </div>
-          </div>
+          position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 24px',
+          borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
+          zIndex: 9999, whiteSpace: 'nowrap',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          animation: 'fadeInUp 0.25s ease-out',
+        }}>
+          {getT(sourceLang, 'exit.backToast') || '한 번 더 누르면 종료됩니다'}
         </div>
       )}
 

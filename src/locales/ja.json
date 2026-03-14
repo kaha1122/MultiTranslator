@@ -318,10 +318,7 @@
     "word": "単語"
   },
   "exit": {
-    "confirmTitle": "アプリを終了しますか？",
-    "homeHint": "ホームに戻るには、右上のホームアイコンをタップしてください。",
-    "cancel": "キャンセル",
-    "confirm": "終了"
+    "backToast": "もう一度押すと終了します"
   },
   "daily": {
     "goalComplete": "今日の目標達成！🎉",

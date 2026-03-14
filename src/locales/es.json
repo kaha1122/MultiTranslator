@@ -318,10 +318,7 @@
     "word": "Vocabulario"
   },
   "exit": {
-    "confirmTitle": "¿Desea salir de la aplicación?",
-    "homeHint": "Para volver al inicio, toque el ícono de inicio en la esquina superior derecha.",
-    "cancel": "Cancelar",
-    "confirm": "Salir"
+    "backToast": "Presiona otra vez para salir"
   },
   "daily": {
     "goalComplete": "¡Objetivo diario alcanzado! 🎉",

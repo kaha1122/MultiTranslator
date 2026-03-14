@@ -318,10 +318,7 @@
     "word": "Từ vựng"
   },
   "exit": {
-    "confirmTitle": "Bạn có muốn thoát ứng dụng?",
-    "homeHint": "Để quay về Trang chủ, hãy nhấn biểu tượng Home ở góc trên bên phải.",
-    "cancel": "Hủy",
-    "confirm": "Thoát"
+    "backToast": "Nhấn lần nữa để thoát"
   },
   "daily": {
     "goalComplete": "Hoàn thành mục tiêu hôm nay! 🎉",

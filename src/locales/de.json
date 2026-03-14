@@ -318,10 +318,7 @@
     "word": "Vokabeln"
   },
   "exit": {
-    "confirmTitle": "Möchten Sie die App beenden?",
-    "homeHint": "Um zur Startseite zurückzukehren, tippen Sie auf das Home-Symbol oben rechts.",
-    "cancel": "Abbrechen",
-    "confirm": "Beenden"
+    "backToast": "Erneut drücken zum Beenden"
   },
   "daily": {
     "goalComplete": "Tagesziel erreicht! 🎉",

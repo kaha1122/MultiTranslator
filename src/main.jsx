@@ -33,15 +33,26 @@ class ErrorBoundary extends Component {
 }
 
 // ── 모바일 Back 키 인터셉트 (React 렌더 전에 즉시 설정) ──
-window.__exitConfirmed = false;
+// "두 번 뒤로 누르면 종료" 패턴:
+// 1차 Back → 토스트 표시 + 2초 타이머
+// 2차 Back (2초 내) → guard 해제 → OS가 자연스럽게 PWA 종료
+window.__backPressedOnce = false;
+window.__backTimer = null;
 window.history.pushState(null, null, window.location.href);
 window.onpopstate = function () {
-  if (window.__exitConfirmed) {
-    window.__exitConfirmed = false; // 리셋 (종료 실패 시 다음 back에서 팝업 다시 표시)
-    return;
+  if (window.__backPressedOnce) {
+    // 2초 이내 두 번째 Back → guard 없이 통과 → PWA 종료
+    clearTimeout(window.__backTimer);
+    window.__backPressedOnce = false;
+    return; // pushState 안 함 → 히스토리 비어서 OS가 닫음
   }
+  // 첫 번째 Back → guard 유지 + 토스트 요청
   window.history.pushState(null, null, window.location.href);
+  window.__backPressedOnce = true;
   window.dispatchEvent(new Event('app-back-pressed'));
+  window.__backTimer = setTimeout(() => {
+    window.__backPressedOnce = false;
+  }, 2000);
 };
 
 createRoot(document.getElementById('root')).render(

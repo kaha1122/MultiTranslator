@@ -318,10 +318,7 @@
     "word": "단어"
   },
   "exit": {
-    "confirmTitle": "앱을 종료하시겠습니까?",
-    "homeHint": "Home으로 돌아가시려면 우측 상단 홈 아이콘을 누르세요.",
-    "cancel": "취소",
-    "confirm": "종료"
+    "backToast": "한 번 더 누르면 종료됩니다"
   },
   "daily": {
     "goalComplete": "오늘 목표 달성! 🎉",
