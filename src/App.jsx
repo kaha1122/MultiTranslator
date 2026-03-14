@@ -232,27 +232,27 @@ function App() {
   const exitConfirmedRef = useRef(false);
 
   React.useEffect(() => {
-    // 앱 시작 시 히스토리 guard 삽입
-    window.history.replaceState({ pronunfit: true }, '');
-    window.history.pushState({ pronunfit: true }, '');
+    // guard 엔트리 삽입 (URL 그대로 유지)
+    window.history.pushState(null, null, window.location.href);
 
-    const onPopState = () => {
-      // 종료 확정 후에는 그대로 나감 (PWA 자연 종료)
-      if (exitConfirmedRef.current) return;
-      // 항상 guard 재삽입 → 다음 back도 잡을 수 있음
-      window.history.pushState({ pronunfit: true }, '');
-      // 팝업 표시
+    // onpopstate 직접 할당 — 절대 하나만 존재, 충돌 없음
+    window.onpopstate = function () {
+      if (exitConfirmedRef.current) {
+        exitConfirmedRef.current = false;
+        return;
+      }
+      // guard 재삽입 + 팝업
+      window.history.pushState(null, null, window.location.href);
       setShowExitPopup(true);
     };
 
-    window.addEventListener('popstate', onPopState);
-    return () => window.removeEventListener('popstate', onPopState);
+    return () => { window.onpopstate = null; };
   }, []);
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
     exitConfirmedRef.current = true;
-    window.history.back(); // guard pop → 다시 back → PWA 종료
+    window.history.back();
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
