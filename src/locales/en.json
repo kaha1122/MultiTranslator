@@ -346,6 +346,7 @@
     "bookmarkPromptTitle": "Goal Reached!",
     "bookmarkPromptDesc": "Tap the ⭐ button to save this sentence to your library. It will count toward today's learning goal.",
     "bookmarkConfirm": "OK",
+    "dontShowAgain": "Don't show again",
     "bookmarkNow": "Bookmark Now",
     "bookmarkLater": "Later"
   },

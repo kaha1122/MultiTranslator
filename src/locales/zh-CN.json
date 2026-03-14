@@ -346,6 +346,7 @@
     "bookmarkPromptTitle": "达到目标分数！",
     "bookmarkPromptDesc": "点击 ⭐ 按钮将这个句子保存到库中，即可记录为今天的学习卡片。",
     "bookmarkConfirm": "确认",
+    "dontShowAgain": "不再提示",
     "bookmarkNow": "立即收藏",
     "bookmarkLater": "稍后再说"
   },

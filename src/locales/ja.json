@@ -346,6 +346,7 @@
     "bookmarkPromptTitle": "目標スコア達成！",
     "bookmarkPromptDesc": "⭐ ボタンを押してこのフレーズをライブラリに保存してください。今日の学習カードとして記録されます。",
     "bookmarkConfirm": "OK",
+    "dontShowAgain": "今後表示しない",
     "bookmarkNow": "ブックマークする",
     "bookmarkLater": "あとで"
   },

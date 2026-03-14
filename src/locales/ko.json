@@ -346,6 +346,7 @@
     "bookmarkPromptTitle": "목표 점수 달성!",
     "bookmarkPromptDesc": "⭐ 버튼을 눌러 이 문장을 라이브러리에 저장하세요. 오늘의 학습 카드로 기록됩니다.",
     "bookmarkConfirm": "확인",
+    "dontShowAgain": "다시 알리지 않음",
     "bookmarkNow": "북마크하기",
     "bookmarkLater": "나중에"
   },

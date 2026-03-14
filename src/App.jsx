@@ -214,6 +214,7 @@ function App() {
 
   // 비Library 탭에서 목표 달성 시 — 북마크 안내 팝업 표시 + 음향효과
   const handleBookmarkPrompt = useCallback((score) => {
+    if (localStorage.getItem('hideBookmarkPrompt') === 'true') return;
     playSuccessSound();
     setBookmarkPrompt({ score });
   }, []);
