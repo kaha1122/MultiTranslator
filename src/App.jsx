@@ -1184,12 +1184,29 @@ function App() {
                 <div className="user-avatar" style={{ width: 36, height: 36, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <User size={18} color="var(--primary-color)" />
                 </div>
-                <div style={{ minWidth: 0 }}>
+                <div style={{ minWidth: 0, flex: 1 }}>
                   <p className="sidebar-username" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.displayName || user?.displayName || 'User'}
                   </p>
                   <p className="sidebar-user-tier">{tier || 'Free'}</p>
                 </div>
+                <span
+                  onClick={handleEditProfile}
+                  style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--primary-color)',
+                    cursor: 'pointer',
+                    fontWeight: 600,
+                    flexShrink: 0,
+                    padding: '2px 6px',
+                    borderRadius: '4px',
+                    transition: 'background 0.2s',
+                  }}
+                  onMouseEnter={(e) => e.target.style.background = 'rgba(34,197,94,0.1)'}
+                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                >
+                  Edit
+                </span>
               </div>
             )}
 
