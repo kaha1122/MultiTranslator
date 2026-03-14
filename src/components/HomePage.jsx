@@ -10,7 +10,7 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
-    const { stats, targets, loading: statsLoading } = useWeeklyCardStats(user);
+    const { stats, monthly, targets, loading: statsLoading } = useWeeklyCardStats(user);
     const [openFolder, setOpenFolder] = useState(null);
 
     const folders = [
@@ -184,7 +184,14 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                         <table className="home-stats-table">
                             <thead>
                                 <tr>
-                                    <th></th>
+                                    <th rowSpan={2}></th>
+                                    <th colSpan={3} className="home-stats-group-header">📖 {t('home.word')}</th>
+                                    <th colSpan={3} className="home-stats-group-header">🎭 {t('home.dialogue')}</th>
+                                </tr>
+                                <tr>
+                                    <th>{t('scene.diffBasic')}</th>
+                                    <th>{t('scene.diffIntermediate')}</th>
+                                    <th>{t('scene.diffHigh')}</th>
                                     <th>{t('scene.diffBasic')}</th>
                                     <th>{t('scene.diffIntermediate')}</th>
                                     <th>{t('scene.diffHigh')}</th>
@@ -192,16 +199,22 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className="home-stats-row-label">🎭 {t('home.dialogue')}</td>
-                                    <td>{stats.scene.basic}/{targets.scene}</td>
-                                    <td>{stats.scene.intermediate}/{targets.scene}</td>
-                                    <td>{stats.scene.high}/{targets.scene}</td>
+                                    <td className="home-stats-row-label">{t('gauge.thisWeek')}</td>
+                                    <td>{stats.vocab.basic}</td>
+                                    <td>{stats.vocab.intermediate}</td>
+                                    <td>{stats.vocab.high}</td>
+                                    <td>{stats.scene.basic}</td>
+                                    <td>{stats.scene.intermediate}</td>
+                                    <td>{stats.scene.high}</td>
                                 </tr>
                                 <tr>
-                                    <td className="home-stats-row-label">📖 {t('home.word')}</td>
-                                    <td>{stats.vocab.basic}/{targets.vocab}</td>
-                                    <td>{stats.vocab.intermediate}/{targets.vocab}</td>
-                                    <td>{stats.vocab.high}/{targets.vocab}</td>
+                                    <td className="home-stats-row-label">{t('gauge.thisMonth')}</td>
+                                    <td>{monthly.vocab.basic}</td>
+                                    <td>{monthly.vocab.intermediate}</td>
+                                    <td>{monthly.vocab.high}</td>
+                                    <td>{monthly.scene.basic}</td>
+                                    <td>{monthly.scene.intermediate}</td>
+                                    <td>{monthly.scene.high}</td>
                                 </tr>
                             </tbody>
                         </table>

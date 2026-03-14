@@ -263,6 +263,13 @@
     color: #334155;
     white-space: nowrap;
 }
+.home-stats-group-header {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #1e293b;
+    border-bottom: 1px solid #e2e8f0;
+    padding-bottom: 4px;
+}
 .home-stats-row-label {
     text-align: left !important;
     font-weight: 700 !important;

@@ -46,28 +46,34 @@ export const useWeeklyCardStats = (user) => {
         load();
     }, [user?.uid]);
 
-    const stats = useMemo(() => {
+    const { weekly, monthly } = useMemo(() => {
         const weekStart = getMonday(new Date());
         const now = new Date();
+        const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
-        const result = {
+        const w = {
+            scene: { basic: 0, intermediate: 0, high: 0 },
+            vocab: { basic: 0, intermediate: 0, high: 0 },
+        };
+        const m = {
             scene: { basic: 0, intermediate: 0, high: 0 },
             vocab: { basic: 0, intermediate: 0, high: 0 },
         };
 
         cards.forEach(c => {
-            if (!c.createdAt || c.createdAt < weekStart || c.createdAt > now) return;
+            if (!c.createdAt || c.createdAt > now) return;
             const type = c.sourceType === 'scene' ? 'scene' : c.sourceType === 'vocab' ? 'vocab' : null;
             if (!type) return;
             const diff = ['basic', 'intermediate', 'high'].includes(c.difficulty) ? c.difficulty : 'basic';
-            result[type][diff]++;
+            if (c.createdAt >= weekStart) w[type][diff]++;
+            if (c.createdAt >= monthStart) m[type][diff]++;
         });
 
-        return result;
+        return { weekly: w, monthly: m };
     }, [cards]);
 
     // 목표 (주간): scene 항목 21개 × 5개/항목 = 105, vocab 8개 × 10개/항목 = 80
     const targets = { scene: 105, vocab: 80 };
 
-    return { stats, targets, loading };
+    return { stats: weekly, monthly, targets, loading };
 };
