@@ -308,6 +308,9 @@
     "translationDesc": "Translate words & sentences with learning tips",
     "translationSubDesc": "AI provides translations with grammar explanations, examples, and pronunciation guides.",
     "goBtn": "Start",
+    "diffB": "B",
+    "diffI": "I",
+    "diffH": "H",
     "weeklyStats": "This Week's Stats",
     "dialogue": "Dialogue",
     "word": "Vocabulary"

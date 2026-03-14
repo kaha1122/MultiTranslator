@@ -308,6 +308,9 @@
     "translationDesc": "Traduisez des mots et phrases avec des conseils",
     "translationSubDesc": "L'IA fournit des traductions avec des explications grammaticales, des exemples et des guides de prononciation.",
     "goBtn": "Commencer",
+    "diffB": "B",
+    "diffI": "I",
+    "diffH": "H",
     "weeklyStats": "Stats de la semaine",
     "dialogue": "Dialogue",
     "word": "Vocabulaire"

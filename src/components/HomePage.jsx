@@ -187,12 +187,12 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                                     <th colSpan={3} className="home-stats-group-header">🎭 {t('home.dialogue')}</th>
                                 </tr>
                                 <tr>
-                                    <th>{t('scene.diffBasic')}</th>
-                                    <th>{t('scene.diffIntermediate')}</th>
-                                    <th>{t('scene.diffHigh')}</th>
-                                    <th>{t('scene.diffBasic')}</th>
-                                    <th>{t('scene.diffIntermediate')}</th>
-                                    <th>{t('scene.diffHigh')}</th>
+                                    <th>{t('home.diffB')}</th>
+                                    <th>{t('home.diffI')}</th>
+                                    <th>{t('home.diffH')}</th>
+                                    <th>{t('home.diffB')}</th>
+                                    <th>{t('home.diffI')}</th>
+                                    <th>{t('home.diffH')}</th>
                                 </tr>
                             </thead>
                             <tbody>

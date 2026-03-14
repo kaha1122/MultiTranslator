@@ -308,6 +308,9 @@
     "translationDesc": "翻译单词和句子，获取学习建议",
     "translationSubDesc": "AI提供翻译以及语法解释、例句和发音指导。",
     "goBtn": "开始",
+    "diffB": "B",
+    "diffI": "I",
+    "diffH": "H",
     "weeklyStats": "本周学习统计",
     "dialogue": "对话",
     "word": "词汇"

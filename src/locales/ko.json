@@ -308,6 +308,9 @@
     "translationDesc": "단어·문장을 번역하고 학습 팁을 확인하세요",
     "translationSubDesc": "AI가 번역과 함께 문법 설명, 예문, 발음 가이드를 제공합니다.",
     "goBtn": "시작하기",
+    "diffB": "기초",
+    "diffI": "중급",
+    "diffH": "고급",
     "weeklyStats": "이번 주 학습 통계",
     "dialogue": "대화",
     "word": "단어"

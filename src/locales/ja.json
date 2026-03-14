@@ -308,6 +308,9 @@
     "translationDesc": "単語・文章を翻訳して学習のヒントを確認",
     "translationSubDesc": "AIが翻訳と一緒に文法解説、例文、発音ガイドを提供します。",
     "goBtn": "スタート",
+    "diffB": "B",
+    "diffI": "I",
+    "diffH": "H",
     "weeklyStats": "今週の学習統計",
     "dialogue": "会話",
     "word": "単語"

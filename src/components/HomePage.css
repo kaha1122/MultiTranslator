@@ -243,43 +243,45 @@
 
 /* ── 섹션 4: 통계표 ── */
 .home-stats {
-    padding-bottom: 20px;
+    padding-bottom: 14px;
 }
 .home-stats-loading {
     text-align: center;
     color: #94a3b8;
-    padding: 12px;
+    padding: 8px;
 }
 .home-stats-table-wrap {
-    overflow-x: auto;
+    overflow-x: hidden;
 }
 .home-stats-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 0.78rem;
+    font-size: 0.72rem;
+    table-layout: fixed;
 }
 .home-stats-table th {
     font-weight: 700;
     color: #64748b;
-    padding: 6px 8px;
+    padding: 3px 2px;
     text-align: center;
     border-bottom: 2px solid #e2e8f0;
     white-space: nowrap;
 }
 .home-stats-table td {
-    padding: 8px;
+    padding: 5px 2px;
     text-align: center;
     border-bottom: 1px solid #f1f5f9;
     font-weight: 600;
     color: #334155;
     white-space: nowrap;
+    font-size: 0.7rem;
 }
 .home-stats-group-header {
-    font-size: 0.8rem;
+    font-size: 0.75rem;
     font-weight: 800;
     color: #1e293b;
     border-bottom: 1px solid #e2e8f0;
-    padding-bottom: 4px;
+    padding-bottom: 3px;
 }
 .home-stats-row-label {
     text-align: left !important;
