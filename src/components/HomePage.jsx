@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, BookOpen, Languages, ChevronRight } from 'lucide-react';
+import { MapPin, BookOpen, Languages } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
@@ -102,82 +102,76 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                 )}
             </div>
 
-            {/* 섹션 3: 3개 폴더 카드 */}
-            <div className="home-section">
+            {/* 섹션 3: 상단 폴더 탭 + 하단 콘텐츠 */}
+            <div className="home-section home-folders-section">
                 <h3 className="home-section-title">{t('home.folders')}</h3>
-                <div className="home-folders">
+                {/* 상단 폴더 탭 */}
+                <div className="home-folder-tabs">
                     {folders.map(folder => {
-                        const isOpen = openFolder === folder.id;
+                        const isActive = openFolder === folder.id;
                         return (
-                            <div key={folder.id} className="home-folder-wrapper">
-                                <motion.div
-                                    className={`home-folder-card ${isOpen ? 'open' : ''}`}
-                                    style={{
-                                        borderColor: isOpen ? folder.borderColor : '#e2e8f0',
-                                        background: isOpen ? folder.bgColor : 'white',
-                                    }}
-                                    onClick={() => setOpenFolder(isOpen ? null : folder.id)}
-                                    layout
-                                >
-                                    {/* 폴더 헤더 (항상 보임) */}
-                                    <div className="home-folder-header">
-                                        <div className="home-folder-icon" style={{ background: folder.bgColor, color: folder.color }}>
-                                            {folder.icon}
-                                        </div>
-                                        <span className="home-folder-name" style={{ color: isOpen ? folder.color : '#1e293b' }}>
-                                            {t(folder.titleKey)}
-                                        </span>
-                                        <motion.span
-                                            className="home-folder-chevron"
-                                            animate={{ rotate: isOpen ? 90 : 0 }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            <ChevronRight size={18} color="#94a3b8" />
-                                        </motion.span>
-                                    </div>
-
-                                    {/* 확장 영역 */}
-                                    <AnimatePresence>
-                                        {isOpen && (
-                                            <motion.div
-                                                className="home-folder-body"
-                                                initial={{ opacity: 0, height: 0 }}
-                                                animate={{ opacity: 1, height: 'auto' }}
-                                                exit={{ opacity: 0, height: 0 }}
-                                                transition={{ duration: 0.25 }}
-                                            >
-                                                {/* 애니메이션 이미지 */}
-                                                <div className="home-folder-anim" style={{ background: folder.bgColor }}>
-                                                    <motion.span
-                                                        className="home-folder-emoji"
-                                                        animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
-                                                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                                                    >
-                                                        {folder.emoji}
-                                                    </motion.span>
-                                                </div>
-
-                                                {/* 큰 글씨 설명 */}
-                                                <p className="home-folder-desc-main">{t(folder.descKey)}</p>
-                                                {/* 작은 글씨 설명 */}
-                                                <p className="home-folder-desc-sub">{t(folder.subDescKey)}</p>
-
-                                                {/* 하단 이동 버튼 */}
-                                                <button
-                                                    className="home-folder-cta"
-                                                    style={{ background: folder.color }}
-                                                    onClick={(e) => { e.stopPropagation(); onNavigate(folder.id); }}
-                                                >
-                                                    {t('home.goBtn')} →
-                                                </button>
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </motion.div>
-                            </div>
+                            <button
+                                key={folder.id}
+                                className={`home-folder-tab ${isActive ? 'active' : ''}`}
+                                style={{
+                                    '--tab-color': folder.color,
+                                    '--tab-bg': folder.bgColor,
+                                    '--tab-border': folder.borderColor,
+                                }}
+                                onClick={() => setOpenFolder(isActive ? null : folder.id)}
+                            >
+                                <div className="home-folder-tab-icon" style={{ background: isActive ? folder.bgColor : '#f1f5f9', color: folder.color }}>
+                                    {folder.icon}
+                                </div>
+                                <span className="home-folder-tab-label">{t(folder.titleKey)}</span>
+                            </button>
                         );
                     })}
                 </div>
+
+                {/* 하단 콘텐츠 영역 */}
+                <AnimatePresence mode="wait">
+                    {openFolder && (() => {
+                        const folder = folders.find(f => f.id === openFolder);
+                        if (!folder) return null;
+                        return (
+                            <motion.div
+                                key={folder.id}
+                                className="home-folder-content"
+                                style={{ background: folder.bgColor, borderColor: folder.borderColor }}
+                                initial={{ opacity: 0, y: -8 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -8 }}
+                                transition={{ duration: 0.25 }}
+                            >
+                                {/* 애니메이션 이미지 */}
+                                <div className="home-folder-anim">
+                                    <motion.span
+                                        className="home-folder-emoji"
+                                        animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
+                                        transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                    >
+                                        {folder.emoji}
+                                    </motion.span>
+                                </div>
+
+                                {/* 큰 글씨 설명 */}
+                                <p className="home-folder-desc-main">{t(folder.descKey)}</p>
+                                {/* 작은 글씨 설명 */}
+                                <p className="home-folder-desc-sub">{t(folder.subDescKey)}</p>
+
+                                {/* 하단 이동 버튼 */}
+                                <button
+                                    className="home-folder-cta"
+                                    style={{ background: folder.color }}
+                                    onClick={() => onNavigate(folder.id)}
+                                >
+                                    {t('home.goBtn')} →
+                                </button>
+                            </motion.div>
+                        );
+                    })()}
+                </AnimatePresence>
             </div>
 
             {/* 섹션 4: 이번 주 학습 통계표 */}
