@@ -62,6 +62,13 @@ function VocabWordCard({
     // 다른 카드가 녹음 중이면 이 카드의 녹음 버튼 비활성화
     const isOtherRecording = activeRecIdx !== null && activeRecIdx !== index;
 
+    // 녹음+분석 완료 후 activeRecIdx 해제
+    useEffect(() => {
+        if (activeRecIdx === index && !isRecording && !isAnalyzing) {
+            onRecordingStart(null);
+        }
+    }, [isRecording, isAnalyzing]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // 녹음 완료 후 점수 기반 효과음 + 북마크 안내
     const prevAnalyzing = useRef(isAnalyzing);
     useEffect(() => {
