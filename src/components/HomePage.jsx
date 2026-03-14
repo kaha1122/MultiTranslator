@@ -10,7 +10,7 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
-    const { stats, monthly, targets, loading: statsLoading } = useWeeklyCardStats(user);
+    const { stats, monthly, targets, monthlyTargets, loading: statsLoading } = useWeeklyCardStats(user);
     const [openFolder, setOpenFolder] = useState(null);
 
     const folders = [
@@ -200,21 +200,21 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                             <tbody>
                                 <tr>
                                     <td className="home-stats-row-label">{t('gauge.thisWeek')}</td>
-                                    <td>{stats.vocab.basic}</td>
-                                    <td>{stats.vocab.intermediate}</td>
-                                    <td>{stats.vocab.high}</td>
-                                    <td>{stats.scene.basic}</td>
-                                    <td>{stats.scene.intermediate}</td>
-                                    <td>{stats.scene.high}</td>
+                                    <td>{stats.vocab.basic}/{targets.vocab}</td>
+                                    <td>{stats.vocab.intermediate}/{targets.vocab}</td>
+                                    <td>{stats.vocab.high}/{targets.vocab}</td>
+                                    <td>{stats.scene.basic}/{targets.scene}</td>
+                                    <td>{stats.scene.intermediate}/{targets.scene}</td>
+                                    <td>{stats.scene.high}/{targets.scene}</td>
                                 </tr>
                                 <tr>
                                     <td className="home-stats-row-label">{t('gauge.thisMonth')}</td>
-                                    <td>{monthly.vocab.basic}</td>
-                                    <td>{monthly.vocab.intermediate}</td>
-                                    <td>{monthly.vocab.high}</td>
-                                    <td>{monthly.scene.basic}</td>
-                                    <td>{monthly.scene.intermediate}</td>
-                                    <td>{monthly.scene.high}</td>
+                                    <td>{monthly.vocab.basic}/{monthlyTargets.vocab}</td>
+                                    <td>{monthly.vocab.intermediate}/{monthlyTargets.vocab}</td>
+                                    <td>{monthly.vocab.high}/{monthlyTargets.vocab}</td>
+                                    <td>{monthly.scene.basic}/{monthlyTargets.scene}</td>
+                                    <td>{monthly.scene.intermediate}/{monthlyTargets.scene}</td>
+                                    <td>{monthly.scene.high}/{monthlyTargets.scene}</td>
                                 </tr>
                             </tbody>
                         </table>

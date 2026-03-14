@@ -72,8 +72,9 @@ export const useWeeklyCardStats = (user) => {
         return { weekly: w, monthly: m };
     }, [cards]);
 
-    // 목표 (주간): scene 항목 21개 × 5개/항목 = 105, vocab 8개 × 10개/항목 = 80
-    const targets = { scene: 105, vocab: 80 };
+    // 목표: 주간 scene 105, vocab 80 / 월간 ×4
+    const weeklyTargets = { scene: 105, vocab: 80 };
+    const monthlyTargets = { scene: 420, vocab: 320 };
 
-    return { stats: weekly, monthly, targets, loading };
+    return { stats: weekly, monthly, targets: weeklyTargets, monthlyTargets, loading };
 };
