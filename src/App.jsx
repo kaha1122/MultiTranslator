@@ -227,51 +227,32 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // ── 모바일 Back 키 종료 확인 팝업 ──
+  // ── 모바일 Back 키 → 종료 확인 팝업 (전역 단일 핸들러) ──
   const [showExitPopup, setShowExitPopup] = useState(false);
-  const viewModeRef = useRef(viewMode);
-  const userRef = useRef(user);
   const exitConfirmedRef = useRef(false);
-  React.useEffect(() => { viewModeRef.current = viewMode; }, [viewMode]);
-  React.useEffect(() => { userRef.current = user; }, [user]);
 
-  // Non-Tab 뷰 목록 (이들은 자체 popstate 핸들러가 back을 처리)
-  const NON_TAB_VIEWS = ['guide', 'privacy', 'terms', 'contact', 'settings'];
-
-  // 컴포넌트 마운트 시 popstate 핸들러 등록
   React.useEffect(() => {
-    // 히스토리 엔트리 1개 추가
-    window.history.pushState({ page: 'app-root' }, '');
+    // 앱 시작 시 히스토리 guard 삽입
+    window.history.replaceState({ pronunfit: true }, '');
+    window.history.pushState({ pronunfit: true }, '');
 
-    const handleBackKey = () => {
-      // 종료 확인 후 실제 나가는 중이면 그대로 통과
+    const onPopState = () => {
+      // 종료 확정 후에는 그대로 나감 (PWA 자연 종료)
       if (exitConfirmedRef.current) return;
-      // 로그인 전이면 무시
-      if (!userRef.current) {
-        window.history.pushState({ page: 'app-root' }, '');
-        return;
-      }
-      // Non-Tab 페이지는 자체 핸들러가 처리 → 엔트리만 재보충
-      if (NON_TAB_VIEWS.includes(viewModeRef.current)) {
-        // 자체 핸들러가 이미 동작하므로, 약간 딜레이 후 재보충
-        setTimeout(() => window.history.pushState({ page: 'app-root' }, ''), 100);
-        return;
-      }
-      // Tab 상태 → 히스토리 재보충 + 종료 확인 팝업
-      window.history.pushState({ page: 'app-root' }, '');
+      // 항상 guard 재삽입 → 다음 back도 잡을 수 있음
+      window.history.pushState({ pronunfit: true }, '');
+      // 팝업 표시
       setShowExitPopup(true);
     };
-    window.addEventListener('popstate', handleBackKey);
-    return () => window.removeEventListener('popstate', handleBackKey);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    window.addEventListener('popstate', onPopState);
+    return () => window.removeEventListener('popstate', onPopState);
   }, []);
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
     exitConfirmedRef.current = true;
-    // popstate 핸들러가 더 이상 재보충하지 않도록 한 뒤, 자연스럽게 뒤로 가기
-    // PWA에서는 히스토리가 바닥나면 앱이 자동 종료(최소화)됨
-    window.history.back();
+    window.history.back(); // guard pop → 다시 back → PWA 종료
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);

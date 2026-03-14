@@ -97,21 +97,8 @@ export default function VideoReader({
 
     useEffect(() => { fetchVideos(targetLang, category); }, [targetLang, category, fetchVideos]);
 
-    // 하드웨어 뒤로 버튼
-    useEffect(() => {
-        const handlePop = () => {
-            if (selectedRef.current) {
-                selectedRef.current = null;
-                setSelected(null);
-            }
-        };
-        window.addEventListener('popstate', handlePop);
-        return () => window.removeEventListener('popstate', handlePop);
-    }, []);
-
     // 영상 선택 → 자동 재생
     const openVideo = (video) => {
-        window.history.pushState({ video: true }, '');
         selectedRef.current = video;
         setSelected(video);
         setMemo('');
@@ -120,7 +107,6 @@ export default function VideoReader({
     const handleBack = () => {
         selectedRef.current = null;
         setSelected(null);
-        window.history.back();
     };
 
     // 메모를 번역 탭으로 전송 (자동 번역 포함, 영상 언어도 전달)

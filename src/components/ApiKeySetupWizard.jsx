@@ -8,22 +8,13 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
     const { saveByokKeys, byokGeminiKey, byokAzureKey, byokAzureRegion } = useAuth();
 
     useEffect(() => {
-        history.pushState({ page: 'api-wizard' }, '');
-        const handlePop = () => onClose();
         const handleKey = (e) => {
             const tag = e.target.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-            if (e.key === 'Backspace' || e.key === 'Escape') {
-                e.preventDefault();
-                history.back();
-            }
+            if (e.key === 'Escape') { e.preventDefault(); onClose(); }
         };
-        window.addEventListener('popstate', handlePop);
         window.addEventListener('keydown', handleKey);
-        return () => {
-            window.removeEventListener('popstate', handlePop);
-            window.removeEventListener('keydown', handleKey);
-        };
+        return () => window.removeEventListener('keydown', handleKey);
     }, [onClose]);
 
     const [geminiKey, setGeminiKey]   = useState(byokGeminiKey  || '');

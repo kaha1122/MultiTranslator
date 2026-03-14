@@ -24,22 +24,13 @@ const DATE_LOCALES = {
 // ── 공통 레이아웃: 뒤로가기 버튼 + 제목 헤더 ──────────────────────────────────
 function LegalLayout({ icon: Icon, title, onBack, backLabel, children }) {
     useEffect(() => {
-        history.pushState({ page: 'legal' }, '');
-        const handlePop = () => onBack();
         const handleKey = (e) => {
             const tag = e.target.tagName;
             if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-            if (e.key === 'Backspace' || e.key === 'Escape') {
-                e.preventDefault();
-                history.back();
-            }
+            if (e.key === 'Escape') { e.preventDefault(); onBack(); }
         };
-        window.addEventListener('popstate', handlePop);
         window.addEventListener('keydown', handleKey);
-        return () => {
-            window.removeEventListener('popstate', handlePop);
-            window.removeEventListener('keydown', handleKey);
-        };
+        return () => window.removeEventListener('keydown', handleKey);
     }, [onBack]);
 
     return (

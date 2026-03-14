@@ -53,25 +53,13 @@ export default function AppGuide({ onBack, sourceLang }) {
   const t = useT(sourceLang);
 
   useEffect(() => {
-    history.pushState({ page: 'guide' }, '');
-
-    const handlePop = () => onBack();
-    window.addEventListener('popstate', handlePop);
-
     const handleKey = (e) => {
       const tag = e.target.tagName;
       if (tag === 'INPUT' || tag === 'TEXTAREA') return;
-      if (e.key === 'Backspace' || e.key === 'Escape') {
-        e.preventDefault();
-        history.back();
-      }
+      if (e.key === 'Escape') { e.preventDefault(); onBack(); }
     };
     window.addEventListener('keydown', handleKey);
-
-    return () => {
-      window.removeEventListener('popstate', handlePop);
-      window.removeEventListener('keydown', handleKey);
-    };
+    return () => window.removeEventListener('keydown', handleKey);
   }, [onBack]);
 
   const handleToggle = (secId, isOpen) => {
