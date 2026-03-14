@@ -269,10 +269,9 @@ function App() {
   const handleExitConfirm = () => {
     setShowExitPopup(false);
     exitConfirmedRef.current = true;
-    // 실제 종료 시도
-    try { window.close(); } catch (e) {}
-    // window.close()가 안 되는 경우 (직접 URL 입력 등) 빈 페이지로
-    setTimeout(() => { window.location.replace('about:blank'); }, 300);
+    // popstate 핸들러가 더 이상 재보충하지 않도록 한 뒤, 자연스럽게 뒤로 가기
+    // PWA에서는 히스토리가 바닥나면 앱이 자동 종료(최소화)됨
+    window.history.back();
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
