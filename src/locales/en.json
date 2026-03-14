@@ -312,6 +312,8 @@
     "diffI": "I",
     "diffH": "H",
     "weeklyStats": "This Week's Stats",
+    "tWeek": "T.Week",
+    "tMonth": "T.Month",
     "dialogue": "Dialogue",
     "word": "Vocabulary"
   },

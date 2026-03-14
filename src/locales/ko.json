@@ -312,6 +312,8 @@
     "diffI": "중급",
     "diffH": "고급",
     "weeklyStats": "이번 주 학습 통계",
+    "tWeek": "이번주",
+    "tMonth": "이번달",
     "dialogue": "대화",
     "word": "단어"
   },

@@ -197,7 +197,7 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td className="home-stats-row-label">{t('gauge.thisWeek')}</td>
+                                    <td className="home-stats-row-label">{t('home.tWeek')}</td>
                                     <td>{stats.vocab.basic}/{targets.vocab}</td>
                                     <td>{stats.vocab.intermediate}/{targets.vocab}</td>
                                     <td>{stats.vocab.high}/{targets.vocab}</td>
@@ -206,7 +206,7 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                                     <td>{stats.scene.high}/{targets.scene}</td>
                                 </tr>
                                 <tr>
-                                    <td className="home-stats-row-label">{t('gauge.thisMonth')}</td>
+                                    <td className="home-stats-row-label">{t('home.tMonth')}</td>
                                     <td>{monthly.vocab.basic}/{monthlyTargets.vocab}</td>
                                     <td>{monthly.vocab.intermediate}/{monthlyTargets.vocab}</td>
                                     <td>{monthly.vocab.high}/{monthlyTargets.vocab}</td>
