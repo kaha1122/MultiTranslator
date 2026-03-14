@@ -400,7 +400,7 @@
 }
 
 .vocab-pron-toggle-label.active {
-  color: #1e293b;
+  color: #6366f1;
   font-weight: 700;
 }
 
@@ -410,14 +410,14 @@
   height: 20px;
   border-radius: 10px;
   border: none;
-  background: #cbd5e1;
+  background: #6366f1;
   cursor: pointer;
   padding: 0;
   transition: background 0.25s;
 }
 
 .vocab-pron-toggle-track.on {
-  background: #10b981;
+  background: #6366f1;
 }
 
 .vocab-pron-toggle-track:disabled {
@@ -439,6 +439,11 @@
 
 .vocab-pron-toggle-track.on .vocab-pron-toggle-thumb {
   transform: translateX(16px);
+}
+
+/* ── Vocab 녹음 버튼 가운데 정렬 ── */
+.vocab-pron-section .practice-actions {
+  justify-content: center;
 }
 
 /* ── 연습 콘텐츠 영역 ── */
