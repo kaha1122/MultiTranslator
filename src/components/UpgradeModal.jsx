@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Zap, Crown, Check } from 'lucide-react';
+import { X, Zap, Crown, Check, ShieldCheck } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
@@ -67,14 +67,22 @@ const PLAN_CONFIGS = [
     },
 ];
 
-const UpgradeModal = ({ onClose, sourceLang }) => {
+const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
     const [loadingPlan, setLoadingPlan] = useState(null);
     const [error, setError] = useState('');
+    const [showPhoneWarning, setShowPhoneWarning] = useState(false);
 
     const handleUpgrade = async (plan) => {
         if (!user) return;
+
+        // 전화번호 인증 확인
+        if (!profile?.phoneVerified) {
+            setShowPhoneWarning(true);
+            return;
+        }
+
         setLoadingPlan(plan.id);
         setError('');
         try {
@@ -112,6 +120,33 @@ const UpgradeModal = ({ onClose, sourceLang }) => {
 
                 {error && (
                     <div className="upgrade-error">{error}</div>
+                )}
+
+                {showPhoneWarning && (
+                    <div style={{
+                        background: '#fef3c7', border: '1.5px solid #fbbf24', borderRadius: '12px',
+                        padding: '14px 16px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <ShieldCheck size={18} style={{ color: '#b45309', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#92400e' }}>
+                                {t('upgrade.phoneRequired')}
+                            </span>
+                        </div>
+                        <p style={{ fontSize: '0.78rem', color: '#78350f', margin: 0, lineHeight: 1.5 }}>
+                            {t('upgrade.phoneRequiredDesc')}
+                        </p>
+                        <button
+                            onClick={() => onRequestPhoneVerify?.()}
+                            style={{
+                                padding: '8px 16px', borderRadius: '10px', border: 'none',
+                                background: '#f59e0b', color: 'white', fontSize: '0.82rem',
+                                fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start'
+                            }}
+                        >
+                            {t('upgrade.verifyNow')}
+                        </button>
+                    </div>
                 )}
 
                 {/* Pro Plans */}

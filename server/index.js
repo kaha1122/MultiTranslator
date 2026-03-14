@@ -823,6 +823,18 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
     const amount = AMOUNTS[resolvedPlanId];
     if (!amount) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
 
+    // 전화번호 인증 확인 (서버 측 이중 체크)
+    if (adminDb) {
+        try {
+            const userDoc = await adminDb.collection('users').doc(customerKey).get();
+            if (!userDoc.exists || !userDoc.data()?.phoneVerified) {
+                return res.status(403).json({ error: 'Phone verification required before subscription' });
+            }
+        } catch (checkErr) {
+            console.error('[TossBilling] phoneVerified check failed:', checkErr.message);
+        }
+    }
+
     try {
         // 1단계: authKey로 빌링키 발급
         const billingRes = await axios.post(

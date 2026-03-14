@@ -645,20 +645,22 @@ function App() {
     if (!phoneVerifCode.trim() || !phoneConfirmResult) return;
     try {
       setPhoneVerifStep('verifying');
-      // verificationId + code로 credential 생성
       const credential = PhoneAuthProvider.credential(phoneConfirmResult, phoneVerifCode);
 
-      // 현재 사용자에 전화번호 연결 시도 (실패해도 코드 검증 자체는 성공)
+      // 코드 검증: updatePhoneNumber으로 현재 계정에 전화번호 설정
       try {
-        const { linkWithCredential, unlink } = await import('firebase/auth');
-        await linkWithCredential(auth.currentUser, credential);
-      } catch (linkErr) {
-        console.log('[PhoneVerif] link skipped:', linkErr.code);
-        // provider-already-linked, credential-already-in-use 등 — 무시
-        // 코드가 맞았으면 credential 생성 자체가 성공한 것이므로 인증 완료 처리
+        const { updatePhoneNumber } = await import('firebase/auth');
+        await updatePhoneNumber(auth.currentUser, credential);
+      } catch (phoneErr) {
+        // 코드 자체가 틀린 경우 → 에러 throw
+        if (phoneErr.code === 'auth/invalid-verification-code' || phoneErr.code === 'auth/invalid-verification-id') {
+          throw phoneErr;
+        }
+        // credential-already-in-use, provider-already-linked 등 → 코드는 맞았으나 연결만 실패
+        console.log('[PhoneVerif] updatePhoneNumber skipped:', phoneErr.code);
       }
 
-      // 인증 성공 → Firestore에 phoneVerified 저장
+      // 코드 검증 성공 → Firestore에 phoneVerified 저장
       const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
       const rawDigits = profileFormData.phone.replace(/\D/g, '');
       await updateUserProfile({
@@ -670,7 +672,7 @@ function App() {
       setPhoneVerifStep('verified');
       setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneVerified') });
     } catch (e) {
-      console.error('[PhoneVerif] code error:', e);
+      console.error('[PhoneVerif] code error:', e.code, e.message);
       setPhoneVerifStep('sent');
       setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneCodeWrong') });
     }
@@ -2171,6 +2173,7 @@ function App() {
         <UpgradeModal
           sourceLang={sourceLang}
           onClose={() => setShowUpgradeModal(false)}
+          onRequestPhoneVerify={() => { setShowUpgradeModal(false); handleEditProfile(); }}
         />
       )}
 
