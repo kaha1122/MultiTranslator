@@ -347,3 +347,247 @@
 .vocab-custom-input:focus {
   border-color: var(--primary-color, #00a884);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   Pronunciation Practice Section
+   ══════════════════════════════════════════════════════════════════════ */
+.vocab-pron-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.vocab-pron-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.vocab-pron-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 1px;
+}
+
+.vocab-score-badge {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: linear-gradient(135deg, #6366f1, #818cf8);
+  color: white;
+  padding: 3px 10px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+/* ── 단어 ↔ 예문 토글 (Stats 캘린더 네비 스타일) ── */
+.vocab-pron-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin-bottom: 8px;
+  background: #f8fafc;
+  border-radius: 10px;
+  padding: 2px 0;
+}
+
+.vocab-pron-toggle-arrow {
+  background: none;
+  border: none;
+  font-size: 1.4rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 4px 12px;
+  border-radius: 8px;
+  transition: background 0.15s;
+  line-height: 1;
+}
+
+.vocab-pron-toggle-arrow:active {
+  background: #e2e8f0;
+}
+
+.vocab-pron-toggle-arrow:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.vocab-pron-toggle-label {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #1e293b;
+  min-width: 80px;
+  text-align: center;
+}
+
+/* ── 연습 콘텐츠 영역 ── */
+.vocab-pron-content {
+  text-align: center;
+}
+
+.vocab-pron-target {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: #334155;
+  background: #eef2ff;
+  border-radius: 10px;
+  padding: 10px 14px;
+  margin: 0 0 8px;
+  line-height: 1.4;
+  word-break: keep-all;
+}
+
+.vocab-pron-prompt {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 0 0 8px;
+}
+
+.vocab-pron-status {
+  font-size: 0.8rem;
+  font-weight: 600;
+  margin: 0 0 8px;
+}
+
+.vocab-pron-status.recording {
+  color: #ef4444;
+}
+
+.vocab-pron-status.analyzing {
+  color: #6366f1;
+}
+
+.vocab-pron-error {
+  color: #ef4444;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  justify-content: center;
+}
+
+.vocab-pron-save-msg {
+  color: #10b981;
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+  justify-content: center;
+  font-weight: 700;
+}
+
+/* ── 녹음 버튼 ── */
+.vocab-pron-actions {
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.vocab-rec-btn {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 2px solid #e2e8f0;
+  background: white;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.2s;
+  color: #64748b;
+}
+
+.vocab-rec-btn:hover {
+  border-color: #6366f1;
+  color: #6366f1;
+}
+
+.vocab-rec-btn.recording {
+  border-color: #ef4444;
+  background: #fef2f2;
+  color: #ef4444;
+  animation: vocab-pulse 1.2s ease-in-out infinite;
+}
+
+.vocab-rec-btn.analyzing {
+  border-color: #6366f1;
+  color: #6366f1;
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.vocab-rec-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+@keyframes vocab-pulse {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
+  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
+}
+
+.vocab-rec-btn .spin {
+  animation: vocab-spin 0.8s linear infinite;
+}
+
+/* ── AI 코치 피드백 ── */
+.vocab-coach-area {
+  margin-top: 10px;
+  background: linear-gradient(135deg, #eff6ff, #eef2ff);
+  border-radius: 10px;
+  padding: 10px 14px;
+}
+
+.vocab-coach-label {
+  font-size: 0.6rem;
+  font-weight: 800;
+  color: #6366f1;
+  letter-spacing: 1px;
+}
+
+.vocab-coach-text {
+  font-size: 0.82rem;
+  color: #334155;
+  margin: 4px 0 0;
+  line-height: 1.5;
+  font-weight: 600;
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   Learning Tip Section
+   ══════════════════════════════════════════════════════════════════════ */
+.vocab-tip-section {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+
+.vocab-tip-label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: #94a3b8;
+  letter-spacing: 1px;
+  display: block;
+  margin-bottom: 6px;
+}
+
+.vocab-tip-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.vocab-tip-item {
+  font-size: 0.82rem;
+  color: #475569;
+  margin: 0;
+  line-height: 1.5;
+  font-weight: 500;
+}

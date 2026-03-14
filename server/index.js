@@ -1094,6 +1094,7 @@ Rules:
 5. **Natural examples**: Each example sentence must show the word/phrase used in a realistic, contextually rich situation — not a generic textbook sentence.
 6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For others: include romanization if applicable.
 7. All meanings, tips, and example translations must be in ${sourceLangName}.
+8. For each word, provide 2-3 concise learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note or cultural context. Each tip should be one sentence.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -1103,7 +1104,8 @@ Return ONLY valid JSON (no markdown):
       "pronunciation": "<pinyin/hiragana/romanization or empty string>",
       "meaning": "<concise meaning in ${sourceLangName}>",
       "example": "<example sentence in ${targetLangName}>",
-      "exampleTranslation": "<example translation in ${sourceLangName}>"
+      "exampleTranslation": "<example translation in ${sourceLangName}>",
+      "learningTip": ["<tip1 in ${sourceLangName}>", "<tip2 in ${sourceLangName}>"]
     }
   ]
 }`;

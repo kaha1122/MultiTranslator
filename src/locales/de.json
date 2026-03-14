@@ -119,6 +119,8 @@
     "regenerate": "Andere Wörter",
     "generating": "Vokabeln werden generiert...",
     "selectTopic": "Wähle oben ein Thema, um Vokabelkarten zu erstellen",
+    "practiceWord": "Wort",
+    "practiceExample": "Beispiel",
     "backToVocab": "Zurück zu Vokabeln"
   },
   "sceneLoc": {

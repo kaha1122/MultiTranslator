@@ -119,6 +119,8 @@
     "regenerate": "他の単語",
     "generating": "単語を生成中...",
     "selectTopic": "上のトピックを選ぶと単語カードが作られます",
+    "practiceWord": "単語練習",
+    "practiceExample": "例文練習",
     "backToVocab": "単語学習に戻る"
   },
   "sceneLoc": {

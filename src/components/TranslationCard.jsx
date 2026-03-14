@@ -72,6 +72,9 @@ const TranslationCard = ({
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
     onMemoClose,
+    // Vocab 예문 (Library에서 vocab 카드 표시 시)
+    example = '',
+    exampleTranslation = '',
     // Scene 태그
     selectedEmotion = '',
     interactionType = '',
@@ -377,6 +380,19 @@ Return only these 2 lines.`;
                         <span className="coach-label">AI PRO COACH</span>
                     </div>
                     <p className="coach-tip-text">"{coachTip}"</p>
+                </div>
+            )}
+
+            {/* Vocab 예문 (Library에서 vocab 카드 표시 시) */}
+            {example && (
+                <div className="card-example-section">
+                    <span className="tip-label">EXAMPLE</span>
+                    <div className="card-example-box">
+                        <p className={`card-example-text font-${langCode}`}>{example}</p>
+                        {exampleTranslation && (
+                            <p className={`card-example-trans font-${sourceLangCode}`}>{exampleTranslation}</p>
+                        )}
+                    </div>
                 </div>
             )}
 

@@ -119,6 +119,8 @@
     "regenerate": "More Words",
     "generating": "Generating vocabulary...",
     "selectTopic": "Select a topic above to generate vocabulary words",
+    "practiceWord": "Word",
+    "practiceExample": "Example",
     "backToVocab": "Back to Vocabulary"
   },
   "sceneLoc": {

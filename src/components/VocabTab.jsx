@@ -1,11 +1,13 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Sparkles, Volume2, Star, RefreshCw } from 'lucide-react';
+import { ChevronRight, Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
-import { playStarSound } from '../utils/soundEffects';
+import { playStarSound, playSuccessSound, playAlertSound } from '../utils/soundEffects';
+import { useAudioRecorder } from '../hooks/useAudioRecorder';
+import PronunciationAssessment from './PronunciationAssessment';
 import './VocabTab.css';
 
 // Vocab history 문서 ID: {topicId}--{level}--{lang}
@@ -27,6 +29,202 @@ const getServerUrl = () => {
     return 'http://localhost:5000';
 };
 
+// ── VocabWordCard 서브 컴포넌트 ─────────────────────────────────────
+// 각 단어별 독립적인 useAudioRecorder + 발음 연습 + Learning Tip
+function VocabWordCard({
+    w, index, selectedLang, sourceLang, onSpeak,
+    isSaved, onSave, onTrialLimitReached,
+    targetGoal, onBookmarkPrompt,
+    activeRecIdx, onRecordingStart,
+    t,
+}) {
+    const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
+    const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
+
+    const {
+        isRecording, isAnalyzing, assessmentResult, coachTip,
+        errorMsg, saveMessage, startRecording, stopRecording, resetAssessment,
+    } = useAudioRecorder(practiceText, selectedLang, sourceLang, onTrialLimitReached);
+
+    // practiceMode 전환 시 이전 결과 초기화
+    const handleModeChange = (mode) => {
+        if (mode === practiceMode) return;
+        resetAssessment();
+        setPracticeMode(mode);
+    };
+
+    // 녹음 시작 시 부모에게 알려서 다른 카드 녹음 차단
+    const handleStart = () => {
+        onRecordingStart(index);
+        startRecording();
+    };
+
+    // 다른 카드가 녹음 중이면 이 카드의 녹음 버튼 비활성화
+    const isOtherRecording = activeRecIdx !== null && activeRecIdx !== index;
+
+    // 녹음 완료 후 점수 기반 효과음 + 북마크 안내
+    const prevAnalyzing = useRef(isAnalyzing);
+    useEffect(() => {
+        if (prevAnalyzing.current && !isAnalyzing && assessmentResult) {
+            const score = assessmentResult.pronunciationScore || 0;
+            if (score >= targetGoal) {
+                playSuccessSound();
+                if (!isSaved) onBookmarkPrompt?.(score);
+            } else {
+                playAlertSound();
+            }
+        }
+        prevAnalyzing.current = isAnalyzing;
+    }, [isAnalyzing, assessmentResult]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const tips = w.learningTip || [];
+
+    return (
+        <div className="vocab-word-card">
+            {/* 상단: 단어 + 발음 + 뜻 + 액션 */}
+            <div className="vocab-word-top">
+                <div className="vocab-word-main">
+                    <p className="vocab-word-text">{w.word}</p>
+                    {w.pronunciation && (
+                        <p className="vocab-word-pronunciation">{w.pronunciation}</p>
+                    )}
+                    <p className="vocab-word-meaning">{w.meaning}</p>
+                </div>
+                <div className="vocab-word-actions">
+                    <button
+                        className="vocab-action-btn"
+                        onClick={() => onSpeak?.(w.word, selectedLang)}
+                        title="TTS"
+                    >
+                        <Volume2 size={16} />
+                    </button>
+                    <button
+                        className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
+                        onClick={onSave}
+                        title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
+                    >
+                        <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
+                    </button>
+                </div>
+            </div>
+
+            {/* 예문 */}
+            {w.example && (
+                <div className="vocab-word-example">
+                    <p className="vocab-word-example-text">
+                        {w.example}
+                        <button
+                            style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
+                            }}
+                            onClick={() => onSpeak?.(w.example, selectedLang)}
+                        >
+                            <Volume2 size={14} />
+                        </button>
+                    </p>
+                    {w.exampleTranslation && (
+                        <p className="vocab-word-example-trans">{w.exampleTranslation}</p>
+                    )}
+                </div>
+            )}
+
+            {/* ── 발음 연습 섹션 ── */}
+            <div className="vocab-pron-section">
+                <div className="vocab-pron-header">
+                    <span className="vocab-pron-label">PRONUNCIATION</span>
+                    {assessmentResult && (
+                        <div className="vocab-score-badge">
+                            <Award size={14} />
+                            {assessmentResult.pronunciationScore}Pt
+                        </div>
+                    )}
+                </div>
+
+                {/* 단어 ↔ 예문 토글 (Stats 캘린더 네비 스타일) */}
+                {w.example && (
+                    <div className="vocab-pron-toggle">
+                        <button
+                            className="vocab-pron-toggle-arrow"
+                            onClick={() => handleModeChange(practiceMode === 'word' ? 'example' : 'word')}
+                            disabled={isRecording || isAnalyzing}
+                        >‹</button>
+                        <span className="vocab-pron-toggle-label">
+                            {practiceMode === 'word' ? t('vocab.practiceWord') : t('vocab.practiceExample')}
+                        </span>
+                        <button
+                            className="vocab-pron-toggle-arrow"
+                            onClick={() => handleModeChange(practiceMode === 'word' ? 'example' : 'word')}
+                            disabled={isRecording || isAnalyzing}
+                        >›</button>
+                    </div>
+                )}
+
+                <div className="vocab-pron-content">
+                    {/* 연습 대상 텍스트 미리보기 */}
+                    <p className="vocab-pron-target">
+                        {practiceText}
+                    </p>
+
+                    {!assessmentResult && !isAnalyzing && !isRecording && (
+                        <p className="vocab-pron-prompt">{t('card.practicePrompt')}</p>
+                    )}
+                    {isRecording && <p className="vocab-pron-status recording">{t('card.recording')}</p>}
+                    {isAnalyzing && <p className="vocab-pron-status analyzing">{t('card.analyzing')}</p>}
+
+                    {errorMsg && (
+                        <div className="vocab-pron-error">
+                            <AlertCircle size={14} />
+                            {errorMsg}
+                        </div>
+                    )}
+                    {saveMessage && !isAnalyzing && (
+                        <div className="vocab-pron-save-msg">
+                            <CheckCircle size={14} />
+                            {saveMessage}
+                        </div>
+                    )}
+
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+
+                    {/* 녹음 버튼 */}
+                    <div className="vocab-pron-actions">
+                        <button
+                            className={`vocab-rec-btn ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
+                            onClick={() => isRecording ? stopRecording() : handleStart()}
+                            disabled={isAnalyzing || isOtherRecording}
+                            title={t('card.practicePrompt')}
+                        >
+                            {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
+                        </button>
+                    </div>
+                </div>
+
+                {/* AI 코치 피드백 */}
+                {coachTip && (
+                    <div className="vocab-coach-area">
+                        <span className="vocab-coach-label">AI PRO COACH</span>
+                        <p className="vocab-coach-text">"{coachTip}"</p>
+                    </div>
+                )}
+            </div>
+
+            {/* ── Learning Tip 섹션 ── */}
+            {tips.length > 0 && (
+                <div className="vocab-tip-section">
+                    <span className="vocab-tip-label">LEARNING TIP</span>
+                    <div className="vocab-tip-list">
+                        {tips.map((tip, idx) => (
+                            <p key={idx} className="vocab-tip-item">• {typeof tip === 'object' ? (tip.content || '') : String(tip || '')}</p>
+                        ))}
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}
+
+// ── 메인 VocabTab ────────────────────────────────────────────────────
 export default function VocabTab({
     sourceLang,
     targetLangs = [],
@@ -44,16 +242,17 @@ export default function VocabTab({
     // ── State ────────────────────────────────────────────────────────
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState('basic');
-    const [openCat, setOpenCat] = useState('daily'); // 첫 카테고리 기본 열림
-    const [selectedTopic, setSelectedTopic] = useState(null); // { catId, subId, topicId }
+    const [openCat, setOpenCat] = useState('daily');
+    const [selectedTopic, setSelectedTopic] = useState(null);
     const [customInput, setCustomInput] = useState('');
-    const [words, setWords] = useState([]); // generated word cards
+    const [words, setWords] = useState([]);
     const [isLoading, setIsLoading] = useState(false);
-    const [savedWords, setSavedWords] = useState(new Set()); // saved word indices
-    const avoidWordsRef = useRef([]); // duplicate avoidance (세션 + Firebase 병합)
-    const historyCacheRef = useRef({}); // Firebase vocabHistory 캐시
+    const [savedWords, setSavedWords] = useState(new Set());
+    const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
+    const avoidWordsRef = useRef([]);
+    const historyCacheRef = useRef({});
 
-    // Firebase에서 해당 키의 이력 읽기 (생성 직전 호출)
+    // Firebase에서 해당 키의 이력 읽기
     const loadVocabHistory = async (key) => {
         if (!user) return [];
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
@@ -67,7 +266,6 @@ export default function VocabTab({
         }
     };
 
-    // 생성 성공 후 이력에 추가 (무제한 — 중복 생성 완전 방지)
     const appendVocabHistory = (key, newWords) => {
         const existing = historyCacheRef.current[key] || [];
         const updated = [...existing, ...newWords];
@@ -80,12 +278,10 @@ export default function VocabTab({
         }
     };
 
-    // visibleLanguages: Settings에서 선택한 targetLangs만 표시
     const visibleLanguages = targetLangs.filter(code =>
         ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es'].includes(code)
     );
 
-    // targetLangs 변경 시 selectedLang 보정
     useEffect(() => {
         if (!visibleLanguages.includes(selectedLang) && visibleLanguages.length > 0) {
             setSelectedLang(visibleLanguages[0]);
@@ -96,6 +292,7 @@ export default function VocabTab({
     useEffect(() => {
         setWords([]);
         setSavedWords(new Set());
+        setActiveRecIdx(null);
         avoidWordsRef.current = [];
     }, [selectedTopic, selectedLang, level]);
 
@@ -103,16 +300,15 @@ export default function VocabTab({
     const handleGenerate = async () => {
         if (!selectedTopic && !customInput.trim()) return;
         setIsLoading(true);
+        setActiveRecIdx(null);
 
         const topicId = selectedTopic?.topicId || 'custom';
         const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
         const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
 
-        // Firebase에서 영구 이력 로드 + 세션 avoidWords 병합
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
         const persistedWords = await loadVocabHistory(historyKey);
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
-        // Gemini에는 최근 200개만 전송 (토큰/속도 최적화)
         const avoidForApi = allAvoid.slice(-200);
 
         try {
@@ -139,9 +335,7 @@ export default function VocabTab({
                 setSavedWords(new Set());
                 if (onGenerate) onGenerate();
                 const newWordTexts = data.words.map(w => w.word);
-                // 세션 avoidWords 업데이트
                 avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
-                // Firebase에 영구 저장 (중복 생성 완전 방지)
                 appendVocabHistory(historyKey, newWordTexts);
             }
         } catch (e) {
@@ -163,6 +357,7 @@ export default function VocabTab({
             example: wordObj.example,
             exampleTranslation: wordObj.exampleTranslation,
             pronunciation: wordObj.pronunciation,
+            learningTip: wordObj.learningTip || [],
             langCode: selectedLang,
             topic: selectedTopic ? getT(sourceLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim(),
             categoryId: selectedTopic?.catId || 'custom',
@@ -170,7 +365,7 @@ export default function VocabTab({
             difficulty: level === 'advanced' ? 'high' : level,
         });
 
-        if (!cardId) return; // 중복 → 이미 저장됨
+        if (!cardId) return;
         playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
         if (onNavigateToLibrary) onNavigateToLibrary(cardId);
@@ -302,52 +497,22 @@ export default function VocabTab({
             {!isLoading && words.length > 0 && (
                 <div className="vocab-words-list">
                     {words.map((w, i) => (
-                        <div key={i} className="vocab-word-card">
-                            <div className="vocab-word-top">
-                                <div className="vocab-word-main">
-                                    <p className="vocab-word-text">{w.word}</p>
-                                    {w.pronunciation && (
-                                        <p className="vocab-word-pronunciation">{w.pronunciation}</p>
-                                    )}
-                                    <p className="vocab-word-meaning">{w.meaning}</p>
-                                </div>
-                                <div className="vocab-word-actions">
-                                    <button
-                                        className="vocab-action-btn"
-                                        onClick={() => onSpeak?.(w.word, selectedLang)}
-                                        title="TTS"
-                                    >
-                                        <Volume2 size={16} />
-                                    </button>
-                                    <button
-                                        className={`vocab-action-btn ${savedWords.has(i) ? 'saved' : ''}`}
-                                        onClick={() => handleSave(w, i)}
-                                        title={savedWords.has(i) ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
-                                    >
-                                        <Star size={16} fill={savedWords.has(i) ? '#f59e0b' : 'none'} />
-                                    </button>
-                                </div>
-                            </div>
-                            {w.example && (
-                                <div className="vocab-word-example">
-                                    <p className="vocab-word-example-text">
-                                        {w.example}
-                                        <button
-                                            style={{
-                                                background: 'none', border: 'none', cursor: 'pointer',
-                                                color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
-                                            }}
-                                            onClick={() => onSpeak?.(w.example, selectedLang)}
-                                        >
-                                            <Volume2 size={14} />
-                                        </button>
-                                    </p>
-                                    {w.exampleTranslation && (
-                                        <p className="vocab-word-example-trans">{w.exampleTranslation}</p>
-                                    )}
-                                </div>
-                            )}
-                        </div>
+                        <VocabWordCard
+                            key={i}
+                            w={w}
+                            index={i}
+                            selectedLang={selectedLang}
+                            sourceLang={sourceLang}
+                            onSpeak={onSpeak}
+                            isSaved={savedWords.has(i)}
+                            onSave={() => handleSave(w, i)}
+                            onTrialLimitReached={onTrialLimitReached}
+                            targetGoal={languageGoals[selectedLang] || 80}
+                            onBookmarkPrompt={onBookmarkPrompt}
+                            activeRecIdx={activeRecIdx}
+                            onRecordingStart={setActiveRecIdx}
+                            t={t}
+                        />
                     ))}
                 </div>
             )}

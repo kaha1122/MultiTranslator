@@ -119,6 +119,8 @@
     "regenerate": "换一批",
     "generating": "正在生成词汇...",
     "selectTopic": "选择上方主题即可生成词汇卡片",
+    "practiceWord": "单词练习",
+    "practiceExample": "例句练习",
     "backToVocab": "返回词汇学习"
   },
   "sceneLoc": {

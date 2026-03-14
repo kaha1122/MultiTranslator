@@ -1102,7 +1102,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic' }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -1124,10 +1124,6 @@ function App() {
 
     const langInfo = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
     try {
-      const tips = [];
-      if (example) tips.push(example);
-      if (exampleTranslation) tips.push(exampleTranslation);
-
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
@@ -1143,7 +1139,9 @@ function App() {
         categoryId,
         topicId,
         scene: topic || '',
-        learningTip: tips,
+        learningTip: learningTip || [],
+        example: example || '',
+        exampleTranslation: exampleTranslation || '',
         pronunciation: pronunciation || '',
         pronunciationScore: null,
         createdAt: serverTimestamp(),

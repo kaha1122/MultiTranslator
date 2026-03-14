@@ -119,6 +119,8 @@
     "regenerate": "Otras palabras",
     "generating": "Generando vocabulario...",
     "selectTopic": "Selecciona un tema arriba para generar tarjetas de vocabulario",
+    "practiceWord": "Palabra",
+    "practiceExample": "Ejemplo",
     "backToVocab": "Volver a Vocabulario"
   },
   "sceneLoc": {
