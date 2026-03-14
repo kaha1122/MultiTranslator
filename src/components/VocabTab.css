@@ -383,45 +383,62 @@
   font-weight: 800;
 }
 
-/* ── 단어 ↔ 예문 토글 (Stats 캘린더 네비 스타일) ── */
+/* ── 단어 ↔ 예문 토글 (슬라이드 토글) ── */
 .vocab-pron-toggle {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0;
+  gap: 6px;
   margin-bottom: 8px;
-  background: #f8fafc;
-  border-radius: 10px;
-  padding: 2px 0;
-}
-
-.vocab-pron-toggle-arrow {
-  background: none;
-  border: none;
-  font-size: 1.4rem;
-  color: #64748b;
-  cursor: pointer;
-  padding: 4px 12px;
-  border-radius: 8px;
-  transition: background 0.15s;
-  line-height: 1;
-}
-
-.vocab-pron-toggle-arrow:active {
-  background: #e2e8f0;
-}
-
-.vocab-pron-toggle-arrow:disabled {
-  opacity: 0.3;
-  cursor: not-allowed;
 }
 
 .vocab-pron-toggle-label {
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: #94a3b8;
+  transition: color 0.2s;
+}
+
+.vocab-pron-toggle-label.active {
   color: #1e293b;
-  min-width: 80px;
-  text-align: center;
+  font-weight: 700;
+}
+
+.vocab-pron-toggle-track {
+  position: relative;
+  width: 36px;
+  height: 20px;
+  border-radius: 10px;
+  border: none;
+  background: #cbd5e1;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s;
+}
+
+.vocab-pron-toggle-track.on {
+  background: #10b981;
+}
+
+.vocab-pron-toggle-track:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.vocab-pron-toggle-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: white;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+  transition: transform 0.25s;
+}
+
+.vocab-pron-toggle-track.on .vocab-pron-toggle-thumb {
+  transform: translateX(16px);
 }
 
 /* ── 연습 콘텐츠 영역 ── */
@@ -480,61 +497,6 @@
   margin-top: 8px;
   justify-content: center;
   font-weight: 700;
-}
-
-/* ── 녹음 버튼 ── */
-.vocab-pron-actions {
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
-}
-
-.vocab-rec-btn {
-  width: 48px;
-  height: 48px;
-  border-radius: 50%;
-  border: 2px solid #e2e8f0;
-  background: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  padding: 0;
-  transition: all 0.2s;
-  color: #64748b;
-}
-
-.vocab-rec-btn:hover {
-  border-color: #6366f1;
-  color: #6366f1;
-}
-
-.vocab-rec-btn.recording {
-  border-color: #ef4444;
-  background: #fef2f2;
-  color: #ef4444;
-  animation: vocab-pulse 1.2s ease-in-out infinite;
-}
-
-.vocab-rec-btn.analyzing {
-  border-color: #6366f1;
-  color: #6366f1;
-  opacity: 0.7;
-  cursor: not-allowed;
-}
-
-.vocab-rec-btn:disabled {
-  opacity: 0.35;
-  cursor: not-allowed;
-}
-
-@keyframes vocab-pulse {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.3); }
-  50% { box-shadow: 0 0 0 8px rgba(239, 68, 68, 0); }
-}
-
-.vocab-rec-btn .spin {
-  animation: vocab-spin 0.8s linear infinite;
 }
 
 /* ── AI 코치 피드백 ── */

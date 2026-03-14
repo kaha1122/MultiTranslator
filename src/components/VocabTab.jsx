@@ -141,22 +141,18 @@ function VocabWordCard({
                     )}
                 </div>
 
-                {/* 단어 ↔ 예문 토글 (Stats 캘린더 네비 스타일) */}
+                {/* 단어 ↔ 예문 토글 (LearningGauge 슬라이드 토글 스타일) */}
                 {w.example && (
                     <div className="vocab-pron-toggle">
+                        <span className={`vocab-pron-toggle-label ${practiceMode === 'word' ? 'active' : ''}`}>{t('vocab.practiceWord')}</span>
                         <button
-                            className="vocab-pron-toggle-arrow"
+                            className={`vocab-pron-toggle-track ${practiceMode === 'example' ? 'on' : ''}`}
                             onClick={() => handleModeChange(practiceMode === 'word' ? 'example' : 'word')}
                             disabled={isRecording || isAnalyzing}
-                        >‹</button>
-                        <span className="vocab-pron-toggle-label">
-                            {practiceMode === 'word' ? t('vocab.practiceWord') : t('vocab.practiceExample')}
-                        </span>
-                        <button
-                            className="vocab-pron-toggle-arrow"
-                            onClick={() => handleModeChange(practiceMode === 'word' ? 'example' : 'word')}
-                            disabled={isRecording || isAnalyzing}
-                        >›</button>
+                        >
+                            <span className="vocab-pron-toggle-thumb" />
+                        </button>
+                        <span className={`vocab-pron-toggle-label ${practiceMode === 'example' ? 'active' : ''}`}>{t('vocab.practiceExample')}</span>
                     </div>
                 )}
 
@@ -188,9 +184,9 @@ function VocabWordCard({
                     <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
 
                     {/* 녹음 버튼 */}
-                    <div className="vocab-pron-actions">
+                    <div className="practice-actions">
                         <button
-                            className={`vocab-rec-btn ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
+                            className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
                             onClick={() => isRecording ? stopRecording() : handleStart()}
                             disabled={isAnalyzing || isOtherRecording}
                             title={t('card.practicePrompt')}
