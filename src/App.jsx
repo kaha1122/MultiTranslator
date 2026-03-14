@@ -1184,7 +1184,7 @@ function App() {
   const handleLogout = async () => {
     try {
       await signOut(auth); // Firebase 서버에 로그아웃 알림
-      setViewMode('scene'); // 로그아웃 후 기본 화면으로 이동
+      setViewMode('home'); // 로그아웃 후 기본 화면으로 이동
     } catch (error) {
       console.error("로그아웃 실패:", error);
     }
@@ -1217,7 +1217,7 @@ function App() {
   if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} sourceLang={sourceLang} />;
   if (viewMode === 'terms') return <TermsOfServicePage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} sourceLang={sourceLang} />;
   if (viewMode === 'contact') return <ContactPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} sourceLang={sourceLang} />;
-  if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('scene')} sourceLang={sourceLang} />;
+  if (viewMode === 'guide') return <AppGuide onBack={() => setViewMode('home')} sourceLang={sourceLang} />;
   // stats는 이제 메인 탭이므로 여기서 early return하지 않음
 
 
