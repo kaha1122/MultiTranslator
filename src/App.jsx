@@ -239,25 +239,36 @@ function App() {
 
   // ── 모바일 Back 키 종료 확인 팝업 ──
   const [showExitPopup, setShowExitPopup] = useState(false);
+  const dictBackToRef = useRef(dictBackTo);
+  const libraryBackToRef = useRef(libraryBackTo);
+  React.useEffect(() => { dictBackToRef.current = dictBackTo; }, [dictBackTo]);
+  React.useEffect(() => { libraryBackToRef.current = libraryBackTo; }, [libraryBackTo]);
+
+  // viewMode 변경 시마다 히스토리 엔트리 보충
   React.useEffect(() => {
     if (!user) return;
-    // 초기 히스토리 엔트리 추가 (back 키 인터셉트용)
     window.history.pushState({ page: 'app-root' }, '');
+  }, [user, viewMode]);
+
+  // popstate 리스너 (user 변경 시에만 등록/해제)
+  React.useEffect(() => {
+    if (!user) return;
     const handleBackKey = () => {
-      // 기존 핸들러가 처리하는 상태면 무시 (dictBackTo, libraryBackTo 등)
-      if (dictBackTo || libraryBackTo) return;
-      // 팝업 표시 + 히스토리 재보충
+      // 기존 핸들러가 처리하는 상태면 무시
+      if (dictBackToRef.current || libraryBackToRef.current) return;
+      // 히스토리 재보충 + 팝업 표시
       window.history.pushState({ page: 'app-root' }, '');
       setShowExitPopup(true);
     };
     window.addEventListener('popstate', handleBackKey);
     return () => window.removeEventListener('popstate', handleBackKey);
-  }, [user, dictBackTo, libraryBackTo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   const handleExitConfirm = () => {
     setShowExitPopup(false);
-    window.history.back(); // 실제 종료 (브라우저 이전 페이지로)
-    window.history.back();
+    // 보충된 엔트리 + 원본 → 2번 back으로 실제 종료
+    window.history.go(-2);
   };
   const handleExitCancel = () => {
     setShowExitPopup(false);
