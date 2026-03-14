@@ -2519,10 +2519,11 @@ function App() {
       {showExitToast && (
         <div style={{
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
-          background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 24px',
+          background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 28px',
           borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
           zIndex: 9999, whiteSpace: 'pre-line', textAlign: 'center',
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+          maxWidth: '85vw', width: 'max-content',
           animation: 'fadeInUp 0.25s ease-out',
         }}>
           {getT(sourceLang, 'exit.backToast') || '한 번 더 누르면 종료됩니다'}
