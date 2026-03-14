@@ -118,75 +118,69 @@
 
 /* ── 섹션 3: 폴더 탭 ── */
 .home-folders-section {
-    padding-bottom: 12px;
-}
-.home-folder-tabs {
-    display: flex;
-    gap: 8px;
-    margin-bottom: 0;
-}
-.home-folder-tab {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-    padding: 10px 4px 8px;
-    border: 2px solid #e2e8f0;
-    border-radius: 14px;
-    background: white;
-    cursor: pointer;
-    transition: all 0.2s;
-    position: relative;
-}
-.home-folder-tab.active {
-    border-color: var(--tab-border);
-    background: var(--tab-bg);
-    box-shadow: 0 2px 10px rgba(0,0,0,0.06);
-}
-.home-folder-tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: -8px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 0;
-    height: 0;
-    border-left: 7px solid transparent;
-    border-right: 7px solid transparent;
-    border-top: 7px solid var(--tab-border);
-}
-.home-folder-tab-icon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background 0.2s;
-}
-.home-folder-tab-label {
-    font-size: 0.72rem;
-    font-weight: 700;
-    color: #64748b;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-}
-.home-folder-tab.active .home-folder-tab-label {
-    color: var(--tab-color);
-}
-
-/* 콘텐츠 영역 */
-.home-folder-content {
-    margin-top: 14px;
-    border: 1.5px solid #e2e8f0;
-    border-radius: 16px;
-    padding: 16px;
     display: flex;
     flex-direction: column;
     gap: 10px;
+    padding-bottom: 12px;
+}
+
+/* 각 폴더 유닛 (탭 + 콘텐츠를 하나로) */
+.home-folder-unit {
+    border: 2px solid #e2e8f0;
+    border-radius: 16px;
+    overflow: hidden;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    background: white;
+}
+.home-folder-unit.active {
+    border-color: var(--folder-border);
+    box-shadow: 0 3px 14px rgba(0,0,0,0.06);
+}
+
+/* 탭 헤더 */
+.home-folder-tab {
+    width: 100%;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 14px;
+    border: none;
+    background: white;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+.home-folder-tab.active {
+    background: var(--folder-bg);
+}
+.home-folder-tab-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: background 0.2s;
+}
+.home-folder-tab-label {
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: #1e293b;
+}
+.home-folder-tab.active .home-folder-tab-label {
+    color: var(--folder-color);
+}
+
+/* 콘텐츠 영역 (탭과 같은 카드 안) */
+.home-folder-content {
+    overflow: hidden;
+}
+.home-folder-content-inner {
+    padding: 0 14px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    background: var(--folder-bg);
 }
 .home-folder-anim {
     width: 100%;
@@ -207,20 +201,22 @@
     color: #1e293b;
     margin: 0;
     line-height: 1.5;
+    text-align: center;
 }
 .home-folder-desc-sub {
     font-size: 0.76rem;
     color: #64748b;
     margin: 0;
     line-height: 1.5;
+    text-align: center;
 }
 .home-folder-cta {
     width: 100%;
-    padding: 11px 0;
+    padding: 12px 0;
     border: none;
     border-radius: 12px;
     color: white;
-    font-size: 0.88rem;
+    font-size: 0.9rem;
     font-weight: 700;
     cursor: pointer;
     transition: opacity 0.2s;
