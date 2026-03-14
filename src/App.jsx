@@ -1190,23 +1190,26 @@ function App() {
                   </p>
                   <p className="sidebar-user-tier">{tier || 'Free'}</p>
                 </div>
-                <span
+                <button
                   onClick={handleEditProfile}
                   style={{
-                    fontSize: '0.75rem',
+                    fontSize: '0.7rem',
                     color: 'var(--primary-color)',
                     cursor: 'pointer',
                     fontWeight: 600,
                     flexShrink: 0,
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    transition: 'background 0.2s',
+                    padding: '3px 10px',
+                    borderRadius: '12px',
+                    border: '1.5px solid var(--primary-color)',
+                    background: 'transparent',
+                    transition: 'all 0.2s',
+                    marginRight: '4px',
                   }}
-                  onMouseEnter={(e) => e.target.style.background = 'rgba(34,197,94,0.1)'}
-                  onMouseLeave={(e) => e.target.style.background = 'transparent'}
+                  onMouseEnter={(e) => { e.target.style.background = 'var(--primary-color)'; e.target.style.color = 'white'; }}
+                  onMouseLeave={(e) => { e.target.style.background = 'transparent'; e.target.style.color = 'var(--primary-color)'; }}
                 >
                   Edit
-                </span>
+                </button>
               </div>
             )}
 
@@ -1674,212 +1677,6 @@ function App() {
               </button>
             </div>
 
-            {/* --- [신규] 프로필 수정 모달 (Signup 디자인 적용) --- */}
-            <AnimatePresence>
-              {showProfileModal && (
-                <motion.div
-                  className="modal-overlay"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  onClick={() => setShowProfileModal(false)}
-                  style={{
-                    position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                    background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-                    padding: '20px' // 화면 작은 폰에서 짤리지 않게 패딩 추가
-                  }}
-                >
-                  <motion.div
-                    className="auth-card"
-                    initial={{ scale: 0.9, y: 20 }}
-                    animate={{ scale: 1, y: 0 }}
-                    exit={{ scale: 0.9, opacity: 0 }}
-                    onClick={(e) => e.stopPropagation()}
-                    style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
-                  >
-                    <button
-                      onClick={() => setShowProfileModal(false)}
-                      style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                    >
-                      <X size={24} />
-                    </button>
-
-                    <div className="auth-header">
-                      <div className="auth-icon-circle signup-icon">
-                        <User size={24} color="white" />
-                      </div>
-                      <h2>{getT(sourceLang, 'auth.editProfile')}</h2>
-                      <p>{getT(sourceLang, 'auth.editSubtitle')}</p>
-                    </div>
-
-                    <form onSubmit={handleSaveProfile} className="auth-form">
-                      {/* 이메일 + 인증 상태 */}
-                      <div className="input-wrapper">
-                        <label className="input-label">{getT(sourceLang, 'auth.email')}</label>
-                        <div className="input-group">
-                          <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
-                          <input
-                            type="email"
-                            value={user.email || ''}
-                            disabled
-                            style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
-                          />
-                        </div>
-                        {user.emailVerified ? (
-                          <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
-                            <CheckCircle2 size={13} /> {getT(sourceLang, 'auth.emailVerified')}
-                          </span>
-                        ) : (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '4px', marginTop: '2px' }}>
-                            <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '600' }}>⚠️ {getT(sourceLang, 'auth.emailNotVerified')}</span>
-                            {emailVerifSent ? (
-                              <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>✅ {getT(sourceLang, 'auth.verifEmailSent')}</span>
-                            ) : (
-                              <span
-                                onClick={handleSendEmailVerification}
-                                style={{ fontSize: '0.72rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
-                              >
-                                {getT(sourceLang, 'auth.sendVerifEmail')}
-                              </span>
-                            )}
-                          </div>
-                        )}
-                        {!user.emailVerified && (
-                          <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px', marginTop: '1px' }}>
-                            {getT(sourceLang, 'auth.verifEmailHint')}
-                          </p>
-                        )}
-                      </div>
-
-                      {/* 닉네임 */}
-                      <div className="input-wrapper">
-                        <label className="input-label">{getT(sourceLang, 'auth.nickname')} <span className="required-star">*</span></label>
-                        <div className="input-group">
-                          <User size={18} className="input-icon" />
-                          <input
-                            type="text"
-                            placeholder={getT(sourceLang, 'auth.nicknamePlaceholder')}
-                            value={profileFormData.nickname}
-                            onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
-                            required
-                          />
-                        </div>
-                      </div>
-
-                      {/* 전화번호 */}
-                      <div className="input-wrapper">
-                        <label className="input-label">{getT(sourceLang, 'auth.phone')}</label>
-                        <div className="input-group" style={{ gap: 0 }}>
-                          <Phone size={18} className="input-icon" />
-                          <select
-                            value={profileFormData.phoneCountry}
-                            onChange={(e) => setProfileFormData({ ...profileFormData, phoneCountry: e.target.value, phone: '' })}
-                            className="phone-country-select"
-                          >
-                            {COUNTRY_PHONES.map(c => (
-                              <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
-                            ))}
-                          </select>
-                          <input
-                            type="tel"
-                            placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
-                            value={profileFormData.phone}
-                            onChange={(e) => setProfileFormData({ ...profileFormData, phone: formatPhoneByCountry(e.target.value, profileFormData.phoneCountry) })}
-                            style={{ flex: 1 }}
-                          />
-                        </div>
-                      </div>
-
-                      <button type="submit" className="auth-submit-btn" style={{ marginTop: '6px' }}>
-                        {getT(sourceLang, 'auth.saveChanges')}
-                      </button>
-                    </form>
-
-                    {/* 비밀번호 변경 섹션 (Email 가입자만) */}
-                    {!isGoogleUser && (
-                      <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
-                        {!pwChangeMode ? (
-                          <button
-                            onClick={() => setPwChangeMode(true)}
-                            style={{
-                              width: '100%', padding: '10px', background: 'none', border: '1.5px solid #e2e8f0',
-                              borderRadius: '10px', color: '#64748b', fontSize: '0.85rem', fontWeight: '600',
-                              cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
-                            }}
-                          >
-                            <Lock size={15} /> {getT(sourceLang, 'auth.changePassword')}
-                          </button>
-                        ) : (
-                          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                            <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4b5563', marginLeft: '4px' }}>{getT(sourceLang, 'auth.changePassword')}</label>
-                            <div className="input-group">
-                              <Lock size={18} className="input-icon" />
-                              <input
-                                type="password"
-                                placeholder={getT(sourceLang, 'auth.currentPassword')}
-                                value={pwForm.current}
-                                onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
-                              />
-                            </div>
-                            <div className="input-group">
-                              <Lock size={18} className="input-icon" />
-                              <input
-                                type="password"
-                                placeholder={getT(sourceLang, 'auth.newPassword')}
-                                value={pwForm.newPw}
-                                onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
-                              />
-                            </div>
-                            <div className="input-group">
-                              <Lock size={18} className="input-icon" />
-                              <input
-                                type="password"
-                                placeholder={getT(sourceLang, 'auth.confirmNewPassword')}
-                                value={pwForm.confirm}
-                                onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
-                              />
-                            </div>
-                            {pwMsg.text && (
-                              <div style={{
-                                padding: '8px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '500',
-                                background: pwMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
-                                color: pwMsg.type === 'error' ? '#dc2626' : '#16a34a',
-                                border: `1px solid ${pwMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`
-                              }}>
-                                {pwMsg.text}
-                              </div>
-                            )}
-                            <div style={{ display: 'flex', gap: '8px' }}>
-                              <button
-                                type="button"
-                                onClick={() => { setPwChangeMode(false); setPwMsg({ type: '', text: '' }); }}
-                                style={{
-                                  flex: 1, padding: '9px', background: '#f1f5f9', border: 'none', borderRadius: '10px',
-                                  color: '#64748b', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer'
-                                }}
-                              >
-                                {getT(sourceLang, 'auth.cancel')}
-                              </button>
-                              <button
-                                type="button"
-                                onClick={handleChangePassword}
-                                style={{
-                                  flex: 1, padding: '9px', background: '#6366f1', border: 'none', borderRadius: '10px',
-                                  color: 'white', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer'
-                                }}
-                              >
-                                {getT(sourceLang, 'auth.change')}
-                              </button>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </motion.div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-
             {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
             <div className="settings-group">
               <label className="settings-label">
@@ -2279,6 +2076,212 @@ function App() {
         sourceLang={sourceLang}
         onUpgrade={() => setShowUpgradeModal(true)}
       />
+
+      {/* --- 프로필 수정 모달 (최상위 — 어느 탭에서든 표시) --- */}
+      <AnimatePresence>
+        {showProfileModal && (
+          <motion.div
+            className="modal-overlay"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setShowProfileModal(false)}
+            style={{
+              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+              background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
+              padding: '20px'
+            }}
+          >
+            <motion.div
+              className="auth-card"
+              initial={{ scale: 0.9, y: 20 }}
+              animate={{ scale: 1, y: 0 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
+            >
+              <button
+                onClick={() => setShowProfileModal(false)}
+                style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
+              >
+                <X size={24} />
+              </button>
+
+              <div className="auth-header">
+                <div className="auth-icon-circle signup-icon">
+                  <User size={24} color="white" />
+                </div>
+                <h2>{getT(sourceLang, 'auth.editProfile')}</h2>
+                <p>{getT(sourceLang, 'auth.editSubtitle')}</p>
+              </div>
+
+              <form onSubmit={handleSaveProfile} className="auth-form">
+                {/* 이메일 + 인증 상태 */}
+                <div className="input-wrapper">
+                  <label className="input-label">{getT(sourceLang, 'auth.email')}</label>
+                  <div className="input-group">
+                    <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
+                    <input
+                      type="email"
+                      value={user.email || ''}
+                      disabled
+                      style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
+                    />
+                  </div>
+                  {user.emailVerified ? (
+                    <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
+                      <CheckCircle2 size={13} /> {getT(sourceLang, 'auth.emailVerified')}
+                    </span>
+                  ) : (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '4px', marginTop: '2px' }}>
+                      <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '600' }}>⚠️ {getT(sourceLang, 'auth.emailNotVerified')}</span>
+                      {emailVerifSent ? (
+                        <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>✅ {getT(sourceLang, 'auth.verifEmailSent')}</span>
+                      ) : (
+                        <span
+                          onClick={handleSendEmailVerification}
+                          style={{ fontSize: '0.72rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
+                        >
+                          {getT(sourceLang, 'auth.sendVerifEmail')}
+                        </span>
+                      )}
+                    </div>
+                  )}
+                  {!user.emailVerified && (
+                    <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px', marginTop: '1px' }}>
+                      {getT(sourceLang, 'auth.verifEmailHint')}
+                    </p>
+                  )}
+                </div>
+
+                {/* 닉네임 */}
+                <div className="input-wrapper">
+                  <label className="input-label">{getT(sourceLang, 'auth.nickname')} <span className="required-star">*</span></label>
+                  <div className="input-group">
+                    <User size={18} className="input-icon" />
+                    <input
+                      type="text"
+                      placeholder={getT(sourceLang, 'auth.nicknamePlaceholder')}
+                      value={profileFormData.nickname}
+                      onChange={(e) => setProfileFormData({ ...profileFormData, nickname: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* 전화번호 */}
+                <div className="input-wrapper">
+                  <label className="input-label">{getT(sourceLang, 'auth.phone')}</label>
+                  <div className="input-group" style={{ gap: 0 }}>
+                    <Phone size={18} className="input-icon" />
+                    <select
+                      value={profileFormData.phoneCountry}
+                      onChange={(e) => setProfileFormData({ ...profileFormData, phoneCountry: e.target.value, phone: '' })}
+                      className="phone-country-select"
+                    >
+                      {COUNTRY_PHONES.map(c => (
+                        <option key={c.code} value={c.code}>{c.flag} {c.dial}</option>
+                      ))}
+                    </select>
+                    <input
+                      type="tel"
+                      placeholder={getT(sourceLang, 'auth.phonePlaceholder')}
+                      value={profileFormData.phone}
+                      onChange={(e) => setProfileFormData({ ...profileFormData, phone: formatPhoneByCountry(e.target.value, profileFormData.phoneCountry) })}
+                      style={{ flex: 1 }}
+                    />
+                  </div>
+                </div>
+
+                <button type="submit" className="auth-submit-btn" style={{ marginTop: '6px' }}>
+                  {getT(sourceLang, 'auth.saveChanges')}
+                </button>
+              </form>
+
+              {/* 비밀번호 변경 섹션 (Email 가입자만) */}
+              {!isGoogleUser && (
+                <div style={{ marginTop: '12px', borderTop: '1px solid #f1f5f9', paddingTop: '12px' }}>
+                  {!pwChangeMode ? (
+                    <button
+                      onClick={() => setPwChangeMode(true)}
+                      style={{
+                        width: '100%', padding: '10px', background: 'none', border: '1.5px solid #e2e8f0',
+                        borderRadius: '10px', color: '#64748b', fontSize: '0.85rem', fontWeight: '600',
+                        cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                      }}
+                    >
+                      <Lock size={15} /> {getT(sourceLang, 'auth.changePassword')}
+                    </button>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                      <label style={{ fontSize: '0.8rem', fontWeight: '700', color: '#4b5563', marginLeft: '4px' }}>{getT(sourceLang, 'auth.changePassword')}</label>
+                      <div className="input-group">
+                        <Lock size={18} className="input-icon" />
+                        <input
+                          type="password"
+                          placeholder={getT(sourceLang, 'auth.currentPassword')}
+                          value={pwForm.current}
+                          onChange={(e) => setPwForm({ ...pwForm, current: e.target.value })}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <Lock size={18} className="input-icon" />
+                        <input
+                          type="password"
+                          placeholder={getT(sourceLang, 'auth.newPassword')}
+                          value={pwForm.newPw}
+                          onChange={(e) => setPwForm({ ...pwForm, newPw: e.target.value })}
+                        />
+                      </div>
+                      <div className="input-group">
+                        <Lock size={18} className="input-icon" />
+                        <input
+                          type="password"
+                          placeholder={getT(sourceLang, 'auth.confirmNewPassword')}
+                          value={pwForm.confirm}
+                          onChange={(e) => setPwForm({ ...pwForm, confirm: e.target.value })}
+                        />
+                      </div>
+                      {pwMsg.text && (
+                        <div style={{
+                          padding: '8px 12px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: '500',
+                          background: pwMsg.type === 'error' ? '#fef2f2' : '#f0fdf4',
+                          color: pwMsg.type === 'error' ? '#dc2626' : '#16a34a',
+                          border: `1px solid ${pwMsg.type === 'error' ? '#fecaca' : '#bbf7d0'}`
+                        }}>
+                          {pwMsg.text}
+                        </div>
+                      )}
+                      <div style={{ display: 'flex', gap: '8px' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setPwChangeMode(false); setPwMsg({ type: '', text: '' }); }}
+                          style={{
+                            flex: 1, padding: '9px', background: '#f1f5f9', border: 'none', borderRadius: '10px',
+                            color: '#64748b', fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer'
+                          }}
+                        >
+                          {getT(sourceLang, 'auth.cancel')}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={handleChangePassword}
+                          style={{
+                            flex: 1, padding: '9px', background: '#6366f1', border: 'none', borderRadius: '10px',
+                            color: 'white', fontSize: '0.85rem', fontWeight: '700', cursor: 'pointer'
+                          }}
+                        >
+                          {getT(sourceLang, 'auth.change')}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Stripe 결제 결과 토스트 */}
       {paymentToast && (
