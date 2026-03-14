@@ -34,6 +34,7 @@ import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import HomePage from './components/HomePage';
+import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
@@ -560,15 +561,26 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // 신규 유저 첫 로그인 시 설정 화면으로 이동 (user.uid 변경 시에만 실행)
+  // 신규 유저 첫 로그인 시 온보딩 팝업 표시
+  const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
     if (!user || !profile) return;
     if (profile.hasCompletedOnboarding === true) return;
-    setTargetLangs(['en']);
-    setViewMode('settings');
-    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
+    setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
+
+  const handleOnboardingComplete = (src, tgts) => {
+    setSourceLang(src);
+    setInputLang(src);
+    setTargetLangs(tgts);
+    localStorage.setItem('sourceLang', src);
+    localStorage.setItem('inputLang', src);
+    localStorage.setItem('targetLangs', JSON.stringify(tgts));
+    setShowOnboarding(false);
+    setViewMode('home');
+    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
+  };
 
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
@@ -2521,6 +2533,14 @@ function App() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {/* 신규 유저 온보딩 팝업 */}
+      {showOnboarding && (
+        <OnboardingModal
+          defaultSourceLang={sourceLang}
+          onComplete={handleOnboardingComplete}
+        />
+      )}
 
       {/* 모바일 Back 키 종료 확인 팝업 */}
       {showExitPopup && (

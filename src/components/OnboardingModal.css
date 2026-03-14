@@ -1,0 +1,133 @@
+.onb-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9998;
+  padding: 20px;
+}
+
+.onb-card {
+  background: white;
+  border-radius: 22px;
+  width: 100%;
+  max-width: 360px;
+  padding: 28px 22px 22px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+}
+
+/* 단계 인디케이터 */
+.onb-steps {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.onb-step-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  transition: all 0.3s;
+}
+.onb-step-dot.active {
+  background: #00a884;
+  width: 20px;
+  border-radius: 4px;
+}
+
+/* 본문 */
+.onb-body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.onb-title {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: #1e293b;
+  text-align: center;
+  margin: 0 0 20px;
+  line-height: 1.5;
+  white-space: pre-line;
+}
+
+/* 언어 버튼 그리드 */
+.onb-lang-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.onb-lang-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.onb-lang-btn:active {
+  transform: scale(0.97);
+}
+.onb-lang-btn.selected {
+  border-color: #00a884;
+  background: #f0fdf4;
+  box-shadow: 0 2px 8px rgba(0, 168, 132, 0.15);
+}
+
+.onb-lang-flag {
+  font-size: 1.3rem;
+  line-height: 1;
+}
+.onb-lang-name {
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: #334155;
+}
+.onb-lang-btn.selected .onb-lang-name {
+  color: #047857;
+}
+
+/* 다음 버튼 */
+.onb-next-btn {
+  width: 100%;
+  padding: 12px 0;
+  border: none;
+  border-radius: 12px;
+  background: #00a884;
+  color: white;
+  font-size: 0.92rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+.onb-next-btn:active {
+  opacity: 0.8;
+}
+
+/* 아니오 버튼 */
+.onb-skip-btn {
+  width: 100%;
+  padding: 10px 0;
+  border: 1.5px solid #e2e8f0;
+  border-radius: 12px;
+  background: white;
+  color: #64748b;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.onb-skip-btn:active {
+  background: #f8fafc;
+}
