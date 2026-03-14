@@ -28,7 +28,7 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
         {
             id: 'scene',
             icon: <MapPin size={24} />,
-            emoji: '🎭',
+            emoji: '💬',
             color: '#6366f1',
             bgColor: '#eef2ff',
             borderColor: '#c7d2fe',
