@@ -17,7 +17,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut, signInWithPopup, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
-import { setDoc, doc } from 'firebase/firestore';
+import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
@@ -615,16 +615,11 @@ function App() {
       setPhoneVerifStep('sending');
       setPhoneVerifMsg({ type: '', text: '' });
 
-      // 중복 번호 체크 (클라이언트 Firestore 직접 조회 — 서버 cold start 무관)
+      // 중복 번호 체크 (verifiedPhones 컬렉션 — 보안 규칙 독립)
       try {
-        const dupSnap = await getDocsFromServer(
-          query(
-            collection(db, 'users'),
-            where('phoneNumber', '==', fullPhone)
-          )
-        );
-        const isDuplicate = dupSnap.docs.some(doc => doc.id !== user.uid && doc.data()?.phoneVerified === true);
-        if (isDuplicate) {
+        const phoneDocRef = doc(db, 'verifiedPhones', fullPhone);
+        const phoneDoc = await getDoc(phoneDocRef);
+        if (phoneDoc.exists() && phoneDoc.data()?.userId !== user.uid) {
           setPhoneVerifStep('idle');
           setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneDuplicate') });
           return;
@@ -686,11 +681,17 @@ function App() {
       // 코드 검증 성공 → Firestore에 phoneVerified 저장
       const dialCode = (COUNTRY_PHONES.find(c => c.code === profileFormData.phoneCountry) || COUNTRY_PHONES[0]).dial;
       const rawDigits = profileFormData.phone.replace(/\D/g, '');
+      const fullPhoneNum = `${dialCode}${rawDigits}`;
       await updateUserProfile({
-        phoneNumber: `${dialCode}${rawDigits}`,
+        phoneNumber: fullPhoneNum,
         phoneCountry: profileFormData.phoneCountry,
         phoneVerified: true,
         updatedAt: serverTimestamp()
+      });
+      // verifiedPhones 컬렉션에 중복 체크용 문서 생성
+      await setDoc(doc(db, 'verifiedPhones', fullPhoneNum), {
+        userId: user.uid,
+        verifiedAt: serverTimestamp()
       });
       setPhoneVerifStep('verified');
       setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneVerified') });
