@@ -58,6 +58,27 @@ async function requireAuth(req, res, next) {
     }
 }
 
+// 선택적 인증 (토큰 있으면 검증, 없으면 통과 — 데모용)
+async function optionalAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+        req.uid = null;
+        return next();
+    }
+    const idToken = authHeader.split('Bearer ')[1];
+    if (!admin.apps.length) {
+        req.uid = 'dev-user';
+        return next();
+    }
+    try {
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        req.uid = decoded.uid;
+    } catch {
+        req.uid = null;
+    }
+    next();
+}
+
 // cron 전용 인증 (Bearer 토큰 또는 CRON_SECRET 헤더)
 function requireCronAuth(req, res, next) {
     const cronKey = req.headers['x-cron-secret'];
@@ -614,7 +635,7 @@ const STYLE_DESC = {
   - Reflect the chosen emotion **gracefully and indirectly**. Ensure the tone remains professional or respectful toward strangers or service staff.`,
 };
 
-app.post('/api/scene-sentence', requireAuth, async (req, res) => {
+app.post('/api/scene-sentence', optionalAuth, async (req, res) => {
     const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
