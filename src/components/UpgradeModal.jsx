@@ -1,6 +1,7 @@
 import { useState } from 'react';
-import { X, Zap, Crown, Check, ShieldCheck } from 'lucide-react';
+import { X, Zap, Crown, Check, ShieldCheck, Mail } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
 import './UpgradeModal.css';
@@ -72,13 +73,37 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const t = useT(sourceLang);
     const [loadingPlan, setLoadingPlan] = useState(null);
     const [error, setError] = useState('');
+    const [showEmailWarning, setShowEmailWarning] = useState(false);
     const [showPhoneWarning, setShowPhoneWarning] = useState(false);
+    const [emailVerifSent, setEmailVerifSent] = useState(false);
+
+    const handleSendVerification = async () => {
+        try {
+            const auth = getAuth();
+            await sendEmailVerification(auth.currentUser);
+            setEmailVerifSent(true);
+        } catch (e) {
+            if (e.code === 'auth/too-many-requests') {
+                setError(t('upgrade.emailTooMany'));
+            } else {
+                setError(t('upgrade.emailSendFailed'));
+            }
+        }
+    };
 
     const handleUpgrade = async (plan) => {
         if (!user) return;
 
+        // 이메일 인증 확인
+        if (!user.emailVerified) {
+            setShowEmailWarning(true);
+            setShowPhoneWarning(false);
+            return;
+        }
+
         // 전화번호 인증 확인
         if (!profile?.phoneVerified) {
+            setShowEmailWarning(false);
             setShowPhoneWarning(true);
             return;
         }
@@ -120,6 +145,39 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
 
                 {error && (
                     <div className="upgrade-error">{error}</div>
+                )}
+
+                {showEmailWarning && (
+                    <div style={{
+                        background: '#eff6ff', border: '1.5px solid #60a5fa', borderRadius: '12px',
+                        padding: '14px 16px', marginBottom: '12px', display: 'flex', flexDirection: 'column', gap: '10px'
+                    }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Mail size={18} style={{ color: '#1d4ed8', flexShrink: 0 }} />
+                            <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#1e40af' }}>
+                                {t('upgrade.emailRequired')}
+                            </span>
+                        </div>
+                        <p style={{ fontSize: '0.78rem', color: '#1e3a5f', margin: 0, lineHeight: 1.5 }}>
+                            {t('upgrade.emailRequiredDesc')}
+                        </p>
+                        {emailVerifSent ? (
+                            <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>
+                                {t('upgrade.emailSent')}
+                            </span>
+                        ) : (
+                            <button
+                                onClick={handleSendVerification}
+                                style={{
+                                    padding: '8px 16px', borderRadius: '10px', border: 'none',
+                                    background: '#3b82f6', color: 'white', fontSize: '0.82rem',
+                                    fontWeight: 700, cursor: 'pointer', alignSelf: 'flex-start'
+                                }}
+                            >
+                                {t('upgrade.sendVerification')}
+                            </button>
+                        )}
+                    </div>
                 )}
 
                 {showPhoneWarning && (

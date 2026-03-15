@@ -828,6 +828,18 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
     const amount = AMOUNTS[resolvedPlanId];
     if (!amount) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
 
+    // 이메일 인증 확인 (서버 측 이중 체크)
+    if (admin.apps.length) {
+        try {
+            const firebaseUser = await admin.auth().getUser(customerKey);
+            if (!firebaseUser.emailVerified) {
+                return res.status(403).json({ error: 'Email verification required before subscription' });
+            }
+        } catch (checkErr) {
+            console.error('[TossBilling] emailVerified check failed:', checkErr.message);
+        }
+    }
+
     // 전화번호 인증 확인 (서버 측 이중 체크)
     if (adminDb) {
         try {
