@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "Spitzname",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Passwort eingeben",
-    "confirmPlaceholder": "Passwort bestätigen"
+    "confirmPlaceholder": "Passwort bestätigen",
+    "deleteAccount": "Konto löschen",
+    "deleteAccountDesc": "Alle Daten werden dauerhaft gelöscht und können nicht wiederhergestellt werden.",
+    "deleteConfirm": "Möchten Sie Ihr Konto wirklich löschen? Alle Lerndaten und Abo-Informationen werden gelöscht.",
+    "deleteConfirm2": "Letzte Bestätigung. Diese Aktion kann nicht rückgängig gemacht werden. Konto löschen?",
+    "deleteFailed": "Kontolöschung fehlgeschlagen. Bitte versuchen Sie es erneut."
   },
   "tags": {
     "emotion": {

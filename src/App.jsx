@@ -585,6 +585,34 @@ function App() {
     setShowProfileModal(true);
   };
 
+  // 회원탈퇴
+  const handleDeleteAccount = async () => {
+    const msg = getT(sourceLang, 'auth.deleteConfirm');
+    if (!confirm(msg)) return;
+    // 2차 확인
+    const msg2 = getT(sourceLang, 'auth.deleteConfirm2');
+    if (!confirm(msg2)) return;
+
+    try {
+      const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const res = await authFetch(`${SERVER_URL}/api/delete-account`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      const data = await res.json();
+      if (data.success) {
+        setShowProfileModal(false);
+        // Firebase Auth에서 이미 삭제되었으므로 signOut으로 정리
+        try { await signOut(auth); } catch {}
+        window.location.reload();
+      } else {
+        alert(getT(sourceLang, 'auth.deleteFailed'));
+      }
+    } catch {
+      alert(getT(sourceLang, 'auth.deleteFailed'));
+    }
+  };
+
   // [신규] 프로필 저장 (setDoc 사용으로 병합 처리됨)
   const handleSaveProfile = async (e) => {
     e.preventDefault();
@@ -2558,6 +2586,24 @@ function App() {
                   )}
                 </div>
               )}
+
+              {/* 회원탈퇴 */}
+              <div style={{ marginTop: '16px', borderTop: '1px solid #fecaca', paddingTop: '14px' }}>
+                <button
+                  type="button"
+                  onClick={handleDeleteAccount}
+                  style={{
+                    width: '100%', padding: '10px', background: 'none', border: '1.5px solid #fca5a5',
+                    borderRadius: '10px', color: '#dc2626', fontSize: '0.82rem', fontWeight: '600',
+                    cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px'
+                  }}
+                >
+                  {getT(sourceLang, 'auth.deleteAccount')}
+                </button>
+                <p style={{ fontSize: '0.68rem', color: '#94a3b8', textAlign: 'center', marginTop: '6px' }}>
+                  {getT(sourceLang, 'auth.deleteAccountDesc')}
+                </p>
+              </div>
             </motion.div>
           </motion.div>
         )}

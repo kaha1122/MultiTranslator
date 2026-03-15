@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "Pseudonyme",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Entrez votre mot de passe",
-    "confirmPlaceholder": "Confirmez votre mot de passe"
+    "confirmPlaceholder": "Confirmez votre mot de passe",
+    "deleteAccount": "Supprimer le compte",
+    "deleteAccountDesc": "Toutes les données seront définitivement supprimées et irrécupérables.",
+    "deleteConfirm": "Êtes-vous sûr de vouloir supprimer votre compte ? Toutes les données d'apprentissage et d'abonnement seront supprimées.",
+    "deleteConfirm2": "Confirmation finale. Cette action est irréversible. Supprimer votre compte ?",
+    "deleteFailed": "La suppression du compte a échoué. Veuillez réessayer."
   },
   "tags": {
     "emotion": {

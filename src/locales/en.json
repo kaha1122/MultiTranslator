@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "Nickname",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Enter your password",
-    "confirmPlaceholder": "Confirm your password"
+    "confirmPlaceholder": "Confirm your password",
+    "deleteAccount": "Delete Account",
+    "deleteAccountDesc": "All data will be permanently deleted and cannot be recovered.",
+    "deleteConfirm": "Are you sure you want to delete your account? All learning data and subscription info will be removed.",
+    "deleteConfirm2": "Final confirmation. This action cannot be undone. Delete your account?",
+    "deleteFailed": "Account deletion failed. Please try again."
   },
   "tags": {
     "emotion": {

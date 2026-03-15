@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "昵称",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "请输入密码",
-    "confirmPlaceholder": "请确认密码"
+    "confirmPlaceholder": "请确认密码",
+    "deleteAccount": "注销账号",
+    "deleteAccountDesc": "注销后所有数据将被永久删除，无法恢复。",
+    "deleteConfirm": "确定要注销账号吗？所有学习数据和订阅信息将被删除。",
+    "deleteConfirm2": "最后确认。此操作不可撤销。确定注销吗？",
+    "deleteFailed": "账号注销失败，请重试。"
   },
   "tags": {
     "emotion": {

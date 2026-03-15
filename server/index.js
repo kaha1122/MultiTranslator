@@ -1051,6 +1051,85 @@ app.post('/api/check-phone', requireAuth, async (req, res) => {
     }
 });
 
+// ── 회원탈퇴 ─────────────────────────────────────────────────────────────────
+app.post('/api/delete-account', requireAuth, async (req, res) => {
+    const uid = req.uid;
+    const errors = [];
+
+    try {
+        // 1. Firestore에서 사용자 정보 조회 (빌링키, 전화번호 등)
+        let userData = null;
+        if (adminDb) {
+            const userDoc = await adminDb.collection('users').doc(uid).get();
+            userData = userDoc.exists ? userDoc.data() : null;
+        }
+
+        // 2. TossPayments 빌링키 폐기 (구독 중이면)
+        if (userData?.tossBillingKey) {
+            try {
+                await axios.post(
+                    'https://api.tosspayments.com/v1/billing/authorizations/revoke',
+                    { billingKey: userData.tossBillingKey },
+                    { headers: { Authorization: TOSS_AUTH_HEADER() } }
+                );
+                console.log(`[DeleteAccount] billing key revoked: ${uid}`);
+            } catch (tossErr) {
+                errors.push(`TossPayments: ${tossErr.response?.data?.message || tossErr.message}`);
+            }
+        }
+
+        // 3. RevenueCat subscriber 삭제
+        if (REVENUECAT_SECRET_KEY) {
+            try {
+                await axios.delete(
+                    `${REVENUECAT_API}/subscribers/${uid}`,
+                    { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}` } }
+                );
+                console.log(`[DeleteAccount] RevenueCat subscriber deleted: ${uid}`);
+            } catch (rcErr) {
+                errors.push(`RevenueCat: ${rcErr.response?.data?.message || rcErr.message}`);
+            }
+        }
+
+        // 4. Firestore verifiedPhones 삭제
+        if (adminDb && userData?.phoneNumber) {
+            try {
+                await adminDb.collection('verifiedPhones').doc(userData.phoneNumber).delete();
+            } catch (phoneErr) {
+                errors.push(`verifiedPhones: ${phoneErr.message}`);
+            }
+        }
+
+        // 5. Firestore users 문서 삭제
+        if (adminDb) {
+            try {
+                await adminDb.collection('users').doc(uid).delete();
+            } catch (dbErr) {
+                errors.push(`Firestore user: ${dbErr.message}`);
+            }
+        }
+
+        // 6. Firebase Auth 계정 삭제
+        if (admin.apps.length) {
+            try {
+                await admin.auth().deleteUser(uid);
+                console.log(`[DeleteAccount] Firebase Auth deleted: ${uid}`);
+            } catch (authErr) {
+                errors.push(`Firebase Auth: ${authErr.message}`);
+            }
+        }
+
+        if (errors.length > 0) {
+            console.warn(`[DeleteAccount] partial errors for ${uid}:`, errors);
+        }
+        console.log(`[DeleteAccount] completed: ${uid}`);
+        res.json({ success: true, errors: errors.length > 0 ? errors : undefined });
+    } catch (err) {
+        console.error('[DeleteAccount] fatal error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── Cron: 자동 갱신 (만료된 구독 재결제 + 연장) ─────────────────────────────
 // Render cron이나 외부 스케줄러에서 매일 1회 호출: POST /api/cron/renew-subscriptions
 app.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) => {

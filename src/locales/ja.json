@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "ニックネーム",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "パスワードを入力",
-    "confirmPlaceholder": "パスワードを確認"
+    "confirmPlaceholder": "パスワードを確認",
+    "deleteAccount": "アカウント削除",
+    "deleteAccountDesc": "退会するとすべてのデータが完全に削除され、復元できません。",
+    "deleteConfirm": "本当にアカウントを削除しますか？すべての学習データとサブスクリプション情報が削除されます。",
+    "deleteConfirm2": "最終確認です。この操作は元に戻せません。本当に削除しますか？",
+    "deleteFailed": "アカウントの削除に失敗しました。もう一度お試しください。"
   },
   "tags": {
     "emotion": {

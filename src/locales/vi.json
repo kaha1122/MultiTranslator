@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "Biệt danh",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Nhập mật khẩu",
-    "confirmPlaceholder": "Xác nhận mật khẩu"
+    "confirmPlaceholder": "Xác nhận mật khẩu",
+    "deleteAccount": "Xóa tài khoản",
+    "deleteAccountDesc": "Tất cả dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục.",
+    "deleteConfirm": "Bạn có chắc muốn xóa tài khoản? Tất cả dữ liệu học tập và thông tin đăng ký sẽ bị xóa.",
+    "deleteConfirm2": "Xác nhận lần cuối. Hành động này không thể hoàn tác. Xóa tài khoản?",
+    "deleteFailed": "Xóa tài khoản thất bại. Vui lòng thử lại."
   },
   "tags": {
     "emotion": {

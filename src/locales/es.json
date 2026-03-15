@@ -670,7 +670,12 @@
     "nicknamePlaceholder": "Apodo",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Ingresa tu contraseña",
-    "confirmPlaceholder": "Confirma tu contraseña"
+    "confirmPlaceholder": "Confirma tu contraseña",
+    "deleteAccount": "Eliminar cuenta",
+    "deleteAccountDesc": "Todos los datos se eliminarán permanentemente y no se podrán recuperar.",
+    "deleteConfirm": "¿Seguro que desea eliminar su cuenta? Se eliminarán todos los datos de aprendizaje y suscripción.",
+    "deleteConfirm2": "Confirmación final. Esta acción no se puede deshacer. ¿Eliminar su cuenta?",
+    "deleteFailed": "Error al eliminar la cuenta. Inténtelo de nuevo."
   },
   "tags": {
     "emotion": {
