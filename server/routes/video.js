@@ -55,17 +55,11 @@ const CURATED_CHANNELS = {
         entertainment: [{ id: 'UCruaM4824Rr_ry7fsD5Jwag', name: 'THVL Giải Trí' }],
         sports:        [{ id: 'UCrI4iNMPZ2vT_G-TqRO6yrw', name: 'VTV Thể Thao' }],
     },
-    ru: {
-        news:          [{ id: 'UCdubelOloxR3wzMOG_bVJkg', name: 'RT на русском' }],
-        culture:       [{ id: 'UCwGQ5ibFnGr0nOaCH-SQnAQ', name: 'Культура' }],
-        entertainment: [{ id: 'UCMDQxm7cUx3yXkFeHa5zqdA', name: 'Первый канал' }],
-        sports:        [{ id: 'UCKHi5wqBfFmQ1FPvP2rr1vg', name: 'Матч ТВ' }],
-    },
     'pt-BR': {
-        news:          [{ id: 'UCm_FMnYBeSUolMjviG8dFnQ', name: 'TV Brasil' }],
+        news:          [{ id: 'UC-6xqzMBF2CXTImn_a4aCVg', name: 'Jornal O Globo' }],
         culture:       [{ id: 'UCKHhA5hN2UohhFDfNXB_cvQ', name: 'Manual do Mundo' }],
-        entertainment: [{ id: 'UCi6tLG06oB8gMjqZYNYnTKA', name: 'Multishow' }],
-        sports:        [{ id: 'UC-6rJSFcyMwq7TdnioxAIJw', name: 'ge' }],
+        entertainment: [{ id: 'UCEWHPFNilsT0IfQfutVzsag', name: 'Porta dos Fundos' }],
+        sports:        [{ id: 'UCZiYbVptd3PVPf4f6eR6UaQ', name: 'CazéTV' }],
     },
 };
 
