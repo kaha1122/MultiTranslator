@@ -87,8 +87,8 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
         setError('');
         try {
             const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-            const billing = tossPayments.billing({ customerKey: user.uid });
-            await billing.requestBillingAuth({
+            const payment = tossPayments.payment({ customerKey: user.uid });
+            await payment.requestBillingAuth({
                 method: 'CARD',
                 successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
                 failUrl:    `${FRONTEND_URL}?billing=fail`,
