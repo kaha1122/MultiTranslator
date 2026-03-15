@@ -287,7 +287,7 @@ export default function VocabTab({
     };
 
     const visibleLanguages = targetLangs.filter(code =>
-        ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es'].includes(code)
+        ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR'].includes(code)
     );
 
     useEffect(() => {
