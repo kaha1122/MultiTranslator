@@ -80,6 +80,9 @@
   "settings": {
     "apiKeys": "API 키",
     "myTier": "내 등급",
+    "mySubscription": "내 구독 현황",
+    "usageCards": "카드",
+    "usagePron": "발음",
     "tierTrial": "무료 체험",
     "tierAdmin": "관리자",
     "tierSilver": "실버",

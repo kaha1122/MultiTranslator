@@ -80,6 +80,9 @@
   "settings": {
     "apiKeys": "API密钥",
     "myTier": "我的方案",
+    "mySubscription": "我的订阅",
+    "usageCards": "卡片",
+    "usagePron": "发音",
     "tierTrial": "免费试用",
     "tierAdmin": "管理员",
     "tierSilver": "银牌",

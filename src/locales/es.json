@@ -80,6 +80,9 @@
   "settings": {
     "apiKeys": "Claves API",
     "myTier": "Mi plan",
+    "mySubscription": "Mi suscripción",
+    "usageCards": "Tarjetas",
+    "usagePron": "Pronunciación",
     "tierTrial": "Prueba gratuita",
     "tierAdmin": "Admin",
     "tierSilver": "Plata",

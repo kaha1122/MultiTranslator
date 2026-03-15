@@ -80,6 +80,9 @@
   "settings": {
     "apiKeys": "API-Schlüssel",
     "myTier": "Mein Plan",
+    "mySubscription": "Mein Abonnement",
+    "usageCards": "Karten",
+    "usagePron": "Aussprache",
     "tierTrial": "Kostenlose Testversion",
     "tierAdmin": "Admin",
     "tierSilver": "Silber",

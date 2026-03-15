@@ -2010,21 +2010,33 @@ function App() {
             {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
             <div className="settings-group" style={{ marginTop: '4px' }}>
               <label className="settings-label">
-                <Lock size={16} /> {getT(sourceLang, 'settings.apiKeys')} · {getT(sourceLang, 'settings.myTier')}
+                <Lock size={16} /> {getT(sourceLang, 'settings.mySubscription')}
               </label>
               <div style={{
                 display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                 background: '#f8fafc', borderRadius: '12px', padding: '12px 16px'
               }}>
-                <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
-                  {{
-                    trial: `🆓 ${getT(sourceLang, 'settings.tierTrial')} (🃏 ${savedCardCount}/${TRIAL_CARD_LIMIT} · 🎤 ${trialPronCount}/${TRIAL_PRON_LIMIT})`,
-                    admin: `🛡️ ${getT(sourceLang, 'settings.tierAdmin')}`,
-                    silver: `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
-                    pro: `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
-                    premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
-                  }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
-                </span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
+                    {{
+                      trial: `🆓 ${getT(sourceLang, 'settings.tierTrial')}`,
+                      admin: `🛡️ ${getT(sourceLang, 'settings.tierAdmin')}`,
+                      silver: `🥈 ${getT(sourceLang, 'settings.tierSilver')}`,
+                      pro: `⭐ ${getT(sourceLang, 'settings.tierPro')}`,
+                      premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
+                    }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
+                  </span>
+                  {tier === 'trial' && (
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      🃏 {getT(sourceLang, 'settings.usageCards')}: {savedCardCount}/{TRIAL_CARD_LIMIT} · 🎤 {getT(sourceLang, 'settings.usagePron')}: {trialPronCount}/{TRIAL_PRON_LIMIT}
+                    </span>
+                  )}
+                  {tier === 'pro' && (
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {proPronCount}/{PRO_PRON_LIMIT}
+                    </span>
+                  )}
+                </div>
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {tier === 'trial' && (
                     <button

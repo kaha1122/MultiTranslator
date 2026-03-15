@@ -80,6 +80,9 @@
   "settings": {
     "apiKeys": "API Key",
     "myTier": "Gói của tôi",
+    "mySubscription": "Gói đăng ký",
+    "usageCards": "Thẻ",
+    "usagePron": "Phát âm",
     "tierTrial": "Dùng thử miễn phí",
     "tierAdmin": "Quản trị",
     "tierSilver": "Bạc",
