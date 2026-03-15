@@ -609,10 +609,15 @@ You are a highly creative Language Learning Content Architect. Your mission is t
 ---
 
 ### [Phase 1: AI-Driven Scenario & Emotion Design]
-Before generating the sentence, you MUST autonomously design the emotional context:
-1. **Select an Emotion**: Choose ONE appropriate emotion for "${scene}" from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous. **Vary your choice — do NOT pick the same emotion every time.**
-2. **Design the Micro-Situation**: Aim for specific "pain points" or realistic moments unique to "${scene}". Avoid generic scenarios like "Where is the restroom?" — instead think of compelling, scene-specific moments.
-3. **Choose an Action Type** (exactly one of these 8):
+The learner's level is **${difficulty || 'basic'}**. Design the scenario complexity accordingly:
+- **Basic**: Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.
+- **Intermediate**: Use the full emotion range. Introduce mild complications or unexpected elements (e.g., a reservation mix-up, a schedule change). All action types are available.
+- **Advanced**: Favor nuanced emotions (Hesitant, Frustrated, Dissatisfied, Apologetic, Nervous). Design layered situations with social tension, negotiation, or cultural sensitivity (e.g., disputing a charge diplomatically, navigating an awkward misunderstanding). Prefer action types: Problem, Complaint, Opinion, Observation.
+
+Then:
+1. **Select an Emotion**: Choose ONE emotion for "${scene}" from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous. **Vary your choice each time**, respecting the level guideline above.
+2. **Design the Micro-Situation**: Create a specific, realistic moment for "${scene}" matched to the ${difficulty || 'basic'} level guidelines above. Avoid generic scenarios like "Where is the restroom?" — instead think of compelling, scene-specific moments.
+3. **Choose an Action Type** (exactly one of these 8), respecting the level preference above:
    - **Inquiry**: Asking a question to get information.
    - **Request**: Asking someone to do something for you.
    - **Observation**: Commenting on or describing the situation.
