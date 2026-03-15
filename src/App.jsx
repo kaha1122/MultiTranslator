@@ -11,7 +11,7 @@ import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 A
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
 import { PhoneAuthProvider } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, getDocs, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer, where } from 'firebase/firestore';
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -615,27 +615,26 @@ function App() {
       setPhoneVerifStep('sending');
       setPhoneVerifMsg({ type: '', text: '' });
 
-      // 중복 번호 체크 (10초 타임아웃)
-      const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      // 중복 번호 체크 (클라이언트 Firestore 직접 조회 — 서버 cold start 무관)
       try {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 10000);
-        const dupRes = await fetch(`${API}/api/check-phone`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: fullPhone, userId: user.uid }),
-          signal: controller.signal
-        });
-        clearTimeout(timeout);
-        const dupData = await dupRes.json();
-        if (dupData.isDuplicate) {
+        const dupSnap = await getDocsFromServer(
+          query(
+            collection(db, 'users'),
+            where('phoneNumber', '==', fullPhone),
+            where('phoneVerified', '==', true)
+          )
+        );
+        const isDuplicate = dupSnap.docs.some(doc => doc.id !== user.uid);
+        if (isDuplicate) {
           setPhoneVerifStep('idle');
           setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneDuplicate') });
           return;
         }
       } catch (dupErr) {
         console.error('[PhoneVerif] duplicate check failed:', dupErr);
-        // 중복 체크 실패/타임아웃 시에도 인증 진행 허용
+        setPhoneVerifStep('idle');
+        setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneVerifFailed') });
+        return;
       }
 
       // reCAPTCHA 초기화
