@@ -6,6 +6,10 @@ import { setUserId } from 'firebase/analytics';
 
 const AuthContext = createContext();
 
+// 회원탈퇴 진행 중 플래그 (onSnapshot이 문서를 재생성하지 않도록)
+let accountDeletionInProgress = false;
+export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -24,6 +28,8 @@ export const AuthProvider = ({ children }) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
+                        // 회원탈퇴 중이면 문서 재생성 방지
+                        if (accountDeletionInProgress) return;
                         // 문서가 없는 기존 유저 → 자동 생성 (onSnapshot이 재실행되어 profile 설정됨)
                         await setDoc(docRef, {
                             uid: authenticatedUser.uid,

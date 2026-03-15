@@ -18,7 +18,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut, signInWithPopup, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
-import { useAuth } from './context/AuthContext';
+import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
@@ -596,6 +596,7 @@ function App() {
   const executeDeleteAccount = async () => {
     setDeleteConfirmStep(0);
     try {
+      setAccountDeletionFlag(true); // onSnapshot 문서 재생성 방지
       const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await authFetch(`${SERVER_URL}/api/delete-account`, {
         method: 'POST',
@@ -607,9 +608,11 @@ function App() {
         try { await signOut(auth); } catch {}
         window.location.reload();
       } else {
+        setAccountDeletionFlag(false);
         alert(getT(sourceLang, 'auth.deleteFailed'));
       }
     } catch {
+      setAccountDeletionFlag(false);
       alert(getT(sourceLang, 'auth.deleteFailed'));
     }
   };

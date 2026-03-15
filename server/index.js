@@ -1083,7 +1083,7 @@ app.post('/api/delete-account', requireAuth, async (req, res) => {
             try {
                 await axios.delete(
                     `${REVENUECAT_API}/subscribers/${uid}`,
-                    { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}` } }
+                    { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}`, 'Content-Type': 'application/json' } }
                 );
                 console.log(`[DeleteAccount] RevenueCat subscriber deleted: ${uid}`);
             } catch (rcErr) {
