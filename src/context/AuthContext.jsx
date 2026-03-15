@@ -78,7 +78,7 @@ export const AuthProvider = ({ children }) => {
 
     const TRIAL_CARD_LIMIT = 10;
     const TRIAL_PRON_LIMIT = 30;
-    const PRO_PRON_LIMIT = 500;
+    const PRO_PRON_LIMIT = 1000;
 
     // 번역 클릭 누적 횟수 (분석용 — 삭제해도 감소하지 않음)
     const trialCardCount = profile?.trialCardCount || 0;
