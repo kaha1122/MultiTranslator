@@ -314,8 +314,8 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = fa
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        {plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}
-                                        {plan.months === 3 && <span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span>}
+                                        <span>{plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
+                                        {plan.months === 3 && <><br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></>}
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -381,8 +381,8 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = fa
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        {plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}
-                                        {plan.months === 3 && <span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span>}
+                                        <span>{plan.months === 1 ? `1${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
+                                        {plan.months === 3 && <><br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></>}
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
