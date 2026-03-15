@@ -32,6 +32,8 @@ const SUPPORTED_LANGUAGES = [
     { code: 'de', name: 'Deutsch' },
     { code: 'es', name: 'Español' },
     { code: 'vi', name: 'Tiếng Việt' },
+    { code: 'ru', name: 'Русский' },
+    { code: 'pt-BR', name: 'Português' },
 ];
 
 /**

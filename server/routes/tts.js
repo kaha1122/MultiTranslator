@@ -16,6 +16,8 @@ const AZURE_TTS_VOICE_MAP = {
     'de':    { voice: 'de-DE-KatjaNeural',        styles: [] },
     'es':    { voice: 'es-ES-ElviraNeural',       styles: [] },
     'ko':    { voice: 'ko-KR-SunHiNeural',        styles: ['chat','cheerful','sad','angry','friendly'] },
+    'ru':    { voice: 'ru-RU-SvetlanaNeural',     styles: [] },
+    'pt-BR': { voice: 'pt-BR-FranciscaNeural',    styles: [] },
 };
 
 // Gemini selected_emotion → Azure TTS style 매핑

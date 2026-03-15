@@ -156,7 +156,7 @@ const TranslationCard = ({
     const callGeminiMemo = async (query) => {
         const key = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
         if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-        const langNames = { ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文', vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español' };
+        const langNames = { ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文', vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español', ru: 'Русский', 'pt-BR': 'Português' };
         const srcName = langNames[sourceLangCode] || 'Korean';
         const tipText = Array.isArray(learningTip)
             ? learningTip.map(t => (t && typeof t === 'object') ? (t.content || '') : String(t || '')).join(' ')

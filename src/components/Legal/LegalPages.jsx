@@ -19,6 +19,7 @@ const EMAIL = 'SystemAdmin@PronunFit.com';
 const DATE_LOCALES = {
     ko: 'ko-KR', en: 'en-US', ja: 'ja-JP', 'zh-CN': 'zh-CN',
     vi: 'vi-VN', fr: 'fr-FR', de: 'de-DE', es: 'es-ES',
+    ru: 'ru-RU', 'pt-BR': 'pt-BR',
 };
 
 // ── 공통 레이아웃: 뒤로가기 버튼 + 제목 헤더 ──────────────────────────────────

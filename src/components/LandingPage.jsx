@@ -16,6 +16,8 @@ const detectLang = () => {
   if (bl.startsWith('fr')) return 'fr';
   if (bl.startsWith('de')) return 'de';
   if (bl.startsWith('es')) return 'es';
+  if (bl.startsWith('ru')) return 'ru';
+  if (bl.startsWith('pt')) return 'pt-BR';
   return 'en';
 };
 
@@ -50,6 +52,7 @@ const ALL_LANGS = [
   { code: 'zh-CN', name: '中文' }, { code: 'ko', name: '한국어' },
   { code: 'vi', name: 'Tiếng Việt' }, { code: 'fr', name: 'Français' },
   { code: 'de', name: 'Deutsch' }, { code: 'es', name: 'Español' },
+  { code: 'ru', name: 'Русский' }, { code: 'pt-BR', name: 'Português' },
 ];
 
 /* ── Guide 섹션 메타 (AppGuide.jsx와 동일) ── */

@@ -12,6 +12,8 @@ const LANGUAGES = [
   { code: 'fr', name: 'Français', flag: '🇫🇷' },
   { code: 'de', name: 'Deutsch', flag: '🇩🇪' },
   { code: 'es', name: 'Español', flag: '🇪🇸' },
+  { code: 'ru', name: 'Русский', flag: '🇷🇺' },
+  { code: 'pt-BR', name: 'Português', flag: '🇧🇷' },
 ];
 
 /**

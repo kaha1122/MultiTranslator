@@ -10,6 +10,7 @@ const LANG_NAMES_FOR_SCENE = {
     'ko': 'Korean', 'en': 'English', 'ja': 'Japanese',
     'zh-CN': 'Chinese (Simplified)', 'vi': 'Vietnamese',
     'fr': 'French', 'de': 'German', 'es': 'Spanish',
+    'ru': 'Russian', 'pt-BR': 'Portuguese (Brazilian)',
 };
 
 // ── 언어별 문법/어휘 특성 가이드 ─────────────────────────────────────────────
@@ -60,6 +61,18 @@ const LANG_SPECIFIC_GUIDE = {
         basic:  'Use presente/pretérito perfecto only. Simple SVO. No subjuntivo.',
         inter:  'Use pretérito vs imperfecto distinction, pronombres de objeto, and common modismos (e.g., "echar de menos").',
         adv:    'Use subjuntivo in all tenses, condicional compuesto, relative clauses with cuyo, and culturally rich refranes.',
+        unit:   'words',
+    },
+    'ru': {
+        basic:  'Use present tense only. Simple SVO. No participles or verbal adverbs (деепричастия).',
+        inter:  'Use perfective/imperfective aspect pairs, common prefixed verbs, cases with prepositions (в/на + prepositional/accusative).',
+        adv:    'Use participles (причастия), verbal adverbs (деепричастия), complex subordinate clauses, and idiomatic expressions (фразеологизмы).',
+        unit:   'words',
+    },
+    'pt-BR': {
+        basic:  'Use presente/pretérito perfeito only. Simple SVO. No subjuntivo.',
+        inter:  'Use pretérito imperfeito vs perfeito, pronomes oblíquos, and common gírias/expressões (e.g., "dar uma mão").',
+        adv:    'Use subjuntivo in all tenses, futuro do subjuntivo, orações relativas, and culturally rich provérbios.',
         unit:   'words',
     },
 };

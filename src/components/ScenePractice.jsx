@@ -60,6 +60,7 @@ const SCENES = {
 const LANG_NAMES = {
     ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
     vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español',
+    ru: 'Русский', 'pt-BR': 'Português',
 };
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────

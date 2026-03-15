@@ -64,6 +64,8 @@ const SUPPORTED_LANGUAGES = [
   { code: 'fr', name: 'Français', tts: 'fr-FR', color: '#f1f5f9', textColor: '#475569' },
   { code: 'de', name: 'Deutsch', tts: 'de-DE', color: '#f1f5f9', textColor: '#475569' },
   { code: 'es', name: 'Español', tts: 'es-ES', color: '#f1f5f9', textColor: '#475569' },
+  { code: 'ru', name: 'Русский', tts: 'ru-RU', color: '#f1f5f9', textColor: '#475569' },
+  { code: 'pt-BR', name: 'Português', tts: 'pt-BR', color: '#f1f5f9', textColor: '#475569' },
 ];
 
 // 브라우저/기기 언어를 감지하여 지원 언어 코드로 변환
@@ -88,7 +90,9 @@ const languageNames = {
   vi: 'Vietnamese',
   fr: 'French',
   de: 'German',
-  es: 'Spanish'
+  es: 'Spanish',
+  ru: 'Russian',
+  'pt-BR': 'Portuguese'
 };
 
 function App() {

@@ -35,7 +35,10 @@ async function analyzePronunciation(audioPath, referenceText, langCode, azureKey
             'ko': 'ko-KR',
             'es': 'es-ES',
             'fr': 'fr-FR',
-            'de': 'de-DE'
+            'de': 'de-DE',
+            'ru': 'ru-RU',
+            'pt-BR': 'pt-BR',
+            'pt': 'pt-BR'
         };
         const targetLanguage = azureLangMap[langCode] || "en-US";
         speechConfig.speechRecognitionLanguage = targetLanguage;
@@ -102,7 +105,10 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
         'zh-TW': 'Chinese (Traditional)',
         'es': 'Spanish',
         'fr': 'French',
-        'de': 'German'
+        'de': 'German',
+        'ru': 'Russian',
+        'pt-BR': 'Portuguese',
+        'pt': 'Portuguese'
     };
     const targetLangName = langNames[sourceLangCode?.split('-')[0]] || 'Korean';
 
@@ -139,7 +145,9 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
             'ko': '현재 AI 코치 연결이 원활하지 않지만, 발음 연습을 응원합니다!',
             'en': 'The AI Coach is currently unavailable, but keep up the great pronunciation practice!',
             'ja': '現在AIコーチの接続が不安定ですが、発音練習を応援しています！',
-            'zh': '目前AI教练连接不畅，但我们支持你的发音练习！'
+            'zh': '目前AI教练连接不畅，但我们支持你的发音练习！',
+            'ru': 'AI-тренер временно недоступен, но продолжайте практиковать произношение!',
+            'pt': 'O treinador de IA está temporariamente indisponível, mas continue praticando a pronúncia!'
         };
         return fallbacks[sourceLangCode?.split('-')[0]] || fallbacks['ko'];
     }

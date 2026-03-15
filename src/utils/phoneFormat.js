@@ -9,6 +9,8 @@ export const COUNTRY_PHONES = [
   { code: 'ES', dial: '+34',  flag: '🇪🇸', name: 'España',     maxDigits: 9,  format: (n) => n.length <= 3 ? n : n.length <= 6 ? `${n.slice(0,3)}-${n.slice(3)}` : `${n.slice(0,3)}-${n.slice(3,6)}-${n.slice(6)}` },
   { code: 'GB', dial: '+44',  flag: '🇬🇧', name: 'UK',         maxDigits: 11, format: (n) => n.length <= 4 ? n : n.length <= 7 ? `${n.slice(0,4)}-${n.slice(3)}` : `${n.slice(0,4)}-${n.slice(4,7)}-${n.slice(7)}` },
   { code: 'CA', dial: '+1',   flag: '🇨🇦', name: 'Canada',     maxDigits: 10, format: (n) => n.length <= 3 ? n : n.length <= 6 ? `${n.slice(0,3)}-${n.slice(3)}` : `${n.slice(0,3)}-${n.slice(3,6)}-${n.slice(6)}` },
+  { code: 'RU', dial: '+7',   flag: '🇷🇺', name: 'Россия',     maxDigits: 10, format: (n) => n.length <= 3 ? n : n.length <= 6 ? `${n.slice(0,3)}-${n.slice(3)}` : `${n.slice(0,3)}-${n.slice(3,6)}-${n.slice(6)}` },
+  { code: 'BR', dial: '+55',  flag: '🇧🇷', name: 'Brasil',     maxDigits: 11, format: (n) => n.length <= 2 ? n : n.length <= 7 ? `${n.slice(0,2)}-${n.slice(2)}` : `${n.slice(0,2)}-${n.slice(2,7)}-${n.slice(7)}` },
 ];
 
 export const formatPhoneByCountry = (value, countryCode) => {
@@ -19,6 +21,6 @@ export const formatPhoneByCountry = (value, countryCode) => {
 };
 
 export const getCountryByLang = (lang) => {
-  const map = { ko: 'KR', en: 'US', ja: 'JP', 'zh-CN': 'CN', vi: 'VN', fr: 'FR', de: 'DE', es: 'ES' };
+  const map = { ko: 'KR', en: 'US', ja: 'JP', 'zh-CN': 'CN', vi: 'VN', fr: 'FR', de: 'DE', es: 'ES', ru: 'RU', 'pt-BR': 'BR' };
   return map[lang] || 'KR';
 };

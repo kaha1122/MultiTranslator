@@ -8,6 +8,8 @@ import vi   from '../locales/vi.json';
 import fr   from '../locales/fr.json';
 import de   from '../locales/de.json';
 import es   from '../locales/es.json';
+import ru   from '../locales/ru.json';
+import ptBR from '../locales/pt-BR.json';
 
 // 언어 코드 → JSON 매핑
 // zh-CN, zh-TW 등 파생 코드를 모두 zh-CN 파일로 연결합니다.
@@ -22,6 +24,9 @@ export const locales = {
     fr,
     de,
     es,
+    ru,
+    'pt-BR': ptBR,
+    pt:      ptBR,
 };
 
 // 점표기법 키("errors.micAccess")를 중첩 객체에서 찾아 반환합니다.

@@ -18,6 +18,7 @@ const makeVocabHistoryKey = (topicId, level, lang) =>
 const LANG_NAMES = {
     ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
     vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español',
+    ru: 'Русский', 'pt-BR': 'Português',
 };
 
 const getServerUrl = () => {
