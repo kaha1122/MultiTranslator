@@ -662,7 +662,7 @@
     "phoneInvalid": "Invalid phone number format.",
     "phoneVerifFailed": "Failed to send verification code.",
     "phoneRequired": "Please enter a phone number.",
-    "phoneDuplicate": "This phone number is already registered.",
+    "phoneDuplicate": "This phone number is already registered to another account. Please use a different number.",
     "nicknamePlaceholder": "Nickname",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Enter your password",

@@ -662,7 +662,7 @@
     "phoneInvalid": "Ungültiges Telefonnummernformat.",
     "phoneVerifFailed": "Senden des Codes fehlgeschlagen.",
     "phoneRequired": "Bitte geben Sie eine Telefonnummer ein.",
-    "phoneDuplicate": "Diese Nummer ist bereits registriert.",
+    "phoneDuplicate": "Diese Nummer ist bereits mit einem anderen Konto verknüpft. Bitte verwenden Sie eine andere Nummer.",
     "nicknamePlaceholder": "Spitzname",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Passwort eingeben",

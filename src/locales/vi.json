@@ -662,7 +662,7 @@
     "phoneInvalid": "Số điện thoại không hợp lệ.",
     "phoneVerifFailed": "Gửi mã xác minh thất bại.",
     "phoneRequired": "Vui lòng nhập số điện thoại.",
-    "phoneDuplicate": "Số điện thoại này đã được đăng ký.",
+    "phoneDuplicate": "Số điện thoại này đã được đăng ký với tài khoản khác. Vui lòng sử dụng số khác.",
     "nicknamePlaceholder": "Biệt danh",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "Nhập mật khẩu",

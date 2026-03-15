@@ -662,7 +662,7 @@
     "phoneInvalid": "올바르지 않은 전화번호 형식입니다.",
     "phoneVerifFailed": "인증번호 발송에 실패했습니다.",
     "phoneRequired": "전화번호를 입력해주세요.",
-    "phoneDuplicate": "이미 등록된 전화번호입니다.",
+    "phoneDuplicate": "이미 다른 계정에 등록된 전화번호입니다. 다른 번호를 사용해 주세요.",
     "nicknamePlaceholder": "닉네임",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "비밀번호를 입력하세요",

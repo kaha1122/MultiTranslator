@@ -662,7 +662,7 @@
     "phoneInvalid": "電話番号の形式が正しくありません。",
     "phoneVerifFailed": "認証コードの送信に失敗しました。",
     "phoneRequired": "電話番号を入力してください。",
-    "phoneDuplicate": "この電話番号はすでに登録されています。",
+    "phoneDuplicate": "この電話番号は別のアカウントで登録済みです。別の番号をご使用ください。",
     "nicknamePlaceholder": "ニックネーム",
     "emailPlaceholder": "hello@example.com",
     "passwordPlaceholder": "パスワードを入力",
