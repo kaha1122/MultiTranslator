@@ -8,6 +8,7 @@ import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { playStarSound, playSuccessSound, playAlertSound } from '../utils/soundEffects';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
+import { authFetch } from '../utils/authFetch';
 import './VocabTab.css';
 
 // Vocab history 문서 ID: {topicId}--{level}--{lang}
@@ -318,7 +319,7 @@ export default function VocabTab({
         const avoidForApi = allAvoid.slice(-200);
 
         try {
-            const res = await fetch(`${getServerUrl()}/api/vocab-words`, {
+            const res = await authFetch(`${getServerUrl()}/api/vocab-words`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

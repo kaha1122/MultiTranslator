@@ -24,6 +24,7 @@ import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getT } from './utils/i18n';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
+import { authFetch, getIdToken } from './utils/authFetch';
 
 // [신규] 첫 사용자 환영(온보딩) 화면 모달 컴포넌트 불러오기
 import TrialLimitModal from './components/TrialLimitModal';
@@ -135,7 +136,7 @@ function App() {
 
     if (billing === 'success' && authKey && customerKey && tierParam) {
       window.history.replaceState({}, '', window.location.pathname);
-      fetch(`${SERVER_URL_FOR_BILLING}/api/toss-confirm-billing`, {
+      authFetch(`${SERVER_URL_FOR_BILLING}/api/toss-confirm-billing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ authKey, customerKey, tier: tierParam, planId: planId || tierParam, months: parseInt(months) || 1, userEmail: email ? decodeURIComponent(email) : '', currency }),
@@ -1186,7 +1187,7 @@ function App() {
     if (!text) return;
     const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     try {
-      const res = await fetch(`${SERVER_URL}/api/azure-tts`, {
+      const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

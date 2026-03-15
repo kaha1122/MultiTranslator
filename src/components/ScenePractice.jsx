@@ -7,6 +7,7 @@ import PronunciationAssessment from './PronunciationAssessment';
 import { playStarSound } from '../utils/soundEffects';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { authFetch } from '../utils/authFetch';
 import './ScenePractice.css';
 
 // Firebase sceneHistory 문서 ID 생성 (특수문자 없는 복합키)
@@ -317,7 +318,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             // Gemini에는 최근 200개만 전송 (토큰/속도 최적화, Firestore에는 전체 보관)
             const avoidForApi = avoidSentences.slice(-200);
 
-            const fetchSentence = () => fetch(`${SERVER_URL}/api/scene-sentence`, {
+            const fetchSentence = () => authFetch(`${SERVER_URL}/api/scene-sentence`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
@@ -367,7 +368,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
             const avoidSentences = await loadHistory(historyKey);
             const avoidForApi = avoidSentences.slice(-200);
 
-            const fetchAnswer = () => fetch(`${SERVER_URL}/api/scene-answer`, {
+            const fetchAnswer = () => authFetch(`${SERVER_URL}/api/scene-answer`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({

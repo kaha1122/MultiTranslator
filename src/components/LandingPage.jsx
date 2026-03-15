@@ -3,6 +3,7 @@ import { Mic, MicOff, Play, RotateCcw, Award } from 'lucide-react';
 import { locales, useT, getT } from '../utils/i18n';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
+import { authFetch } from '../utils/authFetch';
 import './LandingPage.css';
 
 // 브라우저 언어 → 로케일 코드 매핑
@@ -216,7 +217,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
     try {
       const scenePrefix = category === 'locations' ? 'sceneLoc' : 'sceneSit';
       const sceneText = getT('en', `${scenePrefix}.${selectedScene.id}`);
-      const res = await fetch(`${getServerUrl()}/api/scene-sentence`, {
+      const res = await authFetch(`${getServerUrl()}/api/scene-sentence`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

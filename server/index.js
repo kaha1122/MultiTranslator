@@ -34,6 +34,39 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
+// ── Firebase ID Token 인증 미들웨어 ──────────────────────────────────────────
+const CRON_SECRET = process.env.CRON_SECRET || '';
+
+async function requireAuth(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) {
+        return res.status(401).json({ error: 'Authorization header required' });
+    }
+    const idToken = authHeader.split('Bearer ')[1];
+    if (!admin.apps.length) {
+        // Firebase Admin 미초기화 시 스킵 (로컬 개발용)
+        req.uid = 'dev-user';
+        return next();
+    }
+    try {
+        const decoded = await admin.auth().verifyIdToken(idToken);
+        req.uid = decoded.uid;
+        next();
+    } catch (err) {
+        console.error('[Auth] Token verification failed:', err.message);
+        return res.status(401).json({ error: 'Invalid or expired token' });
+    }
+}
+
+// cron 전용 인증 (Bearer 토큰 또는 CRON_SECRET 헤더)
+function requireCronAuth(req, res, next) {
+    const cronKey = req.headers['x-cron-secret'];
+    if (CRON_SECRET && cronKey === CRON_SECRET) return next();
+    // cron secret 미설정 시 통과 (하위 호환)
+    if (!CRON_SECRET) return next();
+    return res.status(401).json({ error: 'Unauthorized cron request' });
+}
+
 const UPLOADS_DIR = 'uploads/';
 if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
@@ -180,7 +213,7 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
 /**
  * Main Analysis Endpoint
  */
-app.post('/analyze', upload.single('audio'), async (req, res) => {
+app.post('/analyze', upload.single('audio'), requireAuth, async (req, res) => {
     const originalAudioPath = req.file?.path;
     const referenceText = req.body.text;
     const langCode = req.body.lang || 'en'; // 프론트엔드에서 보낸 언어 코드
@@ -436,7 +469,7 @@ const EMOTION_TO_STYLE = {
     'panicked':      'fearful',
 };
 
-app.post('/api/azure-tts', async (req, res) => {
+app.post('/api/azure-tts', requireAuth, async (req, res) => {
     const { text, langCode, emotion, byokAzureKey, byokAzureRegion } = req.body;
     if (!text) return res.status(400).json({ error: 'Missing text' });
 
@@ -581,7 +614,7 @@ const STYLE_DESC = {
   - Reflect the chosen emotion **gracefully and indirectly**. Ensure the tone remains professional or respectful toward strangers or service staff.`,
 };
 
-app.post('/api/scene-sentence', async (req, res) => {
+app.post('/api/scene-sentence', requireAuth, async (req, res) => {
     const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
@@ -697,7 +730,7 @@ ${avoidBlock}
  * POST /api/scene-answer
  * Body: { question (initiation sentence), scene, targetLang, sourceLang, byokGeminiKey? }
  */
-app.post('/api/scene-answer', async (req, res) => {
+app.post('/api/scene-answer', requireAuth, async (req, res) => {
     const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
         return res.status(400).json({ error: 'Missing initiation sentence or targetLang' });
@@ -810,7 +843,7 @@ ${avoidBlock}
 // ── TossPayments 빌링키 발급 + 첫 결제 ──────────────────────────────────────
 // 흐름: 프론트(requestBillingAuth) → 토스 카드 입력 → successUrl?authKey=xxx
 //       → 앱이 이 엔드포인트 호출 → 빌링키 발급 → 첫 결제 → Firestore 업데이트
-app.post('/api/toss-confirm-billing', async (req, res) => {
+app.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
     const { authKey, customerKey, tier, planId, months = 1, userEmail, currency = 'KRW' } = req.body;
     if (!authKey || !customerKey || !tier) {
         return res.status(400).json({ error: 'authKey, customerKey, tier are required' });
@@ -958,7 +991,7 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
 });
 
 // ── TossPayments 구독 취소 (자동 연장 중지, 만료일까지 서비스 유지) ──────────
-app.post('/api/cancel-subscription', async (req, res) => {
+app.post('/api/cancel-subscription', requireAuth, async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
@@ -978,7 +1011,7 @@ app.post('/api/cancel-subscription', async (req, res) => {
 });
 
 // ── 전화번호 중복 체크 ──────────────────────────────────────────────────────
-app.post('/api/check-phone', async (req, res) => {
+app.post('/api/check-phone', requireAuth, async (req, res) => {
     const { phoneNumber, userId } = req.body;
     if (!phoneNumber || !userId) return res.status(400).json({ error: 'phoneNumber and userId required' });
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
@@ -999,7 +1032,7 @@ app.post('/api/check-phone', async (req, res) => {
 
 // ── Cron: 자동 갱신 (만료된 구독 재결제 + 연장) ─────────────────────────────
 // Render cron이나 외부 스케줄러에서 매일 1회 호출: POST /api/cron/renew-subscriptions
-app.post('/api/cron/renew-subscriptions', async (req, res) => {
+app.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) => {
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
     const AMOUNTS = {
@@ -1095,7 +1128,7 @@ app.post('/api/cron/renew-subscriptions', async (req, res) => {
  * POST /api/vocab-words
  * Body: { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey?, avoidWords? }
  */
-app.post('/api/vocab-words', async (req, res) => {
+app.post('/api/vocab-words', requireAuth, async (req, res) => {
     const { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });

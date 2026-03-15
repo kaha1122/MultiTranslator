@@ -5,6 +5,7 @@ import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
 import { detectCountry, isKorea } from '../utils/detectCountry';
+import { authFetch } from '../utils/authFetch';
 import './UpgradeModal.css';
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
@@ -460,7 +461,7 @@ function CancelSubscriptionButton({ userId, t }) {
         if (!confirm(t('upgrade.cancelConfirm'))) return;
         setLoading(true);
         try {
-            await fetch(`${SERVER_URL}/api/cancel-subscription`, {
+            await authFetch(`${SERVER_URL}/api/cancel-subscription`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ userId }),

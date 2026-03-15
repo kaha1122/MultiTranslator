@@ -4,6 +4,7 @@ import { db } from '../firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
+import { getAuthHeaders } from '../utils/authFetch';
 
 // 초보자 설명(주석):
 // 환경 변수(.env) 파일에서 API 서버 주소를 읽어옵니다.
@@ -211,7 +212,10 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         try {
             // 1. 발음 평가 서버 요청
             const apiUrl = getApiUrl();
-            const response = await axios.post(`${apiUrl}/analyze`, formData);
+            const authHeaders = await getAuthHeaders();
+            const response = await axios.post(`${apiUrl}/analyze`, formData, {
+                headers: authHeaders,
+            });
             const assessment = response.data.assessment;
             const coaching = response.data.coaching;
 
