@@ -35,7 +35,6 @@ export const AuthProvider = ({ children }) => {
                             uid: authenticatedUser.uid,
                             email: authenticatedUser.email,
                             displayName: authenticatedUser.displayName || 'Google User',
-                            membership: 'Free',
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp(),
                         });

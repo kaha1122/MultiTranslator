@@ -45,7 +45,6 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 displayName: nickname,
                 phoneNumber: rawDigits ? `${selectedCountry.dial}${rawDigits}` : '',
                 phoneCountry: phoneCountry,
-                membership: 'Free',
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
             });
@@ -73,7 +72,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
-            const profileData = { uid: user.uid, email: user.email, membership: 'Free', updatedAt: serverTimestamp() };
+            const profileData = { uid: user.uid, email: user.email, updatedAt: serverTimestamp() };
             if (additionalInfo && additionalInfo.isNewUser) {
                 profileData.displayName = user.displayName || 'Google User';
                 profileData.hasCompletedOnboarding = false;

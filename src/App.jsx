@@ -1293,7 +1293,7 @@ function App() {
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
-      const profileData = { uid: cred.user.uid, email: cred.user.email, membership: 'Free', updatedAt: serverTimestamp() };
+      const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
       if (info?.isNewUser) {
         profileData.displayName = cred.user.displayName || 'Google User';
         profileData.hasCompletedOnboarding = false;
