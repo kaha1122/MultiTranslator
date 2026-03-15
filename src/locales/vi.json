@@ -280,7 +280,7 @@
     "emailRequired": "Cần xác minh email",
     "emailRequiredDesc": "Cần xác minh email để gửi thông tin thanh toán. Vui lòng nhấn nút bên dưới và kiểm tra hộp thư.",
     "sendVerification": "Gửi email xác minh",
-    "emailSent": "Đã gửi email xác minh. Vui lòng kiểm tra hộp thư và thử lại.",
+    "emailSent": "Đã gửi email xác minh. Vui lòng xác minh email rồi nhấn lại nút đăng ký.",
     "emailTooMany": "Quá nhiều yêu cầu. Vui lòng thử lại sau.",
     "emailSendFailed": "Gửi email xác minh thất bại. Vui lòng thử lại.",
     "phoneRequired": "Cần xác minh số điện thoại",

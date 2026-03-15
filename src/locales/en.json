@@ -280,7 +280,7 @@
     "emailRequired": "Email verification required",
     "emailRequiredDesc": "Email verification is required for payment notifications. Please check your inbox after clicking the button below.",
     "sendVerification": "Send verification email",
-    "emailSent": "Verification email sent. Please check your inbox and try again.",
+    "emailSent": "Verification email sent. Please verify your email, then click the subscribe button again.",
     "emailTooMany": "Too many requests. Please try again later.",
     "emailSendFailed": "Failed to send verification email. Please try again.",
     "phoneRequired": "Phone verification required",

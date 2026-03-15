@@ -280,7 +280,7 @@
     "emailRequired": "需要邮箱验证",
     "emailRequiredDesc": "为了发送支付信息通知，需要验证邮箱。请点击下方按钮后查收验证邮件。",
     "sendVerification": "发送验证邮件",
-    "emailSent": "验证邮件已发送，请查收后重试。",
+    "emailSent": "验证邮件已发送。请完成邮箱验证后，再次点击订阅按钮。",
     "emailTooMany": "请求过多，请稍后再试。",
     "emailSendFailed": "验证邮件发送失败，请重试。",
     "phoneRequired": "需要手机号验证",

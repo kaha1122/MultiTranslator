@@ -75,8 +75,9 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const [error, setError] = useState('');
     const [showVerifyWarnings, setShowVerifyWarnings] = useState(false);
     const [emailVerifSent, setEmailVerifSent] = useState(false);
+    const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
 
-    const needEmailVerify = !user?.emailVerified;
+    const needEmailVerify = !emailVerified;
     const needPhoneVerify = !profile?.phoneVerified;
 
     const handleSendVerification = async () => {
@@ -96,11 +97,24 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const handleUpgrade = async (plan) => {
         if (!user) return;
 
-        // 이메일 + 전화번호 인증 동시 확인
-        if (needEmailVerify || needPhoneVerify) {
-            setShowVerifyWarnings(true);
-            return;
+        // 이메일 인증 상태 최신화 (메일 인증 후 토큰 갱신)
+        try {
+            const auth = getAuth();
+            await auth.currentUser.reload();
+            const freshEmailVerified = auth.currentUser?.emailVerified || false;
+            setEmailVerified(freshEmailVerified);
+
+            if (!freshEmailVerified || !profile?.phoneVerified) {
+                setShowVerifyWarnings(true);
+                return;
+            }
+        } catch (_) {
+            if (needEmailVerify || needPhoneVerify) {
+                setShowVerifyWarnings(true);
+                return;
+            }
         }
+        setShowVerifyWarnings(false);
 
         setLoadingPlan(plan.id);
         setError('');

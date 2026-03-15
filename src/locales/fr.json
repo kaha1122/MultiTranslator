@@ -280,7 +280,7 @@
     "emailRequired": "Vérification de l'e-mail requise",
     "emailRequiredDesc": "La vérification de l'e-mail est nécessaire pour les notifications de paiement. Cliquez sur le bouton ci-dessous et vérifiez votre boîte de réception.",
     "sendVerification": "Envoyer l'e-mail de vérification",
-    "emailSent": "E-mail de vérification envoyé. Vérifiez votre boîte de réception et réessayez.",
+    "emailSent": "E-mail de vérification envoyé. Après vérification, cliquez à nouveau sur le bouton d'abonnement.",
     "emailTooMany": "Trop de demandes. Veuillez réessayer plus tard.",
     "emailSendFailed": "Échec de l'envoi de l'e-mail. Veuillez réessayer.",
     "phoneRequired": "Vérification du téléphone requise",
