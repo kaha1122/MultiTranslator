@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -118,6 +118,7 @@ function App() {
 
   // 업그레이드 모달
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
+  const [upgradeForceUSD, setUpgradeForceUSD] = useState(false);
   // TossPayments 빌링 성공 후 URL 파라미터 처리
   const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'fail' | ''
   const SERVER_URL_FOR_BILLING = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -1394,6 +1395,21 @@ function App() {
 
               <div className="sidebar-divider" />
 
+              {/* 구독 (KRW) */}
+              <button className="sidebar-nav-item"
+                onClick={() => { setSidebarOpen(false); setUpgradeForceUSD(false); setShowUpgradeModal(true); }}>
+                <span className="sidebar-nav-icon"><CreditCard size={16} /></span>
+                {getT(sourceLang, 'nav.subscription')}
+              </button>
+
+              {/* 구독 USD (테스트용) */}
+              <button className="sidebar-nav-item"
+                onClick={() => { setSidebarOpen(false); setUpgradeForceUSD(true); setShowUpgradeModal(true); }}
+                style={{ color: '#6366f1' }}>
+                <span className="sidebar-nav-icon"><CreditCard size={16} /></span>
+                Subscription (USD)
+              </button>
+
               {/* 설정 */}
               <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
                 onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
@@ -2233,7 +2249,8 @@ function App() {
       {showUpgradeModal && (
         <UpgradeModal
           sourceLang={sourceLang}
-          onClose={() => setShowUpgradeModal(false)}
+          forceUSD={upgradeForceUSD}
+          onClose={() => { setShowUpgradeModal(false); setUpgradeForceUSD(false); }}
           onRequestPhoneVerify={() => { setShowUpgradeModal(false); handleEditProfile(); }}
         />
       )}

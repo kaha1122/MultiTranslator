@@ -132,7 +132,7 @@ const PLAN_CONFIGS_USD = [
     },
 ];
 
-const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
+const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = false }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
     const [loadingPlan, setLoadingPlan] = useState(null);
@@ -146,7 +146,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
         detectCountry().then(setCountryInfo);
     }, []);
 
-    const isKR = isKorea(countryInfo);
+    const isKR = !forceUSD && isKorea(countryInfo);
     const PLAN_CONFIGS = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
 
     const needEmailVerify = !emailVerified;
