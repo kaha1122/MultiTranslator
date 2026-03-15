@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useCallback } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, getDocsFromServer } from 'firebase/firestore';
 import { useT } from '../utils/i18n';
@@ -54,6 +54,7 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
     const [period, setPeriod] = useState('week'); // 'week' | 'month'
     const [cards, setCards] = useState([]); // all savedCards for this user
     const [isLoading, setIsLoading] = useState(true);
+    const [openCatId, setOpenCatId] = useState(null); // 펼쳐진 vocab 카테고리
 
     // Firestore에서 savedCards 로드 (탭 진입 시마다 서버에서 갱신)
     useEffect(() => {
@@ -76,6 +77,7 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
                         category: d.category || 'locations',
                         scene: d.scene || '',
                         categoryId: d.categoryId || null,
+                        topicId: d.topicId || null,
                         createdAt: d.createdAt?.toDate?.() || null,
                     });
                 });
@@ -158,6 +160,20 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
         return cat === 'locations' ? t('scene.locations') : t('scene.situations');
     };
 
+    // Vocab 카테고리 내 토픽별 카운트
+    const getTopicCounts = useCallback((catId) => {
+        const cat = VOCAB_CATEGORIES.find(c => c.id === catId);
+        if (!cat) return [];
+        const topics = [];
+        cat.subs.forEach(sub => {
+            sub.topics.forEach(topic => {
+                const count = filtered.filter(c => (c.topicId || 'custom') === topic.id).length;
+                topics.push({ id: topic.id, subId: sub.id, count });
+            });
+        });
+        return topics;
+    }, [filtered]);
+
     if (isLoading) return null;
 
     return (
@@ -238,18 +254,43 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
                         ))}
                     </>
                 ) : (
-                    gaugeData.map(item => (
-                        <GaugeRow key={item.id} item={item} label={getLabel(item)} />
-                    ))
+                    gaugeData.map(item => {
+                        const isOpen = openCatId === item.id;
+                        const isExpandable = item.id !== 'custom';
+                        return (
+                            <div key={item.id}>
+                                <GaugeRow
+                                    item={item}
+                                    label={getLabel(item)}
+                                    expandable={isExpandable}
+                                    isOpen={isOpen}
+                                    onToggle={() => setOpenCatId(isOpen ? null : item.id)}
+                                />
+                                {isOpen && isExpandable && (
+                                    <div className="gauge-sub-topics">
+                                        {getTopicCounts(item.id).map(topic => (
+                                            <div key={topic.id} className="gauge-sub-topic-row">
+                                                <span className="gauge-sub-topic-label">{t(`vocabTopic.${topic.id}`)}</span>
+                                                <span className={`gauge-sub-topic-count ${topic.count > 0 ? 'has' : ''}`}>{topic.count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        );
+                    })
                 )}
             </div>
         </div>
     );
 };
 
-const GaugeRow = ({ item, label }) => (
-    <div className="gauge-row">
-        <div className="gauge-row-label">{label}</div>
+const GaugeRow = ({ item, label, expandable, isOpen, onToggle }) => (
+    <div className={`gauge-row ${expandable ? 'expandable' : ''}`} onClick={expandable ? onToggle : undefined}>
+        <div className="gauge-row-label">
+            {expandable && <span className={`gauge-row-chevron ${isOpen ? 'open' : ''}`}>▸</span>}
+            {label}
+        </div>
         <div className="gauge-row-bar-wrap">
             <div
                 className={`gauge-row-bar ${item.pct >= 100 ? 'complete' : item.pct > 0 ? 'partial' : ''}`}

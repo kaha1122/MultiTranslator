@@ -236,3 +236,60 @@
   text-align: right;
   flex-shrink: 0;
 }
+
+.gauge-row.expandable {
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background 0.15s;
+}
+
+.gauge-row.expandable:active {
+  background: #f8fafc;
+}
+
+.gauge-row-chevron {
+  display: inline-block;
+  font-size: 0.6rem;
+  color: #94a3b8;
+  margin-right: 4px;
+  transition: transform 0.2s;
+}
+
+.gauge-row-chevron.open {
+  transform: rotate(90deg);
+}
+
+/* ── 토픽 서브 리스트 ── */
+.gauge-sub-topics {
+  padding: 2px 0 6px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gauge-sub-topic-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+
+.gauge-sub-topic-label {
+  font-size: 0.62rem;
+  color: #94a3b8;
+  font-weight: 500;
+}
+
+.gauge-sub-topic-count {
+  font-size: 0.62rem;
+  color: #cbd5e1;
+  font-weight: 600;
+  min-width: 16px;
+  text-align: right;
+}
+
+.gauge-sub-topic-count.has {
+  color: #6366f1;
+  font-weight: 700;
+}
