@@ -234,7 +234,7 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
 /**
  * Main Analysis Endpoint
  */
-app.post('/analyze', upload.single('audio'), requireAuth, async (req, res) => {
+app.post('/analyze', upload.single('audio'), optionalAuth, async (req, res) => {
     const originalAudioPath = req.file?.path;
     const referenceText = req.body.text;
     const langCode = req.body.lang || 'en'; // 프론트엔드에서 보낸 언어 코드
