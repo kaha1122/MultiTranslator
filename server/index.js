@@ -1100,10 +1100,26 @@ app.post('/api/delete-account', requireAuth, async (req, res) => {
             }
         }
 
-        // 5. Firestore users 문서 삭제
+        // 5. Firestore users 문서 + 서브컬렉션 전체 삭제
         if (adminDb) {
             try {
-                await adminDb.collection('users').doc(uid).delete();
+                const userRef = adminDb.collection('users').doc(uid);
+                // 서브컬렉션 재귀 삭제
+                const subcollections = await userRef.listCollections();
+                for (const sub of subcollections) {
+                    const docs = await sub.listDocuments();
+                    const batch = adminDb.batch();
+                    docs.forEach(doc => batch.delete(doc));
+                    if (docs.length > 0) await batch.commit();
+                    console.log(`[DeleteAccount] subcollection '${sub.id}' deleted (${docs.length} docs): ${uid}`);
+                }
+                // savedCards 컬렉션의 해당 유저 문서도 삭제
+                try {
+                    await adminDb.collection('savedCards').doc(uid).delete();
+                } catch {}
+                // 메인 문서 삭제
+                await userRef.delete();
+                console.log(`[DeleteAccount] Firestore user doc deleted: ${uid}`);
             } catch (dbErr) {
                 errors.push(`Firestore user: ${dbErr.message}`);
             }
