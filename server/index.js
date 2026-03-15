@@ -13,6 +13,9 @@ require('dotenv').config();
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
 const TOSS_AUTH_HEADER = () => 'Basic ' + Buffer.from(`${TOSS_SECRET_KEY}:`).toString('base64');
 
+const REVENUECAT_SECRET_KEY = process.env.REVENUECAT_SECRET_KEY;
+const REVENUECAT_API = 'https://api.revenuecat.com/v1';
+
 // ── Firebase Admin 초기화 ────────────────────────────────────────────────────
 if (!admin.apps.length) {
     try {
@@ -905,6 +908,35 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
             };
             await adminDb.collection('users').doc(customerKey).update(updateData);
             console.log(`[Toss] billing confirmed: ${customerKey} → ${resolvedPlanId} (${resolvedMonths}mo, expires ${expiresAt.toISOString().slice(0,10)})`);
+        }
+
+        // 4단계: RevenueCat entitlement 부여
+        if (REVENUECAT_SECRET_KEY) {
+            const rcEntitlement = tier === 'premium' ? 'Premium' : 'Pro';
+            try {
+                // 먼저 RevenueCat에 subscriber 생성/조회 (없으면 자동 생성됨)
+                await axios.get(
+                    `${REVENUECAT_API}/subscribers/${customerKey}`,
+                    { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}` } }
+                );
+
+                // promotional entitlement 부여 (기간에 맞춰)
+                const rcDuration = resolvedMonths >= 3 ? 'three_month' : 'monthly';
+                await axios.post(
+                    `${REVENUECAT_API}/subscribers/${customerKey}/entitlements/${rcEntitlement}/promotional`,
+                    { duration: rcDuration, start_time_ms: Date.now() },
+                    {
+                        headers: {
+                            Authorization: `Bearer ${REVENUECAT_SECRET_KEY}`,
+                            'Content-Type': 'application/json',
+                        },
+                    }
+                );
+                console.log(`[RevenueCat] granted ${rcEntitlement} to ${customerKey}`);
+            } catch (rcErr) {
+                // RevenueCat 실패해도 결제 자체는 성공으로 처리
+                console.error('[RevenueCat] entitlement grant failed:', rcErr.response?.data || rcErr.message);
+            }
         }
 
         res.json({ success: true, orderId });
