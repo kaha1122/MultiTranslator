@@ -270,7 +270,7 @@
   "upgrade": {
     "modalTitle": "升级您的方案",
     "modalSubtitle": "更多练习，更快进步",
-    "period1m": "/月",
+    "period1m": "个月",
     "period3m": "3个月",
     "oneTime": "一次性",
     "perMonth": "月",

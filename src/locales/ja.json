@@ -270,7 +270,7 @@
   "upgrade": {
     "modalTitle": "プランをアップグレード",
     "modalSubtitle": "より多く練習して、速く上達しましょう",
-    "period1m": "/月",
+    "period1m": "ヶ月",
     "period3m": "3ヶ月",
     "oneTime": "一括払い",
     "perMonth": "月",

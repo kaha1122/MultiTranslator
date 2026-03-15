@@ -270,7 +270,7 @@
   "upgrade": {
     "modalTitle": "플랜 업그레이드",
     "modalSubtitle": "더 많은 연습으로 빠르게 실력을 키우세요",
-    "period1m": "/월",
+    "period1m": "개월",
     "period3m": "3개월",
     "oneTime": "일시불",
     "perMonth": "월",

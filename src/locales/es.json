@@ -270,7 +270,7 @@
   "upgrade": {
     "modalTitle": "Actualizar tu plan",
     "modalSubtitle": "Practica más y mejora más rápido",
-    "period1m": "/mes",
+    "period1m": "mes",
     "period3m": "3 meses",
     "oneTime": "pago único",
     "perMonth": "mes",
