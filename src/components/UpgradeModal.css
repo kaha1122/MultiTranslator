@@ -97,6 +97,8 @@
     padding: 14px 12px;
     position: relative;
     text-align: center;
+    display: flex;
+    flex-direction: column;
 }
 
 .upgrade-plan-badge {
@@ -192,7 +194,7 @@
     border-radius: 10px;
     font-weight: 700;
     font-size: 0.85rem;
-    margin-top: 8px;
+    margin-top: auto;
     transition: opacity 0.2s;
 }
 
