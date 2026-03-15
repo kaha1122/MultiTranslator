@@ -1324,7 +1324,13 @@ function App() {
                     {profile?.displayName || user?.displayName || 'User'}
                   </p>
                   <p className="sidebar-user-email" style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
-                  <p className="sidebar-user-tier">{tier || 'Free'}</p>
+                  <p className="sidebar-user-tier">{{
+                    trial: 'Free Trial',
+                    admin: 'Admin',
+                    byok_free: 'BYOK Free',
+                    pro: 'Pro',
+                    premium: 'Premium',
+                  }[tier] || 'Free Trial'}</p>
                 </div>
                 <button
                   onClick={() => { setSidebarOpen(false); handleEditProfile(); }}
