@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocsFromServer } from 'firebase/firestore';
 import { useT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import './LearningGauge.css';
@@ -55,12 +55,12 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
     const [cards, setCards] = useState([]); // all savedCards for this user
     const [isLoading, setIsLoading] = useState(true);
 
-    // Firestore에서 savedCards 로드 (탭 진입 시마다 갱신)
+    // Firestore에서 savedCards 로드 (탭 진입 시마다 서버에서 갱신)
     useEffect(() => {
         if (!user?.uid || !isActive) return;
         const load = async () => {
             try {
-                const snap = await getDocs(
+                const snap = await getDocsFromServer(
                     query(
                         collection(db, 'savedCards'),
                         where('userId', '==', user.uid),

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, getDocs } from 'firebase/firestore';
+import { collection, query, getDocsFromServer } from 'firebase/firestore';
 import { useT } from '../utils/i18n';
 import LearningGauge from './LearningGauge';
 import './StatsPage.css';
@@ -41,7 +41,7 @@ const StatsPage = ({ user, dailyGoal, sourceLang, isActive }) => {
         if (!user?.uid || !isActive) return;
         const loadAll = async () => {
             try {
-                const snap = await getDocs(
+                const snap = await getDocsFromServer(
                     query(collection(db, 'users', user.uid, 'dailyProgress'))
                 );
                 const map = {};

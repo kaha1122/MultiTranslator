@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { db } from '../firebase/config';
-import { collection, query, where, getDocs } from 'firebase/firestore';
+import { collection, query, where, getDocsFromServer } from 'firebase/firestore';
 
 const getMonday = (date) => {
     const d = new Date(date);
@@ -23,7 +23,7 @@ export const useWeeklyCardStats = (user, isActive = true) => {
         if (!user?.uid || !isActive) { setLoading(false); return; }
         const load = async () => {
             try {
-                const snap = await getDocs(
+                const snap = await getDocsFromServer(
                     query(collection(db, 'savedCards'), where('userId', '==', user.uid))
                 );
                 const arr = [];
