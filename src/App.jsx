@@ -130,13 +130,14 @@ function App() {
     const planId = params.get('planId');
     const months = params.get('months');
     const email = params.get('email');
+    const currency = params.get('currency') || 'KRW';
 
     if (billing === 'success' && authKey && customerKey && tierParam) {
       window.history.replaceState({}, '', window.location.pathname);
       fetch(`${SERVER_URL_FOR_BILLING}/api/toss-confirm-billing`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ authKey, customerKey, tier: tierParam, planId: planId || tierParam, months: parseInt(months) || 1, userEmail: email ? decodeURIComponent(email) : '' }),
+        body: JSON.stringify({ authKey, customerKey, tier: tierParam, planId: planId || tierParam, months: parseInt(months) || 1, userEmail: email ? decodeURIComponent(email) : '', currency }),
       })
         .then(r => r.json())
         .then(data => {

@@ -811,24 +811,32 @@ ${avoidBlock}
 // 흐름: 프론트(requestBillingAuth) → 토스 카드 입력 → successUrl?authKey=xxx
 //       → 앱이 이 엔드포인트 호출 → 빌링키 발급 → 첫 결제 → Firestore 업데이트
 app.post('/api/toss-confirm-billing', async (req, res) => {
-    const { authKey, customerKey, tier, planId, months = 1, userEmail } = req.body;
+    const { authKey, customerKey, tier, planId, months = 1, userEmail, currency = 'KRW' } = req.body;
     if (!authKey || !customerKey || !tier) {
         return res.status(400).json({ error: 'authKey, customerKey, tier are required' });
     }
 
     const AMOUNTS = {
+        // KRW (원)
         pro_1: 9900, pro_3: 16500,
         premium_1: 19900, premium_3: 55000,
-        // 레거시 호환
         pro: 9900, premium: 19900,
+        // USD (센트 → 달러로 변환하여 전송)
+        pro_1_usd: 999, pro_3_usd: 1699,
+        premium_1_usd: 1899, premium_3_usd: 4999,
     };
     const ORDER_NAMES = {
         pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
         premium_1: 'PronunFit Premium 1개월', premium_3: 'PronunFit Premium 3개월',
         pro: 'PronunFit Pro', premium: 'PronunFit Premium',
+        pro_1_usd: 'PronunFit Pro 1 Month', pro_3_usd: 'PronunFit Pro 3 Months',
+        premium_1_usd: 'PronunFit Premium 1 Month', premium_3_usd: 'PronunFit Premium 3 Months',
     };
     const resolvedPlanId = planId || tier;
-    const amount = AMOUNTS[resolvedPlanId];
+    const amountRaw = AMOUNTS[resolvedPlanId];
+    // USD는 센트 단위로 저장되어 있으므로 달러로 변환 (TossPayments는 정수 금액 사용)
+    const isUSD = currency === 'USD';
+    const amount = isUSD ? amountRaw / 100 : amountRaw;
     if (!amount) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
 
     // 이메일 인증 확인 (서버 측 이중 체크)
@@ -843,8 +851,8 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
         }
     }
 
-    // 전화번호 인증 확인 (서버 측 이중 체크)
-    if (adminDb) {
+    // 전화번호 인증 확인 (서버 측 이중 체크 — KRW 결제만)
+    if (!isUSD && adminDb) {
         try {
             const userDoc = await adminDb.collection('users').doc(customerKey).get();
             if (!userDoc.exists || !userDoc.data()?.phoneVerified) {
@@ -874,6 +882,7 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
                 orderId,
                 orderName: ORDER_NAMES[resolvedPlanId] || `PronunFit ${tier}`,
                 customerEmail: userEmail || undefined,
+                ...(isUSD && { currency: 'USD' }),
             },
             { headers: { Authorization: TOSS_AUTH_HEADER() } }
         );
@@ -899,6 +908,7 @@ app.post('/api/toss-confirm-billing', async (req, res) => {
                 tier,
                 planId: resolvedPlanId,
                 subscriptionMonths: resolvedMonths,
+                subscriptionCurrency: isUSD ? 'USD' : 'KRW',
                 tossBillingKey: billingKey,
                 tossCustomerKey: customerKey,
                 autoRenew: true,

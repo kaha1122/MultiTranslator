@@ -1,15 +1,16 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Zap, Crown, Check, ShieldCheck, Mail } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
+import { detectCountry, isKorea } from '../utils/detectCountry';
 import './UpgradeModal.css';
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const FRONTEND_URL = window.location.origin;
 
-const PLAN_CONFIGS = [
+const PLAN_CONFIGS_KRW = [
     {
         id: 'pro_1',
         tier: 'pro',
@@ -68,6 +69,69 @@ const PLAN_CONFIGS = [
     },
 ];
 
+const PLAN_CONFIGS_USD = [
+    {
+        id: 'pro_1_usd',
+        tier: 'pro',
+        months: 1,
+        icon: <Zap size={22} />,
+        name: 'Pro',
+        price: '$9.99',
+        priceNum: 999,
+        currency: 'USD',
+        color: '#4338ca',
+        borderColor: '#e0e7ff',
+        bgColor: '#f5f3ff',
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3'],
+    },
+    {
+        id: 'pro_3_usd',
+        tier: 'pro',
+        months: 3,
+        icon: <Zap size={22} />,
+        name: 'Pro',
+        price: '$16.99',
+        priceNum: 1699,
+        currency: 'USD',
+        discount: 43,
+        badge: 'BEST',
+        color: '#4338ca',
+        borderColor: '#c7d2fe',
+        bgColor: '#eef2ff',
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3'],
+    },
+    {
+        id: 'premium_1_usd',
+        tier: 'premium',
+        months: 1,
+        icon: <Crown size={22} />,
+        name: 'Premium',
+        price: '$18.99',
+        priceNum: 1899,
+        currency: 'USD',
+        color: '#b45309',
+        borderColor: '#fde68a',
+        bgColor: '#fffbeb',
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
+    },
+    {
+        id: 'premium_3_usd',
+        tier: 'premium',
+        months: 3,
+        icon: <Crown size={22} />,
+        name: 'Premium',
+        price: '$49.99',
+        priceNum: 4999,
+        currency: 'USD',
+        discount: 12,
+        badge: 'BEST',
+        color: '#b45309',
+        borderColor: '#fcd34d',
+        bgColor: '#fef9c3',
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4'],
+    },
+];
+
 const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
@@ -76,9 +140,17 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const [showVerifyWarnings, setShowVerifyWarnings] = useState(false);
     const [emailVerifSent, setEmailVerifSent] = useState(false);
     const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
+    const [countryInfo, setCountryInfo] = useState(null);
+
+    useEffect(() => {
+        detectCountry().then(setCountryInfo);
+    }, []);
+
+    const isKR = isKorea(countryInfo);
+    const PLAN_CONFIGS = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
 
     const needEmailVerify = !emailVerified;
-    const needPhoneVerify = !profile?.phoneVerified;
+    const needPhoneVerify = isKR && !profile?.phoneVerified; // 한국만 전화인증 필요
 
     const handleSendVerification = async () => {
         try {
@@ -121,9 +193,10 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
         try {
             const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
             const payment = tossPayments.payment({ customerKey: user.uid });
+            const currency = plan.currency || 'KRW';
             await payment.requestBillingAuth({
                 method: 'CARD',
-                successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}`,
+                successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}&currency=${currency}`,
                 failUrl:    `${FRONTEND_URL}?billing=fail`,
                 customerEmail: user.email || undefined,
                 customerName:  user.displayName || undefined,
