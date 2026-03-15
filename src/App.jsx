@@ -615,14 +615,18 @@ function App() {
       setPhoneVerifStep('sending');
       setPhoneVerifMsg({ type: '', text: '' });
 
-      // 중복 번호 체크
+      // 중복 번호 체크 (10초 타임아웃)
       const API = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       try {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 10000);
         const dupRes = await fetch(`${API}/api/check-phone`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ phoneNumber: fullPhone, userId: user.uid })
+          body: JSON.stringify({ phoneNumber: fullPhone, userId: user.uid }),
+          signal: controller.signal
         });
+        clearTimeout(timeout);
         const dupData = await dupRes.json();
         if (dupData.isDuplicate) {
           setPhoneVerifStep('idle');
@@ -631,7 +635,7 @@ function App() {
         }
       } catch (dupErr) {
         console.error('[PhoneVerif] duplicate check failed:', dupErr);
-        // 중복 체크 실패 시에도 인증 진행 허용 (서버 불가 시)
+        // 중복 체크 실패/타임아웃 시에도 인증 진행 허용
       }
 
       // reCAPTCHA 초기화
