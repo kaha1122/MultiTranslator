@@ -30,6 +30,7 @@ import { authFetch, getIdToken } from './utils/authFetch';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
+import ConfirmModal from './components/ConfirmModal';
 import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
 import ScenePractice from './components/ScenePractice';
@@ -586,13 +587,14 @@ function App() {
   };
 
   // 회원탈퇴
-  const handleDeleteAccount = async () => {
-    const msg = getT(sourceLang, 'auth.deleteConfirm');
-    if (!confirm(msg)) return;
-    // 2차 확인
-    const msg2 = getT(sourceLang, 'auth.deleteConfirm2');
-    if (!confirm(msg2)) return;
+  const [deleteConfirmStep, setDeleteConfirmStep] = useState(0); // 0: 없음, 1: 1차확인, 2: 2차확인
 
+  const handleDeleteAccount = () => {
+    setDeleteConfirmStep(1);
+  };
+
+  const executeDeleteAccount = async () => {
+    setDeleteConfirmStep(0);
     try {
       const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
       const res = await authFetch(`${SERVER_URL}/api/delete-account`, {
@@ -602,7 +604,6 @@ function App() {
       const data = await res.json();
       if (data.success) {
         setShowProfileModal(false);
-        // Firebase Auth에서 이미 삭제되었으므로 signOut으로 정리
         try { await signOut(auth); } catch {}
         window.location.reload();
       } else {
@@ -2614,6 +2615,30 @@ function App() {
         <OnboardingModal
           defaultSourceLang={sourceLang}
           onComplete={handleOnboardingComplete}
+        />
+      )}
+
+      {/* 회원탈퇴 확인 모달 */}
+      {deleteConfirmStep === 1 && (
+        <ConfirmModal
+          title="PronunFit"
+          message={getT(sourceLang, 'auth.deleteConfirm')}
+          confirmText={getT(sourceLang, 'auth.deleteAccount')}
+          cancelText={getT(sourceLang, 'auth.cancel')}
+          danger
+          onConfirm={() => setDeleteConfirmStep(2)}
+          onCancel={() => setDeleteConfirmStep(0)}
+        />
+      )}
+      {deleteConfirmStep === 2 && (
+        <ConfirmModal
+          title="PronunFit"
+          message={getT(sourceLang, 'auth.deleteConfirm2')}
+          confirmText={getT(sourceLang, 'auth.deleteAccount')}
+          cancelText={getT(sourceLang, 'auth.cancel')}
+          danger
+          onConfirm={executeDeleteAccount}
+          onCancel={() => setDeleteConfirmStep(0)}
         />
       )}
 
