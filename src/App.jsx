@@ -620,11 +620,10 @@ function App() {
         const dupSnap = await getDocsFromServer(
           query(
             collection(db, 'users'),
-            where('phoneNumber', '==', fullPhone),
-            where('phoneVerified', '==', true)
+            where('phoneNumber', '==', fullPhone)
           )
         );
-        const isDuplicate = dupSnap.docs.some(doc => doc.id !== user.uid);
+        const isDuplicate = dupSnap.docs.some(doc => doc.id !== user.uid && doc.data()?.phoneVerified === true);
         if (isDuplicate) {
           setPhoneVerifStep('idle');
           setPhoneVerifMsg({ type: 'error', text: getT(sourceLang, 'auth.phoneDuplicate') });
