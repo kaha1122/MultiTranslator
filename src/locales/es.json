@@ -128,11 +128,11 @@
   },
   "sceneLoc": {
     "airport": "Aeropuerto & Vuelo",
-    "hotel": "Hotel & Alojamiento",
+    "hotel": "Hotel",
     "restaurant": "Restaurante & Café",
     "transport": "Transporte público",
     "shopping": "Compras & Mercado",
-    "hospital": "Hospital & Farmacia",
+    "hospital": "Hospital",
     "tourist": "Lugares turísticos",
     "office": "Oficina & Trabajo",
     "bank": "Banco",

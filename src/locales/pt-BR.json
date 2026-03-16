@@ -127,14 +127,14 @@
     "backToVocab": "Voltar ao Vocabulário"
   },
   "sceneLoc": {
-    "airport": "Aeroporto e Avião",
-    "hotel": "Hotel e Hospedagem",
+    "airport": "Aeroporto",
+    "hotel": "Hotel",
     "restaurant": "Restaurante e Café",
     "transport": "Transporte Público",
-    "shopping": "Compras e Mercado",
-    "hospital": "Hospital e Farmácia",
+    "shopping": "Compras",
+    "hospital": "Hospital",
     "tourist": "Pontos Turísticos",
-    "office": "Escritório e Trabalho",
+    "office": "Escritório",
     "bank": "Banco",
     "gym": "Academia",
     "custom": "Personalizado"
@@ -142,13 +142,13 @@
   "sceneSit": {
     "smalltalk": "Conversa Informal",
     "lost": "Objeto Perdido",
-    "reservation": "Alteração de Reserva",
+    "reservation": "Reserva",
     "disagree": "Negociação",
-    "problem": "Resolução de Problemas",
+    "problem": "Problemas",
     "directions": "Pedir Direções",
-    "intro": "Apresentação Pessoal",
+    "intro": "Apresentação",
     "compliment": "Elogios",
-    "decline": "Recusar Educadamente",
+    "decline": "Recusar",
     "advice": "Pedir Conselhos",
     "custom": "Personalizado"
   },

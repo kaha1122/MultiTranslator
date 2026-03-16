@@ -127,12 +127,12 @@
     "backToVocab": "Back to Vocabulary"
   },
   "sceneLoc": {
-    "airport": "Airport & In-flight",
+    "airport": "Airport",
     "hotel": "Hotel & Stay",
     "restaurant": "Restaurant & Cafe",
     "transport": "Public Transport",
     "shopping": "Shopping & Market",
-    "hospital": "Hospital & Pharmacy",
+    "hospital": "Hospital",
     "tourist": "Tourist Spots",
     "office": "Office & Work",
     "bank": "Bank",
