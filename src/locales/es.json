@@ -44,13 +44,13 @@
     "filterThisWeek": "Esta semana",
     "typeWord": "Palabra",
     "typeSentence": "Oración",
-    "srcTranslation": "Diccionario",
+    "srcTranslation": "Diccionario vocal",
     "srcScene": "Diálogo",
     "srcVocab": "Vocabulario",
     "dateClear": "Borrar",
     "backTo_vocab": "Volver a Vocabulario",
     "backTo_scene": "Volver a Diálogo",
-    "backTo_translation": "Volver a Diccionario"
+    "backTo_translation": "Volver al Diccionario vocal"
   },
   "save": {
     "savedSuccess": "¡Guardado con éxito!",
@@ -315,9 +315,9 @@
     "vocabTitle": "Vocabulario",
     "vocabDesc": "La IA crea tarjetas de vocabulario por tema",
     "vocabSubDesc": "Estudia vocabulario en 8 categorías por nivel de dificultad y practica la pronunciación.",
-    "translationTitle": "Diccionario",
-    "translationDesc": "Traduce palabras y frases con consejos de aprendizaje",
-    "translationSubDesc": "La IA proporciona traducciones con explicaciones gramaticales, ejemplos y guías de pronunciación.",
+    "translationTitle": "Diccionario vocal",
+    "translationDesc": "Practica la pronunciación de palabras y oraciones",
+    "translationSubDesc": "Traducción IA + puntuación de pronunciación + consejos de aprendizaje.",
     "videoTitle": "Videos",
     "videoDesc": "Aprende con videos auténticos de YouTube",
     "videoSubDesc": "Mira videos recomendados por categoría, toma notas y traduce mientras ves.",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "Inicio",
     "scene": "Diálogo",
-    "translation": "Diccionario",
+    "translation": "Diccionario vocal",
     "library": "Biblioteca",
     "vocab": "Vocabulario",
     "video": "Video",

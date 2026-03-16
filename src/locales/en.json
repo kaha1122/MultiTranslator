@@ -44,13 +44,13 @@
     "filterThisWeek": "This Week",
     "typeWord": "Word",
     "typeSentence": "Sentence",
-    "srcTranslation": "Dictionary",
+    "srcTranslation": "Voice Dictionary",
     "srcScene": "Dialogue",
     "srcVocab": "Vocabulary",
     "dateClear": "Clear",
     "backTo_vocab": "Back to Vocabulary",
     "backTo_scene": "Back to Dialogue",
-    "backTo_translation": "Back to Dictionary"
+    "backTo_translation": "Back to Voice Dictionary"
   },
   "save": {
     "savedSuccess": "Saved successfully!",
@@ -315,9 +315,9 @@
     "vocabTitle": "Vocabulary",
     "vocabDesc": "AI creates topic-based vocabulary cards for you",
     "vocabSubDesc": "Study words across 8 categories by difficulty level and practice pronunciation.",
-    "translationTitle": "Dictionary",
-    "translationDesc": "Translate words & sentences with learning tips",
-    "translationSubDesc": "AI provides translations with grammar explanations, examples, and pronunciation guides.",
+    "translationTitle": "Voice Dictionary",
+    "translationDesc": "Practice pronunciation of words & sentences",
+    "translationSubDesc": "AI translation + pronunciation scoring + learning tips in one place.",
     "videoTitle": "Video Learning",
     "videoDesc": "Learn real language through YouTube videos",
     "videoSubDesc": "Watch recommended videos by category, take notes, and translate as you go.",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "Home",
     "scene": "Dialogue",
-    "translation": "Dictionary",
+    "translation": "Voice Dictionary",
     "library": "Library",
     "vocab": "Vocabulary",
     "video": "Video",

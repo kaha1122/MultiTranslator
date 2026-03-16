@@ -44,13 +44,13 @@
     "filterThisWeek": "Diese Woche",
     "typeWord": "Wort",
     "typeSentence": "Satz",
-    "srcTranslation": "Wörterbuch",
+    "srcTranslation": "Sprach-Wörterbuch",
     "srcScene": "Dialog",
     "srcVocab": "Vokabeln",
     "dateClear": "Löschen",
     "backTo_vocab": "Zurück zu Vokabeln",
     "backTo_scene": "Zurück zum Dialog",
-    "backTo_translation": "Zurück zum Wörterbuch"
+    "backTo_translation": "Zurück zum Sprach-Wörterbuch"
   },
   "save": {
     "savedSuccess": "Gespeichert!",
@@ -315,9 +315,9 @@
     "vocabTitle": "Vokabeln",
     "vocabDesc": "KI erstellt themenbasierte Vokabelkarten für Sie",
     "vocabSubDesc": "Lernen Sie Vokabeln in 8 Kategorien nach Schwierigkeitsgrad und üben Sie die Aussprache.",
-    "translationTitle": "Wörterbuch",
-    "translationDesc": "Übersetzen Sie Wörter und Sätze mit Lerntipps",
-    "translationSubDesc": "KI liefert Übersetzungen mit Grammatikerklärungen, Beispielen und Ausspracheführern.",
+    "translationTitle": "Sprach-Wörterbuch",
+    "translationDesc": "Üben Sie die Aussprache von Wörtern und Sätzen",
+    "translationSubDesc": "KI-Übersetzung + Aussprachebewertung + Lerntipps auf einen Blick.",
     "videoTitle": "Video-Lernen",
     "videoDesc": "Lernen Sie mit authentischen YouTube-Videos",
     "videoSubDesc": "Sehen Sie empfohlene Videos nach Kategorie, machen Sie Notizen und übersetzen Sie direkt.",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "Startseite",
     "scene": "Dialog",
-    "translation": "Wörterbuch",
+    "translation": "Sprach-Wörterbuch",
     "library": "Bibliothek",
     "vocab": "Vokabeln",
     "video": "Video",

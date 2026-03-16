@@ -44,13 +44,13 @@
     "filterThisWeek": "今週",
     "typeWord": "単語",
     "typeSentence": "文章",
-    "srcTranslation": "辞書",
+    "srcTranslation": "ボイス辞書",
     "srcScene": "会話",
     "srcVocab": "単語",
     "dateClear": "クリア",
     "backTo_vocab": "単語学習に戻る",
     "backTo_scene": "会話練習に戻る",
-    "backTo_translation": "辞書に戻る"
+    "backTo_translation": "ボイス辞書に戻る"
   },
   "save": {
     "savedSuccess": "保存完了！",
@@ -315,9 +315,9 @@
     "vocabTitle": "単語学習",
     "vocabDesc": "AIがトピック別の単語カードを作成します",
     "vocabSubDesc": "8つのカテゴリで難易度別に単語を学習し、発音も練習できます。",
-    "translationTitle": "辞書",
-    "translationDesc": "単語・文章を翻訳して学習のヒントを確認",
-    "translationSubDesc": "AIが翻訳と一緒に文法解説、例文、発音ガイドを提供します。",
+    "translationTitle": "ボイス辞書",
+    "translationDesc": "単語・文章の発音を練習して保存しましょう",
+    "translationSubDesc": "AI翻訳 + 発音評価 + 学習ヒントを一度に提供します。",
     "videoTitle": "動画学習",
     "videoDesc": "YouTube動画でリアルな言語を学びましょう",
     "videoSubDesc": "カテゴリ別のおすすめ動画を見ながらメモして翻訳できます。",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "ホーム",
     "scene": "会話",
-    "translation": "辞書",
+    "translation": "ボイス辞書",
     "library": "単語帳",
     "vocab": "単語",
     "video": "動画",

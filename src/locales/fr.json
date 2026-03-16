@@ -44,13 +44,13 @@
     "filterThisWeek": "Cette semaine",
     "typeWord": "Mot",
     "typeSentence": "Phrase",
-    "srcTranslation": "Dictionnaire",
+    "srcTranslation": "Dico vocal",
     "srcScene": "Dialogue",
     "srcVocab": "Vocabulaire",
     "dateClear": "Effacer",
     "backTo_vocab": "Retour au Vocabulaire",
     "backTo_scene": "Retour au Dialogue",
-    "backTo_translation": "Retour au Dictionnaire"
+    "backTo_translation": "Retour au Dico vocal"
   },
   "save": {
     "savedSuccess": "Enregistré !",
@@ -315,9 +315,9 @@
     "vocabTitle": "Vocabulaire",
     "vocabDesc": "L'IA crée des cartes de vocabulaire par thème",
     "vocabSubDesc": "Étudiez le vocabulaire dans 8 catégories par niveau et pratiquez la prononciation.",
-    "translationTitle": "Dictionnaire",
-    "translationDesc": "Traduisez des mots et phrases avec des conseils",
-    "translationSubDesc": "L'IA fournit des traductions avec des explications grammaticales, des exemples et des guides de prononciation.",
+    "translationTitle": "Dico vocal",
+    "translationDesc": "Pratiquez la prononciation des mots et des phrases",
+    "translationSubDesc": "Traduction IA + évaluation de la prononciation + conseils d'apprentissage.",
     "videoTitle": "Vidéos",
     "videoDesc": "Apprenez avec des vidéos YouTube authentiques",
     "videoSubDesc": "Regardez des vidéos recommandées par catégorie, prenez des notes et traduisez en direct.",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "Accueil",
     "scene": "Dialogue",
-    "translation": "Dictionnaire",
+    "translation": "Dico vocal",
     "library": "Bibliothèque",
     "vocab": "Vocabulaire",
     "video": "Vidéo",

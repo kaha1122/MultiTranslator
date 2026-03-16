@@ -44,13 +44,13 @@
     "filterThisWeek": "本周",
     "typeWord": "单词",
     "typeSentence": "句子",
-    "srcTranslation": "词典",
+    "srcTranslation": "语音词典",
     "srcScene": "对话",
     "srcVocab": "词汇",
     "dateClear": "清除",
     "backTo_vocab": "返回词汇学习",
     "backTo_scene": "返回对话练习",
-    "backTo_translation": "返回词典"
+    "backTo_translation": "返回语音词典"
   },
   "save": {
     "savedSuccess": "保存成功！",
@@ -315,9 +315,9 @@
     "vocabTitle": "词汇学习",
     "vocabDesc": "AI为你按主题生成单词卡片",
     "vocabSubDesc": "在8个类别中按难度学习词汇并练习发音。",
-    "translationTitle": "词典",
-    "translationDesc": "翻译单词和句子，获取学习建议",
-    "translationSubDesc": "AI提供翻译以及语法解释、例句和发音指导。",
+    "translationTitle": "语音词典",
+    "translationDesc": "练习单词和句子的发音并保存",
+    "translationSubDesc": "AI翻译 + 发音评分 + 学习提示一站式提供。",
     "videoTitle": "视频学习",
     "videoDesc": "通过YouTube视频学习地道的语言表达",
     "videoSubDesc": "按分类观看推荐视频，边看边做笔记和翻译。",
@@ -379,7 +379,7 @@
   "nav": {
     "home": "首页",
     "scene": "对话",
-    "translation": "词典",
+    "translation": "语音词典",
     "library": "词库",
     "vocab": "词汇",
     "video": "视频",
