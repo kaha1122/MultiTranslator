@@ -289,7 +289,7 @@
     "phoneRequired": "Phone verification required",
     "phoneRequiredDesc": "Please verify your phone number before subscribing. Go to Edit Profile to complete verification.",
     "verifyNow": "Verify now",
-    "footerNote": "Cancel anytime · Payments securely processed by TossPayments",
+    "footerNote": "Cancel anytime · Card info is processed securely",
     "paymentError": "Could not open payment page. Please try again later.",
     "cancelConfirm": "Stop auto-renewal? You can keep using the service until the end of your current period.",
     "cancelledNotice": "Auto-renewal has been stopped. Service available until:",

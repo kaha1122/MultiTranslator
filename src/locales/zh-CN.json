@@ -289,7 +289,7 @@
     "phoneRequired": "需要手机号验证",
     "phoneRequiredDesc": "订阅前请先完成手机号验证。请前往编辑个人资料完成验证。",
     "verifyNow": "立即验证",
-    "footerNote": "随时可取消 · 支付信息由TossPayments安全处理",
+    "footerNote": "随时可取消 · 卡信息安全处理",
     "paymentError": "无法打开支付页面，请稍后再试。",
     "cancelConfirm": "确定停止自动续费？当前周期内仍可继续使用服务。",
     "cancelledNotice": "自动续费已停止。服务可用至：",

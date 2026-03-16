@@ -289,7 +289,7 @@
     "phoneRequired": "Verificación de teléfono requerida",
     "phoneRequiredDesc": "Verifique su número de teléfono antes de suscribirse.",
     "verifyNow": "Verificar ahora",
-    "footerNote": "Cancela en cualquier momento · Pago seguro con TossPayments",
+    "footerNote": "Cancela en cualquier momento · La información de la tarjeta se procesa de forma segura",
     "paymentError": "No se pudo abrir la página de pago. Por favor, inténtalo más tarde.",
     "cancelConfirm": "¿Detener la renovación automática? Podrás seguir usando el servicio hasta el final del período actual.",
     "cancelledNotice": "La renovación automática ha sido detenida. Servicio disponible hasta:",

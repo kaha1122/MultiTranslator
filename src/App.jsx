@@ -124,7 +124,6 @@ function App() {
 
   // 업그레이드 모달
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
-  const [upgradeForceUSD, setUpgradeForceUSD] = useState(false);
   // TossPayments 빌링 성공 후 URL 파라미터 처리
   const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'fail' | ''
   const SERVER_URL_FOR_BILLING = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -1444,20 +1443,14 @@ function App() {
 
               <div className="sidebar-divider" />
 
-              {/* 구독 (KRW) */}
+              {/* 구독 */}
               <button className="sidebar-nav-item"
-                onClick={() => { setSidebarOpen(false); setUpgradeForceUSD(false); setShowUpgradeModal(true); }}>
+                onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}>
                 <span className="sidebar-nav-icon"><CreditCard size={16} /></span>
                 {getT(sourceLang, 'nav.subscription')}
               </button>
 
-              {/* 구독 USD (테스트용) */}
-              <button className="sidebar-nav-item"
-                onClick={() => { setSidebarOpen(false); setUpgradeForceUSD(true); setShowUpgradeModal(true); }}
-                style={{ color: '#6366f1' }}>
-                <span className="sidebar-nav-icon"><CreditCard size={16} /></span>
-                Subscription (USD)
-              </button>
+
 
               {/* 설정 */}
               <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
@@ -2310,8 +2303,7 @@ function App() {
       {showUpgradeModal && (
         <UpgradeModal
           sourceLang={sourceLang}
-          forceUSD={upgradeForceUSD}
-          onClose={() => { setShowUpgradeModal(false); setUpgradeForceUSD(false); }}
+          onClose={() => setShowUpgradeModal(false)}
           onRequestPhoneVerify={() => { setShowUpgradeModal(false); handleEditProfile(); }}
         />
       )}

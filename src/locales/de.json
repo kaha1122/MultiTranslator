@@ -289,7 +289,7 @@
     "phoneRequired": "Telefonverifizierung erforderlich",
     "phoneRequiredDesc": "Bitte verifizieren Sie Ihre Telefonnummer, bevor Sie ein Abo starten.",
     "verifyNow": "Jetzt verifizieren",
-    "footerNote": "Jederzeit kündbar · Zahlung sicher über TossPayments",
+    "footerNote": "Jederzeit kündbar · Kartendaten werden sicher verarbeitet",
     "paymentError": "Zahlungsseite konnte nicht geöffnet werden. Bitte erneut versuchen.",
     "cancelConfirm": "Automatische Verlängerung stoppen? Sie können den Service bis zum Ende des aktuellen Zeitraums weiter nutzen.",
     "cancelledNotice": "Automatische Verlängerung gestoppt. Service verfügbar bis:",

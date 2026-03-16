@@ -133,7 +133,7 @@ const PLAN_CONFIGS_USD = [
     },
 ];
 
-const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = false }) => {
+const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
     const [loadingPlan, setLoadingPlan] = useState(null);
@@ -147,7 +147,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = fa
         detectCountry().then(setCountryInfo);
     }, []);
 
-    const isKR = !forceUSD && isKorea(countryInfo);
+    const isKR = isKorea(countryInfo);
     const PLAN_CONFIGS = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
 
     const needEmailVerify = !emailVerified;
@@ -363,7 +363,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, forceUSD = fa
                 </div>
 
                 {/* Premium Plans */}
-                <div className="upgrade-tier-group" style={{ marginTop: '16px' }}>
+                <div className="upgrade-tier-group" style={{ marginTop: '10px' }}>
                     <div className="upgrade-tier-label" style={{ color: '#b45309' }}>
                         <Crown size={16} /> Premium
                     </div>
