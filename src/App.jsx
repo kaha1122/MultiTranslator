@@ -1544,7 +1544,7 @@ function App() {
               <div className="header-spacer" />
             ) : (
               <button className="header-home-btn" onClick={() => setViewMode('home')} aria-label="Home">
-                <Home size={28} strokeWidth={2.2} />
+                <Home size={28} strokeWidth={1.5} />
               </button>
             )}
           </div>
