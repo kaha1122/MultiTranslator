@@ -196,7 +196,10 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
 
             {/* 섹션 4: 이번 주 학습 통계표 */}
             <div className="home-section home-stats">
-                <h3 className="home-section-title">{t('home.weeklyStats')}</h3>
+                <div className="home-stats-header">
+                    <h3 className="home-section-title">{t('home.weeklyStats')}</h3>
+                    <button className="home-stats-link" onClick={() => onNavigate('stats')}>{t('home.viewStats')}</button>
+                </div>
                 {statsLoading ? (
                     <div className="home-stats-loading">...</div>
                 ) : (
