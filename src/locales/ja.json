@@ -592,7 +592,9 @@
     "ctaSub": "登録30秒。8言語対応のAI発音コーチが今すぐお待ちしています。",
     "footerNote": "PronunFit · AI発音コーチ · 登録後すぐに無料利用",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
-    "installPopup": "📲 アプリをインストールすると、\nすぐにアクセスできます"
+    "installPopup": "📲 アプリをインストールすると、\nすぐにアクセスできます",
+    "accountDelTitle": "アカウントの削除およびデータ破棄のご案内",
+    "accountDelDesc": "PronunFitのアカウント削除をご希望の場合は、登録されたメールアドレスをご記入の上、<b>support@pronunfit.com</b>までメールをお送りください。リクエスト受付後、7日以内にアカウント情報およびすべての学習データを安全に削除いたします。"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",

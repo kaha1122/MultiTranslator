@@ -592,7 +592,9 @@
     "ctaSub": "30 seconds to sign up. Your AI pronunciation coach in 8 languages is ready.",
     "footerNote": "PronunFit · AI Pronunciation Coach · Free from day one",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
-    "installPopup": "📲 Install the app\nfor instant access"
+    "installPopup": "📲 Install the app\nfor instant access",
+    "accountDelTitle": "Account Deletion & Data Disposal",
+    "accountDelDesc": "If you wish to delete your PronunFit account, please email us at <b>support@pronunfit.com</b> with your registered email address. We will securely delete your account and all learning data within 7 days."
   },
   "renewal": {
     "title": "Subscription Expiring Soon",

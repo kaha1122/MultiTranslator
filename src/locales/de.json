@@ -592,7 +592,9 @@
     "ctaSub": "Anmeldung in 30 Sekunden. Dein KI-Aussprachecoach in 8 Sprachen wartet.",
     "footerNote": "PronunFit · KI-Aussprachecoach · Ab Registrierung kostenlos",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
-    "installPopup": "📲 App installieren\nfür sofortigen Zugang"
+    "installPopup": "📲 App installieren\nfür sofortigen Zugang",
+    "accountDelTitle": "Kontolöschung und Datenvernichtung",
+    "accountDelDesc": "Wenn Sie Ihr PronunFit-Konto löschen möchten, senden Sie bitte eine E-Mail mit Ihrer registrierten E-Mail-Adresse an <b>support@pronunfit.com</b>. Wir werden Ihre Kontoinformationen und alle Lerndaten innerhalb von 7 Tagen sicher löschen."
   },
   "renewal": {
     "title": "Abonnement läuft bald ab",

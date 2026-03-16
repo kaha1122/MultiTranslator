@@ -592,7 +592,9 @@
     "ctaSub": "Registro en 30 segundos. Tu coach de pronunciación IA en 8 idiomas te espera.",
     "footerNote": "PronunFit · Coach de pronunciación IA · Gratis desde el registro",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
-    "installPopup": "📲 Instala la app\npara acceso instantáneo"
+    "installPopup": "📲 Instala la app\npara acceso instantáneo",
+    "accountDelTitle": "Eliminación de cuenta y datos",
+    "accountDelDesc": "Si desea eliminar su cuenta de PronunFit, envíenos un correo electrónico a <b>support@pronunfit.com</b> con su dirección de correo electrónico registrada. Eliminaremos de forma segura la información de su cuenta y todos los datos de aprendizaje en un plazo de 7 días."
   },
   "renewal": {
     "title": "Suscripción por expirar",

@@ -592,7 +592,9 @@
     "ctaSub": "Đăng ký 30 giây. Huấn luyện viên phát âm AI 8 ngôn ngữ đang chờ bạn.",
     "footerNote": "PronunFit · Huấn luyện viên phát âm AI · Miễn phí ngay khi đăng ký",
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
-    "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay"
+    "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay",
+    "accountDelTitle": "Hướng dẫn xóa tài khoản và hủy dữ liệu",
+    "accountDelDesc": "Nếu bạn muốn xóa tài khoản PronunFit, vui lòng gửi email ghi rõ địa chỉ email đã đăng ký của bạn đến <b>support@pronunfit.com</b>. Chúng tôi sẽ xóa an toàn thông tin tài khoản và toàn bộ dữ liệu học tập của bạn trong vòng 7 ngày kể từ khi nhận được yêu cầu."
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",
