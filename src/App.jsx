@@ -230,8 +230,14 @@ function App() {
   // --- 1. 상태 관리 (State Management) ---
   // 이 부분은 앱이 돌아가는 동안 변하는 데이터(글자, 언어 설정 등)를 저장하는 바구니입니다.
 
-  // 현재 화면 모드 — 기본 홈은 'home'
-  const [viewMode, setViewMode] = useState('home');
+  // 현재 화면 모드 — 기본 홈은 'home', URL 경로에 따라 초기 모드 설정
+  const [viewMode, setViewMode] = useState(() => {
+    const path = window.location.pathname;
+    if (path === '/privacy') return 'privacy';
+    if (path === '/terms') return 'terms';
+    if (path === '/contact') return 'contact';
+    return 'home';
+  });
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
@@ -562,7 +568,7 @@ function App() {
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     setShowOnboarding(false);
     setViewMode('home');
-    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => {});
+    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => { });
   };
 
   // [수정] 프로필 수정 모달 열기
@@ -609,7 +615,7 @@ function App() {
       const data = await res.json();
       if (data.success) {
         setShowProfileModal(false);
-        try { await signOut(auth); } catch {}
+        try { await signOut(auth); } catch { }
         window.location.reload();
       } else {
         setAccountDeletionFlag(false);
@@ -1229,14 +1235,14 @@ function App() {
         body: JSON.stringify({
           text,
           langCode,
-          emotion:         emotion         || undefined,
-          byokAzureKey:    byokAzureKey    || undefined,
+          emotion: emotion || undefined,
+          byokAzureKey: byokAzureKey || undefined,
           byokAzureRegion: byokAzureRegion || undefined,
         }),
       });
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
-      const blob  = await res.blob();
-      const url   = URL.createObjectURL(blob);
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
       await audio.play();
@@ -1484,13 +1490,13 @@ function App() {
 
               {/* 법적 정보 */}
               <div className="sidebar-legal-section">
-                <button className="sidebar-legal-btn" onClick={() => { setViewMode('privacy'); setSidebarOpen(false); }}>
+                <button className="sidebar-legal-btn" onClick={() => { window.history.pushState({}, '', '/privacy'); setViewMode('privacy'); setSidebarOpen(false); }}>
                   {getT(sourceLang, 'nav.privacy')}
                 </button>
-                <button className="sidebar-legal-btn" onClick={() => { setViewMode('terms'); setSidebarOpen(false); }}>
+                <button className="sidebar-legal-btn" onClick={() => { window.history.pushState({}, '', '/terms'); setViewMode('terms'); setSidebarOpen(false); }}>
                   {getT(sourceLang, 'nav.terms')}
                 </button>
-                <button className="sidebar-legal-btn" onClick={() => { setViewMode('contact'); setSidebarOpen(false); }}>
+                <button className="sidebar-legal-btn" onClick={() => { window.history.pushState({}, '', '/contact'); setViewMode('contact'); setSidebarOpen(false); }}>
                   {getT(sourceLang, 'nav.contact')}
                 </button>
               </div>
@@ -1554,13 +1560,13 @@ function App() {
         <AnimatePresence mode="wait">
           {(() => {
             const TAB_CONTEXT = {
-              home:        { icon: '🏠', text: getT(sourceLang, 'tabTag.home') },
-              scene:       { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
+              home: { icon: '🏠', text: getT(sourceLang, 'tabTag.home') },
+              scene: { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
               translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
-              vocab:       { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
-              video:       { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
-              library:     { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
-              stats:       { icon: '📊', text: getT(sourceLang, 'tabTag.stats') },
+              vocab: { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
+              video: { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
+              library: { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
+              stats: { icon: '📊', text: getT(sourceLang, 'tabTag.stats') },
             };
             const ctx = TAB_CONTEXT[viewMode];
             if (!ctx) return null;
@@ -2123,7 +2129,7 @@ function App() {
               ].map(({ label, mode }) => (
                 <button
                   key={mode}
-                  onClick={() => setViewMode(mode)}
+                  onClick={() => { window.history.pushState({}, '', `/${mode}`); setViewMode(mode); }}
                   style={{
                     background: 'none',
                     border: 'none',
