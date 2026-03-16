@@ -1,6 +1,6 @@
 const express = require('express');
 const axios = require('axios');
-const { requireAuth } = require('../middleware/auth');
+const { optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
@@ -60,7 +60,7 @@ const EMOTION_TO_STYLE = {
     'panicked':      'fearful',
 };
 
-router.post('/api/azure-tts', requireAuth, async (req, res) => {
+router.post('/api/azure-tts', optionalAuth, async (req, res) => {
     const { text, langCode, emotion, byokAzureKey, byokAzureRegion } = req.body;
     if (!text) return res.status(400).json({ error: 'Missing text' });
 

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, db, googleProvider } from '../../firebase/config';
-import { createUserWithEmailAndPassword, signInWithPopup, getAdditionalUserInfo } from 'firebase/auth';
+import { createUserWithEmailAndPassword, signInWithPopup, signInWithRedirect, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserPlus, Mail, Lock, AlertCircle, User, Phone, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
@@ -69,6 +69,10 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             return;
         }
         try {
+            if (window.Capacitor?.isNativePlatform?.()) {
+                await signInWithRedirect(auth, googleProvider);
+                return;
+            }
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);

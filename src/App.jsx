@@ -15,7 +15,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInWithPopup, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut, signInWithPopup, signInWithRedirect, getRedirectResult, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
@@ -508,6 +508,23 @@ function App() {
     };
 
     wakeupServer();
+
+    // 3. Capacitor 네이티브: Google signInWithRedirect 결과 처리
+    if (window.Capacitor?.isNativePlatform?.()) {
+      getRedirectResult(auth).then(async (cred) => {
+        if (!cred) return;
+        const info = getAdditionalUserInfo(cred);
+        const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
+        if (info?.isNewUser) {
+          profileData.displayName = cred.user.displayName || 'Google User';
+          profileData.hasCompletedOnboarding = false;
+          profileData.createdAt = serverTimestamp();
+        }
+        await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
+      }).catch((err) => {
+        console.warn('[Auth] Redirect result error:', err);
+      });
+    }
   }, []);
 
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
@@ -1244,9 +1261,20 @@ function App() {
       const url = URL.createObjectURL(blob);
       const audio = new Audio(url);
       audio.onended = () => URL.revokeObjectURL(url);
-      await audio.play();
+      audio.onerror = (err) => {
+        console.warn('[TTS] Audio play error:', err);
+        URL.revokeObjectURL(url);
+        handleSpeakFallback(text, langCode);
+      };
+      const playPromise = audio.play();
+      if (playPromise) {
+        playPromise.catch(() => {
+          // autoplay 차단 시 사용자 인터랙션 후 재시도
+          document.addEventListener('click', () => audio.play(), { once: true });
+        });
+      }
     } catch (e) {
-      console.warn('[TTS] Azure failed, fallback to Web Speech API', e);
+      console.warn('[TTS] Azure failed:', e.message);
       handleSpeakFallback(text, langCode);
     }
   };
@@ -1293,13 +1321,21 @@ function App() {
 
 
   // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
+  const isNativePlatform = window.Capacitor?.isNativePlatform?.();
+
   const handleGoogleLoginFromLanding = async () => {
     const ua = navigator.userAgent || '';
-    const isInApp = /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
+    const isInApp = !isNativePlatform && (
+      /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
       || (/Android/.test(ua) && /wv\)/.test(ua))
-      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
-    if (isInApp) { setShowLanding(false); return; } // Login 화면이 인앱 경고 처리
+      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua))
+    );
+    if (isInApp) { setShowLanding(false); return; }
     try {
+      if (isNativePlatform) {
+        await signInWithRedirect(auth, googleProvider);
+        return; // redirect 후 getRedirectResult로 처리됨
+      }
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
       const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
