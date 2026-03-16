@@ -475,9 +475,9 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       </section>
 
       {/* ── 계정 삭제 안내 (Account Deletion Info) ── */}
-      <section id="delete-info" className="lp-account-deletion" style={{ padding: '20px', backgroundColor: '#f9f9f9', textAlign: 'center', marginBottom: '20px' }}>
-        <h3>{c.accountDelTitle || '계정 삭제 및 데이터 파기 안내'}</h3>
-        <p style={{ maxWidth: '600px', margin: '10px auto', fontSize: '14px', lineHeight: '1.6', color: '#555' }}
+      <section id="delete-info" className="lp-delete-info">
+        <h3 className="lp-delete-info-title">{c.accountDelTitle || '계정 삭제 및 데이터 파기 안내'}</h3>
+        <p className="lp-delete-info-desc"
           dangerouslySetInnerHTML={{ __html: c.accountDelDesc || 'PronunFit 서비스의 계정 삭제를 원하실 경우, 가입하신 이메일 주소를 기재하여 <b>support@pronunfit.com</b>으로 메일을 보내주세요. 요청 접수 후 7일 이내에 계정 정보 및 모든 학습 데이터를 안전하게 삭제해 드립니다.' }}
         />
       </section>

@@ -736,6 +736,35 @@
 .lp-btn-secondary:hover { border-color: var(--lp-green); color: var(--lp-green-light); transform: translateY(-2px); }
 
 /* ================================================================
+   Account Deletion Info
+   ================================================================ */
+.lp-delete-info {
+  position: relative;
+  z-index: 1;
+  padding: 2rem 6%;
+  text-align: center;
+  border-top: 1px solid var(--lp-glass-border);
+}
+.lp-delete-info-title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: rgba(255,255,255,0.4);
+  margin: 0 0 0.6rem;
+  letter-spacing: 0.5px;
+}
+.lp-delete-info-desc {
+  max-width: 520px;
+  margin: 0 auto;
+  font-size: 0.78rem;
+  line-height: 1.7;
+  color: rgba(255,255,255,0.3);
+}
+.lp-delete-info-desc b {
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+}
+
+/* ================================================================
    Footer
    ================================================================ */
 .lp-footer {
