@@ -1472,10 +1472,6 @@ function App() {
                     onClick={() => { setSidebarOpen(false); setViewMode('guide'); }}>
                     {getT(sourceLang, 'nav.qaUsage')}
                   </button>
-                  <button className="sidebar-submenu-item"
-                    onClick={() => { setSidebarOpen(false); setShowApiKeyWizard(true); }}>
-                    {getT(sourceLang, 'nav.qaApiTip')}
-                  </button>
                 </div>
               )}
 
