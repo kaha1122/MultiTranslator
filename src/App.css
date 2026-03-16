@@ -281,13 +281,13 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 1rem 1rem;
+  padding: 0.7rem 1rem;
   border-bottom: 1px solid #f1f5f9;
   flex-shrink: 0;
 }
 
 .sidebar-logo {
-  font-size: 1.4rem;
+  font-size: 1.2rem;
   font-weight: 800;
   color: var(--primary-color);
   margin: 0;
@@ -298,28 +298,28 @@ body {
 }
 
 .sidebar-user-info {
-  display: flex; align-items: center; gap: 10px;
-  padding: 1rem; border-bottom: 1px solid #f1f5f9;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.6rem 1rem; border-bottom: 1px solid #f1f5f9;
   flex-shrink: 0;
 }
 
 .sidebar-username {
-  margin: 0; font-weight: 700; font-size: 1.1rem; color: #1e293b;
+  margin: 0; font-weight: 700; font-size: 0.95rem; color: #1e293b;
 }
 
 .sidebar-user-tier {
-  margin: 0; font-size: 0.8rem; color: var(--primary-color); font-weight: 600;
+  margin: 0; font-size: 0.75rem; color: var(--primary-color); font-weight: 600;
 }
 
 .sidebar-nav {
-  display: flex; flex-direction: column; padding: 0.8rem 0.6rem; flex: 1; gap: 0.2rem;
+  display: flex; flex-direction: column; padding: 0.5rem 0.6rem; flex: 1; gap: 0.1rem;
 }
 
 .sidebar-nav-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 12px 14px; border-radius: 10px;
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; border-radius: 9px;
   border: none; background: transparent;
-  font-size: 0.92rem; font-weight: 600; color: #475569;
+  font-size: 0.85rem; font-weight: 600; color: #475569;
   cursor: pointer; transition: all 0.2s;
   text-align: left; width: 100%;
 }
@@ -342,10 +342,10 @@ body {
 }
 
 .sidebar-submenu-item {
-  display: flex; align-items: center; gap: 8px;
-  padding: 9px 12px; border-radius: 8px;
+  display: flex; align-items: center; gap: 7px;
+  padding: 7px 12px; border-radius: 8px;
   border: none; background: transparent;
-  font-size: 0.82rem; font-weight: 500; color: #64748b;
+  font-size: 0.78rem; font-weight: 500; color: #64748b;
   cursor: pointer; transition: all 0.15s;
   text-align: left; width: 100%;
 }
@@ -357,7 +357,7 @@ body {
 .sidebar-divider {
   height: 1px;
   background: #f1f5f9;
-  margin: 6px 0;
+  margin: 4px 0;
 }
 
 .sidebar-legal-section {
@@ -369,9 +369,9 @@ body {
 
 .sidebar-legal-btn {
   display: block;
-  padding: 8px 12px;
+  padding: 6px 12px;
   border: none; background: transparent;
-  font-size: 0.76rem; color: #94a3b8;
+  font-size: 0.72rem; color: #94a3b8;
   cursor: pointer; text-align: left; width: 100%;
   border-radius: 6px;
   transition: color 0.15s;
@@ -380,15 +380,15 @@ body {
 .sidebar-legal-btn:hover { color: #64748b; }
 
 .sidebar-footer {
-  padding: 1rem; border-top: 1px solid #f1f5f9;
+  padding: 0.6rem 1rem; border-top: 1px solid #f1f5f9;
 }
 
 .sidebar-logout-btn {
   display: flex; align-items: center; gap: 8px;
-  width: 100%; padding: 12px; border-radius: 10px;
+  width: 100%; padding: 10px; border-radius: 9px;
   background: #fee2e2; color: #dc2626; border: none;
   font-weight: 700; cursor: pointer; justify-content: center;
-  font-size: 0.88rem;
+  font-size: 0.82rem;
 }
 
 /* 드로어 슬라이드 인 애니메이션 */
