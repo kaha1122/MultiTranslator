@@ -1,8 +1,12 @@
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
+import { CapacitorUpdater } from '@capgo/capacitor-updater'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
+
+// Capgo: 번들 정상 로드 확인 (롤백 방지)
+CapacitorUpdater.notifyAppReady()
 
 class ErrorBoundary extends Component {
   constructor(props) {
@@ -78,7 +82,9 @@ createRoot(document.getElementById('root')).render(
 // - import.meta.env.PROD : 개발(로컬) 환경이 아닌 실제 배포(Vercel) 환경에서만 등록
 //   (개발 중에는 오프라인 캐싱이 개발을 방해할 수 있어서 제외)
 // ─────────────────────────────────────────────────────────────────────────────
-if ('serviceWorker' in navigator && import.meta.env.PROD) {
+// 네이티브 앱에서는 Service Worker 불필요
+const isNative = window.Capacitor?.isNativePlatform?.();
+if (!isNative && 'serviceWorker' in navigator && import.meta.env.PROD) {
   window.addEventListener('load', () => {
     navigator.serviceWorker
       .register('/sw.js')

@@ -1,0 +1,10 @@
+{
+  "appId": "com.arigems.pronunfit",
+  "appName": "PronunFit",
+  "webDir": "dist",
+  "plugins": {
+    "CapacitorUpdater": {
+      "autoUpdate": true
+    }
+  }
+}

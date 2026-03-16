@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PronunFit</string>
+    <string name="title_activity_main">PronunFit</string>
+    <string name="package_name">com.arigems.pronunfit</string>
+    <string name="custom_url_scheme">com.arigems.pronunfit</string>
+</resources>
