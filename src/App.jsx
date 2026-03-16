@@ -15,7 +15,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInWithPopup, signInWithRedirect, getRedirectResult, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
@@ -509,22 +509,6 @@ function App() {
 
     wakeupServer();
 
-    // 3. Capacitor 네이티브: Google signInWithRedirect 결과 처리
-    if (window.Capacitor?.isNativePlatform?.()) {
-      getRedirectResult(auth).then(async (cred) => {
-        if (!cred) return;
-        const info = getAdditionalUserInfo(cred);
-        const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
-        if (info?.isNewUser) {
-          profileData.displayName = cred.user.displayName || 'Google User';
-          profileData.hasCompletedOnboarding = false;
-          profileData.createdAt = serverTimestamp();
-        }
-        await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
-      }).catch((err) => {
-        console.warn('[Auth] Redirect result error:', err);
-      });
-    }
   }, []);
 
   // --- 2. 데이터 자동 저장 (Auto Sync) ---
@@ -1323,19 +1307,36 @@ function App() {
   // 랜딩페이지 Google 로그인 — 인앱 브라우저면 로그인 화면으로 넘기고, 아니면 직접 OAuth 실행
   const isNativePlatform = window.Capacitor?.isNativePlatform?.();
 
+  // 네이티브 Google Sign-In (Capacitor Firebase Auth 플러그인)
+  const handleNativeGoogleLogin = async () => {
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+    const result = await FirebaseAuthentication.signInWithGoogle();
+    const idToken = result.credential?.idToken;
+    if (idToken) {
+      const credential = FirebaseGoogleAuthProvider.credential(idToken);
+      const cred = await signInWithCredential(auth, credential);
+      const info = getAdditionalUserInfo(cred);
+      const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
+      if (info?.isNewUser) {
+        profileData.displayName = cred.user.displayName || 'Google User';
+        profileData.hasCompletedOnboarding = false;
+        profileData.createdAt = serverTimestamp();
+      }
+      await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
+    }
+  };
+
   const handleGoogleLoginFromLanding = async () => {
+    if (isNativePlatform) {
+      try { await handleNativeGoogleLogin(); } catch (err) { console.error('Native Google login error:', err); }
+      return;
+    }
     const ua = navigator.userAgent || '';
-    const isInApp = !isNativePlatform && (
-      /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
+    const isInApp = /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
       || (/Android/.test(ua) && /wv\)/.test(ua))
-      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua))
-    );
+      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
     if (isInApp) { setShowLanding(false); return; }
     try {
-      if (isNativePlatform) {
-        await signInWithRedirect(auth, googleProvider);
-        return; // redirect 후 getRedirectResult로 처리됨
-      }
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
       const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };

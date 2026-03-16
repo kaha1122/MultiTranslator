@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "879220793558",
+    "project_id": "trnaslatorapp",
+    "storage_bucket": "trnaslatorapp.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:879220793558:android:32cf68c4b79dc3c553e977",
+        "android_client_info": {
+          "package_name": "com.arigems.pronunfit"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBu2-3imRjruJplrmevsDdoEdzTm_SlJ2o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

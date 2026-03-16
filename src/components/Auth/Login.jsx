@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { auth, db, googleProvider } from '../../firebase/config';
-import { signInWithEmailAndPassword, signInWithPopup, signInWithRedirect, getAdditionalUserInfo, sendPasswordResetEmail } from 'firebase/auth';
+import { signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { LogIn, Mail, Lock, AlertCircle, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
@@ -64,7 +64,22 @@ function Login({ onSwitchToSignup, sourceLang }) {
         }
         try {
             if (window.Capacitor?.isNativePlatform?.()) {
-                await signInWithRedirect(auth, googleProvider);
+                const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                const result = await FirebaseAuthentication.signInWithGoogle();
+                const idToken = result.credential?.idToken;
+                if (!idToken) throw new Error('No idToken');
+                const credential = FirebaseGoogleAuthProvider.credential(idToken);
+                const userCredential = await signInWithCredential(auth, credential);
+                const user = userCredential.user;
+                const additionalInfo = getAdditionalUserInfo(userCredential);
+                const profileData = { uid: user.uid, email: user.email, updatedAt: serverTimestamp() };
+                if (additionalInfo?.isNewUser) {
+                    profileData.displayName = user.displayName || 'Google User';
+                    profileData.hasCompletedOnboarding = false;
+                    profileData.createdAt = serverTimestamp();
+                }
+                await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+                setIsLoading(false);
                 return;
             }
             const userCredential = await signInWithPopup(auth, googleProvider);

@@ -135,7 +135,7 @@ Rules:
 6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For others: include romanization if applicable.
 7. All meanings, tips, and example translations must be in ${sourceLangName}.
 8. For each word, provide 2-3 concise learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note or cultural context. Each tip should be one sentence.
-9. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical readings, or any annotation in the "word" field.** Bad: "咖啡 (kāfēi)", "食べる（たべる）", "커피(coffee)". Good: "咖啡", "食べる", "커피". Pronunciation goes ONLY in the "pronunciation" field.
+9. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical readings, or any annotation in the "word" field.** Bad: "咖啡 (kāfēi)", "食べる（たべる）", "おんがく (音楽)", "커피(coffee)". Good: "咖啡", "食べる", "音楽", "커피". For Japanese: the "word" field must use the standard written form (kanji where natural, e.g. "音楽" not "おんがく"). Hiragana reading goes ONLY in the "pronunciation" field.
 10. **"example" field must also contain ONLY the pure sentence in ${targetLangName} — no pronunciation annotations, no parenthetical readings.**
 
 Return ONLY valid JSON (no markdown):
