@@ -1674,8 +1674,8 @@ function App() {
                       key={langCode}
                       onClick={() => setInputLang(langCode)}
                       style={{
-                        padding: '6px 14px',
-                        borderRadius: '16px',
+                        padding: '5px 12px',
+                        borderRadius: '14px',
                         border: isSelected ? 'none' : '1px solid #e2e8f0',
                         background: isSelected ? lang.color : 'white',
                         color: isSelected ? lang.textColor : '#64748b',
