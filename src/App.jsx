@@ -1674,8 +1674,8 @@ function App() {
                       key={langCode}
                       onClick={() => setInputLang(langCode)}
                       style={{
-                        padding: '5px 12px',
-                        borderRadius: '14px',
+                        padding: '6px 14px',
+                        borderRadius: '16px',
                         border: isSelected ? 'none' : '1px solid #e2e8f0',
                         background: isSelected ? lang.color : 'white',
                         color: isSelected ? lang.textColor : '#64748b',
@@ -1693,8 +1693,8 @@ function App() {
                 })}
               </div>
               <div className="text-input-wrapper">
-                <input
-                  type="text"
+                <textarea
+                  rows={2}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Enter text to translate"
