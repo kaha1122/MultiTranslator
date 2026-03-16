@@ -38,19 +38,19 @@
 /* ── Level Selector ──────────────────────────────────────────────── */
 .vocab-level-row {
   display: flex;
-  gap: 5px;
-  margin: 4px 0 8px;
+  gap: 8px;
+  margin: 4px 12px 8px;
 }
 
 .vocab-level-btn {
   flex: 1;
-  padding: 4px 0;
-  border-radius: 7px;
+  padding: 7px 0;
+  border-radius: 9px;
   border: 1.5px solid #e2e8f0;
   background: white;
   color: #64748b;
   font-weight: 700;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   cursor: pointer;
   transition: all 0.2s;
 }
