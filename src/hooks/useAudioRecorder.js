@@ -5,6 +5,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
 import { getAuthHeaders } from '../utils/authFetch';
+import { VoiceRecorder } from 'capacitor-voice-recorder';
+import { Capacitor } from '@capacitor/core';
 
 // 초보자 설명(주석):
 // 환경 변수(.env) 파일에서 API 서버 주소를 읽어옵니다.
@@ -60,6 +62,18 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         }
 
         try {
+            // [신규] 안드로이드/iOS 네이티브 환경일 경우 마이크 하드웨어 권한 팝업 요청
+            if (Capacitor.isNativePlatform()) {
+                const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
+                if (!hasPermission.value) {
+                    const reqPermission = await VoiceRecorder.requestAudioRecordingPermission();
+                    if (!reqPermission.value) {
+                        setErrorMsg(getT(sourceLangCode, 'errors.micAccess') || "Microphone permission is required.");
+                        return; // 권한 거부 시 녹음 시작 안 함
+                    }
+                }
+            }
+
             // 기기가 지원하는 오디오 형식을 먼저 확인합니다.
             // 아이폰(사파리/크롬)은 무조건 mp4 계열을 좋아하므로 audio/mp4를 우선순위로 두고, 
             // 그 외(안드로이드/PC 크롬)은 기본적으로 가장 널리 쓰이는 audio/webm을 찾습니다.

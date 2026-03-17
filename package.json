@@ -23,6 +23,7 @@
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.13.5",
     "canvas": "^3.2.1",
+    "capacitor-voice-recorder": "^7.0.6",
     "firebase": "^12.9.0",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.574.0",
