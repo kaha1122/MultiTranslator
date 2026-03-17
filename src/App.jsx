@@ -247,6 +247,10 @@ function App() {
   const [showExitToast, setShowExitToast] = useState(false);
   const exitTimerRef = useRef(null);
 
+  // 좌측 드로어(햄버거 메뉴) 상태 — useEffect보다 앞에 선언 (TDZ 방지)
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
+
   React.useEffect(() => {
     // 1. Web 브라우저용 뒤로 가기 처리 (기존 유지)
     const webHandler = () => {
@@ -291,9 +295,6 @@ function App() {
     };
   }, [showExitToast, viewMode, sidebarOpen]);
 
-  // 좌측 드로어(햄버거 메뉴) 상태
-  const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
 
   // 로그인 시 사이드바 닫기 (이전 상태 잔류 방지)
   React.useEffect(() => {
