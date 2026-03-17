@@ -246,7 +246,7 @@ function App() {
 
   // ── Capgo 번들 버전 / 업데이트 상태 ──
   const [bundleVersion, setBundleVersion] = useState('builtin');
-  const [updateStatus, setUpdateStatus] = useState('확인 중...');
+  const [updateStatus, setUpdateStatus] = useState('');
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     CapacitorUpdater.current().then(info => {
@@ -262,17 +262,11 @@ function App() {
     CapacitorUpdater.addListener('downloadFailed', (res) => {
       setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
     });
-    CapacitorUpdater.addListener('noNeedUpdate', (res) => {
-      setUpdateStatus(`최신 (${JSON.stringify(res)})`);
+    CapacitorUpdater.addListener('noNeedUpdate', () => {
+      setUpdateStatus('');
     });
-    // 채널 등록 후 최신 버전 조회
-    CapacitorUpdater.setChannel({ channel: 'staging' })
-      .then(() => CapacitorUpdater.getLatest())
-      .then(res => {
-        setUpdateStatus(`서버응답: v${res?.version ?? 'none'}`);
-      }).catch(e => {
-        setUpdateStatus(`오류: ${e?.message ?? String(e)}`);
-      });
+    // 채널 등록
+    CapacitorUpdater.setChannel({ channel: 'staging' }).catch(() => {});
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
