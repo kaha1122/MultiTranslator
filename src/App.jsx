@@ -265,12 +265,14 @@ function App() {
     CapacitorUpdater.addListener('noNeedUpdate', (res) => {
       setUpdateStatus(`최신 (${JSON.stringify(res)})`);
     });
-    // 서버에서 최신 버전 직접 조회
-    CapacitorUpdater.getLatest().then(res => {
-      setUpdateStatus(`서버응답: v${res?.version ?? 'none'} url=${res?.url ?? 'none'}`);
-    }).catch(e => {
-      setUpdateStatus(`서버오류: ${e?.message ?? String(e)}`);
-    });
+    // 채널 등록 후 최신 버전 조회
+    CapacitorUpdater.setChannel({ channel: 'staging' })
+      .then(() => CapacitorUpdater.getLatest())
+      .then(res => {
+        setUpdateStatus(`서버응답: v${res?.version ?? 'none'}`);
+      }).catch(e => {
+        setUpdateStatus(`오류: ${e?.message ?? String(e)}`);
+      });
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
