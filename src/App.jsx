@@ -246,24 +246,30 @@ function App() {
 
   // ── Capgo 번들 버전 / 업데이트 상태 ──
   const [bundleVersion, setBundleVersion] = useState('builtin');
-  const [updateStatus, setUpdateStatus] = useState('');
+  const [updateStatus, setUpdateStatus] = useState('확인 중...');
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     CapacitorUpdater.current().then(info => {
       setBundleVersion(info?.bundle?.version || 'builtin');
     }).catch(() => {});
-    // 업데이트 이벤트 수신
+    // 이벤트 리스너
     CapacitorUpdater.addListener('updateAvailable', (res) => {
       setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
     });
     CapacitorUpdater.addListener('downloadComplete', (res) => {
-      setUpdateStatus(`✅ 다운로드 완료 v${res.bundle.version} — 앱 재시작 시 적용`);
+      setUpdateStatus(`✅ 완료 v${res.bundle.version} — 재시작 시 적용`);
     });
     CapacitorUpdater.addListener('downloadFailed', (res) => {
-      setUpdateStatus(`❌ 다운로드 실패: ${res.error}`);
+      setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
     });
-    CapacitorUpdater.addListener('noNeedUpdate', () => {
-      setUpdateStatus('최신 버전입니다');
+    CapacitorUpdater.addListener('noNeedUpdate', (res) => {
+      setUpdateStatus(`최신 (${JSON.stringify(res)})`);
+    });
+    // 서버에서 최신 버전 직접 조회
+    CapacitorUpdater.getLatest().then(res => {
+      setUpdateStatus(`서버응답: v${res?.version ?? 'none'} url=${res?.url ?? 'none'}`);
+    }).catch(e => {
+      setUpdateStatus(`서버오류: ${e?.message ?? String(e)}`);
     });
   }, []);
 
