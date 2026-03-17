@@ -245,7 +245,7 @@ function App() {
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
   // ── Capgo 번들 버전 ──
-  const [bundleVersion, setBundleVersion] = useState('0.0.4');
+  const [bundleVersion, setBundleVersion] = useState('1.0.1');
   useEffect(() => {
     if (Capacitor.isNativePlatform()) {
       CapacitorUpdater.current().then(info => {
