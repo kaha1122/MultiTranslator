@@ -244,16 +244,27 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // ── Capgo 번들 버전 ──
-  const [bundleVersion, setBundleVersion] = useState('1.0.1');
+  // ── Capgo 번들 버전 / 업데이트 상태 ──
+  const [bundleVersion, setBundleVersion] = useState('builtin');
+  const [updateStatus, setUpdateStatus] = useState('');
   useEffect(() => {
-    if (Capacitor.isNativePlatform()) {
-      CapacitorUpdater.current().then(info => {
-        if (info?.bundle?.version && info.bundle.version !== 'builtin') {
-          setBundleVersion(info.bundle.version);
-        }
-      }).catch(() => {});
-    }
+    if (!Capacitor.isNativePlatform()) return;
+    CapacitorUpdater.current().then(info => {
+      setBundleVersion(info?.bundle?.version || 'builtin');
+    }).catch(() => {});
+    // 업데이트 이벤트 수신
+    CapacitorUpdater.addListener('updateAvailable', (res) => {
+      setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
+    });
+    CapacitorUpdater.addListener('downloadComplete', (res) => {
+      setUpdateStatus(`✅ 다운로드 완료 v${res.bundle.version} — 앱 재시작 시 적용`);
+    });
+    CapacitorUpdater.addListener('downloadFailed', (res) => {
+      setUpdateStatus(`❌ 다운로드 실패: ${res.error}`);
+    });
+    CapacitorUpdater.addListener('noNeedUpdate', () => {
+      setUpdateStatus('최신 버전입니다');
+    });
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
@@ -2234,9 +2245,14 @@ function App() {
                 </button>
               ))}
             </div>
-            {/* 앱 버전 표시 */}
-            <div style={{ textAlign: 'center', padding: '16px 0 8px', color: '#64748b', fontSize: '0.8rem', fontWeight: '600', letterSpacing: '0.03em' }}>
-              PronunFit v{bundleVersion}
+            {/* 앱 버전 / 업데이트 상태 */}
+            <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
+              <div style={{ color: '#475569', fontSize: '0.8rem', fontWeight: '600' }}>
+                PronunFit v{bundleVersion}
+              </div>
+              {updateStatus ? (
+                <div style={{ marginTop: '4px', color: '#0ea5e9', fontSize: '0.72rem' }}>{updateStatus}</div>
+              ) : null}
             </div>
           </div>
         </div>
