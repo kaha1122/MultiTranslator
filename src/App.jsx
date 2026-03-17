@@ -266,7 +266,7 @@ function App() {
       setUpdateStatus('');
     });
     // 채널 등록
-    CapacitorUpdater.setChannel({ channel: 'staging' }).catch(() => {});
+    CapacitorUpdater.setChannel({ channel: 'production' }).catch(() => {});
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──

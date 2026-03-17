@@ -5,7 +5,7 @@
   "plugins": {
     "CapacitorUpdater": {
       "autoUpdate": true,
-      "channel": "staging"
+      "channel": "production"
     },
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
