@@ -2222,8 +2222,8 @@ function App() {
               ))}
             </div>
             {/* 앱 버전 표시 */}
-            <div style={{ textAlign: 'center', padding: '12px 0 4px', color: '#cbd5e1', fontSize: '0.72rem' }}>
-              v0.0.2
+            <div style={{ textAlign: 'center', padding: '12px 0 8px', color: '#94a3b8', fontSize: '0.78rem' }}>
+              PronunFit v0.0.3
             </div>
           </div>
         </div>
