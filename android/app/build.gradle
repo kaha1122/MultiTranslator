@@ -1,5 +1,10 @@
 apply plugin: 'com.android.application'
 
+// local.properties에서 서명 정보 로드 (git에 노출 안 됨)
+def localProps = new Properties()
+def localPropsFile = rootProject.file('local.properties')
+if (localPropsFile.exists()) localProps.load(new FileInputStream(localPropsFile))
+
 android {
     namespace = "com.arigems.pronunfit"
     compileSdk = rootProject.ext.compileSdkVersion
@@ -16,10 +21,19 @@ android {
             ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
         }
     }
+    signingConfigs {
+        release {
+            storeFile file(localProps['KEYSTORE_PATH'] ?: 'release-keystore.jks')
+            storePassword localProps['KEYSTORE_PASSWORD'] ?: ''
+            keyAlias localProps['KEY_ALIAS'] ?: 'pronunfit'
+            keyPassword localProps['KEY_PASSWORD'] ?: ''
+        }
+    }
     buildTypes {
         release {
             minifyEnabled false
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
+            signingConfig signingConfigs.release
         }
     }
 }
