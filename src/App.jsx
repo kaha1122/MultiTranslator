@@ -5,6 +5,8 @@ import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditC
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
 
@@ -243,15 +245,51 @@ function App() {
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
   const [showExitToast, setShowExitToast] = useState(false);
+  const exitTimerRef = useRef(null);
 
   React.useEffect(() => {
-    const handler = () => {
+    // 1. Web 브라우저용 뒤로 가기 처리 (기존 유지)
+    const webHandler = () => {
       setShowExitToast(true);
-      setTimeout(() => setShowExitToast(false), 2000);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+      exitTimerRef.current = setTimeout(() => setShowExitToast(false), 2000);
     };
-    window.addEventListener('app-back-pressed', handler);
-    return () => window.removeEventListener('app-back-pressed', handler);
-  }, []);
+    window.addEventListener('app-back-pressed', webHandler);
+
+    // 2. 안드로이드 (Capacitor) 하드웨어 기기 뒤로 가기 처리
+    let nativeListener = null;
+    if (Capacitor.isNativePlatform()) {
+      nativeListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
+        // 모달창이 떠있으면 모달창 우선 닫기 로직 (간단 구현)
+        if (sidebarOpen) {
+          setSidebarOpen(false);
+          return;
+        }
+
+        // 현재 탭이 홈이 아니거나, 웹뷰 히스토리가 있으면 뒤로가기
+        if (viewMode !== 'home' || canGoBack) {
+          window.history.back();
+        } else {
+          // 홈화면(루트)일 때
+          if (showExitToast) {
+            CapacitorApp.exitApp();
+          } else {
+            setShowExitToast(true);
+            if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+            exitTimerRef.current = setTimeout(() => setShowExitToast(false), 2000);
+          }
+        }
+      });
+    }
+
+    return () => {
+      window.removeEventListener('app-back-pressed', webHandler);
+      if (nativeListener) {
+        nativeListener.then(l => l.remove());
+      }
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    };
+  }, [showExitToast, viewMode, sidebarOpen]);
 
   // 좌측 드로어(햄버거 메뉴) 상태
   const [sidebarOpen, setSidebarOpen] = useState(false);

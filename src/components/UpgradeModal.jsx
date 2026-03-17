@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Zap, Crown, Check, ShieldCheck, Mail } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { Capacitor } from '@capacitor/core';
+import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
@@ -192,16 +194,48 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
         setLoadingPlan(plan.id);
         setError('');
         try {
-            const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
-            const payment = tossPayments.payment({ customerKey: user.uid });
-            const currency = plan.currency || 'KRW';
-            await payment.requestBillingAuth({
-                method: 'CARD',
-                successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}&currency=${currency}`,
-                failUrl:    `${FRONTEND_URL}?billing=fail`,
-                customerEmail: user.email || undefined,
-                customerName:  user.displayName || undefined,
-            });
+            if (Capacitor.isNativePlatform()) {
+                // RevenueCat In-App Purchase Flow
+                try {
+                    // Make sure Purchases is configured. Ideally done at App startup, but configuring here is safe if not done.
+                    const rcApiKey = import.meta.env.VITE_REVENUECAT_ANDROID_KEY || import.meta.env.VITE_REVENUECAT_PUBLIC_KEY;
+                    if (rcApiKey) {
+                        await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
+                    }
+
+                    const offerings = await Purchases.getOfferings();
+                    if (!offerings.current) throw new Error(t('upgrade.paymentError') || "No offerings currently available");
+
+                    // RevenueCat Package identifier usually matches our plan.id (e.g., 'pro_1', 'premium_3')
+                    const packageToBuy = offerings.current.availablePackages.find(p => p.identifier === plan.id || p.product.identifier === plan.id);
+                    if (!packageToBuy) throw new Error(`Product ${plan.id} not found in store`);
+
+                    const purchaseResult = await Purchases.purchasePackage({ aPackage: packageToBuy });
+
+                    // Allow server webhook or this client check to finalize
+                    if (Object.keys(purchaseResult.customerInfo.entitlements.active).length > 0) {
+                        window.location.reload();
+                    }
+                } catch (e) {
+                    if (!e.userCancelled) {
+                        setError(e.message || t('upgrade.paymentError'));
+                    }
+                } finally {
+                    setLoadingPlan(null);
+                }
+            } else {
+                // Web Toss Payments Flow
+                const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
+                const payment = tossPayments.payment({ customerKey: user.uid });
+                const currency = plan.currency || 'KRW';
+                await payment.requestBillingAuth({
+                    method: 'CARD',
+                    successUrl: `${FRONTEND_URL}?billing=success&tier=${plan.tier}&planId=${plan.id}&months=${plan.months}&customerKey=${user.uid}&email=${encodeURIComponent(user.email || '')}&currency=${currency}`,
+                    failUrl: `${FRONTEND_URL}?billing=fail`,
+                    customerEmail: user.email || undefined,
+                    customerName: user.displayName || undefined,
+                });
+            }
         } catch (e) {
             setError(t('upgrade.paymentError'));
             setLoadingPlan(null);

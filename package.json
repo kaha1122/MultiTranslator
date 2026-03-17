@@ -14,9 +14,11 @@
   "dependencies": {
     "@capacitor-firebase/authentication": "^8.1.0",
     "@capacitor/android": "^8.2.0",
+    "@capacitor/app": "^8.0.1",
     "@capacitor/cli": "^8.2.0",
     "@capacitor/core": "^8.2.0",
     "@capgo/capacitor-updater": "^8.43.11",
+    "@revenuecat/purchases-capacitor": "^12.2.4",
     "@tosspayments/tosspayments-sdk": "^2.5.0",
     "@vercel/analytics": "^1.6.1",
     "axios": "^1.13.5",
