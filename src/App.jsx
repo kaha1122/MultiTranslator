@@ -2221,6 +2221,10 @@ function App() {
                 </button>
               ))}
             </div>
+            {/* 앱 버전 표시 */}
+            <div style={{ textAlign: 'center', padding: '12px 0 4px', color: '#cbd5e1', fontSize: '0.72rem' }}>
+              v0.0.2
+            </div>
           </div>
         </div>
 
