@@ -7,6 +7,7 @@ import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
 
@@ -242,6 +243,18 @@ function App() {
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
+
+  // ── Capgo 번들 버전 ──
+  const [bundleVersion, setBundleVersion] = useState('0.0.4');
+  useEffect(() => {
+    if (Capacitor.isNativePlatform()) {
+      CapacitorUpdater.current().then(info => {
+        if (info?.bundle?.version && info.bundle.version !== 'builtin') {
+          setBundleVersion(info.bundle.version);
+        }
+      }).catch(() => {});
+    }
+  }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
   const [showExitToast, setShowExitToast] = useState(false);
@@ -2222,8 +2235,8 @@ function App() {
               ))}
             </div>
             {/* 앱 버전 표시 */}
-            <div style={{ textAlign: 'center', padding: '12px 0 8px', color: '#94a3b8', fontSize: '0.78rem' }}>
-              PronunFit v0.0.3
+            <div style={{ textAlign: 'center', padding: '16px 0 8px', color: '#64748b', fontSize: '0.8rem', fontWeight: '600', letterSpacing: '0.03em' }}>
+              PronunFit v{bundleVersion}
             </div>
           </div>
         </div>
