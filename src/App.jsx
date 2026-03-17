@@ -244,13 +244,20 @@ function App() {
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
 
-  // ── Capgo 번들 버전 / 업데이트 상태 ──
-  const [bundleVersion, setBundleVersion] = useState('builtin');
+  // ── 앱 버전 / Capgo 번들 버전 / 업데이트 상태 ──
+  const [appVersion, setAppVersion] = useState('');      // 네이티브 versionName
+  const [bundleVersion, setBundleVersion] = useState(''); // Capgo OTA 버전 (있을 때만)
   const [updateStatus, setUpdateStatus] = useState('');
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
+    // 네이티브 앱 버전 (build.gradle versionName)
+    CapacitorApp.getInfo().then(info => {
+      setAppVersion(info.version);
+    }).catch(() => {});
+    // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
     CapacitorUpdater.current().then(info => {
-      setBundleVersion(info?.bundle?.version || 'builtin');
+      const v = info?.bundle?.version;
+      if (v && v !== 'builtin') setBundleVersion(v);
     }).catch(() => {});
     // 이벤트 리스너
     CapacitorUpdater.addListener('updateAvailable', (res) => {
@@ -265,17 +272,39 @@ function App() {
     CapacitorUpdater.addListener('noNeedUpdate', () => {
       setUpdateStatus('');
     });
-    // 채널 등록
-    CapacitorUpdater.setChannel({ channel: 'production' }).catch(() => {});
+    // 채널 등록 (빌드 타임에 결정: staging or production)
+    CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => {});
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
   const [showExitToast, setShowExitToast] = useState(false);
   const exitTimerRef = useRef(null);
+  const showExitToastRef = useRef(false); // stale closure 방지용
 
   // 좌측 드로어(햄버거 메뉴) 상태 — useEffect보다 앞에 선언 (TDZ 방지)
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
+
+  // showExitToast 변경 시 ref 동기화
+  React.useEffect(() => {
+    showExitToastRef.current = showExitToast;
+  }, [showExitToast]);
+
+  // ── 안드로이드 Back 키용 viewMode 히스토리 스택 ──
+  const viewModeHistoryRef = useRef(['home']);
+  const isNavigatingBackRef = useRef(false);
+
+  // viewMode가 바뀔 때마다 히스토리에 push (뒤로가기로 인한 변경은 제외)
+  React.useEffect(() => {
+    if (isNavigatingBackRef.current) {
+      isNavigatingBackRef.current = false;
+      return;
+    }
+    const history = viewModeHistoryRef.current;
+    if (viewMode !== history[history.length - 1]) {
+      viewModeHistoryRef.current = [...history, viewMode];
+    }
+  }, [viewMode]);
 
   React.useEffect(() => {
     // 1. Web 브라우저용 뒤로 가기 처리 (기존 유지)
@@ -289,24 +318,32 @@ function App() {
     // 2. 안드로이드 (Capacitor) 하드웨어 기기 뒤로 가기 처리
     let nativeListener = null;
     if (Capacitor.isNativePlatform()) {
-      nativeListener = CapacitorApp.addListener('backButton', ({ canGoBack }) => {
-        // 모달창이 떠있으면 모달창 우선 닫기 로직 (간단 구현)
+      nativeListener = CapacitorApp.addListener('backButton', () => {
+        // 사이드바 열려있으면 먼저 닫기
         if (sidebarOpen) {
           setSidebarOpen(false);
           return;
         }
 
-        // 현재 탭이 홈이 아니거나, 웹뷰 히스토리가 있으면 뒤로가기
-        if (viewMode !== 'home' || canGoBack) {
-          window.history.back();
+        // viewMode 히스토리 스택에서 이전 화면으로 이동
+        const history = viewModeHistoryRef.current;
+        if (history.length > 1) {
+          const newHistory = history.slice(0, -1);
+          viewModeHistoryRef.current = newHistory;
+          isNavigatingBackRef.current = true;
+          setViewMode(newHistory[newHistory.length - 1]);
         } else {
-          // 홈화면(루트)일 때
-          if (showExitToast) {
+          // 루트(홈)일 때: 한 번 더 누르면 앱 종료
+          if (showExitToastRef.current) {
             CapacitorApp.exitApp();
           } else {
             setShowExitToast(true);
+            showExitToastRef.current = true;
             if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
-            exitTimerRef.current = setTimeout(() => setShowExitToast(false), 2000);
+            exitTimerRef.current = setTimeout(() => {
+              setShowExitToast(false);
+              showExitToastRef.current = false;
+            }, 2000);
           }
         }
       });
@@ -320,7 +357,7 @@ function App() {
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [viewMode, sidebarOpen]);
+  }, [sidebarOpen]);
 
 
   // 탭 이동 또는 사이드바 열기 시 종료 토스트 즉시 해제
@@ -1634,7 +1671,7 @@ function App() {
                 setDictBackTo(viewMode);
                 setViewMode('translation');
               }}>
-                {getT(sourceLang, 'nav.translation')}
+                {getT(sourceLang, 'nav.dictBtn')}
               </button>
             )}
             {viewMode === 'translation' && dictBackTo && (
@@ -2250,7 +2287,8 @@ function App() {
             {/* 앱 버전 / 업데이트 상태 */}
             <div style={{ textAlign: 'center', padding: '16px 0 8px' }}>
               <div style={{ color: '#475569', fontSize: '0.8rem', fontWeight: '600' }}>
-                PronunFit v{bundleVersion}
+                PronunFit{appVersion ? ` v${appVersion}` : ''}
+                {bundleVersion ? <span style={{ color: '#94a3b8', fontWeight: '400', fontSize: '0.72rem' }}> (OTA {bundleVersion})</span> : null}
               </div>
               {updateStatus ? (
                 <div style={{ marginTop: '4px', color: '#0ea5e9', fontSize: '0.72rem' }}>{updateStatus}</div>

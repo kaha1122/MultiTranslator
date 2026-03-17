@@ -7,4 +7,8 @@ import react from '@vitejs/plugin-react'
 // Vercel 배포 환경에서는 HTTPS가 자동으로 적용됩니다.
 export default defineConfig({
   plugins: [react()],
+  define: {
+    // CAPGO_CHANNEL 환경변수가 없으면 'production' 기본값
+    __CAPGO_CHANNEL__: JSON.stringify(process.env.CAPGO_CHANNEL || 'production'),
+  },
 })
