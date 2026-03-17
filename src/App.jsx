@@ -293,8 +293,18 @@ function App() {
       }
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     };
-  }, [showExitToast, viewMode, sidebarOpen]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, sidebarOpen]);
 
+
+  // 탭 이동 또는 사이드바 열기 시 종료 토스트 즉시 해제
+  React.useEffect(() => {
+    if (showExitToast) {
+      setShowExitToast(false);
+      if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [viewMode, sidebarOpen]);
 
   // 로그인 시 사이드바 닫기 (이전 상태 잔류 방지)
   React.useEffect(() => {
