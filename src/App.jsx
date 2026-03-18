@@ -1763,7 +1763,7 @@ function App() {
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
           const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
-          const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}/${pronLimit}`;
+          const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
           return (
             <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
               {/* 좌측: 게이지 바 2개 세로 배치 */}
