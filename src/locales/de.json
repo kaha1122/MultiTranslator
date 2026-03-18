@@ -804,6 +804,12 @@
     "resultLabel": "Erkannter Text (bearbeitbar)",
     "resultPlaceholder": "Erkannter Text wird hier angezeigt.",
     "retry": "Erneut aufnehmen",
-    "useForTranslation": "Zur Übersetzung verwenden →"
+    "useForTranslation": "Zur Übersetzung verwenden →",
+    "wordMode": "Wort",
+    "sentenceMode": "Satz",
+    "capture": "Aufnehmen",
+    "cameraPermissionDenied": "Kamerazugriff erforderlich. Bitte in den Browsereinstellungen erlauben.",
+    "cameraNotSupported": "Kamera ist auf diesem Gerät nicht verfügbar.",
+    "scanGuide": "Text im Rahmen ausrichten"
   }
 }

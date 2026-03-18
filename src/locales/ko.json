@@ -805,6 +805,12 @@
     "resultLabel": "인식된 텍스트 (수정 가능)",
     "resultPlaceholder": "인식된 텍스트가 여기에 표시됩니다.",
     "retry": "다시 찍기",
-    "useForTranslation": "번역에 사용 →"
+    "useForTranslation": "번역에 사용 →",
+    "wordMode": "단어",
+    "sentenceMode": "문장",
+    "capture": "촬영",
+    "cameraPermissionDenied": "카메라 권한이 필요합니다. 브라우저 설정에서 허용해 주세요.",
+    "cameraNotSupported": "이 기기에서 카메라를 사용할 수 없습니다.",
+    "scanGuide": "스캔할 텍스트를 박스 안에 맞춰주세요"
   }
 }

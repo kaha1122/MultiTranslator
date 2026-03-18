@@ -804,6 +804,12 @@
     "resultLabel": "Văn bản nhận dạng (có thể chỉnh sửa)",
     "resultPlaceholder": "Văn bản nhận dạng sẽ hiển thị ở đây.",
     "retry": "Chụp lại",
-    "useForTranslation": "Dùng để dịch →"
+    "useForTranslation": "Dùng để dịch →",
+    "wordMode": "Từ",
+    "sentenceMode": "Câu",
+    "capture": "Chụp",
+    "cameraPermissionDenied": "Cần quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.",
+    "cameraNotSupported": "Camera không khả dụng trên thiết bị này.",
+    "scanGuide": "Căn chỉnh văn bản vào trong khung"
   }
 }

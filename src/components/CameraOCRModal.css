@@ -279,6 +279,224 @@
     cursor: not-allowed;
 }
 
+/* ────────────────────────────────────────────────
+   Live Viewfinder
+──────────────────────────────────────────────── */
+
+/* Container: fills the modal body */
+.vf-container {
+    position: relative;
+    width: 100%;
+    height: 56vh;
+    min-height: 320px;
+    max-height: 480px;
+    overflow: hidden;
+    border-radius: 12px;
+    background: #000;
+}
+
+/* Live video */
+.vf-video {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform-origin: center center;
+}
+
+/* Dark overlay with transparent hole (box-shadow trick) */
+.vf-overlay {
+    position: absolute;
+    inset: 0;
+    /* huge box-shadow = dark mask, transparent center via pointer events */
+    box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.55);
+    /* cut out a rectangle in the center */
+    width: var(--box-w, 280px);
+    height: var(--box-h, 80px);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    border-radius: 8px;
+    pointer-events: none;
+    z-index: 2;
+    transition: width 0.25s ease, height 0.25s ease;
+}
+
+/* Scan box border */
+.vf-scan-box {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -55%);
+    border: 2px solid rgba(255, 255, 255, 0.7);
+    border-radius: 8px;
+    z-index: 3;
+    pointer-events: none;
+    transition: width 0.25s ease, height 0.25s ease;
+    max-width: 85vw;
+}
+
+/* Corner brackets */
+.vf-corner {
+    position: absolute;
+    width: 20px;
+    height: 20px;
+    border-color: #fff;
+    border-style: solid;
+    border-width: 0;
+    z-index: 4;
+}
+
+.vf-corner.tl {
+    top: -2px;
+    left: -2px;
+    border-top-width: 3px;
+    border-left-width: 3px;
+    border-top-left-radius: 8px;
+}
+
+.vf-corner.tr {
+    top: -2px;
+    right: -2px;
+    border-top-width: 3px;
+    border-right-width: 3px;
+    border-top-right-radius: 8px;
+}
+
+.vf-corner.bl {
+    bottom: -2px;
+    left: -2px;
+    border-bottom-width: 3px;
+    border-left-width: 3px;
+    border-bottom-left-radius: 8px;
+}
+
+.vf-corner.br {
+    bottom: -2px;
+    right: -2px;
+    border-bottom-width: 3px;
+    border-right-width: 3px;
+    border-bottom-right-radius: 8px;
+}
+
+/* Guide text below scan box */
+.vf-guide {
+    position: absolute;
+    bottom: 100px;
+    left: 50%;
+    transform: translateX(-50%);
+    color: rgba(255, 255, 255, 0.8);
+    font-size: 0.75rem;
+    font-weight: 600;
+    z-index: 4;
+    text-shadow: 0 1px 4px rgba(0, 0, 0, 0.6);
+    white-space: nowrap;
+    pointer-events: none;
+}
+
+/* Mode toggle (word / sentence) */
+.vf-mode-toggle {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 4px;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(8px);
+    border-radius: 10px;
+    padding: 3px;
+    z-index: 5;
+}
+
+.vf-mode-btn {
+    padding: 6px 16px;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vf-mode-btn.active {
+    background: rgba(255, 255, 255, 0.22);
+    color: #fff;
+}
+
+/* Bottom bar */
+.vf-bottom-bar {
+    position: absolute;
+    bottom: 16px;
+    left: 0;
+    right: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    z-index: 5;
+}
+
+.vf-close-btn {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    color: #fff;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.vf-capture-btn {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    border: 3px solid rgba(255, 255, 255, 0.9);
+    background: transparent;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: transform 0.1s;
+}
+
+.vf-capture-btn:active {
+    transform: scale(0.92);
+}
+
+.vf-capture-ring {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.9);
+    transition: background 0.15s;
+}
+
+.vf-capture-btn:hover .vf-capture-ring {
+    background: #fff;
+}
+
+.vf-spacer {
+    width: 40px;
+}
+
+/* Viewfinder phase: make modal body expand, no padding */
+.camera-modal-body:has(.vf-container) {
+    padding: 0;
+}
+
+/* ────────────────────────────────────────────────
+   Original styles (select / preview / result)
+──────────────────────────────────────────────── */
+
 /* 카메라 버튼 (textarea 우측 상단) */
 .camera-ocr-btn {
     position: absolute;

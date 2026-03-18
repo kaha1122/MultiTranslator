@@ -805,6 +805,12 @@
     "resultLabel": "認識されたテキスト（編集可能）",
     "resultPlaceholder": "認識されたテキストがここに表示されます。",
     "retry": "撮り直す",
-    "useForTranslation": "翻訳に使用 →"
+    "useForTranslation": "翻訳に使用 →",
+    "wordMode": "単語",
+    "sentenceMode": "文",
+    "capture": "撮影",
+    "cameraPermissionDenied": "カメラの許可が必要です。ブラウザの設定で許可してください。",
+    "cameraNotSupported": "このデバイスではカメラが使用できません。",
+    "scanGuide": "テキストをボックス内に合わせてください"
   }
 }

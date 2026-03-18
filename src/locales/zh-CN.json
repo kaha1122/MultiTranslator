@@ -805,6 +805,12 @@
     "resultLabel": "识别的文字（可编辑）",
     "resultPlaceholder": "识别的文字将显示在这里。",
     "retry": "重新拍摄",
-    "useForTranslation": "用于翻译 →"
+    "useForTranslation": "用于翻译 →",
+    "wordMode": "单词",
+    "sentenceMode": "句子",
+    "capture": "拍摄",
+    "cameraPermissionDenied": "需要相机权限，请在浏览器设置中允许。",
+    "cameraNotSupported": "此设备不支持相机。",
+    "scanGuide": "将文字对准框内"
   }
 }

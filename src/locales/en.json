@@ -805,6 +805,12 @@
     "resultLabel": "Recognized Text (editable)",
     "resultPlaceholder": "Recognized text will appear here.",
     "retry": "Retake",
-    "useForTranslation": "Use for Translation →"
+    "useForTranslation": "Use for Translation →",
+    "wordMode": "Word",
+    "sentenceMode": "Sentence",
+    "capture": "Capture",
+    "cameraPermissionDenied": "Camera permission is required. Please allow it in browser settings.",
+    "cameraNotSupported": "Camera is not available on this device.",
+    "scanGuide": "Align the text inside the box"
   }
 }
