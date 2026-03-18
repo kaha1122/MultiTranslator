@@ -8,10 +8,10 @@ import './CameraOCRModal.css';
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const SCAN_SIZES = {
-    word:     { w: '80vw', h: 70 },
-    sentence: { w: '90vw', h: 80 },
+    word:     { w: '90vw', h: 80 },
+    sentence: { w: '90vw', h: 140 },
 };
-const ZOOM_FACTOR = 0.8;
+const ZOOM_FACTOR = 1.0;
 
 /**
  * CameraOCRModal — Live Viewfinder + Scan Box Crop OCR
