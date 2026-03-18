@@ -57,13 +57,14 @@ function Login({ onSwitchToSignup, sourceLang }) {
     const handleGoogleLogin = async () => {
         setIsLoading(true);
         setError('');
-        if (detectInAppBrowser()) {
+        const isNative = window.Capacitor?.isNativePlatform?.();
+        if (!isNative && detectInAppBrowser()) {
             setError('inapp');
             setIsLoading(false);
             return;
         }
         try {
-            if (window.Capacitor?.isNativePlatform?.()) {
+            if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
                 const result = await FirebaseAuthentication.signInWithGoogle();
                 const idToken = result.credential?.idToken;

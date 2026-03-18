@@ -164,6 +164,8 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) 
 }
 
 /* ── LandingPage 메인 ── */
+const isNative = window.Capacitor?.isNativePlatform?.() || false;
+
 const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
   const bottomRef = useRef(null);
   const demoRef = useRef(null);
@@ -261,7 +263,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       <nav className="lp-nav">
         <div className="lp-logo">PronunFit</div>
         <div className="lp-nav-actions">
-          <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>
+          {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
           <button className="lp-login-btn" onClick={onSignup}>{c.signUp}</button>
         </div>
       </nav>
@@ -514,7 +516,7 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
       )}
 
       {/* ── Install Popup ── */}
-      {showInstall && showInstallPopup && (
+      {!isNative && showInstall && showInstallPopup && (
         <div className="lp-install-popup" style={{ position: 'fixed' }}>
           <button className="lp-popup-close" onClick={() => setShowInstallPopup(false)}>✕</button>
           <p className="lp-popup-msg">{c.installPopup.split('\n').map((line, i) => (

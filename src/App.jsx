@@ -2455,7 +2455,7 @@ function App() {
           Chrome / Edge 계열 브라우저가 설치 가능 상태라고 판단해야 뜹니다.
           iOS Safari는 이 팝업이 지원되지 않아 자동으로 안 뜹니다.
       ──────────────────────────────────────────────────────────────────── */}
-      {showInstallBanner && (
+      {showInstallBanner && !Capacitor.isNativePlatform() && (
         <div style={{
           position: 'fixed',
           bottom: '80px',   // 하단 네비게이션 바 위에 위치
