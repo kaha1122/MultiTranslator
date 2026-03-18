@@ -16,7 +16,7 @@ function getThisWeekMonday() {
     return mon;
 }
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack, progressPopupOpen }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack, progressPopupOpen, onTrialLimitReached, onPronSuccess }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 
@@ -424,6 +424,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 onMemoClose={() => setMemoOpenId(null)}
                                 selectedEmotion={card.selectedEmotion || ''}
                                 interactionType={card.interactionType || ''}
+                                onTrialLimitReached={onTrialLimitReached}
+                                onPronSuccess={onPronSuccess}
                             />
 
                             {/* 하단 액션바 */}

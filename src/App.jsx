@@ -2077,6 +2077,8 @@ function App() {
               setLibraryBackTo(null);
               setViewMode(target);
             }}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onPronSuccess={incrementDailyPron}
           />
         </div>
 
