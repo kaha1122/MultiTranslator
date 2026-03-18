@@ -1885,7 +1885,7 @@ function App() {
                   title="카메라로 텍스트 읽기"
                   aria-label="카메라로 텍스트 읽기"
                 >
-                  <Camera size={18} />
+                  <Camera size={28} />
                 </button>
               </div>
             </div>
