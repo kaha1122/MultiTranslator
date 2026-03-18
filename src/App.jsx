@@ -249,11 +249,21 @@ function App() {
   // 현재 화면 모드 — 기본 홈은 'home', URL 경로에 따라 초기 모드 설정
   const [viewMode, setViewMode] = useState(() => {
     const path = window.location.pathname;
+    // legal 페이지는 비로그인 랜딩에서만 URL로 진입 허용
+    // 로그인 후 새로고침 시에는 홈으로 리다이렉트
     if (path === '/privacy') return 'privacy';
     if (path === '/terms') return 'terms';
     if (path === '/contact') return 'contact';
     return 'home';
   });
+
+  // 로그인 완료 후 legal URL이면 홈으로 리다이렉트 + URL 정리
+  useEffect(() => {
+    if (user && (viewMode === 'privacy' || viewMode === 'terms' || viewMode === 'contact')) {
+      window.history.replaceState({}, '', '/');
+      setViewMode('home');
+    }
+  }, [user, viewMode]);
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
@@ -1747,28 +1757,53 @@ function App() {
           const dayLabels = getT(sourceLang, 'daily.days').split(',');
           const pronLimit = tier === 'trial' ? TRIAL_DAILY_PRON_LIMIT : 999;
           const pronFull = todayPronCount >= pronLimit;
+          const showPronGauge = tier === 'trial';
           return (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px', width: '100%' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
-              {/* 좌측: 카드 게이지 바 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto', width: '38%' }}>
-                <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
-                <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-                  <div style={{
-                    height: '100%', borderRadius: '99px',
-                    width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                    background: todayCount >= dailyGoal
-                      ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
-                      : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
-                    transition: 'width 0.5s ease',
-                    boxShadow: todayCount >= dailyGoal
-                      ? '0 0 6px rgba(16,185,129,0.5)'
-                      : '0 0 6px rgba(99,102,241,0.4)',
-                  }} />
+            <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
+              {/* 좌측: 게이지 바 2개 세로 배치 */}
+              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: showPronGauge ? '4px' : '0', flex: '0 0 auto', width: '38%' }}>
+                {/* 카드 게이지 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
+                  <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <div style={{
+                      height: '100%', borderRadius: '99px',
+                      width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
+                      background: todayCount >= dailyGoal
+                        ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
+                        : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
+                      transition: 'width 0.5s ease',
+                      boxShadow: todayCount >= dailyGoal
+                        ? '0 0 6px rgba(16,185,129,0.5)'
+                        : '0 0 6px rgba(99,102,241,0.4)',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '0.6rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    {todayCount}/{dailyGoal}
+                  </span>
                 </div>
-                <span style={{ fontSize: '0.65rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                  {todayCount}/{dailyGoal}
-                </span>
+                {/* 발음 게이지 (Trial만) */}
+                {showPronGauge && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>🎙️</span>
+                    <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
+                      <div style={{
+                        height: '100%', borderRadius: '99px',
+                        width: `${Math.min((todayPronCount / pronLimit) * 100, 100)}%`,
+                        background: pronFull
+                          ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
+                          : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
+                        transition: 'width 0.5s ease',
+                        boxShadow: pronFull
+                          ? '0 0 6px rgba(239,68,68,0.5)'
+                          : '0 0 6px rgba(245,158,11,0.4)',
+                      }} />
+                    </div>
+                    <span style={{ fontSize: '0.6rem', fontWeight: '700', color: pronFull ? '#dc2626' : '#d97706', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      {todayPronCount}/{pronLimit}
+                    </span>
+                  </div>
+                )}
               </div>
 
               {/* 우측: 주간 캘린더 */}
@@ -1800,29 +1835,6 @@ function App() {
                   );
                 })}
               </div>
-            </div>
-              {/* 발음 게이지 바 (Trial만 제한 표시, 유료는 무제한) */}
-              {tier === 'trial' && (
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '38%' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎙️</span>
-                  <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-                    <div style={{
-                      height: '100%', borderRadius: '99px',
-                      width: `${Math.min((todayPronCount / pronLimit) * 100, 100)}%`,
-                      background: pronFull
-                        ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
-                        : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
-                      transition: 'width 0.5s ease',
-                      boxShadow: pronFull
-                        ? '0 0 6px rgba(239,68,68,0.5)'
-                        : '0 0 6px rgba(245,158,11,0.4)',
-                    }} />
-                  </div>
-                  <span style={{ fontSize: '0.65rem', fontWeight: '700', color: pronFull ? '#dc2626' : '#d97706', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    {todayPronCount}/{pronLimit}
-                  </span>
-                </div>
-              )}
             </div>
           );
         })()}
