@@ -128,40 +128,52 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
     const handleCapture = useCallback(() => {
         const video = videoRef.current;
         const canvas = canvasRef.current;
-        if (!video || !canvas) return;
+        const scanBox = scanBoxRef.current;
+        if (!video || !canvas || !scanBox) return;
 
-        const vw = video.videoWidth;
+        const vw = video.videoWidth;   // native video resolution
         const vh = video.videoHeight;
-        const rect = video.getBoundingClientRect();
-        if (!vw || !vh || !rect.width || !rect.height) return;
+        const vidRect = video.getBoundingClientRect();  // video element on screen
+        const boxRect = scanBox.getBoundingClientRect(); // scan box on screen
+        if (!vw || !vh || !vidRect.width || !vidRect.height) return;
 
-        // object-fit: cover mapping
-        const displayAspect = rect.width / rect.height;
+        // ── Step 1: object-fit: cover — how much of the native video is visible ──
+        const displayAspect = vidRect.width / vidRect.height;
         const videoAspect = vw / vh;
-        let drawW, drawH;
+        let coverW, coverH;  // portion of native video that fills the element (before zoom)
         if (videoAspect > displayAspect) {
-            drawH = vh; drawW = vh * displayAspect;
+            // video wider than container → height fills, width cropped
+            coverH = vh;
+            coverW = vh * displayAspect;
         } else {
-            drawW = vw; drawH = vw / displayAspect;
+            // video taller → width fills, height cropped
+            coverW = vw;
+            coverH = vw / displayAspect;
         }
 
-        // CSS zoom — visible portion is center 1/ZOOM of cover area
-        const visibleW = drawW / ZOOM_FACTOR;
-        const visibleH = drawH / ZOOM_FACTOR;
-        const visibleX = (vw - visibleW) / 2;
-        const visibleY = (vh - visibleH) / 2;
+        // ── Step 2: CSS scale(ZOOM_FACTOR) — we only see center 1/zoom of cover area ──
+        const visibleW = coverW / ZOOM_FACTOR;
+        const visibleH = coverH / ZOOM_FACTOR;
+        // top-left of visible region in native video coords
+        const visibleX0 = (vw - visibleW) / 2;
+        const visibleY0 = (vh - visibleH) / 2;
 
-        // scan box → video coords (read actual rendered size from DOM)
-        const boxRect = scanBoxRef.current?.getBoundingClientRect();
-        const scanW = boxRect ? boxRect.width : 280;
-        const scanH = boxRect ? boxRect.height : 70;
-        const pxPerCSS_x = visibleW / rect.width;
-        const pxPerCSS_y = visibleH / rect.height;
-        const cropW = scanW * pxPerCSS_x;
-        const cropH = scanH * pxPerCSS_y;
-        const cropX = visibleX + (visibleW - cropW) / 2;
-        const cropY = visibleY + (visibleH - cropH) / 2;
+        // ── Step 3: map scan box screen position → native video coords ──
+        // Scale factor: how many native video pixels per CSS pixel on screen
+        const scaleX = visibleW / vidRect.width;
+        const scaleY = visibleH / vidRect.height;
 
+        // Scan box position relative to the video element (screen coords)
+        const boxOffsetX = boxRect.left - vidRect.left;
+        const boxOffsetY = boxRect.top - vidRect.top;
+
+        // Map to native video coords
+        const cropX = visibleX0 + boxOffsetX * scaleX;
+        const cropY = visibleY0 + boxOffsetY * scaleY;
+        const cropW = boxRect.width * scaleX;
+        const cropH = boxRect.height * scaleY;
+
+        // ── Step 4: draw cropped region to canvas ──
         canvas.width = Math.round(cropW);
         canvas.height = Math.round(cropH);
         const ctx = canvas.getContext('2d');
@@ -174,7 +186,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
         setPreviewUrl(dataUrl);
         setPhase('preview');
         performOCR(base64, 'image/jpeg');
-    }, [scanMode, stopCamera, performOCR]);
+    }, [stopCamera, performOCR]);
 
     /* ── Gallery handler (unchanged) ───────────────── */
     const handleGallerySelected = useCallback((file) => {
