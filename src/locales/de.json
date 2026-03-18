@@ -59,8 +59,9 @@
     "audioSaved": "Ausspracheaufzeichnung erfolgreich gespeichert! ✅"
   },
   "trial": {
-    "limitTitle": "Testlimit erreicht!",
-    "limitDesc": "Sie haben 10 Karten und 30 Aussprachetests verwendet.",
+    "limitTitle": "Tägliches Testlimit erreicht!",
+    "limitDesc": "Sie haben das Tageslimit von 10 Karten oder 20 Aussprachetests erreicht.",
+    "seeYouTomorrow": "Bis morgen!",
     "upgradeBtn": "Plan upgraden"
   },
   "apiSetup": {

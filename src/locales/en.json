@@ -59,8 +59,9 @@
     "audioSaved": "Pronunciation record saved successfully! ✅"
   },
   "trial": {
-    "limitTitle": "Trial Limit Reached!",
-    "limitDesc": "You've used 10 cards and 30 pronunciation tests.",
+    "limitTitle": "Daily Trial Limit Reached!",
+    "limitDesc": "You've reached the daily limit of 10 cards or 20 pronunciation tests.",
+    "seeYouTomorrow": "See you tomorrow!",
     "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {

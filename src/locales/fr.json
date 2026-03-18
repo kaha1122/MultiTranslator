@@ -59,8 +59,9 @@
     "audioSaved": "Enregistrement de prononciation sauvegardé avec succès ! ✅"
   },
   "trial": {
-    "limitTitle": "Limite d'essai atteinte !",
-    "limitDesc": "Vous avez utilisé 10 cartes et 30 tests de prononciation.",
+    "limitTitle": "Limite quotidienne d'essai atteinte !",
+    "limitDesc": "Vous avez atteint la limite de 10 cartes ou 20 tests de prononciation par jour.",
+    "seeYouTomorrow": "À demain !",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {

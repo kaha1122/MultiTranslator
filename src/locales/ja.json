@@ -59,8 +59,9 @@
     "audioSaved": "発音記録が正常に保存されました！ ✅"
   },
   "trial": {
-    "limitTitle": "体験の上限に達しました！",
-    "limitDesc": "カード10枚・発音30回の体験が完了しました。",
+    "limitTitle": "本日の無料体験の上限に達しました！",
+    "limitDesc": "1日カード10枚または発音20回の上限に達しました。",
+    "seeYouTomorrow": "また明日お会いしましょう！",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {

@@ -59,8 +59,9 @@
     "audioSaved": "发音记录已成功保存！ ✅"
   },
   "trial": {
-    "limitTitle": "试用额度已用完！",
-    "limitDesc": "已使用10张卡片和30次发音测试。",
+    "limitTitle": "今日免费体验额度已用完！",
+    "limitDesc": "每日10张卡片或20次发音练习的额度已用完。",
+    "seeYouTomorrow": "明天再见！",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {

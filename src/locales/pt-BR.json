@@ -59,8 +59,9 @@
     "audioSaved": "Registro de pronúncia salvo com sucesso! ✅"
   },
   "trial": {
-    "limitTitle": "Limite do Teste Atingido!",
-    "limitDesc": "Você usou 10 cartões e 30 testes de pronúncia.",
+    "limitTitle": "Limite diário de teste atingido!",
+    "limitDesc": "Você atingiu o limite diário de 10 cartões ou 20 testes de pronúncia.",
+    "seeYouTomorrow": "Até amanhã!",
     "upgradeBtn": "Atualize Seu Plano"
   },
   "apiSetup": {

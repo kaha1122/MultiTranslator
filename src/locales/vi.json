@@ -59,8 +59,9 @@
     "audioSaved": "Bản ghi phát âm đã được lưu thành công! ✅"
   },
   "trial": {
-    "limitTitle": "Đã hết giới hạn dùng thử!",
-    "limitDesc": "Bạn đã dùng 10 thẻ và 30 lần kiểm tra phát âm.",
+    "limitTitle": "Đã hết giới hạn dùng thử hôm nay!",
+    "limitDesc": "Bạn đã đạt giới hạn 10 thẻ hoặc 20 lần phát âm mỗi ngày.",
+    "seeYouTomorrow": "Hẹn gặp lại bạn ngày mai!",
     "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {

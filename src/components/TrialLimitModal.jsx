@@ -18,7 +18,7 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
             <div
                 onClick={e => e.stopPropagation()}
                 style={{
-                    background: 'white', borderRadius: '24px', padding: '28px 24px',
+                    background: 'white', borderRadius: '24px', padding: '22px 24px',
                     width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
                     position: 'relative', maxHeight: '90vh', overflowY: 'auto'
                 }}
@@ -31,16 +31,19 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
                 </button>
 
                 {/* 헤더 */}
-                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                    <div style={{ fontSize: '2.5rem', marginBottom: '8px' }}>🎯</div>
-                    <h2 style={{ margin: '0 0 8px', fontSize: '1.3rem', color: '#1e293b', fontWeight: '800' }}>
+                <div style={{ textAlign: 'center', marginBottom: '14px' }}>
+                    <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>🎯</div>
+                    <h2 style={{ margin: '0 0 4px', fontSize: '1.15rem', color: '#1e293b', fontWeight: '800', lineHeight: 1.3 }}>
                         {t('trial.limitTitle')}
                     </h2>
-                    <p style={{ margin: 0, color: '#64748b', fontSize: '0.9rem' }}>
+                    <p style={{ margin: '0 0 2px', color: '#64748b', fontSize: '0.85rem', lineHeight: 1.4 }}>
                         {t('trial.limitDesc')}
                     </p>
+                    <p style={{ margin: 0, color: '#6366f1', fontSize: '0.9rem', fontWeight: '700', lineHeight: 1.4 }}>
+                        {t('trial.seeYouTomorrow')}
+                    </p>
                     {/* 사용량 표시 */}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '12px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🃏 {cardCount}/{TRIAL_DAILY_CARD_LIMIT} /day
                         </span>
@@ -54,7 +57,7 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
                 <button
                     onClick={onUpgrade}
                     style={{
-                        width: '100%', padding: '14px', background: '#4338ca', color: 'white',
+                        width: '100%', padding: '13px', background: '#4338ca', color: 'white',
                         border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer',
                         fontSize: '1rem'
                     }}

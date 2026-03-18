@@ -59,8 +59,9 @@
     "audioSaved": "발음 기록이 성공적으로 저장되었습니다! ✅"
   },
   "trial": {
-    "limitTitle": "체험 한도에 도달했습니다!",
-    "limitDesc": "카드 10개 · 발음 30회 체험을 완료했습니다.",
+    "limitTitle": "오늘의 무료 체험 한도에 도달했습니다!",
+    "limitDesc": "하루 카드 10개 또는 발음 20회 한도에 도달했습니다.",
+    "seeYouTomorrow": "내일 다시 만나요!",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {
