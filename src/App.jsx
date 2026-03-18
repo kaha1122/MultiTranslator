@@ -258,13 +258,16 @@ function App() {
     return 'home';
   });
 
-  // 로그인 완료 후 legal URL이면 홈으로 리다이렉트 + URL 정리
+  // 새로고침 시 /privacy, /terms, /contact URL로 직접 진입한 로그인 사용자만 홈으로 리다이렉트
+  const [initialRedirectDone, setInitialRedirectDone] = useState(false);
   useEffect(() => {
-    if (user && (viewMode === 'privacy' || viewMode === 'terms' || viewMode === 'contact')) {
+    if (initialRedirectDone) return;
+    if (user && ['/privacy', '/terms', '/contact'].includes(window.location.pathname)) {
       window.history.replaceState({}, '', '/');
       setViewMode('home');
     }
-  }, [user, viewMode]);
+    if (user !== undefined) setInitialRedirectDone(true);
+  }, [user, initialRedirectDone]);
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
