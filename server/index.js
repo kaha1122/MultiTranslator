@@ -20,6 +20,7 @@ app.use(require('./routes/scene'));
 app.use(require('./routes/subscription'));
 app.use(require('./routes/account'));
 app.use(require('./routes/vocab'));
+app.use(require('./routes/ocr'));
 
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 app.get('/ping', (req, res) => {

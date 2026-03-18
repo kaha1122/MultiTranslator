@@ -9,6 +9,6 @@ export default defineConfig({
   plugins: [react()],
   define: {
     // CAPGO_CHANNEL 환경변수가 없으면 'production' 기본값
-    __CAPGO_CHANNEL__: JSON.stringify(process.env.CAPGO_CHANNEL || 'production'),
+    __CAPGO_CHANNEL__: JSON.stringify(process.env.CAPGO_CHANNEL || 'staging'),
   },
 })

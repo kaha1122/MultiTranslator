@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard } from 'lucide-react';
+import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -48,6 +49,7 @@ import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
+import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 OCR 모달
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 import { playSuccessSound } from './utils/soundEffects';
 
@@ -253,12 +255,12 @@ function App() {
     // 네이티브 앱 버전 (build.gradle versionName)
     CapacitorApp.getInfo().then(info => {
       setAppVersion(info.version);
-    }).catch(() => {});
+    }).catch(() => { });
     // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
     CapacitorUpdater.current().then(info => {
       const v = info?.bundle?.version;
       if (v && v !== 'builtin') setBundleVersion(v);
-    }).catch(() => {});
+    }).catch(() => { });
     // 이벤트 리스너
     CapacitorUpdater.addListener('updateAvailable', (res) => {
       setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
@@ -273,7 +275,7 @@ function App() {
       setUpdateStatus('');
     });
     // 채널 등록 (빌드 타임에 결정: staging or production)
-    CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => {});
+    CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => { });
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
@@ -356,7 +358,7 @@ function App() {
       }
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidebarOpen]);
 
 
@@ -366,7 +368,7 @@ function App() {
       setShowExitToast(false);
       if (exitTimerRef.current) clearTimeout(exitTimerRef.current);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [viewMode, sidebarOpen]);
 
   // 로그인 시 사이드바 닫기 (이전 상태 잔류 방지)
@@ -529,6 +531,7 @@ function App() {
   // --- 보관함 저장 상태 ---
   const [savedLangCodes, setSavedLangCodes] = useState(new Set()); // 현재 번역에서 저장된 langCode들
   const [practiceResults, setPracticeResults] = useState({}); // [신규] 발음 연습 기록 상태
+  const [showCameraModal, setShowCameraModal] = useState(false); // [신규] 카메라 OCR 모달
 
   // [신규] 현재 번역한 텍스트가 단어(Word)인지 문장(Sentence)인지 판별한 결과 ('W' or 'S')
   const [inputType, setInputType] = useState(() => {
@@ -1837,13 +1840,23 @@ function App() {
                   );
                 })}
               </div>
-              <div className="text-input-wrapper">
+              <div className="text-input-wrapper" style={{ position: 'relative' }}>
+                {/* [신규] 카메라 OCR 버튼 — 우측 상단 */}
+                <button
+                  className="camera-ocr-btn"
+                  onClick={() => setShowCameraModal(true)}
+                  title="카메라로 텍스트 읽기"
+                  aria-label="카메라로 텍스트 읽기"
+                >
+                  <Camera size={16} />
+                </button>
                 <textarea
                   rows={2}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Enter text to translate"
                   className="text-input"
+                  style={{ paddingRight: '48px' }}
                 />
                 {inputText && (
                   <button className="text-input-clear" onClick={() => setInputText('')} aria-label="Clear">
@@ -1851,6 +1864,17 @@ function App() {
                   </button>
                 )}
               </div>
+              {/* [신규] 카메라 OCR 모달 */}
+              {showCameraModal && (
+                <CameraOCRModal
+                  onClose={() => setShowCameraModal(false)}
+                  onTextExtracted={(text) => {
+                    setInputText(text);
+                    setShowCameraModal(false);
+                  }}
+                  sourceLang={sourceLang}
+                />
+              )}
               <div className="translate-btn-container">
                 <button
                   className="translate-btn"
