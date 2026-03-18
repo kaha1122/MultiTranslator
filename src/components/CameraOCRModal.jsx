@@ -11,7 +11,7 @@ const SCAN_SIZES = {
     word:     { w: '80vw', h: 70 },
     sentence: { w: '90vw', h: 80 },
 };
-const ZOOM_FACTOR = 2.0;
+const ZOOM_FACTOR = 1.0;
 
 /**
  * CameraOCRModal — Live Viewfinder + Scan Box Crop OCR
