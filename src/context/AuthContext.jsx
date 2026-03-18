@@ -81,22 +81,25 @@ export const AuthProvider = ({ children }) => {
     const rawTier = profile?.tier || 'trial';
     const tier = rawTier === 'byok_free' ? 'admin' : rawTier;
 
-    const TRIAL_CARD_LIMIT = 10;
-    const TRIAL_PRON_LIMIT = 30;
+    const TRIAL_DAILY_CARD_LIMIT = 10;   // Free Trial: 하루 카드 10개
+    const TRIAL_DAILY_PRON_LIMIT = 20;   // Free Trial: 하루 발음 20회
     const PRO_PRON_LIMIT = 1000;
 
-    // 번역 클릭 누적 횟수 (분석용 — 삭제해도 감소하지 않음)
+    // 하위호환: 기존 필드 유지 (분석용)
     const trialCardCount = profile?.trialCardCount || 0;
-    // Library 저장 누적 횟수 (Trial 한도 기준 — 삭제해도 감소하지 않음)
     const savedCardCount = profile?.savedCardCount || 0;
-    // Trial 발음 평가 누적 횟수
     const trialPronCount = profile?.trialPronCount || 0;
     // Pro 발음 평가 월별 횟수
     const proPronCount = profile?.proPronCount || 0;
     const proPronResetMonth = profile?.proPronResetMonth || '';
 
-    const isTrialSavedCardLimitReached = tier === 'trial' && savedCardCount >= TRIAL_CARD_LIMIT;
-    const isTrialPronLimitReached = tier === 'trial' && trialPronCount >= TRIAL_PRON_LIMIT;
+    // ⚠ Trial 제한은 이제 일간 — todayCount/todayPronCount는 App.jsx에서 주입
+    // AuthContext는 플래그만 제공하고, 실제 체크는 dailyProgress 기반으로 App에서 수행
+    const [dailyTrialCardReached, setDailyTrialCardReached] = useState(false);
+    const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
+
+    const isTrialSavedCardLimitReached = tier === 'trial' && dailyTrialCardReached;
+    const isTrialPronLimitReached = tier === 'trial' && dailyTrialPronReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
     // Pro 월별 카운터 리셋: 현재 월이 저장된 월과 다르면 리셋
@@ -209,8 +212,9 @@ export const AuthProvider = ({ children }) => {
             tier,
             trialCardCount, savedCardCount, trialPronCount,
             proPronCount, PRO_PRON_LIMIT,
-            TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+            TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT,
             isTrialSavedCardLimitReached, isTrialPronLimitReached,
+            setDailyTrialCardReached, setDailyTrialPronReached,
             isProPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementPronCount,
             incrementSceneGenerate, incrementVocabGenerate,

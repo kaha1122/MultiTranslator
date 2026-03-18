@@ -110,8 +110,9 @@ function App() {
   const {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
-    TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT,
+    TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT,
     isTrialSavedCardLimitReached,
+    setDailyTrialCardReached, setDailyTrialPronReached,
     incrementTrialCard, incrementSavedCard,
     incrementSceneGenerate, incrementVocabGenerate,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
@@ -207,7 +208,18 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, weeklyData, incrementAchievement } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todayPronCount, weeklyData, incrementAchievement, incrementDailyPron } = useDailyProgress(user, dailyGoal);
+
+  // Trial 일간 제한 동기화
+  useEffect(() => {
+    if (tier === 'trial') {
+      setDailyTrialCardReached(todayCount >= TRIAL_DAILY_CARD_LIMIT);
+      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
+    } else {
+      setDailyTrialCardReached(false);
+      setDailyTrialPronReached(false);
+    }
+  }, [tier, todayCount, todayPronCount, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -1733,9 +1745,12 @@ function App() {
         {user && viewMode !== 'home' && (() => {
           const today = getToday();
           const dayLabels = getT(sourceLang, 'daily.days').split(',');
+          const pronLimit = tier === 'trial' ? TRIAL_DAILY_PRON_LIMIT : 999;
+          const pronFull = todayPronCount >= pronLimit;
           return (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '6px', width: '100%' }}>
-              {/* 좌측: 게이지 바 */}
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', marginTop: '6px', width: '100%' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', width: '100%' }}>
+              {/* 좌측: 카드 게이지 바 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flex: '0 0 auto', width: '38%' }}>
                 <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
                 <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
@@ -1785,6 +1800,29 @@ function App() {
                   );
                 })}
               </div>
+            </div>
+              {/* 발음 게이지 바 (Trial만 제한 표시, 유료는 무제한) */}
+              {tier === 'trial' && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', width: '38%' }}>
+                  <span style={{ fontSize: '0.7rem', color: '#94a3b8', flexShrink: 0 }}>🎙️</span>
+                  <div style={{ flex: 1, height: '7px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
+                    <div style={{
+                      height: '100%', borderRadius: '99px',
+                      width: `${Math.min((todayPronCount / pronLimit) * 100, 100)}%`,
+                      background: pronFull
+                        ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
+                        : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
+                      transition: 'width 0.5s ease',
+                      boxShadow: pronFull
+                        ? '0 0 6px rgba(239,68,68,0.5)'
+                        : '0 0 6px rgba(245,158,11,0.4)',
+                    }} />
+                  </div>
+                  <span style={{ fontSize: '0.65rem', fontWeight: '700', color: pronFull ? '#dc2626' : '#d97706', flexShrink: 0, whiteSpace: 'nowrap' }}>
+                    {todayPronCount}/{pronLimit}
+                  </span>
+                </div>
+              )}
             </div>
           );
         })()}
@@ -1913,6 +1951,7 @@ function App() {
                       savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
                       onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onPronSuccess={incrementDailyPron}
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
@@ -1960,6 +1999,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -1979,6 +2019,7 @@ function App() {
           <VideoReader
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVideoCard}
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
@@ -1998,6 +2039,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -2170,23 +2212,25 @@ function App() {
               <p className="target-limit-msg" style={{ marginBottom: '0.4rem' }}>
                 {getT(sourceLang, 'daily.settingsDesc')}
               </p>
-              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
+              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px', opacity: tier === 'trial' ? 0.6 : 1 }}>
                 <span style={{ width: '42px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{getT(sourceLang, 'daily.settingsLabel')}</span>
                 <input
                   type="range"
                   min="1"
                   max="100"
-                  value={dailyGoal === '' ? 10 : dailyGoal}
+                  value={tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}
                   className="custom-slider"
+                  disabled={tier === 'trial'}
                   onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${dailyGoal === '' ? 10 : dailyGoal}%, #e2e8f0 ${dailyGoal === '' ? 10 : dailyGoal}%)` }}
+                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}%, #e2e8f0 ${tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}%)` }}
                 />
                 <input
                   type="number"
                   min="1"
                   max="100"
-                  value={dailyGoal === '' ? '' : dailyGoal}
+                  value={tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? '' : dailyGoal)}
                   className="slider-value-input"
+                  disabled={tier === 'trial'}
                   onChange={(e) => {
                     const raw = e.target.value;
                     if (raw === '') {
@@ -2204,6 +2248,9 @@ function App() {
                 <span style={{ marginLeft: '4px', fontWeight: '600', color: '#6366f1', fontSize: '0.85rem' }}>
                   {getT(sourceLang, 'daily.settingsUnit')}
                 </span>
+                {tier === 'trial' && (
+                  <span style={{ fontSize: '0.65rem', color: '#ef4444', marginLeft: '4px', whiteSpace: 'nowrap' }}>Free</span>
+                )}
               </div>
             </div>
 
@@ -2462,7 +2509,8 @@ function App() {
       {showTrialLimitModal && (
         <TrialLimitModal
           sourceLang={sourceLang}
-          cardCount={trialCardCurrentCount}
+          cardCount={todayCount}
+          pronCount={todayPronCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); setShowUpgradeModal(true); }}
         />

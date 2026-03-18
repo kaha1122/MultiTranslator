@@ -35,7 +35,7 @@ const getServerUrl = () => {
 // 각 단어별 독립적인 useAudioRecorder + 발음 연습 + Learning Tip
 function VocabWordCard({
     w, index, selectedLang, sourceLang, onSpeak,
-    isSaved, onSave, onTrialLimitReached,
+    isSaved, onSave, onTrialLimitReached, onPronSuccess,
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
     t,
@@ -46,7 +46,7 @@ function VocabWordCard({
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         errorMsg, saveMessage, startRecording, stopRecording, resetAssessment,
-    } = useAudioRecorder(practiceText, selectedLang, sourceLang, onTrialLimitReached);
+    } = useAudioRecorder(practiceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
 
     // practiceMode 전환 시 이전 결과 초기화
     const handleModeChange = (mode) => {
@@ -237,6 +237,7 @@ export default function VocabTab({
     sourceLang,
     targetLangs = [],
     onTrialLimitReached,
+    onPronSuccess,
     onSaveToLibrary,
     onSpeak,
     languageGoals = {},
@@ -516,6 +517,7 @@ export default function VocabTab({
                             isSaved={savedWords.has(i)}
                             onSave={(score) => handleSave(w, i, score)}
                             onTrialLimitReached={onTrialLimitReached}
+                            onPronSuccess={onPronSuccess}
                             targetGoal={languageGoals[selectedLang] || 80}
                             onBookmarkPrompt={onBookmarkPrompt}
                             activeRecIdx={activeRecIdx}

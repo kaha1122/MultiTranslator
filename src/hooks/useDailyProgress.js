@@ -19,21 +19,26 @@ const getWeekDates = () => {
 
 export const useDailyProgress = (user, dailyGoal = 10) => {
     const [todayCount, setTodayCount] = useState(0);
+    const [todayPronCount, setTodayPronCount] = useState(0);
     const [weeklyData, setWeeklyData] = useState([]);
     // Use ref for achievedKeysSet to avoid stale-closure issues in incrementAchievement
     const achievedKeysRef = useRef(new Set());
     const todayCountRef = useRef(0);
+    const todayPronCountRef = useRef(0);
 
     // Sync refs whenever state changes
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
+    useEffect(() => { todayPronCountRef.current = todayPronCount; }, [todayPronCount]);
 
     useEffect(() => {
         const uid = user?.uid;
         if (!uid) {
             setTodayCount(0);
+            setTodayPronCount(0);
             setWeeklyData([]);
             achievedKeysRef.current = new Set();
             todayCountRef.current = 0;
+            todayPronCountRef.current = 0;
             return;
         }
 
@@ -48,12 +53,17 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                 if (todaySnap.exists()) {
                     const data = todaySnap.data();
                     const cnt = data.count || 0;
+                    const pronCnt = data.pronCount || 0;
                     setTodayCount(cnt);
+                    setTodayPronCount(pronCnt);
                     todayCountRef.current = cnt;
+                    todayPronCountRef.current = pronCnt;
                     achievedKeysRef.current = new Set(data.achievedKeys || []);
                 } else {
                     setTodayCount(0);
+                    setTodayPronCount(0);
                     todayCountRef.current = 0;
+                    todayPronCountRef.current = 0;
                     achievedKeysRef.current = new Set();
                 }
 
@@ -113,5 +123,24 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         return true; // signals "first time this key achieved today" → trigger popup
     }, [user, dailyGoal]);
 
-    return { todayCount, weeklyData, incrementAchievement };
+    // 발음 연습 일간 카운터 증가
+    const incrementDailyPron = useCallback(async () => {
+        if (!user?.uid) return;
+        const today = getToday();
+        const newPronCount = todayPronCountRef.current + 1;
+        todayPronCountRef.current = newPronCount;
+        setTodayPronCount(newPronCount);
+
+        try {
+            await setDoc(
+                doc(db, 'users', user.uid, 'dailyProgress', today),
+                { pronCount: newPronCount, updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        } catch (e) {
+            console.error('[useDailyProgress] pronCount 저장 실패:', e);
+        }
+    }, [user]);
+
+    return { todayCount, todayPronCount, weeklyData, incrementAchievement, incrementDailyPron };
 };

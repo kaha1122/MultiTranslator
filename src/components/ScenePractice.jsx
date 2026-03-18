@@ -64,11 +64,11 @@ const LANG_NAMES = {
 };
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
-function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
+function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         startRecording, stopRecording, errorMsg,
-    } = useAudioRecorder(generated.sentence, langCode, sourceLang, onTrialLimitReached);
+    } = useAudioRecorder(generated.sentence, langCode, sourceLang, onTrialLimitReached, onPronSuccess);
 
     const playMyRecording = () => {
         if (assessmentResult?.audioUrl) {
@@ -215,7 +215,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
@@ -583,6 +583,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     langCode={selectedLang}
                     sourceLang={sourceLang}
                     onTrialLimitReached={onTrialLimitReached}
+                    onPronSuccess={onPronSuccess}
                     onSave={handleSave}
                     isSaved={isSaved}
                     onSpeak={onSpeak}
@@ -601,6 +602,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onSaveToL
                     langCode={selectedLang}
                     sourceLang={sourceLang}
                     onTrialLimitReached={onTrialLimitReached}
+                    onPronSuccess={onPronSuccess}
                     onSave={handleAnswerSave}
                     isSaved={isAnswerSaved}
                     onSpeak={onSpeak}

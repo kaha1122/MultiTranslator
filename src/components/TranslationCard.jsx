@@ -53,6 +53,7 @@ const TranslationCard = ({
     isSaved,
     onPracticeResult,
     onTrialLimitReached,
+    onPronSuccess,
     onTargetAchieved,   // Library 전용 + Translation 탭 이미저장 카드
     onBookmarkPrompt,   // 비Library 탭 미저장 카드 전용 (score, saveFn) => void
     savedCardId,        // Translation 탭에서 저장 후 받은 Firestore docId
@@ -120,7 +121,7 @@ const TranslationCard = ({
         saveMessage,
         startRecording,
         stopRecording,
-    } = useAudioRecorder(text, langCode, sourceLangCode, onTrialLimitReached);
+    } = useAudioRecorder(text, langCode, sourceLangCode, onTrialLimitReached, onPronSuccess);
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {

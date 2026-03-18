@@ -2,9 +2,9 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
-const TrialLimitModal = ({ sourceLang, cardCount, onClose, onUpgrade }) => {
+const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade }) => {
     const t = useT(sourceLang);
-    const { trialPronCount, TRIAL_CARD_LIMIT, TRIAL_PRON_LIMIT } = useAuth();
+    const { TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT } = useAuth();
 
     return (
         <div
@@ -42,10 +42,10 @@ const TrialLimitModal = ({ sourceLang, cardCount, onClose, onUpgrade }) => {
                     {/* 사용량 표시 */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '16px', marginTop: '12px' }}>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
-                            🃏 {cardCount}/{TRIAL_CARD_LIMIT}
+                            🃏 {cardCount}/{TRIAL_DAILY_CARD_LIMIT} /day
                         </span>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
-                            🎤 {trialPronCount}/{TRIAL_PRON_LIMIT}
+                            🎤 {pronCount ?? 0}/{TRIAL_DAILY_PRON_LIMIT} /day
                         </span>
                     </div>
                 </div>
