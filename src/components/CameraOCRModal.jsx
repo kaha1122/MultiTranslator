@@ -8,8 +8,8 @@ import './CameraOCRModal.css';
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const SCAN_SIZES = {
-    word:     { w: '60vw', h: 56 },
-    sentence: { w: '85vw', h: 70 },
+    word:     { w: '80vw', h: 70 },
+    sentence: { w: '90vw', h: 80 },
 };
 const ZOOM_FACTOR = 2.0;
 
