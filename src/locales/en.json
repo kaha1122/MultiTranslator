@@ -793,5 +793,18 @@
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Response Time",
     "contactResponseValue": "1-2 business days"
+  },
+  "cameraOCR": {
+    "title": "Read Text with Camera",
+    "close": "Close",
+    "takePhoto": "Take Photo",
+    "chooseFromGallery": "Choose from Gallery",
+    "selectedImage": "Selected image",
+    "recognizing": "Recognizing text...",
+    "errorFallback": "Failed to extract text. Please try again.",
+    "resultLabel": "Recognized Text (editable)",
+    "resultPlaceholder": "Recognized text will appear here.",
+    "retry": "Retake",
+    "useForTranslation": "Use for Translation →"
   }
 }

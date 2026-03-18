@@ -793,5 +793,18 @@
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "응답 시간",
     "contactResponseValue": "평일 기준 1~2 영업일"
+  },
+  "cameraOCR": {
+    "title": "카메라로 텍스트 읽기",
+    "close": "닫기",
+    "takePhoto": "카메라 촬영",
+    "chooseFromGallery": "갤러리 선택",
+    "selectedImage": "선택된 이미지",
+    "recognizing": "텍스트를 인식하는 중...",
+    "errorFallback": "텍스트 추출에 실패했습니다. 다시 시도해 주세요.",
+    "resultLabel": "인식된 텍스트 (수정 가능)",
+    "resultPlaceholder": "인식된 텍스트가 여기에 표시됩니다.",
+    "retry": "다시 찍기",
+    "useForTranslation": "번역에 사용 →"
   }
 }

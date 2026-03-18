@@ -793,5 +793,18 @@
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "対応時間",
     "contactResponseValue": "営業日基準1〜2日"
+  },
+  "cameraOCR": {
+    "title": "カメラでテキストを読み取る",
+    "close": "閉じる",
+    "takePhoto": "カメラで撮影",
+    "chooseFromGallery": "ギャラリーから選択",
+    "selectedImage": "選択された画像",
+    "recognizing": "テキストを認識中...",
+    "errorFallback": "テキストの抽出に失敗しました。もう一度お試しください。",
+    "resultLabel": "認識されたテキスト（編集可能）",
+    "resultPlaceholder": "認識されたテキストがここに表示されます。",
+    "retry": "撮り直す",
+    "useForTranslation": "翻訳に使用 →"
   }
 }

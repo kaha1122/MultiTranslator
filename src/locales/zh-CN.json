@@ -793,5 +793,18 @@
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "响应时间",
     "contactResponseValue": "工作日1-2天"
+  },
+  "cameraOCR": {
+    "title": "用相机读取文字",
+    "close": "关闭",
+    "takePhoto": "拍照",
+    "chooseFromGallery": "从相册选择",
+    "selectedImage": "已选图片",
+    "recognizing": "正在识别文字...",
+    "errorFallback": "文字提取失败，请重试。",
+    "resultLabel": "识别的文字（可编辑）",
+    "resultPlaceholder": "识别的文字将显示在这里。",
+    "retry": "重新拍摄",
+    "useForTranslation": "用于翻译 →"
   }
 }

@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Camera, Image, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useT } from '../utils/i18n';
 import './CameraOCRModal.css';
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -13,10 +14,11 @@ const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
  * Props:
  *   onClose()           — 모달 닫기
  *   onTextExtracted(text) — 추출된 텍스트를 부모에게 전달
- *   sourceLang          — UI 언어 (현재 미사용, 향후 다국어 확장용)
+ *   sourceLang          — UI 언어 (i18n용)
  */
-const CameraOCRModal = ({ onClose, onTextExtracted }) => {
+const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
     const { byokGeminiKey } = useAuth();
+    const t = useT(sourceLang);
 
     const [previewUrl, setPreviewUrl] = useState(null);   // 이미지 미리보기 URL
     const [ocrText, setOcrText] = useState('');            // 추출된 텍스트 (편집 가능)
@@ -89,7 +91,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                         console.error('[CameraOCR] client fallback failed:', clientErr);
                     }
                 }
-                setError(err.message || '텍스트 추출에 실패했습니다. 다시 시도해 주세요.');
+                setError(err.message || t('cameraOCR.errorFallback'));
                 setPhase('preview');
             } finally {
                 setIsLoading(false);
@@ -122,9 +124,9 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                 <div className="camera-modal-header">
                     <span className="camera-modal-title">
                         <Camera size={18} />
-                        카메라로 텍스트 읽기
+                        {t('cameraOCR.title')}
                     </span>
-                    <button className="camera-modal-close" onClick={onClose} title="닫기">✕</button>
+                    <button className="camera-modal-close" onClick={onClose} title={t('cameraOCR.close')}>✕</button>
                 </div>
 
                 <div className="camera-modal-body">
@@ -138,7 +140,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                                 onClick={() => cameraInputRef.current?.click()}
                             >
                                 <span className="btn-icon">📷</span>
-                                카메라 촬영
+                                {t('cameraOCR.takePhoto')}
                             </button>
                             {/* 갤러리 선택 */}
                             <button
@@ -146,7 +148,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                                 onClick={() => galleryInputRef.current?.click()}
                             >
                                 <span className="btn-icon">🖼</span>
-                                갤러리 선택
+                                {t('cameraOCR.chooseFromGallery')}
                             </button>
 
                             {/* hidden file inputs */}
@@ -171,7 +173,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                     {/* 이미지 미리보기 */}
                     {previewUrl && (
                         <div className="camera-preview-box">
-                            <img src={previewUrl} alt="선택된 이미지" />
+                            <img src={previewUrl} alt={t('cameraOCR.selectedImage')} />
                         </div>
                     )}
 
@@ -179,7 +181,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                     {isLoading && (
                         <div className="ocr-loading">
                             <div className="ocr-spinner" />
-                            텍스트를 인식하는 중...
+                            {t('cameraOCR.recognizing')}
                         </div>
                     )}
 
@@ -191,12 +193,12 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                     {/* OCR 결과 텍스트 (편집 가능) */}
                     {phase === 'result' && !isLoading && (
                         <div className="ocr-result-section">
-                            <span className="ocr-result-label">인식된 텍스트 (수정 가능)</span>
+                            <span className="ocr-result-label">{t('cameraOCR.resultLabel')}</span>
                             <textarea
                                 className="ocr-result-textarea"
                                 value={ocrText}
                                 onChange={(e) => setOcrText(e.target.value)}
-                                placeholder="인식된 텍스트가 여기에 표시됩니다."
+                                placeholder={t('cameraOCR.resultPlaceholder')}
                                 autoFocus
                             />
                         </div>
@@ -208,14 +210,14 @@ const CameraOCRModal = ({ onClose, onTextExtracted }) => {
                     <div className="camera-modal-footer">
                         <button className="ocr-retry-btn" onClick={handleRetry}>
                             <RotateCcw size={14} />
-                            다시 찍기
+                            {t('cameraOCR.retry')}
                         </button>
                         <button
                             className="ocr-use-btn"
                             onClick={handleUse}
                             disabled={!ocrText.trim()}
                         >
-                            번역에 사용 →
+                            {t('cameraOCR.useForTranslation')}
                         </button>
                     </div>
                 )}

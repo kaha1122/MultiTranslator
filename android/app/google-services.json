@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "879220793558-hn2rdi2r1d921gsjvind7tjuvhdjvv6l.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arigems.pronunfit",
+            "certificate_hash": "7ac0bd42c3316ea66733682893bd3050e27670cf"
+          }
+        },
+        {
+          "client_id": "879220793558-lasbausis7tef7e3j6thvi6li29lnmfn.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arigems.pronunfit",
+            "certificate_hash": "ea26a1fced2f117b34b1bf30b01d63145b67566d"
+          }
+        },
+        {
           "client_id": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com",
           "client_type": 3
         }

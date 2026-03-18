@@ -792,5 +792,18 @@
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Thời gian phản hồi",
     "contactResponseValue": "1-2 ngày làm việc"
+  },
+  "cameraOCR": {
+    "title": "Đọc văn bản bằng camera",
+    "close": "Đóng",
+    "takePhoto": "Chụp ảnh",
+    "chooseFromGallery": "Chọn từ thư viện",
+    "selectedImage": "Ảnh đã chọn",
+    "recognizing": "Đang nhận dạng văn bản...",
+    "errorFallback": "Trích xuất văn bản thất bại. Vui lòng thử lại.",
+    "resultLabel": "Văn bản nhận dạng (có thể chỉnh sửa)",
+    "resultPlaceholder": "Văn bản nhận dạng sẽ hiển thị ở đây.",
+    "retry": "Chụp lại",
+    "useForTranslation": "Dùng để dịch →"
   }
 }
