@@ -40,7 +40,7 @@
     "filterSource": "Source",
     "filterDiff": "Level",
     "filterTargetMiss": "Missed",
-    "filterStarred": "Starred",
+    "filterStarred": "Flagged",
     "filterThisWeek": "This Week",
     "typeWord": "Word",
     "typeSentence": "Sentence",

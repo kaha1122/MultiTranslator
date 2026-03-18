@@ -1904,9 +1904,22 @@ function App() {
                 <textarea
                   rows={2}
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={(e) => {
+                    setInputText(e.target.value);
+                    // 자동 높이 조절
+                    e.target.style.height = 'auto';
+                    e.target.style.height = e.target.scrollHeight + 'px';
+                  }}
+                  ref={(el) => {
+                    // inputText가 외부에서 변경될 때(OCR 등)도 높이 조절
+                    if (el) {
+                      el.style.height = 'auto';
+                      el.style.height = el.scrollHeight + 'px';
+                    }
+                  }}
                   placeholder="Enter text to translate"
                   className="text-input"
+                  style={{ overflow: 'hidden', resize: 'none' }}
                 />
                 {inputText && (
                   <button className="text-input-clear" onClick={() => setInputText('')} aria-label="Clear">
