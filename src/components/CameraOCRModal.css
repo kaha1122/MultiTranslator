@@ -302,3 +302,30 @@
     background: #e0e7ff;
     color: #4338ca;
 }
+
+/* 카메라 버튼 (Translate 버튼 옆 인라인) */
+.camera-ocr-btn-inline {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 46px;
+    height: 46px;
+    border-radius: 14px;
+    border: none;
+    background: linear-gradient(135deg, #e0e7ff 0%, #c7d2fe 100%);
+    color: #4338ca;
+    cursor: pointer;
+    transition: all 0.18s;
+    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.18);
+    flex-shrink: 0;
+}
+
+.camera-ocr-btn-inline:hover {
+    background: linear-gradient(135deg, #c7d2fe 0%, #a5b4fc 100%);
+    box-shadow: 0 4px 14px rgba(99, 102, 241, 0.28);
+    transform: translateY(-1px);
+}
+
+.camera-ocr-btn-inline:active {
+    transform: scale(0.96);
+}

@@ -1840,23 +1840,13 @@ function App() {
                   );
                 })}
               </div>
-              <div className="text-input-wrapper" style={{ position: 'relative' }}>
-                {/* [신규] 카메라 OCR 버튼 — 우측 상단 */}
-                <button
-                  className="camera-ocr-btn"
-                  onClick={() => setShowCameraModal(true)}
-                  title="카메라로 텍스트 읽기"
-                  aria-label="카메라로 텍스트 읽기"
-                >
-                  <Camera size={16} />
-                </button>
+              <div className="text-input-wrapper">
                 <textarea
                   rows={2}
                   value={inputText}
                   onChange={(e) => setInputText(e.target.value)}
                   placeholder="Enter text to translate"
                   className="text-input"
-                  style={{ paddingRight: '48px' }}
                 />
                 {inputText && (
                   <button className="text-input-clear" onClick={() => setInputText('')} aria-label="Clear">
@@ -1875,7 +1865,7 @@ function App() {
                   sourceLang={sourceLang}
                 />
               )}
-              <div className="translate-btn-container">
+              <div className="translate-btn-container" style={{ display: 'flex', gap: '10px', justifyContent: 'center', alignItems: 'center' }}>
                 <button
                   className="translate-btn"
                   onClick={handleTranslate}
@@ -1887,6 +1877,15 @@ function App() {
                       Translate
                     </>
                   )}
+                </button>
+                {/* [신규] 카메라 OCR 버튼 — Translate 버튼 우측 */}
+                <button
+                  className="camera-ocr-btn-inline"
+                  onClick={() => setShowCameraModal(true)}
+                  title="카메라로 텍스트 읽기"
+                  aria-label="카메라로 텍스트 읽기"
+                >
+                  <Camera size={18} />
                 </button>
               </div>
             </div>
