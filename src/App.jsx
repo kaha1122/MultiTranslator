@@ -110,6 +110,7 @@ function App() {
   const {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
+    proPronCount, PRO_PRON_LIMIT,
     TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT,
     isTrialSavedCardLimitReached,
     setDailyTrialCardReached, setDailyTrialPronReached,
@@ -1755,9 +1756,14 @@ function App() {
         {user && viewMode !== 'home' && (() => {
           const today = getToday();
           const dayLabels = getT(sourceLang, 'daily.days').split(',');
-          const pronLimit = tier === 'trial' ? TRIAL_DAILY_PRON_LIMIT : 999;
-          const pronFull = todayPronCount >= pronLimit;
-          const showPronGauge = tier === 'trial';
+          // Trial: 일간 발음 게이지, Pro: 월간 발음 게이지, Premium/Admin: 숨김
+          const isTrialTier = tier === 'trial';
+          const isProTier = tier === 'pro';
+          const showPronGauge = isTrialTier || isProTier;
+          const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
+          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
+          const pronFull = pronCurrent >= pronLimit;
+          const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}/${pronLimit}`;
           return (
             <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
               {/* 좌측: 게이지 바 2개 세로 배치 */}
@@ -1782,25 +1788,29 @@ function App() {
                     {todayCount}/{dailyGoal}
                   </span>
                 </div>
-                {/* 발음 게이지 (Trial만) */}
+                {/* 발음 게이지 (Trial: 일간, Pro: 월간) */}
                 {showPronGauge && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                     <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>🎙️</span>
                     <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
                       <div style={{
                         height: '100%', borderRadius: '99px',
-                        width: `${Math.min((todayPronCount / pronLimit) * 100, 100)}%`,
+                        width: `${Math.min((pronCurrent / pronLimit) * 100, 100)}%`,
                         background: pronFull
                           ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
-                          : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
+                          : isProTier
+                            ? 'linear-gradient(90deg, #a7f3d0 0%, #34d399 50%, #059669 100%)'
+                            : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
                         transition: 'width 0.5s ease',
                         boxShadow: pronFull
                           ? '0 0 6px rgba(239,68,68,0.5)'
-                          : '0 0 6px rgba(245,158,11,0.4)',
+                          : isProTier
+                            ? '0 0 6px rgba(52,211,153,0.4)'
+                            : '0 0 6px rgba(245,158,11,0.4)',
                       }} />
                     </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: '700', color: pronFull ? '#dc2626' : '#d97706', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {todayPronCount}/{pronLimit}
+                    <span style={{ fontSize: '0.6rem', fontWeight: '700', color: pronFull ? '#dc2626' : (isProTier ? '#059669' : '#d97706'), flexShrink: 0, whiteSpace: 'nowrap' }}>
+                      {pronLabel}
                     </span>
                   </div>
                 )}

@@ -83,7 +83,7 @@ export const AuthProvider = ({ children }) => {
 
     const TRIAL_DAILY_CARD_LIMIT = 10;   // Free Trial: 하루 카드 10개
     const TRIAL_DAILY_PRON_LIMIT = 20;   // Free Trial: 하루 발음 20회
-    const PRO_PRON_LIMIT = 1000;
+    const PRO_PRON_LIMIT = 1500;         // Pro: 월 1500회
 
     // 하위호환: 기존 필드 유지 (분석용)
     const trialCardCount = profile?.trialCardCount || 0;
