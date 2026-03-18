@@ -8,10 +8,10 @@ import './CameraOCRModal.css';
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const SCAN_SIZES = {
-    word:     { w: 280, h: 80 },
-    sentence: { w: 300, h: 160 },
+    word:     { w: '60vw', h: 56 },
+    sentence: { w: '85vw', h: 70 },
 };
-const ZOOM_FACTOR = 1.3;
+const ZOOM_FACTOR = 2.0;
 
 /**
  * CameraOCRModal — Live Viewfinder + Scan Box Crop OCR
@@ -31,6 +31,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
     const videoRef = useRef(null);
     const canvasRef = useRef(null);
     const streamRef = useRef(null);
+    const scanBoxRef = useRef(null);
     const galleryInputRef = useRef(null);
 
     /* ── Camera start / stop ───────────────────────── */
@@ -150,8 +151,10 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
         const visibleX = (vw - visibleW) / 2;
         const visibleY = (vh - visibleH) / 2;
 
-        // scan box → video coords
-        const { w: scanW, h: scanH } = SCAN_SIZES[scanMode];
+        // scan box → video coords (read actual rendered size from DOM)
+        const boxRect = scanBoxRef.current?.getBoundingClientRect();
+        const scanW = boxRect ? boxRect.width : 280;
+        const scanH = boxRect ? boxRect.height : 70;
         const pxPerCSS_x = visibleW / rect.width;
         const pxPerCSS_y = visibleH / rect.height;
         const cropW = scanW * pxPerCSS_x;
@@ -270,13 +273,13 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
                             <div
                                 className="vf-overlay"
                                 style={{
-                                    '--box-w': `${boxW}px`,
-                                    '--box-h': `${boxH}px`,
+                                    '--box-w': typeof boxW === 'number' ? `${boxW}px` : boxW,
+                                    '--box-h': typeof boxH === 'number' ? `${boxH}px` : boxH,
                                 }}
                             />
 
                             {/* scan box border + corner brackets */}
-                            <div className="vf-scan-box" style={{ width: boxW, height: boxH }}>
+                            <div ref={scanBoxRef} className="vf-scan-box" style={{ width: boxW, height: boxH }}>
                                 <span className="vf-corner tl" /><span className="vf-corner tr" />
                                 <span className="vf-corner bl" /><span className="vf-corner br" />
                             </div>
