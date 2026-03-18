@@ -2279,7 +2279,7 @@ function App() {
                   </span>
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🃏 {getT(sourceLang, 'settings.usageCards')}: {savedCardCount}/{TRIAL_CARD_LIMIT} · 🎤 {getT(sourceLang, 'settings.usagePron')}: {trialPronCount}/{TRIAL_PRON_LIMIT}
+                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todayCount}/{TRIAL_DAILY_CARD_LIMIT}/day · 🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
                     </span>
                   )}
                   {tier === 'pro' && (
