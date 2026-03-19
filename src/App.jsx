@@ -11,6 +11,7 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
+import { geminiUrl } from './config/gemini';
 
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
@@ -1030,7 +1031,7 @@ function App() {
 
       const apiKeyToUse = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
       const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKeyToUse}`,
+        geminiUrl(apiKeyToUse),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

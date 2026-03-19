@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { geminiUrl } from '../config/gemini';
 import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X, CheckCircle, AlertCircle, Loader } from 'lucide-react';
@@ -30,7 +31,7 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
         setGeminiStatus('testing');
         try {
             const resp = await fetch(
-                `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey.trim()}`,
+                geminiUrl(geminiKey.trim()),
                 {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

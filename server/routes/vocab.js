@@ -5,6 +5,7 @@ const { requireAuth } = require('../middleware/auth');
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const { geminiUrl } = require('../config/gemini');
 
 const LANG_NAMES = {
     'ko': 'Korean', 'en': 'English', 'ja': 'Japanese',
@@ -155,7 +156,7 @@ Return ONLY valid JSON (no markdown):
 
     try {
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            geminiUrl(geminiKey),
             {
                 contents: [{ parts: [{ text: prompt }] }],
                 generationConfig: { temperature: 1.5, topK: 64, topP: 0.95 },

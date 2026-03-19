@@ -7,6 +7,7 @@ import PronunciationAssessment from './PronunciationAssessment';
 import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundEffects';
 import { useT, tTag } from '../utils/i18n';
 import { db } from '../firebase/config';
+import { geminiUrl } from '../config/gemini';
 import { doc, updateDoc } from 'firebase/firestore';
 import './TranslationCard.css';
 
@@ -174,7 +175,7 @@ Answer in ${srcName}, exactly 2 lines:
 Return only these 2 lines.`;
 
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
+            geminiUrl(key),
             { method: 'POST', headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
         );

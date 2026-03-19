@@ -17,6 +17,7 @@ const upload = multer({ dest: UPLOADS_DIR });
 const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const { geminiUrl } = require('../config/gemini');
 
 /**
  * 1. Azure Pronunciation Assessment
@@ -133,9 +134,9 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     `;
 
     try {
-        console.log(`[Gemini] Requesting with model: gemini-2.0-flash, Key prefix: ${geminiKey?.substring(0, 5)}...`);
+        console.log(`[Gemini] Requesting with model: gemini-2.5-flash-lite, Key prefix: ${geminiKey?.substring(0, 5)}...`);
         const response = await axios.post(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${geminiKey}`,
+            geminiUrl(geminiKey),
             { contents: [{ parts: [{ text: prompt }] }] }
         );
         return response.data.candidates[0].content.parts[0].text;

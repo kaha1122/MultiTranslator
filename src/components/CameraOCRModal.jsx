@@ -4,6 +4,7 @@ import { Camera, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
 import './CameraOCRModal.css';
+import { geminiUrl } from '../config/gemini';
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -95,7 +96,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
             if (byokGeminiKey) {
                 try {
                     const clientRes = await fetch(
-                        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${byokGeminiKey}`,
+                        geminiUrl(byokGeminiKey),
                         {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
