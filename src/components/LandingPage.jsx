@@ -283,28 +283,18 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
         <h1 className="lp-hero-main">{c.hero1Main}</h1>
         <p className="lp-hero-sub">{c.hero1Sub}</p>
         {isNative ? (
-          /* 안드로이드: 무료 시작 없이 로그인 버튼만 */
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
-            <button onClick={onGoogleLogin} style={{
-              display: 'flex', alignItems: 'center', gap: '10px',
-              padding: '13px 28px', borderRadius: '50px',
-              background: '#fff', border: '2px solid #e2e8f0',
-              fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
-            }}>
-              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 22, height: 22 }} />
-              {c.googleLogin || '구글로 로그인'}
-            </button>
-            {onLogin && (
-              <button onClick={onLogin} style={{
-                padding: '10px 24px', borderRadius: '50px',
-                background: 'transparent', border: '1.5px solid rgba(255,255,255,0.6)',
-                color: '#fff', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
-              }}>
-                {c.otherLogin || '다른 방법으로 로그인'}
-              </button>
-            )}
-          </div>
+          /* 안드로이드: Login 팝업을 여는 단일 버튼 */
+          <button onClick={onLogin} style={{
+            marginTop: '20px',
+            padding: '14px 36px', borderRadius: '50px',
+            background: 'linear-gradient(135deg, #00a884, #059669)',
+            border: 'none', color: '#fff',
+            fontWeight: 800, fontSize: '1.05rem', cursor: 'pointer',
+            letterSpacing: '0.02em',
+            boxShadow: '0 8px 24px rgba(0,168,132,0.4)',
+          }}>
+            {c.loginWithAccount || '내 계정으로 로그인'}
+          </button>
         ) : onStartFree && (
           <button
             onClick={onStartFree}
@@ -522,7 +512,7 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
         <div className="lp-cta-btn-wrap">
           {onStartFree
             ? <button className="lp-btn lp-btn-primary" onClick={onStartFree}>🚀 {c.startFree || '무료로 시작하기'}</button>
-            : <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
+            : <button className="lp-btn lp-btn-primary" onClick={onLogin}>{c.loginWithAccount || '내 계정으로 로그인'}</button>
           }
         </div>
         <div ref={bottomRef} style={{ height: 1 }} />
