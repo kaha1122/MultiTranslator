@@ -14,7 +14,7 @@ const detectInAppBrowser = () => {
     return isKnownApp || isAndroidWebView || isIOSWebView;
 };
 
-function Login({ onSwitchToSignup, sourceLang }) {
+function Login({ onSwitchToSignup, sourceLang, onCancel }) {
     const t = (key) => getT(sourceLang, key);
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
@@ -116,6 +116,17 @@ function Login({ onSwitchToSignup, sourceLang }) {
     return (
         <div className="auth-container">
             <div className="auth-card">
+                {onCancel && (
+                    <button
+                        onClick={onCancel}
+                        style={{
+                            position: 'absolute', top: '14px', right: '14px',
+                            background: 'none', border: 'none', fontSize: '1.4rem',
+                            cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
+                        }}
+                        aria-label="close"
+                    >×</button>
+                )}
                 <div className="auth-header">
                     <div className="auth-icon-circle">
                         <LogIn size={24} color="white" />

@@ -23,7 +23,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
-import { useAuth, setAccountDeletionFlag, setSkipAnonymousLogin } from './context/AuthContext';
+import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
@@ -124,6 +124,11 @@ function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [showLanding, setShowLanding] = useState(true);
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  // 로그인 성공 시 모달 자동 닫기
+  useEffect(() => {
+    if (showLoginModal && user && !user.isAnonymous) setShowLoginModal(false);
+  }, [user, showLoginModal]);
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
@@ -1557,6 +1562,23 @@ function App() {
         />
       )}
 
+      {/* 기존 계정 로그인 모달 (이메일/구글 모두 지원) */}
+      {showLoginModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.45)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center',
+        }} onClick={() => setShowLoginModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '460px', margin: '0 16px' }}>
+            <Login
+              sourceLang={sourceLang}
+              onSwitchToSignup={() => setShowLoginModal(false)}
+              onCancel={() => setShowLoginModal(false)}
+            />
+          </div>
+        </div>
+      )}
+
       {/* 좌측 슬라이드 드로어 */}
       {sidebarOpen && (
         <>
@@ -1588,11 +1610,7 @@ function App() {
                   {getT(sourceLang, 'upgrade.sidebarBtn')}
                 </button>
                 <button
-                  onClick={async () => {
-                    setSidebarOpen(false);
-                    setSkipAnonymousLogin(true);
-                    await signOut(auth);
-                  }}
+                  onClick={() => { setSidebarOpen(false); setShowLoginModal(true); }}
                   style={{
                     width: '100%', marginTop: '8px', padding: '7px', borderRadius: '10px',
                     background: 'transparent', border: '1px solid #86efac', color: '#166534',
