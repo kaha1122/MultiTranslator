@@ -193,14 +193,14 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
 
   // 스크롤 끝 감지 → 설치 팝업
   useEffect(() => {
-    if (!showInstall || !bottomRef.current) return;
+    if (!bottomRef.current) return;
     const obs = new IntersectionObserver(
       ([e]) => { if (e.isIntersecting) setShowInstallPopup(true); },
       { threshold: 0.5 }
     );
     obs.observe(bottomRef.current);
     return () => obs.disconnect();
-  }, [showInstall]);
+  }, []);
 
 
   const handleScrollToDemo = () => {
@@ -563,7 +563,7 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
       )}
 
       {/* ── Install Popup ── */}
-      {!isNative && showInstall && showInstallPopup && (
+      {!isNative && showInstallPopup && (
         <div className="lp-install-popup" style={{ position: 'fixed' }}>
           <button className="lp-popup-close" onClick={() => setShowInstallPopup(false)}>✕</button>
           <p className="lp-popup-msg">{c.installPopup.split('\n').map((line, i) => (
