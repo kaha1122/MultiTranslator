@@ -252,26 +252,42 @@ function App() {
   const handleRewardedAd = async (type) => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
     setRewardAdLoading(true);
+    const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
       const adId = type === 'cards' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
-      await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
-      const listener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
-        listener.remove();
-        const amount = reward?.amount ?? (type === 'cards' ? 5 : 10);
-        const today = getToday();
-        const prev = getBonusForToday();
-        const next = { ...prev };
-        if (type === 'cards') next.cards += amount;
-        else next.prons += amount;
-        localStorage.setItem(`rewardBonus_${today}`, JSON.stringify(next));
-        setRewardBonus(next);
+
+      await new Promise(async (resolve, reject) => {
+        // 리스너를 prepare 전에 먼저 등록
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+          const amount = reward?.amount ?? (type === 'cards' ? 5 : 10);
+          const today = getToday();
+          const prev = getBonusForToday();
+          const next = { ...prev };
+          if (type === 'cards') next.cards += amount;
+          else next.prons += amount;
+          localStorage.setItem(`rewardBonus_${today}`, JSON.stringify(next));
+          setRewardBonus(next);
+          resolve();
+        }));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>
+          reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) =>
+          reject(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+
+        try {
+          await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
+          setRewardAdLoading(false); // 로드 완료 → 로딩 표시 끔
+          await AdMob.showRewardVideoAd();
+        } catch (e) { reject(e); }
       });
-      await AdMob.showRewardVideoAd();
     } catch (e) {
       console.error('[RewardedAd] 실패:', e);
+      alert(`광고 오류: ${e.message}`);
     } finally {
       setRewardAdLoading(false);
+      handles.forEach(h => h?.remove?.());
     }
   };
 
