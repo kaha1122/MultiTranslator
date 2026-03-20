@@ -104,8 +104,11 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // 명시적 로그아웃 후: 새 anonymous 계정 자동 생성 건너뜀 (Landing에서 "시작하기" 시 생성)
-                if (localStorage.getItem('didExplicitLogout') === '1') {
+                // 명시적 로그아웃 후 또는 웹 첫 방문(랜딩 표시 대상):
+                // anonymous 자동 생성 건너뜀 → Landing에서 "시작하기" 클릭 시에만 생성
+                const isNative = window.Capacitor?.isNativePlatform?.();
+                const needsLanding = !isNative && localStorage.getItem('webAppEntered') !== '1';
+                if (localStorage.getItem('didExplicitLogout') === '1' || needsLanding) {
                     setUser(null);
                     setProfile(null);
                     setLoading(false);

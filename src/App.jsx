@@ -1621,14 +1621,15 @@ function App() {
   // [폴백] signInAnonymously 실패 또는 명시적 로그아웃 후 user가 null → 랜딩 또는 로그인 화면
   if (!user) {
     if (showLanding) {
-      const handleStartFreeAfterLogout = async () => {
+      const handleStartFreeFromLanding = async () => {
         localStorage.removeItem('didExplicitLogout');
+        localStorage.setItem('webAppEntered', '1');
         try { await signInAnonymously(auth); } catch (e) { console.error(e); }
         setShowLanding(false);
       };
       return <LandingPage
         onGoogleLogin={handleGoogleLoginFromLanding}
-        onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeAfterLogout}
+        onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeFromLanding}
         onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
         onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
         onInstall={handleInstallClick}
