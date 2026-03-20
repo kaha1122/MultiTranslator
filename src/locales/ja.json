@@ -621,7 +621,9 @@
     "installPopup": "📲 アプリをインストールすると、\nすぐにアクセスできます",
     "accountDelTitle": "アカウントの削除およびデータ破棄のご案内",
     "accountDelDesc": "PronunFitのアカウント削除をご希望の場合は、登録されたメールアドレスをご記入の上、<b>support@pronunfit.com</b>までメールをお送りください。リクエスト受付後、7日以内にアカウント情報およびすべての学習データを安全に削除いたします。",
-    "startFree": "無料で始める"
+    "startFree": "無料で始める",
+    "loginBtn": "ログイン",
+    "loginWithAccount": "マイアカウントでログイン"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",

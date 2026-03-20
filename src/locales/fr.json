@@ -620,7 +620,9 @@
     "installPopup": "📲 Installez l'appli\npour un accès instantané",
     "accountDelTitle": "Suppression du compte et destruction des données",
     "accountDelDesc": "Si vous souhaitez supprimer votre compte PronunFit, veuillez nous envoyer un e-mail à <b>support@pronunfit.com</b> en indiquant votre adresse e-mail d'inscription. Nous supprimerons en toute sécurité les informations de votre compte et toutes les données d'apprentissage dans les 7 jours.",
-    "startFree": "Démarrer gratuitement"
+    "startFree": "Démarrer gratuitement",
+    "loginBtn": "Connexion",
+    "loginWithAccount": "Me connecter à mon compte"
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",

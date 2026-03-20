@@ -620,7 +620,9 @@
     "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay",
     "accountDelTitle": "Hướng dẫn xóa tài khoản và hủy dữ liệu",
     "accountDelDesc": "Nếu bạn muốn xóa tài khoản PronunFit, vui lòng gửi email ghi rõ địa chỉ email đã đăng ký của bạn đến <b>support@pronunfit.com</b>. Chúng tôi sẽ xóa an toàn thông tin tài khoản và toàn bộ dữ liệu học tập của bạn trong vòng 7 ngày kể từ khi nhận được yêu cầu.",
-    "startFree": "Bắt đầu miễn phí"
+    "startFree": "Bắt đầu miễn phí",
+    "loginBtn": "Đăng nhập",
+    "loginWithAccount": "Đăng nhập tài khoản của tôi"
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",

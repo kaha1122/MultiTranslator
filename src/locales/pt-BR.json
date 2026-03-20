@@ -620,7 +620,9 @@
     "installPopup": "📲 Instale o app\npara acesso instantâneo",
     "accountDelTitle": "Exclusão de Conta e Eliminação de Dados",
     "accountDelDesc": "Se você deseja excluir sua conta do PronunFit, envie um e-mail para <b>support@pronunfit.com</b> com seu endereço de e-mail registrado. Excluiremos com segurança as informações da sua conta e todos os dados de aprendizado em até 7 dias.",
-    "startFree": "Começar grátis"
+    "startFree": "Começar grátis",
+    "loginBtn": "Entrar",
+    "loginWithAccount": "Entrar na minha conta"
   },
   "renewal": {
     "title": "Assinatura Expirando em Breve",

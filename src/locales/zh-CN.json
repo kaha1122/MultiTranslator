@@ -621,7 +621,9 @@
     "installPopup": "📲 安装应用后，\n即可直接访问",
     "accountDelTitle": "账号注销及数据销毁说明",
     "accountDelDesc": "如需注销您的PronunFit账号，请使用注册邮箱发送邮件至<b>support@pronunfit.com</b>。我们将在收到请求后7天内安全删除您的账号信息及所有学习数据。",
-    "startFree": "免费开始"
+    "startFree": "免费开始",
+    "loginBtn": "登录",
+    "loginWithAccount": "登录我的账户"
   },
   "renewal": {
     "title": "订阅即将到期",
