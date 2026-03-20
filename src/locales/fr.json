@@ -324,7 +324,9 @@
     "sidebarTitle": "Créez votre compte",
     "sidebarBody": "Inscrivez-vous pour sauvegarder votre historique",
     "sidebarBtn": "Créer un compte gratuit",
-    "passwordPlaceholder": "Mot de passe (6 caractères min.)"
+    "passwordPlaceholder": "Mot de passe (6 caractères min.)",
+    "promptTitle": "Créez un compte gratuit",
+    "promptDesc": "Utilisez votre identifiant pour continuer à apprendre sur le web ou tout autre appareil."
   },
   "home": {
     "weeklyGoal": "Progrès de la semaine",

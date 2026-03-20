@@ -324,7 +324,9 @@
     "sidebarTitle": "Konto erstellen",
     "sidebarBody": "Registrieren Sie sich, um Ihren Lernfortschritt zu speichern",
     "sidebarBtn": "Kostenloses Konto erstellen",
-    "passwordPlaceholder": "Passwort (mind. 6 Zeichen)"
+    "passwordPlaceholder": "Passwort (mind. 6 Zeichen)",
+    "promptTitle": "Kostenloses Konto erstellen",
+    "promptDesc": "Nutze deine eigene ID, um im Web oder auf anderen Geräten weiterzulernen."
   },
   "home": {
     "weeklyGoal": "Wochenfortschritt",

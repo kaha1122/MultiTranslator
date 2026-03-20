@@ -125,10 +125,26 @@ function App() {
   const [showLanding, setShowLanding] = useState(true);
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
+  const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
   // 로그인 성공 시 모달 자동 닫기
   useEffect(() => {
     if (showLoginModal && user && !user.isAnonymous) setShowLoginModal(false);
   }, [user, showLoginModal]);
+
+  // anonymous 유저: 날짜 바뀐 첫 방문 시 사이드바 + 가입 유도 팝업 자동 표시
+  useEffect(() => {
+    if (!user?.isAnonymous) return;
+    const today = new Date().toISOString().slice(0, 10);
+    const lastShown = localStorage.getItem('anonSignupPromptDate');
+    if (lastShown === today) return;
+    // 새 날 또는 처음 방문 → 잠시 후 사이드바 열고 팝업
+    const t = setTimeout(() => {
+      localStorage.setItem('anonSignupPromptDate', today);
+      setSidebarOpen(true);
+      setShowAnonSignupPrompt(true);
+    }, 1500);
+    return () => clearTimeout(t);
+  }, [user?.uid]);
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
@@ -1241,11 +1257,8 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      const wasNew = await incrementAchievement(`library-${docRef.id}`);
+      if (wasNew) setShowProgressPopup(true);
     } catch (error) {
       console.error("Video 카드 저장 오류:", error);
     }
@@ -1296,12 +1309,8 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      // 목표 달성 점수로 저장된 경우 daily progress 카운트
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      const wasNew = await incrementAchievement(`library-${docRef.id}`);
+      if (wasNew) setShowProgressPopup(true);
       return docRef.id;
     } catch (error) {
       console.error("Scene 카드 저장 오류:", error);
@@ -1355,12 +1364,8 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      // 목표 달성 점수로 저장된 경우 daily progress 카운트
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      const wasNew = await incrementAchievement(`library-${docRef.id}`);
+      if (wasNew) setShowProgressPopup(true);
       return docRef.id;
     } catch (error) {
       console.error("Vocab 카드 저장 오류:", error);
@@ -1575,6 +1580,54 @@ function App() {
               onSwitchToSignup={() => setShowLoginModal(false)}
               onCancel={() => setShowLoginModal(false)}
             />
+          </div>
+        </div>
+      )}
+
+      {/* anonymous 가입 유도 팝업 (날짜 바뀐 첫 방문 시 자동 표시) */}
+      {showAnonSignupPrompt && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 10000,
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
+          pointerEvents: 'none',
+        }}>
+          <div style={{
+            width: '100%', maxWidth: '480px',
+            background: '#fff', borderRadius: '24px 24px 0 0',
+            padding: '24px 20px 32px',
+            boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
+            pointerEvents: 'auto',
+            animation: 'slideUp 0.35s ease',
+          }}>
+            <div style={{ width: '40px', height: '4px', background: '#e2e8f0', borderRadius: '99px', margin: '0 auto 20px' }} />
+            <div style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '8px' }}>🎉</div>
+            <h3 style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+              {getT(sourceLang, 'upgrade.promptTitle')}
+            </h3>
+            <p style={{ textAlign: 'center', fontSize: '0.85rem', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
+              {getT(sourceLang, 'upgrade.promptDesc')}
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                onClick={() => { setShowAnonSignupPrompt(false); setShowAccountUpgrade(true); }}
+                style={{
+                  padding: '13px', borderRadius: '14px', border: 'none',
+                  background: 'linear-gradient(135deg, #00a884, #059669)',
+                  color: '#fff', fontWeight: 700, fontSize: '0.95rem', cursor: 'pointer',
+                }}
+              >
+                {getT(sourceLang, 'upgrade.sidebarBtn') || '무료 계정 만들기'}
+              </button>
+              <button
+                onClick={() => setShowAnonSignupPrompt(false)}
+                style={{
+                  padding: '11px', borderRadius: '14px', border: '1px solid #e2e8f0',
+                  background: 'transparent', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer',
+                }}
+              >
+                {getT(sourceLang, 'upgrade.later') || '나중에'}
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -1859,28 +1912,28 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
               {/* 좌측: 게이지 바 2개 세로 배치 */}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: showPronGauge ? '4px' : '0', flex: '0 0 auto', width: '38%' }}>
-                {/* 카드 게이지 — anonymous: 저장 제한(10/일), 유료: 목표 달성 */}
+                {/* 카드 게이지 — trial: 저장 제한(10/일), 유료: 목표 달성 */}
                 {(() => {
-                  const isAnon = user?.isAnonymous;
+                  const isTrial = tier === 'trial';
                   const limit = TRIAL_DAILY_CARD_LIMIT; // 10
                   const goal = dailyGoal;
                   const count = todayCount;
-                  const isFull = isAnon ? count >= limit : count >= goal;
-                  const ratio = isAnon ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
-                  const barColor = isAnon
+                  const isFull = isTrial ? count >= limit : count >= goal;
+                  const ratio = isTrial ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
+                  const barColor = isTrial
                     ? (isFull
                         ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
                         : 'linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)')
                     : (isFull
                         ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
                         : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)');
-                  const glow = isAnon
+                  const glow = isTrial
                     ? (isFull ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(52,211,153,0.4)')
                     : (isFull ? '0 0 6px rgba(16,185,129,0.5)' : '0 0 6px rgba(99,102,241,0.4)');
-                  const textColor = isAnon
+                  const textColor = isTrial
                     ? (isFull ? '#ef4444' : '#059669')
                     : (isFull ? '#059669' : '#818cf8');
-                  const icon = isAnon ? '💾' : '🎯';
+                  const icon = isTrial ? '💾' : '🎯';
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>{icon}</span>
@@ -1894,7 +1947,7 @@ function App() {
                         }} />
                       </div>
                       <span style={{ fontSize: '0.6rem', fontWeight: '700', color: textColor, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        {count}/{isAnon ? limit : goal}
+                        {count}/{isTrial ? limit : goal}
                       </span>
                     </div>
                   );

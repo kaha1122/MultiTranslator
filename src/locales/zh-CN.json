@@ -324,7 +324,9 @@
     "sidebarTitle": "创建您的账户",
     "sidebarBody": "注册后学习记录永久保存",
     "sidebarBtn": "创建免费账户",
-    "passwordPlaceholder": "密码（至少6个字符）"
+    "passwordPlaceholder": "密码（至少6个字符）",
+    "promptTitle": "创建免费账户",
+    "promptDesc": "使用您的账号，在网页或其他设备上继续学习。"
   },
   "home": {
     "weeklyGoal": "本周学习进度",

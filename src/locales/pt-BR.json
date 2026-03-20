@@ -324,7 +324,9 @@
     "sidebarTitle": "Crie sua conta",
     "sidebarBody": "Cadastre-se para salvar seu histórico",
     "sidebarBtn": "Criar conta gratuita",
-    "passwordPlaceholder": "Senha (mín. 6 caracteres)"
+    "passwordPlaceholder": "Senha (mín. 6 caracteres)",
+    "promptTitle": "Crie uma conta gratuita",
+    "promptDesc": "Use seu próprio ID para continuar aprendendo na web ou em outro dispositivo."
   },
   "home": {
     "weeklyGoal": "Progresso da Semana",

@@ -324,7 +324,9 @@
     "sidebarTitle": "Tạo tài khoản của bạn",
     "sidebarBody": "Đăng ký để lưu lịch sử học tập vĩnh viễn",
     "sidebarBtn": "Tạo tài khoản miễn phí",
-    "passwordPlaceholder": "Mật khẩu (tối thiểu 6 ký tự)"
+    "passwordPlaceholder": "Mật khẩu (tối thiểu 6 ký tự)",
+    "promptTitle": "Tạo tài khoản miễn phí",
+    "promptDesc": "Dùng ID của bạn để tiếp tục học trên web hoặc thiết bị khác."
   },
   "home": {
     "weeklyGoal": "Tiến độ tuần này",

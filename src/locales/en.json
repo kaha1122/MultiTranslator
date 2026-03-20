@@ -324,7 +324,9 @@
     "sidebarTitle": "Create an account",
     "sidebarBody": "Sign up to keep your learning history",
     "sidebarBtn": "Create free account",
-    "passwordPlaceholder": "Password (min. 6 characters)"
+    "passwordPlaceholder": "Password (min. 6 characters)",
+    "promptTitle": "Create a free account",
+    "promptDesc": "Use your own ID to continue learning on the web or any other device."
   },
   "home": {
     "weeklyGoal": "This Week's Progress",
