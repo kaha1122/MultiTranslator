@@ -36,7 +36,6 @@ import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
 import AccountUpgradeModal from './components/AccountUpgradeModal';
-import LanguageSetupPopup from './components/LanguageSetupPopup';
 import ConfirmModal from './components/ConfirmModal';
 import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
@@ -717,7 +716,12 @@ function App() {
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     setShowOnboarding(false);
     setViewMode('home');
-    updateUserProfile({ hasCompletedOnboarding: true }).catch(() => { });
+    updateUserProfile({
+      hasCompletedOnboarding: true,
+      sourceLang: src,
+      targetLang: tgts[0] || null,
+      targetLangs: tgts,
+    }).catch(() => { });
   };
 
   // [수정] 프로필 수정 모달 열기
@@ -1522,13 +1526,6 @@ function App() {
     ) : (
       <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
     );
-  }
-
-  // [Android] 익명 유저 + targetLang 미설정 → 언어설정 팝업
-  if (isNativePlatform && user?.isAnonymous && profile && !profile?.targetLang) {
-    return <LanguageSetupPopup onComplete={({ sourceLang: sl, targetLang: tl }) => {
-      // profile은 onSnapshot으로 자동 갱신됨
-    }} />;
   }
 
   // [Web] 익명 유저 + 랜딩 미완료 → 랜딩페이지
