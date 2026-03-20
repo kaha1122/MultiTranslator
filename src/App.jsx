@@ -1574,11 +1574,8 @@ function App() {
             {user?.isAnonymous ? (
               /* 익명 유저: 계정 만들기 CTA */
               <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '14px', margin: '0 4px 4px' }}>
-                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#166534', margin: '0 0 4px' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#166534', margin: '0 0 10px' }}>
                   {getT(sourceLang, 'upgrade.sidebarTitle')}
-                </p>
-                <p style={{ fontSize: '0.75rem', color: '#4ade80', margin: '0 0 10px', lineHeight: 1.4 }}>
-                  {getT(sourceLang, 'upgrade.sidebarBody')}
                 </p>
                 <button
                   onClick={() => { setSidebarOpen(false); setShowAccountUpgrade(true); }}
