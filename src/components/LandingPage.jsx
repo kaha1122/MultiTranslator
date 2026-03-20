@@ -262,7 +262,7 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
       {/* ── Nav ── */}
       <nav className="lp-nav" style={{ justifyContent: 'center', gap: '16px' }}>
         <div className="lp-logo">PronunFit</div>
-        {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
+        {!isNative && showInstall && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
         {onLogin && (
           <button onClick={onLogin} style={{
             padding: '8px 18px', borderRadius: '20px',
