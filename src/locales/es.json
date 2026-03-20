@@ -415,7 +415,8 @@
     "terms": "Términos de servicio",
     "contact": "Contacto",
     "subscription": "Suscripción",
-    "settings": "Configuración"
+    "settings": "Configuración",
+    "studyMore": "Más estudio"
   },
   "stats": {
     "weekRate": "Tasa semanal",
@@ -623,6 +624,13 @@
     "startFree": "Empezar gratis",
     "loginBtn": "Iniciar sesión",
     "loginWithAccount": "Iniciar sesión en mi cuenta"
+  },
+  "reward": {
+    "watchForCards": "+5 tarjetas",
+    "watchAd": "Ver anuncio por 5 tarjetas extra",
+    "watchForProns": "+10 pronunciac.",
+    "watchAdPron": "Ver anuncio por 10 pronunciaciones extra",
+    "loading": "Cargando anuncio..."
   },
   "renewal": {
     "title": "Suscripción por expirar",

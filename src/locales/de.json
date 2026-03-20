@@ -415,7 +415,8 @@
     "terms": "Nutzungsbedingungen",
     "contact": "Kontakt",
     "subscription": "Abonnement",
-    "settings": "Einstellungen"
+    "settings": "Einstellungen",
+    "studyMore": "Mehr lernen"
   },
   "stats": {
     "weekRate": "Wochenquote",
@@ -623,6 +624,13 @@
     "startFree": "Kostenlos starten",
     "loginBtn": "Anmelden",
     "loginWithAccount": "Mit meinem Konto anmelden"
+  },
+  "reward": {
+    "watchForCards": "+5 Karten",
+    "watchAd": "Werbung ansehen für 5 Karten",
+    "watchForProns": "+10 Aussprache",
+    "watchAdPron": "Werbung ansehen für 10 Aussprachen",
+    "loading": "Werbung lädt..."
   },
   "renewal": {
     "title": "Abonnement läuft bald ab",

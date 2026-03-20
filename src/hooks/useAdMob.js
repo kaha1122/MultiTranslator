@@ -5,12 +5,18 @@ const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const IS_TESTING = true; // TODO: 실 광고 전환 시 false로 변경
 
 const AD_UNITS = IS_TESTING ? {
-    bannerTop:    'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
-    bannerBottom: 'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
+    bannerTop:      'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
+    bannerBottom:   'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
+    rewardedCards:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
+    rewardedProns:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
 } : {
-    bannerTop:    'ca-app-pub-8626604652301297/3986871373', // Banner01
-    bannerBottom: 'ca-app-pub-8626604652301297/4166267528', // Banner02
+    bannerTop:      'ca-app-pub-8626604652301297/3986871373', // Banner01
+    bannerBottom:   'ca-app-pub-8626604652301297/4166267528', // Banner02
+    rewardedCards:  'ca-app-pub-8626604652301297/4860569967', // Bonus01 (RewardC, +5)
+    rewardedProns:  'ca-app-pub-8626604652301297/4166267528', // Bonus02 (RewardP, +10)
 };
+
+export { AD_UNITS, IS_TESTING };
 
 const BANNER_HEIGHT = 50;
 

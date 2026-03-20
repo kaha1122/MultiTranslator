@@ -47,7 +47,7 @@ import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
-import { useAdMob } from './hooks/useAdMob';
+import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
@@ -239,16 +239,52 @@ function App() {
   // AdMob 배너 광고 (Android 전용)
   useAdMob();
 
-  // Trial 일간 제한 동기화
+  // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
+  const getBonusForToday = () => {
+    try {
+      const stored = JSON.parse(localStorage.getItem(`rewardBonus_${getToday()}`) || '{}');
+      return { cards: stored.cards || 0, prons: stored.prons || 0 };
+    } catch { return { cards: 0, prons: 0 }; }
+  };
+  const [rewardBonus, setRewardBonus] = useState(getBonusForToday);
+  const [rewardAdLoading, setRewardAdLoading] = useState(false);
+
+  const handleRewardedAd = async (type) => {
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    setRewardAdLoading(true);
+    try {
+      const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
+      const adId = type === 'cards' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
+      const listener = await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
+        listener.remove();
+        const amount = reward?.amount ?? (type === 'cards' ? 5 : 10);
+        const today = getToday();
+        const prev = getBonusForToday();
+        const next = { ...prev };
+        if (type === 'cards') next.cards += amount;
+        else next.prons += amount;
+        localStorage.setItem(`rewardBonus_${today}`, JSON.stringify(next));
+        setRewardBonus(next);
+      });
+      await AdMob.showRewardVideoAd();
+    } catch (e) {
+      console.error('[RewardedAd] 실패:', e);
+    } finally {
+      setRewardAdLoading(false);
+    }
+  };
+
+  // Trial 일간 제한 동기화 (보너스 반영)
   useEffect(() => {
     if (tier === 'trial') {
-      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT);
-      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
+      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards);
+      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons);
     } else {
       setDailyTrialCardReached(false);
       setDailyTrialPronReached(false);
     }
-  }, [tier, todayCount, todayPronCount, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
+  }, [tier, todayCount, todaySaveCount, todayPronCount, rewardBonus, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -1791,6 +1827,62 @@ function App() {
                 <span className="sidebar-nav-icon"><BarChart3 size={16} /></span>
                 {getT(sourceLang, 'nav.stats')}
               </button>
+
+              <div className="sidebar-divider" />
+
+              {/* 추가 학습 (Trial 전용 + 네이티브) */}
+              {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
+                <div style={{ padding: '8px 12px 4px' }}>
+                  <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                    {getT(sourceLang, 'nav.studyMore') || (['ko','ja','zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
+                  </p>
+                  {/* 카드 +5 */}
+                  <button
+                    onClick={() => handleRewardedAd('cards')}
+                    disabled={rewardAdLoading}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
+                      border: '1px solid #bbf7d0', cursor: 'pointer', textAlign: 'left',
+                    }}>
+                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
+                        {getT(sourceLang, 'reward.watchForCards') || '+5 카드'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
+                        {getT(sourceLang, 'reward.watchAd') || '광고 시청 후 카드 5개 추가'}
+                      </div>
+                    </div>
+                  </button>
+                  {/* 발음 +10 */}
+                  <button
+                    onClick={() => handleRewardedAd('prons')}
+                    disabled={rewardAdLoading}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                      border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
+                    }}>
+                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
+                        {getT(sourceLang, 'reward.watchForProns') || '+10 발음'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
+                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가'}
+                      </div>
+                    </div>
+                  </button>
+                  {rewardAdLoading && (
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 0' }}>
+                      {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="sidebar-divider" />
 

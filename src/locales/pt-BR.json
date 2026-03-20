@@ -415,7 +415,8 @@
     "terms": "Termos de Serviço",
     "contact": "Contato",
     "subscription": "Assinatura",
-    "settings": "Configurações"
+    "settings": "Configurações",
+    "studyMore": "Mais estudo"
   },
   "stats": {
     "weekRate": "Taxa Semanal",
@@ -623,6 +624,13 @@
     "startFree": "Começar grátis",
     "loginBtn": "Entrar",
     "loginWithAccount": "Entrar na minha conta"
+  },
+  "reward": {
+    "watchForCards": "+5 cartões",
+    "watchAd": "Assistir anúncio por 5 cartões extra",
+    "watchForProns": "+10 pronúncia",
+    "watchAdPron": "Assistir anúncio por 10 pronúncias extra",
+    "loading": "Carregando anúncio..."
   },
   "renewal": {
     "title": "Assinatura Expirando em Breve",

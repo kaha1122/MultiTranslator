@@ -416,7 +416,8 @@
     "terms": "이용약관",
     "contact": "연락처",
     "subscription": "구독",
-    "settings": "설정"
+    "settings": "설정",
+    "studyMore": "추가 학습"
   },
   "stats": {
     "weekRate": "주간 달성률",
@@ -624,6 +625,13 @@
     "startFree": "무료로 시작하기",
     "loginBtn": "로그인",
     "loginWithAccount": "내 계정으로 로그인"
+  },
+  "reward": {
+    "watchForCards": "+5 카드",
+    "watchAd": "광고 시청 후 카드 5개 추가",
+    "watchForProns": "+10 발음",
+    "watchAdPron": "광고 시청 후 발음 10회 추가",
+    "loading": "광고 로딩 중..."
   },
   "renewal": {
     "title": "구독 만료 예정",

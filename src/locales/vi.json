@@ -415,7 +415,8 @@
     "terms": "Điều khoản dịch vụ",
     "contact": "Liên hệ",
     "subscription": "Đăng ký",
-    "settings": "Cài đặt"
+    "settings": "Cài đặt",
+    "studyMore": "Học thêm"
   },
   "stats": {
     "weekRate": "Tỷ lệ tuần",
@@ -623,6 +624,13 @@
     "startFree": "Bắt đầu miễn phí",
     "loginBtn": "Đăng nhập",
     "loginWithAccount": "Đăng nhập tài khoản của tôi"
+  },
+  "reward": {
+    "watchForCards": "+5 thẻ",
+    "watchAd": "Xem quảng cáo để thêm 5 thẻ",
+    "watchForProns": "+10 phát âm",
+    "watchAdPron": "Xem quảng cáo để thêm 10 lần phát âm",
+    "loading": "Đang tải quảng cáo..."
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",

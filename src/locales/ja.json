@@ -416,7 +416,8 @@
     "terms": "利用規約",
     "contact": "お問い合わせ",
     "subscription": "サブスクリプション",
-    "settings": "設定"
+    "settings": "設定",
+    "studyMore": "追加学習"
   },
   "stats": {
     "weekRate": "週間達成率",
@@ -624,6 +625,13 @@
     "startFree": "無料で始める",
     "loginBtn": "ログイン",
     "loginWithAccount": "マイアカウントでログイン"
+  },
+  "reward": {
+    "watchForCards": "+5 カード",
+    "watchAd": "広告を見てカード5枚追加",
+    "watchForProns": "+10 発音",
+    "watchAdPron": "広告を見て発音10回追加",
+    "loading": "広告読み込み中..."
   },
   "renewal": {
     "title": "サブスクリプション期限間近",

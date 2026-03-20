@@ -415,7 +415,8 @@
     "terms": "Conditions d'utilisation",
     "contact": "Contact",
     "subscription": "Abonnement",
-    "settings": "Paramètres"
+    "settings": "Paramètres",
+    "studyMore": "Étude sup."
   },
   "stats": {
     "weekRate": "Taux hebdo",
@@ -623,6 +624,13 @@
     "startFree": "Démarrer gratuitement",
     "loginBtn": "Connexion",
     "loginWithAccount": "Me connecter à mon compte"
+  },
+  "reward": {
+    "watchForCards": "+5 cartes",
+    "watchAd": "Regardez une pub pour 5 cartes",
+    "watchForProns": "+10 prononc.",
+    "watchAdPron": "Regardez une pub pour 10 prononciations",
+    "loading": "Chargement..."
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",

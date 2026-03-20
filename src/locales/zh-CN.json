@@ -416,7 +416,8 @@
     "terms": "服务条款",
     "contact": "联系我们",
     "subscription": "订阅",
-    "settings": "设置"
+    "settings": "设置",
+    "studyMore": "额外学习"
   },
   "stats": {
     "weekRate": "周达成率",
@@ -624,6 +625,13 @@
     "startFree": "免费开始",
     "loginBtn": "登录",
     "loginWithAccount": "登录我的账户"
+  },
+  "reward": {
+    "watchForCards": "+5 张卡片",
+    "watchAd": "看广告获得5张卡片",
+    "watchForProns": "+10 次发音",
+    "watchAdPron": "看广告获得10次发音",
+    "loading": "广告加载中..."
   },
   "renewal": {
     "title": "订阅即将到期",
