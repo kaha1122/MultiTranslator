@@ -416,7 +416,8 @@
     "contact": "Контакты",
     "subscription": "Подписка",
     "settings": "Настройки",
-    "studyMore": "Доп. учёба"
+    "studyMore": "Доп. учёба",
+    "subscriptionTitle": "Подписка"
   },
   "stats": {
     "weekRate": "Недельный показатель",
@@ -854,5 +855,11 @@
     "step2Title": "Выберите язык для изучения",
     "step2Sub": "Можно изменить в любое время",
     "startBtn": "Начать"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Карточки без лимита · 1 500 произн./мес.",
+    "premium": "👑 Premium",
+    "premiumDesc": "Карточки и произношение без лимита"
   }
 }

@@ -417,7 +417,8 @@
     "contact": "联系我们",
     "subscription": "订阅",
     "settings": "设置",
-    "studyMore": "额外学习"
+    "studyMore": "额外学习",
+    "subscriptionTitle": "订阅计划"
   },
   "stats": {
     "weekRate": "周达成率",
@@ -855,5 +856,11 @@
     "step2Title": "请选择要学习的语言",
     "step2Sub": "随时可在设置中更改",
     "startBtn": "开始"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "卡片无限 · 发音1,500次/月",
+    "premium": "👑 Premium",
+    "premiumDesc": "卡片 · 发音 无限"
   }
 }

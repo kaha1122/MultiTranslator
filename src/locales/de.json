@@ -416,7 +416,8 @@
     "contact": "Kontakt",
     "subscription": "Abonnement",
     "settings": "Einstellungen",
-    "studyMore": "Mehr lernen"
+    "studyMore": "Mehr lernen",
+    "subscriptionTitle": "Abonnement"
   },
   "stats": {
     "weekRate": "Wochenquote",
@@ -854,5 +855,11 @@
     "step2Title": "Wählen Sie die Lernsprache",
     "step2Sub": "Kann jederzeit in den Einstellungen geändert werden",
     "startBtn": "Starten"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Karten unbegrenzt · 1.500 Aussprachen/Monat",
+    "premium": "👑 Premium",
+    "premiumDesc": "Karten & Aussprachen unbegrenzt"
   }
 }

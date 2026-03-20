@@ -416,7 +416,8 @@
     "contact": "Contacto",
     "subscription": "Suscripción",
     "settings": "Configuración",
-    "studyMore": "Más estudio"
+    "studyMore": "Más estudio",
+    "subscriptionTitle": "Suscripción"
   },
   "stats": {
     "weekRate": "Tasa semanal",
@@ -854,5 +855,11 @@
     "step2Title": "Selecciona el idioma que quieres aprender",
     "step2Sub": "Puedes cambiarlo en cualquier momento",
     "startBtn": "Empezar"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Tarjetas ilimitadas · 1.500 pronunciaciones/mes",
+    "premium": "👑 Premium",
+    "premiumDesc": "Tarjetas y pronunciaciones ilimitadas"
   }
 }

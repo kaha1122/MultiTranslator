@@ -417,7 +417,8 @@
     "contact": "お問い合わせ",
     "subscription": "サブスクリプション",
     "settings": "設定",
-    "studyMore": "追加学習"
+    "studyMore": "追加学習",
+    "subscriptionTitle": "プラン"
   },
   "stats": {
     "weekRate": "週間達成率",
@@ -855,5 +856,11 @@
     "step2Title": "学習する言語を選択してください",
     "step2Sub": "後からいつでも変更できます",
     "startBtn": "スタート"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "カード無制限 · 発音1,500回/月",
+    "premium": "👑 Premium",
+    "premiumDesc": "カード・発音 無制限"
   }
 }

@@ -416,7 +416,8 @@
     "contact": "Liên hệ",
     "subscription": "Đăng ký",
     "settings": "Cài đặt",
-    "studyMore": "Học thêm"
+    "studyMore": "Học thêm",
+    "subscriptionTitle": "Gói đăng ký"
   },
   "stats": {
     "weekRate": "Tỷ lệ tuần",
@@ -854,5 +855,11 @@
     "step2Title": "Chọn ngôn ngữ bạn muốn học",
     "step2Sub": "Bạn có thể thay đổi bất cứ lúc nào",
     "startBtn": "Bắt đầu"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Thẻ không giới hạn · 1.500 phát âm/tháng",
+    "premium": "👑 Premium",
+    "premiumDesc": "Thẻ & phát âm không giới hạn"
   }
 }

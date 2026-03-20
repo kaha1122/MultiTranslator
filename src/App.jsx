@@ -1907,12 +1907,50 @@ function App() {
 
               <div className="sidebar-divider" />
 
-              {/* 구독 */}
-              <button className="sidebar-nav-item"
-                onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}>
-                <span className="sidebar-nav-icon"><CreditCard size={16} /></span>
-                {getT(sourceLang, 'nav.subscription')}
-              </button>
+              {/* 구독 플랜 섹션 */}
+              <div style={{ padding: '8px 12px 4px' }}>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {getT(sourceLang, 'nav.subscriptionTitle') || 'Subscribe'}
+                </p>
+                {/* Pro */}
+                <button
+                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #fefce8, #fef9c3)',
+                    border: '1px solid #fde68a', cursor: 'pointer', textAlign: 'left',
+                  }}>
+                  <span style={{ fontSize: '1.2rem' }}>🌟</span>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>
+                      Pro
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#b45309' }}>
+                      {getT(sourceLang, 'subscription.proDesc') || '카드 무제한 · 발음 1,500회/월'}
+                    </div>
+                  </div>
+                </button>
+                {/* Premium */}
+                <button
+                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}
+                  style={{
+                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                    padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #fdf4ff, #fae8ff)',
+                    border: '1px solid #e9d5ff', cursor: 'pointer', textAlign: 'left',
+                  }}>
+                  <span style={{ fontSize: '1.2rem' }}>👑</span>
+                  <div>
+                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6b21a8' }}>
+                      Premium
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#9333ea' }}>
+                      {getT(sourceLang, 'subscription.premiumDesc') || '카드 · 발음 무제한'}
+                    </div>
+                  </div>
+                </button>
+              </div>
 
 
 
@@ -2627,7 +2665,7 @@ function App() {
                   </span>
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todayCount}/{TRIAL_DAILY_CARD_LIMIT}/day · 🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
+                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todayCount}/{TRIAL_DAILY_CARD_LIMIT}/day<br />🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
                     </span>
                   )}
                   {tier === 'pro' && (
@@ -2646,7 +2684,7 @@ function App() {
                         cursor: 'pointer', fontSize: '0.82rem'
                       }}
                     >
-                      ✨ {getT(sourceLang, 'upgrade.btnLabel')}
+                      {getT(sourceLang, 'upgrade.btnLabel')}
                     </button>
                   )}
                   {tier === 'admin' && (

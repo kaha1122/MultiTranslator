@@ -417,7 +417,8 @@
     "contact": "Contact",
     "subscription": "Subscription",
     "settings": "Settings",
-    "studyMore": "Study More"
+    "studyMore": "Study More",
+    "subscriptionTitle": "Subscribe"
   },
   "stats": {
     "weekRate": "Weekly Rate",
@@ -855,5 +856,11 @@
     "step2Title": "Select a language to learn",
     "step2Sub": "You can change this anytime in settings",
     "startBtn": "Start"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Unlimited cards · 1,500 prons/mo",
+    "premium": "👑 Premium",
+    "premiumDesc": "Unlimited cards & prons"
   }
 }

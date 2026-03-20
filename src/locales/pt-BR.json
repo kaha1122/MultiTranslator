@@ -416,7 +416,8 @@
     "contact": "Contato",
     "subscription": "Assinatura",
     "settings": "Configurações",
-    "studyMore": "Mais estudo"
+    "studyMore": "Mais estudo",
+    "subscriptionTitle": "Assinatura"
   },
   "stats": {
     "weekRate": "Taxa Semanal",
@@ -854,5 +855,11 @@
     "step2Title": "Selecione o idioma que deseja aprender",
     "step2Sub": "Você pode alterar a qualquer momento",
     "startBtn": "Começar"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Cartões ilimitados · 1.500 pronúncias/mês",
+    "premium": "👑 Premium",
+    "premiumDesc": "Cartões e pronúncias ilimitados"
   }
 }

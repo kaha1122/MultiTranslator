@@ -416,7 +416,8 @@
     "contact": "Contact",
     "subscription": "Abonnement",
     "settings": "Paramètres",
-    "studyMore": "Étude sup."
+    "studyMore": "Étude sup.",
+    "subscriptionTitle": "Abonnement"
   },
   "stats": {
     "weekRate": "Taux hebdo",
@@ -854,5 +855,11 @@
     "step2Title": "Sélectionnez la langue à apprendre",
     "step2Sub": "Vous pouvez la modifier à tout moment",
     "startBtn": "Commencer"
+  },
+  "subscription": {
+    "pro": "🌟 Pro",
+    "proDesc": "Cartes illimitées · 1 500 prononciations/mois",
+    "premium": "👑 Premium",
+    "premiumDesc": "Cartes & prononciations illimitées"
   }
 }
