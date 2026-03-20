@@ -101,6 +101,12 @@ export const AuthProvider = ({ children }) => {
                     return;
                 }
 
+                // ✅ IndexedDB 복원 완료까지 대기
+                // onAuthStateChanged는 IndexedDB 로딩 전에 null로 먼저 호출될 수 있음.
+                // authStateReady()가 resolve되면 auth.currentUser에 복원된 유저가 담겨 있음.
+                await auth.authStateReady();
+                if (auth.currentUser) return; // 복원된 유저 있음 → 다음 onAuthStateChanged 호출이 처리
+
                 // 비로그인 → 익명으로 자동 로그인 시도
                 try {
                     await signInAnonymously(auth);
