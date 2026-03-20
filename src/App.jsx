@@ -1827,26 +1827,46 @@ function App() {
             <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
               {/* 좌측: 게이지 바 2개 세로 배치 */}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: showPronGauge ? '4px' : '0', flex: '0 0 auto', width: '38%' }}>
-                {/* 카드 게이지 */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>🎯</span>
-                  <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-                    <div style={{
-                      height: '100%', borderRadius: '99px',
-                      width: `${Math.min((todayCount / dailyGoal) * 100, 100)}%`,
-                      background: todayCount >= dailyGoal
+                {/* 카드 게이지 — anonymous: 저장 제한(10/일), 유료: 목표 달성 */}
+                {(() => {
+                  const isAnon = user?.isAnonymous;
+                  const limit = TRIAL_DAILY_CARD_LIMIT; // 10
+                  const goal = dailyGoal;
+                  const count = todayCount;
+                  const isFull = isAnon ? count >= limit : count >= goal;
+                  const ratio = isAnon ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
+                  const barColor = isAnon
+                    ? (isFull
+                        ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
+                        : 'linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)')
+                    : (isFull
                         ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
-                        : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)',
-                      transition: 'width 0.5s ease',
-                      boxShadow: todayCount >= dailyGoal
-                        ? '0 0 6px rgba(16,185,129,0.5)'
-                        : '0 0 6px rgba(99,102,241,0.4)',
-                    }} />
-                  </div>
-                  <span style={{ fontSize: '0.6rem', fontWeight: '700', color: todayCount >= dailyGoal ? '#059669' : '#818cf8', flexShrink: 0, whiteSpace: 'nowrap' }}>
-                    {todayCount}/{dailyGoal}
-                  </span>
-                </div>
+                        : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)');
+                  const glow = isAnon
+                    ? (isFull ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(52,211,153,0.4)')
+                    : (isFull ? '0 0 6px rgba(16,185,129,0.5)' : '0 0 6px rgba(99,102,241,0.4)');
+                  const textColor = isAnon
+                    ? (isFull ? '#ef4444' : '#059669')
+                    : (isFull ? '#059669' : '#818cf8');
+                  const icon = isAnon ? '💾' : '🎯';
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>{icon}</span>
+                      <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
+                        <div style={{
+                          height: '100%', borderRadius: '99px',
+                          width: `${ratio}%`,
+                          background: barColor,
+                          transition: 'width 0.5s ease',
+                          boxShadow: glow,
+                        }} />
+                      </div>
+                      <span style={{ fontSize: '0.6rem', fontWeight: '700', color: textColor, flexShrink: 0, whiteSpace: 'nowrap' }}>
+                        {count}/{isAnon ? limit : goal}
+                      </span>
+                    </div>
+                  );
+                })()}
                 {/* 발음 게이지 (Trial: 일간, Pro: 월간) */}
                 {showPronGauge && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
