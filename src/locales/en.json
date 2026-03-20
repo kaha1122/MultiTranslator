@@ -304,7 +304,27 @@
     "premiumFeature1": "Unlimited pronunciation assessments",
     "premiumFeature3": "Unlimited access to all tabs",
     "premiumFeature4": "Premium support",
-    "discount": "OFF"
+    "discount": "OFF",
+    "title": "Create Account",
+    "subtitle": "Save your learning history permanently",
+    "benefit1": "Permanent learning history",
+    "benefit2": "Sync across devices",
+    "benefit3": "Subscribe to Pro/Premium",
+    "googleBtn": "Continue with Google",
+    "emailBtn": "Continue with Email",
+    "createBtn": "Create Account",
+    "back": "Back",
+    "dataKept": "Your trial progress is kept",
+    "successTitle": "Account created!",
+    "successBody": "Your learning history is safely saved",
+    "errAlreadyExists": "This email is already registered",
+    "errWeakPassword": "Password must be at least 6 characters",
+    "errInvalidEmail": "Invalid email address",
+    "errGeneral": "An error occurred. Please try again",
+    "sidebarTitle": "Create an account",
+    "sidebarBody": "Sign up to keep your learning history",
+    "sidebarBtn": "Create free account",
+    "passwordPlaceholder": "Password (min. 6 characters)"
   },
   "home": {
     "weeklyGoal": "This Week's Progress",
@@ -597,7 +617,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Install the app\nfor instant access",
     "accountDelTitle": "Account Deletion & Data Disposal",
-    "accountDelDesc": "If you wish to delete your PronunFit account, please email us at <b>support@pronunfit.com</b> with your registered email address. We will securely delete your account and all learning data within 7 days."
+    "accountDelDesc": "If you wish to delete your PronunFit account, please email us at <b>support@pronunfit.com</b> with your registered email address. We will securely delete your account and all learning data within 7 days.",
+    "startFree": "Start Free — No Login"
   },
   "renewal": {
     "title": "Subscription Expiring Soon",
@@ -813,5 +834,13 @@
     "cameraPermissionDenied": "Camera permission is required. Please allow it in browser settings.",
     "cameraNotSupported": "Camera is not available on this device.",
     "scanGuide": "Align the text inside the box"
+  },
+  "langSetup": {
+    "welcome": "Get started now",
+    "step1Title": "Select your native language",
+    "step1Sub": "Used for app UI and instructions",
+    "step2Title": "Select a language to learn",
+    "step2Sub": "You can change this anytime in settings",
+    "startBtn": "Start"
   }
 }

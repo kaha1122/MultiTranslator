@@ -304,7 +304,27 @@
     "premiumFeature1": "Évaluations de prononciation illimitées",
     "premiumFeature3": "Accès illimité à tous les onglets",
     "premiumFeature4": "Support Premium",
-    "discount": "Réduction"
+    "discount": "Réduction",
+    "title": "Créer un compte",
+    "subtitle": "Sauvegardez votre historique d'apprentissage",
+    "benefit1": "Historique d'apprentissage permanent",
+    "benefit2": "Synchronisation entre appareils",
+    "benefit3": "Accès aux abonnements Pro/Premium",
+    "googleBtn": "Continuer avec Google",
+    "emailBtn": "Continuer avec l'e-mail",
+    "createBtn": "Créer un compte",
+    "back": "Retour",
+    "dataKept": "Votre progression d'essai est conservée",
+    "successTitle": "Compte créé avec succès !",
+    "successBody": "Votre historique d'apprentissage est sauvegardé",
+    "errAlreadyExists": "Cet e-mail est déjà enregistré",
+    "errWeakPassword": "Le mot de passe doit comporter au moins 6 caractères",
+    "errInvalidEmail": "Adresse e-mail invalide",
+    "errGeneral": "Une erreur s'est produite. Veuillez réessayer",
+    "sidebarTitle": "Créez votre compte",
+    "sidebarBody": "Inscrivez-vous pour sauvegarder votre historique",
+    "sidebarBtn": "Créer un compte gratuit",
+    "passwordPlaceholder": "Mot de passe (6 caractères min.)"
   },
   "home": {
     "weeklyGoal": "Progrès de la semaine",
@@ -596,7 +616,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Installez l'appli\npour un accès instantané",
     "accountDelTitle": "Suppression du compte et destruction des données",
-    "accountDelDesc": "Si vous souhaitez supprimer votre compte PronunFit, veuillez nous envoyer un e-mail à <b>support@pronunfit.com</b> en indiquant votre adresse e-mail d'inscription. Nous supprimerons en toute sécurité les informations de votre compte et toutes les données d'apprentissage dans les 7 jours."
+    "accountDelDesc": "Si vous souhaitez supprimer votre compte PronunFit, veuillez nous envoyer un e-mail à <b>support@pronunfit.com</b> en indiquant votre adresse e-mail d'inscription. Nous supprimerons en toute sécurité les informations de votre compte et toutes les données d'apprentissage dans les 7 jours.",
+    "startFree": "Démarrer gratuitement sans connexion"
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",
@@ -812,5 +833,13 @@
     "cameraPermissionDenied": "L'accès à la caméra est requis. Veuillez l'autoriser dans les paramètres du navigateur.",
     "cameraNotSupported": "La caméra n'est pas disponible sur cet appareil.",
     "scanGuide": "Alignez le texte dans le cadre"
+  },
+  "langSetup": {
+    "welcome": "Commencez maintenant",
+    "step1Title": "Sélectionnez votre langue maternelle",
+    "step1Sub": "Utilisée pour l'interface de l'application",
+    "step2Title": "Sélectionnez la langue à apprendre",
+    "step2Sub": "Vous pouvez la modifier à tout moment",
+    "startBtn": "Commencer"
   }
 }

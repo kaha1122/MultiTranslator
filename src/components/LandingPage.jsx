@@ -166,7 +166,7 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) 
 /* ── LandingPage 메인 ── */
 const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
-const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
+const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
   const bottomRef = useRef(null);
   const demoRef = useRef(null);
   const demoCountRef = useRef(0);
@@ -265,6 +265,15 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         <div className="lp-nav-actions">
           {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
           <button className="lp-login-btn" onClick={onSignup}>{c.signUp}</button>
+          {onStartFree && (
+            <button
+              className="lp-login-btn"
+              onClick={onStartFree}
+              style={{ background: '#00a884', color: '#fff', border: 'none', fontWeight: 700 }}
+            >
+              {c.startFree || '무료 시작'}
+            </button>
+          )}
         </div>
       </nav>
 
@@ -276,6 +285,26 @@ const LandingPage = ({ onGoogleLogin, onLogin, onSignup, onInstall, showInstall,
         </div>
         <h1 className="lp-hero-main">{c.hero1Main}</h1>
         <p className="lp-hero-sub">{c.hero1Sub}</p>
+        {onStartFree && (
+          <button
+            onClick={onStartFree}
+            style={{
+              marginTop: '20px',
+              padding: '14px 36px',
+              borderRadius: '50px',
+              background: 'linear-gradient(135deg, #00a884, #059669)',
+              border: 'none', color: '#fff',
+              fontWeight: 800, fontSize: '1.05rem',
+              cursor: 'pointer', letterSpacing: '0.02em',
+              boxShadow: '0 8px 24px rgba(0,168,132,0.4)',
+              transition: 'transform 0.2s',
+            }}
+            onMouseEnter={e => e.target.style.transform = 'scale(1.04)'}
+            onMouseLeave={e => e.target.style.transform = 'scale(1)'}
+          >
+            🚀 {c.startFree || '로그인 없이 무료 시작'}
+          </button>
+        )}
         <div className="lp-hero-divider" />
       </section>
 

@@ -304,7 +304,27 @@
     "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
     "premiumFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature4": "Soporte Premium",
-    "discount": "Descuento"
+    "discount": "Descuento",
+    "title": "Crear cuenta",
+    "subtitle": "Guarda tu historial de aprendizaje permanentemente",
+    "benefit1": "Historial de aprendizaje permanente",
+    "benefit2": "Sincronización entre dispositivos",
+    "benefit3": "Acceso a suscripciones Pro/Premium",
+    "googleBtn": "Continuar con Google",
+    "emailBtn": "Continuar con correo",
+    "createBtn": "Crear cuenta",
+    "back": "Volver",
+    "dataKept": "Tu progreso de prueba se mantiene",
+    "successTitle": "¡Cuenta creada con éxito!",
+    "successBody": "Tu historial de aprendizaje está guardado",
+    "errAlreadyExists": "Este correo ya está registrado",
+    "errWeakPassword": "La contraseña debe tener al menos 6 caracteres",
+    "errInvalidEmail": "Dirección de correo no válida",
+    "errGeneral": "Ocurrió un error. Por favor, inténtalo de nuevo",
+    "sidebarTitle": "Crea tu cuenta",
+    "sidebarBody": "Regístrate para guardar tu historial",
+    "sidebarBtn": "Crear cuenta gratuita",
+    "passwordPlaceholder": "Contraseña (mín. 6 caracteres)"
   },
   "home": {
     "weeklyGoal": "Progreso semanal",
@@ -596,7 +616,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Instala la app\npara acceso instantáneo",
     "accountDelTitle": "Eliminación de cuenta y datos",
-    "accountDelDesc": "Si desea eliminar su cuenta de PronunFit, envíenos un correo electrónico a <b>support@pronunfit.com</b> con su dirección de correo electrónico registrada. Eliminaremos de forma segura la información de su cuenta y todos los datos de aprendizaje en un plazo de 7 días."
+    "accountDelDesc": "Si desea eliminar su cuenta de PronunFit, envíenos un correo electrónico a <b>support@pronunfit.com</b> con su dirección de correo electrónico registrada. Eliminaremos de forma segura la información de su cuenta y todos los datos de aprendizaje en un plazo de 7 días.",
+    "startFree": "Empezar gratis sin iniciar sesión"
   },
   "renewal": {
     "title": "Suscripción por expirar",
@@ -812,5 +833,13 @@
     "cameraPermissionDenied": "Se requiere permiso de cámara. Por favor, permítalo en la configuración del navegador.",
     "cameraNotSupported": "La cámara no está disponible en este dispositivo.",
     "scanGuide": "Alinee el texto dentro del recuadro"
+  },
+  "langSetup": {
+    "welcome": "Empieza ahora",
+    "step1Title": "Selecciona tu idioma nativo",
+    "step1Sub": "Se usa para la interfaz de la app",
+    "step2Title": "Selecciona el idioma que quieres aprender",
+    "step2Sub": "Puedes cambiarlo en cualquier momento",
+    "startBtn": "Empezar"
   }
 }

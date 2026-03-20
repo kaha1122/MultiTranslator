@@ -35,6 +35,8 @@ import { authFetch, getIdToken } from './utils/authFetch';
 import TrialLimitModal from './components/TrialLimitModal';
 import ApiKeySetupWizard from './components/ApiKeySetupWizard';
 import UpgradeModal from './components/UpgradeModal';
+import AccountUpgradeModal from './components/AccountUpgradeModal';
+import LanguageSetupPopup from './components/LanguageSetupPopup';
 import ConfirmModal from './components/ConfirmModal';
 import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
@@ -121,6 +123,7 @@ function App() {
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   const [showLanding, setShowLanding] = useState(true);
+  const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
 
   // [신규] 인앱 브라우저 안내 팝업
   const [showInAppWarning, setShowInAppWarning] = useState(false);
@@ -1493,33 +1496,45 @@ function App() {
     }
   };
 
-  // 로그인이 되어있지 않으면 랜딩 → 로그인/회원가입 화면을 보여줍니다.
-  if (!user) {
-    if (showLanding) {
-      return <LandingPage
-        onGoogleLogin={handleGoogleLoginFromLanding}
-        onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
-        onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
-        onInstall={handleInstallClick}
-        showInstall={showInstallBanner}
-        onSpeak={handleSpeak}
-        onPrivacy={() => setViewMode('privacy')}
-        onTerms={() => setViewMode('terms')}
-        onContact={() => setViewMode('contact')}
-      />;
-    }
-    return authMode === 'login' ? (
-      <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
-    ) : (
-      <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
-    );
+  // ── 진입 분기 ────────────────────────────────────────────────────────────────
+  // user는 항상 존재 (익명 or 실계정) — AuthContext가 null이면 signInAnonymously() 호출함
+
+  // [Android] 익명 유저 + targetLang 미설정 → 언어설정 팝업
+  if (isNativePlatform && user?.isAnonymous && profile && !profile?.targetLang) {
+    return <LanguageSetupPopup onComplete={({ sourceLang: sl, targetLang: tl }) => {
+      // profile은 onSnapshot으로 자동 갱신됨
+    }} />;
   }
 
-  // 로그인이 되어있을 때 보여주는 메인 앱 화면
+  // [Web] 익명 유저 + 랜딩 미완료 → 랜딩페이지
+  if (!isNativePlatform && user?.isAnonymous && showLanding) {
+    return <LandingPage
+      onGoogleLogin={handleGoogleLoginFromLanding}
+      onStartFree={() => setShowLanding(false)}
+      onLogin={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
+      onSignup={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
+      onInstall={handleInstallClick}
+      showInstall={showInstallBanner}
+      onSpeak={handleSpeak}
+      onPrivacy={() => setViewMode('privacy')}
+      onTerms={() => setViewMode('terms')}
+      onContact={() => setViewMode('contact')}
+    />;
+  }
+
+  // 메인 앱 화면
   return (
     <div className="app-container" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-      {/* Vercel 분석 도구 (성능 및 방문자 통계용) */}
+      {/* Vercel 분석 도구 */}
       <Analytics />
+
+      {/* 익명→실계정 업그레이드 모달 */}
+      {showAccountUpgrade && (
+        <AccountUpgradeModal
+          sourceLang={sourceLang}
+          onClose={() => setShowAccountUpgrade(false)}
+        />
+      )}
 
       {/* 좌측 슬라이드 드로어 */}
       {sidebarOpen && (
@@ -1535,7 +1550,27 @@ function App() {
             </div>
 
             {/* 유저 정보 */}
-            {user && (
+            {user?.isAnonymous ? (
+              /* 익명 유저: 계정 만들기 CTA */
+              <div style={{ padding: '12px 16px', background: '#f0fdf4', borderRadius: '14px', margin: '0 4px 4px' }}>
+                <p style={{ fontWeight: 700, fontSize: '0.88rem', color: '#166534', margin: '0 0 4px' }}>
+                  {getT(sourceLang, 'upgrade.sidebarTitle')}
+                </p>
+                <p style={{ fontSize: '0.75rem', color: '#4ade80', margin: '0 0 10px', lineHeight: 1.4 }}>
+                  {getT(sourceLang, 'upgrade.sidebarBody')}
+                </p>
+                <button
+                  onClick={() => { setSidebarOpen(false); setShowAccountUpgrade(true); }}
+                  style={{
+                    width: '100%', padding: '9px', borderRadius: '10px',
+                    background: '#00a884', border: 'none', color: '#fff',
+                    fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer',
+                  }}
+                >
+                  {getT(sourceLang, 'upgrade.sidebarBtn')}
+                </button>
+              </div>
+            ) : (
               <div className="sidebar-user-info">
                 <div className="user-avatar" style={{ width: 36, height: 36, borderRadius: '50%', background: '#f0fdf4', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <User size={18} color="var(--primary-color)" />
@@ -1671,13 +1706,15 @@ function App() {
 
             </nav>
 
-            {/* 로그아웃 */}
-            <div className="sidebar-footer">
-              <button className="sidebar-logout-btn" onClick={handleLogout}>
-                <LogOut size={16} />
-                {getT(sourceLang, 'settings.logout') || 'Logout'}
-              </button>
-            </div>
+            {/* 로그아웃 (실계정만) */}
+            {!user?.isAnonymous && (
+              <div className="sidebar-footer">
+                <button className="sidebar-logout-btn" onClick={handleLogout}>
+                  <LogOut size={16} />
+                  {getT(sourceLang, 'settings.logout') || 'Logout'}
+                </button>
+              </div>
+            )}
           </div>
         </>
       )}

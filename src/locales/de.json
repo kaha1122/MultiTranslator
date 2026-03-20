@@ -304,7 +304,27 @@
     "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
     "premiumFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature4": "Premium-Support",
-    "discount": "Rabatt"
+    "discount": "Rabatt",
+    "title": "Konto erstellen",
+    "subtitle": "Sichern Sie Ihren Lernfortschritt dauerhaft",
+    "benefit1": "Dauerhafter Lernfortschritt",
+    "benefit2": "Geräteübergreifende Synchronisierung",
+    "benefit3": "Pro/Premium-Abonnements verfügbar",
+    "googleBtn": "Mit Google fortfahren",
+    "emailBtn": "Mit E-Mail fortfahren",
+    "createBtn": "Konto erstellen",
+    "back": "Zurück",
+    "dataKept": "Ihr Testfortschritt bleibt erhalten",
+    "successTitle": "Konto erfolgreich erstellt!",
+    "successBody": "Ihr Lernfortschritt ist sicher gespeichert",
+    "errAlreadyExists": "Diese E-Mail ist bereits registriert",
+    "errWeakPassword": "Das Passwort muss mindestens 6 Zeichen lang sein",
+    "errInvalidEmail": "Ungültige E-Mail-Adresse",
+    "errGeneral": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut",
+    "sidebarTitle": "Konto erstellen",
+    "sidebarBody": "Registrieren Sie sich, um Ihren Lernfortschritt zu speichern",
+    "sidebarBtn": "Kostenloses Konto erstellen",
+    "passwordPlaceholder": "Passwort (mind. 6 Zeichen)"
   },
   "home": {
     "weeklyGoal": "Wochenfortschritt",
@@ -596,7 +616,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 App installieren\nfür sofortigen Zugang",
     "accountDelTitle": "Kontolöschung und Datenvernichtung",
-    "accountDelDesc": "Wenn Sie Ihr PronunFit-Konto löschen möchten, senden Sie bitte eine E-Mail mit Ihrer registrierten E-Mail-Adresse an <b>support@pronunfit.com</b>. Wir werden Ihre Kontoinformationen und alle Lerndaten innerhalb von 7 Tagen sicher löschen."
+    "accountDelDesc": "Wenn Sie Ihr PronunFit-Konto löschen möchten, senden Sie bitte eine E-Mail mit Ihrer registrierten E-Mail-Adresse an <b>support@pronunfit.com</b>. Wir werden Ihre Kontoinformationen und alle Lerndaten innerhalb von 7 Tagen sicher löschen.",
+    "startFree": "Kostenlos starten – ohne Login"
   },
   "renewal": {
     "title": "Abonnement läuft bald ab",
@@ -812,5 +833,13 @@
     "cameraPermissionDenied": "Kamerazugriff erforderlich. Bitte in den Browsereinstellungen erlauben.",
     "cameraNotSupported": "Kamera ist auf diesem Gerät nicht verfügbar.",
     "scanGuide": "Text im Rahmen ausrichten"
+  },
+  "langSetup": {
+    "welcome": "Jetzt loslegen",
+    "step1Title": "Wählen Sie Ihre Muttersprache",
+    "step1Sub": "Wird für die App-Oberfläche verwendet",
+    "step2Title": "Wählen Sie die Lernsprache",
+    "step2Sub": "Kann jederzeit in den Einstellungen geändert werden",
+    "startBtn": "Starten"
   }
 }

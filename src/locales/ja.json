@@ -304,7 +304,27 @@
     "premiumFeature1": "発音評価無制限",
     "premiumFeature3": "すべてのタブ無制限",
     "premiumFeature4": "プレミアム専用サポート",
-    "discount": "割引"
+    "discount": "割引",
+    "title": "アカウントを作成",
+    "subtitle": "学習履歴を永久保存しましょう",
+    "benefit1": "学習履歴の永久保存",
+    "benefit2": "デバイス間同期",
+    "benefit3": "Pro/Premiumプランの利用",
+    "googleBtn": "Googleで続ける",
+    "emailBtn": "メールで続ける",
+    "createBtn": "アカウント作成",
+    "back": "戻る",
+    "dataKept": "体験の記録はそのまま保持されます",
+    "successTitle": "アカウントが作成されました！",
+    "successBody": "学習履歴が安全に保存されています",
+    "errAlreadyExists": "このメールはすでに登録されています",
+    "errWeakPassword": "パスワードは6文字以上にしてください",
+    "errInvalidEmail": "無効なメールアドレスです",
+    "errGeneral": "エラーが発生しました。もう一度お試しください",
+    "sidebarTitle": "アカウントを作成しましょう",
+    "sidebarBody": "登録すると学習履歴が永久保存されます",
+    "sidebarBtn": "無料アカウントを作成",
+    "passwordPlaceholder": "パスワード（6文字以上）"
   },
   "home": {
     "weeklyGoal": "今週の学習状況",
@@ -597,7 +617,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 アプリをインストールすると、\nすぐにアクセスできます",
     "accountDelTitle": "アカウントの削除およびデータ破棄のご案内",
-    "accountDelDesc": "PronunFitのアカウント削除をご希望の場合は、登録されたメールアドレスをご記入の上、<b>support@pronunfit.com</b>までメールをお送りください。リクエスト受付後、7日以内にアカウント情報およびすべての学習データを安全に削除いたします。"
+    "accountDelDesc": "PronunFitのアカウント削除をご希望の場合は、登録されたメールアドレスをご記入の上、<b>support@pronunfit.com</b>までメールをお送りください。リクエスト受付後、7日以内にアカウント情報およびすべての学習データを安全に削除いたします。",
+    "startFree": "ログイン不要で無料スタート"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",
@@ -813,5 +834,13 @@
     "cameraPermissionDenied": "カメラの許可が必要です。ブラウザの設定で許可してください。",
     "cameraNotSupported": "このデバイスではカメラが使用できません。",
     "scanGuide": "テキストをボックス内に合わせてください"
+  },
+  "langSetup": {
+    "welcome": "さあ始めましょう",
+    "step1Title": "母国語を選択してください",
+    "step1Sub": "アプリの表示言語になります",
+    "step2Title": "学習する言語を選択してください",
+    "step2Sub": "後からいつでも変更できます",
+    "startBtn": "スタート"
   }
 }

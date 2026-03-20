@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db, analytics } from '../firebase/config';
-import { onAuthStateChanged } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp } from 'firebase/firestore';
+import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
+import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
 
 const AuthContext = createContext();
@@ -18,27 +18,43 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let unsubscribeProfile;
 
-        const unsubscribeAuth = onAuthStateChanged(auth, (authenticatedUser) => {
+        const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
             if (authenticatedUser) {
                 setUser(authenticatedUser);
                 if (analytics) setUserId(analytics, authenticatedUser.uid);
 
                 const docRef = doc(db, 'users', authenticatedUser.uid);
+
+                // 익명 유저: 최소 Firestore 문서 생성 후 onSnapshot 연결
+                if (authenticatedUser.isAnonymous) {
+                    const snap = await getDoc(docRef);
+                    if (!snap.exists()) {
+                        await setDoc(docRef, {
+                            uid: authenticatedUser.uid,
+                            isAnonymous: true,
+                            tier: 'trial',
+                            createdAt: serverTimestamp(),
+                            updatedAt: serverTimestamp(),
+                        });
+                    }
+                }
+
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
                         // 회원탈퇴 중이면 문서 재생성 방지
                         if (accountDeletionInProgress) return;
-                        // 문서가 없는 기존 유저 → 자동 생성 (onSnapshot이 재실행되어 profile 설정됨)
+                        // 실계정 유저: 문서가 없으면 자동 생성
                         await setDoc(docRef, {
                             uid: authenticatedUser.uid,
                             email: authenticatedUser.email,
                             displayName: authenticatedUser.displayName || 'Google User',
+                            hasCompletedOnboarding: false,
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp(),
                         });
-                        return; // setDoc 후 onSnapshot이 다시 호출되므로 여기서 리턴
+                        return; // setDoc 후 onSnapshot이 다시 호출됨
                     }
                     setLoading(false);
                 }, (error) => {
@@ -48,13 +64,14 @@ export const AuthProvider = ({ children }) => {
                 });
 
             } else {
-                setUser(null);
-                setProfile(null);
-                if (analytics) setUserId(analytics, null);
-                if (unsubscribeProfile) {
-                    unsubscribeProfile();
+                // 비로그인 → 익명으로 자동 로그인 (loading 유지)
+                try {
+                    await signInAnonymously(auth);
+                    // onAuthStateChanged가 anonymous user로 다시 호출됨
+                } catch (e) {
+                    console.error('Anonymous sign-in failed:', e);
+                    setLoading(false);
                 }
-                setLoading(false);
             }
         });
 
@@ -72,6 +89,26 @@ export const AuthProvider = ({ children }) => {
             await setDoc(docRef, updates, { merge: true });
         } catch (error) {
             console.error("Error updating profile:", error);
+            throw error;
+        }
+    };
+
+    // ── 익명 → 실계정 업그레이드 ──────────────────────────────────────────────
+    // credential: GoogleAuthProvider.credential(idToken) 또는 EmailAuthProvider.credential(email, pw)
+    const upgradeAnonymous = async (credential) => {
+        if (!user || !user.isAnonymous) return;
+        try {
+            const result = await linkWithCredential(auth.currentUser, credential);
+            // Firestore 문서에 실계정 정보 병합 (uid는 그대로 유지됨)
+            await setDoc(doc(db, 'users', result.user.uid), {
+                email: result.user.email,
+                displayName: result.user.displayName || result.user.email?.split('@')[0] || 'User',
+                isAnonymous: false,
+                updatedAt: serverTimestamp(),
+            }, { merge: true });
+            return result;
+        } catch (error) {
+            console.error('upgradeAnonymous failed:', error);
             throw error;
         }
     };
@@ -94,7 +131,6 @@ export const AuthProvider = ({ children }) => {
     const proPronResetMonth = profile?.proPronResetMonth || '';
 
     // ⚠ Trial 제한은 이제 일간 — todayCount/todayPronCount는 App.jsx에서 주입
-    // AuthContext는 플래그만 제공하고, 실제 체크는 dailyProgress 기반으로 App에서 수행
     const [dailyTrialCardReached, setDailyTrialCardReached] = useState(false);
     const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
 
@@ -102,10 +138,10 @@ export const AuthProvider = ({ children }) => {
     const isTrialPronLimitReached = tier === 'trial' && dailyTrialPronReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
-    // Pro 월별 카운터 리셋: 현재 월이 저장된 월과 다르면 리셋
+    // Pro 월별 카운터 리셋
     useEffect(() => {
         if (!user || tier !== 'pro') return;
-        const currentMonth = new Date().toISOString().slice(0, 7); // "2026-03"
+        const currentMonth = new Date().toISOString().slice(0, 7);
         if (proPronResetMonth && proPronResetMonth === currentMonth) return;
         updateDoc(doc(db, 'users', user.uid), {
             proPronCount: 0,
@@ -113,15 +149,13 @@ export const AuthProvider = ({ children }) => {
         }).catch(e => console.error("Pro pron reset failed:", e));
     }, [user, tier, proPronResetMonth]);
 
-    // 구독 만료 체크: autoRenew가 false이고 만료일이 지나면 trial로 복귀
-    // autoRenew가 true면 서버 cron이 재결제 처리하므로 클라이언트에서 다운그레이드하지 않음
+    // 구독 만료 체크
     useEffect(() => {
         if (!user || !profile?.subscriptionExpiresAt) return;
         if (tier !== 'pro' && tier !== 'premium') return;
-        if (profile?.autoRenew === true) return; // cron이 처리
+        if (profile?.autoRenew === true) return;
         const expiresAt = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
         if (new Date() > expiresAt) {
-            // 빌링키 폐기는 서버에서 처리되므로 클라이언트는 Firestore만 정리
             updateDoc(doc(db, 'users', user.uid), {
                 tier: 'trial',
                 autoRenew: false,
@@ -135,7 +169,7 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
 
-    // 번역 클릭 카운터 (분석용, 모든 tier에서 기록)
+    // 번역 클릭 카운터 (분석용)
     const incrementTrialCard = async () => {
         if (!user) return;
         try {
@@ -147,7 +181,7 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementTrialCard failed:", e); }
     };
 
-    // Library 저장 누적 카운터 (Trial 한도 산정용)
+    // Library 저장 누적 카운터
     const incrementSavedCard = async () => {
         if (!user || tier !== 'trial') return;
         try {
@@ -155,7 +189,7 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementSavedCard failed:", e); }
     };
 
-    // 발음 평가 카운터: trial이면 trialPronCount, pro이면 proPronCount 증가
+    // 발음 평가 카운터
     const incrementPronCount = async () => {
         if (!user) return;
         try {
@@ -164,11 +198,10 @@ export const AuthProvider = ({ children }) => {
             } else if (tier === 'pro') {
                 await updateDoc(doc(db, 'users', user.uid), { proPronCount: increment(1) });
             }
-            // premium, admin은 카운터 없음 (무제한)
         } catch (e) { console.error("incrementPronCount failed:", e); }
     };
 
-    // Scene 생성 카운터 (분석용, 모든 tier에서 기록 — Question/Answer 각각 +1)
+    // Scene 생성 카운터
     const incrementSceneGenerate = async () => {
         if (!user) return;
         try {
@@ -179,7 +212,7 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementSceneGenerate failed:", e); }
     };
 
-    // Vocab 생성 카운터 (분석용, 모든 tier에서 기록)
+    // Vocab 생성 카운터
     const incrementVocabGenerate = async () => {
         if (!user) return;
         try {
@@ -190,7 +223,7 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementVocabGenerate failed:", e); }
     };
 
-    // Admin 전용: BYOK 키 저장 + tier를 'admin'으로 전환
+    // Admin 전용: BYOK 키 저장
     const saveByokKeys = async (geminiKey, azureKey, azureRegion) => {
         if (!user) return;
         await updateUserProfile({
@@ -201,7 +234,6 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
-    // BYOK 키 읽기
     const byokGeminiKey  = profile?.byokGeminiKey  || null;
     const byokAzureKey   = profile?.byokAzureKey   || null;
     const byokAzureRegion = profile?.byokAzureRegion || '';
@@ -220,6 +252,7 @@ export const AuthProvider = ({ children }) => {
             incrementSceneGenerate, incrementVocabGenerate,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
+            upgradeAnonymous,
         }}>
             {loading ? (
                 <div style={{

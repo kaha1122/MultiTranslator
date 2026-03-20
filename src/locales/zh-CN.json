@@ -304,7 +304,27 @@
     "premiumFeature1": "无限发音评估",
     "premiumFeature3": "所有标签页无限使用",
     "premiumFeature4": "高级专属支持",
-    "discount": "折扣"
+    "discount": "折扣",
+    "title": "创建账户",
+    "subtitle": "注册后永久保存学习记录",
+    "benefit1": "永久保存学习记录",
+    "benefit2": "跨设备同步",
+    "benefit3": "订阅Pro/Premium套餐",
+    "googleBtn": "用Google继续",
+    "emailBtn": "用邮箱继续",
+    "createBtn": "创建账户",
+    "back": "返回",
+    "dataKept": "体验记录将保留",
+    "successTitle": "账户创建成功！",
+    "successBody": "学习记录已安全保存",
+    "errAlreadyExists": "此邮箱已注册",
+    "errWeakPassword": "密码至少需要6个字符",
+    "errInvalidEmail": "邮箱地址无效",
+    "errGeneral": "发生错误，请重试",
+    "sidebarTitle": "创建您的账户",
+    "sidebarBody": "注册后学习记录永久保存",
+    "sidebarBtn": "创建免费账户",
+    "passwordPlaceholder": "密码（至少6个字符）"
   },
   "home": {
     "weeklyGoal": "本周学习进度",
@@ -597,7 +617,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 安装应用后，\n即可直接访问",
     "accountDelTitle": "账号注销及数据销毁说明",
-    "accountDelDesc": "如需注销您的PronunFit账号，请使用注册邮箱发送邮件至<b>support@pronunfit.com</b>。我们将在收到请求后7天内安全删除您的账号信息及所有学习数据。"
+    "accountDelDesc": "如需注销您的PronunFit账号，请使用注册邮箱发送邮件至<b>support@pronunfit.com</b>。我们将在收到请求后7天内安全删除您的账号信息及所有学习数据。",
+    "startFree": "无需登录，免费开始"
   },
   "renewal": {
     "title": "订阅即将到期",
@@ -813,5 +834,13 @@
     "cameraPermissionDenied": "需要相机权限，请在浏览器设置中允许。",
     "cameraNotSupported": "此设备不支持相机。",
     "scanGuide": "将文字对准框内"
+  },
+  "langSetup": {
+    "welcome": "立即开始",
+    "step1Title": "请选择您的母语",
+    "step1Sub": "用于应用界面和说明",
+    "step2Title": "请选择要学习的语言",
+    "step2Sub": "随时可在设置中更改",
+    "startBtn": "开始"
   }
 }

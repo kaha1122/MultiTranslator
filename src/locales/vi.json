@@ -304,7 +304,27 @@
     "premiumFeature1": "Đánh giá phát âm không giới hạn",
     "premiumFeature3": "Không giới hạn tất cả tab",
     "premiumFeature4": "Hỗ trợ Premium",
-    "discount": "Giảm"
+    "discount": "Giảm",
+    "title": "Tạo tài khoản",
+    "subtitle": "Lưu lịch sử học tập vĩnh viễn",
+    "benefit1": "Lưu lịch sử học tập vĩnh viễn",
+    "benefit2": "Đồng bộ giữa các thiết bị",
+    "benefit3": "Đăng ký Pro/Premium",
+    "googleBtn": "Tiếp tục với Google",
+    "emailBtn": "Tiếp tục với Email",
+    "createBtn": "Tạo tài khoản",
+    "back": "Quay lại",
+    "dataKept": "Tiến trình trải nghiệm được giữ nguyên",
+    "successTitle": "Tài khoản đã được tạo!",
+    "successBody": "Lịch sử học tập được lưu an toàn",
+    "errAlreadyExists": "Email này đã được đăng ký",
+    "errWeakPassword": "Mật khẩu phải có ít nhất 6 ký tự",
+    "errInvalidEmail": "Địa chỉ email không hợp lệ",
+    "errGeneral": "Đã xảy ra lỗi. Vui lòng thử lại",
+    "sidebarTitle": "Tạo tài khoản của bạn",
+    "sidebarBody": "Đăng ký để lưu lịch sử học tập vĩnh viễn",
+    "sidebarBtn": "Tạo tài khoản miễn phí",
+    "passwordPlaceholder": "Mật khẩu (tối thiểu 6 ký tự)"
   },
   "home": {
     "weeklyGoal": "Tiến độ tuần này",
@@ -596,7 +616,8 @@
     "footerCopy": "© 2026 PronunFit. All rights reserved.",
     "installPopup": "📲 Cài đặt ứng dụng\nđể truy cập ngay",
     "accountDelTitle": "Hướng dẫn xóa tài khoản và hủy dữ liệu",
-    "accountDelDesc": "Nếu bạn muốn xóa tài khoản PronunFit, vui lòng gửi email ghi rõ địa chỉ email đã đăng ký của bạn đến <b>support@pronunfit.com</b>. Chúng tôi sẽ xóa an toàn thông tin tài khoản và toàn bộ dữ liệu học tập của bạn trong vòng 7 ngày kể từ khi nhận được yêu cầu."
+    "accountDelDesc": "Nếu bạn muốn xóa tài khoản PronunFit, vui lòng gửi email ghi rõ địa chỉ email đã đăng ký của bạn đến <b>support@pronunfit.com</b>. Chúng tôi sẽ xóa an toàn thông tin tài khoản và toàn bộ dữ liệu học tập của bạn trong vòng 7 ngày kể từ khi nhận được yêu cầu.",
+    "startFree": "Bắt đầu miễn phí - Không cần đăng nhập"
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",
@@ -812,5 +833,13 @@
     "cameraPermissionDenied": "Cần quyền truy cập camera. Vui lòng cho phép trong cài đặt trình duyệt.",
     "cameraNotSupported": "Camera không khả dụng trên thiết bị này.",
     "scanGuide": "Căn chỉnh văn bản vào trong khung"
+  },
+  "langSetup": {
+    "welcome": "Bắt đầu ngay bây giờ",
+    "step1Title": "Chọn ngôn ngữ mẹ đẻ của bạn",
+    "step1Sub": "Dùng cho giao diện và hướng dẫn của ứng dụng",
+    "step2Title": "Chọn ngôn ngữ bạn muốn học",
+    "step2Sub": "Bạn có thể thay đổi bất cứ lúc nào",
+    "startBtn": "Bắt đầu"
   }
 }

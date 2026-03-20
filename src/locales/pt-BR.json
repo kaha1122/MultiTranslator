@@ -304,7 +304,27 @@
     "premiumFeature1": "Avaliações de pronúncia ilimitadas",
     "premiumFeature3": "Acesso ilimitado a todas as abas",
     "premiumFeature4": "Suporte premium",
-    "discount": "OFF"
+    "discount": "OFF",
+    "title": "Criar conta",
+    "subtitle": "Salve seu histórico de aprendizado permanentemente",
+    "benefit1": "Histórico de aprendizado permanente",
+    "benefit2": "Sincronização entre dispositivos",
+    "benefit3": "Acesso a assinaturas Pro/Premium",
+    "googleBtn": "Continuar com Google",
+    "emailBtn": "Continuar com e-mail",
+    "createBtn": "Criar conta",
+    "back": "Voltar",
+    "dataKept": "Seu progresso de teste é mantido",
+    "successTitle": "Conta criada com sucesso!",
+    "successBody": "Seu histórico de aprendizado está salvo",
+    "errAlreadyExists": "Este e-mail já está cadastrado",
+    "errWeakPassword": "A senha deve ter pelo menos 6 caracteres",
+    "errInvalidEmail": "Endereço de e-mail inválido",
+    "errGeneral": "Ocorreu um erro. Por favor, tente novamente",
+    "sidebarTitle": "Crie sua conta",
+    "sidebarBody": "Cadastre-se para salvar seu histórico",
+    "sidebarBtn": "Criar conta gratuita",
+    "passwordPlaceholder": "Senha (mín. 6 caracteres)"
   },
   "home": {
     "weeklyGoal": "Progresso da Semana",
@@ -596,7 +616,8 @@
     "footerCopy": "© 2026 PronunFit. Todos os direitos reservados.",
     "installPopup": "📲 Instale o app\npara acesso instantâneo",
     "accountDelTitle": "Exclusão de Conta e Eliminação de Dados",
-    "accountDelDesc": "Se você deseja excluir sua conta do PronunFit, envie um e-mail para <b>support@pronunfit.com</b> com seu endereço de e-mail registrado. Excluiremos com segurança as informações da sua conta e todos os dados de aprendizado em até 7 dias."
+    "accountDelDesc": "Se você deseja excluir sua conta do PronunFit, envie um e-mail para <b>support@pronunfit.com</b> com seu endereço de e-mail registrado. Excluiremos com segurança as informações da sua conta e todos os dados de aprendizado em até 7 dias.",
+    "startFree": "Começar grátis sem fazer login"
   },
   "renewal": {
     "title": "Assinatura Expirando em Breve",
@@ -812,5 +833,13 @@
     "cameraPermissionDenied": "Permissão de câmera necessária. Por favor, permita nas configurações do navegador.",
     "cameraNotSupported": "Câmera não disponível neste dispositivo.",
     "scanGuide": "Alinhe o texto dentro da caixa"
+  },
+  "langSetup": {
+    "welcome": "Comece agora",
+    "step1Title": "Selecione seu idioma nativo",
+    "step1Sub": "Usado para a interface do aplicativo",
+    "step2Title": "Selecione o idioma que deseja aprender",
+    "step2Sub": "Você pode alterar a qualquer momento",
+    "startBtn": "Começar"
   }
 }
