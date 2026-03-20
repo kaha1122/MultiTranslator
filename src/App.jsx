@@ -1195,12 +1195,8 @@ function App() {
     if (result.status === "success") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
       setSavedCardIds(prev => ({ ...prev, [langCode]: result.id }));
-      const score = practiceResults[langCode]?.pronunciationScore;
-      const goal = languageGoals[langCode] || 80;
-      if (score != null && score >= goal) {
-        const wasNew = await incrementAchievement(`library-${result.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      const wasNew = await incrementAchievement(`library-${result.id}`);
+      if (wasNew) setShowProgressPopup(true);
       // Library로 이동하여 저장된 카드 포커스
       if (result.id) {
         setFocusCardId(result.id);
