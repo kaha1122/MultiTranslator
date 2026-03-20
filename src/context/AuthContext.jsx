@@ -10,6 +10,10 @@ const AuthContext = createContext();
 let accountDeletionInProgress = false;
 export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
 
+// 익명 자동 로그인 건너뛰기 플래그 (로그아웃 후 실계정 로그인 유도 시 사용)
+let skipAnonymousLogin = false;
+export const setSkipAnonymousLogin = (v) => { skipAnonymousLogin = v; };
+
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
@@ -64,13 +68,19 @@ export const AuthProvider = ({ children }) => {
                 });
 
             } else {
+                // skipAnonymousLogin 플래그가 켜져 있으면 익명 로그인 건너뜀 → 로그인 화면 표시
+                if (skipAnonymousLogin) {
+                    skipAnonymousLogin = false;
+                    setUser(null);
+                    setProfile(null);
+                    setLoading(false);
+                    return;
+                }
                 // 비로그인 → 익명으로 자동 로그인 시도
-                // 실패 시(익명 인증 미활성화 등) loading=false → App.jsx의 !user 분기가 처리
                 try {
                     await signInAnonymously(auth);
-                    // onAuthStateChanged가 anonymous user로 다시 호출됨
                 } catch (e) {
-                    console.error('Anonymous sign-in failed (Firebase 콘솔에서 익명 인증을 활성화하세요):', e);
+                    console.error('Anonymous sign-in failed:', e);
                     setUser(null);
                     setProfile(null);
                     setLoading(false);

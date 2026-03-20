@@ -23,7 +23,7 @@ import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
-import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
+import { useAuth, setAccountDeletionFlag, setSkipAnonymousLogin } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
@@ -1586,6 +1586,20 @@ function App() {
                   }}
                 >
                   {getT(sourceLang, 'upgrade.sidebarBtn')}
+                </button>
+                <button
+                  onClick={async () => {
+                    setSidebarOpen(false);
+                    setSkipAnonymousLogin(true);
+                    await signOut(auth);
+                  }}
+                  style={{
+                    width: '100%', marginTop: '8px', padding: '7px', borderRadius: '10px',
+                    background: 'transparent', border: '1px solid #86efac', color: '#166534',
+                    fontSize: '0.78rem', cursor: 'pointer',
+                  }}
+                >
+                  기존 계정으로 로그인
                 </button>
               </div>
             ) : (
