@@ -691,19 +691,24 @@ function App() {
 
   // [설치] 버튼을 눌렀을 때 실행
   const handleInstallClick = async () => {
-    if (!deferredPrompt) {
-      // iOS Safari: 브라우저 공유 메뉴 안내
-      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-      if (isIOS) {
-        alert('홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택하세요.');
-      }
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('[PWA] 사용자 선택:', outcome);
+      setDeferredPrompt(null);
+      setShowInstallBanner(false);
       return;
     }
-    deferredPrompt.prompt(); // 브라우저 설치 팝업 실행
-    const { outcome } = await deferredPrompt.userChoice;
-    console.log('[PWA] 사용자 선택:', outcome); // 'accepted' or 'dismissed'
-    setDeferredPrompt(null);
-    setShowInstallBanner(false);
+    // deferredPrompt 없을 때: OS별 수동 설치 안내
+    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isAndroid = /android/i.test(navigator.userAgent);
+    if (isIOS) {
+      alert('홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택하세요.');
+    } else if (isAndroid) {
+      alert('앱으로 설치하려면:\nChrome 주소창 우측 ⋮ 메뉴 → "앱 설치" 또는 "홈 화면에 추가"를 선택하세요.');
+    } else {
+      alert('앱으로 설치하려면:\n브라우저 주소창 우측 설치 아이콘(⊕)을 클릭하거나,\n메뉴 → "PronunFit 설치"를 선택하세요.');
+    }
   };
 
 
