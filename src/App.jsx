@@ -1497,7 +1497,28 @@ function App() {
   };
 
   // ── 진입 분기 ────────────────────────────────────────────────────────────────
-  // user는 항상 존재 (익명 or 실계정) — AuthContext가 null이면 signInAnonymously() 호출함
+
+  // [폴백] signInAnonymously 실패 등으로 user가 null → 기존 로그인 화면
+  if (!user) {
+    if (showLanding) {
+      return <LandingPage
+        onGoogleLogin={handleGoogleLoginFromLanding}
+        onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
+        onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
+        onInstall={handleInstallClick}
+        showInstall={showInstallBanner}
+        onSpeak={handleSpeak}
+        onPrivacy={() => setViewMode('privacy')}
+        onTerms={() => setViewMode('terms')}
+        onContact={() => setViewMode('contact')}
+      />;
+    }
+    return authMode === 'login' ? (
+      <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
+    ) : (
+      <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
+    );
+  }
 
   // [Android] 익명 유저 + targetLang 미설정 → 언어설정 팝업
   if (isNativePlatform && user?.isAnonymous && profile && !profile?.targetLang) {

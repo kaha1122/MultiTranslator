@@ -64,12 +64,15 @@ export const AuthProvider = ({ children }) => {
                 });
 
             } else {
-                // 비로그인 → 익명으로 자동 로그인 (loading 유지)
+                // 비로그인 → 익명으로 자동 로그인 시도
+                // 실패 시(익명 인증 미활성화 등) loading=false → App.jsx의 !user 분기가 처리
                 try {
                     await signInAnonymously(auth);
                     // onAuthStateChanged가 anonymous user로 다시 호출됨
                 } catch (e) {
-                    console.error('Anonymous sign-in failed:', e);
+                    console.error('Anonymous sign-in failed (Firebase 콘솔에서 익명 인증을 활성화하세요):', e);
+                    setUser(null);
+                    setProfile(null);
                     setLoading(false);
                 }
             }
