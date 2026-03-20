@@ -263,6 +263,15 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
       <nav className="lp-nav" style={{ justifyContent: 'center', gap: '16px' }}>
         <div className="lp-logo">PronunFit</div>
         {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
+        {onLogin && (
+          <button onClick={onLogin} style={{
+            padding: '8px 18px', borderRadius: '20px',
+            border: '1.5px solid #00a884', background: 'transparent',
+            color: '#00a884', fontWeight: 700, fontSize: '0.88rem', cursor: 'pointer',
+          }}>
+            {c.loginBtn || '로그인'}
+          </button>
+        )}
       </nav>
 
       {/* ── Hero 1: 발음 ── */}
@@ -273,7 +282,30 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
         </div>
         <h1 className="lp-hero-main">{c.hero1Main}</h1>
         <p className="lp-hero-sub">{c.hero1Sub}</p>
-        {onStartFree && (
+        {isNative ? (
+          /* 안드로이드: 무료 시작 없이 로그인 버튼만 */
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', marginTop: '20px' }}>
+            <button onClick={onGoogleLogin} style={{
+              display: 'flex', alignItems: 'center', gap: '10px',
+              padding: '13px 28px', borderRadius: '50px',
+              background: '#fff', border: '2px solid #e2e8f0',
+              fontWeight: 700, fontSize: '1rem', cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(0,0,0,0.12)',
+            }}>
+              <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" style={{ width: 22, height: 22 }} />
+              {c.googleLogin || '구글로 로그인'}
+            </button>
+            {onLogin && (
+              <button onClick={onLogin} style={{
+                padding: '10px 24px', borderRadius: '50px',
+                background: 'transparent', border: '1.5px solid rgba(255,255,255,0.6)',
+                color: '#fff', fontWeight: 600, fontSize: '0.9rem', cursor: 'pointer',
+              }}>
+                {c.otherLogin || '다른 방법으로 로그인'}
+              </button>
+            )}
+          </div>
+        ) : onStartFree && (
           <button
             onClick={onStartFree}
             style={{

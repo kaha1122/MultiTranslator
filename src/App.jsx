@@ -1545,7 +1545,7 @@ function App() {
       };
       return <LandingPage
         onGoogleLogin={handleGoogleLoginFromLanding}
-        onStartFree={handleStartFreeAfterLogout}
+        onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeAfterLogout}
         onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
         onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
         onInstall={handleInstallClick}
