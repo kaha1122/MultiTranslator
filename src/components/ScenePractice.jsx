@@ -215,7 +215,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary }) => {
+const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved }) => {
     const [category, setCategory]           = useState('locations');
     const [selectedScene, setSelectedScene] = useState(null);
     const [customInput, setCustomInput]     = useState('');
