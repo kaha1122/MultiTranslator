@@ -1549,7 +1549,6 @@ function App() {
     <div className="app-container"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      style={isNativePlatform ? { paddingTop: '50px', paddingBottom: '50px' } : undefined}
     >
       {/* Vercel 분석 도구 */}
       <Analytics />

@@ -429,7 +429,7 @@ body {
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   position: fixed;
-  bottom: 2px;
+  bottom: calc(var(--admob-bottom, 0px) + 2px);
   padding-bottom: max(2px, env(safe-area-inset-bottom));
   left: 50%;
   transform: translateX(-50%);
