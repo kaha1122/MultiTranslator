@@ -59,7 +59,17 @@ export const useAdMob = () => {
                 const AdMob = await getAdMob();
                 if (!AdMob) return;
 
-                const { BannerAdSize, BannerAdPosition } = await import('@capacitor-community/admob');
+                const { BannerAdSize, BannerAdPosition, BannerAdPluginEvents } = await import('@capacitor-community/admob');
+
+                // 배너 에러 리스너 (원인 파악용)
+                AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
+                    console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
+                });
+                AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+                    console.log('[AdMob Banner] Loaded OK');
+                });
+
+                console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerTop, 'isTesting:', IS_TESTING);
 
                 // 상단 배너 표시
                 await AdMob.showBanner({
@@ -71,6 +81,7 @@ export const useAdMob = () => {
                 });
                 // 상단 배너 높이만큼 헤더 아래로 이동
                 setOffset(true, false);
+                console.log('[AdMob] showBanner 호출 완료');
 
                 // 하단 배너 시도 (플러그인이 동시 2개 지원하는 경우)
                 try {
@@ -82,13 +93,12 @@ export const useAdMob = () => {
                         isTesting: IS_TESTING,
                     });
                     setOffset(true, true);
-                } catch {
-                    // 동시 2개 미지원 시 상단만 유지
-                    console.warn('[AdMob] 하단 배너 동시 표시 불가 — 상단만 운영');
+                } catch (e2) {
+                    console.warn('[AdMob] 하단 배너 동시 표시 불가 — 상단만 운영:', e2?.message);
                 }
 
             } catch (e) {
-                console.error('[AdMob] 초기화 실패:', e);
+                console.error('[AdMob] 초기화/배너 실패:', e?.message, JSON.stringify(e));
             }
         };
 
