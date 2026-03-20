@@ -40,9 +40,9 @@ async function initAdMob() {
     admobInitialized = true;
 }
 
-function setOffset(top, bottom) {
+function setOffset(bottom) {
     const r = document.documentElement;
-    r.style.setProperty('--admob-top',    top    ? `${BANNER_HEIGHT}px` : '0px');
+    r.style.setProperty('--admob-top', '0px');
     r.style.setProperty('--admob-bottom', bottom ? `${BANNER_HEIGHT}px` : '0px');
 }
 
@@ -53,6 +53,8 @@ export const useAdMob = () => {
         if (!isNativePlatform() || initialized.current) return;
         initialized.current = true;
 
+        let listenerHandles = [];
+
         const setup = async () => {
             try {
                 await initAdMob();
@@ -61,41 +63,27 @@ export const useAdMob = () => {
 
                 const { BannerAdSize, BannerAdPosition, BannerAdPluginEvents } = await import('@capacitor-community/admob');
 
-                // 배너 에러 리스너 (원인 파악용)
-                AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
-                    console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
-                });
-                AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+                // 이벤트 리스너 등록 (cleanup에서 제거)
+                listenerHandles.push(await AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
                     console.log('[AdMob Banner] Loaded OK');
-                });
+                    setOffset(true);
+                }));
+                listenerHandles.push(await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
+                    console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
+                }));
 
-                console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerTop, 'isTesting:', IS_TESTING);
+                console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerBottom, 'isTesting:', IS_TESTING);
 
-                // 상단 배너 표시
+                // 하단 배너 표시 (하나만 운영 — 동시 2개는 플러그인 미지원)
                 await AdMob.showBanner({
-                    adId: AD_UNITS.bannerTop,
+                    adId: AD_UNITS.bannerBottom,
                     adSize: BannerAdSize.BANNER,
-                    position: BannerAdPosition.TOP_CENTER,
+                    position: BannerAdPosition.BOTTOM_CENTER,
                     margin: 0,
                     isTesting: IS_TESTING,
                 });
-                // 상단 배너 높이만큼 헤더 아래로 이동
-                setOffset(true, false);
-                console.log('[AdMob] showBanner 호출 완료');
 
-                // 하단 배너 시도 (플러그인이 동시 2개 지원하는 경우)
-                try {
-                    await AdMob.showBanner({
-                        adId: AD_UNITS.bannerBottom,
-                        adSize: BannerAdSize.BANNER,
-                        position: BannerAdPosition.BOTTOM_CENTER,
-                        margin: 0,
-                        isTesting: IS_TESTING,
-                    });
-                    setOffset(true, true);
-                } catch (e2) {
-                    console.warn('[AdMob] 하단 배너 동시 표시 불가 — 상단만 운영:', e2?.message);
-                }
+                console.log('[AdMob] showBanner 호출 완료');
 
             } catch (e) {
                 console.error('[AdMob] 초기화/배너 실패:', e?.message, JSON.stringify(e));
@@ -105,8 +93,9 @@ export const useAdMob = () => {
         setup();
 
         return () => {
+            listenerHandles.forEach(h => h?.remove?.());
             getAdMob().then(AdMob => AdMob?.removeBanner?.().catch(() => {}));
-            setOffset(false, false);
+            setOffset(false);
         };
     }, []);
 };
