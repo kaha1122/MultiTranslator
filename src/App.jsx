@@ -137,7 +137,12 @@ function App() {
     const today = new Date().toISOString().slice(0, 10);
     const lastShown = localStorage.getItem('anonSignupPromptDate');
     if (lastShown === today) return;
-    // 새 날 또는 처음 방문 → 잠시 후 사이드바 열고 팝업
+    // 최초 방문(lastShown 없음): 오늘 날짜만 기록하고 팝업 생략 (다음날부터 표시)
+    if (!lastShown) {
+      localStorage.setItem('anonSignupPromptDate', today);
+      return;
+    }
+    // 날짜 바뀐 재방문 → 잠시 후 사이드바 열고 팝업
     const t = setTimeout(() => {
       localStorage.setItem('anonSignupPromptDate', today);
       setSidebarOpen(true);
