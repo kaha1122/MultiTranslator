@@ -249,7 +249,7 @@ function App() {
 
   // 카드 5장 저장마다 인터스티셜 광고 (Trial만)
   const triggerInterstitialOnSave = () => {
-    if (tier === 'pro' || tier === 'premium') return;
+    if (tier !== 'trial') return;
     const key = 'interstitialSaveCount';
     const count = (parseInt(localStorage.getItem(key) || '0', 10) + 1);
     if (count >= 5) {
