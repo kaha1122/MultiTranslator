@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { auth, db, googleProvider } from '../../firebase/config';
 import { signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
-import { LogIn, Mail, Lock, AlertCircle, Smartphone } from 'lucide-react';
+import { Mail, Lock, AlertCircle, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
 import './Auth.css';
 
@@ -23,20 +23,13 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
     const [resetSent, setResetSent] = useState(false);
 
     const handleForgotPassword = async () => {
-        if (!email.trim()) {
-            setError(t('auth.forgotEmailFirst'));
-            return;
-        }
+        if (!email.trim()) { setError(t('auth.forgotEmailFirst')); return; }
         try {
             await sendPasswordResetEmail(auth, email);
             setResetSent(true);
             setError('');
         } catch (err) {
-            if (err.code === 'auth/user-not-found') {
-                setError(t('auth.forgotNotFound'));
-            } else {
-                setError(`${t('auth.forgotFail')}: ${err.code}`);
-            }
+            setError(err.code === 'auth/user-not-found' ? t('auth.forgotNotFound') : `${t('auth.forgotFail')}: ${err.code}`);
         }
     };
 
@@ -87,7 +80,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const profileData = { uid: user.uid, email: user.email, updatedAt: serverTimestamp() };
-            if (additionalInfo && additionalInfo.isNewUser) {
+            if (additionalInfo?.isNewUser) {
                 profileData.displayName = user.displayName || 'Google User';
                 profileData.hasCompletedOnboarding = false;
                 profileData.createdAt = serverTimestamp();
@@ -115,28 +108,27 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
 
     return (
         <div className="auth-container">
-            <div className="auth-card">
+            <div className="auth-card" style={{ padding: '24px 20px 20px', gap: 0 }}>
+                {/* 닫기 버튼 */}
                 {onCancel && (
-                    <button
-                        onClick={onCancel}
-                        style={{
-                            position: 'absolute', top: '14px', right: '14px',
-                            background: 'none', border: 'none', fontSize: '1.4rem',
-                            cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
-                        }}
-                        aria-label="close"
-                    >×</button>
+                    <button onClick={onCancel} style={{
+                        position: 'absolute', top: '14px', right: '14px',
+                        background: 'none', border: 'none', fontSize: '1.4rem',
+                        cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
+                    }} aria-label="close">×</button>
                 )}
-                <div className="auth-header">
-                    <div className="auth-icon-circle">
-                        <LogIn size={24} color="white" />
-                    </div>
-                    <h2>{t('auth.welcomeBack')}</h2>
-                    <p>{t('auth.loginSubtitle')}</p>
-                </div>
 
+                {/* 타이틀 */}
+                <h2 style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 4px' }}>
+                    {t('auth.welcomeBack')}
+                </h2>
+                <p style={{ textAlign: 'center', fontSize: '0.82rem', color: '#94a3b8', margin: '0 0 18px' }}>
+                    {t('auth.loginSubtitle')}
+                </p>
+
+                {/* 에러 */}
                 {error === 'inapp' ? (
-                    <div className="auth-inapp-warning">
+                    <div className="auth-inapp-warning" style={{ marginBottom: '12px' }}>
                         <Smartphone size={20} />
                         <div>
                             <strong>{t('auth.inappTitle')}</strong>
@@ -144,74 +136,77 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                         </div>
                     </div>
                 ) : error && (
-                    <div className="auth-error">
-                        <AlertCircle size={18} />
-                        <span>{error}</span>
+                    <div className="auth-error" style={{ marginBottom: '12px' }}>
+                        <AlertCircle size={16} />
+                        <span style={{ fontSize: '0.82rem' }}>{error}</span>
                     </div>
                 )}
 
-                <form onSubmit={handleLogin} className="auth-form">
-                    <div className="input-wrapper">
-                        <label className="input-label">{t('auth.email')} <span className="required-star">*</span></label>
-                        <div className="input-group">
-                            <Mail size={18} className="input-icon" />
-                            <input
-                                type="email"
-                                placeholder={t('auth.emailPlaceholder')}
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                required
-                            />
-                        </div>
+                {/* ── 상단: 구글 로그인 (메인) ── */}
+                <button className="google-btn" onClick={handleGoogleLogin} disabled={isLoading}
+                    style={{ width: '100%', padding: '13px', fontSize: '1rem', fontWeight: 700, marginBottom: '0' }}>
+                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="google-icon" />
+                    {t('auth.googleLogin')}
+                </button>
+
+                {/* 구분선 */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '16px 0 14px' }}>
+                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                    <span style={{ fontSize: '0.75rem', color: '#cbd5e1', whiteSpace: 'nowrap' }}>
+                        {t('auth.or')} {t('auth.email')}
+                    </span>
+                    <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
+                </div>
+
+                {/* ── 하단: 이메일/비번 (보조) ── */}
+                <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                        <Mail size={16} className="input-icon" />
+                        <input
+                            type="email"
+                            placeholder={t('auth.emailPlaceholder')}
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            required
+                            style={{ fontSize: '0.88rem', padding: '10px 10px 10px 36px' }}
+                        />
+                    </div>
+                    <div className="input-group" style={{ marginBottom: 0 }}>
+                        <Lock size={16} className="input-icon" />
+                        <input
+                            type="password"
+                            placeholder={t('auth.passwordPlaceholder')}
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
+                            required
+                            style={{ fontSize: '0.88rem', padding: '10px 10px 10px 36px' }}
+                        />
                     </div>
 
-                    <div className="input-wrapper">
-                        <label className="input-label">{t('auth.password')} <span className="required-star">*</span></label>
-                        <div className="input-group">
-                            <Lock size={18} className="input-icon" />
-                            <input
-                                type="password"
-                                placeholder={t('auth.passwordPlaceholder')}
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                required
-                            />
-                        </div>
-                    </div>
-
-                    <div style={{ textAlign: 'right', marginTop: '2px' }}>
-                        <span
-                            onClick={handleForgotPassword}
-                            style={{ fontSize: '0.8rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600' }}
-                        >
+                    <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+                        <span onClick={handleForgotPassword}
+                            style={{ fontSize: '0.76rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600' }}>
                             {t('auth.forgotPassword')}
                         </span>
                     </div>
 
                     {resetSent && (
                         <div style={{
-                            background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '10px',
-                            padding: '10px 14px', fontSize: '0.82rem', color: '#166534', fontWeight: '500'
+                            background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '8px',
+                            padding: '8px 12px', fontSize: '0.78rem', color: '#166534',
                         }}>
                             ✅ {t('auth.forgotSent')}
                         </div>
                     )}
 
-                    <button type="submit" className="auth-submit-btn" disabled={isLoading} style={{ marginTop: '6px' }}>
+                    <button type="submit" disabled={isLoading} style={{
+                        padding: '10px', borderRadius: '12px', border: '1px solid #cbd5e1',
+                        background: '#f8fafc', color: '#475569', fontWeight: 600,
+                        fontSize: '0.88rem', cursor: 'pointer', marginTop: '2px',
+                    }}>
                         {isLoading ? t('auth.processing') : t('auth.login')}
                     </button>
                 </form>
-
-                <div className="auth-divider">{t('auth.or')}</div>
-
-                <button className="google-btn" onClick={handleGoogleLogin} disabled={isLoading}>
-                    <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="google-icon" />
-                    {t('auth.googleLogin')}
-                </button>
-
-                <div className="auth-footer">
-                    <p>{t('auth.noAccount')} <span onClick={onSwitchToSignup}>{t('auth.signup')}</span></p>
-                </div>
             </div>
         </div>
     );

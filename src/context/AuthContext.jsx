@@ -73,6 +73,15 @@ export const AuthProvider = ({ children }) => {
                         const result = await FirebaseAuthentication.getCurrentUser();
                         if (result.user) {
                             // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
+                            // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백
+                            setTimeout(async () => {
+                                if (!auth.currentUser) {
+                                    console.warn('[AuthContext] 네이티브 sync 타임아웃 → signInAnonymously 폴백');
+                                    try { await signInAnonymously(auth); } catch (e) {
+                                        setUser(null); setProfile(null); setLoading(false);
+                                    }
+                                }
+                            }, 5000);
                             return;
                         }
                     } catch (e) {

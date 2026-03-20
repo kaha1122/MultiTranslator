@@ -1436,8 +1436,16 @@ function App() {
   // 로그아웃을 처리하는 함수
   const handleLogout = async () => {
     try {
-      await signOut(auth); // Firebase 서버에 로그아웃 알림
-      setViewMode('home'); // 로그아웃 후 기본 화면으로 이동
+      // 네이티브 환경: Capacitor Firebase Auth도 함께 로그아웃 (미처리 시 앱 재실행 시 로딩 stuck)
+      if (window.Capacitor?.isNativePlatform?.()) {
+        try {
+          const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+          await FirebaseAuthentication.signOut();
+        } catch (e) { /* 플러그인 오류 무시 */ }
+      }
+      await signOut(auth);
+      setShowLanding(true); // 로그아웃 후 랜딩 페이지로
+      setViewMode('home');
     } catch (error) {
       console.error("로그아웃 실패:", error);
     }
@@ -1599,18 +1607,23 @@ function App() {
       {showAnonSignupPrompt && (
         <div style={{
           position: 'fixed', inset: 0, zIndex: 10000,
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'center',
-          pointerEvents: 'none',
-        }}>
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          background: 'rgba(0,0,0,0.45)',
+        }} onClick={() => setShowAnonSignupPrompt(false)}>
           <div style={{
-            width: '100%', maxWidth: '480px',
-            background: '#fff', borderRadius: '24px 24px 0 0',
-            padding: '24px 20px 32px',
-            boxShadow: '0 -8px 40px rgba(0,0,0,0.18)',
-            pointerEvents: 'auto',
-            animation: 'slideUp 0.35s ease',
-          }}>
-            <div style={{ width: '40px', height: '4px', background: '#e2e8f0', borderRadius: '99px', margin: '0 auto 20px' }} />
+            width: 'calc(100% - 48px)', maxWidth: '360px',
+            background: '#fff', borderRadius: '24px',
+            padding: '28px 24px 24px',
+            boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+            animation: 'fadeInScale 0.25s ease',
+          }} onClick={e => e.stopPropagation()}>
+            <div style={{ position: 'relative' }}>
+              <button onClick={() => setShowAnonSignupPrompt(false)} style={{
+                position: 'absolute', top: '-12px', right: '-8px',
+                background: 'none', border: 'none', fontSize: '1.3rem',
+                cursor: 'pointer', color: '#94a3b8', lineHeight: 1,
+              }}>×</button>
+            </div>
             <div style={{ fontSize: '1.5rem', textAlign: 'center', marginBottom: '8px' }}>🎉</div>
             <h3 style={{ textAlign: 'center', fontSize: '1.1rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
               {getT(sourceLang, 'upgrade.promptTitle')}
