@@ -48,6 +48,7 @@ import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
+import { useAdMob } from './hooks/useAdMob';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
@@ -214,6 +215,9 @@ function App() {
 
   // Daily progress hook
   const { todayCount, todayPronCount, weeklyData, incrementAchievement, incrementDailyPron } = useDailyProgress(user, dailyGoal);
+
+  // AdMob 배너 광고 (Android 전용)
+  useAdMob();
 
   // Trial 일간 제한 동기화
   useEffect(() => {
@@ -1545,7 +1549,11 @@ function App() {
 
   // 메인 앱 화면
   return (
-    <div className="app-container" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
+    <div className="app-container"
+      onTouchStart={handleTouchStart}
+      onTouchEnd={handleTouchEnd}
+      style={isNativePlatform ? { paddingTop: '50px', paddingBottom: '50px' } : undefined}
+    >
       {/* Vercel 분석 도구 */}
       <Analytics />
 
