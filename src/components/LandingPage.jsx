@@ -260,21 +260,9 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
       <div className="lp-ambient lp-ambient-2" />
 
       {/* ── Nav ── */}
-      <nav className="lp-nav">
+      <nav className="lp-nav" style={{ justifyContent: 'center', gap: '16px' }}>
         <div className="lp-logo">PronunFit</div>
-        <div className="lp-nav-actions">
-          {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
-          <button className="lp-login-btn" onClick={onSignup}>{c.signUp}</button>
-          {onStartFree && (
-            <button
-              className="lp-login-btn"
-              onClick={onStartFree}
-              style={{ background: '#00a884', color: '#fff', border: 'none', fontWeight: 700 }}
-            >
-              {c.startFree || '무료 시작'}
-            </button>
-          )}
-        </div>
+        {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
       </nav>
 
       {/* ── Hero 1: 발음 ── */}
@@ -302,7 +290,7 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
             onMouseEnter={e => e.target.style.transform = 'scale(1.04)'}
             onMouseLeave={e => e.target.style.transform = 'scale(1)'}
           >
-            🚀 {c.startFree || '로그인 없이 무료 시작'}
+            🚀 {c.startFree || '무료로 시작하기'}
           </button>
         )}
         <div className="lp-hero-divider" />
@@ -432,12 +420,13 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
       </section>
 
       {/* ── 중간 로그인 CTA ── */}
-      <section className="lp-mid-cta">
-        <div className="lp-cta-btn-wrap">
-          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
-          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
-        </div>
-      </section>
+      {onStartFree && (
+        <section className="lp-mid-cta">
+          <div className="lp-cta-btn-wrap">
+            <button className="lp-btn lp-btn-primary" onClick={onStartFree}>🚀 {c.startFree || '무료로 시작하기'}</button>
+          </div>
+        </section>
+      )}
 
       {/* ── Guide Accordion ── */}
       <section className="lp-guide">
@@ -499,8 +488,10 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
         </h2>
         <p className="lp-cta-sub">{c.ctaSub}</p>
         <div className="lp-cta-btn-wrap">
-          <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
-          <button className="lp-btn lp-btn-secondary" onClick={onLogin}>{c.otherLogin}</button>
+          {onStartFree
+            ? <button className="lp-btn lp-btn-primary" onClick={onStartFree}>🚀 {c.startFree || '무료로 시작하기'}</button>
+            : <button className="lp-btn lp-btn-primary" onClick={onGoogleLogin}>{c.ctaStart}</button>
+          }
         </div>
         <div ref={bottomRef} style={{ height: 1 }} />
       </section>
@@ -538,8 +529,13 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
             <button className="lp-modal-close" onClick={() => setShowLoginModal(false)}>✕</button>
             <div className="lp-modal-emoji">🎯</div>
             <h3 className="lp-modal-title">{c.demoLoginTitle}</h3>
-            <button className="lp-modal-google" onClick={onGoogleLogin}>{c.demoLoginGoogle}</button>
-            <button className="lp-modal-other" onClick={onLogin}>{c.demoLoginOther}</button>
+            <button
+              className="lp-modal-google"
+              onClick={() => { setShowLoginModal(false); onStartFree ? onStartFree() : onGoogleLogin(); }}
+              style={{ background: 'linear-gradient(135deg, #00a884, #059669)', color: '#fff', border: 'none' }}
+            >
+              🚀 {c.startFree || '무료로 시작하기'}
+            </button>
           </div>
         </div>
       )}

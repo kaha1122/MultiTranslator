@@ -618,7 +618,7 @@
     "installPopup": "📲 Install the app\nfor instant access",
     "accountDelTitle": "Account Deletion & Data Disposal",
     "accountDelDesc": "If you wish to delete your PronunFit account, please email us at <b>support@pronunfit.com</b> with your registered email address. We will securely delete your account and all learning data within 7 days.",
-    "startFree": "Start Free — No Login"
+    "startFree": "Start Free"
   },
   "renewal": {
     "title": "Subscription Expiring Soon",
