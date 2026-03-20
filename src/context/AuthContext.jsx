@@ -10,6 +10,9 @@ const AuthContext = createContext();
 let accountDeletionInProgress = false;
 export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
 
+// 익명 로그인 중복 실행 방지 플래그
+let anonSignInInProgress = false;
+
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -107,6 +110,10 @@ export const AuthProvider = ({ children }) => {
                 await auth.authStateReady();
                 if (auth.currentUser) return; // 복원된 유저 있음 → 다음 onAuthStateChanged 호출이 처리
 
+                // 중복 실행 방지: 동시에 여러 번 호출돼도 signInAnonymously는 한 번만
+                if (anonSignInInProgress) return;
+                anonSignInInProgress = true;
+
                 // 비로그인 → 익명으로 자동 로그인 시도
                 try {
                     await signInAnonymously(auth);
@@ -115,6 +122,8 @@ export const AuthProvider = ({ children }) => {
                     setUser(null);
                     setProfile(null);
                     setLoading(false);
+                } finally {
+                    anonSignInInProgress = false;
                 }
             }
         });

@@ -304,6 +304,7 @@
     "premiumFeature1": "无限发音评估",
     "premiumFeature3": "所有标签页无限使用",
     "premiumFeature4": "高级专属支持",
+    "noAds": "无广告",
     "discount": "折扣",
     "title": "创建账户",
     "subtitle": "注册后永久保存学习记录",
@@ -861,6 +862,12 @@
     "pro": "🌟 Pro",
     "proDesc": "卡片无限 · 发音1,500次/月",
     "premium": "👑 Premium",
-    "premiumDesc": "卡片 · 发音 无限"
+    "premiumDesc": "卡片 · 发音 无限",
+    "noAds": "无广告"
+  },
+  "install": {
+    "ios": "添加到主屏幕：\n点击底部分享按钮(□↑) → 选择\"添加到主屏幕\"。",
+    "android": "安装为应用：\n点击 Chrome 地址栏右侧 ⋮ 菜单 → \"安装应用\" 或 \"添加到主屏幕\"。",
+    "desktop": "安装为应用：\n点击浏览器地址栏右侧安装图标(⊕)，\n或菜单 → \"安装 PronunFit\"。"
   }
 }

@@ -275,6 +275,7 @@ body {
   flex-direction: column;
   box-shadow: 4px 0 32px rgba(0,0,0,0.18);
   overflow-y: auto;
+  padding-bottom: var(--admob-bottom, 0px);
 }
 
 .sidebar-header {

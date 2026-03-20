@@ -304,6 +304,7 @@
     "premiumFeature1": "발음 평가 무제한",
     "premiumFeature3": "모든 탭 무제한 이용",
     "premiumFeature4": "프리미엄 전용 지원",
+    "noAds": "광고 없음",
     "discount": "할인",
     "title": "계정 만들기",
     "subtitle": "가입하면 학습 기록이 영구 보존됩니다",
@@ -861,6 +862,12 @@
     "pro": "🌟 Pro",
     "proDesc": "카드 무제한 · 발음 1,500회/월",
     "premium": "👑 Premium",
-    "premiumDesc": "카드 · 발음 무제한"
+    "premiumDesc": "카드 · 발음 무제한",
+    "noAds": "광고 없음"
+  },
+  "install": {
+    "ios": "홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → \"홈 화면에 추가\"를 선택하세요.",
+    "android": "앱으로 설치하려면:\nChrome 주소창 우측 ⋮ 메뉴 → \"앱 설치\" 또는 \"홈 화면에 추가\"를 선택하세요.",
+    "desktop": "앱으로 설치하려면:\n브라우저 주소창 우측 설치 아이콘(⊕)을 클릭하거나,\n메뉴 → \"PronunFit 설치\"를 선택하세요."
   }
 }

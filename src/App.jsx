@@ -47,7 +47,7 @@ import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
-import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { useAdMob, showInterstitialAd, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
@@ -122,7 +122,10 @@ function App() {
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
-  const [showLanding, setShowLanding] = useState(true);
+  // 웹: 이미 앱에 진입한 적 있으면 랜딩 건너뜀 (anonymous 복원 시 재진입 방지)
+  const [showLanding, setShowLanding] = useState(
+    () => localStorage.getItem('webAppEntered') !== '1'
+  );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
@@ -241,8 +244,21 @@ function App() {
   // Daily progress hook
   const { todayCount, todaySaveCount, todayPronCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron } = useDailyProgress(user, dailyGoal);
 
-  // AdMob 배너 광고 (Android 전용)
-  useAdMob();
+  // AdMob 배너 광고 (Android 전용, Pro/Premium 제외)
+  useAdMob(tier);
+
+  // 카드 5장 저장마다 인터스티셜 광고 (Trial만)
+  const triggerInterstitialOnSave = () => {
+    if (tier === 'pro' || tier === 'premium') return;
+    const key = 'interstitialSaveCount';
+    const count = (parseInt(localStorage.getItem(key) || '0', 10) + 1);
+    if (count >= 5) {
+      localStorage.setItem(key, '0');
+      showInterstitialAd();
+    } else {
+      localStorage.setItem(key, String(count));
+    }
+  };
 
   // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
   const getBonusForToday = () => {
@@ -703,11 +719,11 @@ function App() {
     const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
     const isAndroid = /android/i.test(navigator.userAgent);
     if (isIOS) {
-      alert('홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → "홈 화면에 추가"를 선택하세요.');
+      alert(getT(sourceLang, 'install.ios'));
     } else if (isAndroid) {
-      alert('앱으로 설치하려면:\nChrome 주소창 우측 ⋮ 메뉴 → "앱 설치" 또는 "홈 화면에 추가"를 선택하세요.');
+      alert(getT(sourceLang, 'install.android'));
     } else {
-      alert('앱으로 설치하려면:\n브라우저 주소창 우측 설치 아이콘(⊕)을 클릭하거나,\n메뉴 → "PronunFit 설치"를 선택하세요.');
+      alert(getT(sourceLang, 'install.desktop'));
     }
   };
 
@@ -1268,6 +1284,7 @@ function App() {
 
       const docRef = await addDoc(collection(db, "savedCards"), cardData);
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
+      triggerInterstitialOnSave();
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -1322,6 +1339,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
+      triggerInterstitialOnSave();
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -1378,6 +1396,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
+      triggerInterstitialOnSave();
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -1437,6 +1456,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
+      triggerInterstitialOnSave();
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -1509,6 +1529,7 @@ function App() {
         } catch (e) { /* 플러그인 오류 무시 */ }
       }
       localStorage.setItem('didExplicitLogout', '1'); // 로그아웃 플래그: 새 anonymous 자동 생성 방지
+      localStorage.removeItem('webAppEntered'); // 로그아웃 시 웹 진입 플래그 제거 → 랜딩 다시 표시
       await signOut(auth);
       setShowLanding(true); // 로그아웃 후 랜딩 페이지로
       setViewMode('home');
@@ -1629,7 +1650,7 @@ function App() {
   if (!isNativePlatform && user?.isAnonymous && showLanding) {
     return <LandingPage
       onGoogleLogin={handleGoogleLoginFromLanding}
-      onStartFree={() => setShowLanding(false)}
+      onStartFree={() => { localStorage.setItem('webAppEntered', '1'); setShowLanding(false); }}
       onLogin={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
       onSignup={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
       onInstall={handleInstallClick}
@@ -1927,7 +1948,7 @@ function App() {
                     border: '1px solid #fde68a', cursor: 'pointer', textAlign: 'left',
                   }}>
                   <span style={{ fontSize: '1.2rem' }}>🌟</span>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>
                       Pro
                     </div>
@@ -1935,6 +1956,9 @@ function App() {
                       {getT(sourceLang, 'subscription.proDesc') || '카드 무제한 · 발음 1,500회/월'}
                     </div>
                   </div>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#92400e', background: '#fde68a', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                    {getT(sourceLang, 'subscription.noAds') || '광고 없음'}
+                  </span>
                 </button>
                 {/* Premium */}
                 <button
@@ -1946,7 +1970,7 @@ function App() {
                     border: '1px solid #e9d5ff', cursor: 'pointer', textAlign: 'left',
                   }}>
                   <span style={{ fontSize: '1.2rem' }}>👑</span>
-                  <div>
+                  <div style={{ flex: 1 }}>
                     <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6b21a8' }}>
                       Premium
                     </div>
@@ -1954,6 +1978,9 @@ function App() {
                       {getT(sourceLang, 'subscription.premiumDesc') || '카드 · 발음 무제한'}
                     </div>
                   </div>
+                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6b21a8', background: '#e9d5ff', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                    광고 없음
+                  </span>
                 </button>
               </div>
 

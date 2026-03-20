@@ -304,6 +304,7 @@
     "premiumFeature1": "Unlimited pronunciation assessments",
     "premiumFeature3": "Unlimited access to all tabs",
     "premiumFeature4": "Premium support",
+    "noAds": "No Ads",
     "discount": "OFF",
     "title": "Create Account",
     "subtitle": "Save your learning history permanently",
@@ -861,6 +862,12 @@
     "pro": "🌟 Pro",
     "proDesc": "Unlimited cards · 1,500 prons/mo",
     "premium": "👑 Premium",
-    "premiumDesc": "Unlimited cards & prons"
+    "premiumDesc": "Unlimited cards & prons",
+    "noAds": "No Ads"
+  },
+  "install": {
+    "ios": "To add to home screen:\nTap the share button (□↑) at the bottom → select \"Add to Home Screen\".",
+    "android": "To install as an app:\nTap ⋮ menu in Chrome address bar → \"Install app\" or \"Add to Home Screen\".",
+    "desktop": "To install as an app:\nClick the install icon (⊕) in the browser address bar,\nor go to menu → \"Install PronunFit\"."
   }
 }

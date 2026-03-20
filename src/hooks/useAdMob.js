@@ -9,35 +9,70 @@ const AD_UNITS = IS_TESTING ? {
     bannerBottom:   'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
     rewardedCards:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
     rewardedProns:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
+    interstitial:   'ca-app-pub-3940256099942544/1033173712', // AdMob Test Interstitial
 } : {
     bannerTop:      'ca-app-pub-8626604652301297/3986871373', // Banner01
     bannerBottom:   'ca-app-pub-8626604652301297/4166267528', // Banner02
     rewardedCards:  'ca-app-pub-8626604652301297/4860569967', // Bonus01 (RewardC, +5)
     rewardedProns:  'ca-app-pub-8626604652301297/4166267528', // Bonus02 (RewardP, +10)
+    interstitial:   'ca-app-pub-8626604652301297/6443880844', // Interstitial01
 };
 
 export { AD_UNITS, IS_TESTING };
 
-const BANNER_HEIGHT = 50;
-
-let admobInitialized = false;
-
-async function getAdMob() {
-    if (!isNativePlatform()) return null;
+export async function showInterstitialAd() {
+    if (!isNativePlatform()) return;
     try {
-        const { AdMob } = await import('@capacitor-community/admob');
-        return AdMob;
-    } catch {
-        return null;
+        await loadAdMob();
+        if (!_adMob) return;
+
+        const { InterstitialAdPluginEvents } = await import('@capacitor-community/admob');
+
+        await new Promise(async (resolve) => {
+            const handles = [];
+            const cleanup = () => handles.forEach(h => h?.remove?.());
+
+            handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
+                cleanup(); resolve();
+            }));
+            handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {
+                console.error('[AdMob Interstitial] FailedToLoad:', JSON.stringify(e));
+                cleanup(); resolve();
+            }));
+            handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToShow, (e) => {
+                console.error('[AdMob Interstitial] FailedToShow:', JSON.stringify(e));
+                cleanup(); resolve();
+            }));
+
+            try {
+                await _adMob.prepareInterstitial({ adId: AD_UNITS.interstitial, isTesting: IS_TESTING });
+                await _adMob.showInterstitial();
+            } catch (e) {
+                console.error('[AdMob Interstitial] 실패:', e?.message);
+                cleanup(); resolve();
+            }
+        });
+    } catch (e) {
+        console.error('[AdMob Interstitial] 오류:', e?.message);
     }
 }
 
-async function initAdMob() {
-    if (admobInitialized) return;
-    const AdMob = await getAdMob();
-    if (!AdMob) return;
-    await AdMob.initialize({ testingDevices: [], initializeForTesting: IS_TESTING });
-    admobInitialized = true;
+const BANNER_HEIGHT = 50;
+
+// AdMob 플러그인을 모듈 변수에 캐싱 — async 함수에서 return하면
+// JS가 thenable 감지를 위해 AdMob.then()을 호출 → 네이티브 브릿지 에러 발생
+let _adMob = null;
+let _admobInitialized = false;
+
+async function loadAdMob() {
+    if (_adMob) return;
+    if (!isNativePlatform()) return;
+    try {
+        const mod = await import('@capacitor-community/admob');
+        _adMob = mod.AdMob;
+    } catch {
+        _adMob = null;
+    }
 }
 
 function setOffset(bottom) {
@@ -46,38 +81,41 @@ function setOffset(bottom) {
     r.style.setProperty('--admob-bottom', bottom ? `${BANNER_HEIGHT}px` : '0px');
 }
 
-export const useAdMob = () => {
+export const useAdMob = (tier) => {
     const initialized = useRef(false);
 
     useEffect(() => {
         if (!isNativePlatform() || initialized.current) return;
+        if (tier === 'pro' || tier === 'premium') return;
         initialized.current = true;
 
         let listenerHandles = [];
 
         const setup = async () => {
             try {
-                await initAdMob();
-                const AdMob = await getAdMob();
-                if (!AdMob) return;
+                await loadAdMob();
+                if (!_adMob) return;
+
+                if (!_admobInitialized) {
+                    await _adMob.initialize({});
+                    _admobInitialized = true;
+                }
 
                 const { BannerAdSize, BannerAdPosition, BannerAdPluginEvents } = await import('@capacitor-community/admob');
 
-                // 이벤트 리스너 등록 (cleanup에서 제거)
-                listenerHandles.push(await AdMob.addListener(BannerAdPluginEvents.Loaded, () => {
+                listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.Loaded, () => {
                     console.log('[AdMob Banner] Loaded OK');
                     setOffset(true);
                 }));
-                listenerHandles.push(await AdMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
+                listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
                     console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
                 }));
 
                 console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerBottom, 'isTesting:', IS_TESTING);
 
-                // 하단 배너 표시 (하나만 운영 — 동시 2개는 플러그인 미지원)
-                await AdMob.showBanner({
+                await _adMob.showBanner({
                     adId: AD_UNITS.bannerBottom,
-                    adSize: BannerAdSize.BANNER,
+                    adSize: BannerAdSize.ADAPTIVE_BANNER,
                     position: BannerAdPosition.BOTTOM_CENTER,
                     margin: 0,
                     isTesting: IS_TESTING,
@@ -94,7 +132,7 @@ export const useAdMob = () => {
 
         return () => {
             listenerHandles.forEach(h => h?.remove?.());
-            getAdMob().then(AdMob => AdMob?.removeBanner?.().catch(() => {}));
+            if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
         };
     }, []);

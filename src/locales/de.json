@@ -304,6 +304,7 @@
     "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
     "premiumFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature4": "Premium-Support",
+    "noAds": "Keine Werbung",
     "discount": "Rabatt",
     "title": "Konto erstellen",
     "subtitle": "Sichern Sie Ihren Lernfortschritt dauerhaft",
@@ -860,6 +861,12 @@
     "pro": "🌟 Pro",
     "proDesc": "Karten unbegrenzt · 1.500 Aussprachen/Monat",
     "premium": "👑 Premium",
-    "premiumDesc": "Karten & Aussprachen unbegrenzt"
+    "premiumDesc": "Karten & Aussprachen unbegrenzt",
+    "noAds": "Keine Werbung"
+  },
+  "install": {
+    "ios": "Zum Startbildschirm hinzufügen:\nTippe auf die Teilen-Schaltfläche (□↑) → wähle \"Zum Home-Bildschirm\".",
+    "android": "Als App installieren:\nTippe auf ⋮ in der Chrome-Adressleiste → \"App installieren\" oder \"Zum Startbildschirm hinzufügen\".",
+    "desktop": "Als App installieren:\nKlicke auf das Installations-Symbol (⊕) in der Adressleiste,\noder Menü → \"PronunFit installieren\"."
   }
 }

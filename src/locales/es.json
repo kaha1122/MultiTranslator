@@ -304,6 +304,7 @@
     "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
     "premiumFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature4": "Soporte Premium",
+    "noAds": "Sin anuncios",
     "discount": "Descuento",
     "title": "Crear cuenta",
     "subtitle": "Guarda tu historial de aprendizaje permanentemente",
@@ -860,6 +861,12 @@
     "pro": "🌟 Pro",
     "proDesc": "Tarjetas ilimitadas · 1.500 pronunciaciones/mes",
     "premium": "👑 Premium",
-    "premiumDesc": "Tarjetas y pronunciaciones ilimitadas"
+    "premiumDesc": "Tarjetas y pronunciaciones ilimitadas",
+    "noAds": "Sin anuncios"
+  },
+  "install": {
+    "ios": "Para agregar a la pantalla de inicio:\nToca el botón compartir (□↑) → selecciona \"Agregar a pantalla de inicio\".",
+    "android": "Para instalar como app:\nToca el menú ⋮ en la barra de Chrome → \"Instalar app\" o \"Agregar a pantalla de inicio\".",
+    "desktop": "Para instalar como app:\nHaz clic en el icono de instalación (⊕) en la barra del navegador,\no menú → \"Instalar PronunFit\"."
   }
 }

@@ -304,6 +304,7 @@
     "premiumFeature1": "Đánh giá phát âm không giới hạn",
     "premiumFeature3": "Không giới hạn tất cả tab",
     "premiumFeature4": "Hỗ trợ Premium",
+    "noAds": "Không quảng cáo",
     "discount": "Giảm",
     "title": "Tạo tài khoản",
     "subtitle": "Lưu lịch sử học tập vĩnh viễn",
@@ -860,6 +861,12 @@
     "pro": "🌟 Pro",
     "proDesc": "Thẻ không giới hạn · 1.500 phát âm/tháng",
     "premium": "👑 Premium",
-    "premiumDesc": "Thẻ & phát âm không giới hạn"
+    "premiumDesc": "Thẻ & phát âm không giới hạn",
+    "noAds": "Không quảng cáo"
+  },
+  "install": {
+    "ios": "Thêm vào màn hình chính:\nNhấn nút chia sẻ (□↑) → chọn \"Thêm vào màn hình chính\".",
+    "android": "Cài đặt như ứng dụng:\nNhấn ⋮ trên thanh địa chỉ Chrome → \"Cài đặt ứng dụng\" hoặc \"Thêm vào màn hình chính\".",
+    "desktop": "Cài đặt như ứng dụng:\nNhấp vào biểu tượng cài đặt (⊕) trên thanh địa chỉ,\nhoặc menu → \"Cài đặt PronunFit\"."
   }
 }
