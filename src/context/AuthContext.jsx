@@ -10,9 +10,6 @@ const AuthContext = createContext();
 let accountDeletionInProgress = false;
 export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
 
-// 익명 자동 로그인 건너뛰기 플래그 (로그아웃 후 실계정 로그인 유도 시 사용)
-let skipAnonymousLogin = false;
-export const setSkipAnonymousLogin = (v) => { skipAnonymousLogin = v; };
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -68,14 +65,21 @@ export const AuthProvider = ({ children }) => {
                 });
 
             } else {
-                // skipAnonymousLogin 플래그가 켜져 있으면 익명 로그인 건너뜀 → 로그인 화면 표시
-                if (skipAnonymousLogin) {
-                    skipAnonymousLogin = false;
-                    setUser(null);
-                    setProfile(null);
-                    setLoading(false);
-                    return;
+                // 네이티브(Capacitor) 환경: 네이티브 Firebase에 로그인된 유저가 있으면
+                // 웹 SDK 동기화를 기다려야 함 — 즉시 signInAnonymously 호출 금지
+                if (window.Capacitor?.isNativePlatform?.()) {
+                    try {
+                        const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                        const result = await FirebaseAuthentication.getCurrentUser();
+                        if (result.user) {
+                            // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
+                            return;
+                        }
+                    } catch (e) {
+                        // 플러그인 오류 시 기존 로직으로 폴백
+                    }
                 }
+
                 // 비로그인 → 익명으로 자동 로그인 시도
                 try {
                     await signInAnonymously(auth);
