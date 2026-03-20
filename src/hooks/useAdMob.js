@@ -7,7 +7,7 @@ const AD_UNITS = {
     bannerBottom: 'ca-app-pub-8626604652301297/4166267528', // Banner02
 };
 
-const BANNER_HEIGHT = 60; // ADAPTIVE_BANNER 대략적인 높이(px)
+const BANNER_HEIGHT = 50;
 
 let admobInitialized = false;
 
@@ -29,11 +29,10 @@ async function initAdMob() {
     admobInitialized = true;
 }
 
-// CSS 변수로 헤더/하단 nav 위치를 배너 높이만큼 이동
-function applyBannerOffsets(top, bottom) {
-    const root = document.documentElement;
-    root.style.setProperty('--admob-top', top ? `${BANNER_HEIGHT}px` : '0px');
-    root.style.setProperty('--admob-bottom', bottom ? `${BANNER_HEIGHT}px` : '0px');
+function setOffset(top, bottom) {
+    const r = document.documentElement;
+    r.style.setProperty('--admob-top',    top    ? `${BANNER_HEIGHT}px` : '0px');
+    r.style.setProperty('--admob-bottom', bottom ? `${BANNER_HEIGHT}px` : '0px');
 }
 
 export const useAdMob = () => {
@@ -59,21 +58,23 @@ export const useAdMob = () => {
                     margin: 0,
                     isTesting: false,
                 });
+                // 상단 배너 높이만큼 헤더 아래로 이동
+                setOffset(true, false);
 
-                // 하단 배너: 상단 배너 제거 후 하단으로 재표시
-                // (플러그인이 동시 2개 미지원 — 하단만 유지)
-                await AdMob.removeBanner();
-
-                await AdMob.showBanner({
-                    adId: AD_UNITS.bannerBottom,
-                    adSize: BannerAdSize.BANNER,
-                    position: BannerAdPosition.BOTTOM_CENTER,
-                    margin: 0,
-                    isTesting: false,
-                });
-
-                // 하단 배너만 운영 → 하단 nav를 올려야 함
-                applyBannerOffsets(false, true);
+                // 하단 배너 시도 (플러그인이 동시 2개 지원하는 경우)
+                try {
+                    await AdMob.showBanner({
+                        adId: AD_UNITS.bannerBottom,
+                        adSize: BannerAdSize.BANNER,
+                        position: BannerAdPosition.BOTTOM_CENTER,
+                        margin: 0,
+                        isTesting: false,
+                    });
+                    setOffset(true, true);
+                } catch {
+                    // 동시 2개 미지원 시 상단만 유지
+                    console.warn('[AdMob] 하단 배너 동시 표시 불가 — 상단만 운영');
+                }
 
             } catch (e) {
                 console.error('[AdMob] 초기화 실패:', e);
@@ -84,7 +85,7 @@ export const useAdMob = () => {
 
         return () => {
             getAdMob().then(AdMob => AdMob?.removeBanner?.().catch(() => {}));
-            applyBannerOffsets(false, false);
+            setOffset(false, false);
         };
     }, []);
 };
