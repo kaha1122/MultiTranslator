@@ -324,6 +324,7 @@
     "sidebarTitle": "계정을 만들어 보세요",
     "sidebarBody": "가입하면 학습 기록이 영구 보존됩니다",
     "sidebarBtn": "무료 계정 만들기",
+    "loginExisting": "기존 계정으로 로그인",
     "passwordPlaceholder": "비밀번호 (6자 이상)",
     "promptTitle": "무료 계정을 만드세요",
     "promptDesc": "내 아이디를 사용하여, 웹이나 다른 기기에서도 학습을 이어갈 수 있어요."

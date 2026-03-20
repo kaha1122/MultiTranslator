@@ -234,7 +234,7 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, todayPronCount, weeklyData, incrementAchievement, incrementDailyPron } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron } = useDailyProgress(user, dailyGoal);
 
   // AdMob 배너 광고 (Android 전용)
   useAdMob();
@@ -242,7 +242,7 @@ function App() {
   // Trial 일간 제한 동기화
   useEffect(() => {
     if (tier === 'trial') {
-      setDailyTrialCardReached(todayCount >= TRIAL_DAILY_CARD_LIMIT);
+      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT);
       setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
     } else {
       setDailyTrialCardReached(false);
@@ -1216,8 +1216,7 @@ function App() {
     if (result.status === "success") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
       setSavedCardIds(prev => ({ ...prev, [langCode]: result.id }));
-      const wasNew = await incrementAchievement(`library-${result.id}`);
-      if (wasNew) setShowProgressPopup(true);
+      incrementDailySave();
       // Library로 이동하여 저장된 카드 포커스
       if (result.id) {
         setFocusCardId(result.id);
@@ -1257,8 +1256,12 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      const wasNew = await incrementAchievement(`library-${docRef.id}`);
-      if (wasNew) setShowProgressPopup(true);
+      incrementDailySave();
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
     } catch (error) {
       console.error("Video 카드 저장 오류:", error);
     }
@@ -1309,8 +1312,12 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      const wasNew = await incrementAchievement(`library-${docRef.id}`);
-      if (wasNew) setShowProgressPopup(true);
+      incrementDailySave();
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
       return docRef.id;
     } catch (error) {
       console.error("Scene 카드 저장 오류:", error);
@@ -1364,8 +1371,12 @@ function App() {
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
-      const wasNew = await incrementAchievement(`library-${docRef.id}`);
-      if (wasNew) setShowProgressPopup(true);
+      incrementDailySave();
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
       return docRef.id;
     } catch (error) {
       console.error("Vocab 카드 저장 오류:", error);
@@ -1670,7 +1681,7 @@ function App() {
                     fontSize: '0.78rem', cursor: 'pointer',
                   }}
                 >
-                  기존 계정으로 로그인
+                  {getT(sourceLang, 'upgrade.loginExisting')}
                 </button>
               </div>
             ) : (
@@ -1917,7 +1928,7 @@ function App() {
                   const isTrial = tier === 'trial';
                   const limit = TRIAL_DAILY_CARD_LIMIT; // 10
                   const goal = dailyGoal;
-                  const count = todayCount;
+                  const count = isTrial ? todaySaveCount : todayCount;
                   const isFull = isTrial ? count >= limit : count >= goal;
                   const ratio = isTrial ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
                   const barColor = isTrial
