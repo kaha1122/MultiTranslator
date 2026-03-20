@@ -387,10 +387,18 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                     </div>
                     {/* Pro features (shared) */}
                     <ul className="upgrade-plan-features">
-                        {PLAN_CONFIGS[0].featureKeys.map((key, i) => (
-                            <li key={i}>
-                                <Check size={14} style={{ color: '#4338ca', flexShrink: 0 }} />
-                                <span>{t(key)}</span>
+                        {PLAN_CONFIGS[0].featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
+                            <li key={i} style={i === 0 ? { display: 'flex', justifyContent: 'space-between', width: '100%' } : undefined}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Check size={14} style={{ color: '#4338ca', flexShrink: 0 }} />
+                                    <span>{t(key)}</span>
+                                </span>
+                                {i === 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#dc2626', fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                        <Check size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                        {t('upgrade.noAds')}
+                                    </span>
+                                )}
                             </li>
                         ))}
                     </ul>
@@ -453,10 +461,18 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                         })}
                     </div>
                     <ul className="upgrade-plan-features">
-                        {PLAN_CONFIGS[2].featureKeys.map((key, i) => (
-                            <li key={i}>
-                                <Check size={14} style={{ color: '#b45309', flexShrink: 0 }} />
-                                <span>{t(key)}</span>
+                        {PLAN_CONFIGS[2].featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
+                            <li key={i} style={i === 0 ? { display: 'flex', justifyContent: 'space-between', width: '100%' } : undefined}>
+                                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                    <Check size={14} style={{ color: '#b45309', flexShrink: 0 }} />
+                                    <span>{t(key)}</span>
+                                </span>
+                                {i === 0 && (
+                                    <span style={{ display: 'flex', alignItems: 'center', gap: 6, color: '#dc2626', fontWeight: 700, fontSize: '0.78rem', whiteSpace: 'nowrap' }}>
+                                        <Check size={14} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                        {t('upgrade.noAds')}
+                                    </span>
+                                )}
                             </li>
                         ))}
                     </ul>

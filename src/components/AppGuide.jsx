@@ -147,9 +147,9 @@ export default function AppGuide({ onBack, sourceLang }) {
         })}
       </div>
 
-      <div style={{ height: 8 }} />
+      <div style={{ height: 4 }} />
       <button className="guide-close-btn" onClick={onBack}>{t('guide.backBtn')}</button>
-      <div style={{ height: 32 }} />
+      <div style={{ height: 16 }} />
     </div>
   );
 }

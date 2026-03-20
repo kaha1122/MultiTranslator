@@ -4,7 +4,7 @@
   flex-direction: column;
   min-height: 100vh;
   background: #f8fafc;
-  padding-bottom: 60px;
+  padding-bottom: calc(60px + var(--admob-bottom, 0px));
 }
 
 .guide-header {
@@ -42,12 +42,12 @@
 }
 
 .guide-intro {
-  padding: 14px 16px;
-  font-size: 0.875rem;
+  padding: 10px 16px;
+  font-size: 0.84rem;
   color: #64748b;
   background: linear-gradient(135deg, #ecfdf5, #eff6ff);
   border-bottom: 1px solid #e2e8f0;
-  line-height: 1.5;
+  line-height: 1.4;
 }
 
 /* ── 섹션 ─────────────────────────────────────── */
@@ -55,8 +55,8 @@
   display: flex;
   flex-direction: column;
   gap: 0;
-  padding: 12px 12px 0;
-  gap: 8px;
+  padding: 8px 12px 0;
+  gap: 5px;
 }
 
 .guide-section {
@@ -77,12 +77,12 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 16px;
+  padding: 10px 14px;
   background: white;
   border: none;
   cursor: pointer;
   text-align: left;
-  gap: 12px;
+  gap: 10px;
 }
 
 .guide-section.open .guide-section-header {
@@ -96,21 +96,21 @@
 }
 
 .guide-section-emoji {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   line-height: 1;
   flex-shrink: 0;
 }
 
 .guide-section-name {
-  font-size: 1rem;
+  font-size: 0.92rem;
   font-weight: 700;
   color: #0f172a;
 }
 
 .guide-section-sub {
-  font-size: 0.76rem;
+  font-size: 0.72rem;
   color: #64748b;
-  margin-top: 2px;
+  margin-top: 1px;
 }
 
 /* ── 섹션 콘텐츠 ─────────────────────────────── */
@@ -176,8 +176,8 @@
 /* ── 하단 돌아가기 버튼 ────────────────────────── */
 .guide-close-btn {
   display: block;
-  margin: 12px auto 0;
-  padding: 12px 32px;
+  margin: 8px auto 0;
+  padding: 10px 32px;
   background: #00a884;
   color: white;
   border: none;

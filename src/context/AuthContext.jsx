@@ -35,15 +35,20 @@ export const AuthProvider = ({ children }) => {
 
                 // 익명 유저: 최소 Firestore 문서 생성 후 onSnapshot 연결
                 if (authenticatedUser.isAnonymous) {
-                    const snap = await getDoc(docRef);
-                    if (!snap.exists()) {
-                        await setDoc(docRef, {
-                            uid: authenticatedUser.uid,
-                            isAnonymous: true,
-                            tier: 'trial',
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(),
-                        });
+                    try {
+                        const snap = await getDoc(docRef);
+                        if (!snap.exists()) {
+                            await setDoc(docRef, {
+                                uid: authenticatedUser.uid,
+                                isAnonymous: true,
+                                tier: 'trial',
+                                createdAt: serverTimestamp(),
+                                updatedAt: serverTimestamp(),
+                            });
+                        }
+                    } catch (e) {
+                        console.error('[AuthContext] Anonymous user doc creation failed:', e);
+                        // onSnapshot fallback(line 56-64)이 재시도하므로 계속 진행
                     }
                 }
 
@@ -82,10 +87,13 @@ export const AuthProvider = ({ children }) => {
                             // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
                             // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백
                             setTimeout(async () => {
-                                if (!auth.currentUser) {
+                                if (!auth.currentUser && !anonSignInInProgress) {
+                                    anonSignInInProgress = true;
                                     console.warn('[AuthContext] 네이티브 sync 타임아웃 → signInAnonymously 폴백');
                                     try { await signInAnonymously(auth); } catch (e) {
                                         setUser(null); setProfile(null); setLoading(false);
+                                    } finally {
+                                        anonSignInInProgress = false;
                                     }
                                 }
                             }, 5000);
@@ -104,18 +112,18 @@ export const AuthProvider = ({ children }) => {
                     return;
                 }
 
-                // ✅ IndexedDB 복원 완료까지 대기
-                // onAuthStateChanged는 IndexedDB 로딩 전에 null로 먼저 호출될 수 있음.
-                // authStateReady()가 resolve되면 auth.currentUser에 복원된 유저가 담겨 있음.
-                await auth.authStateReady();
-                if (auth.currentUser) return; // 복원된 유저 있음 → 다음 onAuthStateChanged 호출이 처리
-
-                // 중복 실행 방지: 동시에 여러 번 호출돼도 signInAnonymously는 한 번만
+                // ✅ 중복 실행 방지: authStateReady() 이전에 뮤텍스 체크
+                // onAuthStateChanged가 동시에 여러 번 호출되면 둘 다 authStateReady()를
+                // 통과할 수 있으므로, 뮤텍스를 가장 먼저 체크해야 함
                 if (anonSignInInProgress) return;
                 anonSignInInProgress = true;
 
-                // 비로그인 → 익명으로 자동 로그인 시도
                 try {
+                    // IndexedDB 복원 완료까지 대기
+                    await auth.authStateReady();
+                    if (auth.currentUser) return; // 복원된 유저 있음 → 다음 onAuthStateChanged 호출이 처리
+
+                    // 비로그인 → 익명으로 자동 로그인 시도
                     await signInAnonymously(auth);
                 } catch (e) {
                     console.error('Anonymous sign-in failed:', e);
