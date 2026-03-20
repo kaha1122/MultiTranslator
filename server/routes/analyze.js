@@ -108,10 +108,11 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
         'fr': 'French',
         'de': 'German',
         'ru': 'Russian',
-        'pt-BR': 'Portuguese',
-        'pt': 'Portuguese'
+        'pt-BR': 'Portuguese (Brazil)',
+        'pt': 'Portuguese',
+        'vi': 'Vietnamese',
     };
-    const targetLangName = langNames[sourceLangCode?.split('-')[0]] || 'Korean';
+    const targetLangName = langNames[sourceLangCode] || langNames[sourceLangCode?.split('-')[0]] || 'English';
 
     const prompt = `
     You are a friendly and expert pronunciation coach.
@@ -122,13 +123,18 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     - Accuracy: ${assessmentData.accuracyScore}
     - Fluency: ${assessmentData.fluencyScore}
 
-    Word-level breakdown:
-    ${assessmentData.words.map(w => `- ${w.word}: Accuracy ${w.accuracyScore}, Error: ${w.errorType}`).join('\n')}
+    Word-level breakdown (with phoneme detail where available):
+    ${assessmentData.words.map(w => {
+        const phonemeDetail = w.phonemes?.length
+            ? ` [phonemes: ${w.phonemes.map(p => `${p.phoneme}(${p.accuracyScore})`).join(', ')}]`
+            : '';
+        return `- "${w.word}": Accuracy ${w.accuracyScore}, Error: ${w.errorType}${phonemeDetail}`;
+    }).join('\n')}
 
     Based on this data, provide ONE short, encouraging coaching tip (max 2 sentences) in EXACTLY ${targetLangName}.
     CRITICAL RULES:
-    1. Focus on the weakest part, specific mispronounced sounds, or a general tip to sound more natural.
-    2. Vary your responses! Do not use generic fallback phrases like "정말 잘하셨어요. 조금만 더 연습하면...". Provide unique insight each time based on their actual performance.
+    1. Write the entire tip in ${targetLangName}. However, when referring to specific words or phonemes, ALWAYS use the ORIGINAL script/characters from the student's sentence (e.g., write "电影" or "diànyǐng", NEVER translate them into ${targetLangName} equivalents like "영화" or "movie").
+    2. Vary your responses! Do not use generic fallback phrases. Provide unique insight based on actual performance.
     3. If they scored 100/100, enthusiastically praise their perfect pronunciation with varied phrasing.
     4. Return ONLY the tip text in ${targetLangName}, nothing else.
     `;
