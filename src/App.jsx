@@ -2047,7 +2047,7 @@ function App() {
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
+          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
           const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
           return (
@@ -2057,7 +2057,7 @@ function App() {
                 {/* 카드 게이지 — trial: 저장 제한(10/일), 유료: 목표 달성 */}
                 {(() => {
                   const isTrial = tier === 'trial';
-                  const limit = TRIAL_DAILY_CARD_LIMIT; // 10
+                  const limit = TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards;
                   const goal = dailyGoal;
                   const count = isTrial ? todaySaveCount : todayCount;
                   const isFull = isTrial ? count >= limit : count >= goal;
