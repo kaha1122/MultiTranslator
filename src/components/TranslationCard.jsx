@@ -164,10 +164,16 @@ const TranslationCard = ({
             ? learningTip.map(t => (t && typeof t === 'object') ? (t.content || '') : String(t || '')).join(' ')
             : (learningTip || '');
 
-        const prompt = `You are a language learning assistant.
-Card text: "${text}" (${langCode})
-Learning Tips: "${tipText}"
-Student asks in ${srcName}: "${query}"
+        const prompt = `You are a language learning assistant helping a student.
+The student is studying this card:
+- Target sentence: "${text}" (${langCode})
+- Learning context (for reference only): "${tipText}"
+
+The student asks: "${query}"
+
+IMPORTANT: Answer the student's actual question directly in ${srcName}.
+If the question is unrelated to the card content, answer it as a general language question.
+Do NOT force a connection to the card content.
 
 Answer in ${srcName}, exactly 2 lines:
 ① [Core meaning or explanation — 1 sentence]
