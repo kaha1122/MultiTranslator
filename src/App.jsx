@@ -20,7 +20,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
@@ -724,6 +724,8 @@ function App() {
   useEffect(() => {
     if (!user || !profile) return;
     if (profile.hasCompletedOnboarding === true) return;
+    // 이 기기에서 이미 온보딩을 마쳤으면 신규 anonymous여도 다시 묻지 않음
+    if (localStorage.getItem('deviceOnboardingDone') === '1') return;
     setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
@@ -735,6 +737,7 @@ function App() {
     localStorage.setItem('sourceLang', src);
     localStorage.setItem('inputLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
+    localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
     setShowOnboarding(false);
     setViewMode('home');
     updateUserProfile({
@@ -1443,6 +1446,7 @@ function App() {
           await FirebaseAuthentication.signOut();
         } catch (e) { /* 플러그인 오류 무시 */ }
       }
+      localStorage.setItem('didExplicitLogout', '1'); // 로그아웃 플래그: 새 anonymous 자동 생성 방지
       await signOut(auth);
       setShowLanding(true); // 로그아웃 후 랜딩 페이지로
       setViewMode('home');
@@ -1531,11 +1535,17 @@ function App() {
 
   // ── 진입 분기 ────────────────────────────────────────────────────────────────
 
-  // [폴백] signInAnonymously 실패 등으로 user가 null → 기존 로그인 화면
+  // [폴백] signInAnonymously 실패 또는 명시적 로그아웃 후 user가 null → 랜딩 또는 로그인 화면
   if (!user) {
     if (showLanding) {
+      const handleStartFreeAfterLogout = async () => {
+        localStorage.removeItem('didExplicitLogout');
+        try { await signInAnonymously(auth); } catch (e) { console.error(e); }
+        setShowLanding(false);
+      };
       return <LandingPage
         onGoogleLogin={handleGoogleLoginFromLanding}
+        onStartFree={handleStartFreeAfterLogout}
         onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
         onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
         onInstall={handleInstallClick}

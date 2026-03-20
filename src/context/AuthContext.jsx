@@ -21,6 +21,10 @@ export const AuthProvider = ({ children }) => {
 
         const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
             if (authenticatedUser) {
+                // 로그인 성공 시 명시적 로그아웃 플래그 제거
+                if (!authenticatedUser.isAnonymous) {
+                    localStorage.removeItem('didExplicitLogout');
+                }
                 setUser(authenticatedUser);
                 if (analytics) setUserId(analytics, authenticatedUser.uid);
 
@@ -87,6 +91,14 @@ export const AuthProvider = ({ children }) => {
                     } catch (e) {
                         // 플러그인 오류 시 기존 로직으로 폴백
                     }
+                }
+
+                // 명시적 로그아웃 후: 새 anonymous 계정 자동 생성 건너뜀 (Landing에서 "시작하기" 시 생성)
+                if (localStorage.getItem('didExplicitLogout') === '1') {
+                    setUser(null);
+                    setProfile(null);
+                    setLoading(false);
+                    return;
                 }
 
                 // 비로그인 → 익명으로 자동 로그인 시도
