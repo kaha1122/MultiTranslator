@@ -137,7 +137,8 @@ function App() {
   // anonymous 유저: 날짜 바뀐 첫 방문 시 사이드바 + 가입 유도 팝업 자동 표시
   useEffect(() => {
     if (!user?.isAnonymous) return;
-    const today = new Date().toISOString().slice(0, 10);
+    const now = new Date();
+    const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
     const lastShown = localStorage.getItem('anonSignupPromptDate');
     if (lastShown === today) return;
     // 최초 방문(lastShown 없음): 오늘 날짜만 기록하고 팝업 생략 (다음날부터 표시)
