@@ -14,6 +14,14 @@
       },
       "oauth_client": [
         {
+          "client_id": "879220793558-gp6j5q0idvfgn85qblgor2bl90vv98tr.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.arigems.pronunfit",
+            "certificate_hash": "9099498de0f31979f987bdb66e43a7d529c06566"
+          }
+        },
+        {
           "client_id": "879220793558-hn2rdi2r1d921gsjvind7tjuvhdjvv6l.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
