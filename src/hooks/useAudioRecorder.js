@@ -260,6 +260,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     await setDoc(recordRef, {
                         cardId: textHash,
                         originalText: text,
+                        targetLang: langCode,
+                        sourceLang: sourceLangCode,
+                        platform: window.Capacitor?.isNativePlatform?.() ? 'app' : 'web',
                         timestamp: serverTimestamp(),
                         scores: {
                             accuracy: assessment.pronunciationScore || 0,
