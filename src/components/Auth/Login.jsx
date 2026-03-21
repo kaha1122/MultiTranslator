@@ -59,7 +59,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
         try {
             if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-                const result = await FirebaseAuthentication.signInWithGoogle();
+                const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false });
                 const idToken = result.credential?.idToken;
                 if (!idToken) throw new Error('No idToken');
                 const credential = FirebaseGoogleAuthProvider.credential(idToken);

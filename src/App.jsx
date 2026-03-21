@@ -1575,7 +1575,7 @@ function App() {
   // 네이티브 Google Sign-In (Capacitor Firebase Auth 플러그인)
   const handleNativeGoogleLogin = async () => {
     const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-    const result = await FirebaseAuthentication.signInWithGoogle();
+    const result = await FirebaseAuthentication.signInWithGoogle({ useCredentialManager: false });
     const idToken = result.credential?.idToken;
     if (idToken) {
       const credential = FirebaseGoogleAuthProvider.credential(idToken);
