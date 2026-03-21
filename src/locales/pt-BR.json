@@ -2,6 +2,7 @@
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",
   "errors": {
     "micAccess": "Acesso ao microfone necessário. Por favor, permita nas configurações do navegador. 🎤",
+    "retryPronunciation": "Nenhuma voz detectada. Por favor, tente novamente.",
     "serverConnect": "Não foi possível conectar ao servidor de análise. Tente novamente mais tarde. 🥺",
     "libraryLoad": "Não foi possível carregar os dados da biblioteca. Verifique sua conexão com a internet. 😥",
     "byokAzureFail": "Falha na conexão da chave Azure. Verifique sua chave e região.",

@@ -2,6 +2,7 @@
   "splashTagline": "Free Multilingual Pronunciation Note",
   "errors": {
     "micAccess": "Microphone access required. Please allow it in browser settings. 🎤",
+    "retryPronunciation": "No voice detected. Please try again.",
     "serverConnect": "Cannot connect to the analysis server. Please try again later. 🥺",
     "libraryLoad": "Cannot load library data. Please check your internet connection. 😥",
     "byokAzureFail": "Azure key connection failed. Please check your key and region.",

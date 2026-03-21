@@ -2,6 +2,7 @@
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {
     "micAccess": "Mikrofonzugriff erforderlich. Bitte in den Browsereinstellungen erlauben. 🎤",
+    "retryPronunciation": "Keine Stimme erkannt. Bitte versuchen Sie es erneut.",
     "serverConnect": "Verbindung zum Analyseserver fehlgeschlagen. Bitte später erneut versuchen. 🥺",
     "libraryLoad": "Bibliotheksdaten konnten nicht geladen werden. Bitte Internetverbindung prüfen. 😥",
     "byokAzureFail": "Azure-Schlüsselverbindung fehlgeschlagen. Bitte Schlüssel und Region prüfen.",

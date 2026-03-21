@@ -2,6 +2,7 @@
   "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",
   "errors": {
     "micAccess": "Se requiere acceso al micrófono. Por favor, permítalo en la configuración del navegador. 🎤",
+    "retryPronunciation": "No se detectó voz. Por favor, inténtelo de nuevo.",
     "serverConnect": "No se puede conectar al servidor de análisis. Por favor, inténtelo más tarde. 🥺",
     "libraryLoad": "No se pueden cargar los datos de la biblioteca. Verifique su conexión a internet. 😥",
     "byokAzureFail": "Falló la conexión con Azure. Verifique su clave y región.",

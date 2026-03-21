@@ -49,6 +49,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
     // [신규] 침묵 감지(Silence Detection)를 위한 보조 메모리(Ref) 공간
     const audioContextRef = useRef(null);
     const silenceAnimationFrameRef = useRef(null);
+    const recordStartTimeRef = useRef(null);
 
     // 1. 녹음 시작 함수
     const startRecording = async () => {
@@ -166,11 +167,18 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
 
             // 녹음이 중지되면 분석을 시작합니다.
             mediaRecorder.current.onstop = async () => {
-                // 저장할 때, 고정된 'audio/wav'가 아니라, 기기가 만든 진짜 타입으로 덩어리(Blob)를 만듭니다.
                 const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
-                analyzeFullPronunciation(audioBlob, mediaRecorder.current.mimeType); // mimeType도 같이 넘겨줍니다.
+                const recordDuration = Date.now() - (recordStartTimeRef.current || 0);
 
-                // --- [신규] 분석이 끝났거나 녹음이 멈추면 침묵 감지 조수도 청소(정리)시켜줍니다. ---
+                // 녹음 시간 0.8초 미만 또는 데이터 2KB 미만 → 서버 전송 없이 재시도 안내
+                if (recordDuration < 800 || audioBlob.size < 2000) {
+                    setErrorMsg(getT(sourceLangCode, 'errors.retryPronunciation') || 'Please try again.');
+                    // 리소스 정리 후 조기 종료 (아래 cleanup 코드는 그대로 실행)
+                } else {
+                    analyzeFullPronunciation(audioBlob, mediaRecorder.current.mimeType);
+                }
+
+                // --- 분석이 끝났거나 녹음이 멈추면 침묵 감지 조수도 청소(정리)시켜줍니다. ---
                 if (silenceAnimationFrameRef.current) {
                     clearInterval(silenceAnimationFrameRef.current);
                     silenceAnimationFrameRef.current = null;
@@ -183,6 +191,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 // --- [신규 끝] ---
             };
 
+            recordStartTimeRef.current = Date.now();
             mediaRecorder.current.start();
             setIsRecording(true);
             setAssessmentResult(null);

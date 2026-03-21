@@ -2,6 +2,7 @@
   "splashTagline": "免费多语言发音学习单词本",
   "errors": {
     "micAccess": "需要麦克风权限。请在浏览器设置中允许。 🎤",
+    "retryPronunciation": "未检测到语音，请重新发音。",
     "serverConnect": "无法连接到分析服务器。请稍后重试。 🥺",
     "libraryLoad": "无法加载词库数据。请检查您的网络连接。 😥",
     "byokAzureFail": "Azure密钥连接失败。请检查您的密钥和区域。",

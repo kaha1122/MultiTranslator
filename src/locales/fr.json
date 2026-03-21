@@ -2,6 +2,7 @@
   "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",
   "errors": {
     "micAccess": "Accès au microphone requis. Veuillez l'autoriser dans les paramètres du navigateur. 🎤",
+    "retryPronunciation": "Aucune voix détectée. Veuillez réessayer.",
     "serverConnect": "Impossible de se connecter au serveur d'analyse. Veuillez réessayer. 🥺",
     "libraryLoad": "Impossible de charger la bibliothèque. Vérifiez votre connexion internet. 😥",
     "byokAzureFail": "La connexion à Azure a échoué. Vérifiez votre clé et votre région.",
