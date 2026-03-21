@@ -1581,7 +1581,9 @@ function App() {
       const credential = FirebaseGoogleAuthProvider.credential(idToken);
       const cred = await signInWithCredential(auth, credential);
       const info = getAdditionalUserInfo(cred);
-      const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
+      const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+      const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+      const profileData = { uid: cred.user.uid, email: cred.user.email, platform, deviceLang, updatedAt: serverTimestamp() };
       if (info?.isNewUser) {
         profileData.displayName = cred.user.displayName || 'Google User';
         profileData.hasCompletedOnboarding = false;
@@ -1604,7 +1606,9 @@ function App() {
     try {
       const cred = await signInWithPopup(auth, googleProvider);
       const info = getAdditionalUserInfo(cred);
-      const profileData = { uid: cred.user.uid, email: cred.user.email, updatedAt: serverTimestamp() };
+      const platform = 'web';
+      const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+      const profileData = { uid: cred.user.uid, email: cred.user.email, platform, deviceLang, updatedAt: serverTimestamp() };
       if (info?.isNewUser) {
         profileData.displayName = cred.user.displayName || 'Google User';
         profileData.hasCompletedOnboarding = false;

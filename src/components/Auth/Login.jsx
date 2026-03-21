@@ -66,7 +66,9 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
                 const additionalInfo = getAdditionalUserInfo(userCredential);
-                const profileData = { uid: user.uid, email: user.email, updatedAt: serverTimestamp() };
+                const platform = 'app';
+                const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
                     profileData.displayName = user.displayName || 'Google User';
                     profileData.hasCompletedOnboarding = false;
@@ -79,7 +81,9 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
-            const profileData = { uid: user.uid, email: user.email, updatedAt: serverTimestamp() };
+            const platform = 'web';
+            const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
                 profileData.displayName = user.displayName || 'Google User';
                 profileData.hasCompletedOnboarding = false;

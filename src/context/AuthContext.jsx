@@ -38,10 +38,14 @@ export const AuthProvider = ({ children }) => {
                     try {
                         const snap = await getDoc(docRef);
                         if (!snap.exists()) {
+                            const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+                            const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                             await setDoc(docRef, {
                                 uid: authenticatedUser.uid,
                                 isAnonymous: true,
                                 tier: 'trial',
+                                platform,
+                                deviceLang,
                                 createdAt: serverTimestamp(),
                                 updatedAt: serverTimestamp(),
                             });
@@ -59,11 +63,15 @@ export const AuthProvider = ({ children }) => {
                         // 회원탈퇴 중이면 문서 재생성 방지
                         if (accountDeletionInProgress) return;
                         // 실계정 유저: 문서가 없으면 자동 생성
+                        const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+                        const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                         await setDoc(docRef, {
                             uid: authenticatedUser.uid,
                             email: authenticatedUser.email,
                             displayName: authenticatedUser.displayName || 'Google User',
                             hasCompletedOnboarding: false,
+                            platform,
+                            deviceLang,
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp(),
                         });
