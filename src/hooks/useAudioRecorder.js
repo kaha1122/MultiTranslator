@@ -50,6 +50,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
     const audioContextRef = useRef(null);
     const silenceAnimationFrameRef = useRef(null);
     const recordStartTimeRef = useRef(null);
+    const hasDetectedVoiceRef = useRef(false);
 
     // 1. 녹음 시작 함수
     const startRecording = async () => {
@@ -149,6 +150,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                         // 소리가 컸다 = 사용자가 다시 말을 시작했다!
                         // 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
                         silenceStartTime = null;
+                        hasDetectedVoiceRef.current = true;
                     }
                 };
 
@@ -170,10 +172,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 const audioBlob = new Blob(audioChunks.current, { type: mediaRecorder.current.mimeType || 'audio/webm' });
                 const recordDuration = Date.now() - (recordStartTimeRef.current || 0);
 
-                // 녹음 시간 0.8초 미만 또는 데이터 2KB 미만 → 서버 전송 없이 재시도 안내
-                if (recordDuration < 800 || audioBlob.size < 2000) {
+                // 음성 미감지, 녹음 너무 짧음, 데이터 부족 → 서버 전송 없이 재시도 안내
+                if (!hasDetectedVoiceRef.current || recordDuration < 2000 || audioBlob.size < 2000) {
                     setErrorMsg(getT(sourceLangCode, 'errors.retryPronunciation') || 'Please try again.');
-                    // 리소스 정리 후 조기 종료 (아래 cleanup 코드는 그대로 실행)
                 } else {
                     analyzeFullPronunciation(audioBlob, mediaRecorder.current.mimeType);
                 }
@@ -192,6 +193,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             };
 
             recordStartTimeRef.current = Date.now();
+            hasDetectedVoiceRef.current = false;
             mediaRecorder.current.start();
             setIsRecording(true);
             setAssessmentResult(null);
