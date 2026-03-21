@@ -247,6 +247,22 @@ function App() {
   // AdMob 배너 광고 (Android 전용, Pro/Premium 제외)
   useAdMob(tier);
 
+  // RevenueCat 초기화 (Android 전용, 앱 시작 시 1회)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform() || !user) return;
+    const rcApiKey = import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
+    if (!rcApiKey) return;
+    (async () => {
+      try {
+        const { Purchases } = await import('@revenuecat/purchases-capacitor');
+        await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
+        console.log('[RevenueCat] Configured for', user.uid);
+      } catch (e) {
+        console.error('[RevenueCat] Init failed:', e?.message);
+      }
+    })();
+  }, [user?.uid]);
+
   // 카드 5장 저장마다 인터스티셜 광고 (Trial만)
   const triggerInterstitialOnSave = () => {
     if (tier !== 'trial') return;
