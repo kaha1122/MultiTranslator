@@ -377,11 +377,31 @@ function App() {
   const [appVersion, setAppVersion] = useState('');      // 네이티브 versionName
   const [bundleVersion, setBundleVersion] = useState(''); // Capgo OTA 버전 (있을 때만)
   const [updateStatus, setUpdateStatus] = useState('');
+  const [showNativeUpdate, setShowNativeUpdate] = useState(false); // Play Store 업데이트 팝업
+
+  // 버전 비교: "1.1.0" < "1.1.5" → true
+  const isVersionOlder = (current, required) => {
+    const c = current.split('.').map(Number);
+    const r = required.split('.').map(Number);
+    for (let i = 0; i < 3; i++) {
+      if ((c[i] || 0) < (r[i] || 0)) return true;
+      if ((c[i] || 0) > (r[i] || 0)) return false;
+    }
+    return false;
+  };
+
+  // ── 최소 네이티브 버전 (이 값보다 낮으면 Play Store 업데이트 유도) ──
+  const MIN_NATIVE_VERSION = '1.1.5';
+
   useEffect(() => {
     if (!Capacitor.isNativePlatform()) return;
     // 네이티브 앱 버전 (build.gradle versionName)
     CapacitorApp.getInfo().then(info => {
       setAppVersion(info.version);
+      // 최소 버전 체크
+      if (info.version && isVersionOlder(info.version, MIN_NATIVE_VERSION)) {
+        setShowNativeUpdate(true);
+      }
     }).catch(() => { });
     // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
     CapacitorUpdater.current().then(info => {
@@ -1560,6 +1580,51 @@ function App() {
   // 2.3초 후 handleSplashFinish 가 호출되어 false로 전환됩니다.
   if (showSplash) return <SplashScreen onFinish={handleSplashFinish} />;
 
+  // ── 네이티브 앱 업데이트 필요 팝업 ──────────────────────────────────────────
+  const nativeUpdatePopup = showNativeUpdate && (
+    <div style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      zIndex: 9999, padding: 20,
+    }}>
+      <div style={{
+        background: 'white', borderRadius: 20, padding: '28px 24px',
+        maxWidth: 340, width: '100%', textAlign: 'center',
+        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+      }}>
+        <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔄</div>
+        <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
+          {getT(sourceLang, 'update.title') !== 'update.title' ? getT(sourceLang, 'update.title') : '앱 업데이트 필요'}
+        </h3>
+        <p style={{ margin: '0 0 20px', fontSize: '0.85rem', color: '#64748b', lineHeight: 1.5 }}>
+          {getT(sourceLang, 'update.desc') !== 'update.desc' ? getT(sourceLang, 'update.desc') : '새로운 기능과 버그 수정이 포함된 최신 버전이 있습니다. 업데이트 후 이용해 주세요.'}
+        </p>
+        <button
+          onClick={() => {
+            window.open('https://play.google.com/store/apps/details?id=com.arigems.pronunfit', '_system');
+          }}
+          style={{
+            width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
+            background: '#00a884', color: 'white', fontSize: '0.95rem',
+            fontWeight: 700, cursor: 'pointer', marginBottom: 10,
+          }}
+        >
+          {getT(sourceLang, 'update.btn') !== 'update.btn' ? getT(sourceLang, 'update.btn') : 'Play Store에서 업데이트'}
+        </button>
+        <button
+          onClick={() => setShowNativeUpdate(false)}
+          style={{
+            width: '100%', padding: '10px 0', border: 'none', borderRadius: 10,
+            background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem',
+            fontWeight: 600, cursor: 'pointer',
+          }}
+        >
+          {getT(sourceLang, 'update.later') !== 'update.later' ? getT(sourceLang, 'update.later') : '나중에'}
+        </button>
+      </div>
+    </div>
+  );
+
   // ── Legal 페이지는 로그인 여부에 관계없이 항상 접근 가능해야 합니다 ──────────────
   // AdSense 심사관이 로그인 없이도 Privacy Policy / Contact 등을 볼 수 있어야 하기 때문입니다.
   if (viewMode === 'privacy') return <PrivacyPolicyPage onBack={() => setViewMode(user ? 'settings' : 'login-legal')} sourceLang={sourceLang} />;
@@ -1673,6 +1738,7 @@ function App() {
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
     >
+      {nativeUpdatePopup}
       {/* Vercel 분석 도구 */}
       <Analytics />
 

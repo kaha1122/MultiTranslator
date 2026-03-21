@@ -271,6 +271,12 @@
       "sports": "Sports"
     }
   },
+  "update": {
+    "title": "App Update Required",
+    "desc": "A new version with improvements and bug fixes is available. Please update to continue.",
+    "btn": "Update on Play Store",
+    "later": "Later"
+  },
   "upgrade": {
     "modalTitle": "Upgrade Your Plan",
     "modalSubtitle": "Practice more and improve faster",
