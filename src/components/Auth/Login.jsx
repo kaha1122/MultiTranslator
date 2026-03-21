@@ -89,7 +89,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
         } catch (err) {
             console.error(err);
             if (err.code !== 'auth/popup-closed-by-user') {
-                setError(`${t('auth.googleFailed')}: ${err.code}`);
+                setError(`${t('auth.googleFailed')}: ${err.code || err.message || JSON.stringify(err)}`);
             }
             setIsLoading(false);
         }
