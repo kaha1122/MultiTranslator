@@ -535,11 +535,11 @@ const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall,
           <p>SystemAdmin@PronunFit.com | 050-6754-5465</p>
         </div>
         <div className="lp-footer-links">
-          <button onClick={onPrivacy}>{t('nav.privacy')}</button>
+          <a href="/privacy" onClick={(e) => { e.preventDefault(); onPrivacy(); }}>{t('nav.privacy')}</a>
           <span>·</span>
-          <button onClick={onTerms}>{t('nav.terms')}</button>
+          <a href="/terms" onClick={(e) => { e.preventDefault(); onTerms(); }}>{t('nav.terms')}</a>
           <span>·</span>
-          <button onClick={onContact}>{t('nav.contact')}</button>
+          <a href="/contact" onClick={(e) => { e.preventDefault(); onContact(); }}>{t('nav.contact')}</a>
         </div>
         <p className="lp-footer-copy">{c.footerCopy}</p>
       </footer>
