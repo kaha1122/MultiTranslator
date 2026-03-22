@@ -3,6 +3,7 @@ import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
+import { Capacitor } from '@capacitor/core';
 
 const AuthContext = createContext();
 
@@ -240,6 +241,47 @@ export const AuthProvider = ({ children }) => {
             }).catch(e => console.error("Subscription expiry downgrade failed:", e));
         }
     }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
+
+    // ── RevenueCat entitlement → Firestore tier 동기화 (네이티브 앱 전용) ──
+    useEffect(() => {
+        if (!Capacitor.isNativePlatform() || !user) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { Purchases } = await import('@revenuecat/purchases-capacitor');
+                const { customerInfo } = await Purchases.getCustomerInfo();
+                const active = customerInfo?.entitlements?.active || {};
+                if (cancelled) return;
+
+                // RevenueCat entitlement 기준 tier 결정
+                let rcTier = null;
+                if (active['Premium']) rcTier = 'premium';
+                else if (active['Pro']) rcTier = 'pro';
+
+                // Firestore tier와 다르면 동기화
+                const currentTier = profile?.tier || 'trial';
+                if (rcTier && rcTier !== currentTier) {
+                    await updateDoc(doc(db, 'users', user.uid), {
+                        tier: rcTier,
+                        tierUpdatedAt: serverTimestamp(),
+                        tierSource: 'revenuecat',
+                    });
+                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier}`);
+                } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
+                    // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
+                    await updateDoc(doc(db, 'users', user.uid), {
+                        tier: 'trial',
+                        tierUpdatedAt: serverTimestamp(),
+                        tierSource: null,
+                    });
+                    console.log(`[RevenueCat] entitlement expired → trial`);
+                }
+            } catch (e) {
+                console.error('[RevenueCat] getCustomerInfo failed:', e?.message);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [user?.uid]);
 
     // 번역 클릭 카운터 (분석용)
     const incrementTrialCard = async () => {

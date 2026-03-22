@@ -163,7 +163,7 @@ function App() {
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   const [trialCardCurrentCount, setTrialCardCurrentCount] = useState(0);
 
-  // 업그레이드 모달
+  // 업그레이드 모달 — false | 'pro' | 'premium' | true (전체 표시)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   // TossPayments 빌링 성공 후 URL 파라미터 처리
   const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'fail' | ''
@@ -2028,7 +2028,7 @@ function App() {
                 </p>
                 {/* Pro */}
                 <button
-                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}
+                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal('pro'); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
@@ -2050,7 +2050,7 @@ function App() {
                 </button>
                 {/* Premium */}
                 <button
-                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal(true); }}
+                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal('premium'); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
@@ -3037,6 +3037,7 @@ function App() {
           sourceLang={sourceLang}
           onClose={() => setShowUpgradeModal(false)}
           onRequestPhoneVerify={() => { setShowUpgradeModal(false); handleEditProfile(); }}
+          initialTier={typeof showUpgradeModal === 'string' ? showUpgradeModal : undefined}
         />
       )}
 

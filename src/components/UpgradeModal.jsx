@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Zap, Crown, Check, ShieldCheck, Mail } from 'lucide-react';
+import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2 } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
@@ -13,6 +13,105 @@ import './UpgradeModal.css';
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const FRONTEND_URL = window.location.origin;
 
+// ── RevenueCat 대시보드 구성 ──
+// Products:     pro_1(Monthly), Pro_3(3months), Premium_1(Monthly), Premium_3(3months)
+// Entitlements: Pro → pro_1, Pro_3  /  Premium → Premium_1, Premium_3
+// Offerings:    Pro(pro_1, Pro_3)   /  Premium(Premium_1, Premium_3)
+const RC_OFFERING_PRO = 'Pro';
+const RC_OFFERING_PREMIUM = 'Premium';
+
+// ── 각 Offering의 UI 스타일 매핑 ──
+const RC_PACKAGE_META = {
+    pro: {
+        tier: 'pro',
+        icon: <Zap size={22} />,
+        name: 'Pro',
+        color: '#4338ca',
+        borderColor: '#e0e7ff',
+        bgColor: '#f5f3ff',
+        borderColorBest: '#c7d2fe',
+        bgColorBest: '#eef2ff',
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+    },
+    premium: {
+        tier: 'premium',
+        icon: <Crown size={22} />,
+        name: 'Premium',
+        color: '#b45309',
+        borderColor: '#fde68a',
+        bgColor: '#fffbeb',
+        borderColorBest: '#fcd34d',
+        bgColorBest: '#fef9c3',
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+    },
+};
+
+// RevenueCat 표준 packageType → months
+const RC_TYPE_TO_MONTHS = {
+    'MONTHLY': 1,
+    'TWO_MONTH': 2,
+    'THREE_MONTH': 3,
+    'SIX_MONTH': 6,
+    'ANNUAL': 12,
+    'LIFETIME': 0,
+};
+
+// Product ID → months 폴백 (Google Play / RevenueCat 모두 소문자 통일)
+const PRODUCT_ID_TO_MONTHS = {
+    'pro_1': 1, 'pro_3': 3,
+    'premium_1': 1, 'premium_3': 3,
+};
+
+// RevenueCat 패키지 배열 → UI plan 배열 변환
+const rcPackagesToPlans = (packages, tierKey) => {
+    const meta = RC_PACKAGE_META[tierKey];
+    if (!meta || !packages?.length) return [];
+
+    return packages
+        .map(pkg => {
+            const product = pkg.product;
+            // 1순위: RevenueCat 표준 packageType (MONTHLY, THREE_MONTH 등)
+            // 2순위: product identifier로 폴백 (pro_1, Pro_3, Premium_1, Premium_3)
+            const months = RC_TYPE_TO_MONTHS[pkg.packageType]
+                ?? PRODUCT_ID_TO_MONTHS[product.identifier]
+                ?? 1;
+            const isBest = months >= 3;
+
+            return {
+                id: product.identifier,                    // Google Play / App Store product ID
+                rcPackage: pkg,                             // 원본 패키지 (purchasePackage에 전달)
+                tier: meta.tier,
+                months,
+                icon: meta.icon,
+                name: meta.name,
+                // RevenueCat SDK가 국가/통화에 맞는 가격 자동 제공
+                price: product.priceString,
+                priceNum: product.price,
+                currency: product.currencyCode,
+                color: meta.color,
+                borderColor: isBest ? meta.borderColorBest : meta.borderColor,
+                bgColor: isBest ? meta.bgColorBest : meta.bgColor,
+                featureKeys: meta.featureKeys,
+                badge: isBest ? 'BEST' : null,
+                discount: null, // calcDiscounts에서 후처리
+            };
+        })
+        .sort((a, b) => a.months - b.months); // 1개월 → 3개월 순
+};
+
+// 할인율 계산 (월간 대비 장기 플랜 절감액)
+const calcDiscounts = (plans) => {
+    const monthlyPlan = plans.find(p => p.months === 1);
+    if (!monthlyPlan) return plans;
+    return plans.map(p => {
+        if (p.months <= 1 || !monthlyPlan.priceNum) return p;
+        const monthlyEquiv = p.priceNum / p.months;
+        const discount = Math.round((1 - monthlyEquiv / monthlyPlan.priceNum) * 100);
+        return { ...p, discount: discount > 0 ? discount : null };
+    });
+};
+
+// ── 웹 전용 하드코딩 플랜 (TossPayments) ──
 const PLAN_CONFIGS_KRW = [
     {
         id: 'pro_1',
@@ -135,7 +234,7 @@ const PLAN_CONFIGS_USD = [
     },
 ];
 
-const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
+const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }) => {
     const { user, profile } = useAuth();
     const t = useT(sourceLang);
     const [loadingPlan, setLoadingPlan] = useState(null);
@@ -145,12 +244,61 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
     const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
     const [countryInfo, setCountryInfo] = useState(null);
 
+    // ── RevenueCat Offering 상태 (네이티브 전용) ──
+    const isNative = Capacitor.isNativePlatform();
+    const [rcProPlans, setRcProPlans] = useState([]);
+    const [rcPremiumPlans, setRcPremiumPlans] = useState([]);
+    const [rcLoading, setRcLoading] = useState(isNative); // 네이티브면 초기 로딩
+    const [rcError, setRcError] = useState('');
+
+    // RevenueCat Offerings 로드 (네이티브 앱 전용)
+    useEffect(() => {
+        if (!isNative) return;
+        let cancelled = false;
+        (async () => {
+            try {
+                const offerings = await Purchases.getOfferings();
+                if (cancelled) return;
+
+                // Pro offering
+                const proOffering = offerings.all?.[RC_OFFERING_PRO];
+                if (proOffering?.availablePackages?.length) {
+                    const proPlans = calcDiscounts(rcPackagesToPlans(proOffering.availablePackages, 'pro'));
+                    setRcProPlans(proPlans);
+                }
+
+                // Premium offering
+                const premiumOffering = offerings.all?.[RC_OFFERING_PREMIUM];
+                if (premiumOffering?.availablePackages?.length) {
+                    const premPlans = calcDiscounts(rcPackagesToPlans(premiumOffering.availablePackages, 'premium'));
+                    setRcPremiumPlans(premPlans);
+                }
+
+                if (!proOffering?.availablePackages?.length && !premiumOffering?.availablePackages?.length) {
+                    setRcError('No offerings available');
+                }
+            } catch (e) {
+                if (!cancelled) {
+                    console.error('[RevenueCat] getOfferings failed:', e);
+                    setRcError(e.message || 'Failed to load store products');
+                }
+            } finally {
+                if (!cancelled) setRcLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [isNative]);
+
     useEffect(() => {
         detectCountry().then(setCountryInfo);
     }, []);
 
     const isKR = isKorea(countryInfo);
-    const PLAN_CONFIGS = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
+    // 웹: 기존 하드코딩 플랜 / 네이티브: RevenueCat offering에서 가져온 플랜
+    const webPlanConfigs = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
+    const PLAN_CONFIGS = isNative
+        ? [...rcProPlans, ...rcPremiumPlans]
+        : webPlanConfigs;
 
     const needEmailVerify = !emailVerified;
     const needPhoneVerify = isKR && !profile?.phoneVerified; // 한국만 전화인증 필요
@@ -194,25 +342,16 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
         setLoadingPlan(plan.id);
         setError('');
         try {
-            if (Capacitor.isNativePlatform()) {
-                // RevenueCat In-App Purchase Flow
+            if (isNative) {
+                // ── RevenueCat In-App Purchase Flow ──
                 try {
-                    // Make sure Purchases is configured. Ideally done at App startup, but configuring here is safe if not done.
-                    const rcApiKey = import.meta.env.VITE_REVENUECAT_ANDROID_KEY || import.meta.env.VITE_REVENUECAT_PUBLIC_KEY;
-                    if (rcApiKey) {
-                        await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
-                    }
-
-                    const offerings = await Purchases.getOfferings();
-                    if (!offerings.current) throw new Error(t('upgrade.paymentError') || "No offerings currently available");
-
-                    // RevenueCat Package identifier usually matches our plan.id (e.g., 'pro_1', 'premium_3')
-                    const packageToBuy = offerings.current.availablePackages.find(p => p.identifier === plan.id || p.product.identifier === plan.id);
+                    // plan.rcPackage: offering에서 가져온 원본 패키지 객체
+                    const packageToBuy = plan.rcPackage;
                     if (!packageToBuy) throw new Error(`Product ${plan.id} not found in store`);
 
                     const purchaseResult = await Purchases.purchasePackage({ aPackage: packageToBuy });
 
-                    // Allow server webhook or this client check to finalize
+                    // entitlement 활성화 확인 → 새로고침으로 tier 반영
                     if (Object.keys(purchaseResult.customerInfo.entitlements.active).length > 0) {
                         window.location.reload();
                     }
@@ -261,6 +400,17 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
 
                 {error && (
                     <div className="upgrade-error">{error}</div>
+                )}
+
+                {/* 네이티브: RevenueCat 로딩 / 에러 상태 */}
+                {isNative && rcLoading && (
+                    <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '40px 0', gap: '8px', color: '#64748b' }}>
+                        <Loader2 size={20} className="spin-animation" />
+                        <span style={{ fontSize: '0.85rem' }}>{t('upgrade.loadingProducts') || 'Loading products...'}</span>
+                    </div>
+                )}
+                {isNative && rcError && !rcLoading && (
+                    <div className="upgrade-error">{rcError}</div>
                 )}
 
                 {showVerifyWarnings && (needEmailVerify || needPhoneVerify) && (
@@ -329,7 +479,8 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                     </div>
                 )}
 
-                {/* Pro Plans */}
+                {/* Pro Plans — initialTier이 없거나 'pro'일 때 표시 */}
+                {(!initialTier || initialTier === 'pro') && !rcLoading && (
                 <div className="upgrade-tier-group">
                     <div className="upgrade-tier-label" style={{ color: '#4338ca' }}>
                         <Zap size={16} /> Pro
@@ -349,22 +500,21 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? <>1<br />{t('upgrade.period1m')}</> : t('upgrade.period3m')}</span>
-                                        {plan.months === 3 && <><br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></>}
+                                        {plan.months === 1
+                                            ? <span>1 {t('upgrade.period1m')}</span>
+                                            : <span>{t('upgrade.period3m')}<br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></span>
+                                        }
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                    </div>
-                                    <div className="upgrade-plan-discount-line">
-                                        {plan.discount ? (
-                                            <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
-                                        ) : (
-                                            <span className="upgrade-plan-discount-spacer">&nbsp;</span>
+                                        {plan.discount && (
+                                            <div className="upgrade-plan-discount-line">
+                                                <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                            </div>
                                         )}
                                     </div>
-
                                     <button
                                         className="upgrade-plan-btn"
                                         style={{
@@ -385,9 +535,8 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                             );
                         })}
                     </div>
-                    {/* Pro features (shared) */}
                     <ul className="upgrade-plan-features">
-                        {PLAN_CONFIGS[0].featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
+                        {RC_PACKAGE_META.pro.featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
                             <li key={i} style={i === 0 ? { display: 'flex', justifyContent: 'space-between', width: '100%' } : undefined}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Check size={14} style={{ color: '#4338ca', flexShrink: 0 }} />
@@ -403,9 +552,11 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                         ))}
                     </ul>
                 </div>
+                )}
 
-                {/* Premium Plans */}
-                <div className="upgrade-tier-group" style={{ marginTop: '10px' }}>
+                {/* Premium Plans — initialTier이 없거나 'premium'일 때 표시 */}
+                {(!initialTier || initialTier === 'premium') && !rcLoading && (
+                <div className="upgrade-tier-group" style={{ marginTop: initialTier ? '0' : '10px' }}>
                     <div className="upgrade-tier-label" style={{ color: '#b45309' }}>
                         <Crown size={16} /> Premium
                     </div>
@@ -424,22 +575,21 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? <>1<br />{t('upgrade.period1m')}</> : t('upgrade.period3m')}</span>
-                                        {plan.months === 3 && <><br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></>}
+                                        {plan.months === 1
+                                            ? <span>1 {t('upgrade.period1m')}</span>
+                                            : <span>{t('upgrade.period3m')}<br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></span>
+                                        }
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
                                             {plan.price}
                                         </span>
-                                    </div>
-                                    <div className="upgrade-plan-discount-line">
-                                        {plan.discount ? (
-                                            <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
-                                        ) : (
-                                            <span className="upgrade-plan-discount-spacer">&nbsp;</span>
+                                        {plan.discount && (
+                                            <div className="upgrade-plan-discount-line">
+                                                <span className="upgrade-plan-discount">{plan.discount}% {t('upgrade.discount')}</span>
+                                            </div>
                                         )}
                                     </div>
-
                                     <button
                                         className="upgrade-plan-btn"
                                         style={{
@@ -461,7 +611,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                         })}
                     </div>
                     <ul className="upgrade-plan-features">
-                        {PLAN_CONFIGS[2].featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
+                        {RC_PACKAGE_META.premium.featureKeys.filter(k => k !== 'upgrade.noAds').map((key, i) => (
                             <li key={i} style={i === 0 ? { display: 'flex', justifyContent: 'space-between', width: '100%' } : undefined}>
                                 <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
                                     <Check size={14} style={{ color: '#b45309', flexShrink: 0 }} />
@@ -477,6 +627,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify }) => {
                         ))}
                     </ul>
                 </div>
+                )}
 
                 {isSubscribed && profile?.autoRenew === true && (
                     <CancelSubscriptionButton userId={user?.uid} t={t} />
@@ -506,8 +657,27 @@ const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 function CancelSubscriptionButton({ userId, t }) {
     const [loading, setLoading] = useState(false);
+    const isNativePlatform = Capacitor.isNativePlatform();
 
     const handleCancel = async () => {
+        if (isNativePlatform) {
+            // 네이티브: Google Play 구독 관리 페이지로 이동
+            try {
+                const { customerInfo } = await Purchases.getCustomerInfo();
+                const mgmtUrl = customerInfo?.managementURL;
+                if (mgmtUrl) {
+                    window.open(mgmtUrl, '_blank');
+                } else {
+                    // fallback: Google Play 구독 관리 직접 링크
+                    window.open('https://play.google.com/store/account/subscriptions', '_blank');
+                }
+            } catch {
+                window.open('https://play.google.com/store/account/subscriptions', '_blank');
+            }
+            return;
+        }
+
+        // 웹: TossPayments 자동갱신 중지
         if (!confirm(t('upgrade.cancelConfirm'))) return;
         setLoading(true);
         try {
@@ -525,7 +695,9 @@ function CancelSubscriptionButton({ userId, t }) {
 
     return (
         <button className="upgrade-manage-btn" onClick={handleCancel} disabled={loading}>
-            {loading ? t('upgrade.processing') : t('upgrade.cancelBtn')}
+            {loading ? t('upgrade.processing') : isNativePlatform
+                ? (t('upgrade.manageSubscription') || 'Manage Subscription')
+                : t('upgrade.cancelBtn')}
         </button>
     );
 }
