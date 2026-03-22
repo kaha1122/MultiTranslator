@@ -331,7 +331,8 @@
     "loginExisting": "Se connecter avec un compte existant",
     "passwordPlaceholder": "Mot de passe (6 caractères min.)",
     "promptTitle": "Créez un compte gratuit",
-    "promptDesc": "Utilisez votre identifiant pour continuer à apprendre sur le web ou tout autre appareil."
+    "promptDesc": "Utilisez votre identifiant pour continuer à apprendre sur le web ou tout autre appareil.",
+    "nextTime": "La prochaine fois"
   },
   "home": {
     "weeklyGoal": "Progrès de la semaine",

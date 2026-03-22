@@ -337,7 +337,8 @@
     "loginExisting": "Log in with existing account",
     "passwordPlaceholder": "Password (min. 6 characters)",
     "promptTitle": "Create a free account",
-    "promptDesc": "Use your own ID to continue learning on the web or any other device."
+    "promptDesc": "Use your own ID to continue learning on the web or any other device.",
+    "nextTime": "Next time"
   },
   "home": {
     "weeklyGoal": "This Week's Progress",

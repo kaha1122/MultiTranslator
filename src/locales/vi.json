@@ -331,7 +331,8 @@
     "loginExisting": "Đăng nhập bằng tài khoản hiện có",
     "passwordPlaceholder": "Mật khẩu (tối thiểu 6 ký tự)",
     "promptTitle": "Tạo tài khoản miễn phí",
-    "promptDesc": "Dùng ID của bạn để tiếp tục học trên web hoặc thiết bị khác."
+    "promptDesc": "Dùng ID của bạn để tiếp tục học trên web hoặc thiết bị khác.",
+    "nextTime": "Lần sau"
   },
   "home": {
     "weeklyGoal": "Tiến độ tuần này",

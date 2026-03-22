@@ -1884,7 +1884,7 @@ function App() {
                   background: 'transparent', color: '#94a3b8', fontSize: '0.85rem', cursor: 'pointer',
                 }}
               >
-                {getT(sourceLang, 'upgrade.later') || '나중에'}
+                {getT(sourceLang, 'upgrade.nextTime') || '다음에'}
               </button>
             </div>
           </div>

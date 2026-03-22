@@ -331,7 +331,8 @@
     "loginExisting": "既存のアカウントでログイン",
     "passwordPlaceholder": "パスワード（6文字以上）",
     "promptTitle": "無料アカウントを作成しましょう",
-    "promptDesc": "自分のIDでウェブや他の端末でも学習を続けられます。"
+    "promptDesc": "自分のIDでウェブや他の端末でも学習を続けられます。",
+    "nextTime": "次回"
   },
   "home": {
     "weeklyGoal": "今週の学習状況",

@@ -331,7 +331,8 @@
     "loginExisting": "Iniciar sesión con cuenta existente",
     "passwordPlaceholder": "Contraseña (mín. 6 caracteres)",
     "promptTitle": "Crea una cuenta gratuita",
-    "promptDesc": "Usa tu propio ID para seguir aprendiendo en la web o en cualquier dispositivo."
+    "promptDesc": "Usa tu propio ID para seguir aprendiendo en la web o en cualquier dispositivo.",
+    "nextTime": "La próxima vez"
   },
   "home": {
     "weeklyGoal": "Progreso semanal",

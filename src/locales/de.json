@@ -331,7 +331,8 @@
     "loginExisting": "Mit bestehendem Konto anmelden",
     "passwordPlaceholder": "Passwort (mind. 6 Zeichen)",
     "promptTitle": "Kostenloses Konto erstellen",
-    "promptDesc": "Nutze deine eigene ID, um im Web oder auf anderen Geräten weiterzulernen."
+    "promptDesc": "Nutze deine eigene ID, um im Web oder auf anderen Geräten weiterzulernen.",
+    "nextTime": "Nächstes Mal"
   },
   "home": {
     "weeklyGoal": "Wochenfortschritt",

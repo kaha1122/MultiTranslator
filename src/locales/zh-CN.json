@@ -331,7 +331,8 @@
     "loginExisting": "使用已有账户登录",
     "passwordPlaceholder": "密码（至少6个字符）",
     "promptTitle": "创建免费账户",
-    "promptDesc": "使用您的账号，在网页或其他设备上继续学习。"
+    "promptDesc": "使用您的账号，在网页或其他设备上继续学习。",
+    "nextTime": "下次再说"
   },
   "home": {
     "weeklyGoal": "本周学习进度",
