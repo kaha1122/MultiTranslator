@@ -843,7 +843,7 @@ function App() {
     if (localStorage.getItem('deviceOnboardingDone') === '1') return;
     setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid]);
+  }, [user?.uid, profile?.hasCompletedOnboarding]);
 
   const handleOnboardingComplete = (src, tgts) => {
     setSourceLang(src);
