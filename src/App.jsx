@@ -1937,7 +1937,7 @@ function App() {
                   <p className="sidebar-username" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.displayName || user?.displayName || 'User'}
                   </p>
-                  <p className="sidebar-user-email" style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email}</p>
+                  <p className="sidebar-user-email" style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email || (user.isAnonymous ? user.uid : '')}</p>
                   <p className="sidebar-user-tier">{{
                     trial: 'Free Trial',
                     admin: 'Admin',
