@@ -46,7 +46,7 @@ body {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
+  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px) + var(--admob-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
@@ -1167,7 +1167,7 @@ body {
 /* ── 탭 위치 도트 인디케이터 ─────────────────────────────────────── */
 .tab-dots {
   position: fixed;
-  bottom: 0;
+  bottom: var(--admob-bottom, 0px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
