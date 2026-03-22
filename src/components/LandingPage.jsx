@@ -166,7 +166,7 @@ function DemoCard({ generated, langCode, sourceLang, onSpeak, onLimitReached }) 
 /* ── LandingPage 메인 ── */
 const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
-const LandingPage = ({ onGoogleLogin, onStartFree, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
+const LandingPage = ({ onGoogleLogin, onFacebookLogin, onStartFree, onLogin, onSignup, onInstall, showInstall, onSpeak, onPrivacy, onTerms, onContact }) => {
   const bottomRef = useRef(null);
   const demoRef = useRef(null);
   const demoCountRef = useRef(0);

@@ -20,8 +20,8 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
-import { googleProvider } from './firebase/config';
+import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { googleProvider, facebookProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
 import Login from './components/Auth/Login';
@@ -1702,6 +1702,54 @@ function App() {
     }
   };
 
+  // 네이티브 Facebook Sign-In (Capacitor Firebase Auth 플러그인)
+  const handleNativeFacebookLogin = async () => {
+    const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+    const result = await FirebaseAuthentication.signInWithFacebook();
+    const accessToken = result.credential?.accessToken;
+    if (accessToken) {
+      const credential = FirebaseFacebookAuthProvider.credential(accessToken);
+      const cred = await signInWithCredential(auth, credential);
+      const info = getAdditionalUserInfo(cred);
+      const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+      const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+      const profileData = { uid: cred.user.uid, email: cred.user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+      if (info?.isNewUser) {
+        profileData.displayName = cred.user.displayName || 'Facebook User';
+        profileData.hasCompletedOnboarding = false;
+        profileData.createdAt = serverTimestamp();
+      }
+      await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
+    }
+  };
+
+  const handleFacebookLoginFromLanding = async () => {
+    if (isNativePlatform) {
+      try { await handleNativeFacebookLogin(); } catch (err) { console.error('Native Facebook login error:', err); }
+      return;
+    }
+    const ua = navigator.userAgent || '';
+    const isInApp = /KAKAOTALK|KAKAO|Instagram|NAVER|Line\/|FBAN|FBAV/i.test(ua)
+      || (/Android/.test(ua) && /wv\)/.test(ua))
+      || (/iPhone|iPad/.test(ua) && !/Safari/.test(ua));
+    if (isInApp) { setShowLanding(false); return; }
+    try {
+      const cred = await signInWithPopup(auth, facebookProvider);
+      const info = getAdditionalUserInfo(cred);
+      const platform = 'web';
+      const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+      const profileData = { uid: cred.user.uid, email: cred.user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+      if (info?.isNewUser) {
+        profileData.displayName = cred.user.displayName || 'Facebook User';
+        profileData.hasCompletedOnboarding = false;
+        profileData.createdAt = serverTimestamp();
+      }
+      await setDoc(doc(db, 'users', cred.user.uid), profileData, { merge: true });
+    } catch (err) {
+      if (err.code !== 'auth/popup-closed-by-user') console.error('Facebook login error:', err);
+    }
+  };
+
   // ── 진입 분기 ────────────────────────────────────────────────────────────────
 
   // [폴백] signInAnonymously 실패 또는 명시적 로그아웃 후 user가 null → 랜딩 또는 로그인 화면
@@ -1715,6 +1763,7 @@ function App() {
       };
       return <LandingPage
         onGoogleLogin={handleGoogleLoginFromLanding}
+        onFacebookLogin={handleFacebookLoginFromLanding}
         onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeFromLanding}
         onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
         onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
@@ -1737,6 +1786,7 @@ function App() {
   if (!isNativePlatform && user?.isAnonymous && showLanding) {
     return <LandingPage
       onGoogleLogin={handleGoogleLoginFromLanding}
+      onFacebookLogin={handleFacebookLoginFromLanding}
       onStartFree={() => { localStorage.setItem('webAppEntered', '1'); setShowLanding(false); }}
       onLogin={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
       onSignup={() => { setShowLanding(false); setShowAccountUpgrade(true); }}

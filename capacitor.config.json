@@ -9,7 +9,7 @@
     },
     "FirebaseAuthentication": {
       "skipNativeAuth": false,
-      "providers": ["google.com"],
+      "providers": ["google.com", "facebook.com"],
       "googleProviderWebClientId": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com"
     }
   }

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { auth, db, googleProvider } from '../../firebase/config';
-import { signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, getAdditionalUserInfo, sendPasswordResetEmail } from 'firebase/auth';
+import { auth, db, googleProvider, facebookProvider } from '../../firebase/config';
+import { signInWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo, sendPasswordResetEmail } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { Mail, Lock, AlertCircle, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
@@ -99,6 +99,60 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
         }
     };
 
+    const handleFacebookLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        const isNative = window.Capacitor?.isNativePlatform?.();
+        if (!isNative && detectInAppBrowser()) {
+            setError('inapp');
+            setIsLoading(false);
+            return;
+        }
+        try {
+            if (isNative) {
+                const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                const result = await FirebaseAuthentication.signInWithFacebook();
+                const accessToken = result.credential?.accessToken;
+                if (!accessToken) throw new Error('No accessToken');
+                const credential = FirebaseFacebookAuthProvider.credential(accessToken);
+                const userCredential = await signInWithCredential(auth, credential);
+                const user = userCredential.user;
+                const additionalInfo = getAdditionalUserInfo(userCredential);
+                const platform = 'app';
+                const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+                if (additionalInfo?.isNewUser) {
+                    profileData.displayName = user.displayName || 'Facebook User';
+                    profileData.hasCompletedOnboarding = false;
+                    profileData.createdAt = serverTimestamp();
+                }
+                await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+                setIsLoading(false);
+                return;
+            }
+            const userCredential = await signInWithPopup(auth, facebookProvider);
+            const user = userCredential.user;
+            const additionalInfo = getAdditionalUserInfo(userCredential);
+            const platform = 'web';
+            const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+            if (additionalInfo?.isNewUser) {
+                profileData.displayName = user.displayName || 'Facebook User';
+                profileData.hasCompletedOnboarding = false;
+                profileData.createdAt = serverTimestamp();
+            }
+            await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+        } catch (err) {
+            console.error(err);
+            if (err.code === 'auth/account-exists-with-different-credential') {
+                setError(t('auth.accountExistsDifferent'));
+            } else if (err.code !== 'auth/popup-closed-by-user') {
+                setError(`${t('auth.facebookFailed')}: ${err.code || err.message || JSON.stringify(err)}`);
+            }
+            setIsLoading(false);
+        }
+    };
+
     if (isLoading) {
         return (
             <div className="auth-container">
@@ -151,6 +205,14 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                     style={{ width: '100%', padding: '13px', fontSize: '1rem', fontWeight: 700, marginBottom: '0' }}>
                     <img src="https://www.gstatic.com/firebasejs/ui/2.0.0/images/auth/google.svg" alt="Google" className="google-icon" />
                     {t('auth.googleLogin')}
+                </button>
+
+                <button className="facebook-btn" onClick={handleFacebookLogin} disabled={isLoading}
+                    style={{ width: '100%', padding: '13px', fontSize: '1rem', fontWeight: 700, marginTop: '8px', marginBottom: '0',
+                        background: '#1877F2', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                    {t('auth.facebookLogin')}
                 </button>
 
                 {/* 구분선 */}

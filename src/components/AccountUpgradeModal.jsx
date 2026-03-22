@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { X, Mail, Chrome, Loader, AlertCircle, CheckCircle } from 'lucide-react';
-import { auth, googleProvider, db } from '../firebase/config';
+import { auth, googleProvider, facebookProvider, db } from '../firebase/config';
 import {
     signInWithPopup, GoogleAuthProvider as FirebaseGoogleAuthProvider,
+    FacebookAuthProvider as FirebaseFacebookAuthProvider,
     signInWithCredential, EmailAuthProvider, createUserWithEmailAndPassword,
     linkWithCredential,
 } from 'firebase/auth';
@@ -52,6 +53,40 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
             setTimeout(() => onClose(), 1500);
         } catch (err) {
             if (err.code === 'auth/credential-already-in-use') {
+                setError(t('upgrade.errAlreadyExists'));
+            } else if (err.code !== 'auth/popup-closed-by-user') {
+                setError(t('upgrade.errGeneral'));
+            }
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ── Facebook 업그레이드 ─────────────────────────────────────────────────────
+    const handleFacebookUpgrade = async () => {
+        setLoading(true);
+        setError('');
+        try {
+            if (isNative) {
+                const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                const result = await FirebaseAuthentication.signInWithFacebook();
+                const accessToken = result.credential?.accessToken;
+                if (!accessToken) throw new Error('No accessToken');
+                const credential = FirebaseFacebookAuthProvider.credential(accessToken);
+                await upgradeAnonymous(credential);
+            } else {
+                const result = await signInWithPopup(auth, facebookProvider);
+                await setDoc(doc(db, 'users', result.user.uid), {
+                    email: result.user.email,
+                    displayName: result.user.displayName || 'Facebook User',
+                    isAnonymous: false,
+                    updatedAt: serverTimestamp(),
+                }, { merge: true });
+            }
+            setSuccess(true);
+            setTimeout(() => onClose(), 1500);
+        } catch (err) {
+            if (err.code === 'auth/credential-already-in-use' || err.code === 'auth/account-exists-with-different-credential') {
                 setError(t('upgrade.errAlreadyExists'));
             } else if (err.code !== 'auth/popup-closed-by-user') {
                 setError(t('upgrade.errGeneral'));
@@ -179,6 +214,25 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                                         </svg>
                                     )}
                                     {t('upgrade.googleBtn')}
+                                </button>
+
+                                {/* Facebook */}
+                                <button
+                                    onClick={handleFacebookUpgrade}
+                                    disabled={loading}
+                                    style={{
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px',
+                                        padding: '13px', borderRadius: '12px',
+                                        border: 'none', background: '#1877F2',
+                                        cursor: loading ? 'not-allowed' : 'pointer',
+                                        fontWeight: 600, fontSize: '0.95rem', color: '#fff',
+                                        transition: 'all 0.2s',
+                                    }}
+                                >
+                                    {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
+                                        <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+                                    )}
+                                    {t('upgrade.facebookBtn')}
                                 </button>
 
                                 {/* 이메일 */}
