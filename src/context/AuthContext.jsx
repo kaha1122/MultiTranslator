@@ -4,6 +4,7 @@ import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'fireb
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
 import { Capacitor } from '@capacitor/core';
+import { isBot } from '../utils/isBot';
 
 const AuthContext = createContext();
 
@@ -116,7 +117,8 @@ export const AuthProvider = ({ children }) => {
                 // 명시적 로그아웃 후 또는 웹 첫 방문(랜딩 표시 대상):
                 // anonymous 자동 생성 건너뜀 → Landing에서 "시작하기" 클릭 시에만 생성
                 const isNative = window.Capacitor?.isNativePlatform?.();
-                const needsLanding = !isNative && localStorage.getItem('webAppEntered') !== '1';
+                // 봇(AdSense/검색엔진)은 랜딩 게이트 우회 → 앱 콘텐츠 크롤링 허용
+                const needsLanding = !isNative && !isBot() && localStorage.getItem('webAppEntered') !== '1';
                 if (localStorage.getItem('didExplicitLogout') === '1' || needsLanding) {
                     setUser(null);
                     setProfile(null);

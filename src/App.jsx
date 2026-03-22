@@ -54,6 +54,7 @@ import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 OCR 모달
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
+import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -123,8 +124,9 @@ function App() {
   } = useAuth();
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   // 웹: 이미 앱에 진입한 적 있으면 랜딩 건너뜀 (anonymous 복원 시 재진입 방지)
+  // 봇(AdSense/검색엔진)은 랜딩 우회 → 앱 콘텐츠 크롤링 허용
   const [showLanding, setShowLanding] = useState(
-    () => localStorage.getItem('webAppEntered') !== '1'
+    () => !isBot() && localStorage.getItem('webAppEntered') !== '1'
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
