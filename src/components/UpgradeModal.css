@@ -110,7 +110,8 @@
     border-radius: 20px;
     font-size: 0.68rem;
     font-weight: 800;
-    color: white;
+    color: #78350f;
+    background: linear-gradient(135deg, #fbbf24, #f59e0b) !important;
     letter-spacing: 0.05em;
 }
 
@@ -136,10 +137,16 @@
 
 .upgrade-plan-price-block {
     display: flex;
-    align-items: center;
-    gap: 6px;
+    flex-direction: column;
     flex: 1;
     min-width: 0;
+    gap: 2px;
+}
+
+.upgrade-plan-price-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
 }
 
 .upgrade-plan-amount {

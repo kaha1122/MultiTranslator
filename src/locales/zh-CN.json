@@ -297,6 +297,7 @@
     "cancelledNotice": "自动续费已停止。服务可用至：",
     "cancelFailed": "取消失败，请重试。",
     "cancelBtn": "停止自动续费",
+    "manageSubscription": "管理订阅",
     "btnLabel": "升级",
     "toastSuccess": "🎉 支付成功！方案正在升级中。",
     "toastFail": "支付失败或已取消。",

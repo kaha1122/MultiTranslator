@@ -258,15 +258,24 @@ export const AuthProvider = ({ children }) => {
                 if (active['Premium']) rcTier = 'premium';
                 else if (active['Pro']) rcTier = 'pro';
 
+                // 활성 entitlement에서 productId 추출
+                const rcEntitlement = active['Premium'] || active['Pro'];
+                const rcProductId = rcEntitlement?.productIdentifier || null;
+
                 // Firestore tier와 다르면 동기화
                 const currentTier = profile?.tier || 'trial';
                 if (rcTier && rcTier !== currentTier) {
-                    await updateDoc(doc(db, 'users', user.uid), {
+                    const syncData = {
                         tier: rcTier,
                         tierUpdatedAt: serverTimestamp(),
                         tierSource: 'revenuecat',
-                    });
-                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier}`);
+                    };
+                    if (rcProductId) {
+                        syncData.planId = rcProductId;
+                        syncData.subscriptionMonths = rcProductId.includes('_3') ? 3 : 1;
+                    }
+                    await updateDoc(doc(db, 'users', user.uid), syncData);
+                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId})`);
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
                     // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
                     await updateDoc(doc(db, 'users', user.uid), {

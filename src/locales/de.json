@@ -297,6 +297,7 @@
     "cancelledNotice": "Automatische Verlängerung gestoppt. Service verfügbar bis:",
     "cancelFailed": "Kündigung fehlgeschlagen. Bitte erneut versuchen.",
     "cancelBtn": "Auto-Verlängerung stoppen",
+    "manageSubscription": "Abo verwalten",
     "btnLabel": "Upgraden",
     "toastSuccess": "🎉 Zahlung abgeschlossen! Ihr Plan wird aktualisiert.",
     "toastFail": "Zahlung fehlgeschlagen oder abgebrochen.",

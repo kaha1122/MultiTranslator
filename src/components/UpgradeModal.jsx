@@ -487,7 +487,9 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                     </div>
                     <div className="upgrade-plans-row">
                         {PLAN_CONFIGS.filter(p => p.tier === 'pro').map(plan => {
-                            const isCurrentPlan = currentPlanId === plan.id || (currentTier === plan.tier && !currentPlanId && plan.months === 1);
+                            const isCurrentPlan = currentPlanId
+                                ? (currentPlanId === plan.id || plan.id?.startsWith(currentPlanId + ':') || currentPlanId.startsWith(plan.id + ':'))
+                                : false;
                             return (
                                 <div
                                     key={plan.id}
@@ -500,10 +502,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        {plan.months === 1
-                                            ? <span>1 {t('upgrade.period1m')}</span>
-                                            : <span>{t('upgrade.period3m')}<br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></span>
-                                        }
+                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -562,7 +561,9 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                     </div>
                     <div className="upgrade-plans-row">
                         {PLAN_CONFIGS.filter(p => p.tier === 'premium').map(plan => {
-                            const isCurrentPlan = currentPlanId === plan.id || (currentTier === plan.tier && !currentPlanId && plan.months === 1);
+                            const isCurrentPlan = currentPlanId
+                                ? (currentPlanId === plan.id || plan.id?.startsWith(currentPlanId + ':') || currentPlanId.startsWith(plan.id + ':'))
+                                : false;
                             return (
                                 <div
                                     key={plan.id}
@@ -575,10 +576,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        {plan.months === 1
-                                            ? <span>1 {t('upgrade.period1m')}</span>
-                                            : <span>{t('upgrade.period3m')}<br /><span className="upgrade-plan-onetag">{t('upgrade.oneTime')}</span></span>
-                                        }
+                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -629,7 +627,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 </div>
                 )}
 
-                {isSubscribed && profile?.autoRenew === true && (
+                {isSubscribed && (profile?.autoRenew === true || (isNative && profile?.tierSource === 'revenuecat')) && (
                     <CancelSubscriptionButton userId={user?.uid} t={t} />
                 )}
                 {isSubscribed && profile?.autoRenew === false && profile?.subscriptionExpiresAt && (
@@ -695,8 +693,8 @@ function CancelSubscriptionButton({ userId, t }) {
 
     return (
         <button className="upgrade-manage-btn" onClick={handleCancel} disabled={loading}>
-            {loading ? t('upgrade.processing') : isNativePlatform
-                ? (t('upgrade.manageSubscription') || 'Manage Subscription')
+            {loading ? t('upgrade.processing')
+                : isNativePlatform ? t('upgrade.manageSubscription')
                 : t('upgrade.cancelBtn')}
         </button>
     );

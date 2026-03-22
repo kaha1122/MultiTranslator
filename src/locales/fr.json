@@ -297,6 +297,7 @@
     "cancelledNotice": "Le renouvellement automatique a été arrêté. Service disponible jusqu'au :",
     "cancelFailed": "Annulation échouée. Veuillez réessayer.",
     "cancelBtn": "Arrêter le renouvellement",
+    "manageSubscription": "Gérer l'abonnement",
     "btnLabel": "Mettre à niveau",
     "toastSuccess": "🎉 Paiement effectué ! Votre plan est en cours de mise à niveau.",
     "toastFail": "Paiement échoué ou annulé.",

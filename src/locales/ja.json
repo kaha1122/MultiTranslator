@@ -297,6 +297,7 @@
     "cancelledNotice": "自動更新が停止されました。サービス利用可能期間:",
     "cancelFailed": "キャンセルに失敗しました。再度お試しください。",
     "cancelBtn": "自動更新を停止",
+    "manageSubscription": "サブスク管理",
     "btnLabel": "アップグレード",
     "toastSuccess": "🎉 お支払い完了！プランがアップグレードされます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",

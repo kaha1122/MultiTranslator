@@ -297,6 +297,7 @@
     "cancelledNotice": "La renovación automática ha sido detenida. Servicio disponible hasta:",
     "cancelFailed": "Cancelación fallida. Por favor, inténtalo de nuevo.",
     "cancelBtn": "Detener renovación",
+    "manageSubscription": "Gestionar suscripción",
     "btnLabel": "Actualizar",
     "toastSuccess": "🎉 ¡Pago completado! Tu plan está siendo actualizado.",
     "toastFail": "Pago fallido o cancelado.",

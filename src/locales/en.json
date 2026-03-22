@@ -303,6 +303,7 @@
     "cancelledNotice": "Auto-renewal has been stopped. Service available until:",
     "cancelFailed": "Cancellation failed. Please try again.",
     "cancelBtn": "Stop Auto-Renewal",
+    "manageSubscription": "Manage Subscription",
     "btnLabel": "Upgrade",
     "toastSuccess": "🎉 Payment complete! Your plan is being upgraded.",
     "toastFail": "Payment failed or was cancelled.",

@@ -303,6 +303,7 @@
     "cancelledNotice": "자동 갱신이 중지되었습니다. 서비스 이용 가능 기간:",
     "cancelFailed": "취소 처리에 실패했습니다. 다시 시도해 주세요.",
     "cancelBtn": "자동 갱신 중지",
+    "manageSubscription": "구독 관리",
     "btnLabel": "업그레이드",
     "toastSuccess": "🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.",
     "toastFail": "결제에 실패하거나 취소되었습니다.",

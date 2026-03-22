@@ -297,6 +297,7 @@
     "cancelledNotice": "Tự động gia hạn đã dừng. Dịch vụ khả dụng đến:",
     "cancelFailed": "Hủy thất bại. Vui lòng thử lại.",
     "cancelBtn": "Dừng tự động gia hạn",
+    "manageSubscription": "Quản lý đăng ký",
     "btnLabel": "Nâng cấp",
     "toastSuccess": "🎉 Thanh toán thành công! Gói của bạn đang được nâng cấp.",
     "toastFail": "Thanh toán thất bại hoặc đã bị hủy.",
