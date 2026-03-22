@@ -843,7 +843,7 @@ function App() {
     if (localStorage.getItem('deviceOnboardingDone') === '1') return;
     setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, profile?.hasCompletedOnboarding]);
+  }, [user?.uid, !!profile]);
 
   const handleOnboardingComplete = (src, tgts) => {
     setSourceLang(src);
@@ -1757,8 +1757,12 @@ function App() {
     if (showLanding) {
       const handleStartFreeFromLanding = async () => {
         localStorage.removeItem('didExplicitLogout');
-        localStorage.setItem('webAppEntered', '1');
-        try { await signInAnonymously(auth); } catch (e) { console.error(e); }
+        // ⚠ webAppEntered는 signInAnonymously 성공 후 설정
+        // 먼저 설정하면 AuthContext의 needsLanding 가드가 해제되어 2중 채번 위험
+        try {
+          await signInAnonymously(auth);
+          localStorage.setItem('webAppEntered', '1');
+        } catch (e) { console.error(e); }
         setShowLanding(false);
       };
       return <LandingPage
