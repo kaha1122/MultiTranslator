@@ -21,6 +21,8 @@ export const db = getFirestore(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();
+facebookProvider.addScope('email');
+facebookProvider.addScope('public_profile');
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
 
 export { RecaptchaVerifier };
