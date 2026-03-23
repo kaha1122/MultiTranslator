@@ -133,7 +133,7 @@ Rules:
 3. **Level compliance**: Strictly match the vocabulary complexity and example sentence structure defined in the Level guidelines above.
 4. **Anti-duplication**: Do NOT repeat any word from the exclusion list above.
 5. **Natural examples**: Each example sentence must show the word/phrase used in a realistic, contextually rich situation — not a generic textbook sentence.
-6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For others: include romanization if applicable.
+6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For ru: include the word/sentence rewritten with accent marks (´) on stressed vowels (e.g., "привéт", "Извини́те, где нахо́дится метро́?"). For others: include romanization if applicable.
 7. All meanings, tips, and example translations must be in ${sourceLangName}.
 8. For each word, provide 2-3 concise learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note or cultural context. Each tip should be one sentence.
 9. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical readings, or any annotation in the "word" field.** Bad: "咖啡 (kāfēi)", "食べる（たべる）", "おんがく (音楽)", "커피(coffee)". Good: "咖啡", "食べる", "音楽", "커피". For Japanese: the "word" field must use the standard written form (kanji where natural, e.g. "音楽" not "おんがく"). Hiragana reading goes ONLY in the "pronunciation" field.
@@ -144,10 +144,10 @@ Return ONLY valid JSON (no markdown):
   "words": [
     {
       "word": "<PURE word/phrase in ${targetLangName} — NO pronunciation or reading annotations>",
-      "pronunciation": "<pinyin/hiragana/romanization or empty string>",
+      "pronunciation": "<pinyin for zh-CN/zh, hiragana for ja, stressed form with ´ marks for ru, or empty string>",
       "meaning": "<concise meaning in ${sourceLangName}>",
       "example": "<example sentence in ${targetLangName}>",
-      "examplePronunciation": "<pinyin/hiragana/romanization of the example sentence, or empty string if not applicable>",
+      "examplePronunciation": "<pinyin for zh-CN/zh, hiragana for ja, stressed form with ´ marks for ru, or empty string>",
       "exampleTranslation": "<example translation in ${sourceLangName}>",
       "learningTip": ["<tip1 in ${sourceLangName}>", "<tip2 in ${sourceLangName}>"]
     }

@@ -187,7 +187,7 @@ ${avoidBlock}
 4. **Anti-Duplication**: Do NOT use the same core verb, topic, or sentence structure as any Previous Sentence.
 5. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
 6. **Grammar & Length**: Strictly adhere to the Difficulty Guidelines above.
-7. **No reading aids**: Do not add furigana/hiragana readings for ja, pinyin/tone marks for zh-CN/zh-TW, or any romanization unless explicitly requested.
+7. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Write the sentence exactly as a native would type it in a text message — plain script only, no glosses, no furigana, no ruby text, no tone marks. Violations of this rule make the output unusable.
 
 ---
 
@@ -198,7 +198,7 @@ ${avoidBlock}
   "internal_scenario_summary": "English description of the chosen emotion, action type, and the specific micro-situation.",
   "sentence": "The generated opening sentence in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
-  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on stressed vowels (e.g., 'Извини́те, где нахо́дится метро́?'). For all others: empty string ''.",
   "scene_hint": "In ${sourceLangName}: a vivid description of the micro-situation WITHOUT emotion tags (e.g., '비행기가 너무 추워서 담요를 요청하려는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
@@ -296,7 +296,7 @@ ${avoidBlock}
 4. **Anti-Duplication**: Do NOT reuse the same core verb, topic, or sentence structure as any Previous Reply Sentence.
 5. **Modern & Realistic**: Reflect 2026 native speech, not stiff textbook phrases.
 6. **Informative**: Include useful details — a location, a time, a price, a suggestion, empathy — not just "yes" or "no".
-7. **No reading aids**: Do not add furigana/hiragana readings for ja, pinyin/tone marks for zh-CN/zh-TW, or any romanization unless explicitly requested.
+7. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Write the sentence exactly as a native would type it in a text message — plain script only, no glosses, no furigana, no ruby text, no tone marks. Violations of this rule make the output unusable.
 ---
 
 ### [Return ONLY valid JSON (no markdown)]
@@ -306,7 +306,7 @@ ${avoidBlock}
   "internal_scenario_summary": "English description: who is responding, their emotion, what information they are giving, and why this is a natural response.",
   "sentence": "The generated response in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
-  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For all others: empty string ''.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on stressed vowels (e.g., 'Извини́те, где нахо́дится метро́?'). For all others: empty string ''.",
   "scene_hint": "In ${sourceLangName}: describe who is speaking (role) and what they are telling the learner, WITHOUT emotion tags (e.g., '승무원이 담요를 가져다주겠다고 안내하는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
