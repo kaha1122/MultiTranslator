@@ -11,7 +11,8 @@ const ConfirmModal = ({ title, message, confirmText, cancelText, onConfirm, onCa
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-                zIndex: 3000, padding: '20px'
+                zIndex: 3000,
+                padding: '20px 20px calc(20px + var(--admob-bottom, 0px))'
             }}
         >
             <motion.div

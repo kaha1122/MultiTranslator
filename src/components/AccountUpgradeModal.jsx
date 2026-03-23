@@ -128,7 +128,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 position: 'fixed', inset: 0, zIndex: 9999,
                 background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                padding: '20px',
+                padding: '20px 20px calc(20px + var(--admob-bottom, 0px))',
             }}
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
