@@ -19,6 +19,26 @@ const initAudioContext = () => {
     return audioCtx;
 };
 
+// iOS Safari 대응: 첫 사용자 터치/클릭 시 AudioContext를 unlock
+// iOS는 사용자 제스처 핸들러 안에서만 AudioContext를 resume할 수 있으므로,
+// 앱 로드 직후 첫 터치에서 미리 unlock해 두면 이후 비동기 호출에서도 소리 재생 가능
+const unlockAudioContext = () => {
+    const ctx = initAudioContext();
+    // 무음 버퍼를 재생하여 iOS가 AudioContext를 "사용자 활성화" 상태로 인식하게 함
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+    // 한 번 unlock하면 충분 — 리스너 제거
+    document.removeEventListener('touchstart', unlockAudioContext, true);
+    document.removeEventListener('touchend', unlockAudioContext, true);
+    document.removeEventListener('click', unlockAudioContext, true);
+};
+document.addEventListener('touchstart', unlockAudioContext, true);
+document.addEventListener('touchend', unlockAudioContext, true);
+document.addEventListener('click', unlockAudioContext, true);
+
 // 삐- 소리를 만드는 아주 기본적인 함수
 const playTone = (freq, type, duration, startTime = 0) => {
     const ctx = initAudioContext();
