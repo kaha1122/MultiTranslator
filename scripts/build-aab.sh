@@ -19,7 +19,7 @@ ANDROID_DIR="$PROJECT_DIR/android"
 GRADLE_FILE="$ANDROID_DIR/app/build.gradle"
 
 # ── 설정 ──
-SERVER_URL="${SERVER_URL:-https://pronunfit-server.onrender.com}"
+SERVER_URL="${SERVER_URL:-https://multitranslator.onrender.com}"
 BUILD_SECRET="${BUILD_SECRET:-pronunfit-build-2026-secret}"
 
 # 1. build.gradle에서 버전 읽기

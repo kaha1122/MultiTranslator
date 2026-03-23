@@ -227,6 +227,14 @@ function App() {
   const [phoneConfirmResult, setPhoneConfirmResult] = useState(null);
   const recaptchaContainerRef = useRef(null);
   const recaptchaVerifierRef = useRef(null);
+  const [pendingUpgradeTier, setPendingUpgradeTier] = useState(null); // 인증 완료 후 구독 모달 복귀용
+  const closeProfileModal = () => {
+    setShowProfileModal(false);
+    if (pendingUpgradeTier) {
+      setShowUpgradeModal(pendingUpgradeTier);
+      setPendingUpgradeTier(null);
+    }
+  };
 
   // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
   const [languageGoals, setLanguageGoals] = useState(() => {
@@ -937,7 +945,7 @@ function App() {
         phoneCountry: profileFormData.phoneCountry,
         updatedAt: serverTimestamp()
       });
-      setShowProfileModal(false);
+      closeProfileModal();
     } catch (e) {
       alert("Failed to update profile. Please try again.");
     }
@@ -973,18 +981,21 @@ function App() {
         return;
       }
 
-      // 네이티브: Capacitor Firebase Auth (reCAPTCHA 불필요, 이벤트 기반)
+      // 네이티브: Capacitor Firebase Auth로 SMS 발송 (reCAPTCHA 불필요)
+      // signInWithPhoneNumber은 네이티브 인증 상태 불필요 → 익명/Google 사용자 모두 동작
+      // verificationId만 받아서 웹 SDK의 updatePhoneNumber으로 연결
       if (Capacitor.isNativePlatform()) {
         const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-        // 이벤트 리스너로 verificationId 수신 (linkWithPhoneNumber은 void 반환)
+        // 기존 리스너 정리
+        await FirebaseAuthentication.removeAllListeners();
         await new Promise((resolve, reject) => {
           let resolved = false;
-          // 자동 인증 완료 (Android instant verification)
+          // 자동 인증 완료 (Android instant verification — 같은 기기 번호 등)
           FirebaseAuthentication.addListener('phoneVerificationCompleted', (event) => {
             if (resolved) return;
             resolved = true;
-            console.log('[PhoneVerif] native auto-verified');
-            setPhoneConfirmResult('__auto_verified__');
+            console.log('[PhoneVerif] native auto-verified, code:', event.verificationCode);
+            setPhoneConfirmResult({ type: 'auto', verificationId: event.verificationId, verificationCode: event.verificationCode });
             setPhoneVerifStep('sent');
             setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneCodeSent') });
             resolve();
@@ -994,7 +1005,7 @@ function App() {
             if (resolved) return;
             resolved = true;
             console.log('[PhoneVerif] native code sent, verificationId:', event.verificationId);
-            setPhoneConfirmResult(event.verificationId);
+            setPhoneConfirmResult({ type: 'sms', verificationId: event.verificationId });
             setPhoneVerifStep('sent');
             setPhoneVerifMsg({ type: 'success', text: getT(sourceLang, 'auth.phoneCodeSent') });
             resolve();
@@ -1006,8 +1017,8 @@ function App() {
             console.error('[PhoneVerif] native verification failed:', event.message);
             reject(new Error(event.message));
           });
-          // SMS 발송 요청
-          FirebaseAuthentication.linkWithPhoneNumber({ phoneNumber: fullPhone }).catch(reject);
+          // SMS 발송 — signInWithPhoneNumber (네이티브 로그인 상태 불필요)
+          FirebaseAuthentication.signInWithPhoneNumber({ phoneNumber: fullPhone }).catch(reject);
           // 타임아웃 (60초)
           setTimeout(() => { if (!resolved) { resolved = true; reject(new Error('timeout')); } }, 60000);
         });
@@ -1042,39 +1053,30 @@ function App() {
 
   // SMS 인증 코드 확인
   const handleVerifyPhoneCode = async () => {
-    if (!phoneVerifCode.trim() || !phoneConfirmResult) return;
+    const isAutoVerified = Capacitor.isNativePlatform() && phoneConfirmResult?.type === 'auto';
+    if ((!phoneVerifCode.trim() && !isAutoVerified) || !phoneConfirmResult) return;
     try {
       setPhoneVerifStep('verifying');
 
-      if (Capacitor.isNativePlatform()) {
-        // 네이티브: confirmVerificationCode로 코드 확인
-        if (phoneConfirmResult !== '__auto_verified__') {
-          try {
-            const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-            await FirebaseAuthentication.confirmVerificationCode({
-              verificationId: phoneConfirmResult,
-              verificationCode: phoneVerifCode
-            });
-          } catch (phoneErr) {
-            if (phoneErr.message?.includes('invalid-verification-code') || phoneErr.message?.includes('invalid-verification-id') || phoneErr.code === 'auth/invalid-verification-code') {
-              throw phoneErr;
-            }
-            // credential-already-in-use, provider-already-linked 등 → 코드는 맞았으나 연결만 실패
-            console.log('[PhoneVerif] native confirmVerificationCode skipped:', phoneErr.message || phoneErr.code);
-          }
+      // 네이티브/웹 공통: 웹 SDK의 PhoneAuthProvider.credential + updatePhoneNumber 사용
+      // 네이티브에서도 verificationId는 Firebase 서버가 발급하므로 웹 SDK와 호환됨
+      const verId = Capacitor.isNativePlatform()
+        ? (phoneConfirmResult.type === 'auto' ? phoneConfirmResult.verificationId : phoneConfirmResult.verificationId)
+        : phoneConfirmResult;
+      const code = Capacitor.isNativePlatform() && phoneConfirmResult.type === 'auto'
+        ? (phoneConfirmResult.verificationCode || phoneVerifCode)
+        : phoneVerifCode;
+
+      const credential = PhoneAuthProvider.credential(verId, code);
+      try {
+        const { updatePhoneNumber } = await import('firebase/auth');
+        await updatePhoneNumber(auth.currentUser, credential);
+      } catch (phoneErr) {
+        if (phoneErr.code === 'auth/invalid-verification-code' || phoneErr.code === 'auth/invalid-verification-id') {
+          throw phoneErr;
         }
-      } else {
-        // 웹: 기존 방식
-        const credential = PhoneAuthProvider.credential(phoneConfirmResult, phoneVerifCode);
-        try {
-          const { updatePhoneNumber } = await import('firebase/auth');
-          await updatePhoneNumber(auth.currentUser, credential);
-        } catch (phoneErr) {
-          if (phoneErr.code === 'auth/invalid-verification-code' || phoneErr.code === 'auth/invalid-verification-id') {
-            throw phoneErr;
-          }
-          console.log('[PhoneVerif] updatePhoneNumber skipped:', phoneErr.code);
-        }
+        // credential-already-in-use, provider-already-linked 등 → 코드는 맞았으나 연결만 실패
+        console.log('[PhoneVerif] updatePhoneNumber skipped:', phoneErr.code);
       }
 
       // 코드 검증 성공 → Firestore에 phoneVerified 저장
@@ -3152,7 +3154,7 @@ function App() {
         <UpgradeModal
           sourceLang={sourceLang}
           onClose={() => setShowUpgradeModal(false)}
-          onRequestPhoneVerify={() => { setShowUpgradeModal(false); handleEditProfile(); }}
+          onRequestPhoneVerify={() => { const tier = typeof showUpgradeModal === 'string' ? showUpgradeModal : 'pro'; setPendingUpgradeTier(tier); setShowUpgradeModal(false); handleEditProfile(); }}
           initialTier={typeof showUpgradeModal === 'string' ? showUpgradeModal : undefined}
         />
       )}
@@ -3171,7 +3173,7 @@ function App() {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={() => setShowProfileModal(false)}
+            onClick={closeProfileModal}
             style={{
               position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
               background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
@@ -3187,7 +3189,7 @@ function App() {
               style={{ position: 'relative', maxHeight: '90vh', overflowY: 'auto' }}
             >
               <button
-                onClick={() => setShowProfileModal(false)}
+                onClick={closeProfileModal}
                 style={{ position: 'absolute', top: '15px', right: '15px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
               >
                 <X size={24} />

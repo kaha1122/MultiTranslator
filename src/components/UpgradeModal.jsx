@@ -293,6 +293,25 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         detectCountry().then(setCountryInfo);
     }, []);
 
+    // 이메일 인증 후 앱 복귀 시 emailVerified 자동 갱신
+    useEffect(() => {
+        if (emailVerified) return; // 이미 인증됨
+        const handleVisibility = async () => {
+            if (document.visibilityState === 'visible') {
+                try {
+                    const auth = getAuth();
+                    await auth.currentUser?.reload();
+                    if (auth.currentUser?.emailVerified) {
+                        setEmailVerified(true);
+                        setShowVerifyWarnings(false);
+                    }
+                } catch (_) {}
+            }
+        };
+        document.addEventListener('visibilitychange', handleVisibility);
+        return () => document.removeEventListener('visibilitychange', handleVisibility);
+    }, [emailVerified]);
+
     const isKR = isKorea(countryInfo);
     // 웹: 기존 하드코딩 플랜 / 네이티브: RevenueCat offering에서 가져온 플랜
     const webPlanConfigs = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;

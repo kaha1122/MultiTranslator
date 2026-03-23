@@ -18,7 +18,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
     const [mode, setMode] = useState('choice'); // 'choice' | 'email'
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loadingType, setLoadingType] = useState(null); // 'google' | 'facebook' | 'email' | null
     const [error, setError] = useState('');
     const [success, setSuccess] = useState(false);
 
@@ -26,7 +26,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
 
     // ── Google 업그레이드 ──────────────────────────────────────────────────────
     const handleGoogleUpgrade = async () => {
-        setLoading(true);
+        setLoadingType('google');
         setError('');
         try {
             if (isNative) {
@@ -58,13 +58,13 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 setError(t('upgrade.errGeneral'));
             }
         } finally {
-            setLoading(false);
+            setLoadingType(null);
         }
     };
 
     // ── Facebook 업그레이드 ─────────────────────────────────────────────────────
     const handleFacebookUpgrade = async () => {
-        setLoading(true);
+        setLoadingType('facebook');
         setError('');
         try {
             if (isNative) {
@@ -92,14 +92,14 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 setError(t('upgrade.errGeneral'));
             }
         } finally {
-            setLoading(false);
+            setLoadingType(null);
         }
     };
 
     // ── 이메일 업그레이드 ──────────────────────────────────────────────────────
     const handleEmailUpgrade = async (e) => {
         e.preventDefault();
-        setLoading(true);
+        setLoadingType('email');
         setError('');
         try {
             const credential = EmailAuthProvider.credential(email, password);
@@ -117,9 +117,11 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 setError(t('upgrade.errGeneral'));
             }
         } finally {
-            setLoading(false);
+            setLoadingType(null);
         }
     };
+
+    const loading = !!loadingType; // 하위 호환: disabled 체크용
 
     return (
         <div
@@ -205,7 +207,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                                         transition: 'all 0.2s',
                                     }}
                                 >
-                                    {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
+                                    {loadingType === 'google' ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
                                         <svg width="18" height="18" viewBox="0 0 48 48">
                                             <path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.2l6.7-6.7C35.7 2.5 30.2 0 24 0 14.7 0 6.7 5.5 2.8 13.5l7.8 6.1C12.5 13.2 17.8 9.5 24 9.5z"/>
                                             <path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v8.5h12.7c-.6 3-2.3 5.5-4.8 7.2l7.6 5.9c4.5-4.1 7-10.2 7-17.1z"/>
@@ -229,7 +231,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                                         transition: 'all 0.2s',
                                     }}
                                 >
-                                    {loading ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
+                                    {loadingType === 'facebook' ? <Loader size={18} style={{ animation: 'spin 1s linear infinite' }} /> : (
                                         <svg width="18" height="18" viewBox="0 0 24 24" fill="white"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                                     )}
                                     {t('upgrade.facebookBtn')}
@@ -291,7 +293,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
                                     }}
                                 >
-                                    {loading && <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />}
+                                    {loadingType === 'email' && <Loader size={16} style={{ animation: 'spin 1s linear infinite' }} />}
                                     {t('upgrade.createBtn')}
                                 </button>
                                 <button
