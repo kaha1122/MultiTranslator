@@ -19,30 +19,29 @@ const initAudioContext = () => {
     return audioCtx;
 };
 
-// iOS Safari 대응: 첫 사용자 터치/클릭 시 AudioContext를 unlock
-// iOS는 사용자 제스처 핸들러 안에서만 AudioContext를 resume할 수 있으므로,
-// 앱 로드 직후 첫 터치에서 미리 unlock해 두면 이후 비동기 호출에서도 소리 재생 가능
-const unlockAudioContext = () => {
+// iOS Safari 대응: 매 사용자 터치/클릭 시 AudioContext를 resume
+// iOS는 비활성 상태 후 AudioContext를 다시 suspended로 돌릴 수 있으므로,
+// 매 제스처마다 resume을 호출하여 이후 비동기 콜백(발음 평가 결과 등)에서도 소리 재생 가능
+let _audioUnlocked = false;
+const keepAudioAlive = () => {
     try {
         const ctx = initAudioContext();
-        // 무음 버퍼를 재생하여 iOS가 AudioContext를 "사용자 활성화" 상태로 인식하게 함
-        const buffer = ctx.createBuffer(1, 1, 22050);
-        const source = ctx.createBufferSource();
-        source.buffer = buffer;
-        source.connect(ctx.destination);
-        source.start(0);
+        // 첫 터치: 무음 버퍼 재생으로 iOS AudioContext 활성화
+        if (!_audioUnlocked) {
+            const buffer = ctx.createBuffer(1, 1, 22050);
+            const source = ctx.createBufferSource();
+            source.buffer = buffer;
+            source.connect(ctx.destination);
+            source.start(0);
+            _audioUnlocked = true;
+        }
     } catch (e) {
         // AudioContext 미지원 환경에서도 앱 동작에 영향 없음
     }
-    // 한 번 unlock하면 충분 — 리스너 제거
-    document.removeEventListener('touchstart', unlockAudioContext, true);
-    document.removeEventListener('touchend', unlockAudioContext, true);
-    document.removeEventListener('click', unlockAudioContext, true);
 };
 if (typeof document !== 'undefined') {
-    document.addEventListener('touchstart', unlockAudioContext, true);
-    document.addEventListener('touchend', unlockAudioContext, true);
-    document.addEventListener('click', unlockAudioContext, true);
+    document.addEventListener('touchstart', keepAudioAlive, true);
+    document.addEventListener('click', keepAudioAlive, true);
 }
 
 // 삐- 소리를 만드는 아주 기본적인 함수
