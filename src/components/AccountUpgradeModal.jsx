@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { X, Mail, Chrome, Loader, AlertCircle, CheckCircle } from 'lucide-react';
 import { auth, googleProvider, facebookProvider, db } from '../firebase/config';
 import {
-    signInWithPopup, GoogleAuthProvider as FirebaseGoogleAuthProvider,
+    linkWithPopup, GoogleAuthProvider as FirebaseGoogleAuthProvider,
     FacebookAuthProvider as FirebaseFacebookAuthProvider,
     signInWithCredential, EmailAuthProvider, createUserWithEmailAndPassword,
     linkWithCredential,
@@ -37,11 +37,8 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 const credential = FirebaseGoogleAuthProvider.credential(idToken);
                 await upgradeAnonymous(credential);
             } else {
-                const result = await signInWithPopup(auth, googleProvider);
-                // linkWithCredential은 upgradeAnonymous가 처리
-                // signInWithPopup은 이미 새 세션을 만들므로, 별도 처리
-                // 익명 유저가 있을 경우: popup 결과의 credential로 link 시도
-                // (popup이 이미 sign-in 처리했으므로 profile만 업데이트)
+                // linkWithPopup: 익명 UID 유지 + Google credential 연결
+                const result = await linkWithPopup(auth.currentUser, googleProvider);
                 await setDoc(doc(db, 'users', result.user.uid), {
                     email: result.user.email,
                     displayName: result.user.displayName || 'Google User',
@@ -75,7 +72,8 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 const credential = FirebaseFacebookAuthProvider.credential(accessToken);
                 await upgradeAnonymous(credential);
             } else {
-                const result = await signInWithPopup(auth, facebookProvider);
+                // linkWithPopup: 익명 UID 유지 + Facebook credential 연결
+                const result = await linkWithPopup(auth.currentUser, facebookProvider);
                 await setDoc(doc(db, 'users', result.user.uid), {
                     email: result.user.email,
                     displayName: result.user.displayName || 'Facebook User',

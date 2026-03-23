@@ -104,14 +104,25 @@ router.post('/api/delete-account', requireAuth, async (req, res) => {
             }
         }
 
-        // 6. Firebase Auth 계정 삭제
+        // 6. Firebase Auth 계정 삭제 (필수 — 실패 시 재가입 불가하므로 fatal 처리)
         if (admin.apps.length) {
             try {
                 await admin.auth().deleteUser(uid);
                 console.log(`[DeleteAccount] Firebase Auth deleted: ${uid}`);
             } catch (authErr) {
-                errors.push(`Firebase Auth: ${authErr.message}`);
+                console.error(`[DeleteAccount] Firebase Auth deletion FAILED: ${uid}`, authErr.message);
+                return res.status(500).json({
+                    success: false,
+                    error: `Firebase Auth 삭제 실패: ${authErr.message}`,
+                    partialErrors: errors,
+                });
             }
+        } else {
+            return res.status(500).json({
+                success: false,
+                error: 'Firebase Admin not initialized',
+                partialErrors: errors,
+            });
         }
 
         if (errors.length > 0) {
