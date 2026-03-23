@@ -4,4 +4,7 @@
     <string name="title_activity_main">PronunFit</string>
     <string name="package_name">com.arigems.pronunfit</string>
     <string name="custom_url_scheme">com.arigems.pronunfit</string>
+    <string name="facebook_app_id">1549474396756439</string>
+    <string name="facebook_client_token">38e683deb685470b7b8356779eb38f53</string>
+    <string name="fb_login_protocol_scheme">fb1549474396756439</string>
 </resources>

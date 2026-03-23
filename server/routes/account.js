@@ -125,4 +125,29 @@ router.post('/api/delete-account', requireAuth, async (req, res) => {
     }
 });
 
+// ── 앱 설정 업데이트 (빌드 스크립트용) ─────────────────────────────────────────
+router.post('/api/config/app', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    const { latestNativeVersion } = req.body;
+    if (!latestNativeVersion) return res.status(400).json({ error: 'latestNativeVersion required' });
+
+    try {
+        await adminDb.collection('config').doc('app').set(
+            { latestNativeVersion, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
+            { merge: true }
+        );
+        console.log(`[Config] latestNativeVersion updated to ${latestNativeVersion}`);
+        res.json({ success: true, latestNativeVersion });
+    } catch (err) {
+        console.error('[Config] update error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
