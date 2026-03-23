@@ -1,130 +1,213 @@
 // src/utils/soundEffects.js
-// [초보자 코딩 가이드]
-// 브라우저의 AudioContext를 사용하면 외부 mp3 파일 없이도 코드로 소리(주파수 삐- 소리)를 직접 만들 수 있습니다. 
-// 이 방식은 파일 로딩 딜레이가 없어 누르자마자 즉각적으로 빠르고 안정적으로 소리가 납니다. 
+// AudioContext(프로그래매틱 톤) + HTML5 Audio(iOS 폴백) 하이브리드 방식
+// Android/데스크톱: AudioContext로 즉각 재생
+// iOS: AudioContext 실패 시 WAV 데이터 URL로 폴백 (Silent Mode에서도 재생 가능)
 
-// AudioContext를 미리 전역으로 만들어 두면, 브라우저 정책(Autoplay)에 막히지 않고 재사용할 수 있습니다.
+// ── AudioContext 관리 ────────────────────────────────────────────────────────
 let audioCtx = null;
 
-const initAudioContext = () => {
-    if (!audioCtx) {
-        // 브라우저마다 이름이 다를 수 있어서 호환성을 위해 체크
-        const AudioContext = window.AudioContext || window.webkitAudioContext;
-        audioCtx = new AudioContext();
-    }
-    // 사용자가 상호작용하기 전에 Context가 정지되어 있을 수 있으므로 재개해 줌
-    if (audioCtx.state === 'suspended') {
-        audioCtx.resume();
-    }
+const getAudioCtx = () => {
+    try {
+        if (!audioCtx) {
+            const AC = window.AudioContext || window.webkitAudioContext;
+            if (AC) audioCtx = new AC();
+        }
+        if (audioCtx?.state === 'suspended') {
+            audioCtx.resume();
+        }
+    } catch (e) { /* 미지원 환경 */ }
     return audioCtx;
 };
 
-// iOS Safari 대응: 매 사용자 터치/클릭 시 AudioContext를 resume
-// iOS는 비활성 상태 후 AudioContext를 다시 suspended로 돌릴 수 있으므로,
-// 매 제스처마다 resume을 호출하여 이후 비동기 콜백(발음 평가 결과 등)에서도 소리 재생 가능
-let _audioUnlocked = false;
-const keepAudioAlive = () => {
-    try {
-        const ctx = initAudioContext();
-        // 첫 터치: 무음 버퍼 재생으로 iOS AudioContext 활성화
-        if (!_audioUnlocked) {
-            const buffer = ctx.createBuffer(1, 1, 22050);
-            const source = ctx.createBufferSource();
-            source.buffer = buffer;
-            source.connect(ctx.destination);
-            source.start(0);
-            _audioUnlocked = true;
-        }
-    } catch (e) {
-        // AudioContext 미지원 환경에서도 앱 동작에 영향 없음
-    }
-};
+// 매 터치/클릭마다 AudioContext resume (iOS 대응)
 if (typeof document !== 'undefined') {
-    document.addEventListener('touchstart', keepAudioAlive, true);
-    document.addEventListener('click', keepAudioAlive, true);
+    const resumeOnGesture = () => { try { getAudioCtx(); } catch (e) {} };
+    document.addEventListener('touchend', resumeOnGesture, true);
+    document.addEventListener('click', resumeOnGesture, true);
 }
 
-// 삐- 소리를 만드는 아주 기본적인 함수
-const playTone = (freq, type, duration, startTime = 0) => {
-    const ctx = initAudioContext();
-    const osc = ctx.createOscillator(); // 소리 발생기
-    const gainNode = ctx.createGain(); // 볼륨 조절기
+// ── WAV 생성 유틸 (AudioContext 없이도 소리 재생 가능) ──────────────────────
+// PCM 데이터로 WAV Blob을 만들어 HTML5 Audio로 재생
+const generateWav = (sampleRate, samples) => {
+    const numSamples = samples.length;
+    const buffer = new ArrayBuffer(44 + numSamples * 2);
+    const view = new DataView(buffer);
 
-    osc.type = type; // sine(부드러운소리), square(고전게임소리), triangle(전자음), sawtooth(날카로운소리)
-    osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime); // 주파수(음높이) - 예: 440은 '라'음
+    // WAV header
+    const writeStr = (offset, str) => { for (let i = 0; i < str.length; i++) view.setUint8(offset + i, str.charCodeAt(i)); };
+    writeStr(0, 'RIFF');
+    view.setUint32(4, 36 + numSamples * 2, true);
+    writeStr(8, 'WAVE');
+    writeStr(12, 'fmt ');
+    view.setUint32(16, 16, true);        // chunk size
+    view.setUint16(20, 1, true);          // PCM
+    view.setUint16(22, 1, true);          // mono
+    view.setUint32(24, sampleRate, true); // sample rate
+    view.setUint32(28, sampleRate * 2, true); // byte rate
+    view.setUint16(32, 2, true);          // block align
+    view.setUint16(34, 16, true);         // bits per sample
+    writeStr(36, 'data');
+    view.setUint32(40, numSamples * 2, true);
 
-    // 소리가 갑자기 끊기면 '띡' 하는 잡음이 생기므로, 부드럽게 볼륨이 줄어들게 설정(Fade out)
-    gainNode.gain.setValueAtTime(0.1, ctx.currentTime + startTime); // 시작 볼륨 조절 (0.1 수준으로 작게)
+    // PCM data
+    for (let i = 0; i < numSamples; i++) {
+        const s = Math.max(-1, Math.min(1, samples[i]));
+        view.setInt16(44 + i * 2, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+    }
+    return new Blob([buffer], { type: 'audio/wav' });
+};
+
+// 주파수 톤 시퀀스 → PCM samples 생성
+const generateToneSamples = (tones, sampleRate = 22050) => {
+    // tones: [{ freq, duration, start, volume }]
+    const totalDuration = Math.max(...tones.map(t => t.start + t.duration));
+    const numSamples = Math.ceil(totalDuration * sampleRate);
+    const samples = new Float32Array(numSamples);
+
+    for (const { freq, duration, start, volume = 0.1 } of tones) {
+        const startIdx = Math.floor(start * sampleRate);
+        const endIdx = Math.floor((start + duration) * sampleRate);
+        for (let i = startIdx; i < endIdx && i < numSamples; i++) {
+            const t = (i - startIdx) / sampleRate;
+            const envelope = Math.max(0, 1 - t / duration); // linear fade out
+            samples[i] += Math.sin(2 * Math.PI * freq * t) * volume * envelope;
+        }
+    }
+    return samples;
+};
+
+// ── 사운드별 톤 정의 ─────────────────────────────────────────────────────────
+const TONES = {
+    alert: [
+        { freq: 600, duration: 0.1, start: 0, volume: 0.1 },
+        { freq: 800, duration: 0.2, start: 0.1, volume: 0.1 },
+    ],
+    success: [
+        { freq: 523.25, duration: 0.1,  start: 0,   volume: 0.1 },  // 도
+        { freq: 659.25, duration: 0.1,  start: 0.1, volume: 0.1 },  // 미
+        { freq: 783.99, duration: 0.1,  start: 0.2, volume: 0.1 },  // 솔
+        { freq: 1046.50, duration: 0.3, start: 0.3, volume: 0.1 },  // 높은 도
+    ],
+    star: [
+        { freq: 523.25, duration: 0.08,  start: 0,    volume: 0.1 },
+        { freq: 659.25, duration: 0.08,  start: 0.07, volume: 0.1 },
+        { freq: 783.99, duration: 0.08,  start: 0.14, volume: 0.1 },
+        { freq: 1046.50, duration: 0.08, start: 0.21, volume: 0.1 },
+        { freq: 1318.51, duration: 0.18, start: 0.28, volume: 0.1 },
+    ],
+    swipe: [
+        { freq: 600, duration: 0.15, start: 0, volume: 0.15 },
+    ],
+};
+
+// ── WAV Blob URL 캐시 (한 번만 생성) ────────────────────────────────────────
+const _wavCache = {};
+const getWavUrl = (name) => {
+    if (!_wavCache[name]) {
+        const tones = TONES[name];
+        if (!tones) return null;
+        const samples = generateToneSamples(tones);
+        const blob = generateWav(22050, samples);
+        _wavCache[name] = URL.createObjectURL(blob);
+    }
+    return _wavCache[name];
+};
+
+// ── AudioContext로 재생 시도 ─────────────────────────────────────────────────
+const playToneViaCtx = (freq, type, duration, startTime = 0) => {
+    const ctx = getAudioCtx();
+    if (!ctx || ctx.state !== 'running') return false;
+
+    const osc = ctx.createOscillator();
+    const gainNode = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, ctx.currentTime + startTime);
+    gainNode.gain.setValueAtTime(0.1, ctx.currentTime + startTime);
     gainNode.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + startTime + duration);
-
-    // 스피커에 연결
     osc.connect(gainNode);
     gainNode.connect(ctx.destination);
-
-    // 정해진 시간에 재생 시작하고 멈춤
     osc.start(ctx.currentTime + startTime);
     osc.stop(ctx.currentTime + startTime + duration);
+    return true;
 };
 
-// 1. 일반적인 결과가 떴을 때 알림 소리 (뾰롱~)
+// ── HTML5 Audio 폴백 재생 ───────────────────────────────────────────────────
+const playViaAudio = (name) => {
+    try {
+        const url = getWavUrl(name);
+        if (!url) return;
+        const audio = new Audio(url);
+        audio.volume = 0.3;
+        audio.play().catch(() => {});
+    } catch (e) {}
+};
+
+// ── 하이브리드 재생 함수: AudioContext 먼저, 실패 시 HTML5 Audio ──────────────
+const playSound = (name, ctxTones) => {
+    try {
+        const ctx = getAudioCtx();
+        if (ctx?.state === 'running') {
+            // AudioContext 사용 가능 → 프로그래매틱 톤 재생
+            for (const t of ctxTones) {
+                playToneViaCtx(t.freq, t.type || 'sine', t.duration, t.start);
+            }
+            return;
+        }
+    } catch (e) {}
+    // AudioContext 불가 → HTML5 Audio 폴백
+    playViaAudio(name);
+};
+
+// ── Public API ──────────────────────────────────────────────────────────────
+
+// 1. 일반 결과 알림 소리 (뾰롱~)
 export const playAlertSound = () => {
-    try {
-        playTone(600, 'sine', 0.1, 0); // 낮게 짧게
-        playTone(800, 'sine', 0.2, 0.1); // 살짝 높게 길게
-    } catch (e) {
-        console.error("Audio playback error:", e);
-    }
+    playSound('alert', [
+        { freq: 600, duration: 0.1, start: 0 },
+        { freq: 800, duration: 0.2, start: 0.1 },
+    ]);
 };
 
-// 2. 목표 점수를 넘었을 때 축하 소리 (따단~ 따다단~ 🎉)
+// 2. 목표 점수 달성 축하 소리 (따단~ 따다단~)
 export const playSuccessSound = () => {
-    try {
-        // 슈퍼 마리오 동전 먹는 듯한 경쾌한 오름차순 멜로디 연주
-        playTone(523.25, 'sine', 0.1, 0); // 도
-        playTone(659.25, 'sine', 0.1, 0.1); // 미
-        playTone(783.99, 'sine', 0.1, 0.2); // 솔
-        playTone(1046.50, 'sine', 0.3, 0.3); // 높은 도
-    } catch (e) {
-        console.error("Audio playback error:", e);
-    }
+    playSound('success', [
+        { freq: 523.25, duration: 0.1,  start: 0 },
+        { freq: 659.25, duration: 0.1,  start: 0.1 },
+        { freq: 783.99, duration: 0.1,  start: 0.2 },
+        { freq: 1046.50, duration: 0.3, start: 0.3 },
+    ]);
 };
 
-// 3. 별 저장 소리 (반짝! 오름차순 별빛 차임)
+// 3. 별 저장 소리 (반짝!)
 export const playStarSound = () => {
-    try {
-        playTone(523.25, 'sine', 0.08, 0);     // 도
-        playTone(659.25, 'sine', 0.08, 0.07);  // 미
-        playTone(783.99, 'sine', 0.08, 0.14);  // 솔
-        playTone(1046.50, 'sine', 0.08, 0.21); // 높은 도
-        playTone(1318.51, 'sine', 0.18, 0.28); // 높은 미 (반짝!)
-    } catch (e) {
-        console.error("Audio playback error:", e);
-    }
+    playSound('star', [
+        { freq: 523.25, duration: 0.08,  start: 0 },
+        { freq: 659.25, duration: 0.08,  start: 0.07 },
+        { freq: 783.99, duration: 0.08,  start: 0.14 },
+        { freq: 1046.50, duration: 0.08, start: 0.21 },
+        { freq: 1318.51, duration: 0.18, start: 0.28 },
+    ]);
 };
 
-// 4. 스와이프 저장 소리 (쓱~ 바람 가르는 소리)
+// 4. 스와이프 저장 소리 (쓱~)
 export const playSwipeSound = () => {
     try {
-        const ctx = initAudioContext();
-        const osc = ctx.createOscillator();
-        const gainNode = ctx.createGain();
-
-        osc.type = 'triangle'; // 바람 소리 느낌을 위해 triangle파형 사용
-        // 조금 더 무겁고 선명한 주파수 대역 사용
-        osc.frequency.setValueAtTime(600, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
-
-        // 볼륨을 크게(0.4) 설정하여 모바일에서도 잘 들리게 함
-        gainNode.gain.setValueAtTime(0, ctx.currentTime);
-        gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
-        gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
-
-        osc.connect(gainNode);
-        gainNode.connect(ctx.destination);
-
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.15);
-    } catch (e) {
-        console.error("Audio playback error:", e);
-    }
+        const ctx = getAudioCtx();
+        if (ctx?.state === 'running') {
+            const osc = ctx.createOscillator();
+            const gainNode = ctx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(600, ctx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(150, ctx.currentTime + 0.15);
+            gainNode.gain.setValueAtTime(0, ctx.currentTime);
+            gainNode.gain.linearRampToValueAtTime(0.4, ctx.currentTime + 0.05);
+            gainNode.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+            osc.connect(gainNode);
+            gainNode.connect(ctx.destination);
+            osc.start(ctx.currentTime);
+            osc.stop(ctx.currentTime + 0.15);
+            return;
+        }
+    } catch (e) {}
+    playViaAudio('swipe');
 };
