@@ -11,7 +11,8 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
 
-const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
+const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang = 'ko' }) => {
+    const handleComplete = onSuccess || onClose; // 계정 생성 성공 시 콜백
     const { user, upgradeAnonymous } = useAuth();
     const t = (key) => getT(sourceLang, key);
 
@@ -47,7 +48,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 }, { merge: true });
             }
             setSuccess(true);
-            setTimeout(() => onClose(), 1500);
+            setTimeout(() => handleComplete(), 1500);
         } catch (err) {
             if (err.code === 'auth/credential-already-in-use') {
                 setError(t('upgrade.errAlreadyExists'));
@@ -82,7 +83,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                 }, { merge: true });
             }
             setSuccess(true);
-            setTimeout(() => onClose(), 1500);
+            setTimeout(() => handleComplete(), 1500);
         } catch (err) {
             if (err.code === 'auth/credential-already-in-use' || err.code === 'auth/account-exists-with-different-credential') {
                 setError(t('upgrade.errAlreadyExists'));
@@ -103,7 +104,7 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
             const credential = EmailAuthProvider.credential(email, password);
             await upgradeAnonymous(credential);
             setSuccess(true);
-            setTimeout(() => onClose(), 1500);
+            setTimeout(() => handleComplete(), 1500);
         } catch (err) {
             if (err.code === 'auth/email-already-in-use' || err.code === 'auth/credential-already-in-use') {
                 setError(t('upgrade.errAlreadyExists'));
@@ -166,6 +167,17 @@ const AccountUpgradeModal = ({ onClose, sourceLang = 'ko' }) => {
                                 {t('upgrade.subtitle')}
                             </p>
                         </div>
+
+                        {/* 구독 시도 → 계정 먼저 만들기 안내 */}
+                        {fromSubscription && (
+                            <div style={{
+                                background: '#eff6ff', border: '1.5px solid #60a5fa', borderRadius: '12px',
+                                padding: '12px 14px', marginBottom: '14px',
+                                fontSize: '0.82rem', color: '#1e40af', fontWeight: 600, textAlign: 'center',
+                            }}>
+                                {t('upgrade.accountRequiredForSubscription')}
+                            </div>
+                        )}
 
                         {/* 혜택 안내 */}
                         <div style={{

@@ -319,6 +319,7 @@
     "createBtn": "Konto erstellen",
     "back": "Zurück",
     "dataKept": "Ihr Testfortschritt bleibt erhalten",
+    "accountRequiredForSubscription": "Bitte erstellen Sie zuerst ein kostenloses Konto, um zu abonnieren",
     "successTitle": "Konto erfolgreich erstellt!",
     "successBody": "Ihr Lernfortschritt ist sicher gespeichert",
     "errAlreadyExists": "Diese E-Mail ist bereits registriert",

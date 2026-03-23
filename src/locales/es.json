@@ -319,6 +319,7 @@
     "createBtn": "Crear cuenta",
     "back": "Volver",
     "dataKept": "Tu progreso de prueba se mantiene",
+    "accountRequiredForSubscription": "Crea una cuenta gratuita primero para suscribirte",
     "successTitle": "¡Cuenta creada con éxito!",
     "successBody": "Tu historial de aprendizaje está guardado",
     "errAlreadyExists": "Este correo ya está registrado",

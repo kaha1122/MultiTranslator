@@ -325,6 +325,7 @@
     "createBtn": "계정 만들기",
     "back": "뒤로",
     "dataKept": "체험 기록이 그대로 유지됩니다",
+    "accountRequiredForSubscription": "구독하려면 먼저 무료 계정을 만들어야 합니다",
     "successTitle": "계정이 만들어졌습니다!",
     "successBody": "학습 기록이 안전하게 보존됩니다",
     "errAlreadyExists": "이미 가입된 이메일입니다",

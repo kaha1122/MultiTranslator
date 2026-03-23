@@ -325,6 +325,7 @@
     "createBtn": "Create Account",
     "back": "Back",
     "dataKept": "Your trial progress is kept",
+    "accountRequiredForSubscription": "Please create a free account first to subscribe",
     "successTitle": "Account created!",
     "successBody": "Your learning history is safely saved",
     "errAlreadyExists": "This email is already registered",

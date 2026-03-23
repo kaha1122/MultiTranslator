@@ -319,6 +319,7 @@
     "createBtn": "アカウント作成",
     "back": "戻る",
     "dataKept": "体験の記録はそのまま保持されます",
+    "accountRequiredForSubscription": "定期購読するには、まず無料アカウントを作成してください",
     "successTitle": "アカウントが作成されました！",
     "successBody": "学習履歴が安全に保存されています",
     "errAlreadyExists": "このメールはすでに登録されています",

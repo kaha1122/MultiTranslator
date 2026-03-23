@@ -228,6 +228,16 @@ function App() {
   const recaptchaContainerRef = useRef(null);
   const recaptchaVerifierRef = useRef(null);
   const [pendingUpgradeTier, setPendingUpgradeTier] = useState(null); // 인증 완료 후 구독 모달 복귀용
+
+  // 익명 유저가 구독 시도 시 → 무료계정 생성 먼저 유도
+  const requestUpgrade = (tier) => {
+    if (user?.isAnonymous) {
+      setPendingUpgradeTier(typeof tier === 'string' ? tier : 'pro');
+      setShowAccountUpgrade(true);
+      return;
+    }
+    setShowUpgradeModal(tier);
+  };
   const closeProfileModal = () => {
     setShowProfileModal(false);
     if (pendingUpgradeTier) {
@@ -1881,7 +1891,15 @@ function App() {
       {showAccountUpgrade && (
         <AccountUpgradeModal
           sourceLang={sourceLang}
-          onClose={() => setShowAccountUpgrade(false)}
+          onClose={() => { setShowAccountUpgrade(false); setPendingUpgradeTier(null); }}
+          onSuccess={() => {
+            setShowAccountUpgrade(false);
+            if (pendingUpgradeTier) {
+              setShowUpgradeModal(pendingUpgradeTier);
+              setPendingUpgradeTier(null);
+            }
+          }}
+          fromSubscription={!!pendingUpgradeTier}
         />
       )}
 
@@ -2146,7 +2164,7 @@ function App() {
                 </p>
                 {/* Pro */}
                 <button
-                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal('pro'); }}
+                  onClick={() => { setSidebarOpen(false); requestUpgrade('pro'); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
@@ -2168,7 +2186,7 @@ function App() {
                 </button>
                 {/* Premium */}
                 <button
-                  onClick={() => { setSidebarOpen(false); setShowUpgradeModal('premium'); }}
+                  onClick={() => { setSidebarOpen(false); requestUpgrade('premium'); }}
                   style={{
                     width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                     padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
@@ -2915,7 +2933,7 @@ function App() {
                 <div style={{ display: 'flex', gap: '8px' }}>
                   {tier === 'trial' && (
                     <button
-                      onClick={() => setShowUpgradeModal(true)}
+                      onClick={() => requestUpgrade(true)}
                       style={{
                         padding: '8px 14px', background: '#00a884', color: 'white',
                         border: 'none', borderRadius: '8px', fontWeight: 'bold',
@@ -3136,7 +3154,7 @@ function App() {
           cardCount={todayCount}
           pronCount={todayPronCount}
           onClose={() => setShowTrialLimitModal(false)}
-          onUpgrade={() => { setShowTrialLimitModal(false); setShowUpgradeModal(true); }}
+          onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
         />
       )}
 
@@ -3162,7 +3180,7 @@ function App() {
       {/* 구독 만료 예정 알림 팝업 */}
       <RenewalReminderPopup
         sourceLang={sourceLang}
-        onUpgrade={() => setShowUpgradeModal(true)}
+        onUpgrade={() => requestUpgrade(true)}
       />
 
       {/* --- 프로필 수정 모달 (최상위 — 어느 탭에서든 표시) --- */}

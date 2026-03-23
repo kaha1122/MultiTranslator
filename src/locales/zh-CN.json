@@ -319,6 +319,7 @@
     "createBtn": "创建账户",
     "back": "返回",
     "dataKept": "体验记录将保留",
+    "accountRequiredForSubscription": "订阅前请先创建免费账户",
     "successTitle": "账户创建成功！",
     "successBody": "学习记录已安全保存",
     "errAlreadyExists": "此邮箱已注册",

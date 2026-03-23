@@ -319,6 +319,7 @@
     "createBtn": "Tạo tài khoản",
     "back": "Quay lại",
     "dataKept": "Tiến trình trải nghiệm được giữ nguyên",
+    "accountRequiredForSubscription": "Vui lòng tạo tài khoản miễn phí trước khi đăng ký",
     "successTitle": "Tài khoản đã được tạo!",
     "successBody": "Lịch sử học tập được lưu an toàn",
     "errAlreadyExists": "Email này đã được đăng ký",
