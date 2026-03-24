@@ -10,7 +10,7 @@ require('./config/firebase');
 
 const app = express();
 app.use(cors());
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // ── 라우트 모듈 등록 ─────────────────────────────────────────────────────────
 app.use(require('./routes/analyze'));

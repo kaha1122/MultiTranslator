@@ -8,6 +8,28 @@ import { geminiUrl } from '../config/gemini';
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
+/** 이미지를 최대 maxSize px로 리사이즈하여 base64 반환 */
+const resizeImage = (dataUrl, maxSize = 1920, quality = 0.85) =>
+    new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            let { width, height } = img;
+            if (width <= maxSize && height <= maxSize) {
+                resolve(dataUrl.split(',')[1]);
+                return;
+            }
+            const ratio = Math.min(maxSize / width, maxSize / height);
+            width = Math.round(width * ratio);
+            height = Math.round(height * ratio);
+            const c = document.createElement('canvas');
+            c.width = width;
+            c.height = height;
+            c.getContext('2d').drawImage(img, 0, 0, width, height);
+            resolve(c.toDataURL('image/jpeg', quality).split(',')[1]);
+        };
+        img.src = dataUrl;
+    });
+
 const SCAN_SIZES = {
     word:     { w: '90vw', h: 80 },
     sentence: { w: '90vw', h: 140 },
@@ -181,12 +203,11 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
         ctx.drawImage(video, cropX, cropY, cropW, cropH, 0, 0, canvas.width, canvas.height);
 
         const dataUrl = canvas.toDataURL('image/jpeg', 0.92);
-        const base64 = dataUrl.split(',')[1];
 
         stopCamera();
         setPreviewUrl(dataUrl);
         setPhase('preview');
-        performOCR(base64, 'image/jpeg');
+        resizeImage(dataUrl).then(b64 => performOCR(b64, 'image/jpeg'));
     }, [stopCamera, performOCR]);
 
     /* ── Gallery handler (unchanged) ───────────────── */
@@ -199,9 +220,9 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
         setPhase('preview');
 
         const reader = new FileReader();
-        reader.onload = (e) => {
-            const base64 = e.target.result.split(',')[1];
-            performOCR(base64, file.type || 'image/jpeg');
+        reader.onload = async (e) => {
+            const b64 = await resizeImage(e.target.result);
+            performOCR(b64, 'image/jpeg');
         };
         reader.readAsDataURL(file);
     }, [performOCR]);
