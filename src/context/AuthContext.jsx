@@ -36,6 +36,7 @@ export const AuthProvider = ({ children }) => {
                 const docRef = doc(db, 'users', authenticatedUser.uid);
 
                 // 익명 유저: 최소 Firestore 문서 생성 후 onSnapshot 연결
+                let docJustCreated = false;
                 if (authenticatedUser.isAnonymous) {
                     try {
                         const snap = await getDoc(docRef);
@@ -51,11 +52,19 @@ export const AuthProvider = ({ children }) => {
                                 createdAt: serverTimestamp(),
                                 updatedAt: serverTimestamp(),
                             });
+                            docJustCreated = true;
                         }
                     } catch (e) {
                         console.error('[AuthContext] Anonymous user doc creation failed:', e);
                         // onSnapshot fallback(line 56-64)이 재시도하므로 계속 진행
                     }
+                }
+
+                // 앱 재실행 시 updatedAt 갱신 (방금 문서를 생성한 경우는 제외)
+                if (!docJustCreated) {
+                    updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
+                        console.error('[AuthContext] updatedAt refresh failed:', e)
+                    );
                 }
 
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
