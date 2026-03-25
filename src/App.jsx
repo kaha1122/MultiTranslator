@@ -278,6 +278,16 @@ function App() {
         const { Purchases } = await import('@revenuecat/purchases-capacitor');
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
         console.log('[RevenueCat] Configured for', user.uid);
+        // Google Play 구매 내역 복원 — 앱 재설치/계정 전환 시 구독 동기화
+        try {
+          const { customerInfo } = await Purchases.restorePurchases();
+          const activeEnts = Object.keys(customerInfo?.entitlements?.active || {});
+          if (activeEnts.length > 0) {
+            console.log('[RevenueCat] Restored:', activeEnts.join(', '));
+          }
+        } catch (restoreErr) {
+          console.warn('[RevenueCat] Restore failed (non-blocking):', restoreErr?.message);
+        }
       } catch (e) {
         console.error('[RevenueCat] Init failed:', e?.message);
       }
