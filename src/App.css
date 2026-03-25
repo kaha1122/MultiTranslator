@@ -21,10 +21,11 @@
   --badge-zh-text: #9a3412;
 }
 
-body {
+html, body {
   margin: 0;
   padding: 0;
   min-height: 100vh;
+  overflow-x: hidden;
   background-color: #e2e8f0;
   background-image: radial-gradient(at 0% 0%, rgba(0, 168, 132, 0.05) 0px, transparent 50%),
     radial-gradient(at 100% 0%, rgba(99, 102, 241, 0.05) 0px, transparent 50%);
@@ -267,7 +268,7 @@ body {
 
 .sidebar {
   position: fixed;
-  top: 0; left: 0; bottom: 0;
+  top: 0; left: 0; bottom: var(--admob-bottom, 0px);
   width: min(260px, 75vw);
   background: white;
   z-index: 2001;
@@ -275,7 +276,6 @@ body {
   flex-direction: column;
   box-shadow: 4px 0 32px rgba(0,0,0,0.18);
   overflow-y: auto;
-  padding-bottom: var(--admob-bottom, 0px);
 }
 
 .sidebar-header {
