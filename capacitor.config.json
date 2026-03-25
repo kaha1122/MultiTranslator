@@ -8,7 +8,7 @@
       "channel": "production"
     },
     "FirebaseAuthentication": {
-      "skipNativeAuth": false,
+      "skipNativeAuth": true,
       "providers": ["google.com", "facebook.com", "phone"],
       "googleProviderWebClientId": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com"
     }
