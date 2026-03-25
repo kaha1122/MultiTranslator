@@ -304,6 +304,18 @@ function App() {
             }
             await setDoc(doc(db, 'users', user.uid), syncData, { merge: true });
             console.log(`[RevenueCat] Synced to Firestore: ${rcTier}`, syncData);
+          } else {
+            // 활성 구독 없음 → 현재 pro/premium이면 다운그레이드
+            const userDoc = await getDoc(doc(db, 'users', user.uid));
+            const userData = userDoc.exists() ? userDoc.data() : {};
+            if ((userData.tier === 'pro' || userData.tier === 'premium') && userData.tierSource === 'revenuecat') {
+              await setDoc(doc(db, 'users', user.uid), {
+                tier: 'trial',
+                autoRenew: false,
+                updatedAt: serverTimestamp(),
+              }, { merge: true });
+              console.log('[RevenueCat] No active entitlement → downgraded to trial');
+            }
           }
         } catch (restoreErr) {
           console.warn('[RevenueCat] Restore failed (non-blocking):', restoreErr?.message);

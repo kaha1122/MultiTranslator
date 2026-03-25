@@ -243,9 +243,6 @@ export const AuthProvider = ({ children }) => {
         const expiresAt = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
         if (new Date() <= expiresAt) return; // 아직 만기 전
 
-        // 만기 경과 — RevenueCat 네이티브: 동기화 useEffect가 실제 entitlement 확인 후 처리
-        if (profile?.tierSource === 'revenuecat' && Capacitor.isNativePlatform()) return;
-
         // Toss 결제 중 autoRenew: 서버 cron이 갱신 처리하므로 skip (24시간 여유)
         if (profile?.autoRenew === true && profile?.tierSource !== 'revenuecat') {
             const graceMs = 24 * 60 * 60 * 1000; // 24시간 grace period
