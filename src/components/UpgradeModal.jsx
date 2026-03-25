@@ -401,7 +401,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     };
 
     const currentTier = profile?.tier || 'trial';
-    const currentPlanId = profile?.planId || null;
+    const currentPlanId = (currentTier === 'pro' || currentTier === 'premium') ? (profile?.planId || null) : null;
     const isSubscribed = currentTier === 'pro' || currentTier === 'premium';
 
     return (

@@ -2954,7 +2954,7 @@ function App() {
                 background: '#f8fafc', borderRadius: '12px', padding: '12px 16px'
               }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
-                  <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#1e293b' }}>
+                  <span style={{ fontWeight: '700', fontSize: '0.9rem', color: '#16a34a' }}>
                     {{
                       trial: `🆓 ${getT(sourceLang, 'settings.tierTrial')}`,
                       admin: `🛡️ ${getT(sourceLang, 'settings.tierAdmin')}`,
@@ -2963,14 +2963,29 @@ function App() {
                       premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
                     }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
                   </span>
-                  {tier === 'trial' && (
+                  {/* 상품명 (Pro/Premium 구독자) */}
+                  {(tier === 'pro' || tier === 'premium') && profile?.planId && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todayCount}/{TRIAL_DAILY_CARD_LIMIT}/day<br />🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
+                      📦 {{ pro_1: getT(sourceLang, 'settings.planPro1'), pro_3: getT(sourceLang, 'settings.planPro3'), premium_1: getT(sourceLang, 'settings.planPremium1'), premium_3: getT(sourceLang, 'settings.planPremium3') }[profile.planId?.toLowerCase()] || profile.planId}
                     </span>
                   )}
+                  {/* 만기예정일 (Pro/Premium 구독자) */}
+                  {(tier === 'pro' || tier === 'premium') && profile?.subscriptionExpiresAt && (
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      📅 {getT(sourceLang, 'settings.expiryDate')}: {(() => { const d = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; })()}
+                    </span>
+                  )}
+                  {/* 발음 사용량 (Pro) */}
                   {tier === 'pro' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                       🎤 {getT(sourceLang, 'settings.usagePron')}: {proPronCount}/{PRO_PRON_LIMIT}
+                    </span>
+                  )}
+                  {/* 일일 사용량 (Trial) */}
+                  {tier === 'trial' && (
+                    <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
+                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todaySaveCount}/{TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}/day<br />
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}/day
                     </span>
                   )}
                 </div>

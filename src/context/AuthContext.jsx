@@ -250,9 +250,11 @@ export const AuthProvider = ({ children }) => {
         }
 
         // 만기 + 갱신 안 됨 → trial 다운그레이드 (구독 필드만 초기화, 나머지 보존)
+        // subscriptionExpiresAt/subscriptionMonths는 이력 보존을 위해 유지 (null 설정 시 Firestore 필드 삭제됨)
         updateDoc(doc(db, 'users', user.uid), {
             tier: 'trial',
             autoRenew: false,
+            planId: null,
             tierUpdatedAt: new Date(),
         }).catch(e => console.error("Subscription expiry downgrade failed:", e));
     }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
@@ -304,9 +306,11 @@ export const AuthProvider = ({ children }) => {
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
                     // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
                     // 구독 필드만 초기화, 나머지(phone, 카운터 등) 보존
+                    // subscriptionExpiresAt/subscriptionMonths는 이력 보존을 위해 유지
                     await updateDoc(doc(db, 'users', user.uid), {
                         tier: 'trial',
                         autoRenew: false,
+                        planId: null,
                         tierUpdatedAt: serverTimestamp(),
                     });
                     console.log(`[RevenueCat] entitlement expired → trial`);
