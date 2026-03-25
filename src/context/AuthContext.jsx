@@ -275,7 +275,8 @@ export const AuthProvider = ({ children }) => {
 
                 // Firestore tier와 다르면 동기화
                 const currentTier = profile?.tier || 'trial';
-                if (rcTier && rcTier !== currentTier) {
+                const needsExpirySync = rcTier && !profile?.subscriptionExpiresAt;
+                if (rcTier && (rcTier !== currentTier || needsExpirySync)) {
                     const syncData = {
                         tier: rcTier,
                         tierUpdatedAt: serverTimestamp(),
@@ -285,8 +286,17 @@ export const AuthProvider = ({ children }) => {
                         syncData.planId = rcProductId;
                         syncData.subscriptionMonths = rcProductId.includes('_3') ? 3 : 1;
                     }
+                    // 만기일 + 자동갱신 동기화
+                    const expiresDateStr = rcEntitlement?.expirationDate;
+                    if (expiresDateStr) {
+                        syncData.subscriptionExpiresAt = new Date(expiresDateStr);
+                    }
+                    const willRenew = rcEntitlement?.willRenew;
+                    if (willRenew !== undefined) {
+                        syncData.autoRenew = willRenew;
+                    }
                     await updateDoc(doc(db, 'users', user.uid), syncData);
-                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId})`);
+                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId}), expires: ${expiresDateStr}`);
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
                     // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
                     await updateDoc(doc(db, 'users', user.uid), {
