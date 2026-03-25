@@ -417,8 +417,21 @@ export default function VocabTab({
             {/* Category Accordion */}
             {VOCAB_CATEGORIES.map(cat => {
                 const isOpen = openCat === cat.id;
+                const catTheme = {
+                    daily: '#10b981',    // emerald
+                    travel: '#3b82f6',   // blue
+                    business: '#f59e0b', // amber
+                    education: '#8b5cf6',// violet
+                    social: '#ec4899',   // pink
+                    tech: '#06b6d4',     // cyan
+                    culture: '#f97316',  // orange
+                }[cat.id] || '#94a3b8';
                 return (
-                    <div key={cat.id} className="vocab-category">
+                    <div
+                        key={cat.id}
+                        className={`vocab-category ${isOpen ? 'vocab-category--open' : ''}`}
+                        style={isOpen ? { '--cat-theme': catTheme } : undefined}
+                    >
                         <button
                             className="vocab-cat-header"
                             onClick={() => setOpenCat(isOpen ? null : cat.id)}
