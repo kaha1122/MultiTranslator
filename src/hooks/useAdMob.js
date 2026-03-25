@@ -82,12 +82,23 @@ function setOffset(bottom) {
 }
 
 export const useAdMob = (tier) => {
-    const initialized = useRef(false);
+    const bannerShowing = useRef(false);
+    const isPaid = tier === 'pro' || tier === 'premium';
 
+    // Pro/Premium 전환 시 배너 제거
     useEffect(() => {
-        if (!isNativePlatform() || initialized.current) return;
-        if (tier === 'pro' || tier === 'premium') return;
-        initialized.current = true;
+        if (!isNativePlatform()) return;
+        if (isPaid && bannerShowing.current) {
+            if (_adMob) _adMob.removeBanner?.().catch(() => {});
+            setOffset(false);
+            bannerShowing.current = false;
+            console.log('[AdMob] Banner removed (paid tier)');
+        }
+    }, [isPaid]);
+
+    // Trial 시 배너 표시
+    useEffect(() => {
+        if (!isNativePlatform() || isPaid || bannerShowing.current) return;
 
         let listenerHandles = [];
 
@@ -121,6 +132,7 @@ export const useAdMob = (tier) => {
                     isTesting: IS_TESTING,
                 });
 
+                bannerShowing.current = true;
                 console.log('[AdMob] showBanner 호출 완료');
 
             } catch (e) {
@@ -134,6 +146,7 @@ export const useAdMob = (tier) => {
             listenerHandles.forEach(h => h?.remove?.());
             if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
+            bannerShowing.current = false;
         };
-    }, []);
+    }, [isPaid]);
 };
