@@ -278,20 +278,38 @@ function App() {
         const { Purchases, LOG_LEVEL } = await import('@revenuecat/purchases-capacitor');
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
-        // 임시 디버그: configure 성공 확인
-        const { customerInfo: initInfo } = await Purchases.getCustomerInfo();
-        const initEnts = Object.keys(initInfo?.entitlements?.active || {});
-        alert(`[RC] configure OK\nUID: ${user.uid}\nActive: ${initEnts.join(',') || 'none'}\nSubs: ${(initInfo?.activeSubscriptions || []).join(',') || 'none'}`);
-        // Google Play 구매 내역 복원
+        console.log('[RevenueCat] Configured for', user.uid);
+        // Google Play 구매 내역 복원 + Firestore 직접 동기화
         try {
           const { customerInfo } = await Purchases.restorePurchases();
-          const activeEnts = Object.keys(customerInfo?.entitlements?.active || {});
-          alert(`[RC] restore OK\nActive: ${activeEnts.join(',') || 'none'}\nSubs: ${(customerInfo?.activeSubscriptions || []).join(',') || 'none'}`);
+          const active = customerInfo?.entitlements?.active || {};
+          let rcTier = null;
+          if (active['Premium']) rcTier = 'premium';
+          else if (active['Pro']) rcTier = 'pro';
+
+          if (rcTier) {
+            const rcEnt = active['Premium'] || active['Pro'];
+            const syncData = {
+              tier: rcTier,
+              tierSource: 'revenuecat',
+              autoRenew: rcEnt?.willRenew || false,
+              updatedAt: serverTimestamp(),
+            };
+            if (rcEnt?.expirationDate) {
+              syncData.subscriptionExpiresAt = new Date(rcEnt.expirationDate);
+            }
+            if (rcEnt?.productIdentifier) {
+              syncData.planId = rcEnt.productIdentifier;
+              syncData.subscriptionMonths = rcEnt.productIdentifier.includes('_3') ? 3 : 1;
+            }
+            await setDoc(doc(db, 'users', user.uid), syncData, { merge: true });
+            console.log(`[RevenueCat] Synced to Firestore: ${rcTier}`, syncData);
+          }
         } catch (restoreErr) {
-          alert(`[RC] restore FAIL: ${restoreErr?.message}`);
+          console.warn('[RevenueCat] Restore failed (non-blocking):', restoreErr?.message);
         }
       } catch (e) {
-        alert(`[RC] Init FAIL: ${e?.message}\n${JSON.stringify(e).slice(0, 200)}`);
+        console.error('[RevenueCat] Init failed:', e?.message);
       }
     })();
   }, [user?.uid]);
