@@ -180,12 +180,21 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
         setError('');
         try {
             const credential = EmailAuthProvider.credential(email, password);
-            await upgradeAnonymous(credential);
+            try {
+                await upgradeAnonymous(credential);
+            } catch (linkErr) {
+                if (linkErr.code === 'auth/email-already-in-use' || linkErr.code === 'auth/credential-already-in-use') {
+                    // 기존 이메일 계정이 존재 → 입력된 비밀번호로 로그인 시도 후 마이그레이션
+                    await migrateAndSignIn(credential);
+                } else {
+                    throw linkErr;
+                }
+            }
             setSuccess(true);
             setTimeout(() => handleComplete(), 1500);
         } catch (err) {
-            if (err.code === 'auth/email-already-in-use' || err.code === 'auth/credential-already-in-use') {
-                setError(t('upgrade.errAlreadyExists'));
+            if (err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password') {
+                setError(t('upgrade.errWrongPassword'));
             } else if (err.code === 'auth/weak-password') {
                 setError(t('upgrade.errWeakPassword'));
             } else if (err.code === 'auth/invalid-email') {

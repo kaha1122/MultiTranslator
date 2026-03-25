@@ -331,6 +331,7 @@
     "errAlreadyExists": "This email is already registered",
     "errWeakPassword": "Password must be at least 6 characters",
     "errInvalidEmail": "Invalid email address",
+    "errWrongPassword": "Incorrect password",
     "errGeneral": "An error occurred. Please try again",
     "sidebarTitle": "Create an account",
     "sidebarBody": "Sign up to keep your learning history",

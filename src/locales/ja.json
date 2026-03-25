@@ -325,6 +325,7 @@
     "errAlreadyExists": "このメールはすでに登録されています",
     "errWeakPassword": "パスワードは6文字以上にしてください",
     "errInvalidEmail": "無効なメールアドレスです",
+    "errWrongPassword": "パスワードが一致しません",
     "errGeneral": "エラーが発生しました。もう一度お試しください",
     "sidebarTitle": "アカウントを作成しましょう",
     "sidebarBody": "登録すると学習履歴が永久保存されます",

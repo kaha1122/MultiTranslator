@@ -325,6 +325,7 @@
     "errAlreadyExists": "Diese E-Mail ist bereits registriert",
     "errWeakPassword": "Das Passwort muss mindestens 6 Zeichen lang sein",
     "errInvalidEmail": "Ungültige E-Mail-Adresse",
+    "errWrongPassword": "Falsches Passwort",
     "errGeneral": "Ein Fehler ist aufgetreten. Bitte versuchen Sie es erneut",
     "sidebarTitle": "Konto erstellen",
     "sidebarBody": "Registrieren Sie sich, um Ihren Lernfortschritt zu speichern",

@@ -325,6 +325,7 @@
     "errAlreadyExists": "Este e-mail já está cadastrado",
     "errWeakPassword": "A senha deve ter pelo menos 6 caracteres",
     "errInvalidEmail": "Endereço de e-mail inválido",
+    "errWrongPassword": "Senha incorreta",
     "errGeneral": "Ocorreu um erro. Por favor, tente novamente",
     "sidebarTitle": "Crie sua conta",
     "sidebarBody": "Cadastre-se para salvar seu histórico",

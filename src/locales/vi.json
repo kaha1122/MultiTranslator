@@ -325,6 +325,7 @@
     "errAlreadyExists": "Email này đã được đăng ký",
     "errWeakPassword": "Mật khẩu phải có ít nhất 6 ký tự",
     "errInvalidEmail": "Địa chỉ email không hợp lệ",
+    "errWrongPassword": "Mật khẩu không đúng",
     "errGeneral": "Đã xảy ra lỗi. Vui lòng thử lại",
     "sidebarTitle": "Tạo tài khoản của bạn",
     "sidebarBody": "Đăng ký để lưu lịch sử học tập vĩnh viễn",

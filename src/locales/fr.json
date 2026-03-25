@@ -325,6 +325,7 @@
     "errAlreadyExists": "Cet e-mail est déjà enregistré",
     "errWeakPassword": "Le mot de passe doit comporter au moins 6 caractères",
     "errInvalidEmail": "Adresse e-mail invalide",
+    "errWrongPassword": "Mot de passe incorrect",
     "errGeneral": "Une erreur s'est produite. Veuillez réessayer",
     "sidebarTitle": "Créez votre compte",
     "sidebarBody": "Inscrivez-vous pour sauvegarder votre historique",

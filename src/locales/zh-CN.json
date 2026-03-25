@@ -325,6 +325,7 @@
     "errAlreadyExists": "此邮箱已注册",
     "errWeakPassword": "密码至少需要6个字符",
     "errInvalidEmail": "邮箱地址无效",
+    "errWrongPassword": "密码不正确",
     "errGeneral": "发生错误，请重试",
     "sidebarTitle": "创建您的账户",
     "sidebarBody": "注册后学习记录永久保存",
