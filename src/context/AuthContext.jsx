@@ -255,7 +255,7 @@ export const AuthProvider = ({ children }) => {
 
     // ── RevenueCat entitlement → Firestore tier 동기화 (네이티브 앱 전용) ──
     useEffect(() => {
-        if (!Capacitor.isNativePlatform() || !user) return;
+        if (!Capacitor.isNativePlatform() || !user || !profile) return;
         let cancelled = false;
         (async () => {
             try {
@@ -311,7 +311,8 @@ export const AuthProvider = ({ children }) => {
             }
         })();
         return () => { cancelled = true; };
-    }, [user?.uid]);
+        // profile 로드 후 실행 + tier/expiry 변경 시 재동기화
+    }, [user?.uid, profile?.tier, !!profile?.subscriptionExpiresAt]);
 
     // 번역 클릭 카운터 (분석용)
     const incrementTrialCard = async () => {
