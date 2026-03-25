@@ -237,20 +237,29 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         if (!user || !profile?.subscriptionExpiresAt) return;
         if (tier !== 'pro' && tier !== 'premium') return;
-        if (profile?.autoRenew === true) return;
         const expiresAt = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
-        if (new Date() > expiresAt) {
-            updateDoc(doc(db, 'users', user.uid), {
-                tier: 'trial',
-                autoRenew: false,
-                planId: null,
-                subscriptionMonths: null,
-                tossBillingKey: null,
-                tossCustomerKey: null,
-                subscriptionExpiresAt: null,
-                tierUpdatedAt: new Date(),
-            }).catch(e => console.error("Subscription expiry downgrade failed:", e));
+        if (new Date() <= expiresAt) return; // 아직 만기 전
+
+        // 만기 경과 — RevenueCat 네이티브: 동기화 useEffect가 실제 entitlement 확인 후 처리
+        if (profile?.tierSource === 'revenuecat' && Capacitor.isNativePlatform()) return;
+
+        // Toss 결제 중 autoRenew: 서버 cron이 갱신 처리하므로 skip (24시간 여유)
+        if (profile?.autoRenew === true && profile?.tierSource !== 'revenuecat') {
+            const graceMs = 24 * 60 * 60 * 1000; // 24시간 grace period
+            if (new Date() - expiresAt < graceMs) return;
         }
+
+        // 만기 + 갱신 안 됨 → trial 다운그레이드
+        updateDoc(doc(db, 'users', user.uid), {
+            tier: 'trial',
+            autoRenew: false,
+            planId: null,
+            subscriptionMonths: null,
+            tossBillingKey: null,
+            tossCustomerKey: null,
+            subscriptionExpiresAt: null,
+            tierUpdatedAt: new Date(),
+        }).catch(e => console.error("Subscription expiry downgrade failed:", e));
     }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
 
     // ── RevenueCat entitlement → Firestore tier 동기화 (네이티브 앱 전용) ──
@@ -301,8 +310,12 @@ export const AuthProvider = ({ children }) => {
                     // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
                     await updateDoc(doc(db, 'users', user.uid), {
                         tier: 'trial',
-                        tierUpdatedAt: serverTimestamp(),
+                        autoRenew: false,
+                        planId: null,
+                        subscriptionMonths: null,
+                        subscriptionExpiresAt: null,
                         tierSource: null,
+                        tierUpdatedAt: serverTimestamp(),
                     });
                     console.log(`[RevenueCat] entitlement expired → trial`);
                 }
