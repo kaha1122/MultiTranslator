@@ -7,6 +7,24 @@ import { getT } from '../../utils/i18n';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from '../../utils/phoneFormat';
 import './Auth.css';
 
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+
+const migrateAnonymousData = async (anonymousUid, newUser) => {
+    if (!anonymousUid || anonymousUid === newUser.uid) return;
+    try {
+        const token = await newUser.getIdToken();
+        const resp = await fetch(`${API_URL}/api/migrate-anonymous`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+            body: JSON.stringify({ anonymousUid }),
+        });
+        const data = await resp.json();
+        if (data.success) console.log('[Signup Migrate] success:', data.migrated);
+    } catch (e) {
+        console.warn('[Signup Migrate] failed (non-blocking):', e.message);
+    }
+};
+
 const detectInAppBrowser = () => {
     const ua = navigator.userAgent || '';
     const isKnownApp = /KAKAOTALK|KAKAO|Instagram|NAVER|NaverApp|Line\/|FBAN|FBAV|Twitter|Snapchat/i.test(ua);
@@ -35,9 +53,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
         }
         setIsLoading(true);
         setError('');
+        const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const rawDigits = phone.replace(/\D/g, '');
             await setDoc(doc(db, 'users', user.uid), {
                 uid: user.uid,
@@ -69,6 +89,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             setIsLoading(false);
             return;
         }
+        const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
         try {
             if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
@@ -78,6 +99,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 const credential = FirebaseGoogleAuthProvider.credential(idToken);
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const additionalInfo = getAdditionalUserInfo(userCredential);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
@@ -93,6 +115,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             }
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
@@ -122,6 +145,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             setIsLoading(false);
             return;
         }
+        const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
         try {
             if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
@@ -131,6 +155,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 const credential = FirebaseFacebookAuthProvider.credential(accessToken);
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const additionalInfo = getAdditionalUserInfo(userCredential);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
@@ -146,6 +171,7 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             }
             const userCredential = await signInWithPopup(auth, facebookProvider);
             const user = userCredential.user;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
