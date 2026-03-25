@@ -10,6 +10,9 @@ import {
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
+import { authFetch } from '../utils/authFetch';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang = 'ko' }) => {
     const handleComplete = onSuccess || onClose; // 계정 생성 성공 시 콜백
@@ -25,6 +28,40 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
 
     const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
+    // ── 재방문 유저: 기존 계정으로 로그인 + 익명 데이터 마이그레이션 ──────────
+    const migrateAndSignIn = async (credential) => {
+        const anonymousUid = auth.currentUser?.uid;
+        // 기존 계정으로 로그인
+        const result = await signInWithCredential(auth, credential);
+        // 서버에 마이그레이션 요청
+        if (anonymousUid && anonymousUid !== result.user.uid) {
+            try {
+                const token = await result.user.getIdToken();
+                const resp = await fetch(`${API_URL}/api/migrate-anonymous`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ anonymousUid }),
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    console.log('[Migrate] success:', data.migrated);
+                }
+            } catch (e) {
+                console.warn('[Migrate] failed (non-blocking):', e.message);
+            }
+        }
+        // Firestore 프로필 업데이트
+        await setDoc(doc(db, 'users', result.user.uid), {
+            email: result.user.email,
+            displayName: result.user.displayName || 'User',
+            isAnonymous: false,
+            updatedAt: serverTimestamp(),
+        }, { merge: true });
+    };
+
     // ── Google 업그레이드 ──────────────────────────────────────────────────────
     const handleGoogleUpgrade = async () => {
         setLoadingType('google');
@@ -36,16 +73,37 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 const idToken = result.credential?.idToken;
                 if (!idToken) throw new Error('No idToken');
                 const credential = FirebaseGoogleAuthProvider.credential(idToken);
-                await upgradeAnonymous(credential);
+                try {
+                    await upgradeAnonymous(credential);
+                } catch (linkErr) {
+                    if (linkErr.code === 'auth/credential-already-in-use') {
+                        await migrateAndSignIn(credential);
+                    } else {
+                        throw linkErr;
+                    }
+                }
             } else {
-                // linkWithPopup: 익명 UID 유지 + Google credential 연결
-                const result = await linkWithPopup(auth.currentUser, googleProvider);
-                await setDoc(doc(db, 'users', result.user.uid), {
-                    email: result.user.email,
-                    displayName: result.user.displayName || 'Google User',
-                    isAnonymous: false,
-                    updatedAt: serverTimestamp(),
-                }, { merge: true });
+                try {
+                    const result = await linkWithPopup(auth.currentUser, googleProvider);
+                    await setDoc(doc(db, 'users', result.user.uid), {
+                        email: result.user.email,
+                        displayName: result.user.displayName || 'Google User',
+                        isAnonymous: false,
+                        updatedAt: serverTimestamp(),
+                    }, { merge: true });
+                } catch (linkErr) {
+                    if (linkErr.code === 'auth/credential-already-in-use') {
+                        const credential = FirebaseGoogleAuthProvider.credentialFromError(linkErr)
+                            || GoogleAuthProvider.credentialFromError(linkErr);
+                        if (credential) {
+                            await migrateAndSignIn(credential);
+                        } else {
+                            throw linkErr;
+                        }
+                    } else {
+                        throw linkErr;
+                    }
+                }
             }
             setSuccess(true);
             setTimeout(() => handleComplete(), 1500);
@@ -71,16 +129,36 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 const accessToken = result.credential?.accessToken;
                 if (!accessToken) throw new Error('No accessToken');
                 const credential = FirebaseFacebookAuthProvider.credential(accessToken);
-                await upgradeAnonymous(credential);
+                try {
+                    await upgradeAnonymous(credential);
+                } catch (linkErr) {
+                    if (linkErr.code === 'auth/credential-already-in-use' || linkErr.code === 'auth/account-exists-with-different-credential') {
+                        await migrateAndSignIn(credential);
+                    } else {
+                        throw linkErr;
+                    }
+                }
             } else {
-                // linkWithPopup: 익명 UID 유지 + Facebook credential 연결
-                const result = await linkWithPopup(auth.currentUser, facebookProvider);
-                await setDoc(doc(db, 'users', result.user.uid), {
-                    email: result.user.email,
-                    displayName: result.user.displayName || 'Facebook User',
-                    isAnonymous: false,
-                    updatedAt: serverTimestamp(),
-                }, { merge: true });
+                try {
+                    const result = await linkWithPopup(auth.currentUser, facebookProvider);
+                    await setDoc(doc(db, 'users', result.user.uid), {
+                        email: result.user.email,
+                        displayName: result.user.displayName || 'Facebook User',
+                        isAnonymous: false,
+                        updatedAt: serverTimestamp(),
+                    }, { merge: true });
+                } catch (linkErr) {
+                    if (linkErr.code === 'auth/credential-already-in-use' || linkErr.code === 'auth/account-exists-with-different-credential') {
+                        const credential = FirebaseFacebookAuthProvider.credentialFromError(linkErr);
+                        if (credential) {
+                            await migrateAndSignIn(credential);
+                        } else {
+                            throw linkErr;
+                        }
+                    } else {
+                        throw linkErr;
+                    }
+                }
             }
             setSuccess(true);
             setTimeout(() => handleComplete(), 1500);

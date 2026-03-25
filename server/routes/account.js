@@ -161,6 +161,106 @@ router.post('/api/config/app', async (req, res) => {
     }
 });
 
+// ── 익명 → 기존 계정 데이터 마이그레이션 ─────────────────────────────────────
+// 재방문 유저: 익명 계정 데이터를 기존 Google 계정으로 이전
+router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
+    const targetUid = req.uid; // 현재 로그인된 유저 (Google 계정)
+    const { anonymousUid } = req.body;
+    if (!anonymousUid) return res.status(400).json({ error: 'anonymousUid required' });
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+    if (targetUid === anonymousUid) return res.status(400).json({ error: 'same uid' });
+
+    const migrated = { savedCards: 0, subcollections: {} };
+
+    try {
+        // 1. savedCards: userId 필드를 targetUid로 업데이트
+        const cardsSnap = await adminDb.collection('savedCards')
+            .where('userId', '==', anonymousUid).get();
+        if (!cardsSnap.empty) {
+            const batch = adminDb.batch();
+            cardsSnap.docs.forEach(d => batch.update(d.ref, { userId: targetUid }));
+            await batch.commit();
+            migrated.savedCards = cardsSnap.size;
+        }
+
+        // 2. users/{anonUid} 서브컬렉션 → users/{targetUid}로 복사
+        const anonRef = adminDb.collection('users').doc(anonymousUid);
+        const subcollections = await anonRef.listCollections();
+        for (const sub of subcollections) {
+            const docs = await sub.get();
+            if (docs.empty) continue;
+            const batch = adminDb.batch();
+            let count = 0;
+            docs.forEach(d => {
+                const targetDocRef = adminDb
+                    .collection('users').doc(targetUid)
+                    .collection(sub.id).doc(d.id);
+                batch.set(targetDocRef, d.data(), { merge: true });
+                count++;
+            });
+            await batch.commit();
+            migrated.subcollections[sub.id] = count;
+        }
+
+        // 3. users/{anonUid} 문서의 카운터/진행도를 targetUid에 병합
+        const anonDoc = await anonRef.get();
+        if (anonDoc.exists) {
+            const anonData = anonDoc.data();
+            const mergeFields = {};
+            // 누적 카운터는 익명 쪽 값이 더 크면 병합
+            const counterKeys = [
+                'trialCardCount', 'savedCardCount', 'trialPronCount',
+                'translationGenerateCount', 'sceneGenerateCount',
+                'vocabGenerateCount', 'totalGenerateCount',
+            ];
+            const targetDoc = await adminDb.collection('users').doc(targetUid).get();
+            const targetData = targetDoc.exists ? targetDoc.data() : {};
+            for (const key of counterKeys) {
+                if ((anonData[key] || 0) > 0) {
+                    mergeFields[key] = admin.firestore.FieldValue.increment(anonData[key] || 0);
+                }
+            }
+            // 온보딩 상태 보존
+            if (anonData.hasCompletedOnboarding && !targetData.hasCompletedOnboarding) {
+                mergeFields.hasCompletedOnboarding = true;
+            }
+            if (Object.keys(mergeFields).length > 0) {
+                mergeFields.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+                await adminDb.collection('users').doc(targetUid).update(mergeFields);
+            }
+        }
+
+        // 4. 익명 계정 Firestore 정리 (서브컬렉션 + 메인 문서)
+        for (const sub of subcollections) {
+            const docs = await sub.listDocuments();
+            if (docs.length > 0) {
+                const batch = adminDb.batch();
+                docs.forEach(d => batch.delete(d));
+                await batch.commit();
+            }
+        }
+        await anonRef.delete();
+
+        // 5. 익명 Auth 계정 삭제
+        if (admin.apps.length) {
+            try {
+                await admin.auth().deleteUser(anonymousUid);
+            } catch (authErr) {
+                // 이미 삭제됐거나 존재하지 않으면 무시
+                if (authErr.code !== 'auth/user-not-found') {
+                    console.warn(`[Migrate] anon Auth delete failed: ${authErr.message}`);
+                }
+            }
+        }
+
+        console.log(`[Migrate] ${anonymousUid} → ${targetUid}:`, migrated);
+        res.json({ success: true, migrated });
+    } catch (err) {
+        console.error('[Migrate] error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── [Admin] 이메일 기준 Auth 유저 조회/삭제 (테스트용, BUILD_SECRET 인증) ──────
 router.post('/api/admin/delete-auth-by-email', async (req, res) => {
     const authHeader = req.headers.authorization;
