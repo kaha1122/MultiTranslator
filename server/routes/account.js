@@ -161,4 +161,42 @@ router.post('/api/config/app', async (req, res) => {
     }
 });
 
+// ── [Admin] 이메일 기준 Auth 유저 조회/삭제 (테스트용, BUILD_SECRET 인증) ──────
+router.post('/api/admin/delete-auth-by-email', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!admin.apps.length) return res.status(500).json({ error: 'Firebase Admin not initialized' });
+
+    const { email, dryRun } = req.body;
+    if (!email) return res.status(400).json({ error: 'email required' });
+
+    try {
+        const user = await admin.auth().getUserByEmail(email);
+        const info = {
+            uid: user.uid,
+            email: user.email,
+            providers: user.providerData.map(p => p.providerId),
+            created: user.metadata.creationTime,
+            lastSignIn: user.metadata.lastSignInTime,
+        };
+
+        if (dryRun) {
+            return res.json({ success: true, action: 'dry-run', user: info });
+        }
+
+        await admin.auth().deleteUser(user.uid);
+        console.log(`[Admin] Auth user deleted by email: ${email} (uid: ${user.uid})`);
+        res.json({ success: true, action: 'deleted', user: info });
+    } catch (err) {
+        if (err.code === 'auth/user-not-found') {
+            return res.json({ success: true, action: 'not-found', message: 'No Auth user with this email' });
+        }
+        console.error('[Admin] delete-auth-by-email error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
