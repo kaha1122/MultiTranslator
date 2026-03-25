@@ -85,7 +85,7 @@ export const AuthProvider = ({ children }) => {
                             deviceLang,
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp(),
-                        });
+                        }, { merge: true });
                         return; // setDoc 후 onSnapshot이 다시 호출됨
                     }
                     setLoading(false);
@@ -249,15 +249,10 @@ export const AuthProvider = ({ children }) => {
             if (new Date() - expiresAt < graceMs) return;
         }
 
-        // 만기 + 갱신 안 됨 → trial 다운그레이드
+        // 만기 + 갱신 안 됨 → trial 다운그레이드 (구독 필드만 초기화, 나머지 보존)
         updateDoc(doc(db, 'users', user.uid), {
             tier: 'trial',
             autoRenew: false,
-            planId: null,
-            subscriptionMonths: null,
-            tossBillingKey: null,
-            tossCustomerKey: null,
-            subscriptionExpiresAt: null,
             tierUpdatedAt: new Date(),
         }).catch(e => console.error("Subscription expiry downgrade failed:", e));
     }, [user, tier, profile?.subscriptionExpiresAt, profile?.autoRenew]);
@@ -308,13 +303,10 @@ export const AuthProvider = ({ children }) => {
                     console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId}), expires: ${expiresDateStr}`);
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
                     // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
+                    // 구독 필드만 초기화, 나머지(phone, 카운터 등) 보존
                     await updateDoc(doc(db, 'users', user.uid), {
                         tier: 'trial',
                         autoRenew: false,
-                        planId: null,
-                        subscriptionMonths: null,
-                        subscriptionExpiresAt: null,
-                        tierSource: null,
                         tierUpdatedAt: serverTimestamp(),
                     });
                     console.log(`[RevenueCat] entitlement expired → trial`);
