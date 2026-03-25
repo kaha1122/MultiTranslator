@@ -5,6 +5,9 @@ import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc 
 import { setUserId } from 'firebase/analytics';
 import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
+import { authFetch } from '../utils/authFetch';
+
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AuthContext = createContext();
 
@@ -318,6 +321,29 @@ export const AuthProvider = ({ children }) => {
         return () => { cancelled = true; };
         // profile 로드 후 실행 + tier/expiry 변경 시 재동기화
     }, [user?.uid, profile?.tier, !!profile?.subscriptionExpiresAt]);
+
+    // ── 웹에서 RevenueCat 구독 상태 서버 경유 확인 ──────────────────────────
+    useEffect(() => {
+        if (Capacitor.isNativePlatform() || !user || !profile) return;
+        // RevenueCat 구독인데 웹에서 접속한 경우만
+        if (profile?.tierSource !== 'revenuecat') return;
+        if (tier !== 'pro' && tier !== 'premium') return;
+
+        let cancelled = false;
+        (async () => {
+            try {
+                const resp = await authFetch(`${API_URL}/api/check-subscription`, { method: 'POST' });
+                if (cancelled) return;
+                const data = await resp.json();
+                if (data.success) {
+                    console.log(`[Web RC Check] tier: ${data.tier}, expires: ${data.expiresDate}`);
+                }
+            } catch (e) {
+                console.warn('[Web RC Check] failed:', e.message);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, [user?.uid, profile?.tierSource]);
 
     // 번역 클릭 카운터 (분석용)
     const incrementTrialCard = async () => {

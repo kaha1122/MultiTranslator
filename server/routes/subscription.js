@@ -171,6 +171,74 @@ router.post('/api/cancel-subscription', requireAuth, async (req, res) => {
     }
 });
 
+// ── RevenueCat 구독 상태 확인 (웹/앱 공용) ──────────────────────────────────
+// 웹에서 RevenueCat 구독 유저의 만기/갱신 상태를 서버 경유로 확인
+router.post('/api/check-subscription', requireAuth, async (req, res) => {
+    const uid = req.uid;
+    if (!REVENUECAT_SECRET_KEY) return res.status(500).json({ error: 'RevenueCat not configured' });
+
+    try {
+        const rcRes = await axios.get(
+            `${REVENUECAT_API}/subscribers/${uid}`,
+            { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}`, 'Content-Type': 'application/json' } }
+        );
+        const subscriber = rcRes.data?.subscriber;
+        const entitlements = subscriber?.entitlements || {};
+
+        let tier = null;
+        let expiresDate = null;
+        let willRenew = false;
+        let productId = null;
+
+        const proEnt = entitlements['Pro'];
+        const premiumEnt = entitlements['Premium'];
+        const active = premiumEnt || proEnt;
+
+        if (active) {
+            const expires = new Date(active.expires_date);
+            if (expires > new Date()) {
+                tier = premiumEnt ? 'premium' : 'pro';
+                expiresDate = active.expires_date;
+                willRenew = active.unsubscribe_detected_at == null;
+                productId = active.product_identifier;
+            }
+        }
+
+        // Firestore 동기화
+        if (adminDb) {
+            const updateData = { tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp() };
+            if (tier) {
+                updateData.tier = tier;
+                updateData.tierSource = 'revenuecat';
+                if (expiresDate) updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(new Date(expiresDate));
+                if (productId) {
+                    updateData.planId = productId;
+                    updateData.subscriptionMonths = productId.includes('_3') ? 3 : 1;
+                }
+                updateData.autoRenew = willRenew;
+            } else {
+                // 활성 구독 없음 → Firestore가 pro/premium이면 다운그레이드
+                const userDoc = await adminDb.collection('users').doc(uid).get();
+                const userData = userDoc.exists ? userDoc.data() : {};
+                if ((userData.tier === 'pro' || userData.tier === 'premium') && userData.tierSource === 'revenuecat') {
+                    updateData.tier = 'trial';
+                    updateData.autoRenew = false;
+                }
+            }
+            await adminDb.collection('users').doc(uid).update(updateData);
+        }
+
+        res.json({ success: true, tier, expiresDate, willRenew, productId });
+    } catch (err) {
+        // 404 = RevenueCat에 구독자 없음 → 정상 (구독한 적 없음)
+        if (err.response?.status === 404) {
+            return res.json({ success: true, tier: null, expiresDate: null });
+        }
+        console.error('[CheckSubscription] error:', err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 // ── Cron: 자동 갱신 ─────────────────────────────────────────────────────────
 router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) => {
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
