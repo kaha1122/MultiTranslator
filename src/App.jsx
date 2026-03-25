@@ -275,21 +275,27 @@ function App() {
     if (!rcApiKey) return;
     (async () => {
       try {
-        const { Purchases } = await import('@revenuecat/purchases-capacitor');
+        const { Purchases, LOG_LEVEL } = await import('@revenuecat/purchases-capacitor');
+        await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
         console.log('[RevenueCat] Configured for', user.uid);
         // Google Play 구매 내역 복원 — 앱 재설치/계정 전환 시 구독 동기화
         try {
           const { customerInfo } = await Purchases.restorePurchases();
           const activeEnts = Object.keys(customerInfo?.entitlements?.active || {});
+          console.log('[RevenueCat] Restore result:', JSON.stringify({
+            active: activeEnts,
+            allEnts: Object.keys(customerInfo?.entitlements || {}),
+            subs: customerInfo?.activeSubscriptions || [],
+          }));
           if (activeEnts.length > 0) {
             console.log('[RevenueCat] Restored:', activeEnts.join(', '));
           }
         } catch (restoreErr) {
-          console.warn('[RevenueCat] Restore failed (non-blocking):', restoreErr?.message);
+          console.error('[RevenueCat] Restore FAILED:', restoreErr?.message, restoreErr?.code, JSON.stringify(restoreErr));
         }
       } catch (e) {
-        console.error('[RevenueCat] Init failed:', e?.message);
+        console.error('[RevenueCat] Init FAILED:', e?.message, e?.code, JSON.stringify(e));
       }
     })();
   }, [user?.uid]);
