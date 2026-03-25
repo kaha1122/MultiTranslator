@@ -1274,7 +1274,7 @@ function App() {
         - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
 
         [Task 4: Pronunciation]
-        en: IPA / ja: Hiragana / zh-CN: Pinyin / others: Romanization
+        en: IPA / ja: Hiragana / zh-CN: Pinyin / ru: Rewrite with accent marks (´) on stressed vowels per standard Russian dictionary stress (ё and single-syllable words excluded) / others: Romanization
 
         [Task 5: Difficulty Classification]
         Classify the source text difficulty as one of: "basic", "intermediate", "high".

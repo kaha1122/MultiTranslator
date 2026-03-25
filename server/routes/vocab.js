@@ -133,7 +133,13 @@ Rules:
 3. **Level compliance**: Strictly match the vocabulary complexity and example sentence structure defined in the Level guidelines above.
 4. **Anti-duplication**: Do NOT repeat any word from the exclusion list above.
 5. **Natural examples**: Each example sentence must show the word/phrase used in a realistic, contextually rich situation — not a generic textbook sentence.
-6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For ru: include the word/sentence rewritten with accent marks (´) on stressed vowels (e.g., "привéт", "Извини́те, где нахо́дится метро́?"). For others: include romanization if applicable.
+6. For zh-CN: include pinyin with tone marks. For ja: include hiragana reading. For others: include romanization if applicable.
+   For ru (Russian stress marks — CRITICAL accuracy rule):
+   - In "pronunciation" and "examplePronunciation", rewrite the word/sentence with an acute accent (´) placed ONLY on the stressed vowel of each word.
+   - ACCURACY IS MANDATORY: Place the accent on the EXACT vowel that carries stress in standard Russian dictionary pronunciation. Do NOT guess.
+   - Common stress errors to AVOID: "прívет" ✗ → "привéт" ✓ (second syllable), "извинúте" ✗ → "извини́те" ✓ (third syllable), "мóлоко" ✗ → "молокó" ✓ (last syllable).
+   - The accent mark (´) must be placed DIRECTLY on the vowel letter (combining acute U+0301), not before or after it.
+   - Words with ё do not need an accent mark (ё is always stressed). Single-syllable words (в, на, он, да) need no accent mark.
 7. All meanings, tips, and example translations must be in ${sourceLangName}.
 8. For each word, provide 2-3 concise learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note or cultural context. Each tip should be one sentence.
 9. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical readings, or any annotation in the "word" field.** Bad: "咖啡 (kāfēi)", "食べる（たべる）", "おんがく (音楽)", "커피(coffee)". Good: "咖啡", "食べる", "音楽", "커피". For Japanese: the "word" field must use the standard written form (kanji where natural, e.g. "音楽" not "おんがく"). Hiragana reading goes ONLY in the "pronunciation" field.

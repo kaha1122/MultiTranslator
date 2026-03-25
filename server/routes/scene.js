@@ -198,7 +198,7 @@ ${avoidBlock}
   "internal_scenario_summary": "English description of the chosen emotion, action type, and the specific micro-situation.",
   "sentence": "The generated opening sentence in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
-  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on stressed vowels (e.g., 'Извини́те, где нахо́дится метро́?'). For all others: empty string ''.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on the stressed vowel of each multi-syllable word. ACCURACY IS CRITICAL — place the accent on the EXACT stressed vowel per standard Russian dictionary pronunciation. Words with ё (always stressed) and single-syllable words (в, на, он, да, где) need no accent. Example: 'Извини́те, где нахо́дится метро́?' — NOT 'Извинúте' or 'нахóдится'. For all others: empty string ''.",
   "scene_hint": "In ${sourceLangName}: a vivid description of the micro-situation WITHOUT emotion tags (e.g., '비행기가 너무 추워서 담요를 요청하려는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
@@ -306,7 +306,7 @@ ${avoidBlock}
   "internal_scenario_summary": "English description: who is responding, their emotion, what information they are giving, and why this is a natural response.",
   "sentence": "The generated response in ${targetLangName}.",
   "translation": "Natural translation in ${sourceLangName}.",
-  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on stressed vowels (e.g., 'Извини́те, где нахо́дится метро́?'). For all others: empty string ''.",
+  "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: the full sentence rewritten with accent marks (´) on the stressed vowel of each multi-syllable word. ACCURACY IS CRITICAL — place the accent on the EXACT stressed vowel per standard Russian dictionary pronunciation. Words with ё (always stressed) and single-syllable words (в, на, он, да, где) need no accent. Example: 'Извини́те, где нахо́дится метро́?' — NOT 'Извинúте' or 'нахóдится'. For all others: empty string ''.",
   "scene_hint": "In ${sourceLangName}: describe who is speaking (role) and what they are telling the learner, WITHOUT emotion tags (e.g., '승무원이 담요를 가져다주겠다고 안내하는 상황').",
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
