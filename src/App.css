@@ -1067,6 +1067,7 @@ html, body {
   overflow: hidden;
   /* 자식 요소가 모서리를 튀어나오지 못하게 */
   border: 2px solid #2ec4b6;
+  box-sizing: border-box;
   display: flex;
   flex-direction: column;
   scroll-margin-top: 120px;

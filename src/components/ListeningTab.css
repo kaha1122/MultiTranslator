@@ -223,6 +223,7 @@
   border: 2px solid #2ec4b6;
   padding: 16px;
   margin: 12px 0;
+  box-sizing: border-box;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
