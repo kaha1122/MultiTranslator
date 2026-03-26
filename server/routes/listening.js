@@ -58,6 +58,7 @@ Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})
 - Target language: ${targetLangName}
 - Learner's native language: ${sourceLangName}
+- CRITICAL: ALL translations, meanings, and tips MUST be written in ${sourceLangName}. NEVER use ${targetLangName} for translations.
 - Content type: ${contentType === 'dialogue' ? 'Dialogue (2-person conversation)' : 'Essay (monologue/narrative)'}
 - Level: ${levelDesc}
 ${avoidBlock}

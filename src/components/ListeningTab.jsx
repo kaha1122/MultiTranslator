@@ -15,6 +15,13 @@ const LANG_NAMES = {
     ru: 'Русский', 'pt-BR': 'Português',
 };
 
+// 대화형 지문에서 A:/B: 레이블 제거 + 줄바꿈을 SSML pause로 변환
+const cleanDialogueForTTS = (text) => {
+    if (!text) return text;
+    // A: B: 등 화자 레이블 제거, 줄바꿈 유지 (TTS 엔진이 줄바꿈에서 자연스럽게 쉼)
+    return text.replace(/^[A-Z]:\s*/gm, '\n').replace(/\n{2,}/g, '\n\n');
+};
+
 const getServerUrl = () => {
     try {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
@@ -301,7 +308,10 @@ export default function ListeningTab({
                             </div>
                             <button
                                 className="listening-tts-btn"
-                                onClick={() => onSpeak?.(passage.text, selectedLang)}
+                                onClick={() => onSpeak?.(
+                                    passageType === 'dialogue' ? cleanDialogueForTTS(passage.text) : passage.text,
+                                    selectedLang
+                                )}
                                 title="Listen"
                             >
                                 <Volume2 size={18} />
@@ -344,25 +354,27 @@ export default function ListeningTab({
                                 <BookOpen size={14} />
                                 {t('listening.keywords')}
                             </div>
-                            {keywords.map((w, i) => (
-                                <VocabWordCard
-                                    key={i}
-                                    w={w}
-                                    index={i}
-                                    selectedLang={selectedLang}
-                                    sourceLang={sourceLang}
-                                    onSpeak={onSpeak}
-                                    isSaved={savedWords.has(i)}
-                                    onSave={(score) => handleSave(w, i, score)}
-                                    onTrialLimitReached={onTrialLimitReached}
-                                    onPronSuccess={onPronSuccess}
-                                    targetGoal={languageGoals[selectedLang] || 80}
-                                    onBookmarkPrompt={onBookmarkPrompt}
-                                    activeRecIdx={activeRecIdx}
-                                    onRecordingStart={setActiveRecIdx}
-                                    t={t}
-                                />
-                            ))}
+                            <div className="listening-keywords-list">
+                                {keywords.map((w, i) => (
+                                    <VocabWordCard
+                                        key={i}
+                                        w={w}
+                                        index={i}
+                                        selectedLang={selectedLang}
+                                        sourceLang={sourceLang}
+                                        onSpeak={onSpeak}
+                                        isSaved={savedWords.has(i)}
+                                        onSave={(score) => handleSave(w, i, score)}
+                                        onTrialLimitReached={onTrialLimitReached}
+                                        onPronSuccess={onPronSuccess}
+                                        targetGoal={languageGoals[selectedLang] || 80}
+                                        onBookmarkPrompt={onBookmarkPrompt}
+                                        activeRecIdx={activeRecIdx}
+                                        onRecordingStart={setActiveRecIdx}
+                                        t={t}
+                                    />
+                                ))}
+                            </div>
                         </>
                     )}
                 </>

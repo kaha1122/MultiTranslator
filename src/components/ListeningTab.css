@@ -331,6 +331,12 @@
   margin: 16px 0 8px;
 }
 
+.listening-keywords-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
 /* ── Loading ───────────────────────────────────────────────────── */
 .listening-loading {
   display: flex;
