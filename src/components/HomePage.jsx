@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, BookOpen, Languages, Video, Library } from 'lucide-react';
+import { MapPin, BookOpen, Languages, Video, Library, Headphones } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
@@ -46,6 +46,17 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
             titleKey: 'home.translationTitle',
             descKey: 'home.translationDesc',
             subDescKey: 'home.translationSubDesc',
+        },
+        {
+            id: 'listening',
+            icon: <Headphones size={24} />,
+            emoji: '🎧',
+            color: '#7c3aed',
+            bgColor: '#f5f3ff',
+            borderColor: '#ddd6fe',
+            titleKey: 'home.listeningTitle',
+            descKey: 'home.listeningDesc',
+            subDescKey: 'home.listeningSubDesc',
         },
         {
             id: 'video',
