@@ -57,7 +57,7 @@ export async function showInterstitialAd() {
     }
 }
 
-const BANNER_HEIGHT = 50;
+const DEFAULT_BANNER_HEIGHT = 60;
 
 // AdMob 플러그인을 모듈 변수에 캐싱 — async 함수에서 return하면
 // JS가 thenable 감지를 위해 AdMob.then()을 호출 → 네이티브 브릿지 에러 발생
@@ -75,10 +75,10 @@ async function loadAdMob() {
     }
 }
 
-function setOffset(bottom) {
+function setOffset(height) {
     const r = document.documentElement;
     r.style.setProperty('--admob-top', '0px');
-    r.style.setProperty('--admob-bottom', bottom ? `${BANNER_HEIGHT}px` : '0px');
+    r.style.setProperty('--admob-bottom', height ? `${height}px` : '0px');
 }
 
 export const useAdMob = (tier) => {
@@ -114,9 +114,14 @@ export const useAdMob = (tier) => {
 
                 const { BannerAdSize, BannerAdPosition, BannerAdPluginEvents } = await import('@capacitor-community/admob');
 
+                listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => {
+                    const h = info?.height || DEFAULT_BANNER_HEIGHT;
+                    console.log('[AdMob Banner] SizeChanged, height:', h);
+                    setOffset(h);
+                }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.Loaded, () => {
                     console.log('[AdMob Banner] Loaded OK');
-                    setOffset(true);
+                    setOffset(DEFAULT_BANNER_HEIGHT); // SizeChanged가 아직 안 왔을 때 폴백
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
                     console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
