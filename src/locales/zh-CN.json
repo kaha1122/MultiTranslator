@@ -48,6 +48,7 @@
     "srcTranslation": "语音词典",
     "srcScene": "对话",
     "srcVocab": "词汇",
+    "srcListening": "听力",
     "dateClear": "清除",
     "backTo_vocab": "返回词汇学习",
     "backTo_scene": "返回对话练习",
@@ -430,7 +431,8 @@
     "subscription": "订阅",
     "settings": "设置",
     "studyMore": "额外学习",
-    "subscriptionTitle": "订阅计划"
+    "subscriptionTitle": "订阅计划",
+    "listening": "听力练习"
   },
   "stats": {
     "weekRate": "周达成率",
@@ -884,5 +886,19 @@
     "ios": "添加到主屏幕：\n点击底部分享按钮(□↑) → 选择\"添加到主屏幕\"。",
     "android": "安装为应用：\n点击 Chrome 地址栏右侧 ⋮ 菜单 → \"安装应用\" 或 \"添加到主屏幕\"。",
     "desktop": "安装为应用：\n点击浏览器地址栏右侧安装图标(⊕)，\n或菜单 → \"安装 PronunFit\"。"
+  },
+  "listening": {
+    "essay": "文章",
+    "dialogue": "对话",
+    "selectTopic": "选择主题",
+    "generate": "生成文章",
+    "regenerate": "新文章",
+    "generating": "正在生成文章...",
+    "showTranslation": "显示翻译",
+    "hideTranslation": "隐藏翻译",
+    "showPronunciation": "显示拼音",
+    "hidePronunciation": "隐藏拼音",
+    "emptyState": "选择主题并生成听力文章",
+    "keywords": "核心词汇"
   }
 }

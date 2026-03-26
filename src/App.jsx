@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
@@ -39,6 +39,7 @@ import AccountUpgradeModal from './components/AccountUpgradeModal';
 import ConfirmModal from './components/ConfirmModal';
 import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
+import ListeningTab from './components/ListeningTab';
 import ScenePractice from './components/ScenePractice';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import HomePage from './components/HomePage';
@@ -640,7 +641,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['home', 'scene', 'vocab', 'translation', 'library', 'video', 'stats'];
+  const TAB_ORDER = ['home', 'scene', 'translation', 'vocab', 'listening', 'library', 'video', 'stats'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -2119,6 +2120,12 @@ function App() {
                 {getT(sourceLang, 'nav.vocab')}
               </button>
 
+              <button className={`sidebar-nav-item ${viewMode === 'listening' ? 'active' : ''}`}
+                onClick={() => { setViewMode('listening'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><Headphones size={16} /></span>
+                {getT(sourceLang, 'nav.listening')}
+              </button>
+
               <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
                 onClick={() => { setViewMode('translation'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><Languages size={16} /></span>
@@ -2321,7 +2328,7 @@ function App() {
 
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
             {/* Back 버튼 (해당 탭에서만) */}
-            {(viewMode === 'scene' || viewMode === 'vocab') && (
+            {(viewMode === 'scene' || viewMode === 'vocab' || viewMode === 'listening') && (
               <button className="header-dict-btn" onClick={() => {
                 setDictBackTo(viewMode);
                 setViewMode('translation');
@@ -2696,6 +2703,26 @@ function App() {
             }}
           />
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
+        </div>
+
+        {/* Listening 탭 — 듣기 학습 */}
+        <div style={{ display: viewMode === 'listening' ? 'block' : 'none', width: '100%' }}>
+          <ListeningTab
+            sourceLang={sourceLang}
+            targetLangs={targetLangs}
+            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onPronSuccess={incrementDailyPron}
+            onSaveToLibrary={saveVocabCard}
+            onSpeak={handleSpeak}
+            languageGoals={languageGoals}
+            onBookmarkPrompt={handleBookmarkPrompt}
+            onGenerate={incrementVocabGenerate}
+            onNavigateToLibrary={(cardId) => {
+              setFocusCardId(cardId);
+              setLibraryBackTo('listening');
+              setViewMode('library');
+            }}
+          />
         </div>
 
         {/* Video 탭 — 다국어 YouTube 동영상 학습 */}

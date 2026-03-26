@@ -20,6 +20,7 @@ app.use(require('./routes/scene'));
 app.use(require('./routes/subscription'));
 app.use(require('./routes/account'));
 app.use(require('./routes/vocab'));
+app.use(require('./routes/listening'));
 app.use(require('./routes/ocr'));
 app.use(require('./routes/webhook'));
 

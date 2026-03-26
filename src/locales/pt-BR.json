@@ -48,6 +48,7 @@
     "srcTranslation": "Dicionário de voz",
     "srcScene": "Diálogo",
     "srcVocab": "Vocabulário",
+    "srcListening": "Escuta",
     "dateClear": "Limpar",
     "backTo_vocab": "Voltar ao Vocabulário",
     "backTo_scene": "Voltar ao Diálogo",
@@ -429,7 +430,8 @@
     "subscription": "Assinatura",
     "settings": "Configurações",
     "studyMore": "Mais estudo",
-    "subscriptionTitle": "Assinatura"
+    "subscriptionTitle": "Assinatura",
+    "listening": "Escuta"
   },
   "stats": {
     "weekRate": "Taxa Semanal",
@@ -883,5 +885,19 @@
     "ios": "Para adicionar à tela inicial:\nToque no botão compartilhar (□↑) → selecione \"Adicionar à tela inicial\".",
     "android": "Para instalar como app:\nToque em ⋮ no Chrome → \"Instalar app\" ou \"Adicionar à tela inicial\".",
     "desktop": "Para instalar como app:\nClique no ícone de instalação (⊕) na barra de endereços,\nou menu → \"Instalar PronunFit\"."
+  },
+  "listening": {
+    "essay": "Ensaio",
+    "dialogue": "Diálogo",
+    "selectTopic": "Escolher tema",
+    "generate": "Gerar texto",
+    "regenerate": "Novo texto",
+    "generating": "Gerando texto...",
+    "showTranslation": "Mostrar tradução",
+    "hideTranslation": "Ocultar tradução",
+    "showPronunciation": "Mostrar pronúncia",
+    "hidePronunciation": "Ocultar pronúncia",
+    "emptyState": "Escolha um tema e gere um texto de escuta",
+    "keywords": "Vocabulário-chave"
   }
 }

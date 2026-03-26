@@ -33,7 +33,7 @@ const getServerUrl = () => {
 
 // ── VocabWordCard 서브 컴포넌트 ─────────────────────────────────────
 // 각 단어별 독립적인 useAudioRecorder + 발음 연습 + Learning Tip
-function VocabWordCard({
+export function VocabWordCard({
     w, index, selectedLang, sourceLang, onSpeak,
     isSaved, onSave, onTrialLimitReached, onPronSuccess,
     targetGoal, onBookmarkPrompt,

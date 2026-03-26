@@ -48,6 +48,7 @@
     "srcTranslation": "Voice Dictionary",
     "srcScene": "Dialogue",
     "srcVocab": "Vocabulary",
+    "srcListening": "Listening",
     "dateClear": "Clear",
     "backTo_vocab": "Back to Vocabulary",
     "backTo_scene": "Back to Dialogue",
@@ -436,7 +437,8 @@
     "subscription": "Subscription",
     "settings": "Settings",
     "studyMore": "Study More",
-    "subscriptionTitle": "Subscribe"
+    "subscriptionTitle": "Subscribe",
+    "listening": "Listening"
   },
   "stats": {
     "weekRate": "Weekly Rate",
@@ -890,5 +892,19 @@
     "ios": "To add to home screen:\nTap the share button (□↑) at the bottom → select \"Add to Home Screen\".",
     "android": "To install as an app:\nTap ⋮ menu in Chrome address bar → \"Install app\" or \"Add to Home Screen\".",
     "desktop": "To install as an app:\nClick the install icon (⊕) in the browser address bar,\nor go to menu → \"Install PronunFit\"."
+  },
+  "listening": {
+    "essay": "Essay",
+    "dialogue": "Dialogue",
+    "selectTopic": "Select a topic",
+    "generate": "Generate Passage",
+    "regenerate": "New Passage",
+    "generating": "Generating passage...",
+    "showTranslation": "Show Translation",
+    "hideTranslation": "Hide Translation",
+    "showPronunciation": "Show Pronunciation",
+    "hidePronunciation": "Hide Pronunciation",
+    "emptyState": "Select a topic and generate a listening passage",
+    "keywords": "Key Vocabulary"
   }
 }

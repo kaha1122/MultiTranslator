@@ -48,6 +48,7 @@
     "srcTranslation": "Sprach-Wörterbuch",
     "srcScene": "Dialog",
     "srcVocab": "Vokabeln",
+    "srcListening": "Hören",
     "dateClear": "Löschen",
     "backTo_vocab": "Zurück zu Vokabeln",
     "backTo_scene": "Zurück zum Dialog",
@@ -429,7 +430,8 @@
     "subscription": "Abonnement",
     "settings": "Einstellungen",
     "studyMore": "Mehr lernen",
-    "subscriptionTitle": "Abonnement"
+    "subscriptionTitle": "Abonnement",
+    "listening": "Hören"
   },
   "stats": {
     "weekRate": "Wochenquote",
@@ -883,5 +885,19 @@
     "ios": "Zum Startbildschirm hinzufügen:\nTippe auf die Teilen-Schaltfläche (□↑) → wähle \"Zum Home-Bildschirm\".",
     "android": "Als App installieren:\nTippe auf ⋮ in der Chrome-Adressleiste → \"App installieren\" oder \"Zum Startbildschirm hinzufügen\".",
     "desktop": "Als App installieren:\nKlicke auf das Installations-Symbol (⊕) in der Adressleiste,\noder Menü → \"PronunFit installieren\"."
+  },
+  "listening": {
+    "essay": "Aufsatz",
+    "dialogue": "Dialog",
+    "selectTopic": "Thema wählen",
+    "generate": "Text erstellen",
+    "regenerate": "Neuer Text",
+    "generating": "Text wird erstellt...",
+    "showTranslation": "Übersetzung anzeigen",
+    "hideTranslation": "Übersetzung ausblenden",
+    "showPronunciation": "Aussprache anzeigen",
+    "hidePronunciation": "Aussprache ausblenden",
+    "emptyState": "Wählen Sie ein Thema und erstellen Sie einen Hörtext",
+    "keywords": "Schlüsselwörter"
   }
 }

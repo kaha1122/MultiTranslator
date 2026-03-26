@@ -48,6 +48,7 @@
     "srcTranslation": "Từ điển giọng nói",
     "srcScene": "Hội thoại",
     "srcVocab": "Từ vựng",
+    "srcListening": "Nghe",
     "dateClear": "Xóa",
     "backTo_vocab": "Quay lại Từ vựng",
     "backTo_scene": "Quay lại Hội thoại",
@@ -429,7 +430,8 @@
     "subscription": "Đăng ký",
     "settings": "Cài đặt",
     "studyMore": "Học thêm",
-    "subscriptionTitle": "Gói đăng ký"
+    "subscriptionTitle": "Gói đăng ký",
+    "listening": "Nghe"
   },
   "stats": {
     "weekRate": "Tỷ lệ tuần",
@@ -883,5 +885,19 @@
     "ios": "Thêm vào màn hình chính:\nNhấn nút chia sẻ (□↑) → chọn \"Thêm vào màn hình chính\".",
     "android": "Cài đặt như ứng dụng:\nNhấn ⋮ trên thanh địa chỉ Chrome → \"Cài đặt ứng dụng\" hoặc \"Thêm vào màn hình chính\".",
     "desktop": "Cài đặt như ứng dụng:\nNhấp vào biểu tượng cài đặt (⊕) trên thanh địa chỉ,\nhoặc menu → \"Cài đặt PronunFit\"."
+  },
+  "listening": {
+    "essay": "Bài luận",
+    "dialogue": "Hội thoại",
+    "selectTopic": "Chọn chủ đề",
+    "generate": "Tạo bài đọc",
+    "regenerate": "Bài mới",
+    "generating": "Đang tạo bài đọc...",
+    "showTranslation": "Hiện bản dịch",
+    "hideTranslation": "Ẩn bản dịch",
+    "showPronunciation": "Hiện phát âm",
+    "hidePronunciation": "Ẩn phát âm",
+    "emptyState": "Chọn chủ đề và tạo bài nghe",
+    "keywords": "Từ vựng chính"
   }
 }

@@ -48,6 +48,7 @@
     "srcTranslation": "ボイス辞書",
     "srcScene": "会話",
     "srcVocab": "単語",
+    "srcListening": "リスニング",
     "dateClear": "クリア",
     "backTo_vocab": "単語学習に戻る",
     "backTo_scene": "会話練習に戻る",
@@ -430,7 +431,8 @@
     "subscription": "サブスクリプション",
     "settings": "設定",
     "studyMore": "追加学習",
-    "subscriptionTitle": "プラン"
+    "subscriptionTitle": "プラン",
+    "listening": "リスニング"
   },
   "stats": {
     "weekRate": "週間達成率",
@@ -884,5 +886,19 @@
     "ios": "ホーム画面に追加するには:\n下部の共有ボタン(□↑) → \"ホーム画面に追加\"を選択してください。",
     "android": "アプリとしてインストールするには:\nChrome のアドレスバー右の ⋮ メニュー → \"アプリをインストール\" または \"ホーム画面に追加\"。",
     "desktop": "アプリとしてインストールするには:\nブラウザのアドレスバー右のインストールアイコン(⊕)をクリックするか、\nメニュー → \"PronunFit をインストール\"。"
+  },
+  "listening": {
+    "essay": "エッセイ",
+    "dialogue": "会話",
+    "selectTopic": "トピックを選択",
+    "generate": "文章を生成",
+    "regenerate": "新しい文章",
+    "generating": "文章を生成中...",
+    "showTranslation": "翻訳を表示",
+    "hideTranslation": "翻訳を非表示",
+    "showPronunciation": "発音を表示",
+    "hidePronunciation": "発音を非表示",
+    "emptyState": "トピックを選んでリスニング文章を生成しましょう",
+    "keywords": "重要単語"
   }
 }
