@@ -196,8 +196,6 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             hasDetectedVoiceRef.current = false;
             mediaRecorder.current.start();
             setIsRecording(true);
-            setAssessmentResult(null);
-            setCoachTip(null);
         } catch (err) {
             console.error("Mic access error:", err);
             // alert() 대신에 상태 변수에 에러 텍스트를 담아, 부드러운 UI 텍스트로 보여주게 합니다.
@@ -217,6 +215,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
 
     // 3. 발음 분석 서버로 전송하는 함수
     const analyzeFullPronunciation = async (blob, mimeType) => {
+        setAssessmentResult(null);
+        setCoachTip(null);
         setIsAnalyzing(true);
         const formData = new FormData();
 
