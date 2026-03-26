@@ -16,7 +16,7 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang = 'ko' }) => {
     const handleComplete = onSuccess || onClose; // 계정 생성 성공 시 콜백
-    const { user, upgradeAnonymous } = useAuth();
+    const { user, profile, upgradeAnonymous } = useAuth();
     const t = (key) => getT(sourceLang, key);
 
     const [mode, setMode] = useState('choice'); // 'choice' | 'email'
@@ -56,7 +56,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
         // Firestore 프로필 업데이트
         await setDoc(doc(db, 'users', result.user.uid), {
             email: result.user.email,
-            displayName: result.user.displayName || 'User',
+            displayName: profile?.displayName || result.user.displayName || 'User',
             isAnonymous: false,
             updatedAt: serverTimestamp(),
         }, { merge: true });
@@ -87,7 +87,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                     const result = await linkWithPopup(auth.currentUser, googleProvider);
                     await setDoc(doc(db, 'users', result.user.uid), {
                         email: result.user.email,
-                        displayName: result.user.displayName || 'Google User',
+                        displayName: profile?.displayName || result.user.displayName || 'Google User',
                         isAnonymous: false,
                         updatedAt: serverTimestamp(),
                     }, { merge: true });
@@ -143,7 +143,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                     const result = await linkWithPopup(auth.currentUser, facebookProvider);
                     await setDoc(doc(db, 'users', result.user.uid), {
                         email: result.user.email,
-                        displayName: result.user.displayName || 'Facebook User',
+                        displayName: profile?.displayName || result.user.displayName || 'Facebook User',
                         isAnonymous: false,
                         updatedAt: serverTimestamp(),
                     }, { merge: true });

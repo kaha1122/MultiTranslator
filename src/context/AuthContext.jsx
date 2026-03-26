@@ -82,7 +82,7 @@ export const AuthProvider = ({ children }) => {
                         await setDoc(docRef, {
                             uid: authenticatedUser.uid,
                             email: authenticatedUser.email,
-                            displayName: authenticatedUser.displayName || 'Google User',
+                            displayName: authenticatedUser.displayName || 'User',
                             hasCompletedOnboarding: false,
                             platform,
                             deviceLang,
@@ -185,11 +185,14 @@ export const AuthProvider = ({ children }) => {
     const upgradeAnonymous = async (credential) => {
         if (!user || !user.isAnonymous) return;
         try {
+            // 기존 익명 유저의 displayName 보존
+            const existingName = profile?.displayName;
             const result = await linkWithCredential(auth.currentUser, credential);
             // Firestore 문서에 실계정 정보 병합 (uid는 그대로 유지됨)
+            // 기존 닉네임이 있으면 유지, 없으면 Google/provider 이름 사용
             await setDoc(doc(db, 'users', result.user.uid), {
                 email: result.user.email,
-                displayName: result.user.displayName || result.user.email?.split('@')[0] || 'User',
+                displayName: existingName || result.user.displayName || result.user.email?.split('@')[0] || 'User',
                 isAnonymous: false,
                 updatedAt: serverTimestamp(),
             }, { merge: true });
