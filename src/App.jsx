@@ -1634,8 +1634,26 @@ function App() {
   };
 
   // Azure Neural TTS — 모든 탭 공용 (실패 시 Web Speech API로 폴백)
+  // TTS 음성 캐시: 동일 텍스트+언어 반복 재생 시 서버 호출 없이 캐시에서 재생
+  const ttsCacheRef = useRef(new Map());
+  const TTS_CACHE_MAX = 30; // 최대 캐시 항목 수
+
   const handleSpeak = async (text, langCode, emotion) => {
     if (!text) return;
+    const cacheKey = `${langCode}:${emotion || ''}:${text}`;
+
+    // 캐시 히트 — 서버 호출 없이 즉시 재생
+    if (ttsCacheRef.current.has(cacheKey)) {
+      const cachedUrl = ttsCacheRef.current.get(cacheKey);
+      try {
+        const audio = new Audio(cachedUrl);
+        audio.onerror = () => handleSpeakFallback(text, langCode);
+        const p = audio.play();
+        if (p) p.catch(() => document.addEventListener('click', () => audio.play(), { once: true }));
+        return;
+      } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
+    }
+
     const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     try {
       const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
@@ -1652,17 +1670,25 @@ function App() {
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+
+      // 캐시에 저장 (LRU: 오래된 항목 제거)
+      if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
+        const oldestKey = ttsCacheRef.current.keys().next().value;
+        const oldUrl = ttsCacheRef.current.get(oldestKey);
+        URL.revokeObjectURL(oldUrl);
+        ttsCacheRef.current.delete(oldestKey);
+      }
+      ttsCacheRef.current.set(cacheKey, url);
+
       const audio = new Audio(url);
-      audio.onended = () => URL.revokeObjectURL(url);
+      // 캐시된 URL은 revokeObjectURL 안 함 (재사용 위해)
       audio.onerror = (err) => {
         console.warn('[TTS] Audio play error:', err);
-        URL.revokeObjectURL(url);
         handleSpeakFallback(text, langCode);
       };
       const playPromise = audio.play();
       if (playPromise) {
         playPromise.catch(() => {
-          // autoplay 차단 시 사용자 인터랙션 후 재시도
           document.addEventListener('click', () => audio.play(), { once: true });
         });
       }
