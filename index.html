@@ -19,6 +19,10 @@
 
   <!-- 카카오톡, 링크 미리보기용 Open Graph 설정 -->
   <meta property="og:type" content="website" />
+  <script>
+    // Facebook 크롤러가 자바스크립트를 실행할 때 해당 페이지 주소를 og:url로 인식하도록 동적 추가
+    document.write('<meta property="og:url" content="' + window.location.href + '" />');
+  </script>
   <meta property="og:title" content="PronunFit: 8개국어 AI 발음 연습 스마트 단어장" />
   <meta property="og:description" content="AI를 활용한 8개국어 발음 연습. 듣고 따라하고, 저장하기 / Smart Vocabulary Note with AI 🎙️" />
   <!-- 아래 이미지 비율은 1200x630 사이즈가 카카오톡이나 SNS에 가장 예쁘게 나옵니다. -->
