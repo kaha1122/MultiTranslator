@@ -6,7 +6,7 @@ import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavigate, isActive }) => {
+const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, dailyGoal, dailyCardLimit = 10, dailyPronLimit = 20, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
@@ -84,6 +84,9 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
 
     const gaugePercent = Math.min((todayCount / dailyGoal) * 100, 100);
     const isComplete = todayCount >= dailyGoal;
+    const cardPercent = Math.min((todaySaveCount / dailyCardLimit) * 100, 100);
+    const pronPercent = Math.min((todayPronCount / dailyPronLimit) * 100, 100);
+    const listenPercent = Math.min((todayListenCount / dailyListenLimit) * 100, 100);
 
     return (
         <div className="home-page">
@@ -108,31 +111,51 @@ const HomePage = ({ user, weeklyData, todayCount, dailyGoal, sourceLang, onNavig
                 </div>
             </div>
 
-            {/* 섹션 2: 카드 목표 게이지바 */}
+            {/* 섹션 2: 오늘의 진도 — 3개 게이지 */}
             <div className="home-section home-gauge">
-                <div className="home-gauge-header">
-                    <span className="home-gauge-label">{t('home.todayProgress')}</span>
-                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>
-                        {todayCount} / {dailyGoal} {t('daily.counterUnit')}
-                    </span>
+                <span className="home-gauge-title">{t('home.todayProgress')}</span>
+
+                {/* 카드 달성 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎯</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${gaugePercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
                 </div>
-                <div className="home-gauge-track">
-                    <motion.div
-                        className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
-                        initial={{ width: 0 }}
-                        animate={{ width: `${gaugePercent}%` }}
-                        transition={{ duration: 0.8, ease: 'easeOut' }}
-                    />
+
+                {/* 발음 연습 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎙</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className="home-gauge-fill pron"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pronPercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
                 </div>
-                {isComplete && (
-                    <motion.p
-                        className="home-gauge-msg"
-                        initial={{ opacity: 0, y: 5 }}
-                        animate={{ opacity: 1, y: 0 }}
-                    >
-                        {t('daily.goalComplete')}
-                    </motion.p>
-                )}
+
+                {/* 듣기 조회 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎧</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className="home-gauge-fill listen"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${listenPercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
+                </div>
             </div>
 
             {/* 섹션 3: 상단 폴더 탭 + 하단 콘텐츠 */}

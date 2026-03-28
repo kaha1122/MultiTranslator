@@ -21,15 +21,18 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
+    const [todayListenCount, setTodayListenCount] = useState(0);
     const [weeklyData, setWeeklyData] = useState([]);
     const achievedKeysRef = useRef(new Set());
     const todayCountRef = useRef(0);
     const todaySaveCountRef = useRef(0);
     const todayPronCountRef = useRef(0);
+    const todayListenCountRef = useRef(0);
 
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
     useEffect(() => { todaySaveCountRef.current = todaySaveCount; }, [todaySaveCount]);
     useEffect(() => { todayPronCountRef.current = todayPronCount; }, [todayPronCount]);
+    useEffect(() => { todayListenCountRef.current = todayListenCount; }, [todayListenCount]);
 
     useEffect(() => {
         const uid = user?.uid;
@@ -37,11 +40,13 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             setTodayCount(0);
             setTodaySaveCount(0);
             setTodayPronCount(0);
+            setTodayListenCount(0);
             setWeeklyData([]);
             achievedKeysRef.current = new Set();
             todayCountRef.current = 0;
             todaySaveCountRef.current = 0;
             todayPronCountRef.current = 0;
+            todayListenCountRef.current = 0;
             return;
         }
 
@@ -58,20 +63,25 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                     const cnt = data.count || 0;
                     const saveCnt = data.saveCount || 0;
                     const pronCnt = data.pronCount || 0;
+                    const listenCnt = data.listenCount || 0;
                     setTodayCount(cnt);
                     setTodaySaveCount(saveCnt);
                     setTodayPronCount(pronCnt);
+                    setTodayListenCount(listenCnt);
                     todayCountRef.current = cnt;
                     todaySaveCountRef.current = saveCnt;
                     todayPronCountRef.current = pronCnt;
+                    todayListenCountRef.current = listenCnt;
                     achievedKeysRef.current = new Set(data.achievedKeys || []);
                 } else {
                     setTodayCount(0);
                     setTodaySaveCount(0);
                     setTodayPronCount(0);
+                    setTodayListenCount(0);
                     todayCountRef.current = 0;
                     todaySaveCountRef.current = 0;
                     todayPronCountRef.current = 0;
+                    todayListenCountRef.current = 0;
                     achievedKeysRef.current = new Set();
                 }
 
@@ -168,5 +178,24 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         }
     }, [user]);
 
-    return { todayCount, todaySaveCount, todayPronCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron };
+    // Listening 지문 조회 일간 카운터 증가
+    const incrementDailyListen = useCallback(async () => {
+        if (!user?.uid) return;
+        const today = getToday();
+        const newListenCount = todayListenCountRef.current + 1;
+        todayListenCountRef.current = newListenCount;
+        setTodayListenCount(newListenCount);
+
+        try {
+            await setDoc(
+                doc(db, 'users', user.uid, 'dailyProgress', today),
+                { listenCount: newListenCount, updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        } catch (e) {
+            console.error('[useDailyProgress] listenCount 저장 실패:', e);
+        }
+    }, [user]);
+
+    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen };
 };

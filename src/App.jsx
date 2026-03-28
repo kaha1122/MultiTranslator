@@ -264,7 +264,7 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen } = useDailyProgress(user, dailyGoal);
 
   // AdMob 배너 광고 (Android 전용, Pro/Premium 제외)
   useAdMob(tier);
@@ -2561,7 +2561,13 @@ function App() {
             user={user}
             weeklyData={weeklyData}
             todayCount={todayCount}
+            todaySaveCount={todaySaveCount}
+            todayPronCount={todayPronCount}
+            todayListenCount={todayListenCount}
             dailyGoal={dailyGoal}
+            dailyCardLimit={TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}
+            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}
+            dailyListenLimit={10}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
@@ -2764,7 +2770,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={incrementVocabGenerate}
+            onGenerate={() => { incrementVocabGenerate(); incrementDailyListen(); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
