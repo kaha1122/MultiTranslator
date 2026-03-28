@@ -1,7 +1,13 @@
 const express = require('express');
+const crypto = require('crypto');
+const axios = require('axios');
 const { admin, adminDb } = require('../config/firebase');
 
 const router = express.Router();
+
+const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
+const TOSS_WEBHOOK_SECRET = process.env.TOSS_WEBHOOK_SECRET;
+const TOSS_AUTH_HEADER = () => 'Basic ' + Buffer.from(`${TOSS_SECRET_KEY}:`).toString('base64');
 
 // RevenueCat Webhook Authorization 헤더 검증
 const REVENUECAT_WEBHOOK_AUTH = process.env.REVENUECAT_WEBHOOK_AUTH;
@@ -110,6 +116,152 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
     } catch (err) {
         console.error('[Webhook] Error:', err.message);
         // 5xx 반환 시 RevenueCat이 재시도하므로 200 반환
+        res.status(200).json({ success: false, error: err.message });
+    }
+});
+
+// ── TossPayments Webhook ─────────────────────────────────────────────────────
+// https://docs.tosspayments.com/guides/webhook
+// 토스페이먼츠 대시보드 → 개발정보 → Webhook URL에 등록:
+//   https://<server-domain>/api/toss-webhook
+
+const verifyTossWebhook = (req, res, next) => {
+    if (!TOSS_WEBHOOK_SECRET) {
+        console.warn('[TossWebhook] TOSS_WEBHOOK_SECRET not set — skipping signature verification');
+        return next();
+    }
+    // 토스 서명 검증: HMAC-SHA256(시크릿, timestamp + body)
+    const timestamp = req.headers['toss-timestamp'];
+    const signature = req.headers['toss-signature'];
+    if (!timestamp || !signature) {
+        console.warn('[TossWebhook] Missing signature headers');
+        return res.status(401).json({ error: 'Missing signature' });
+    }
+    const payload = `${timestamp}${JSON.stringify(req.body)}`;
+    const expected = crypto.createHmac('sha256', TOSS_WEBHOOK_SECRET).update(payload).digest('base64');
+    if (signature !== expected) {
+        console.warn('[TossWebhook] Signature mismatch');
+        return res.status(401).json({ error: 'Invalid signature' });
+    }
+    next();
+};
+
+router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    try {
+        const { eventType, data } = req.body;
+        console.log(`[TossWebhook] ${eventType}`, JSON.stringify(data).slice(0, 200));
+
+        if (!eventType || !data) {
+            return res.status(400).json({ error: 'Missing eventType or data' });
+        }
+
+        switch (eventType) {
+            // ── 결제 취소 (환불 포함) ──
+            case 'PAYMENT.CANCELED':
+            case 'PAYMENT.PARTIAL_CANCELED': {
+                const { orderId, cancels } = data;
+                if (!orderId) break;
+
+                // orderId 형식: order_{timestamp}_{uid 앞 8자리}
+                // customerKey로 사용자 찾기
+                const customerKey = data.customerKey;
+                if (!customerKey) {
+                    console.warn('[TossWebhook] No customerKey in cancel event, searching by orderId');
+                    break;
+                }
+
+                const userRef = adminDb.collection('users').doc(customerKey);
+                const userDoc = await userRef.get();
+                if (!userDoc.exists) {
+                    console.warn(`[TossWebhook] User not found: ${customerKey}`);
+                    break;
+                }
+
+                const cancelReason = cancels?.[cancels.length - 1]?.cancelReason || 'Unknown';
+                const cancelAmount = cancels?.[cancels.length - 1]?.cancelAmount || 0;
+
+                if (eventType === 'PAYMENT.CANCELED') {
+                    // 전액 환불 → trial 다운그레이드 + 빌링키 폐기
+                    await userRef.update({
+                        tier: 'trial',
+                        autoRenew: false,
+                        planId: null,
+                        subscriptionMonths: null,
+                        subscriptionExpiresAt: null,
+                        tierSource: null,
+                        tossBillingKey: null,
+                        tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                        lastCancelReason: cancelReason,
+                        lastCanceledAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+
+                    // 빌링키 폐기
+                    const userData = userDoc.data();
+                    if (userData.tossBillingKey) {
+                        try {
+                            await axios.post(
+                                'https://api.tosspayments.com/v1/billing/authorizations/revoke',
+                                { billingKey: userData.tossBillingKey },
+                                { headers: { Authorization: TOSS_AUTH_HEADER() } }
+                            );
+                        } catch (revokeErr) {
+                            console.error('[TossWebhook] Billing key revoke failed:', revokeErr.message);
+                        }
+                    }
+                    console.log(`[TossWebhook] ${customerKey} → trial (FULL REFUND: ${cancelAmount}, reason: ${cancelReason})`);
+                } else {
+                    // 부분 환불 → tier 유지, 로그만 기록
+                    await userRef.update({
+                        lastCancelReason: `부분환불: ${cancelAmount} - ${cancelReason}`,
+                        lastCanceledAt: admin.firestore.FieldValue.serverTimestamp(),
+                    });
+                    console.log(`[TossWebhook] ${customerKey} → PARTIAL REFUND: ${cancelAmount}, tier kept`);
+                }
+                break;
+            }
+
+            // ── 결제 승인 완료 ──
+            case 'PAYMENT.DONE': {
+                // confirm-billing에서 이미 처리하므로 로그만
+                console.log(`[TossWebhook] Payment done: orderId=${data.orderId}, amount=${data.totalAmount}`);
+                break;
+            }
+
+            // ── 결제 실패 ──
+            case 'PAYMENT.FAILED': {
+                console.log(`[TossWebhook] Payment failed: orderId=${data.orderId}, code=${data.failCode}`);
+                break;
+            }
+
+            // ── 빌링키 삭제 ──
+            case 'BILLING_KEY.DELETED': {
+                const customerKey = data.customerKey;
+                if (!customerKey) break;
+
+                const userRef = adminDb.collection('users').doc(customerKey);
+                const userDoc = await userRef.get();
+                if (!userDoc.exists) break;
+
+                await userRef.update({
+                    autoRenew: false,
+                    tossBillingKey: null,
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[TossWebhook] ${customerKey} → billingKey deleted, autoRenew off`);
+                break;
+            }
+
+            default:
+                console.log(`[TossWebhook] Unhandled event: ${eventType}`);
+        }
+
+        // 토스는 200 응답을 기대
+        res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('[TossWebhook] Error:', err.message);
+        // 5xx 반환 시 토스가 재시도하므로 200 반환
         res.status(200).json({ success: false, error: err.message });
     }
 });
