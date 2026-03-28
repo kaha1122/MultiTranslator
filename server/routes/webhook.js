@@ -151,24 +151,20 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
 
     try {
         const { eventType, data } = req.body;
-        console.log(`[TossWebhook] ${eventType}`, JSON.stringify(data).slice(0, 200));
+        console.log(`[TossWebhook] ${eventType}`, JSON.stringify(data).slice(0, 300));
 
         if (!eventType || !data) {
             return res.status(400).json({ error: 'Missing eventType or data' });
         }
 
         switch (eventType) {
-            // ── 결제 취소 (환불 포함) ──
-            case 'PAYMENT.CANCELED':
-            case 'PAYMENT.PARTIAL_CANCELED': {
-                const { orderId, cancels } = data;
-                if (!orderId) break;
+            // ── 결제 상태 변경 (승인/취소/환불 등) ──
+            case 'PAYMENT_STATUS_CHANGED': {
+                const { status, customerKey, orderId, cancels, totalAmount } = data;
+                console.log(`[TossWebhook] PAYMENT status=${status}, orderId=${orderId}`);
 
-                // orderId 형식: order_{timestamp}_{uid 앞 8자리}
-                // customerKey로 사용자 찾기
-                const customerKey = data.customerKey;
                 if (!customerKey) {
-                    console.warn('[TossWebhook] No customerKey in cancel event, searching by orderId');
+                    console.warn('[TossWebhook] No customerKey in event');
                     break;
                 }
 
@@ -179,11 +175,11 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
                     break;
                 }
 
-                const cancelReason = cancels?.[cancels.length - 1]?.cancelReason || 'Unknown';
-                const cancelAmount = cancels?.[cancels.length - 1]?.cancelAmount || 0;
-
-                if (eventType === 'PAYMENT.CANCELED') {
+                if (status === 'CANCELED') {
                     // 전액 환불 → trial 다운그레이드 + 빌링키 폐기
+                    const cancelReason = cancels?.[cancels.length - 1]?.cancelReason || 'Unknown';
+                    const cancelAmount = cancels?.[cancels.length - 1]?.cancelAmount || 0;
+
                     await userRef.update({
                         tier: 'trial',
                         autoRenew: false,
@@ -211,32 +207,41 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
                         }
                     }
                     console.log(`[TossWebhook] ${customerKey} → trial (FULL REFUND: ${cancelAmount}, reason: ${cancelReason})`);
-                } else {
+
+                } else if (status === 'PARTIAL_CANCELED') {
                     // 부분 환불 → tier 유지, 로그만 기록
+                    const cancelReason = cancels?.[cancels.length - 1]?.cancelReason || 'Unknown';
+                    const cancelAmount = cancels?.[cancels.length - 1]?.cancelAmount || 0;
                     await userRef.update({
                         lastCancelReason: `부분환불: ${cancelAmount} - ${cancelReason}`,
                         lastCanceledAt: admin.firestore.FieldValue.serverTimestamp(),
                     });
                     console.log(`[TossWebhook] ${customerKey} → PARTIAL REFUND: ${cancelAmount}, tier kept`);
+
+                } else if (status === 'DONE') {
+                    // 결제 승인 → confirm-billing에서 이미 처리하므로 로그만
+                    console.log(`[TossWebhook] Payment confirmed: ${customerKey}, amount=${totalAmount}`);
+
+                } else if (status === 'ABORTED' || status === 'EXPIRED') {
+                    console.log(`[TossWebhook] Payment ${status}: ${customerKey}, orderId=${orderId}`);
                 }
                 break;
             }
 
-            // ── 결제 승인 완료 ──
-            case 'PAYMENT.DONE': {
-                // confirm-billing에서 이미 처리하므로 로그만
-                console.log(`[TossWebhook] Payment done: orderId=${data.orderId}, amount=${data.totalAmount}`);
-                break;
-            }
+            // ── 취소 상태 변경 ──
+            case 'CANCEL_STATUS_CHANGED': {
+                const { cancelStatus, customerKey, orderId } = data;
+                console.log(`[TossWebhook] CANCEL status=${cancelStatus}, orderId=${orderId}`);
 
-            // ── 결제 실패 ──
-            case 'PAYMENT.FAILED': {
-                console.log(`[TossWebhook] Payment failed: orderId=${data.orderId}, code=${data.failCode}`);
+                if (cancelStatus === 'DONE' && customerKey) {
+                    // 취소 완료 확인 → PAYMENT_STATUS_CHANGED에서 이미 처리하므로 로그만
+                    console.log(`[TossWebhook] Cancel confirmed for ${customerKey}`);
+                }
                 break;
             }
 
             // ── 빌링키 삭제 ──
-            case 'BILLING_KEY.DELETED': {
+            case 'BILLING_DELETED': {
                 const customerKey = data.customerKey;
                 if (!customerKey) break;
 
