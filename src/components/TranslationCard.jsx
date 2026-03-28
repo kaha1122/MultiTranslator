@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { createPortal } from 'react-dom';
-import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star, Flag } from 'lucide-react';
+import { Play, Mic, MicOff, RotateCcw, Award, CheckCircle, AlertCircle, Star, Flag, Volume2 } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import PronunciationAssessment from './PronunciationAssessment';
@@ -358,7 +358,7 @@ Return only these 2 lines.`;
                                 }}
                                 onClick={(e) => { e.stopPropagation(); onSpeakText?.(example, langCode); }}
                             >
-                                <Play size={14} fill="#64748b" stroke="#64748b" />
+                                <Volume2 size={14} />
                             </button>
                         </p>
                         {exampleTranslation && (
