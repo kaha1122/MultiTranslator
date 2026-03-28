@@ -2262,45 +2262,37 @@ function App() {
                 <button
                   onClick={() => { setSidebarOpen(false); requestUpgrade('pro'); }}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #fefce8, #fef9c3)',
+                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '6px',
+                    borderRadius: '12px', background: 'linear-gradient(135deg, #fefce8, #fef9c3)',
                     border: '1px solid #fde68a', cursor: 'pointer', textAlign: 'left',
                   }}>
-                  <span style={{ fontSize: '1.2rem' }}>🌟</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>
-                      Pro
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#b45309' }}>
-                      {getT(sourceLang, 'subscription.proDesc') || '카드 무제한 · 발음 1,500회/월'}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>🌟 Pro</span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#92400e', background: '#fde68a', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                      {getT(sourceLang, 'subscription.noAds') || '광고 없음'}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#92400e', background: '#fde68a', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                    {getT(sourceLang, 'subscription.noAds') || '광고 없음'}
-                  </span>
+                  <div style={{ fontSize: '0.72rem', color: '#b45309' }}>
+                    {getT(sourceLang, 'subscription.proDesc') || '카드 무제한 · 발음 1,500회/월'}
+                  </div>
                 </button>
                 {/* Premium */}
                 <button
                   onClick={() => { setSidebarOpen(false); requestUpgrade('premium'); }}
                   style={{
-                    width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                    padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #fdf4ff, #fae8ff)',
+                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
+                    borderRadius: '12px', background: 'linear-gradient(135deg, #fdf4ff, #fae8ff)',
                     border: '1px solid #e9d5ff', cursor: 'pointer', textAlign: 'left',
                   }}>
-                  <span style={{ fontSize: '1.2rem' }}>👑</span>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6b21a8' }}>
-                      Premium
-                    </div>
-                    <div style={{ fontSize: '0.72rem', color: '#9333ea' }}>
-                      {getT(sourceLang, 'subscription.premiumDesc') || '카드 · 발음 무제한'}
-                    </div>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6b21a8' }}>👑 Premium</span>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6b21a8', background: '#e9d5ff', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                      {getT(sourceLang, 'subscription.noAds') || '광고 없음'}
+                    </span>
                   </div>
-                  <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#6b21a8', background: '#e9d5ff', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                    광고 없음
-                  </span>
+                  <div style={{ fontSize: '0.72rem', color: '#9333ea' }}>
+                    {getT(sourceLang, 'subscription.premiumDesc') || '카드 · 발음 무제한'}
+                  </div>
                 </button>
               </div>
 
