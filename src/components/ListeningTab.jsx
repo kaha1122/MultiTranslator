@@ -22,6 +22,19 @@ const cleanDialogueForTTS = (text) => {
     return text.replace(/^[A-Z]:\s*/gm, '\n').replace(/\n{2,}/g, '\n\n');
 };
 
+// 지문을 문장 단위로 분리 (대화: 줄 단위 / 에세이: 문장부호 기준)
+const splitIntoSentences = (text, isDialogue) => {
+    if (!text) return [];
+    if (isDialogue) {
+        // 대화: 줄바꿈 기준 분리, 빈 줄 제거
+        return text.split('\n').filter(s => s.trim());
+    }
+    // 에세이: 문장 종결 부호 기준 분리 (마침표, 물음표, 느낌표 + CJK 구두점)
+    // 부호 뒤에서 분리하되 부호는 앞 문장에 포함
+    const parts = text.split(/(?<=[。．.！!？?\n])\s*/);
+    return parts.filter(s => s.trim());
+};
+
 const getServerUrl = () => {
     try {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
@@ -64,6 +77,7 @@ export default function ListeningTab({
     const [showPronunciation, setShowPronunciation] = useState(false);
     const [savedWords, setSavedWords] = useState(new Set());
     const [activeRecIdx, setActiveRecIdx] = useState(null);
+    const [playingSentenceIdx, setPlayingSentenceIdx] = useState(null);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
@@ -318,7 +332,24 @@ export default function ListeningTab({
                             </button>
                         </div>
 
-                        <div className="listening-passage-text">{passage.text}</div>
+                        <div className="listening-passage-text">
+                            {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => (
+                                <span
+                                    key={idx}
+                                    className={`listening-sentence ${playingSentenceIdx === idx ? 'playing' : ''}`}
+                                    onClick={() => {
+                                        setPlayingSentenceIdx(idx);
+                                        const ttsText = passageType === 'dialogue'
+                                            ? sentence.replace(/^[A-Z]:\s*/, '')
+                                            : sentence;
+                                        onSpeak?.(ttsText, selectedLang);
+                                    }}
+                                >
+                                    {sentence}
+                                    {passageType === 'dialogue' ? '\n' : ' '}
+                                </span>
+                            ))}
+                        </div>
 
                         {passage.pronunciation && (
                             <>

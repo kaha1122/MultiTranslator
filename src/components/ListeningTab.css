@@ -276,6 +276,25 @@
   margin-bottom: 10px;
 }
 
+/* 문장 단위 터치 재생 */
+.listening-sentence {
+  cursor: pointer;
+  border-radius: 4px;
+  padding: 1px 2px;
+  transition: background 0.2s, color 0.2s;
+}
+.listening-sentence:hover {
+  background: #f0fdf4;
+}
+.listening-sentence:active {
+  background: #dcfce7;
+}
+.listening-sentence.playing {
+  background: #dbeafe;
+  color: #1e40af;
+  border-radius: 4px;
+}
+
 .listening-passage-pron {
   font-size: 0.8rem;
   line-height: 1.6;
