@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import './VideoReader.css';
@@ -44,10 +44,10 @@ const SUPPORTED_LANGUAGES = [
  * YouTube Data API captions.download는 OAuth 필요(영상 소유자만 가능).
  * 앱 안정성을 위해 자막 기능 대신 메모 → 번역 탭 연동으로 대체.
  */
-export default function VideoReader({
+function VideoReader({
     sourceLang, onTrialLimitReached, onSaveToLibrary, onBookmarkPrompt,
-    languageGoals = {}, targetLangs = [], onSendToTranslation,
-}) {
+    languageGoals = {}, targetLangs = [], onSendToTranslation, onDetailChange,
+}, ref) {
     const t = useT(sourceLang);
     const SERVER_URL = getServerUrl();
 
@@ -78,12 +78,18 @@ export default function VideoReader({
 
     const selectedRef = useRef(null);
 
+    useImperativeHandle(ref, () => ({
+        isDetailOpen: () => !!selectedRef.current,
+        closeDetail: () => { selectedRef.current = null; setSelected(null); onDetailChange?.(false); },
+    }));
+
     // 영상 목록 fetch
     const fetchVideos = useCallback(async (lang, cat) => {
         setLoadingVideos(true);
         setVideosError('');
         setSelected(null);
         selectedRef.current = null;
+        onDetailChange?.(false);
         try {
             const res = await fetch(`${SERVER_URL}/api/video-feed?lang=${lang}&category=${cat}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -103,11 +109,13 @@ export default function VideoReader({
         selectedRef.current = video;
         setSelected(video);
         setMemo('');
+        onDetailChange?.(true);
     };
 
     const handleBack = () => {
         selectedRef.current = null;
         setSelected(null);
+        onDetailChange?.(false);
     };
 
     // 메모를 번역 탭으로 전송 (자동 번역 포함, 영상 언어도 전달)
@@ -255,3 +263,5 @@ export default function VideoReader({
         </div>
     );
 }
+
+export default forwardRef(VideoReader);

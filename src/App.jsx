@@ -452,6 +452,7 @@ function App() {
   const [focusCardId, setFocusCardId] = useState(null);
   const [libraryBackTo, setLibraryBackTo] = useState(null);
   const [dictBackTo, setDictBackTo] = useState(null); // Scene/Vocab → 사전 이동 시 원래 탭 기억
+  const [videoDetailOpen, setVideoDetailOpen] = useState(false); // 동영상 상세뷰 열림 상태
 
   // ── 앱 버전 / Capgo 번들 버전 / 업데이트 상태 ──
   const [appVersion, setAppVersion] = useState('');      // 네이티브 versionName
@@ -525,6 +526,7 @@ function App() {
   // ── 안드로이드 Back 키용 viewMode 히스토리 스택 ──
   const viewModeHistoryRef = useRef(['home']);
   const isNavigatingBackRef = useRef(false);
+  const videoReaderRef = useRef(null);
 
   // viewMode가 바뀔 때마다 히스토리에 push (뒤로가기로 인한 변경은 제외)
   React.useEffect(() => {
@@ -554,6 +556,12 @@ function App() {
         // 사이드바 열려있으면 먼저 닫기
         if (sidebarOpen) {
           setSidebarOpen(false);
+          return;
+        }
+
+        // 동영상 상세뷰가 열려있으면 목록으로 복귀
+        if (videoReaderRef.current?.isDetailOpen?.()) {
+          videoReaderRef.current.closeDetail();
           return;
         }
 
@@ -2383,6 +2391,12 @@ function App() {
                 Back
               </button>
             )}
+            {/* 동영상 상세뷰 back 버튼 */}
+            {viewMode === 'video' && videoDetailOpen && (
+              <button className="header-dict-btn" onClick={() => videoReaderRef.current?.closeDetail()}>
+                Back
+              </button>
+            )}
             {/* 홈 버튼 (홈이 아닐 때 항상 표시) */}
             {viewMode === 'home' ? (
               <div className="header-spacer" />
@@ -2777,10 +2791,12 @@ function App() {
         {/* Video 탭 — 다국어 YouTube 동영상 학습 */}
         <div style={{ display: viewMode === 'video' ? 'block' : 'none', width: '100%', height: '100%' }}>
           <VideoReader
+            ref={videoReaderRef}
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
                       onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVideoCard}
+            onDetailChange={setVideoDetailOpen}
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
             targetLangs={targetLangs}
