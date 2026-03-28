@@ -7,6 +7,7 @@ import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
 import { authFetch } from '../utils/authFetch';
+import { playStarSound } from '../utils/soundEffects';
 import './ListeningTab.css';
 
 const LANG_NAMES = {
@@ -208,6 +209,7 @@ export default function ListeningTab({
         });
 
         if (!cardId) return;
+        playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
         if (onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
