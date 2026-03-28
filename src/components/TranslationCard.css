@@ -976,3 +976,65 @@
     border-radius: 12px;
     white-space: nowrap;
 }
+
+/* ── 단어 ↔ 예문 발음 토글 (Library 카드용) ── */
+.practice-section .vocab-pron-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-bottom: 8px;
+}
+.practice-section .vocab-pron-toggle-label {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: #94a3b8;
+    transition: color 0.2s;
+}
+.practice-section .vocab-pron-toggle-label.active {
+    color: #6366f1;
+    font-weight: 700;
+}
+.practice-section .vocab-pron-toggle-track {
+    position: relative;
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    background: #6366f1;
+    cursor: pointer;
+    padding: 0;
+    transition: background 0.25s;
+}
+.practice-section .vocab-pron-toggle-track.on {
+    background: #6366f1;
+}
+.practice-section .vocab-pron-toggle-track:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.practice-section .vocab-pron-toggle-thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.15);
+    transition: transform 0.25s;
+}
+.practice-section .vocab-pron-toggle-track.on .vocab-pron-toggle-thumb {
+    transform: translateX(16px);
+}
+.practice-section .vocab-pron-target {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #334155;
+    background: #eef2ff;
+    border-radius: 10px;
+    padding: 10px 14px;
+    margin: 0 0 8px;
+    line-height: 1.4;
+    text-align: center;
+}

@@ -113,6 +113,10 @@ const TranslationCard = ({
     const displayMemos = [...(memos || []), ...pendingMemos];
     const displayNotes = [...(userNotes || []), ...pendingNotes];
 
+    // ── 단어 ↔ 예문 발음 연습 토글 (example이 있는 카드만) ──
+    const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
+    const practiceText = (practiceMode === 'example' && example) ? example : text;
+
     const {
         isRecording,
         isAnalyzing,
@@ -122,7 +126,14 @@ const TranslationCard = ({
         saveMessage,
         startRecording,
         stopRecording,
-    } = useAudioRecorder(text, langCode, sourceLangCode, onTrialLimitReached, onPronSuccess);
+        resetAssessment,
+    } = useAudioRecorder(practiceText, langCode, sourceLangCode, onTrialLimitReached, onPronSuccess);
+
+    const handleModeChange = (mode) => {
+        if (mode === practiceMode) return;
+        resetAssessment();
+        setPracticeMode(mode);
+    };
 
     // eslint-disable-next-line react-hooks/exhaustive-deps
     useEffect(() => {
@@ -345,7 +356,27 @@ Return only these 2 lines.`;
                     )}
                 </div>
 
+                {/* 단어 ↔ 예문 토글 (example이 있는 카드만) */}
+                {example && (
+                    <div className="vocab-pron-toggle">
+                        <span className={`vocab-pron-toggle-label ${practiceMode === 'word' ? 'active' : ''}`}>{t('vocab.practiceWord')}</span>
+                        <button
+                            className={`vocab-pron-toggle-track ${practiceMode === 'example' ? 'on' : ''}`}
+                            onClick={() => handleModeChange(practiceMode === 'word' ? 'example' : 'word')}
+                            disabled={isRecording || isAnalyzing}
+                        >
+                            <span className="vocab-pron-toggle-thumb" />
+                        </button>
+                        <span className={`vocab-pron-toggle-label ${practiceMode === 'example' ? 'active' : ''}`}>{t('vocab.practiceExample')}</span>
+                    </div>
+                )}
+
                 <div className="practice-content">
+                    {/* 연습 대상 텍스트 미리보기 */}
+                    <p className={`vocab-pron-target font-${langCode}`}>
+                        {practiceText}
+                    </p>
+
                     {!assessmentResult && !isAnalyzing && !isRecording && (
                         <p className="practice-placeholder">{t('card.practicePrompt')}</p>
                     )}

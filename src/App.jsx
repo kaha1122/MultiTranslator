@@ -738,6 +738,9 @@ function App() {
     } catch (e) { return {}; }
   });
 
+  // Translation 탭 — 단어일 때 Gemini가 생성한 예문 { langCode: { example, exampleTranslation } }
+  const [translationExamples, setTranslationExamples] = useState({});
+
   // 현재 번역 중인지, 팁을 만드는 중인지 나타내는 상태 (화면에 로딩 표시용)
   const [isTranslating, setIsTranslating] = useState(false);
   const [isGeneratingTips, setIsGeneratingTips] = useState(false);
@@ -1241,6 +1244,7 @@ function App() {
     setSavedLangCodes(new Set()); // 새 번역 시 별 저장 상태 초기화
     setPronunciations({});
     setPracticeResults({});
+    setTranslationExamples({});
 
     try {
       const sourceLangName = SUPPORTED_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
@@ -1283,6 +1287,11 @@ function App() {
         - "intermediate": natural daily expressions, moderate vocabulary
         - "high": complex structures, idioms, nuanced or specialized language
 
+        [Task 6: Example Sentence (word type only)]
+        If type is "word", generate ONE natural example sentence for each target language using the translated word.
+        Also provide a translation of that example sentence in ${sourceLangName}.
+        If type is "sentence", omit the "example" and "exampleTranslation" fields from each entry.
+
         [Output — valid JSON only, no markdown]
         {
           "type": "word" | "sentence",
@@ -1291,7 +1300,7 @@ function App() {
             ${targetLangNames.map(name => `["${sourceLangName} tip about ${name} translation", "${sourceLangName} tip 2"]`).join(',\n            ')}
           ],
           "data": {
-            ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "..." }`).join(',\n            ')}
+            ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "...", "example": "...", "exampleTranslation": "..." }`).join(',\n            ')}
           }
         }
       `;
@@ -1334,12 +1343,19 @@ function App() {
       const newTranslations = {};
       const newTips = {};
       const newProns = {};
+      const newExamples = {};
       if (result.data) {
         targetLangs.forEach(langCode => {
           const entry = result.data[langCode];
           if (entry) {
             newTranslations[langCode] = entry.translation || inputText;
             newProns[langCode] = entry.pronunciation;
+            if (entry.example) {
+              newExamples[langCode] = {
+                example: entry.example,
+                exampleTranslation: entry.exampleTranslation || '',
+              };
+            }
           }
         });
       }
@@ -1362,6 +1378,7 @@ function App() {
       setTranslations(newTranslations);
       setLearningTips(newTips);
       setPronunciations(newProns);
+      setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
 
     } catch (error) {
@@ -1433,6 +1450,8 @@ function App() {
         geminiKeySource: byokGeminiKey ? 'byok' : 'app', // 어떤 Gemini 키로 번역했는지
         sourceType: 'translation',
         difficulty: translationDifficulty,
+        example: translationExamples[langCode]?.example || '',
+        exampleTranslation: translationExamples[langCode]?.exampleTranslation || '',
         createdAt: serverTimestamp()
       };
 
@@ -2660,6 +2679,8 @@ function App() {
                       text={translations[langCode]}
                       pronunciation={pronunciations[langCode]}
                       learningTip={learningTips[langCode]}
+                      example={translationExamples[langCode]?.example || ''}
+                      exampleTranslation={translationExamples[langCode]?.exampleTranslation || ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
                       onSpeak={() => handleSpeak(translations[langCode], langCode)}
