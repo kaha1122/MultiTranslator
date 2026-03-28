@@ -2684,6 +2684,7 @@ function App() {
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
                       onSpeak={() => handleSpeak(translations[langCode], langCode)}
+                      onSpeakText={handleSpeak}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}

@@ -408,6 +408,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 badgeColor={card.langCode === 'en' ? '#e0e7ff' : card.langCode === 'ja' ? '#fef2f2' : '#fff7ed'}
                                 badgeTextColor={card.langCode === 'en' ? '#4338ca' : card.langCode === 'ja' ? '#b91c1c' : '#9a3412'}
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode, card.selectedEmotion)}
+                                onSpeakText={onSpeak}
                                 isInSelectionMode={false}
                                 isLibraryView={true}
                                 onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}

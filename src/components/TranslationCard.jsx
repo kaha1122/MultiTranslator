@@ -77,6 +77,8 @@ const TranslationCard = ({
     // Vocab 예문 (Library에서 vocab 카드 표시 시)
     example = '',
     exampleTranslation = '',
+    // 예문 TTS 재생용 (text, langCode) => void
+    onSpeakText,
     // Scene 태그
     selectedEmotion = '',
     interactionType = '',
@@ -342,6 +344,30 @@ Return only these 2 lines.`;
                 )}
             </div>
 
+            {/* Vocab 예문 — 발음 토글 위에 표시 (VocabTab과 동일 위치) */}
+            {example && (
+                <div className="card-example-section">
+                    <span className="tip-label">EXAMPLE</span>
+                    <div className="card-example-box">
+                        <p className={`card-example-text font-${langCode}`}>
+                            {example}
+                            <button
+                                style={{
+                                    background: 'none', border: 'none', cursor: 'pointer',
+                                    color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
+                                }}
+                                onClick={(e) => { e.stopPropagation(); onSpeakText?.(example, langCode); }}
+                            >
+                                <Play size={14} fill="#64748b" stroke="#64748b" />
+                            </button>
+                        </p>
+                        {exampleTranslation && (
+                            <p className={`card-example-trans font-${sourceLangCode}`}>{exampleTranslation}</p>
+                        )}
+                    </div>
+                </div>
+            )}
+
             <div className="section-divider"></div>
 
             {/* 발음 연습 섹션 */}
@@ -419,19 +445,6 @@ Return only these 2 lines.`;
                         <span className="coach-label">AI PRO COACH</span>
                     </div>
                     <p className="coach-tip-text">"{coachTip}"</p>
-                </div>
-            )}
-
-            {/* Vocab 예문 (Library에서 vocab 카드 표시 시) */}
-            {example && (
-                <div className="card-example-section">
-                    <span className="tip-label">EXAMPLE</span>
-                    <div className="card-example-box">
-                        <p className={`card-example-text font-${langCode}`}>{example}</p>
-                        {exampleTranslation && (
-                            <p className={`card-example-trans font-${sourceLangCode}`}>{exampleTranslation}</p>
-                        )}
-                    </div>
                 </div>
             )}
 
