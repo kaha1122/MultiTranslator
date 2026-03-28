@@ -312,6 +312,7 @@
     "manageSubscription": "Manage Subscription",
     "btnLabel": "Upgrade",
     "toastSuccess": "🎉 Payment complete! Your plan is being upgraded.",
+    "thankYou": "Thank you for subscribing!",
     "toastFail": "Payment failed or was cancelled.",
     "proFeature1": "1,500 pronunciation assessments/mo",
     "proFeature3": "Unlimited access to all tabs",

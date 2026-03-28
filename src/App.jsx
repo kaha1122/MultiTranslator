@@ -170,6 +170,7 @@ function App() {
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   // TossPayments 빌링 성공 후 URL 파라미터 처리
   const [paymentToast, setPaymentToast] = useState(''); // 'success' | 'fail' | ''
+  const [paymentSuccessModal, setPaymentSuccessModal] = useState(null); // null | { tier: 'pro'|'premium' }
   const SERVER_URL_FOR_BILLING = import.meta.env.VITE_API_URL || 'http://localhost:5000';
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
@@ -191,8 +192,12 @@ function App() {
       })
         .then(r => r.json())
         .then(data => {
-          setPaymentToast(data.success ? 'success' : 'fail');
-          setTimeout(() => setPaymentToast(''), 4000);
+          if (data.success) {
+            setPaymentSuccessModal({ tier: tierParam });
+          } else {
+            setPaymentToast('fail');
+            setTimeout(() => setPaymentToast(''), 4000);
+          }
         })
         .catch(() => { setPaymentToast('fail'); setTimeout(() => setPaymentToast(''), 4000); });
     } else if (billing === 'fail') {
@@ -3682,16 +3687,55 @@ function App() {
         </div>
       )}
 
-      {/* Stripe 결제 결과 토스트 */}
+      {/* 결제 성공 팝업 모달 */}
+      {paymentSuccessModal && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 9999, padding: '20px',
+        }}>
+          <div style={{
+            background: '#fff', borderRadius: '20px', padding: '32px 24px',
+            maxWidth: '340px', width: '100%', textAlign: 'center',
+            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+          }}>
+            <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
+              {paymentSuccessModal.tier === 'premium' ? '👑' : '🌟'}
+            </div>
+            <h2 style={{ fontSize: '1.2rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
+              {getT(sourceLang, 'upgrade.toastSuccess') || '결제가 완료되었습니다!'}
+            </h2>
+            <p style={{ fontSize: '0.9rem', color: '#64748b', margin: '0 0 24px', lineHeight: 1.5 }}>
+              {getT(sourceLang, 'upgrade.thankYou') || '구독해 주셔서 감사합니다.'}
+            </p>
+            <button
+              onClick={() => {
+                setPaymentSuccessModal(null);
+                window.location.reload();
+              }}
+              style={{
+                width: '100%', padding: '14px', borderRadius: '12px',
+                background: paymentSuccessModal.tier === 'premium' ? '#b45309' : '#4338ca',
+                color: '#fff', border: 'none', cursor: 'pointer',
+                fontWeight: 700, fontSize: '1rem',
+              }}
+            >
+              {getT(sourceLang, 'common.confirm') || '확인'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 결제 실패 토스트 */}
       {paymentToast && (
         <div style={{
           position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)',
-          background: paymentToast === 'success' ? '#00a884' : '#64748b',
+          background: '#64748b',
           color: 'white', padding: '12px 24px', borderRadius: '20px',
           fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
         }}>
-          {paymentToast === 'success' ? getT(sourceLang, 'upgrade.toastSuccess') : getT(sourceLang, 'upgrade.toastFail')}
+          {getT(sourceLang, 'upgrade.toastFail')}
         </div>
       )}
     </div>
