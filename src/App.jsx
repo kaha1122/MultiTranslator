@@ -2414,18 +2414,34 @@ function App() {
         </div>
 
         <AnimatePresence mode="wait">
-          {TAB_ORDER.includes(viewMode) && (
-            <motion.div
-              key={viewMode}
-              className="tab-title-bar"
-              initial={{ opacity: 0, y: -4 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 4 }}
-              transition={{ duration: 0.2 }}
-            >
-              {getT(sourceLang, `nav.${viewMode}`)}
-            </motion.div>
-          )}
+          {(() => {
+            const TAB_STYLE = {
+              home:        { icon: '🏠', color: '#00a884' },
+              vocab:       { icon: '📖', color: '#059669' },
+              scene:       { icon: '🎭', color: '#6366f1' },
+              listening:   { icon: '🎧', color: '#7c3aed' },
+              translation: { icon: '🔤', color: '#d97706' },
+              video:       { icon: '🎬', color: '#e11d48' },
+              library:     { icon: '⭐', color: '#0891b2' },
+              stats:       { icon: '📊', color: '#6366f1' },
+            };
+            const s = TAB_STYLE[viewMode];
+            if (!s) return null;
+            return (
+              <motion.div
+                key={viewMode}
+                className="tab-title-bar"
+                style={{ borderLeftColor: s.color, background: `linear-gradient(90deg, ${s.color}18 0%, ${s.color}05 100%)` }}
+                initial={{ opacity: 0, x: 10 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -10 }}
+                transition={{ duration: 0.2 }}
+              >
+                <span className="tab-title-icon">{s.icon}</span>
+                <span className="tab-title-text">{getT(sourceLang, `nav.${viewMode}`)}</span>
+              </motion.div>
+            );
+          })()}
         </AnimatePresence>
 
         {/* 미니 일일 진도 바 + 주간 캘린더 (홈에서는 숨김 — 홈에서 더 크게 표시) */}
