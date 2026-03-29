@@ -186,12 +186,13 @@
   animation: lpFadeInUp 0.7s ease 0.1s both;
 }
 
-/* 폰 감싸기 (돋보기/별표 기준점) */
+/* 폰 감싸기 (돋보기/별표 기준점) — 폰 너비 기준 고정 */
 .lp-phone-wrap {
   position: relative;
   z-index: 1;
-  display: flex;
-  justify-content: center;
+  width: 260px;
+  max-width: 70vw;
+  margin: 0 auto;
   animation: lpFadeInUp 0.8s ease 0.15s both;
 }
 
@@ -205,7 +206,7 @@
   overflow: hidden;
   z-index: 3;
   top: 2%;
-  left: calc(50% - 215px);
+  left: -95px;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(255, 255, 255, 0.6);
   background: #fff;
 }
@@ -231,10 +232,10 @@
   box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
 }
 
-/* 별표 */
+/* 별표 — 폰 프레임 오른쪽 바로 바깥 */
 .lp-star {
   position: absolute;
-  right: calc(50% - 145px);
+  right: -30px;
   z-index: 3;
   font-size: 18px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -558,6 +559,10 @@
     font-size: 1rem;
   }
 
+  .lp-phone-wrap {
+    width: 320px;
+  }
+
   .lp-phone-frame {
     width: 320px;
     border-radius: 34px;
@@ -567,7 +572,7 @@
   .lp-magnifier {
     width: 160px;
     height: 160px;
-    left: calc(50% - 240px);
+    left: -115px;
     border-width: 3px;
   }
 
@@ -585,7 +590,7 @@
 
   .lp-star {
     font-size: 22px;
-    right: calc(50% - 196px);
+    right: -34px;
   }
 
   .lp-recommend {
@@ -614,6 +619,10 @@
     max-width: 500px;
   }
 
+  .lp-phone-wrap {
+    width: 360px;
+  }
+
   .lp-phone-frame {
     width: 360px;
     border-radius: 38px;
@@ -622,7 +631,7 @@
   .lp-magnifier {
     width: 180px;
     height: 180px;
-    left: calc(50% - 280px);
+    left: -130px;
     border-width: 3px;
   }
 
@@ -640,6 +649,6 @@
 
   .lp-star {
     font-size: 24px;
-    right: calc(50% - 220px);
+    right: -38px;
   }
 }
