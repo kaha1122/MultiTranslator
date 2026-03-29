@@ -18,9 +18,9 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
             id: 'vocab',
             icon: <BookOpen size={24} />,
             emoji: '📖',
-            color: '#059669',
-            bgColor: '#f0fdf4',
-            borderColor: '#a7f3d0',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
             titleKey: 'home.vocabTitle',
             descKey: 'home.vocabDesc',
             subDescKey: 'home.vocabSubDesc',
@@ -29,53 +29,56 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
             id: 'scene',
             icon: <MapPin size={24} />,
             emoji: '💬',
-            color: '#6366f1',
-            bgColor: '#eef2ff',
-            borderColor: '#c7d2fe',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
             titleKey: 'home.sceneTitle',
             descKey: 'home.sceneDesc',
             subDescKey: 'home.sceneSubDesc',
         },
         {
-            id: 'translation',
-            icon: <Languages size={24} />,
-            emoji: '🔤',
-            color: '#d97706',
-            bgColor: '#fffbeb',
-            borderColor: '#fde68a',
-            titleKey: 'home.translationTitle',
-            descKey: 'home.translationDesc',
-            subDescKey: 'home.translationSubDesc',
-        },
-        {
             id: 'listening',
             icon: <Headphones size={24} />,
             emoji: '🎧',
-            color: '#7c3aed',
-            bgColor: '#f5f3ff',
-            borderColor: '#ddd6fe',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
             titleKey: 'home.listeningTitle',
             descKey: 'home.listeningDesc',
             subDescKey: 'home.listeningSubDesc',
         },
         {
+            id: 'translation',
+            icon: <Languages size={24} />,
+            emoji: '🔤',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
+            titleKey: 'home.translationTitle',
+            descKey: 'home.translationDesc',
+            subDescKey: 'home.translationSubDesc',
+        },
+        {
             id: 'video',
             icon: <Video size={24} />,
             emoji: '🎬',
-            color: '#e11d48',
-            bgColor: '#fff1f2',
-            borderColor: '#fecdd3',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
             titleKey: 'home.videoTitle',
             descKey: 'home.videoDesc',
             subDescKey: 'home.videoSubDesc',
         },
+    ];
+
+    const recordFolders = [
         {
             id: 'library',
             icon: <Library size={24} />,
             emoji: '📚',
-            color: '#0891b2',
-            bgColor: '#ecfeff',
-            borderColor: '#a5f3fc',
+            color: '#7B2D8E',
+            bgColor: '#f5f0ff',
+            borderColor: '#d8b4fe',
             titleKey: 'home.libraryTitle',
             descKey: 'home.libraryDesc',
             subDescKey: 'home.librarySubDesc',
@@ -212,6 +215,67 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                             <p className="home-folder-desc-sub">{t(folder.subDescKey)}</p>
 
                                             {/* 하단 이동 버튼 */}
+                                            <button
+                                                className="home-folder-cta"
+                                                style={{ background: folder.color }}
+                                                onClick={() => onNavigate(folder.id)}
+                                            >
+                                                {t('home.goBtn')} →
+                                            </button>
+                                        </div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
+                        </div>
+                    );
+                })}
+            </div>
+
+            {/* 섹션 3-2: 학습기록 */}
+            <div className="home-section home-folders-section">
+                <h3 className="home-section-title">{t('home.recordSection')}</h3>
+                {recordFolders.map(folder => {
+                    const isActive = openFolder === folder.id;
+                    return (
+                        <div
+                            key={folder.id}
+                            className={`home-folder-unit ${isActive ? 'active' : ''}`}
+                            style={{
+                                '--folder-color': folder.color,
+                                '--folder-bg': folder.bgColor,
+                                '--folder-border': folder.borderColor,
+                            }}
+                        >
+                            <button
+                                className={`home-folder-tab ${isActive ? 'active' : ''}`}
+                                onClick={() => setOpenFolder(isActive ? null : folder.id)}
+                            >
+                                <div className="home-folder-tab-icon" style={{ background: isActive ? folder.bgColor : '#f1f5f9', color: folder.color }}>
+                                    {folder.icon}
+                                </div>
+                                <span className="home-folder-tab-label">{t(folder.titleKey)}</span>
+                            </button>
+                            <AnimatePresence>
+                                {isActive && (
+                                    <motion.div
+                                        className="home-folder-content"
+                                        initial={{ opacity: 0, height: 0 }}
+                                        animate={{ opacity: 1, height: 'auto' }}
+                                        exit={{ opacity: 0, height: 0 }}
+                                        transition={{ duration: 0.25 }}
+                                    >
+                                        <div className="home-folder-content-inner">
+                                            <div className="home-folder-anim">
+                                                <motion.span
+                                                    className="home-folder-emoji"
+                                                    animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
+                                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                                >
+                                                    {folder.emoji}
+                                                </motion.span>
+                                            </div>
+                                            <p className="home-folder-desc-main">{t(folder.descKey)}</p>
+                                            <p className="home-folder-desc-sub">{t(folder.subDescKey)}</p>
                                             <button
                                                 className="home-folder-cta"
                                                 style={{ background: folder.color }}

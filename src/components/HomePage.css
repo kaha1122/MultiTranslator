@@ -201,7 +201,7 @@
 .home-folder-tab-label {
     font-size: 0.92rem;
     font-weight: 700;
-    color: #1e293b;
+    color: #7B2D8E;
 }
 .home-folder-tab.active .home-folder-tab-label {
     color: var(--folder-color);

@@ -656,7 +656,7 @@ function App() {
   };
 
   // 스와이프로 탭 이동 — 메인 탭 순서
-  const TAB_ORDER = ['home', 'scene', 'translation', 'vocab', 'listening', 'library', 'video', 'stats'];
+  const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
   const swipeStartX = React.useRef(null);
   const swipeStartY = React.useRef(null);
 
@@ -2163,16 +2163,16 @@ function App() {
                 {getT(sourceLang, 'nav.home')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><MapPin size={16} /></span>
-                {getT(sourceLang, 'nav.scene')}
-              </button>
-
               <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
                 onClick={() => { setViewMode('vocab'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
                 {getT(sourceLang, 'nav.vocab')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
+                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><MapPin size={16} /></span>
+                {getT(sourceLang, 'nav.scene')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'listening' ? 'active' : ''}`}
@@ -2187,16 +2187,16 @@ function App() {
                 {getT(sourceLang, 'nav.translation')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
-                onClick={() => { setViewMode('library'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
-                {getT(sourceLang, 'nav.library')}
-              </button>
-
               <button className={`sidebar-nav-item ${viewMode === 'video' ? 'active' : ''}`}
                 onClick={() => { setViewMode('video'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><Youtube size={16} /></span>
                 {getT(sourceLang, 'nav.video')}
+              </button>
+
+              <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
+                onClick={() => { setViewMode('library'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
+                {getT(sourceLang, 'nav.library')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'stats' ? 'active' : ''}`}
@@ -2414,34 +2414,18 @@ function App() {
         </div>
 
         <AnimatePresence mode="wait">
-          {(() => {
-            const TAB_CONTEXT = {
-              home: { icon: '🏠', text: getT(sourceLang, 'tabTag.home') },
-              scene: { icon: '🎭', text: getT(sourceLang, 'tabTag.scene') },
-              translation: { icon: '🔤', text: getT(sourceLang, 'tabTag.translation') },
-              vocab: { icon: '📖', text: getT(sourceLang, 'tabTag.vocab') },
-              video: { icon: '🎬', text: getT(sourceLang, 'tabTag.video') },
-              library: { icon: '⭐', text: getT(sourceLang, 'tabTag.library') },
-              stats: { icon: '📊', text: getT(sourceLang, 'tabTag.stats') },
-            };
-            const ctx = TAB_CONTEXT[viewMode];
-            if (!ctx) return null;
-            return (
-              <motion.div
-                key={viewMode}
-                className="tab-context-bar"
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <span className="tab-context-icon">{ctx.icon}</span>
-                <span className="tab-context-text">
-                  <span className="marquee-inner">{ctx.text}</span>
-                </span>
-              </motion.div>
-            );
-          })()}
+          {TAB_ORDER.includes(viewMode) && (
+            <motion.div
+              key={viewMode}
+              className="tab-title-bar"
+              initial={{ opacity: 0, y: -4 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 4 }}
+              transition={{ duration: 0.2 }}
+            >
+              {getT(sourceLang, `nav.${viewMode}`)}
+            </motion.div>
+          )}
         </AnimatePresence>
 
         {/* 미니 일일 진도 바 + 주간 캘린더 (홈에서는 숨김 — 홈에서 더 크게 표시) */}

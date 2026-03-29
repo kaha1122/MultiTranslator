@@ -139,45 +139,16 @@ body {
   background: rgba(0, 0, 0, 0.06);
 }
 
-/* 탭 컨텍스트 바 — 로고 아래 풀너비 */
-.tab-context-bar {
-  display: flex;
-  align-items: center;
-  gap: 6px;
+/* 탭 타이틀 바 — 로고 아래 자주색 탭 이름 */
+.tab-title-bar {
   width: 100%;
   box-sizing: border-box;
-  background: linear-gradient(90deg, rgba(0,168,132,0.1) 0%, rgba(0,168,132,0.02) 100%);
-  border-left: 3px solid var(--primary-color, #00a884);
-  border-radius: 0 6px 6px 0;
-  padding: 4px 10px;
-}
-
-.tab-context-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.tab-context-text {
-  font-size: 0.82rem;
-  color: #334155;
-  font-weight: 500;
-  white-space: nowrap;
-  overflow: hidden;
-  line-height: 1.4;
-  flex: 1;
-  min-width: 0;
-}
-
-.tab-context-text .marquee-inner {
-  display: inline-block;
-  animation: marquee-scroll 12s linear infinite;
-  padding-left: 100%;
-}
-
-@keyframes marquee-scroll {
-  0%   { transform: translateX(0); }
-  100% { transform: translateX(-100%); }
+  padding: 6px 12px;
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: #7B2D8E;
+  text-align: center;
+  letter-spacing: 0.5px;
 }
 
 .main-logo-3d {
@@ -321,13 +292,13 @@ body {
   display: flex; align-items: center; gap: 9px;
   padding: 9px 12px; border-radius: 9px;
   border: none; background: transparent;
-  font-size: 0.85rem; font-weight: 600; color: #475569;
+  font-size: 0.85rem; font-weight: 600; color: #7B2D8E;
   cursor: pointer; transition: all 0.2s;
   text-align: left; width: 100%;
 }
 
 .sidebar-nav-item.active, .sidebar-nav-item:hover {
-  background: #f0fdf4; color: var(--primary-color);
+  background: #f5f0ff; color: #5B1A6E;
 }
 
 .sidebar-nav-icon {
