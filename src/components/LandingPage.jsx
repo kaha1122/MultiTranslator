@@ -25,11 +25,14 @@ const IMG_LANG_MAP = {
 
 // 5장 카드 정의: 순서 Promo1→3→4→5→2
 // Card5(발음)는 영어 스크린샷만 존재
+// 별표 Y비율 (Card4 - 가성비, 각 메뉴 항목 옆)
+const STAR_POSITIONS = [0.34, 0.44, 0.54, 0.64, 0.74, 0.83];
+
 const CARDS = [
   { id: 'card1', hasLangVariant: true },
   { id: 'card2', hasLangVariant: true },
-  { id: 'card3', hasLangVariant: true },
-  { id: 'card4', hasLangVariant: true },
+  { id: 'card3', hasLangVariant: true, magnifier: true },   // 돋보기
+  { id: 'card4', hasLangVariant: true, stars: true },        // 별표
   { id: 'card5', hasLangVariant: false },  // 영어 전용
 ];
 
@@ -124,14 +127,39 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
               ))}
             </p>
 
-            {/* 폰 프레임 + 스크린샷 */}
-            <div className="lp-phone-frame">
-              <img
-                src={imgSrc}
-                alt={`PronunFit ${card.id}`}
-                loading={idx === 0 ? 'eager' : 'lazy'}
-                className="lp-phone-screenshot"
-              />
+            {/* 폰 프레임 + 스크린샷 + 장식 */}
+            <div className="lp-phone-wrap">
+              {/* 돋보기 (Card3 - 다국어 동시학습) */}
+              {card.magnifier && (
+                <div className="lp-magnifier">
+                  <img
+                    src={imgSrc}
+                    alt="zoom"
+                    className="lp-magnifier-img"
+                  />
+                  <div className="lp-magnifier-handle" />
+                </div>
+              )}
+
+              <div className="lp-phone-frame">
+                <img
+                  src={imgSrc}
+                  alt={`PronunFit ${card.id}`}
+                  loading={idx === 0 ? 'eager' : 'lazy'}
+                  className="lp-phone-screenshot"
+                />
+              </div>
+
+              {/* 별표 (Card4 - 가성비) */}
+              {card.stars && STAR_POSITIONS.map((yRatio, i) => (
+                <span
+                  key={i}
+                  className="lp-star"
+                  style={{ top: `${yRatio * 100}%` }}
+                >
+                  ⭐
+                </span>
+              ))}
             </div>
 
             {/* 추천 대상 */}
