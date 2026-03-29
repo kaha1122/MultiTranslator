@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { auth, db, googleProvider, facebookProvider } from '../../firebase/config';
-import { createUserWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo } from 'firebase/auth';
+import { auth, db, googleProvider, facebookProvider, appleProvider } from '../../firebase/config';
+import { createUserWithEmailAndPassword, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, OAuthProvider, getAdditionalUserInfo } from 'firebase/auth';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserPlus, Mail, Lock, AlertCircle, User, Phone, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
@@ -194,6 +194,58 @@ function Signup({ onSwitchToLogin, sourceLang }) {
         }
     };
 
+    const handleAppleLogin = async () => {
+        setIsLoading(true);
+        setError('');
+        const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
+        try {
+            const isNative = window.Capacitor?.isNativePlatform?.();
+            if (isNative) {
+                const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                const result = await FirebaseAuthentication.signInWithApple();
+                const idToken = result.credential?.idToken;
+                const rawNonce = result.credential?.nonce;
+                if (!idToken) throw new Error('No idToken');
+                const credential = new OAuthProvider('apple.com').credential({ idToken, rawNonce });
+                const userCredential = await signInWithCredential(auth, credential);
+                const user = userCredential.user;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+                const additionalInfo = getAdditionalUserInfo(userCredential);
+                const platform = 'app';
+                const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+                if (additionalInfo?.isNewUser) {
+                    profileData.displayName = user.displayName || 'Apple User';
+                    profileData.hasCompletedOnboarding = false;
+                    profileData.createdAt = serverTimestamp();
+                }
+                await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+                setIsLoading(false);
+                return;
+            }
+            const userCredential = await signInWithPopup(auth, appleProvider);
+            const user = userCredential.user;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+            const additionalInfo = getAdditionalUserInfo(userCredential);
+            const platform = 'web';
+            const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+            if (additionalInfo?.isNewUser) {
+                profileData.displayName = user.displayName || 'Apple User';
+                profileData.hasCompletedOnboarding = false;
+                profileData.createdAt = serverTimestamp();
+            }
+            await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
+        } catch (err) {
+            console.error(err);
+            if (err.code !== 'auth/popup-closed-by-user') {
+                setError(`${t('auth.appleFailed')}: ${err.code || err.message || JSON.stringify(err)}`);
+            }
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
     return (
         <div className="auth-container">
             <div className="auth-card">
@@ -318,6 +370,14 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                         display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="#1877F2"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
                     {t('auth.facebookSignup')}
+                </button>
+
+                <button onClick={handleAppleLogin} disabled={isLoading}
+                    style={{ width: '100%', padding: '12px', fontSize: '0.95rem', fontWeight: 700, marginTop: '8px',
+                        background: '#000', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="#fff"><path d="M17.05 20.28c-.98.95-2.05.88-3.08.4-1.09-.5-2.08-.48-3.24 0-1.44.62-2.2.44-3.06-.4C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/></svg>
+                    {t('auth.appleSignup')}
                 </button>
 
                 <div className="auth-footer">

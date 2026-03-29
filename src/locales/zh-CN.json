@@ -322,6 +322,7 @@
     "benefit3": "订阅Pro/Premium套餐",
     "googleBtn": "用Google继续",
     "facebookBtn": "用Facebook继续",
+    "appleBtn": "使用Apple继续",
     "emailBtn": "用邮箱继续",
     "createBtn": "创建账户",
     "back": "返回",
@@ -690,6 +691,9 @@
     "facebookLogin": "使用Facebook登录",
     "facebookSignup": "使用Facebook注册",
     "facebookFailed": "Facebook登录失败",
+    "appleLogin": "使用Apple登录",
+    "appleSignup": "使用Apple注册",
+    "appleFailed": "Apple登录失败",
     "accountExistsDifferent": "此邮箱已通过其他登录方式注册。",
     "inappTitle": "应用内浏览器无法使用Google登录。",
     "inappDesc": "请在默认浏览器中打开后重试。",
@@ -889,7 +893,8 @@
   "install": {
     "ios": "添加到主屏幕：\n点击底部分享按钮(□↑) → 选择\"添加到主屏幕\"。",
     "android": "安装为应用：\n点击 Chrome 地址栏右侧 ⋮ 菜单 → \"安装应用\" 或 \"添加到主屏幕\"。",
-    "desktop": "安装为应用：\n点击浏览器地址栏右侧安装图标(⊕)，\n或菜单 → \"安装 PronunFit\"。"
+    "desktop": "安装为应用：\n点击浏览器地址栏右侧安装图标(⊕)，\n或菜单 → \"安装 PronunFit\"。",
+    "alreadyInstalled": "已安装完成。\n请检查应用图标。"
   },
   "listening": {
     "essay": "文章",

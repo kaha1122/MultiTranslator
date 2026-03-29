@@ -1,22 +1,37 @@
 import { useEffect, useRef } from 'react';
 
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
+const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
 
 const IS_TESTING = true; // TODO: 실 광고 전환 시 false로 변경
 
-const AD_UNITS = IS_TESTING ? {
-    bannerTop:      'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
-    bannerBottom:   'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
-    rewardedCards:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
-    rewardedProns:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
-    interstitial:   'ca-app-pub-3940256099942544/1033173712', // AdMob Test Interstitial
-} : {
+// Android 프로덕션 Ad Unit IDs
+const AD_UNITS_ANDROID = {
     bannerTop:      'ca-app-pub-8626604652301297/3986871373', // Banner01
     bannerBottom:   'ca-app-pub-8626604652301297/4166267528', // Banner02
     rewardedCards:  'ca-app-pub-8626604652301297/4860569967', // Bonus01 (RewardC, +5)
     rewardedProns:  'ca-app-pub-8626604652301297/4166267528', // Bonus02 (RewardP, +10)
     interstitial:   'ca-app-pub-8626604652301297/6443880844', // Interstitial01
 };
+
+// iOS 프로덕션 Ad Unit IDs
+const AD_UNITS_IOS = {
+    bannerTop:      'ca-app-pub-8626604652301297/4522890515', // iOS Banner01 (bannerTop 미사용, bannerBottom과 동일)
+    bannerBottom:   'ca-app-pub-8626604652301297/4522890515', // iOS Banner01
+    rewardedCards:  'ca-app-pub-8626604652301297/6602055685', // iOS Bonus01 (RewardC)
+    rewardedProns:  'ca-app-pub-8626604652301297/3209808845', // iOS Bonus02 (RewardP)
+    interstitial:   'ca-app-pub-8626604652301297/2858455055', // iOS Interstitial01
+};
+
+const AD_UNITS_TEST = {
+    bannerTop:      'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
+    bannerBottom:   'ca-app-pub-3940256099942544/6300978111', // AdMob Test Banner
+    rewardedCards:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
+    rewardedProns:  'ca-app-pub-3940256099942544/5224354917', // AdMob Test Rewarded
+    interstitial:   'ca-app-pub-3940256099942544/1033173712', // AdMob Test Interstitial
+};
+
+const AD_UNITS = IS_TESTING ? AD_UNITS_TEST : (isIOS() ? AD_UNITS_IOS : AD_UNITS_ANDROID);
 
 export { AD_UNITS, IS_TESTING };
 

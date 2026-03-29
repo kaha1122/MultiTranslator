@@ -322,6 +322,7 @@
     "benefit3": "Pro/Premiumプランの利用",
     "googleBtn": "Googleで続ける",
     "facebookBtn": "Facebookで続ける",
+    "appleBtn": "Appleで続ける",
     "emailBtn": "メールで続ける",
     "createBtn": "アカウント作成",
     "back": "戻る",
@@ -730,6 +731,9 @@
     "facebookLogin": "Facebookでログイン",
     "facebookSignup": "Facebookで登録",
     "facebookFailed": "Facebookログイン失敗",
+    "appleLogin": "Appleでログイン",
+    "appleSignup": "Appleで登録",
+    "appleFailed": "Appleログイン失敗",
     "accountExistsDifferent": "このメールは別のログイン方法で登録済みです。",
     "inappTitle": "アプリ内ブラウザではGoogleログインできません。",
     "inappDesc": "デフォルトブラウザで開いてから再度お試しください。",
@@ -929,7 +933,8 @@
   "install": {
     "ios": "ホーム画面に追加するには:\n下部の共有ボタン(□↑) → \"ホーム画面に追加\"を選択してください。",
     "android": "アプリとしてインストールするには:\nChrome のアドレスバー右の ⋮ メニュー → \"アプリをインストール\" または \"ホーム画面に追加\"。",
-    "desktop": "アプリとしてインストールするには:\nブラウザのアドレスバー右のインストールアイコン(⊕)をクリックするか、\nメニュー → \"PronunFit をインストール\"。"
+    "desktop": "アプリとしてインストールするには:\nブラウザのアドレスバー右のインストールアイコン(⊕)をクリックするか、\nメニュー → \"PronunFit をインストール\"。",
+    "alreadyInstalled": "すでにインストールされています。\nアイコンをご確認ください。"
   },
   "listening": {
     "essay": "エッセイ",

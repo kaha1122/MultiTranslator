@@ -274,10 +274,12 @@ function App() {
   // AdMob 배너 광고 (Android 전용, Pro/Premium 제외)
   useAdMob(tier);
 
-  // RevenueCat 초기화 (Android 전용, 앱 시작 시 1회)
+  // RevenueCat 초기화 (네이티브 앱, 앱 시작 시 1회)
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !user) return;
-    const rcApiKey = import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
+    const rcApiKey = Capacitor.getPlatform() === 'ios'
+      ? import.meta.env.VITE_REVENUECAT_IOS_KEY
+      : import.meta.env.VITE_REVENUECAT_ANDROID_KEY;
     if (!rcApiKey) return;
     (async () => {
       try {
@@ -834,16 +836,8 @@ function App() {
       setShowInstallBanner(false);
       return;
     }
-    // deferredPrompt 없을 때: OS별 수동 설치 안내
-    const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
-    const isAndroid = /android/i.test(navigator.userAgent);
-    if (isIOS) {
-      alert(getT(sourceLang, 'install.ios'));
-    } else if (isAndroid) {
-      alert(getT(sourceLang, 'install.android'));
-    } else {
-      alert(getT(sourceLang, 'install.desktop'));
-    }
+    // deferredPrompt 없을 때: 이미 설치된 것으로 안내
+    alert(getT(sourceLang, 'install.alreadyInstalled'));
   };
 
 
@@ -1793,7 +1787,10 @@ function App() {
         </p>
         <button
           onClick={() => {
-            window.open('https://play.google.com/store/apps/details?id=com.arigems.pronunfit', '_system');
+            const storeUrl = Capacitor.getPlatform() === 'ios'
+              ? 'https://apps.apple.com/app/pronunfit/idXXXXXXXXXX' // TODO: App Store ID 등록 후 교체
+              : 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
+            window.open(storeUrl, '_system');
           }}
           style={{
             width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
@@ -1801,7 +1798,7 @@ function App() {
             fontWeight: 700, cursor: 'pointer', marginBottom: 10,
           }}
         >
-          {getT(sourceLang, 'update.btn') !== 'update.btn' ? getT(sourceLang, 'update.btn') : 'Play Store에서 업데이트'}
+          {getT(sourceLang, 'update.btn') !== 'update.btn' ? getT(sourceLang, 'update.btn') : (Capacitor.getPlatform() === 'ios' ? 'App Store에서 업데이트' : 'Play Store에서 업데이트')}
         </button>
         <button
           onClick={() => setShowNativeUpdate(false)}
@@ -3060,10 +3057,10 @@ function App() {
                       premium: `💎 ${getT(sourceLang, 'settings.tierPremium')}`,
                     }[tier] || `🆓 ${getT(sourceLang, 'settings.tierTrial')}`}
                   </span>
-                  {/* 상품명 (Pro/Premium 구독자) */}
+                  {/* 상품명 (Pro/Premium 구독자) — planId 파싱으로 i18n 표시 */}
                   {(tier === 'pro' || tier === 'premium') && profile?.planId && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      📦 {{ pro_1: getT(sourceLang, 'settings.planPro1'), pro_3: getT(sourceLang, 'settings.planPro3'), premium_1: getT(sourceLang, 'settings.planPremium1'), premium_3: getT(sourceLang, 'settings.planPremium3') }[profile.planId?.toLowerCase()] || profile.planId}
+                      📦 {(() => { const id = profile.planId.toLowerCase(); const isPremium = id.includes('premium'); const is3 = id.includes('_3') || id.includes('3month'); return getT(sourceLang, `settings.${isPremium ? (is3 ? 'planPremium3' : 'planPremium1') : (is3 ? 'planPro3' : 'planPro1')}`); })()}
                     </span>
                   )}
                   {/* 만기예정일 (Pro/Premium 구독자) */}

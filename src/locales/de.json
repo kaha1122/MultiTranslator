@@ -322,6 +322,7 @@
     "benefit3": "Pro/Premium-Abonnements verfügbar",
     "googleBtn": "Mit Google fortfahren",
     "facebookBtn": "Mit Facebook fortfahren",
+    "appleBtn": "Mit Apple fortfahren",
     "emailBtn": "Mit E-Mail fortfahren",
     "createBtn": "Konto erstellen",
     "back": "Zurück",
@@ -689,6 +690,9 @@
     "facebookLogin": "Mit Facebook anmelden",
     "facebookSignup": "Mit Facebook registrieren",
     "facebookFailed": "Facebook-Anmeldung fehlgeschlagen",
+    "appleLogin": "Mit Apple anmelden",
+    "appleSignup": "Mit Apple registrieren",
+    "appleFailed": "Apple-Anmeldung fehlgeschlagen",
     "accountExistsDifferent": "Diese E-Mail ist bereits mit einer anderen Anmeldemethode registriert.",
     "inappTitle": "Google-Anmeldung ist in diesem In-App-Browser nicht verfügbar.",
     "inappDesc": "Bitte öffnen Sie diese Seite in Ihrem Standardbrowser.",
@@ -888,7 +892,8 @@
   "install": {
     "ios": "Zum Startbildschirm hinzufügen:\nTippe auf die Teilen-Schaltfläche (□↑) → wähle \"Zum Home-Bildschirm\".",
     "android": "Als App installieren:\nTippe auf ⋮ in der Chrome-Adressleiste → \"App installieren\" oder \"Zum Startbildschirm hinzufügen\".",
-    "desktop": "Als App installieren:\nKlicke auf das Installations-Symbol (⊕) in der Adressleiste,\noder Menü → \"PronunFit installieren\"."
+    "desktop": "Als App installieren:\nKlicke auf das Installations-Symbol (⊕) in der Adressleiste,\noder Menü → \"PronunFit installieren\".",
+    "alreadyInstalled": "Bereits installiert.\nBitte überprüfen Sie das App-Symbol."
   },
   "listening": {
     "essay": "Aufsatz",

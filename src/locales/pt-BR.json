@@ -322,6 +322,7 @@
     "benefit3": "Acesso a assinaturas Pro/Premium",
     "googleBtn": "Continuar com Google",
     "facebookBtn": "Continuar com Facebook",
+    "appleBtn": "Continuar com Apple",
     "emailBtn": "Continuar com e-mail",
     "createBtn": "Criar conta",
     "back": "Voltar",
@@ -689,6 +690,9 @@
     "facebookLogin": "Entrar com Facebook",
     "facebookSignup": "Cadastrar com Facebook",
     "facebookFailed": "Falha no login com Facebook",
+    "appleLogin": "Entrar com Apple",
+    "appleSignup": "Cadastrar com Apple",
+    "appleFailed": "Falha no login com Apple",
     "accountExistsDifferent": "Este e-mail já está registrado com outro método de login.",
     "inappTitle": "O login com Google não está disponível neste navegador interno do app.",
     "inappDesc": "Abra esta página no seu navegador padrão e tente novamente.",
@@ -888,7 +892,8 @@
   "install": {
     "ios": "Para adicionar à tela inicial:\nToque no botão compartilhar (□↑) → selecione \"Adicionar à tela inicial\".",
     "android": "Para instalar como app:\nToque em ⋮ no Chrome → \"Instalar app\" ou \"Adicionar à tela inicial\".",
-    "desktop": "Para instalar como app:\nClique no ícone de instalação (⊕) na barra de endereços,\nou menu → \"Instalar PronunFit\"."
+    "desktop": "Para instalar como app:\nClique no ícone de instalação (⊕) na barra de endereços,\nou menu → \"Instalar PronunFit\".",
+    "alreadyInstalled": "Já está instalado.\nPor favor, verifique o ícone do aplicativo."
   },
   "listening": {
     "essay": "Ensaio",

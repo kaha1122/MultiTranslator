@@ -322,6 +322,7 @@
     "benefit3": "Accès aux abonnements Pro/Premium",
     "googleBtn": "Continuer avec Google",
     "facebookBtn": "Continuer avec Facebook",
+    "appleBtn": "Continuer avec Apple",
     "emailBtn": "Continuer avec l'e-mail",
     "createBtn": "Créer un compte",
     "back": "Retour",
@@ -689,6 +690,9 @@
     "facebookLogin": "Se connecter avec Facebook",
     "facebookSignup": "S'inscrire avec Facebook",
     "facebookFailed": "Échec de la connexion Facebook",
+    "appleLogin": "Se connecter avec Apple",
+    "appleSignup": "S'inscrire avec Apple",
+    "appleFailed": "Échec de la connexion Apple",
     "accountExistsDifferent": "Cet e-mail est déjà enregistré avec une autre méthode de connexion.",
     "inappTitle": "Connexion Google indisponible dans ce navigateur intégré.",
     "inappDesc": "Veuillez ouvrir cette page dans votre navigateur par défaut.",
@@ -888,7 +892,8 @@
   "install": {
     "ios": "Pour ajouter à l'écran d'accueil :\nAppuyez sur le bouton partager (□↑) → sélectionnez \"Sur l'écran d'accueil\".",
     "android": "Pour installer en tant qu'app :\nAppuyez sur ⋮ dans Chrome → \"Installer l'application\" ou \"Ajouter à l'écran d'accueil\".",
-    "desktop": "Pour installer en tant qu'app :\nCliquez sur l'icône d'installation (⊕) dans la barre d'adresse,\nou menu → \"Installer PronunFit\"."
+    "desktop": "Pour installer en tant qu'app :\nCliquez sur l'icône d'installation (⊕) dans la barre d'adresse,\nou menu → \"Installer PronunFit\".",
+    "alreadyInstalled": "Déjà installé.\nVeuillez vérifier l'icône de l'application."
   },
   "listening": {
     "essay": "Essai",

@@ -322,6 +322,7 @@
     "benefit3": "Đăng ký Pro/Premium",
     "googleBtn": "Tiếp tục với Google",
     "facebookBtn": "Tiếp tục với Facebook",
+    "appleBtn": "Tiếp tục với Apple",
     "emailBtn": "Tiếp tục với Email",
     "createBtn": "Tạo tài khoản",
     "back": "Quay lại",
@@ -729,6 +730,9 @@
     "facebookLogin": "Đăng nhập bằng Facebook",
     "facebookSignup": "Đăng ký bằng Facebook",
     "facebookFailed": "Đăng nhập Facebook thất bại",
+    "appleLogin": "Đăng nhập bằng Apple",
+    "appleSignup": "Đăng ký bằng Apple",
+    "appleFailed": "Đăng nhập Apple thất bại",
     "accountExistsDifferent": "Email này đã được đăng ký bằng phương thức đăng nhập khác.",
     "inappTitle": "Không thể đăng nhập Google trong trình duyệt ứng dụng.",
     "inappDesc": "Vui lòng mở trang này trong trình duyệt mặc định và thử lại.",
@@ -928,7 +932,8 @@
   "install": {
     "ios": "Thêm vào màn hình chính:\nNhấn nút chia sẻ (□↑) → chọn \"Thêm vào màn hình chính\".",
     "android": "Cài đặt như ứng dụng:\nNhấn ⋮ trên thanh địa chỉ Chrome → \"Cài đặt ứng dụng\" hoặc \"Thêm vào màn hình chính\".",
-    "desktop": "Cài đặt như ứng dụng:\nNhấp vào biểu tượng cài đặt (⊕) trên thanh địa chỉ,\nhoặc menu → \"Cài đặt PronunFit\"."
+    "desktop": "Cài đặt như ứng dụng:\nNhấp vào biểu tượng cài đặt (⊕) trên thanh địa chỉ,\nhoặc menu → \"Cài đặt PronunFit\".",
+    "alreadyInstalled": "Đã được cài đặt.\nVui lòng kiểm tra biểu tượng ứng dụng."
   },
   "listening": {
     "essay": "Bài luận",

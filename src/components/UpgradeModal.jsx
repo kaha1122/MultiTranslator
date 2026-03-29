@@ -678,18 +678,20 @@ function CancelSubscriptionButton({ userId, t }) {
 
     const handleCancel = async () => {
         if (isNativePlatform) {
-            // 네이티브: Google Play 구독 관리 페이지로 이동
+            // 네이티브: 구독 관리 페이지로 이동 (iOS: App Store / Android: Google Play)
+            const storeFallback = Capacitor.getPlatform() === 'ios'
+                ? 'https://apps.apple.com/account/subscriptions'
+                : 'https://play.google.com/store/account/subscriptions';
             try {
                 const { customerInfo } = await Purchases.getCustomerInfo();
                 const mgmtUrl = customerInfo?.managementURL;
                 if (mgmtUrl) {
                     window.open(mgmtUrl, '_blank');
                 } else {
-                    // fallback: Google Play 구독 관리 직접 링크
-                    window.open('https://play.google.com/store/account/subscriptions', '_blank');
+                    window.open(storeFallback, '_blank');
                 }
             } catch {
-                window.open('https://play.google.com/store/account/subscriptions', '_blank');
+                window.open(storeFallback, '_blank');
             }
             return;
         }

@@ -328,6 +328,7 @@
     "benefit3": "Subscribe to Pro/Premium",
     "googleBtn": "Continue with Google",
     "facebookBtn": "Continue with Facebook",
+    "appleBtn": "Continue with Apple",
     "emailBtn": "Continue with Email",
     "createBtn": "Create Account",
     "back": "Back",
@@ -736,6 +737,9 @@
     "facebookLogin": "Sign in with Facebook",
     "facebookSignup": "Sign up with Facebook",
     "facebookFailed": "Facebook login failed",
+    "appleLogin": "Sign in with Apple",
+    "appleSignup": "Sign up with Apple",
+    "appleFailed": "Apple sign-in failed",
     "accountExistsDifferent": "This email is already registered with a different sign-in method.",
     "inappTitle": "Google login is not available in this in-app browser.",
     "inappDesc": "Please open this page in your default browser and try again.",
@@ -935,7 +939,8 @@
   "install": {
     "ios": "To add to home screen:\nTap the share button (□↑) at the bottom → select \"Add to Home Screen\".",
     "android": "To install as an app:\nTap ⋮ menu in Chrome address bar → \"Install app\" or \"Add to Home Screen\".",
-    "desktop": "To install as an app:\nClick the install icon (⊕) in the browser address bar,\nor go to menu → \"Install PronunFit\"."
+    "desktop": "To install as an app:\nClick the install icon (⊕) in the browser address bar,\nor go to menu → \"Install PronunFit\".",
+    "alreadyInstalled": "Already installed.\nPlease check your app icon."
   },
   "listening": {
     "essay": "Essay",
