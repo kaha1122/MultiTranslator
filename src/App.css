@@ -52,7 +52,12 @@ body {
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
   overflow-y: auto;
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE/Edge */
   /* 컨테이너 자체가 스크롤 컨텍스트 → overflow-x: hidden이 sticky를 깨지 않음 */
+}
+.app-container::-webkit-scrollbar {
+  display: none; /* Chrome/Safari/Edge */
 }
 
 /* Header Section */
