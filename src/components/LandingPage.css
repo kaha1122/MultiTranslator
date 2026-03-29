@@ -1,6 +1,6 @@
 /* ==========================================================
-   LandingPage.css — Mobile-First Responsive (v2)
-   테마: 다크(#0B0C10) + 에메랄드 그린(#10b981) + 블루(#4A90E2)
+   LandingPage.css — Promo Card Landing (v3)
+   테마: 다크(#0B0C10) + 에메랄드 그린(#10b981)
    ========================================================== */
 
 @import url('https://cdn.jsdelivr.net/gh/orioncactus/pretendard/dist/web/static/pretendard.css');
@@ -10,12 +10,10 @@
   --lp-green: #10b981;
   --lp-green-light: #34d399;
   --lp-green-dark: #059669;
-  --lp-blue: #4A90E2;
   --lp-dark-bg: #0B0C10;
   --lp-text-main: #FFFFFF;
   --lp-text-muted: #94a3b8;
   --lp-glass-border: rgba(255, 255, 255, 0.08);
-  --lp-card-border: rgba(16, 185, 129, 0.15);
 
   background-color: var(--lp-dark-bg);
   color: var(--lp-text-main);
@@ -48,7 +46,7 @@
   right: -20vw;
   width: 70vw;
   height: 70vw;
-  background: radial-gradient(circle, rgba(74, 144, 226, 0.10) 0%, transparent 70%);
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.08) 0%, transparent 70%);
 }
 
 /* ================================================================
@@ -78,12 +76,6 @@
   letter-spacing: -0.5px;
 }
 
-.lp-nav-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.6rem;
-}
-
 .lp-install-btn {
   padding: 0.5rem 1.1rem;
   border-radius: 20px;
@@ -103,825 +95,187 @@
   box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
 }
 
-.lp-login-btn {
-  padding: 0.5rem 1.2rem;
-  border-radius: 20px;
-  font-weight: 600;
-  color: var(--lp-text-main);
-  background: none;
-  border: 1px solid var(--lp-glass-border);
-  cursor: pointer;
-  font-family: inherit;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-}
-
-.lp-login-btn:hover {
-  border-color: var(--lp-green);
-  color: var(--lp-green-light);
-}
-
 /* ================================================================
-   Hero 섹션
+   프로모 카드 섹션
    ================================================================ */
-.lp-hero {
+.lp-promo-section {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.lp-hero-1 {
-  padding: 6.5rem 6% 1rem;
-}
-
-.lp-hero-2 {
-  padding: 2rem 6% 2.5rem;
+  padding: 3rem 5% 2.5rem;
   border-top: 1px solid var(--lp-glass-border);
+  overflow: hidden;
 }
 
-/* 국기 아이콘 띠 */
-.lp-hero-flags {
-  display: flex;
-  gap: 0.6rem;
-  font-size: 1.5rem;
-  margin-bottom: 1.2rem;
-  animation: lpFadeInUp 0.6s ease both;
-  flex-wrap: wrap;
-  justify-content: center;
+.lp-promo-section.first {
+  padding-top: calc(5rem + env(safe-area-inset-top, 0px));
+  border-top: none;
 }
 
-.lp-hero-flags span {
-  animation: lpFloat 3s ease-in-out infinite;
+/* 배경 장식 orb */
+.lp-promo-orb {
+  position: absolute;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 0;
 }
 
-.lp-hero-flags span:nth-child(2) {
-  animation-delay: 0.3s;
+.lp-promo-orb-1 {
+  width: 300px;
+  height: 300px;
+  top: -60px;
+  right: -80px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.07) 0%, transparent 70%);
 }
 
-.lp-hero-flags span:nth-child(3) {
-  animation-delay: 0.6s;
+.lp-promo-orb-2 {
+  width: 250px;
+  height: 250px;
+  bottom: -40px;
+  left: -60px;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.05) 0%, transparent 70%);
 }
 
-.lp-hero-flags span:nth-child(4) {
-  animation-delay: 0.9s;
-}
-
-.lp-hero-flags span:nth-child(5) {
-  animation-delay: 1.2s;
-}
-
-.lp-hero-flags span:nth-child(6) {
-  animation-delay: 1.5s;
-}
-
-.lp-hero-flags span:nth-child(7) {
-  animation-delay: 1.8s;
-}
-
-.lp-hero-flags span:nth-child(8) {
-  animation-delay: 2.1s;
-}
-
-/* 메인 카피 */
-.lp-hero-main {
-  font-size: 2rem;
+/* 헤드카피 */
+.lp-promo-title {
+  font-size: 1.7rem;
   font-weight: 900;
-  line-height: 1.4;
+  line-height: 1.35;
   white-space: pre-line;
   word-break: keep-all;
-  margin: 0 0 1rem;
-  background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, #a7f3d0 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+  margin: 0 0 0.8rem;
+  color: var(--lp-text-main);
   letter-spacing: -0.5px;
+  position: relative;
+  z-index: 1;
+  animation: lpFadeInUp 0.6s ease both;
+}
+
+.lp-card-highlight {
+  color: var(--lp-green);
+  position: relative;
+  display: inline;
+}
+
+.lp-card-highlight::after {
+  content: '';
+  position: absolute;
+  bottom: 2px;
+  left: -4px;
+  right: -4px;
+  height: 10px;
+  background: rgba(16, 185, 129, 0.15);
+  border-radius: 3px;
+  z-index: -1;
+}
+
+/* 서브카피 */
+.lp-promo-subtitle {
+  font-size: 0.88rem;
+  color: var(--lp-text-muted);
+  line-height: 1.65;
+  white-space: pre-line;
+  word-break: keep-all;
+  max-width: 420px;
+  margin: 0 0 1.8rem;
+  position: relative;
+  z-index: 1;
   animation: lpFadeInUp 0.7s ease 0.1s both;
 }
 
-/* 서브 카피 */
-.lp-hero-sub {
-  font-size: 0.9rem;
-  color: var(--lp-text-muted);
-  line-height: 1.7;
-  white-space: pre-line;
-  word-break: keep-all;
-  max-width: 400px;
-  animation: lpFadeInUp 0.8s ease 0.2s both;
-  margin: 0;
-}
-
-/* 브랜드 로고 + 텍스트 */
-.lp-hero-brand {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
-  margin-top: 1.8rem;
-  animation: lpFadeInUp 0.8s ease 0.3s both;
-}
-
-.lp-hero-brand-row {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-}
-
-.lp-hero-brand-icon {
-  width: 56px;
-  height: 56px;
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(16, 185, 129, 0.25);
-  animation: lpFloat 4s ease-in-out infinite;
-}
-
-.lp-hero-brand-name {
-  font-size: 1.8rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  display: inline-flex;
-}
-
-.lp-brand-letter {
-  display: inline-block;
-  opacity: 0;
-  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: lpLetterIn 0.4s ease forwards;
-}
-
-.lp-hero-brand-tag {
-  font-size: 0.78rem;
-  color: var(--lp-green-light);
-  letter-spacing: 0.5px;
-  font-weight: 600;
-}
-
-.lp-hero-divider {
-  width: 60px;
-  height: 2px;
-  background: linear-gradient(90deg, var(--lp-green), var(--lp-green-light));
-  margin: 1.5rem auto 0;
-  border-radius: 2px;
-  animation: lpFadeInUp 0.9s ease 0.3s both;
-}
-
-/* ================================================================
-   Scene Demo 섹션
-   ================================================================ */
-.lp-demo {
+/* 폰 프레임 */
+.lp-phone-frame {
   position: relative;
   z-index: 1;
-  padding: 3rem 5% 2.5rem;
-  border-top: 1px solid var(--lp-glass-border);
+  width: 260px;
+  max-width: 70vw;
+  border-radius: 28px;
+  border: 3px solid rgba(255, 255, 255, 0.12);
+  overflow: hidden;
+  background: #000;
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 0 40px rgba(16, 185, 129, 0.08);
+  animation: lpFadeInUp 0.8s ease 0.15s both;
 }
 
-.lp-demo-title {
-  text-align: center;
-  font-size: 1.6rem;
+.lp-phone-screenshot {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* 추천 대상 */
+.lp-recommend {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 380px;
+  margin-top: 1.8rem;
+  text-align: left;
+  animation: lpFadeInUp 0.8s ease 0.2s both;
+}
+
+.lp-recommend-title {
+  font-size: 0.88rem;
   font-weight: 800;
-  color: var(--lp-text-main);
-  margin-bottom: 0.3rem;
-  letter-spacing: -0.5px;
+  color: var(--lp-green-light);
+  margin: 0 0 0.6rem;
+  text-align: center;
 }
 
-.lp-demo-sub {
-  text-align: center;
+.lp-recommend-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.lp-recommend-item {
   font-size: 0.82rem;
   color: var(--lp-text-muted);
-  margin-bottom: 1.5rem;
-}
-
-/* 카테고리 토글 */
-.lp-demo-toggle {
+  line-height: 1.5;
+  margin: 0;
   display: flex;
-  gap: 0.5rem;
-  margin-bottom: 1rem;
+  align-items: flex-start;
+  gap: 0.4rem;
 }
 
-.lp-demo-toggle button {
-  padding: 0.55rem 1.2rem;
-  border-radius: 100px;
-  font-size: 0.88rem;
-  font-weight: 700;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  background: rgba(255, 255, 255, 0.04);
-  color: var(--lp-text-muted);
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.lp-demo-toggle button.active {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: var(--lp-green);
-  color: var(--lp-green-light);
-}
-
-/* 씬 그리드 (ScenePractice 스타일) */
-.lp-demo-chips {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 8px;
-  margin-bottom: 1.2rem;
-}
-
-.lp-demo-chip {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: 10px 4px;
-  border-radius: 12px;
-  font-size: 0.62rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.1);
-  color: rgba(255, 255, 255, 0.75);
-  transition: all 0.2s;
-  font-family: inherit;
-  text-align: center;
-  line-height: 1.2;
-  word-break: keep-all;
-}
-
-.lp-demo-chip span:first-child {
-  font-size: 1.4rem;
-}
-
-.lp-demo-chip.active {
-  background: rgba(16, 185, 129, 0.15);
-  border-color: var(--lp-green);
-  color: var(--lp-green-light);
-}
-
-/* 난이도 / 말투 옵션 */
-.lp-demo-options {
-  margin: 0 0 1rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
-}
-
-.lp-demo-option-row {
-  display: flex;
-  align-items: center;
-  gap: 0.7rem;
-}
-
-.lp-demo-option-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: var(--lp-text-muted);
-  min-width: 48px;
+.lp-recommend-check {
   flex-shrink: 0;
+  font-size: 0.75rem;
 }
 
-.lp-demo-pills {
-  display: flex;
-  gap: 0.4rem;
-  flex-wrap: wrap;
-}
-
-.lp-demo-pill {
-  padding: 0.3rem 0.75rem;
-  border-radius: 100px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--lp-text-muted);
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.lp-demo-pill.active {
-  background: rgba(16, 185, 129, 0.12);
-  border-color: rgba(16, 185, 129, 0.5);
-  color: var(--lp-green-light);
-}
-
-/* 언어 선택 */
-.lp-demo-langs {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 1.8rem;
-}
-
-.lp-demo-lang {
-  padding: 0.35rem 0.7rem;
-  border-radius: 100px;
-  font-size: 0.78rem;
-  font-weight: 600;
-  cursor: pointer;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.03);
-  color: var(--lp-text-muted);
-  transition: all 0.2s;
-  font-family: inherit;
-}
-
-.lp-demo-lang.active {
-  background: rgba(74, 144, 226, 0.15);
-  border-color: var(--lp-blue);
-  color: #93c5fd;
-}
-
-/* 생성 버튼 wrap */
-.lp-demo-generate-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.lp-demo-generate {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  padding: 0.85rem 2rem;
-  font-size: 1rem;
-  font-weight: 800;
-  color: #0B0C10;
-  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
+/* CTA 버튼 */
+.lp-promo-cta {
+  position: relative;
+  z-index: 1;
+  margin-top: 1.8rem;
+  padding: 14px 36px;
+  border-radius: 50px;
+  background: linear-gradient(135deg, #00a884, var(--lp-green-dark));
   border: none;
-  border-radius: 100px;
+  color: #fff;
+  font-weight: 800;
+  font-size: 1rem;
   cursor: pointer;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
+  letter-spacing: 0.02em;
+  box-shadow: 0 8px 24px rgba(0, 168, 132, 0.35);
   transition: all 0.25s;
   font-family: inherit;
-  min-width: 200px;
+  animation: lpFadeInUp 0.9s ease 0.25s both;
 }
 
-.lp-demo-hint {
-  margin: 0.6rem 0 0;
-  font-size: 0.76rem;
-  color: var(--lp-text-muted);
-  text-align: center;
+.lp-promo-cta:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 12px 32px rgba(0, 168, 132, 0.5);
 }
 
-.lp-demo-generate:hover:not(:disabled) {
-  transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(16, 185, 129, 0.45);
-}
-
-.lp-demo-generate:disabled {
-  opacity: 0.5;
-  cursor: default;
-}
-
-.lp-demo-error-msg {
-  text-align: center;
-  color: #f87171;
-  font-size: 0.85rem;
-  margin-bottom: 0.5rem;
-}
-
-/* ── Demo Card ── */
-.lp-demo-card {
-  max-width: 500px;
-  margin: 1rem auto 0;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 20px;
-  padding: 1.2rem;
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-}
-
-.lp-demo-card-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 0.8rem;
-}
-
-.lp-demo-card-hint {
-  display: flex;
-  gap: 0.4rem;
-  align-items: flex-start;
-  flex: 1;
-}
-
-.lp-demo-card-hint span {
-  font-size: 1rem;
-  flex-shrink: 0;
-}
-
-.lp-demo-card-hint p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: var(--lp-text-muted);
-  line-height: 1.4;
-}
-
-.lp-demo-tts-btn {
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  background: rgba(16, 185, 129, 0.2);
-  border: 1px solid rgba(16, 185, 129, 0.4);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  padding: 0;
-  transition: all 0.2s;
-  color: white;
-}
-
-.lp-demo-tts-btn:hover {
-  background: rgba(16, 185, 129, 0.35);
-}
-
-.lp-demo-card-sentence {
-  font-size: 1.25rem;
-  font-weight: 800;
-  color: var(--lp-text-main);
-  text-align: center;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
-}
-
-.lp-demo-card-pronunciation {
-  text-align: center;
-  font-size: 0.85rem;
-  color: var(--lp-text-muted);
-  margin: 0 0 0.5rem;
-}
-
-.lp-demo-card-translation {
-  text-align: center;
-  font-size: 0.92rem;
-  color: #a5b4c8;
-  margin-bottom: 0.8rem;
-}
-
-.lp-demo-card-tip {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  background: rgba(234, 179, 8, 0.08);
-  border-radius: 10px;
-  padding: 0.6rem 0.8rem;
-  margin-bottom: 0.8rem;
-}
-
-.lp-demo-card-tip span {
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.lp-demo-card-tip p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: #fbbf24;
-  line-height: 1.5;
-}
-
-.lp-demo-score-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3rem;
-  background: rgba(16, 185, 129, 0.15);
-  color: var(--lp-green-light);
-  font-weight: 800;
-  font-size: 0.9rem;
-  padding: 0.3rem 0.8rem;
-  border-radius: 100px;
-  margin-bottom: 0.5rem;
-}
-
-.lp-demo-coach-tip {
-  display: flex;
-  gap: 0.5rem;
-  align-items: flex-start;
-  background: rgba(74, 144, 226, 0.1);
-  border-radius: 10px;
-  padding: 0.6rem 0.8rem;
-  margin-top: 0.5rem;
-}
-
-.lp-demo-coach-tip span {
-  font-size: 0.9rem;
-  flex-shrink: 0;
-}
-
-.lp-demo-coach-tip p {
-  margin: 0;
-  font-size: 0.82rem;
-  color: #93c5fd;
-  line-height: 1.5;
-}
-
-.lp-demo-error {
-  text-align: center;
-  color: #f87171;
-  font-size: 0.82rem;
-  margin-top: 0.5rem;
-}
-
-/* 녹음 버튼 */
-.lp-demo-record-wrap {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
-  margin-top: 1rem;
-}
-
-.lp-demo-status {
-  font-size: 0.82rem;
-  font-weight: 600;
-  margin: 0;
-}
-
-.lp-demo-status.recording {
-  color: #f87171;
-}
-
-.lp-demo-status.analyzing {
-  color: var(--lp-green-light);
-}
-
-.lp-demo-record-btn {
-  width: 56px;
-  height: 56px;
-  border-radius: 50%;
-  border: 2px solid var(--lp-green);
-  background: rgba(16, 185, 129, 0.12);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: var(--lp-green-light);
-  transition: all 0.2s;
-  padding: 0;
-}
-
-.lp-demo-record-btn:hover:not(:disabled) {
-  background: rgba(16, 185, 129, 0.25);
-}
-
-.lp-demo-record-btn.recording {
-  border-color: #f87171;
-  background: rgba(248, 113, 113, 0.15);
-  color: #f87171;
-  animation: lpPulse 1.5s infinite;
-}
-
-.lp-demo-record-btn.analyzing {
-  border-color: var(--lp-green-light);
-  opacity: 0.7;
-  cursor: default;
-}
-
-.lp-demo-record-btn:disabled {
-  cursor: default;
-}
-
-/* ================================================================
-   Guide Accordion
-   ================================================================ */
-/* 중간 로그인 CTA */
-.lp-mid-cta {
-  position: relative;
-  z-index: 1;
-  padding: 2rem 5%;
-}
-
-.lp-mid-cta .lp-cta-btn-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.lp-guide {
-  position: relative;
-  z-index: 1;
-  padding: 3rem 5% 2rem;
-  border-top: 1px solid var(--lp-glass-border);
-}
-
-.lp-guide-title {
-  text-align: center;
-  font-size: 1.6rem;
-  font-weight: 800;
-  color: var(--lp-text-main);
-  margin-bottom: 1.5rem;
-  letter-spacing: -0.5px;
-}
-
-.lp-guide-list {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-}
-
-.lp-guide-card {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-radius: 14px;
-  overflow: hidden;
-  transition: border-color 0.2s;
-}
-
-.lp-guide-card.open {
-  border-color: var(--gc-color);
-}
-
-.lp-guide-card-header {
-  width: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 0.9rem 1rem;
-  background: transparent;
-  border: none;
-  cursor: pointer;
-  text-align: left;
-  gap: 0.75rem;
-  color: inherit;
-  font-family: inherit;
-}
-
-.lp-guide-card.open .lp-guide-card-header {
-  background: rgba(255, 255, 255, 0.03);
-}
-
-.lp-guide-card-header-left {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-}
-
-.lp-guide-card-emoji {
-  font-size: 1.4rem;
-  flex-shrink: 0;
-}
-
-.lp-guide-card-name {
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: var(--lp-text-main);
-}
-
-.lp-guide-card-sub {
-  font-size: 0.72rem;
-  color: var(--lp-text-muted);
-  margin-top: 2px;
-}
-
-.lp-guide-chevron {
-  font-size: 0.65rem;
-  color: var(--lp-text-muted);
-  flex-shrink: 0;
-}
-
-.lp-guide-card-body {
-  padding: 0.2rem 1rem 1rem;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.lp-guide-card-steps {
-  display: flex;
-  flex-direction: column;
-  gap: 0.7rem;
-  padding-top: 0.5rem;
-}
-
-.lp-guide-step {
-  display: flex;
-  gap: 0.6rem;
-  align-items: flex-start;
-}
-
-.lp-guide-step-icon {
-  font-size: 1rem;
-  flex-shrink: 0;
-  width: 22px;
-  text-align: center;
-  padding-top: 1px;
-}
-
-.lp-guide-step-label {
-  font-size: 0.78rem;
-  font-weight: 700;
-  margin-bottom: 2px;
-}
-
-.lp-guide-step-desc {
-  font-size: 0.78rem;
-  color: var(--lp-text-muted);
-  line-height: 1.55;
-  white-space: pre-line;
-}
-
-/* 팁 박스 */
-.lp-guide-tips {
-  border-left: 3px solid;
-  border-radius: 0 8px 8px 0;
-  padding: 0.6rem 0.8rem;
-  margin-top: 0.8rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.3rem;
-}
-
-.lp-guide-tip {
-  margin: 0;
-  font-size: 0.76rem;
-  color: var(--lp-text-muted);
-  line-height: 1.5;
-}
-
-/* ================================================================
-   CTA 섹션
-   ================================================================ */
-.lp-cta-section {
-  padding: 4rem 6%;
-  text-align: center;
-  position: relative;
-  z-index: 1;
-  border-top: 1px solid var(--lp-glass-border);
-}
-
-.lp-cta-title {
-  font-size: 1.9rem;
-  font-weight: 900;
-  letter-spacing: -0.5px;
-  line-height: 1.2;
-  margin-bottom: 1rem;
-}
-
-.lp-highlight {
-  background: linear-gradient(135deg, var(--lp-green) 0%, var(--lp-green-light) 50%, var(--lp-blue) 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  display: inline-block;
-}
-
-.lp-cta-sub {
-  font-size: 0.95rem;
-  color: var(--lp-text-muted);
-  margin-bottom: 2rem;
-  max-width: 400px;
-  margin-left: auto;
-  margin-right: auto;
-}
-
-.lp-cta-btn-wrap {
-  display: flex;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-width: 320px;
-  margin: 0 auto;
-}
-
-.lp-btn {
-  padding: 0.9rem 1.5rem;
-  border-radius: 100px;
-  font-weight: 700;
-  font-size: 1rem;
-  cursor: pointer;
-  border: none;
-  transition: all 0.25s ease;
-  font-family: inherit;
-  width: 100%;
-  letter-spacing: 0.01em;
-}
-
-.lp-btn-primary {
-  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
-  background-size: 200%;
-  color: white;
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
-}
-
-.lp-btn-primary:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 12px 32px rgba(16, 185, 129, 0.5);
-}
-
-.lp-btn-secondary {
-  background: transparent;
-  color: var(--lp-text-main);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.lp-btn-secondary:hover {
-  border-color: var(--lp-green);
-  color: var(--lp-green-light);
-  transform: translateY(-2px);
+.lp-promo-cta:active {
+  transform: scale(0.97);
 }
 
 /* ================================================================
@@ -996,20 +350,16 @@
   flex-wrap: wrap;
 }
 
-.lp-footer-links button {
-  background: none;
-  border: none;
+.lp-footer-links a {
   color: var(--lp-text-muted);
   font-size: 0.78rem;
   cursor: pointer;
-  padding: 0;
-  font-family: inherit;
-  transition: color 0.2s;
   text-decoration: underline;
   text-underline-offset: 2px;
+  transition: color 0.2s;
 }
 
-.lp-footer-links button:hover {
+.lp-footer-links a:hover {
   color: var(--lp-green-light);
 }
 
@@ -1022,104 +372,6 @@
   font-size: 0.72rem;
   color: rgba(255, 255, 255, 0.25);
   margin: 0;
-}
-
-/* ================================================================
-   Login Modal
-   ================================================================ */
-.lp-modal-overlay {
-  position: fixed;
-  inset: 0;
-  z-index: 300;
-  background: rgba(0, 0, 0, 0.7);
-  backdrop-filter: blur(4px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 1rem;
-  animation: lpFadeIn 0.2s ease;
-}
-
-.lp-modal {
-  background: #1a1d24;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 24px;
-  padding: 2rem 1.5rem;
-  width: min(340px, 90vw);
-  text-align: center;
-  position: relative;
-}
-
-.lp-modal-close {
-  position: absolute;
-  top: 0.8rem;
-  right: 1rem;
-  background: none;
-  border: none;
-  color: var(--lp-text-muted);
-  cursor: pointer;
-  font-size: 1rem;
-  padding: 0;
-}
-
-.lp-modal-emoji {
-  font-size: 2.5rem;
-  margin-bottom: 0.5rem;
-}
-
-.lp-modal-title {
-  font-size: 1.3rem;
-  font-weight: 800;
-  color: var(--lp-text-main);
-  margin: 0 0 0.5rem;
-}
-
-.lp-modal-msg {
-  font-size: 0.92rem;
-  color: var(--lp-text-muted);
-  margin-bottom: 1.5rem;
-}
-
-.lp-modal-google {
-  display: block;
-  width: 100%;
-  padding: 0.85rem;
-  font-size: 0.95rem;
-  font-weight: 700;
-  color: #0B0C10;
-  background: linear-gradient(135deg, var(--lp-green-dark), var(--lp-green), var(--lp-green-light));
-  border: none;
-  border-radius: 100px;
-  cursor: pointer;
-  font-family: inherit;
-  margin-bottom: 0.6rem;
-  box-shadow: 0 6px 20px rgba(16, 185, 129, 0.3);
-  transition: all 0.2s;
-}
-
-.lp-modal-google:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.45);
-}
-
-.lp-modal-other {
-  display: block;
-  width: 100%;
-  padding: 0.75rem;
-  font-size: 0.9rem;
-  font-weight: 600;
-  color: var(--lp-text-muted);
-  background: transparent;
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  border-radius: 100px;
-  cursor: pointer;
-  font-family: inherit;
-  transition: all 0.2s;
-}
-
-.lp-modal-other:hover {
-  border-color: var(--lp-green);
-  color: var(--lp-green-light);
 }
 
 /* ================================================================
@@ -1194,36 +446,11 @@
 /* ================================================================
    Animations
    ================================================================ */
-@keyframes lpFloat {
-
-  0%,
-  100% {
-    transform: translateY(0);
-  }
-
-  50% {
-    transform: translateY(-6px);
-  }
-}
-
-@keyframes lpSlideInLeft {
-  from {
-    opacity: 0;
-    transform: translateX(-30px);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateX(0);
-  }
-}
-
 @keyframes lpFadeInUp {
   from {
     opacity: 0;
     transform: translateY(24px);
   }
-
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1231,27 +458,8 @@
 }
 
 @keyframes lpFadeIn {
-  from {
-    opacity: 0;
-  }
-
-  to {
-    opacity: 1;
-  }
-}
-
-@keyframes lpPulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.7;
-    transform: scale(0.92);
-  }
+  from { opacity: 0; }
+  to { opacity: 1; }
 }
 
 @keyframes lpSlideUp {
@@ -1259,38 +467,9 @@
     opacity: 0;
     transform: translateX(-50%) translateY(24px);
   }
-
   to {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
-  }
-}
-
-@keyframes lpLetterIn {
-  from {
-    opacity: 0;
-    transform: translateY(8px) scale(0.8);
-  }
-
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-/* spin animation for RotateCcw */
-.lp-demo-generate .spin,
-.lp-demo-record-btn .spin {
-  animation: lpSpin 1s linear infinite;
-}
-
-@keyframes lpSpin {
-  from {
-    transform: rotate(0deg);
-  }
-
-  to {
-    transform: rotate(360deg);
   }
 }
 
@@ -1306,48 +485,34 @@
     padding: 1.3rem 6%;
   }
 
-  .lp-hero-1 {
-    padding: 7rem 8% 2rem;
+  .lp-promo-section.first {
+    padding-top: 7rem;
   }
 
-  .lp-hero-2 {
-    padding: 3rem 8% 3rem;
+  .lp-promo-title {
+    font-size: 2.2rem;
   }
 
-  .lp-hero-main {
-    font-size: 2.5rem;
-  }
-
-  .lp-hero-sub {
+  .lp-promo-subtitle {
     font-size: 1rem;
   }
 
-  .lp-hero-flags {
-    font-size: 2rem;
-    gap: 1rem;
+  .lp-phone-frame {
+    width: 320px;
+    border-radius: 34px;
+    border-width: 4px;
   }
 
-  .lp-demo-title {
-    font-size: 2rem;
+  .lp-recommend {
+    max-width: 440px;
   }
 
-  .lp-guide-title {
-    font-size: 2rem;
+  .lp-recommend-title {
+    font-size: 1rem;
   }
 
-  .lp-cta-title {
-    font-size: 2.4rem;
-  }
-
-  .lp-cta-btn-wrap {
-    flex-direction: row;
-    max-width: none;
-    justify-content: center;
-  }
-
-  .lp-btn {
-    width: auto;
-    padding: 0.9rem 2rem;
+  .lp-recommend-item {
+    font-size: 0.9rem;
   }
 }
 
@@ -1355,11 +520,17 @@
    Desktop (1024px+)
    ================================================================ */
 @media (min-width: 1024px) {
-  .lp-hero-main {
-    font-size: 3rem;
+  .lp-promo-title {
+    font-size: 2.6rem;
   }
 
-  .lp-cta-title {
-    font-size: 2.8rem;
+  .lp-promo-subtitle {
+    font-size: 1.05rem;
+    max-width: 500px;
+  }
+
+  .lp-phone-frame {
+    width: 360px;
+    border-radius: 38px;
   }
 }
