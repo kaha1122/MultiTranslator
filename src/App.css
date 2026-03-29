@@ -305,6 +305,13 @@ body {
 .sidebar-nav-item.active, .sidebar-nav-item:hover {
   background: #f5f0ff; color: #5B1A6E;
 }
+.sidebar-nav-item.sidebar-nav-util {
+  color: #475569;
+}
+.sidebar-nav-item.sidebar-nav-util.active,
+.sidebar-nav-item.sidebar-nav-util:hover {
+  background: #f0fdf4; color: var(--primary-color);
+}
 
 .sidebar-nav-icon {
   flex-shrink: 0;

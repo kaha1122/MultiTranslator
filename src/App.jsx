@@ -2309,14 +2309,14 @@ function App() {
 
 
               {/* 설정 */}
-              <button className={`sidebar-nav-item ${viewMode === 'settings' ? 'active' : ''}`}
+              <button className={`sidebar-nav-item sidebar-nav-util ${viewMode === 'settings' ? 'active' : ''}`}
                 onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon"><SettingsIcon size={16} /></span>
                 {getT(sourceLang, 'nav.settings')}
               </button>
 
               {/* Q&A 서브메뉴 */}
-              <button className="sidebar-nav-item"
+              <button className="sidebar-nav-item sidebar-nav-util"
                 onClick={() => setQaMenuOpen(prev => !prev)}>
                 <span className="sidebar-nav-icon"><HelpCircle size={16} /></span>
                 <span style={{ flex: 1 }}>{getT(sourceLang, 'nav.qa')}</span>
