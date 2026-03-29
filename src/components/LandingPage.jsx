@@ -142,24 +142,26 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
               )}
 
               <div className="lp-phone-frame">
-                <img
-                  src={imgSrc}
-                  alt={`PronunFit ${card.id}`}
-                  loading={idx === 0 ? 'eager' : 'lazy'}
-                  className="lp-phone-screenshot"
-                />
-              </div>
+                <div className="lp-phone-inner">
+                  <img
+                    src={imgSrc}
+                    alt={`PronunFit ${card.id}`}
+                    loading={idx === 0 ? 'eager' : 'lazy'}
+                    className="lp-phone-screenshot"
+                  />
+                </div>
 
-              {/* 별표 (Card4 - 가성비) */}
-              {card.stars && STAR_POSITIONS.map((yRatio, i) => (
-                <span
-                  key={i}
-                  className="lp-star"
-                  style={{ top: `${yRatio * 100}%` }}
-                >
-                  ⭐
-                </span>
-              ))}
+                {/* 별표 (Card4 - 가성비) — phone-frame 기준 절대 배치 */}
+                {card.stars && STAR_POSITIONS.map((yRatio, i) => (
+                  <span
+                    key={i}
+                    className="lp-star"
+                    style={{ top: `${yRatio * 100}%` }}
+                  >
+                    ⭐
+                  </span>
+                ))}
+              </div>
             </div>
 
             {/* 추천 대상 */}
