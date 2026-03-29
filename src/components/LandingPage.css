@@ -235,7 +235,7 @@
 /* 별표 — 폰 프레임 오른쪽 바로 바깥 */
 .lp-star {
   position: absolute;
-  right: 30px;
+  right: 12%;
   z-index: 3;
   font-size: 18px;
   filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
@@ -596,7 +596,7 @@
 
   .lp-star {
     font-size: 22px;
-    right: -34px;
+    right: 12%;
   }
 
   .lp-recommend {
@@ -655,6 +655,6 @@
 
   .lp-star {
     font-size: 24px;
-    right: -38px;
+    right: 12%;
   }
 }
