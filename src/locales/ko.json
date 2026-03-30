@@ -277,7 +277,8 @@
       "culture": "문화",
       "entertainment": "예능",
       "sports": "스포츠"
-    }
+    },
+    "extraLangNotSupported": "기타 언어는 동영상이 제공되지 않습니다."
   },
   "update": {
     "title": "앱 업데이트 필요",

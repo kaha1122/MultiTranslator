@@ -277,7 +277,8 @@
       "culture": "Cultura",
       "entertainment": "Entretenimento",
       "sports": "Esportes"
-    }
+    },
+    "extraLangNotSupported": "Vídeos não estão disponíveis para outros idiomas."
   },
   "upgrade": {
     "modalTitle": "Atualize Seu Plano",

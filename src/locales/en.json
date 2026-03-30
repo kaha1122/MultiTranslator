@@ -277,7 +277,8 @@
       "culture": "Culture",
       "entertainment": "Entertainment",
       "sports": "Sports"
-    }
+    },
+    "extraLangNotSupported": "Videos are not available for additional languages."
   },
   "update": {
     "title": "App Update Required",

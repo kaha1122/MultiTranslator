@@ -277,7 +277,8 @@
       "culture": "Культура",
       "entertainment": "Развлечения",
       "sports": "Спорт"
-    }
+    },
+    "extraLangNotSupported": "Видео недоступны для дополнительных языков."
   },
   "upgrade": {
     "modalTitle": "Улучшить тарифный план",

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
 import { useT } from '../utils/i18n';
-import { ALL_LANGUAGES } from '../config/languages';
+import { ALL_LANGUAGES, SUPPORTED_LANGUAGES, EXTRA_LANGUAGES } from '../config/languages';
 import './VideoReader.css';
 import AdBanner from './AdBanner';
 
@@ -132,8 +132,19 @@ function VideoReader({
                 ))}
             </div>
 
+            {/* 기타 언어 동영상 미지원 안내 */}
+            {EXTRA_LANGUAGES.some(l => l.code === targetLang) && (
+                <div style={{
+                    padding: '12px 16px', margin: '8px 0', borderRadius: '10px',
+                    background: '#fef3c7', border: '1px solid #fde68a', color: '#92400e',
+                    fontSize: '0.83rem', fontWeight: 500, textAlign: 'center',
+                }}>
+                    {t('video.extraLangNotSupported') || '기타 언어는 동영상이 제공되지 않습니다.'}
+                </div>
+            )}
+
             {/* 카테고리 탭 */}
-            {!selected && (
+            {!selected && !EXTRA_LANGUAGES.some(l => l.code === targetLang) && (
                 <div className="vid-category-tabs">
                     {CATEGORIES.map(cat => {
                         const color = CATEGORY_COLORS[cat];

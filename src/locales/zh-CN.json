@@ -277,7 +277,8 @@
       "culture": "文化",
       "entertainment": "娱乐",
       "sports": "体育"
-    }
+    },
+    "extraLangNotSupported": "其他语言暂不提供视频内容。"
   },
   "upgrade": {
     "modalTitle": "升级您的方案",

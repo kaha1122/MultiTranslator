@@ -277,7 +277,8 @@
       "culture": "Văn hóa",
       "entertainment": "Giải trí",
       "sports": "Thể thao"
-    }
+    },
+    "extraLangNotSupported": "Không có video cho các ngôn ngữ khác."
   },
   "upgrade": {
     "modalTitle": "Nâng cấp gói của bạn",

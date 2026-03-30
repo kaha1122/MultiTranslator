@@ -277,7 +277,8 @@
       "culture": "文化",
       "entertainment": "エンタメ",
       "sports": "スポーツ"
-    }
+    },
+    "extraLangNotSupported": "その他の言語には動画が提供されていません。"
   },
   "upgrade": {
     "modalTitle": "プランをアップグレード",

@@ -277,7 +277,8 @@
       "culture": "Culture",
       "entertainment": "Divertissement",
       "sports": "Sports"
-    }
+    },
+    "extraLangNotSupported": "Les vidéos ne sont pas disponibles pour les autres langues."
   },
   "upgrade": {
     "modalTitle": "Améliorer votre plan",
