@@ -33,6 +33,17 @@ const SUPPORTED_LANGUAGES = [
     { code: 'es', name: 'Español' },
     { code: 'vi', name: 'Tiếng Việt' },
     { code: 'pt-BR', name: 'Português' },
+    // 추가 Tier 1 언어
+    { code: 'ar', name: 'العربية' }, { code: 'bn', name: 'বাংলা' }, { code: 'bg', name: 'Български' },
+    { code: 'zh-TW', name: '中文(繁體)' }, { code: 'hr', name: 'Hrvatski' }, { code: 'cs', name: 'Čeština' },
+    { code: 'da', name: 'Dansk' }, { code: 'nl', name: 'Nederlands' }, { code: 'et', name: 'Eesti' },
+    { code: 'fi', name: 'Suomi' }, { code: 'el', name: 'Ελληνικά' }, { code: 'he', name: 'עברית' },
+    { code: 'hi', name: 'हिन्दी' }, { code: 'hu', name: 'Magyar' }, { code: 'id', name: 'Indonesia' },
+    { code: 'it', name: 'Italiano' }, { code: 'lv', name: 'Latviešu' }, { code: 'lt', name: 'Lietuvių' },
+    { code: 'no', name: 'Norsk' }, { code: 'pl', name: 'Polski' }, { code: 'ro', name: 'Română' },
+    { code: 'sr', name: 'Srpski' }, { code: 'sk', name: 'Slovenčina' }, { code: 'sl', name: 'Slovenščina' },
+    { code: 'sw', name: 'Kiswahili' }, { code: 'sv', name: 'Svenska' }, { code: 'th', name: 'ไทย' },
+    { code: 'tr', name: 'Türkçe' }, { code: 'uk', name: 'Українська' },
 ];
 
 /**

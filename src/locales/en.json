@@ -102,6 +102,7 @@
     "targetCount": "Currently {n}/3 selected",
     "scoreGoals": "Target Score Goals",
     "scoreGoalsDesc": "Set your pronunciation target score for each language.",
+    "extraLangs": "Other Languages",
     "noTarget": "Please select a target language above first.",
     "saveReturn": "Save Settings & Return"
   },

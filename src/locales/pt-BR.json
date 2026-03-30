@@ -102,6 +102,7 @@
     "targetCount": "Atualmente {n}/3 selecionados",
     "scoreGoals": "Metas de Pontuação",
     "scoreGoalsDesc": "Defina sua meta de pontuação de pronúncia para cada idioma.",
+    "extraLangs": "Outros idiomas",
     "noTarget": "Selecione um idioma de destino acima primeiro.",
     "saveReturn": "Salvar Configurações e Voltar"
   },

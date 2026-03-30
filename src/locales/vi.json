@@ -102,6 +102,7 @@
     "targetCount": "Đã chọn {n}/3",
     "scoreGoals": "Mục tiêu điểm số",
     "scoreGoalsDesc": "Đặt điểm mục tiêu phát âm cho từng ngôn ngữ.",
+    "extraLangs": "Ngôn ngữ khác",
     "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
     "saveReturn": "Lưu cài đặt & Quay lại"
   },

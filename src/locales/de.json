@@ -102,6 +102,7 @@
     "targetCount": "Aktuell {n}/3 ausgewählt",
     "scoreGoals": "Zielscore-Einstellungen",
     "scoreGoalsDesc": "Setze dein Aussprache-Ziel für jede Sprache.",
+    "extraLangs": "Weitere Sprachen",
     "noTarget": "Bitte wähle zuerst oben eine Zielsprache aus.",
     "saveReturn": "Einstellungen speichern & Zurück"
   },

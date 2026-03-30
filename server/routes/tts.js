@@ -8,6 +8,7 @@ const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
 
 const AZURE_TTS_VOICE_MAP = {
+    // 기존 10개 언어
     'en':    { voice: 'en-US-JennyNeural',      styles: ['chat','cheerful','sad','angry','excited','friendly','hopeful','empathetic'] },
     'ja':    { voice: 'ja-JP-NanamiNeural',      styles: ['chat'] },
     'zh-CN': { voice: 'zh-CN-XiaoxiaoNeural',    styles: ['chat','cheerful','sad','angry','fearful','gentle','serious','friendly','empathetic','calm'] },
@@ -18,6 +19,36 @@ const AZURE_TTS_VOICE_MAP = {
     'ko':    { voice: 'ko-KR-SunHiNeural',        styles: ['chat','cheerful','sad','angry','friendly'] },
     'ru':    { voice: 'ru-RU-SvetlanaNeural',     styles: [] },
     'pt-BR': { voice: 'pt-BR-FranciscaNeural',    styles: [] },
+    // 추가 Tier 1 언어 (28개)
+    'ar':    { voice: 'ar-SA-ZariyahNeural',      styles: [] },
+    'bn':    { voice: 'bn-IN-TanishaaNeural',     styles: [] },
+    'bg':    { voice: 'bg-BG-KalinaNeural',       styles: [] },
+    'zh-TW': { voice: 'zh-TW-HsiaoChenNeural',   styles: [] },
+    'hr':    { voice: 'hr-HR-GabrijelaNeural',    styles: [] },
+    'cs':    { voice: 'cs-CZ-VlastaNeural',       styles: [] },
+    'da':    { voice: 'da-DK-ChristelNeural',     styles: [] },
+    'nl':    { voice: 'nl-NL-ColetteNeural',      styles: [] },
+    'et':    { voice: 'et-EE-AnuNeural',           styles: [] },
+    'fi':    { voice: 'fi-FI-NooraNeural',         styles: [] },
+    'el':    { voice: 'el-GR-AthinaNeural',        styles: [] },
+    'he':    { voice: 'he-IL-HilaNeural',          styles: [] },
+    'hi':    { voice: 'hi-IN-SwaraNeural',         styles: [] },
+    'hu':    { voice: 'hu-HU-NoemiNeural',         styles: [] },
+    'id':    { voice: 'id-ID-GadisNeural',         styles: [] },
+    'it':    { voice: 'it-IT-ElsaNeural',          styles: [] },
+    'lv':    { voice: 'lv-LV-EveritaNeural',      styles: [] },
+    'lt':    { voice: 'lt-LT-OnaNeural',           styles: [] },
+    'no':    { voice: 'nb-NO-PernilleNeural',      styles: [] },
+    'pl':    { voice: 'pl-PL-AgnieszkaNeural',     styles: [] },
+    'ro':    { voice: 'ro-RO-AlinaNeural',         styles: [] },
+    'sr':    { voice: 'sr-RS-SophieNeural',        styles: [] },
+    'sk':    { voice: 'sk-SK-ViktoriaNeural',      styles: [] },
+    'sl':    { voice: 'sl-SI-PetraNeural',         styles: [] },
+    'sw':    { voice: 'sw-KE-ZuriNeural',          styles: [] },
+    'sv':    { voice: 'sv-SE-SofieNeural',         styles: [] },
+    'th':    { voice: 'th-TH-PremwadeeNeural',     styles: [] },
+    'tr':    { voice: 'tr-TR-EmelNeural',           styles: [] },
+    'uk':    { voice: 'uk-UA-PolinaNeural',         styles: [] },
 };
 
 // Gemini selected_emotion → Azure TTS style 매핑

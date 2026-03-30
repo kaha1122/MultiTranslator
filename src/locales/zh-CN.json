@@ -102,6 +102,7 @@
     "targetCount": "当前已选 {n}/3",
     "scoreGoals": "目标分数设置",
     "scoreGoalsDesc": "设置各语言的发音目标分数。",
+    "extraLangs": "其他语言",
     "noTarget": "请先在上方选择学习语言。",
     "saveReturn": "保存设置并返回"
   },

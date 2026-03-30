@@ -102,6 +102,7 @@
     "targetCount": "Actuellement {n}/3 sélectionnées",
     "scoreGoals": "Objectifs de score",
     "scoreGoalsDesc": "Définissez votre score cible de prononciation pour chaque langue.",
+    "extraLangs": "Autres langues",
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
     "saveReturn": "Enregistrer & Retour"
   },
