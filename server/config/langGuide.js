@@ -3,10 +3,22 @@
  */
 
 const LANG_NAMES = {
+    // 기존 10개
     'ko': 'Korean', 'en': 'English', 'ja': 'Japanese',
     'zh-CN': 'Chinese (Simplified)', 'vi': 'Vietnamese',
     'fr': 'French', 'de': 'German', 'es': 'Spanish',
     'ru': 'Russian', 'pt-BR': 'Portuguese (Brazilian)',
+    // 추가 Tier 1 (28개)
+    'ar': 'Arabic', 'bn': 'Bengali', 'bg': 'Bulgarian',
+    'zh-TW': 'Chinese (Traditional)', 'hr': 'Croatian', 'cs': 'Czech',
+    'da': 'Danish', 'nl': 'Dutch', 'et': 'Estonian',
+    'fi': 'Finnish', 'el': 'Greek', 'he': 'Hebrew',
+    'hi': 'Hindi', 'hu': 'Hungarian', 'id': 'Indonesian',
+    'it': 'Italian', 'lv': 'Latvian', 'lt': 'Lithuanian',
+    'no': 'Norwegian', 'pl': 'Polish', 'ro': 'Romanian',
+    'sr': 'Serbian', 'sk': 'Slovak', 'sl': 'Slovenian',
+    'sw': 'Swahili', 'sv': 'Swedish', 'th': 'Thai',
+    'tr': 'Turkish', 'uk': 'Ukrainian',
 };
 
 const LANG_SPECIFIC_GUIDE = {
