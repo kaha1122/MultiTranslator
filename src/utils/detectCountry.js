@@ -10,10 +10,15 @@ export async function detectCountry() {
         const res = await fetch('https://ipapi.co/json/', { signal: AbortSignal.timeout(5000) });
         if (!res.ok) throw new Error(res.status);
         const data = await res.json();
-        cached = { country: data.country_code || 'US', currency: data.country_code === 'KR' ? 'KRW' : 'USD' };
+        cached = {
+            country: data.country_code || 'US',
+            currency: data.country_code === 'KR' ? 'KRW' : 'USD',
+            city: data.city || '',
+            region: data.region || '',
+        };
     } catch {
         // 감지 실패 시 기본값 USD (해외 사용자 가정)
-        cached = { country: 'US', currency: 'USD' };
+        cached = { country: 'US', currency: 'USD', city: '', region: '' };
     }
 
     return cached;

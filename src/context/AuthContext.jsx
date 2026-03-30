@@ -6,6 +6,7 @@ import { setUserId } from 'firebase/analytics';
 import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
 import { authFetch } from '../utils/authFetch';
+import { detectCountry } from '../utils/detectCountry';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -56,6 +57,16 @@ export const AuthProvider = ({ children }) => {
                                 updatedAt: serverTimestamp(),
                             });
                             docJustCreated = true;
+                            // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
+                            detectCountry().then(info => {
+                                if (info.country) {
+                                    updateDoc(docRef, {
+                                        geoCountry: info.country,
+                                        geoCity: info.city || '',
+                                        geoRegion: info.region || '',
+                                    }).catch(() => {});
+                                }
+                            }).catch(() => {});
                         }
                     } catch (e) {
                         console.error('[AuthContext] Anonymous user doc creation failed:', e);
@@ -89,6 +100,16 @@ export const AuthProvider = ({ children }) => {
                             createdAt: serverTimestamp(),
                             updatedAt: serverTimestamp(),
                         }, { merge: true });
+                        // 위치 정보 비동기 저장
+                        detectCountry().then(info => {
+                            if (info.country) {
+                                updateDoc(docRef, {
+                                    geoCountry: info.country,
+                                    geoCity: info.city || '',
+                                    geoRegion: info.region || '',
+                                }).catch(() => {});
+                            }
+                        }).catch(() => {});
                         return; // setDoc 후 onSnapshot이 다시 호출됨
                     }
                     setLoading(false);
