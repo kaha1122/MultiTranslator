@@ -41,7 +41,7 @@ const getServerUrl = () => {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
             return import.meta.env.VITE_API_URL;
         }
-    } catch (e) {}
+    } catch (e) { }
     if (typeof window !== 'undefined') return `http://${window.location.hostname}:5000`;
     return 'http://localhost:5000';
 };
@@ -65,10 +65,18 @@ export default function ListeningTab({
     const t = useT(sourceLang);
 
     // ── State ────────────────────────────────────────────────────
+    // 랜덤 초기 토픽 선택
+    const pickRandomTopic = () => {
+        const cat = VOCAB_CATEGORIES[Math.floor(Math.random() * VOCAB_CATEGORIES.length)];
+        const sub = cat.subs[Math.floor(Math.random() * cat.subs.length)];
+        const topic = sub.topics[Math.floor(Math.random() * sub.topics.length)];
+        return { catId: cat.id, subId: sub.id, topicId: topic.id };
+    };
+
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState('basic');
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
-    const [selectedTopic, setSelectedTopic] = useState(null); // { catId, subId, topicId }
+    const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [showCategorySheet, setShowCategorySheet] = useState(false);
 
     const [passage, setPassage] = useState(null);
