@@ -23,37 +23,37 @@ const getServerUrl = () => {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
             return import.meta.env.VITE_API_URL;
         }
-    } catch (e) {}
+    } catch (e) { }
     if (typeof window !== 'undefined') return `http://${window.location.hostname}:5000`;
     return 'http://localhost:5000';
 };
 
 const SCENES = {
     locations: [
-        { id: 'airport',    icon: '✈️' },
-        { id: 'hotel',      icon: '🏨' },
+        { id: 'airport', icon: '✈️' },
+        { id: 'hotel', icon: '🏨' },
         { id: 'restaurant', icon: '🍽️' },
-        { id: 'transport',  icon: '🚌' },
-        { id: 'shopping',   icon: '🛍️' },
-        { id: 'hospital',   icon: '🏥' },
-        { id: 'tourist',    icon: '🗺️' },
-        { id: 'office',     icon: '💼' },
-        { id: 'bank',       icon: '🏦' },
-        { id: 'gym',        icon: '💪' },
-        { id: 'custom',     icon: '✏️' },
+        { id: 'transport', icon: '🚌' },
+        { id: 'shopping', icon: '🛍️' },
+        { id: 'hospital', icon: '🏥' },
+        { id: 'tourist', icon: '🗺️' },
+        { id: 'office', icon: '💼' },
+        { id: 'bank', icon: '🏦' },
+        { id: 'gym', icon: '💪' },
+        { id: 'custom', icon: '✏️' },
     ],
     situations: [
-        { id: 'smalltalk',  icon: '💬' },
-        { id: 'lost',       icon: '🆘' },
-        { id: 'reservation',icon: '📅' },
-        { id: 'disagree',   icon: '🤝' },
-        { id: 'problem',    icon: '🔧' },
+        { id: 'smalltalk', icon: '💬' },
+        { id: 'lost', icon: '🆘' },
+        { id: 'reservation', icon: '📅' },
+        { id: 'disagree', icon: '🤝' },
+        { id: 'problem', icon: '🔧' },
         { id: 'directions', icon: '🧭' },
-        { id: 'intro',      icon: '🎤' },
+        { id: 'intro', icon: '🎤' },
         { id: 'compliment', icon: '🙏' },
-        { id: 'decline',    icon: '🚫' },
-        { id: 'advice',     icon: '💡' },
-        { id: 'custom',     icon: '✏️' },
+        { id: 'decline', icon: '🚫' },
+        { id: 'advice', icon: '💡' },
+        { id: 'custom', icon: '✏️' },
     ],
 };
 
@@ -216,18 +216,24 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
 const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved }) => {
-    const [category, setCategory]           = useState('locations');
-    const [selectedScene, setSelectedScene] = useState(null);
-    const [customInput, setCustomInput]     = useState('');
-    const [selectedLang, setSelectedLang]   = useState(targetLangs?.[0] || 'en');
-    const [difficulty, setDifficulty]       = useState('basic');
-    const [speechStyle, setSpeechStyle]     = useState('formal');
-    const [generated, setGenerated]         = useState(null);
+    // 랜덤 초기 장소 선택 (custom 제외)
+    const pickRandomScene = (cat = 'locations') => {
+        const list = SCENES[cat].filter(s => s.id !== 'custom');
+        return list[Math.floor(Math.random() * list.length)];
+    };
+
+    const [category, setCategory] = useState('locations');
+    const [selectedScene, setSelectedScene] = useState(() => pickRandomScene('locations'));
+    const [customInput, setCustomInput] = useState('');
+    const [selectedLang, setSelectedLang] = useState(targetLangs?.[0] || 'en');
+    const [difficulty, setDifficulty] = useState('basic');
+    const [speechStyle, setSpeechStyle] = useState('formal');
+    const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);
-    const [loading, setLoading]             = useState(false);
+    const [loading, setLoading] = useState(false);
     const [loadingAnswer, setLoadingAnswer] = useState(false);
-    const [error, setError]                 = useState(null);
-    const [isSaved, setIsSaved]             = useState(false);
+    const [error, setError] = useState(null);
+    const [isSaved, setIsSaved] = useState(false);
     const [isAnswerSaved, setIsAnswerSaved] = useState(false);
 
     const t = useT(sourceLang);
@@ -408,17 +414,17 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
     const handleSave = async (pronunciationScore = null) => {
         if (!generated || !selectedScene || isSaved) return;
         const cardId = await onSaveToLibrary({
-            sentence:          generated.sentence,
-            translation:       generated.translation,
-            langCode:          selectedLang,
-            scene:             selectedScene.id,
+            sentence: generated.sentence,
+            translation: generated.translation,
+            langCode: selectedLang,
+            scene: selectedScene.id,
             category,
-            sceneHint:         generated.scene_hint,
-            learningTip:       generated.learning_tip,
+            sceneHint: generated.scene_hint,
+            learningTip: generated.learning_tip,
             pronunciationScore,
             difficulty,
-            selectedEmotion:   generated.selected_emotion || '',
-            interactionType:   generated.interaction_type || '',
+            selectedEmotion: generated.selected_emotion || '',
+            interactionType: generated.interaction_type || '',
         });
         if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
@@ -429,17 +435,17 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
     const handleAnswerSave = async (pronunciationScore = null) => {
         if (!generatedAnswer || !selectedScene || isAnswerSaved) return;
         const cardId = await onSaveToLibrary({
-            sentence:          generatedAnswer.sentence,
-            translation:       generatedAnswer.translation,
-            langCode:          selectedLang,
-            scene:             selectedScene.id,
+            sentence: generatedAnswer.sentence,
+            translation: generatedAnswer.translation,
+            langCode: selectedLang,
+            scene: selectedScene.id,
             category,
-            sceneHint:         generatedAnswer.scene_hint,
-            learningTip:       generatedAnswer.learning_tip,
+            sceneHint: generatedAnswer.scene_hint,
+            learningTip: generatedAnswer.learning_tip,
             pronunciationScore,
             difficulty,
-            selectedEmotion:   generatedAnswer.selected_emotion || '',
-            interactionType:   generatedAnswer.interaction_type || '',
+            selectedEmotion: generatedAnswer.selected_emotion || '',
+            interactionType: generatedAnswer.interaction_type || '',
         });
         if (!cardId) return; // 중복 → 이미 저장됨
         playStarSound();
@@ -578,38 +584,38 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
             {/* 질문 카드 */}
             {generated && (
                 <div ref={questionCardRef} className="scene-card-scroll-anchor">
-                <ScenePracticeCard
-                    generated={generated}
-                    langCode={selectedLang}
-                    sourceLang={sourceLang}
-                    onTrialLimitReached={onTrialLimitReached}
-                    onPronSuccess={onPronSuccess}
-                    onSave={handleSave}
-                    isSaved={isSaved}
-                    onSpeak={onSpeak}
-                    t={t}
-                    targetGoal={languageGoals[selectedLang] || 80}
-                    onBookmarkPrompt={onBookmarkPrompt}
-                />
+                    <ScenePracticeCard
+                        generated={generated}
+                        langCode={selectedLang}
+                        sourceLang={sourceLang}
+                        onTrialLimitReached={onTrialLimitReached}
+                        onPronSuccess={onPronSuccess}
+                        onSave={handleSave}
+                        isSaved={isSaved}
+                        onSpeak={onSpeak}
+                        t={t}
+                        targetGoal={languageGoals[selectedLang] || 80}
+                        onBookmarkPrompt={onBookmarkPrompt}
+                    />
                 </div>
             )}
 
             {/* 답변 카드 */}
             {generatedAnswer && (
                 <div ref={answerCardRef} className="scene-card-scroll-anchor">
-                <ScenePracticeCard
-                    generated={generatedAnswer}
-                    langCode={selectedLang}
-                    sourceLang={sourceLang}
-                    onTrialLimitReached={onTrialLimitReached}
-                    onPronSuccess={onPronSuccess}
-                    onSave={handleAnswerSave}
-                    isSaved={isAnswerSaved}
-                    onSpeak={onSpeak}
-                    t={t}
-                    targetGoal={languageGoals[selectedLang] || 80}
-                    onBookmarkPrompt={onBookmarkPrompt}
-                />
+                    <ScenePracticeCard
+                        generated={generatedAnswer}
+                        langCode={selectedLang}
+                        sourceLang={sourceLang}
+                        onTrialLimitReached={onTrialLimitReached}
+                        onPronSuccess={onPronSuccess}
+                        onSave={handleAnswerSave}
+                        isSaved={isAnswerSaved}
+                        onSpeak={onSpeak}
+                        t={t}
+                        targetGoal={languageGoals[selectedLang] || 80}
+                        onBookmarkPrompt={onBookmarkPrompt}
+                    />
                 </div>
             )}
         </div>

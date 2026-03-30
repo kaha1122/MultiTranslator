@@ -2237,7 +2237,7 @@ function App() {
               {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-                    {getT(sourceLang, 'nav.studyMore') || (['ko','ja','zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
+                    {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
                   {/* 카드 +5 */}
                   <button
@@ -2400,20 +2400,7 @@ function App() {
           </h1>
 
           <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
-            {/* Back 버튼 (해당 탭에서만) */}
-            {(viewMode === 'scene' || viewMode === 'vocab' || viewMode === 'listening') && (
-              <button className="header-dict-btn" onClick={() => {
-                setDictBackTo(viewMode);
-                setViewMode('translation');
-              }}>
-                {getT(sourceLang, 'nav.dictBtn')}
-              </button>
-            )}
-            {viewMode === 'translation' && dictBackTo && (
-              <button className="header-dict-btn" onClick={() => { setViewMode(dictBackTo); setDictBackTo(null); }}>
-                Back
-              </button>
-            )}
+
             {viewMode === 'library' && libraryBackTo && (
               <button className="header-dict-btn" onClick={() => { setViewMode(libraryBackTo); setLibraryBackTo(null); }}>
                 Back
@@ -2442,14 +2429,14 @@ function App() {
         <AnimatePresence mode="wait">
           {(() => {
             const TAB_STYLE = {
-              home:        { icon: '🏠', color: '#00a884' },
-              vocab:       { icon: '📖', color: '#059669' },
-              scene:       { icon: '🎭', color: '#6366f1' },
-              listening:   { icon: '🎧', color: '#7c3aed' },
+              home: { icon: '🏠', color: '#00a884' },
+              vocab: { icon: '📖', color: '#059669' },
+              scene: { icon: '🎭', color: '#6366f1' },
+              listening: { icon: '🎧', color: '#7c3aed' },
               translation: { icon: '🔤', color: '#d97706' },
-              video:       { icon: '🎬', color: '#e11d48' },
-              library:     { icon: '⭐', color: '#0891b2' },
-              stats:       { icon: '📊', color: '#6366f1' },
+              video: { icon: '🎬', color: '#e11d48' },
+              library: { icon: '⭐', color: '#0891b2' },
+              stats: { icon: '📊', color: '#6366f1' },
             };
             const s = TAB_STYLE[viewMode];
             if (!s) return null;
@@ -2496,11 +2483,11 @@ function App() {
                   const ratio = isTrial ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
                   const barColor = isTrial
                     ? (isFull
-                        ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
-                        : 'linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)')
+                      ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
+                      : 'linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)')
                     : (isFull
-                        ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
-                        : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)');
+                      ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
+                      : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)');
                   const glow = isTrial
                     ? (isFull ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(52,211,153,0.4)')
                     : (isFull ? '0 0 6px rgba(16,185,129,0.5)' : '0 0 6px rgba(99,102,241,0.4)');
@@ -2781,7 +2768,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                      onPronSuccess={incrementDailyPron}
+            onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -2822,7 +2809,7 @@ function App() {
             ref={videoReaderRef}
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                      onPronSuccess={incrementDailyPron}
+            onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVideoCard}
             onDetailChange={setVideoDetailOpen}
             onBookmarkPrompt={handleBookmarkPrompt}
@@ -2843,7 +2830,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                      onPronSuccess={incrementDailyPron}
+            onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -3127,7 +3114,7 @@ function App() {
                   {/* 만기예정일 (Pro/Premium 구독자) */}
                   {(tier === 'pro' || tier === 'premium') && profile?.subscriptionExpiresAt && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      📅 {getT(sourceLang, 'settings.expiryDate')}: {(() => { const d = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt); return `${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`; })()}
+                      📅 {getT(sourceLang, 'settings.expiryDate')}: {(() => { const d = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt); return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`; })()}
                     </span>
                   )}
                   {/* 발음 사용량 (Pro) */}
