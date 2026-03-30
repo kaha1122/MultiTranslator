@@ -9,17 +9,12 @@ import { playStarSound, playSuccessSound, playAlertSound } from '../utils/soundE
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
 import { authFetch } from '../utils/authFetch';
+import { getLangName } from '../config/languages';
 import './VocabTab.css';
 
 // Vocab history 문서 ID: {topicId}--{level}--{lang}
 const makeVocabHistoryKey = (topicId, level, lang) =>
     `${topicId}--${level}--${lang}`;
-
-const LANG_NAMES = {
-    ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
-    vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español',
-    ru: 'Русский', 'pt-BR': 'Português',
-};
 
 const getServerUrl = () => {
     try {
@@ -296,9 +291,7 @@ export default function VocabTab({
         }
     };
 
-    const visibleLanguages = targetLangs.filter(code =>
-        ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR'].includes(code)
-    );
+    const visibleLanguages = targetLangs;
 
     useEffect(() => {
         if (!visibleLanguages.includes(selectedLang) && visibleLanguages.length > 0) {
@@ -401,7 +394,7 @@ export default function VocabTab({
                         className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
                         onClick={() => setSelectedLang(code)}
                     >
-                        {LANG_NAMES[code] || code}
+                        {getLangName(code)}
                     </button>
                 ))}
             </div>

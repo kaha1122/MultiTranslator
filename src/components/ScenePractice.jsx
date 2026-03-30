@@ -3,6 +3,7 @@ import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import { useT, getT, tTag } from '../utils/i18n';
+import { getLangName } from '../config/languages';
 import PronunciationAssessment from './PronunciationAssessment';
 import { playStarSound } from '../utils/soundEffects';
 import { db } from '../firebase/config';
@@ -57,11 +58,6 @@ const SCENES = {
     ],
 };
 
-const LANG_NAMES = {
-    ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
-    vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español',
-    ru: 'Русский', 'pt-BR': 'Português',
-};
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
 function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
@@ -550,7 +546,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
                                 setIsSaved(false);
                             }}
                         >
-                            {LANG_NAMES[code] || code}
+                            {getLangName(code)}
                         </button>
                     ))}
                 </div>

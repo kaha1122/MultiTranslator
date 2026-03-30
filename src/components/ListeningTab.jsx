@@ -8,13 +8,8 @@ import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
 import { authFetch } from '../utils/authFetch';
 import { playStarSound } from '../utils/soundEffects';
+import { getLangName } from '../config/languages';
 import './ListeningTab.css';
-
-const LANG_NAMES = {
-    ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文',
-    vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español',
-    ru: 'Русский', 'pt-BR': 'Português',
-};
 
 // 대화형 지문에서 A:/B: 레이블 제거 + 줄바꿈을 SSML pause로 변환
 const cleanDialogueForTTS = (text) => {
@@ -91,9 +86,7 @@ export default function ListeningTab({
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
 
-    const visibleLanguages = targetLangs.filter(code =>
-        ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR'].includes(code)
-    );
+    const visibleLanguages = targetLangs;
 
     useEffect(() => {
         if (!visibleLanguages.includes(selectedLang) && visibleLanguages.length > 0) {
@@ -239,7 +232,7 @@ export default function ListeningTab({
                         className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
                         onClick={() => setSelectedLang(code)}
                     >
-                        {LANG_NAMES[code] || code}
+                        {getLangName(code)}
                     </button>
                 ))}
             </div>

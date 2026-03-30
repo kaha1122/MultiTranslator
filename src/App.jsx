@@ -64,55 +64,8 @@ import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components
 // [신규] 스플래시 화면 - 앱 아이콘으로 열 때 처음 보이는 로딩 화면
 import SplashScreen from './components/SplashScreen';
 
-// Supported Language List
-const SUPPORTED_LANGUAGES = [
-  { code: 'ko', name: '한국어', tts: 'ko-KR', color: '#f0fdf4', textColor: '#166534' },
-  { code: 'en', name: 'English', tts: 'en-US', color: '#e0e7ff', textColor: '#4338ca' },
-  { code: 'ja', name: '日本語', tts: 'ja-JP', color: '#fef2f2', textColor: '#b91c1c' },
-  { code: 'zh-CN', name: '中文', tts: 'zh-CN', color: '#fff7ed', textColor: '#9a3412' },
-  { code: 'vi', name: 'Tiếng Việt', tts: 'vi-VN', color: '#f0fdf4', textColor: '#166534' },
-  { code: 'fr', name: 'Français', tts: 'fr-FR', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'de', name: 'Deutsch', tts: 'de-DE', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'es', name: 'Español', tts: 'es-ES', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'ru', name: 'Русский', tts: 'ru-RU', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'pt-BR', name: 'Português', tts: 'pt-BR', color: '#f1f5f9', textColor: '#475569' },
-];
-
-// Gemini Tier 1 추가 언어 (기존 10개 제외 28개)
-const EXTRA_LANGUAGES = [
-  { code: 'ar', name: 'العربية', tts: 'ar-SA', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'bn', name: 'বাংলা', tts: 'bn-IN', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'bg', name: 'Български', tts: 'bg-BG', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'zh-TW', name: '中文(繁體)', tts: 'zh-TW', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'hr', name: 'Hrvatski', tts: 'hr-HR', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'cs', name: 'Čeština', tts: 'cs-CZ', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'da', name: 'Dansk', tts: 'da-DK', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'nl', name: 'Nederlands', tts: 'nl-NL', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'et', name: 'Eesti', tts: 'et-EE', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'fi', name: 'Suomi', tts: 'fi-FI', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'el', name: 'Ελληνικά', tts: 'el-GR', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'he', name: 'עברית', tts: 'he-IL', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'hi', name: 'हिन्दी', tts: 'hi-IN', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'hu', name: 'Magyar', tts: 'hu-HU', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'id', name: 'Indonesia', tts: 'id-ID', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'it', name: 'Italiano', tts: 'it-IT', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'lv', name: 'Latviešu', tts: 'lv-LV', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'lt', name: 'Lietuvių', tts: 'lt-LT', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'no', name: 'Norsk', tts: 'nb-NO', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'pl', name: 'Polski', tts: 'pl-PL', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'ro', name: 'Română', tts: 'ro-RO', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'sr', name: 'Srpski', tts: 'sr-RS', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'sk', name: 'Slovenčina', tts: 'sk-SK', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'sl', name: 'Slovenščina', tts: 'sl-SI', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'sw', name: 'Kiswahili', tts: 'sw-KE', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'sv', name: 'Svenska', tts: 'sv-SE', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'th', name: 'ไทย', tts: 'th-TH', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'tr', name: 'Türkçe', tts: 'tr-TR', color: '#f1f5f9', textColor: '#475569' },
-  { code: 'uk', name: 'Українська', tts: 'uk-UA', color: '#f1f5f9', textColor: '#475569' },
-];
-
-// 기존 10개 + 추가 28개 = 전체 언어 목록
-const ALL_LANGUAGES = [...SUPPORTED_LANGUAGES, ...EXTRA_LANGUAGES];
+// 언어 목록 중앙 관리 모듈
+import { SUPPORTED_LANGUAGES, EXTRA_LANGUAGES, ALL_LANGUAGES, getLangName, getLangInfo } from './config/languages';
 
 // 브라우저/기기 언어를 감지하여 지원 언어 코드로 변환
 const detectBrowserSourceLang = () => {
@@ -125,7 +78,6 @@ const detectBrowserSourceLang = () => {
 };
 
 // source 언어에 따른 스마트 기본 target 설정
-// 영어권 → 한국어 학습, 나머지 → 영어 학습
 const getDefaultTargetLangs = (src) => src === 'en' ? ['ko'] : ['en'];
 
 const languageNames = Object.fromEntries(ALL_LANGUAGES.map(l => [l.code, l.name]));
@@ -134,7 +86,6 @@ function App() {
   // ── 스플래시 화면 상태 ──────────────────────────────────────────────────
   // 앱 시작 시 한 번만 true, 스플래시가 끝나면 false로 바뀌어 메인 화면이 나타납니다.
   const [showSplash, setShowSplash] = useState(true);
-  const [showExtraLangs, setShowExtraLangs] = useState(false);
   // useCallback: SplashScreen에 넘겨줄 onFinish 함수가 매 렌더링마다 새로 생성되지 않도록 최적화
   const handleSplashFinish = useCallback(() => setShowSplash(false), []);
 
@@ -158,6 +109,7 @@ function App() {
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
+  const [showExtraLangs, setShowExtraLangs] = useState(false);
   // 로그인 성공 시 모달 자동 닫기
   useEffect(() => {
     if (showLoginModal && user && !user.isAnonymous) setShowLoginModal(false);
@@ -745,7 +697,7 @@ function App() {
       if (!saved) return getDefaultTargetLangs(detectBrowserSourceLang());
       const parsed = JSON.parse(saved);
       if (!Array.isArray(parsed)) return getDefaultTargetLangs(detectBrowserSourceLang());
-      // 지원되는 언어 코드만 필터링해서 가져옵니다. (기존 10개 + 추가 언어 포함)
+      // 지원되는 언어 코드만 필터링 (기존 10개 + 추가 28개 포함)
       return parsed.filter(code => ALL_LANGUAGES.some(l => l.code === code));
     } catch (e) {
       return getDefaultTargetLangs(detectBrowserSourceLang());
@@ -1280,12 +1232,12 @@ function App() {
     setTranslationExamples({});
 
     try {
-      const sourceLangName = ALL_LANGUAGES.find(l => l.code === sourceLang)?.name || sourceLang;
-      const inputLangName = ALL_LANGUAGES.find(l => l.code === inputLang)?.name || inputLang;
+      const sourceLangName = getLangName(sourceLang);
+      const inputLangName = getLangName(inputLang);
 
 
       const targetLangNames = targetLangs.map(code =>
-        ALL_LANGUAGES.find(l => l.code === code)?.name || code
+        getLangName(code)
       );
 
       const prompt = `
@@ -1469,7 +1421,7 @@ function App() {
       const cardData = {
         userId: user.uid,
         userEmail: user.email,
-        language: ALL_LANGUAGES.find(l => l.code === langCode)?.name || langCode,
+        language: getLangName(langCode),
         langCode: langCode,
         sourceText: inputText,
         sourceLang: sourceLang, // 모국어 (UI 기준 언어)
@@ -1524,7 +1476,7 @@ function App() {
       setShowTrialLimitModal(true);
       return;
     }
-    const langInfo = ALL_LANGUAGES.find(l => l.code === langCode);
+    const langInfo = getLangInfo(langCode);
     try {
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
@@ -1577,7 +1529,7 @@ function App() {
       if (active) return null; // 이미 저장됨 → 중복 방지
     } catch (e) { console.error("Scene duplicate check failed:", e); }
 
-    const langInfo = ALL_LANGUAGES.find(l => l.code === langCode);
+    const langInfo = getLangInfo(langCode);
     try {
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
@@ -1636,7 +1588,7 @@ function App() {
       if (active) return null; // 이미 저장됨 → 중복 방지
     } catch (e) { console.error("Vocab duplicate check failed:", e); }
 
-    const langInfo = ALL_LANGUAGES.find(l => l.code === langCode);
+    const langInfo = getLangInfo(langCode);
     try {
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
@@ -1679,7 +1631,7 @@ function App() {
   // Web Speech API fallback (오프라인 / Azure 실패 시)
   const handleSpeakFallback = (text, langCode) => {
     if (!text) return;
-    const langInfo = ALL_LANGUAGES.find(l => l.code === langCode);
+    const langInfo = getLangInfo(langCode);
     const utterance = new SpeechSynthesisUtterance(text);
     if (langInfo) utterance.lang = langInfo.tts;
     window.speechSynthesis.speak(utterance);
@@ -1814,7 +1766,7 @@ function App() {
         <button
           onClick={() => {
             const storeUrl = Capacitor.getPlatform() === 'ios'
-              ? 'https://apps.apple.com/app/pronunfit/id6761342764'
+              ? 'https://apps.apple.com/app/pronunfit/idXXXXXXXXXX' // TODO: App Store ID 등록 후 교체
               : 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
             window.open(storeUrl, '_system');
           }}
@@ -2605,7 +2557,7 @@ function App() {
               <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
                 {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
                 {[sourceLang, ...targetLangs].filter((value, index, self) => self.indexOf(value) === index).map((langCode) => {
-                  const lang = ALL_LANGUAGES.find(l => l.code === langCode);
+                  const lang = getLangInfo(langCode);
                   if (!lang) return null;
                   const isSelected = inputLang === langCode;
                   return (
@@ -2697,7 +2649,7 @@ function App() {
             {/* 번역 결과 카드들이 나오는 영역 */}
             <div className="cards-grid">
               {targetLangs.map((langCode) => {
-                const lang = SUPPORTED_LANGUAGES.find(l => l.code === langCode);
+                const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
                 const goal = languageGoals[langCode] || 80;
                 return (
@@ -2944,7 +2896,6 @@ function App() {
 
               {/* 기타 언어 (Gemini Tier 1 추가 28개) */}
               <div
-                className="extra-lang-toggle"
                 onClick={() => setShowExtraLangs(!showExtraLangs)}
                 style={{
                   display: 'flex', alignItems: 'center', justifyContent: 'space-between',
@@ -2986,7 +2937,7 @@ function App() {
               </p>
               <div className="goal-sliders">
                 {targetLangs.map(code => {
-                  const lang = ALL_LANGUAGES.find(l => l.code === code);
+                  const lang = getLangInfo(code);
                   const rawGoal = languageGoals[code];
                   const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 80 : rawGoal;
                   const sliderColor = lang?.textColor || 'var(--primary-color)';

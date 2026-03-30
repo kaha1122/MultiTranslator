@@ -8,6 +8,7 @@ import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundE
 import { useT, tTag } from '../utils/i18n';
 import { db } from '../firebase/config';
 import { geminiUrl } from '../config/gemini';
+import { getLangName } from '../config/languages';
 import { doc, updateDoc } from 'firebase/firestore';
 import './TranslationCard.css';
 
@@ -171,8 +172,7 @@ const TranslationCard = ({
     const callGeminiMemo = async (query) => {
         const key = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
         if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
-        const langNames = { ko: '한국어', en: 'English', ja: '日本語', 'zh-CN': '中文', vi: 'Tiếng Việt', fr: 'Français', de: 'Deutsch', es: 'Español', ru: 'Русский', 'pt-BR': 'Português' };
-        const srcName = langNames[sourceLangCode] || 'Korean';
+        const srcName = getLangName(sourceLangCode);
         const tipText = Array.isArray(learningTip)
             ? learningTip.map(t => (t && typeof t === 'object') ? (t.content || '') : String(t || '')).join(' ')
             : (learningTip || '');

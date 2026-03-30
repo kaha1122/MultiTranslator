@@ -4,6 +4,7 @@ import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, s
 import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
+import { getLangInfo } from '../config/languages';
 import './Library.css';
 
 // ── 이번주 월요일 00:00 (현지시간) 계산 ──
@@ -405,8 +406,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 learningTip={card.learningTip}
                                 example={card.example || ''}
                                 exampleTranslation={card.exampleTranslation || ''}
-                                badgeColor={card.langCode === 'en' ? '#e0e7ff' : card.langCode === 'ja' ? '#fef2f2' : '#fff7ed'}
-                                badgeTextColor={card.langCode === 'en' ? '#4338ca' : card.langCode === 'ja' ? '#b91c1c' : '#9a3412'}
+                                badgeColor={getLangInfo(card.langCode)?.color || '#f1f5f9'}
+                                badgeTextColor={getLangInfo(card.langCode)?.textColor || '#475569'}
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode, card.selectedEmotion)}
                                 onSpeakText={onSpeak}
                                 isInSelectionMode={false}
