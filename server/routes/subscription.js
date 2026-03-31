@@ -18,11 +18,11 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
     }
 
     const AMOUNTS = {
-        pro_1: 4990, pro_3: 11990,
-        premium_1: 14990, premium_3: 35000,
-        pro: 4990, premium: 14990,
-        pro_1_usd: 349, pro_3_usd: 799,
-        premium_1_usd: 999, premium_3_usd: 2499,
+        pro_1: 4990, pro_3: 13990,
+        premium_1: 16990, premium_3: 35000,
+        pro: 4990, premium: 16990,
+        pro_1_usd: 349, pro_3_usd: 899,
+        premium_1_usd: 1099, premium_3_usd: 2499,
     };
     const ORDER_NAMES = {
         pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
@@ -244,8 +244,8 @@ router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) =
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
     const AMOUNTS = {
-        pro_1: 4990, pro_3: 11990,
-        premium_1: 14990, premium_3: 35000,
+        pro_1: 4990, pro_3: 13990,
+        premium_1: 16990, premium_3: 35000,
     };
     const ORDER_NAMES = {
         pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
