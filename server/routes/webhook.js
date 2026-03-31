@@ -73,6 +73,7 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                 }
 
                 const expiresAt = event?.event?.expiration_at_ms;
+                const purchasedAt = event?.event?.purchased_at_ms;
                 const updateData = {
                     tier,
                     planId: productId,
@@ -81,6 +82,9 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                     tierSource: 'revenuecat',
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 };
+                if (purchasedAt) {
+                    updateData.subscriptionStartedAt = admin.firestore.Timestamp.fromMillis(purchasedAt);
+                }
                 if (expiresAt) {
                     updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromMillis(expiresAt);
                 }
