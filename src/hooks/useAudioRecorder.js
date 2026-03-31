@@ -104,22 +104,36 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     : ''; // 둘 다 지원 안 하면 브라우저 기본값에 맡김
 
             // 블루투스 이어폰 등 외부 오디오 입력장치 자동 감지
+            // iOS Safari: getUserMedia({ audio: true })만으로 OS가 AirPods 마이크를 자동 라우팅
+            // Android/PC Chrome: enumerateDevices()로 BT 장치 감지 후 ideal로 힌트 제공
             let audioConstraints = true;
-            try {
-                const devices = await navigator.mediaDevices.enumerateDevices();
-                const audioInputs = devices.filter(d => d.kind === 'audioinput');
-                // 블루투스/무선 장치가 있으면 우선 선택 (label에 bluetooth, airpods, buds, wireless 등 포함)
-                const btDevice = audioInputs.find(d =>
-                    d.label && /bluetooth|airpods|buds|wireless|galaxy buds|wf-|wh-|bt[- ]|헤드셋/i.test(d.label)
-                );
-                if (btDevice && btDevice.deviceId) {
-                    audioConstraints = { deviceId: { exact: btDevice.deviceId } };
-                    console.log(`블루투스 마이크 감지: ${btDevice.label}`);
+            if (!Capacitor.isNativePlatform()) {
+                try {
+                    const devices = await navigator.mediaDevices.enumerateDevices();
+                    const audioInputs = devices.filter(d => d.kind === 'audioinput');
+                    const btDevice = audioInputs.find(d =>
+                        d.label && /bluetooth|airpods|buds|wireless|galaxy buds|wf-|wh-|bt[- ]|헤드셋/i.test(d.label)
+                    );
+                    if (btDevice && btDevice.deviceId) {
+                        audioConstraints = { deviceId: { ideal: btDevice.deviceId } };
+                        console.log(`블루투스 마이크 감지: ${btDevice.label}`);
+                    }
+                } catch (enumErr) {
+                    console.warn('오디오 장치 목록 조회 실패:', enumErr);
                 }
-            } catch (enumErr) {
-                console.warn('오디오 장치 목록 조회 실패:', enumErr);
             }
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+            let stream;
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
+            } catch (firstErr) {
+                // BT 장치 지정 실패 시 기본 마이크로 fallback
+                if (audioConstraints !== true) {
+                    console.warn('지정 마이크 실패, 기본 마이크로 전환:', firstErr);
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                } else {
+                    throw firstErr;
+                }
+            }
             // 찾아낸 파일 형식(mimeType)을 녹음기(MediaRecorder)에 알려줍니다.
             mediaRecorder.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunks.current = [];
