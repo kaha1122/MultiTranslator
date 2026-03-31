@@ -80,17 +80,17 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 }
             }
 
-            // [Android] 블루투스 헤드셋이 연결된 경우 SCO 채널을 열어 BT 마이크 활성화
-            if (Capacitor.getPlatform() === 'android') {
+            // [Android/iOS] 블루투스 헤드셋이 연결된 경우 BT 오디오 채널 활성화
+            if (Capacitor.isNativePlatform()) {
                 try {
                     const { connected } = await BluetoothAudio.isBluetoothHeadsetConnected();
                     if (connected) {
                         await BluetoothAudio.startBluetoothSco();
                         btScoActiveRef.current = true;
-                        console.log('Android BT SCO 시작: 블루투스 마이크 활성화');
+                        console.log(`${Capacitor.getPlatform()} BT 오디오 활성화: 블루투스 마이크 사용`);
                     }
                 } catch (btErr) {
-                    console.warn('BT SCO 시작 실패 (내장 마이크 사용):', btErr);
+                    console.warn('BT 오디오 활성화 실패 (내장 마이크 사용):', btErr);
                 }
             }
 

@@ -196,6 +196,8 @@
 	<!-- ── 권한 요청 메시지 ── -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PronunFit needs microphone access for pronunciation practice</string>
+	<key>NSBluetoothAlwaysUsageDescription</key>
+	<string>PronunFit uses Bluetooth to connect to your wireless headset for pronunciation practice</string>
 	<key>NSCameraUsageDescription</key>
 	<string>PronunFit needs camera access for text recognition (OCR)</string>
 	<key>NSUserTrackingUsageDescription</key>
