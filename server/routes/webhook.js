@@ -202,6 +202,20 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
                         lastCanceledAt: admin.firestore.FieldValue.serverTimestamp(),
                     });
 
+                    // orders 컬렉션 업데이트
+                    if (orderId) {
+                        const orderRef = adminDb.collection('orders').doc(orderId);
+                        const orderDoc = await orderRef.get();
+                        if (orderDoc.exists) {
+                            await orderRef.update({
+                                status: 'CANCELED',
+                                canceledAt: admin.firestore.FieldValue.serverTimestamp(),
+                                cancelReason,
+                                cancelAmount,
+                            });
+                        }
+                    }
+
                     // 빌링키 폐기
                     const userData = userDoc.data();
                     if (userData.tossBillingKey) {
@@ -225,6 +239,20 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
                         lastCancelReason: `부분환불: ${cancelAmount} - ${cancelReason}`,
                         lastCanceledAt: admin.firestore.FieldValue.serverTimestamp(),
                     });
+
+                    // orders 컬렉션 업데이트
+                    if (orderId) {
+                        const orderRef = adminDb.collection('orders').doc(orderId);
+                        const orderDoc = await orderRef.get();
+                        if (orderDoc.exists) {
+                            await orderRef.update({
+                                status: 'PARTIAL_CANCELED',
+                                canceledAt: admin.firestore.FieldValue.serverTimestamp(),
+                                cancelReason,
+                                cancelAmount,
+                            });
+                        }
+                    }
                     console.log(`[TossWebhook] ${customerKey} → PARTIAL REFUND: ${cancelAmount}, tier kept`);
 
                 } else if (status === 'DONE') {

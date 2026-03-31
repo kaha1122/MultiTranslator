@@ -72,20 +72,49 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
 
         // 2단계: 빌링키로 결제
         const orderId = `order_${Date.now()}_${customerKey.slice(0, 8)}`;
-        await axios.post(
+        const orderName = ORDER_NAMES[resolvedPlanId] || `PronunFit ${tier}`;
+        const paymentRes = await axios.post(
             `https://api.tosspayments.com/v1/billing/${billingKey}`,
             {
                 customerKey,
                 amount,
                 orderId,
-                orderName: ORDER_NAMES[resolvedPlanId] || `PronunFit ${tier}`,
+                orderName,
                 customerEmail: userEmail || undefined,
                 ...(isUSD && { currency: 'USD' }),
             },
             { headers: { Authorization: TOSS_AUTH_HEADER() } }
         );
+        const paymentData = paymentRes.data;
+        const traceId = paymentRes.headers['x-tosspayments-trace-id'] || null;
 
-        // 3단계: Firestore 업데이트
+        // 3단계: orders 컬렉션에 주문 정보 저장
+        if (adminDb) {
+            await adminDb.collection('orders').doc(orderId).set({
+                orderId,
+                paymentKey: paymentData.paymentKey || null,
+                traceId,
+                userId: customerKey,
+                planId: resolvedPlanId,
+                orderName,
+                status: paymentData.status || 'DONE',
+                amount,
+                currency: isUSD ? 'USD' : 'KRW',
+                method: paymentData.method || null,
+                cardNumber: paymentData.card?.number || null,
+                cardType: paymentData.card?.cardType || null,
+                receiptUrl: paymentData.receipt?.url || null,
+                type: 'initial',
+                requestedAt: paymentData.requestedAt || null,
+                approvedAt: paymentData.approvedAt || null,
+                canceledAt: null,
+                cancelReason: null,
+                cancelAmount: null,
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+            });
+        }
+
+        // 4단계: Firestore 유저 업데이트
         const resolvedMonths = parseInt(months) || 1;
 
         let baseDate = new Date();
@@ -275,16 +304,43 @@ router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) =
             const months = subscriptionMonths || (planId.endsWith('_3') ? 3 : 1);
             try {
                 const orderId = `renew_${Date.now()}_${doc.id.slice(0, 8)}`;
-                await axios.post(
+                const orderName = ORDER_NAMES[planId] || `PronunFit ${planId}`;
+                const renewRes = await axios.post(
                     `https://api.tosspayments.com/v1/billing/${tossBillingKey}`,
                     {
                         customerKey: tossCustomerKey || doc.id,
                         amount,
                         orderId,
-                        orderName: ORDER_NAMES[planId] || `PronunFit ${planId}`,
+                        orderName,
                     },
                     { headers: { Authorization: TOSS_AUTH_HEADER() } }
                 );
+                const renewData = renewRes.data;
+                const renewTraceId = renewRes.headers['x-tosspayments-trace-id'] || null;
+
+                // orders 컬렉션에 갱신 주문 저장
+                await adminDb.collection('orders').doc(orderId).set({
+                    orderId,
+                    paymentKey: renewData.paymentKey || null,
+                    traceId: renewTraceId,
+                    userId: doc.id,
+                    planId,
+                    orderName,
+                    status: renewData.status || 'DONE',
+                    amount,
+                    currency: 'KRW',
+                    method: renewData.method || null,
+                    cardNumber: renewData.card?.number || null,
+                    cardType: renewData.card?.cardType || null,
+                    receiptUrl: renewData.receipt?.url || null,
+                    type: 'renewal',
+                    requestedAt: renewData.requestedAt || null,
+                    approvedAt: renewData.approvedAt || null,
+                    canceledAt: null,
+                    cancelReason: null,
+                    cancelAmount: null,
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
 
                 const currentExpiry = data.subscriptionExpiresAt.toDate
                     ? data.subscriptionExpiresAt.toDate() : new Date(data.subscriptionExpiresAt);
