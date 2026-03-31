@@ -7,7 +7,6 @@ import PronunciationAssessment from './PronunciationAssessment';
 import { playAlertSound, playSuccessSound, playStarSound } from '../utils/soundEffects';
 import { useT, tTag } from '../utils/i18n';
 import { db } from '../firebase/config';
-import { geminiUrl } from '../config/gemini';
 import { getLangName } from '../config/languages';
 import { doc, updateDoc } from 'firebase/firestore';
 import './TranslationCard.css';
@@ -85,7 +84,7 @@ const TranslationCard = ({
     interactionType = '',
 }) => {
     const t = useT(sourceLangCode);
-    const { byokGeminiKey } = useAuth();
+    const { byokGeminiKey, currentUser } = useAuth();
 
     // ── 메모 팝업 상태 ──
     const [showMemoPopup, setShowMemoPopup] = useState(false);
@@ -170,8 +169,6 @@ const TranslationCard = ({
 
     // ── Gemini AI 메모 호출 ──
     const callGeminiMemo = async (query) => {
-        const key = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
-        if (!key) throw new Error('Gemini API 키가 설정되지 않았습니다.');
         const srcName = getLangName(sourceLangCode);
         const tipText = Array.isArray(learningTip)
             ? learningTip.map(t => (t && typeof t === 'object') ? (t.content || '') : String(t || '')).join(' ')
@@ -193,16 +190,18 @@ Answer in ${srcName}, exactly 2 lines:
 ② [Example sentence or usage tip — 1 sentence]
 Return only these 2 lines.`;
 
-        const res = await fetch(
-            geminiUrl(key),
-            { method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ contents: [{ parts: [{ text: prompt }] }] }) }
-        );
+        const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+        const idToken = await currentUser?.getIdToken();
+        const res = await fetch(`${SERVER_URL}/api/translate-memo`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', ...(idToken && { Authorization: `Bearer ${idToken}` }) },
+            body: JSON.stringify({ prompt, byokGeminiKey })
+        });
         const data = await res.json();
         if (!res.ok) {
             throw new Error(data.error?.message || `API 오류 (${res.status})`);
         }
-        return data.candidates[0].content.parts[0].text.trim();
+        return data.text;
     };
 
     // ── AI Q/A 제출 ──

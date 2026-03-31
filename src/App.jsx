@@ -11,7 +11,6 @@ import { Capacitor } from '@capacitor/core';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
-import { geminiUrl } from './config/gemini';
 
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
@@ -1293,18 +1292,13 @@ function App() {
         }
       `;
 
-      const apiKeyToUse = byokGeminiKey || import.meta.env.VITE_GEMINI_API_KEY;
-      const response = await fetch(
-        geminiUrl(apiKeyToUse),
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          })
-        }
-      );
+      const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      const idToken = await user?.getIdToken();
+      const response = await fetch(`${SERVER_URL}/api/translate`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...(idToken && { Authorization: `Bearer ${idToken}` }) },
+        body: JSON.stringify({ prompt, byokGeminiKey })
+      });
 
       if (!response.ok) {
         if (response.status === 429 && retryCount < 1) {
@@ -1315,8 +1309,7 @@ function App() {
       }
 
       const data = await response.json();
-      const textResponse = data.candidates[0].content.parts[0].text;
-      const jsonString = textResponse.replace(/```json/g, '').replace(/```/g, '').trim();
+      const jsonString = data.text.replace(/```json/g, '').replace(/```/g, '').trim();
       const result = JSON.parse(jsonString);
 
       if (result.type) {
