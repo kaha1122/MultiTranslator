@@ -295,7 +295,7 @@
     "perMonth": "mo",
     "processing": "Processing...",
     "currentPlan": "Current Plan",
-    "startPlan": "Get Started",
+    "startPlan": "Select",
     "emailRequired": "Email verification required",
     "emailRequiredDesc": "Email verification is required for payment notifications. Please check your inbox after clicking the button below.",
     "sendVerification": "Send verification email",

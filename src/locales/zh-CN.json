@@ -289,7 +289,7 @@
     "perMonth": "月",
     "processing": "处理中...",
     "currentPlan": "当前方案",
-    "startPlan": "立即开始",
+    "startPlan": "选择",
     "emailRequired": "需要邮箱验证",
     "emailRequiredDesc": "为了发送支付信息通知，需要验证邮箱。请点击下方按钮后查收验证邮件。",
     "sendVerification": "发送验证邮件",

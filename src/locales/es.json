@@ -289,7 +289,7 @@
     "perMonth": "mes",
     "processing": "Procesando...",
     "currentPlan": "Plan actual",
-    "startPlan": "Comenzar",
+    "startPlan": "Elegir",
     "emailRequired": "Verificación de correo requerida",
     "emailRequiredDesc": "Se requiere verificación de correo para notificaciones de pago. Pulse el botón de abajo y revise su bandeja de entrada.",
     "sendVerification": "Enviar correo de verificación",

@@ -295,7 +295,7 @@
     "perMonth": "월",
     "processing": "처리 중...",
     "currentPlan": "현재 플랜",
-    "startPlan": "시작하기",
+    "startPlan": "선택",
     "emailRequired": "이메일 인증이 필요합니다",
     "emailRequiredDesc": "결제 정보 안내를 위해 이메일 인증이 필요합니다. 아래 버튼을 눌러 인증 메일을 확인해 주세요.",
     "sendVerification": "인증 메일 보내기",

@@ -289,7 +289,7 @@
     "perMonth": "月",
     "processing": "処理中...",
     "currentPlan": "現在のプラン",
-    "startPlan": "始める",
+    "startPlan": "選択",
     "emailRequired": "メール認証が必要です",
     "emailRequiredDesc": "決済情報のご案内のためメール認証が必要です。下のボタンを押して認証メールをご確認ください。",
     "sendVerification": "認証メールを送信",
