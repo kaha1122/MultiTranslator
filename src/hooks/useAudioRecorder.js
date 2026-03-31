@@ -85,7 +85,23 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     ? 'audio/mp4'
                     : ''; // 둘 다 지원 안 하면 브라우저 기본값에 맡김
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            // 블루투스 이어폰 등 외부 오디오 입력장치 자동 감지
+            let audioConstraints = true;
+            try {
+                const devices = await navigator.mediaDevices.enumerateDevices();
+                const audioInputs = devices.filter(d => d.kind === 'audioinput');
+                // 블루투스/무선 장치가 있으면 우선 선택 (label에 bluetooth, airpods, buds, wireless 등 포함)
+                const btDevice = audioInputs.find(d =>
+                    d.label && /bluetooth|airpods|buds|wireless|galaxy buds|wf-|wh-|bt[- ]|헤드셋/i.test(d.label)
+                );
+                if (btDevice && btDevice.deviceId) {
+                    audioConstraints = { deviceId: { exact: btDevice.deviceId } };
+                    console.log(`블루투스 마이크 감지: ${btDevice.label}`);
+                }
+            } catch (enumErr) {
+                console.warn('오디오 장치 목록 조회 실패:', enumErr);
+            }
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
             // 찾아낸 파일 형식(mimeType)을 녹음기(MediaRecorder)에 알려줍니다.
             mediaRecorder.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunks.current = [];
