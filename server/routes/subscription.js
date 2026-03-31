@@ -108,6 +108,7 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
                 subscriptionCurrency: isUSD ? 'USD' : 'KRW',
                 tossBillingKey: billingKey,
                 tossCustomerKey: customerKey,
+                tossOrderId: orderId,
                 autoRenew: true,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -292,6 +293,7 @@ router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) =
 
                 await adminDb.collection('users').doc(doc.id).update({
                     subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(newExpiry),
+                    tossOrderId: orderId,
                     lastRenewedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[Cron] renewed: ${doc.id} → ${planId} (expires ${newExpiry.toISOString().slice(0,10)})`);

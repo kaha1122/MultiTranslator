@@ -161,17 +161,26 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
             // ── 결제 상태 변경 (승인/취소/환불 등) ──
             case 'PAYMENT_STATUS_CHANGED': {
                 const { status, customerKey, orderId, cancels, totalAmount } = data;
-                console.log(`[TossWebhook] PAYMENT status=${status}, orderId=${orderId}`);
+                console.log(`[TossWebhook] PAYMENT status=${status}, orderId=${orderId}, customerKey=${customerKey}`);
 
-                if (!customerKey) {
-                    console.warn('[TossWebhook] No customerKey in event');
-                    break;
+                // customerKey 또는 orderId로 유저 조회
+                let userRef, userDoc;
+                if (customerKey) {
+                    userRef = adminDb.collection('users').doc(customerKey);
+                    userDoc = await userRef.get();
                 }
-
-                const userRef = adminDb.collection('users').doc(customerKey);
-                const userDoc = await userRef.get();
-                if (!userDoc.exists) {
-                    console.warn(`[TossWebhook] User not found: ${customerKey}`);
+                // customerKey로 못 찾으면 orderId로 검색
+                if (!userDoc?.exists && orderId) {
+                    const snap = await adminDb.collection('users')
+                        .where('tossOrderId', '==', orderId).limit(1).get();
+                    if (!snap.empty) {
+                        userDoc = snap.docs[0];
+                        userRef = userDoc.ref;
+                        console.log(`[TossWebhook] Found user by orderId: ${userDoc.id}`);
+                    }
+                }
+                if (!userRef || !userDoc?.exists) {
+                    console.warn(`[TossWebhook] User not found: customerKey=${customerKey}, orderId=${orderId}`);
                     break;
                 }
 
@@ -242,12 +251,23 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
 
             // ── 빌링키 삭제 ──
             case 'BILLING_DELETED': {
-                const customerKey = data.customerKey;
-                if (!customerKey) break;
-
-                const userRef = adminDb.collection('users').doc(customerKey);
-                const userDoc = await userRef.get();
-                if (!userDoc.exists) break;
+                const bkCustomerKey = data.customerKey;
+                let bkRef, bkDoc;
+                if (bkCustomerKey) {
+                    bkRef = adminDb.collection('users').doc(bkCustomerKey);
+                    bkDoc = await bkRef.get();
+                }
+                if (!bkDoc?.exists && data.billingKey) {
+                    const snap = await adminDb.collection('users')
+                        .where('tossBillingKey', '==', data.billingKey).limit(1).get();
+                    if (!snap.empty) {
+                        bkDoc = snap.docs[0];
+                        bkRef = bkDoc.ref;
+                    }
+                }
+                if (!bkRef || !bkDoc?.exists) break;
+                const userRef = bkRef;
+                const userDoc = bkDoc;
 
                 await userRef.update({
                     autoRenew: false,
