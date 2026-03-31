@@ -190,6 +190,8 @@ router.post('/api/cancel-subscription', requireAuth, async (req, res) => {
         if (adminDb) {
             await adminDb.collection('users').doc(userId).update({
                 autoRenew: false,
+                autoRenewPausedAt: admin.firestore.FieldValue.serverTimestamp(),
+                autoRenewPauseCount: admin.firestore.FieldValue.increment(1),
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
             });
             console.log(`[Toss] auto-renew disabled: ${userId} (service continues until expiry)`);
