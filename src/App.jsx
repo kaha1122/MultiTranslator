@@ -3079,8 +3079,11 @@ function App() {
                       📦 {(() => { const id = profile.planId.toLowerCase(); const isPremium = id.includes('premium'); const is3 = id.includes('_3') || id.includes('3month'); return getT(sourceLang, `settings.${isPremium ? (is3 ? 'planPremium3' : 'planPremium1') : (is3 ? 'planPro3' : 'planPro1')}`); })()}
                     </span>
                   )}
-                  {/* 만기예정일 (Pro/Premium 구독자) */}
-                  {(tier === 'pro' || tier === 'premium') && profile?.subscriptionExpiresAt && (
+                  {/* 만기예정일 (Pro/Premium 구독자, 미래 만기일만 표시) */}
+                  {(tier === 'pro' || tier === 'premium') && profile?.subscriptionExpiresAt && (() => {
+                    const d = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt);
+                    return d > new Date();
+                  })() && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
                       📅 {getT(sourceLang, 'settings.expiryDate')}: {(() => { const d = profile.subscriptionExpiresAt.toDate ? profile.subscriptionExpiresAt.toDate() : new Date(profile.subscriptionExpiresAt); return `${d.getFullYear()}/${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`; })()}
                     </span>
