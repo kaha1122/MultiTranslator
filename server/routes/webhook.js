@@ -18,8 +18,10 @@ const verifyWebhook = (req, res, next) => {
         console.warn('[Webhook] REVENUECAT_WEBHOOK_AUTH not set — skipping auth');
         return next();
     }
-    const authHeader = req.headers['authorization'];
-    if (authHeader !== `Bearer ${REVENUECAT_WEBHOOK_AUTH}`) {
+    const authHeader = req.headers['authorization'] || '';
+    // RevenueCat이 "Bearer xxx" 또는 "xxx" 형식으로 보낼 수 있으므로 둘 다 허용
+    const token = authHeader.replace(/^Bearer\s+/i, '');
+    if (token !== REVENUECAT_WEBHOOK_AUTH) {
         console.warn('[Webhook] Unauthorized:', authHeader?.slice(0, 20));
         return res.status(401).json({ error: 'Unauthorized' });
     }
