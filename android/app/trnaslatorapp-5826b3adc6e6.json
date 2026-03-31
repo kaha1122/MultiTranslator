@@ -1,0 +1,13 @@
+{
+  "type": "service_account",
+  "project_id": "trnaslatorapp",
+  "private_key_id": "5826b3adc6e6e3c634c0def6a285730ae16a66fb",
+  "private_key": "-----BEGIN PRIVATE KEY-----\nMIIEvQIBADANBgkqhkiG9w0BAQEFAASCBKcwggSjAgEAAoIBAQDR5EOAGRJ4NWEe\nYGVjAW08XlWyI3FXRIF6XIgLQkIVZ0VT59QubyAN822hrItnWhf6zprr4E0VM9oL\neBRnoHgaqR0aFkwXmZ0wHHA9eWBKEvI4akXliqfJtOaEP0NJH1wsu1+DD9GLE6Uc\n/FoROCz5gO6CvE6sFqEXtcRNyNb+CeviqOV0n90qweoAawHwubPuBsfyqrHsh6BN\n6PkydQeoEgy3xyJNEv3JFX7CaDXr9quIv6a8abz3evMMzaj2tzkFnIs8ZXM6Ao7j\n35mv96Ee4AKHA8hSvZMsltMjJA76zp2CjXBP6F+gi5AUzrNsi/LhbXTxhsmib1ZJ\nwg/PMn/ZAgMBAAECggEACNmpP0/Eqlpv2wDMDaHBWia30ircltuDN9EKhdUC+yrk\nrrjLXDOLLw4TvO83spbchNLCOrjKxJ6FhBnJsc6U+eTQdBQ6xvz5y+NLF/XT/v5F\nBebJ8Izz7b//FKuj5JkEq+MxEBJHmZJtZ3yRjKvTzlJ8MXmLZLC7QAgbUVSrEhZD\n5HgjcNXRb5KU5qzebxwo0yxfqH6QnO/A7MGjYkl9DesYCWIEVUqc5Eu2zD1PQedV\ndPWrDVe24GEgXx5lED/YajpX+8sAzikM3ArOrpMsOSDo8FcJTP/bL04Rm24As3gC\nkRZCkFFzVt08/t94UANTUl5yxPniAgb09+Cj3H8DjQKBgQD8PjGJDa92Gjg5CeEn\nNjMH1eSOYadRfo2wPb1BjTwfMOX/uIShju8fzPnhoqbYjeBibCRhX4i6ZGw7G+Iw\n4T0mo9yqNAZaBaRoqbkgUPkFwH+ZTBZH/BShgu+n6SODhlaLJag2F86+E3CP9jS/\nKGRwNKOmpp+TIUPyqy9YZzkJlQKBgQDVBJWCACHWxi2UaAzb4X7H4tEogoxvCxLN\nDWyi9Ipv82z+rcdjjlnjuLATDsbqZfXr0/lGdUHEPi88FVFS++y2dDzoFXFJAa1A\n4BzpWgFpmfJRoWOCor+PzELTa6GICaT9mFTlvZlnd+JLljl/9akydmZQcR45+qk3\nZlDX7Nx0NQKBgAqahrSPObgKRCDJtIhUc/K5YCFII6N+YXBuN/2AdW2OPazxUcoE\n2zKICF0e3EqwNCWPDDx3qqTDQfV+J5UMcuij7MvO4hF4uT+ZGuor3TwLqpGELE+c\nXjWn7nEtkMufoxW4YIjdmVhOMuYqYG9EwGwjGloQGRczR8r0vUnHFRO9AoGBANON\nT+Xht7mS66VdiJe+ZKiiy9INhOaq+qsGUAOuFOaFvJNZhpGKyB7uRn9Gx6n2RLtG\ns2OUBBKfJ03mZfOiGj5BRlO/J9i3f5bUfCILrydvKkaDn04Xz2NCGoPZenyeB2uL\nI5VeLMGjP+yNbuFz2esxxv7QuJIgLHnGdTdcFryZAoGAQBwxy/nlaMKoEr4UTmSK\nnfhUWkPvXj1L9RyKqEsmaTd7FIP9FnV/XJzbJ01uW/Igti2H7nQMLoc5TbM/o7hi\nBnEQ7HUoTGCZeFEyQOSrjH1sYpdArnVYzG+kn5d/TlfobsPxIcatNsVEE6HCRq7A\nK0W1123KmqGA3hvjExWLs3o=\n-----END PRIVATE KEY-----\n",
+  "client_email": "revenuecat-play-billing@trnaslatorapp.iam.gserviceaccount.com",
+  "client_id": "113475112134930568075",
+  "auth_uri": "https://accounts.google.com/o/oauth2/auth",
+  "token_uri": "https://oauth2.googleapis.com/token",
+  "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
+  "client_x509_cert_url": "https://www.googleapis.com/robot/v1/metadata/x509/revenuecat-play-billing%40trnaslatorapp.iam.gserviceaccount.com",
+  "universe_domain": "googleapis.com"
+}
