@@ -313,6 +313,7 @@
     "toastSuccess": "🎉 支付成功！方案正在升级中。",
     "thankYou": "感谢您的订阅！",
     "toastFail": "支付失败或已取消。",
+    "duplicateSubscription": "您已在应用商店有活跃订阅，请先取消后再操作。",
     "proFeature1": "每月1,500次发音评估",
     "proFeature3": "所有标签页无限使用",
     "premiumFeature1": "无限发音评估",

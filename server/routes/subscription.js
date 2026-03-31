@@ -61,6 +61,22 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
         }
     }
 
+    // 이중 결제 방지: RevenueCat 활성 구독이 있으면 Toss 결제 차단
+    if (adminDb) {
+        try {
+            const userDoc = await adminDb.collection('users').doc(customerKey).get();
+            const userData = userDoc.exists ? userDoc.data() : {};
+            if ((userData.tier === 'pro' || userData.tier === 'premium') && userData.tierSource === 'revenuecat') {
+                const expiresAt = userData.subscriptionExpiresAt?.toDate ? userData.subscriptionExpiresAt.toDate() : null;
+                if (expiresAt && expiresAt > new Date()) {
+                    return res.status(409).json({ error: 'Active subscription exists on app store. Please cancel it first.' });
+                }
+            }
+        } catch (checkErr) {
+            console.error('[TossBilling] duplicate subscription check failed:', checkErr.message);
+        }
+    }
+
     try {
         // 1단계: authKey로 빌링키 발급
         const billingRes = await axios.post(
@@ -138,6 +154,7 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
                 tossBillingKey: billingKey,
                 tossCustomerKey: customerKey,
                 tossOrderId: orderId,
+                tierSource: 'toss',
                 autoRenew: true,
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
@@ -294,7 +311,12 @@ router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) =
         let renewed = 0, failed = 0;
         for (const doc of snapshot.docs) {
             const data = doc.data();
-            const { tossBillingKey, tossCustomerKey, planId, subscriptionMonths } = data;
+            const { tossBillingKey, tossCustomerKey, planId, subscriptionMonths, tierSource } = data;
+            // RevenueCat 구독은 Toss cron에서 갱신하지 않음
+            if (tierSource === 'revenuecat') {
+                console.log(`[Cron] SKIP ${doc.id} — RevenueCat subscription`);
+                continue;
+            }
             if (!tossBillingKey || !planId) {
                 failed++;
                 continue;

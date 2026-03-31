@@ -319,6 +319,7 @@
     "toastSuccess": "🎉 결제가 완료되었습니다! 플랜이 업그레이드됩니다.",
     "thankYou": "구독해 주셔서 감사합니다.",
     "toastFail": "결제에 실패하거나 취소되었습니다.",
+    "duplicateSubscription": "이미 앱스토어에서 활성 구독이 있습니다. 먼저 기존 구독을 취소해 주세요.",
     "proFeature1": "발음 평가 월 1,500회",
     "proFeature3": "모든 탭 무제한 이용",
     "premiumFeature1": "발음 평가 무제한",

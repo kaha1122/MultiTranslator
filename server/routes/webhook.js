@@ -58,6 +58,18 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
             case 'PRODUCT_CHANGE':
             case 'UNCANCELLATION': {
                 if (!tier) break;
+
+                // 이중 결제 방지: Toss 활성 구독이 있으면 RevenueCat으로 덮어쓰지 않음
+                const rcUserDoc = await adminDb.collection('users').doc(appUserId).get();
+                const rcUserData = rcUserDoc.exists ? rcUserDoc.data() : {};
+                if (rcUserData.tierSource === 'toss' && rcUserData.autoRenew === true) {
+                    const tossExpires = rcUserData.subscriptionExpiresAt?.toDate ? rcUserData.subscriptionExpiresAt.toDate() : null;
+                    if (tossExpires && tossExpires > new Date()) {
+                        console.log(`[Webhook] SKIP ${appUserId} — active Toss subscription (expires ${tossExpires.toISOString().slice(0,10)})`);
+                        break;
+                    }
+                }
+
                 const expiresAt = event?.event?.expiration_at_ms;
                 const updateData = {
                     tier,

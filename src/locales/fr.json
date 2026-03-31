@@ -313,6 +313,7 @@
     "toastSuccess": "🎉 Paiement effectué ! Votre plan est en cours de mise à niveau.",
     "thankYou": "Merci pour votre abonnement !",
     "toastFail": "Paiement échoué ou annulé.",
+    "duplicateSubscription": "Vous avez déjà un abonnement actif sur l'App Store. Veuillez d'abord l'annuler.",
     "proFeature1": "1 500 évaluations de prononciation/mois",
     "proFeature3": "Accès illimité à tous les onglets",
     "premiumFeature1": "Évaluations de prononciation illimitées",

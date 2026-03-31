@@ -313,6 +313,7 @@
     "toastSuccess": "🎉 お支払い完了！プランがアップグレードされます。",
     "thankYou": "ご登録ありがとうございます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",
+    "duplicateSubscription": "アプリストアで有効なサブスクリプションがあります。先にそちらを解約してください。",
     "proFeature1": "発音評価 月1,500回",
     "proFeature3": "すべてのタブ無制限",
     "premiumFeature1": "発音評価無制限",

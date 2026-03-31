@@ -168,8 +168,12 @@ function App() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ authKey, customerKey, tier: tierParam, planId: planId || tierParam, months: parseInt(months) || 1, userEmail: email ? decodeURIComponent(email) : '', currency }),
       })
-        .then(r => r.json())
-        .then(data => {
+        .then(async r => {
+          const data = await r.json();
+          if (r.status === 409) {
+            alert(getT(sourceLang, 'upgrade.duplicateSubscription'));
+            return;
+          }
           if (data.success) {
             setPaymentSuccessModal({ tier: tierParam });
           } else {

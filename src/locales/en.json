@@ -319,6 +319,7 @@
     "toastSuccess": "🎉 Payment complete! Your plan is being upgraded.",
     "thankYou": "Thank you for subscribing!",
     "toastFail": "Payment failed or was cancelled.",
+    "duplicateSubscription": "You already have an active subscription on the app store. Please cancel it first.",
     "proFeature1": "1,500 pronunciation assessments/mo",
     "proFeature3": "Unlimited access to all tabs",
     "premiumFeature1": "Unlimited pronunciation assessments",

@@ -313,6 +313,7 @@
     "toastSuccess": "🎉 ¡Pago completado! Tu plan está siendo actualizado.",
     "thankYou": "¡Gracias por suscribirte!",
     "toastFail": "Pago fallido o cancelado.",
+    "duplicateSubscription": "Ya tienes una suscripción activa en la tienda de apps. Cancélala primero.",
     "proFeature1": "1.500 evaluaciones de pronunciación/mes",
     "proFeature3": "Acceso ilimitado a todas las pestañas",
     "premiumFeature1": "Evaluaciones de pronunciación ilimitadas",
