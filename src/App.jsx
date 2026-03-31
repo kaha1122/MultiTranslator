@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, AlertCircle, MoreHorizontal, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
@@ -137,7 +137,7 @@ function App() {
   }, [user?.uid]);
 
   // [신규] 인앱 브라우저 안내 팝업
-  const [showInAppWarning, setShowInAppWarning] = useState(false);
+  // showInAppWarning 삭제됨 (인앱 브라우저 경고 제거)
 
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
@@ -1216,18 +1216,7 @@ function App() {
       console.warn('언어 설정 로컬 저장 실패:', e);
     }
 
-    // 1. 접속한 브라우저의 고유 서명(User Agent) 확인
-    const ua = navigator.userAgent || navigator.vendor || window.opera;
-    // 카카오톡, 인스타그램, 네이버, 라인, 페이스북 등의 키워드 감지
-    const isAppBrowser = /KAKAOTALK|Instagram|NAVER|Line|FBAN|FBAV/i.test(ua);
-
-    if (isAppBrowser) {
-      // 인앱 브라우저인 경우, 사용자에게 친절한 모달 팝업을 띄움 (화면 이동은 하지 않음)
-      setShowInAppWarning(true);
-    } else {
-      // 일반 브라우저인 경우 홈으로 이동
-      setViewMode('home');
-    }
+    setViewMode('home');
   };
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
@@ -3187,42 +3176,7 @@ function App() {
         </div>
       </main>
 
-      {/* 인앱 브라우저 안내 팝업 — 탭과 무관하게 항상 표시 가능 */}
-      {showInAppWarning && (
-        <div className="onboarding-overlay" style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.6)', zIndex: 9999,
-          display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: '20px'
-        }}>
-          <div style={{
-            background: 'white', borderRadius: '20px', padding: '20px',
-            width: '100%', maxWidth: '380px', boxShadow: '0 10px 25px rgba(0,0,0,0.2)',
-            display: 'flex', flexDirection: 'column', gap: '15px', maxHeight: '90vh', overflowY: 'auto'
-          }}>
-            <style>{`
-              @keyframes pulse-yellow { 0% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(234, 179, 8, 0); } 100% { box-shadow: 0 0 0 0 rgba(234, 179, 8, 0); } }
-              @keyframes pulse-red { 0% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7); } 70% { box-shadow: 0 0 0 15px rgba(239, 68, 68, 0); } 100% { box-shadow: 0 0 0 0 rgba(239, 68, 68, 0); } }
-            `}</style>
-            <div style={{ display: 'flex', justifyContent: 'center', color: '#eab308' }}>
-              <AlertCircle size={40} />
-            </div>
-            <h3 style={{ textAlign: 'center', color: '#1e293b', margin: 0 }}>브라우저 변경 안내</h3>
-            <div style={{ background: '#f8fafc', padding: '15px', borderRadius: '12px', fontSize: '0.9rem', color: '#334155', lineHeight: '1.5' }}>
-              <p style={{ margin: '0 0 10px 0' }}>🎙️ 마이크 기능을 100% 활용하시려면 우측 하단의 [⋮] 버튼 등을 눌러 <b>'다른 브라우저로 열기'(Chrome/Edge/Safari)</b>를 선택해 주세요!</p>
-              <p style={{ margin: 0, fontSize: '0.85rem', color: '#64748b' }}>To fully use the microphone, please tap the menu button and select <b>'Open in another browser' (Chrome/Edge/Safari)</b>.</p>
-            </div>
-            <div style={{ position: 'relative', width: '100%', borderRadius: '12px', overflow: 'hidden', border: '1px solid #e2e8f0', background: '#f1f5f9', display: 'flex', justifyContent: 'center' }}>
-              <img src="/kakaotalk_guide.png" alt="Browser Guide" style={{ width: '100%', maxHeight: '50vh', objectFit: 'contain', display: 'block' }} />
-            </div>
-            <button
-              style={{ marginTop: '5px', padding: '12px', background: 'var(--primary-color)', color: 'white', border: 'none', borderRadius: '10px', fontWeight: 'bold', cursor: 'pointer' }}
-              onClick={() => { setShowInAppWarning(false); setViewMode('translation'); }}
-            >
-              알겠습니다 (Got it)
-            </button>
-          </div>
-        </div>
-      )}
+      {/* 인앱 브라우저 안내 팝업 삭제됨 */}
 
       {/* ── PWA 홈 화면 설치 유도 배너 ──────────────────────────────────────
           showInstallBanner가 true일 때만 네비게이션 바 바로 위에 나타납니다.
