@@ -278,22 +278,32 @@ function App() {
           else if (active['Pro']) rcTier = 'pro';
 
           if (rcTier) {
-            const rcEnt = active['Premium'] || active['Pro'];
-            const syncData = {
-              tier: rcTier,
-              tierSource: 'revenuecat',
-              autoRenew: rcEnt?.willRenew || false,
-              updatedAt: serverTimestamp(),
-            };
-            if (rcEnt?.expirationDate) {
-              syncData.subscriptionExpiresAt = new Date(rcEnt.expirationDate);
+            // Toss 활성 구독이 있으면 RevenueCat으로 덮어쓰지 않음
+            const currentDoc = await getDoc(doc(db, 'users', user.uid));
+            const currentData = currentDoc.exists() ? currentDoc.data() : {};
+            const tossExpires = currentData.subscriptionExpiresAt?.toDate
+              ? currentData.subscriptionExpiresAt.toDate()
+              : currentData.subscriptionExpiresAt ? new Date(currentData.subscriptionExpiresAt) : null;
+            if (currentData.tierSource === 'toss' && currentData.autoRenew === true && tossExpires && tossExpires > new Date()) {
+              console.log('[RevenueCat] SKIP sync — active Toss subscription');
+            } else {
+              const rcEnt = active['Premium'] || active['Pro'];
+              const syncData = {
+                tier: rcTier,
+                tierSource: 'revenuecat',
+                autoRenew: rcEnt?.willRenew || false,
+                updatedAt: serverTimestamp(),
+              };
+              if (rcEnt?.expirationDate) {
+                syncData.subscriptionExpiresAt = new Date(rcEnt.expirationDate);
+              }
+              if (rcEnt?.productIdentifier) {
+                syncData.planId = rcEnt.productIdentifier;
+                syncData.subscriptionMonths = rcEnt.productIdentifier.includes('_3') ? 3 : 1;
+              }
+              await setDoc(doc(db, 'users', user.uid), syncData, { merge: true });
+              console.log(`[RevenueCat] Synced to Firestore: ${rcTier}`, syncData);
             }
-            if (rcEnt?.productIdentifier) {
-              syncData.planId = rcEnt.productIdentifier;
-              syncData.subscriptionMonths = rcEnt.productIdentifier.includes('_3') ? 3 : 1;
-            }
-            await setDoc(doc(db, 'users', user.uid), syncData, { merge: true });
-            console.log(`[RevenueCat] Synced to Firestore: ${rcTier}`, syncData);
           } else {
             // 활성 구독 없음 → 현재 pro/premium이면 다운그레이드
             const userDoc = await getDoc(doc(db, 'users', user.uid));
