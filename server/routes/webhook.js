@@ -106,12 +106,11 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
             // ── 구독 만료 / 환불 ──
             case 'EXPIRATION':
             case 'BILLING_ISSUE': {
+                // subscriptionExpiresAt, subscriptionMonths, subscriptionStartedAt는 이력 보존을 위해 유지
                 await adminDb.collection('users').doc(appUserId).update({
                     tier: 'trial',
                     autoRenew: false,
                     planId: null,
-                    subscriptionMonths: null,
-                    subscriptionExpiresAt: null,
                     tierSource: null,
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
