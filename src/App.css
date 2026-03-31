@@ -1015,6 +1015,12 @@ body {
   text-align: center;
 }
 
+.lang-flag {
+  font-size: 1.2rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
 .lang-option:not(.selected):hover {
   background: #f0fdf4;
   transform: translateY(-2px);

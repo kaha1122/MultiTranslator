@@ -2869,6 +2869,7 @@ function App() {
                     onClick={() => setSourceLang(lang.code)}
                   >
                     {sourceLang === lang.code && <CheckCircle2 size={16} />}
+                    <span className="lang-flag">{lang.flag}</span>
                     {lang.name}
                   </div>
                 ))}
@@ -2889,6 +2890,7 @@ function App() {
                     onClick={() => toggleTargetLang(lang.code)}
                   >
                     {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
+                    <span className="lang-flag">{lang.flag}</span>
                     {lang.name}
                   </div>
                 ))}
@@ -2922,6 +2924,7 @@ function App() {
                       onClick={() => toggleTargetLang(lang.code)}
                     >
                       {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
+                      <span className="lang-flag">{lang.flag}</span>
                       {lang.name}
                     </div>
                   ))}
