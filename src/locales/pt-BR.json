@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "Confirmar"
+  },
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",
   "errors": {
     "micAccess": "Acesso ao microfone necessário. Por favor, permita nas configurações do navegador. 🎤",

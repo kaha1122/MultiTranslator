@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "Xác nhận"
+  },
   "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",
   "errors": {
     "micAccess": "Cần quyền truy cập microphone. Vui lòng cho phép trong cài đặt trình duyệt. 🎤",

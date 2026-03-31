@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "確認"
+  },
   "splashTagline": "無料の多言語発音学習単語帳",
   "errors": {
     "micAccess": "マイクへのアクセスが必要です。ブラウザの設定で許可してください。 🎤",

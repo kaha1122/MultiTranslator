@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "확인"
+  },
   "splashTagline": "무료 다국어 발음학습 단어장",
   "errors": {
     "micAccess": "마이크 권한이 필요합니다. 브라우저 설정에서 허용해 주세요. 🎤",

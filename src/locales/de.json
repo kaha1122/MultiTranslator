@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "Bestätigen"
+  },
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {
     "micAccess": "Mikrofonzugriff erforderlich. Bitte in den Browsereinstellungen erlauben. 🎤",

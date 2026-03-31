@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "Confirmar"
+  },
   "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",
   "errors": {
     "micAccess": "Se requiere acceso al micrófono. Por favor, permítalo en la configuración del navegador. 🎤",

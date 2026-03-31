@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "确认"
+  },
   "splashTagline": "免费多语言发音学习单词本",
   "errors": {
     "micAccess": "需要麦克风权限。请在浏览器设置中允许。 🎤",

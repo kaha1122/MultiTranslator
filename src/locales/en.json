@@ -1,4 +1,7 @@
 {
+  "common": {
+    "confirm": "OK"
+  },
   "splashTagline": "Free Multilingual Pronunciation Note",
   "errors": {
     "micAccess": "Microphone access required. Please allow it in browser settings. 🎤",
