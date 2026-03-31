@@ -3128,9 +3128,9 @@ function App() {
               flexWrap: 'wrap'
             }}>
               {[
-                { label: '개인정보처리방침', mode: 'privacy' },
-                { label: '이용약관', mode: 'terms' },
-                { label: '연락처', mode: 'contact' },
+                { label: getT(sourceLang, 'nav.privacy'), mode: 'privacy' },
+                { label: getT(sourceLang, 'nav.terms'), mode: 'terms' },
+                { label: getT(sourceLang, 'nav.contact'), mode: 'contact' },
               ].map(({ label, mode }) => (
                 <button
                   key={mode}
