@@ -136,8 +136,11 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
         let baseDate = new Date();
         if (adminDb) {
             const userDoc = await adminDb.collection('users').doc(customerKey).get();
-            const existingExpiry = userDoc.data()?.subscriptionExpiresAt;
-            if (existingExpiry) {
+            const userData = userDoc.exists ? userDoc.data() : {};
+            const existingTier = userData.tier;
+            const existingExpiry = userData.subscriptionExpiresAt;
+            // 동일 tier 내 재결제: 잔여기간 합산 / 다른 tier로 업그레이드: 즉시 리셋
+            if (existingExpiry && existingTier === tier) {
                 const existingDate = existingExpiry.toDate ? existingExpiry.toDate() : new Date(existingExpiry);
                 if (existingDate > baseDate) baseDate = existingDate;
             }
