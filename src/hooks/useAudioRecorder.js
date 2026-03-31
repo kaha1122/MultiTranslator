@@ -6,7 +6,10 @@ import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
 import { getAuthHeaders } from '../utils/authFetch';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
+
+// Android 블루투스 SCO 제어 네이티브 플러그인
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 // 초보자 설명(주석):
 // 환경 변수(.env) 파일에서 API 서버 주소를 읽어옵니다.
@@ -51,6 +54,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
     const silenceAnimationFrameRef = useRef(null);
     const recordStartTimeRef = useRef(null);
     const hasDetectedVoiceRef = useRef(false);
+    const btScoActiveRef = useRef(false);
 
     // 1. 녹음 시작 함수
     const startRecording = async () => {
@@ -76,8 +80,22 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 }
             }
 
+            // [Android] 블루투스 헤드셋이 연결된 경우 SCO 채널을 열어 BT 마이크 활성화
+            if (Capacitor.getPlatform() === 'android') {
+                try {
+                    const { connected } = await BluetoothAudio.isBluetoothHeadsetConnected();
+                    if (connected) {
+                        await BluetoothAudio.startBluetoothSco();
+                        btScoActiveRef.current = true;
+                        console.log('Android BT SCO 시작: 블루투스 마이크 활성화');
+                    }
+                } catch (btErr) {
+                    console.warn('BT SCO 시작 실패 (내장 마이크 사용):', btErr);
+                }
+            }
+
             // 기기가 지원하는 오디오 형식을 먼저 확인합니다.
-            // 아이폰(사파리/크롬)은 무조건 mp4 계열을 좋아하므로 audio/mp4를 우선순위로 두고, 
+            // 아이폰(사파리/크롬)은 무조건 mp4 계열을 좋아하므로 audio/mp4를 우선순위로 두고,
             // 그 외(안드로이드/PC 크롬)은 기본적으로 가장 널리 쓰이는 audio/webm을 찾습니다.
             const mimeType = MediaRecorder.isTypeSupported('audio/webm')
                 ? 'audio/webm'
@@ -205,6 +223,11 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 }
                 // 마이크가 켜져 있는 상태로 아이콘이 남지 않도록 깨끗하게 꺼줍니다.
                 stream.getTracks().forEach(track => track.stop());
+                // [Android] 블루투스 SCO 채널 해제
+                if (btScoActiveRef.current) {
+                    BluetoothAudio.stopBluetoothSco().catch(e => console.warn('BT SCO 종료 실패:', e));
+                    btScoActiveRef.current = false;
+                }
                 // --- [신규 끝] ---
             };
 
@@ -214,6 +237,11 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access error:", err);
+            // 블루투스 SCO가 열린 상태에서 에러 발생 시 정리
+            if (btScoActiveRef.current) {
+                BluetoothAudio.stopBluetoothSco().catch(() => {});
+                btScoActiveRef.current = false;
+            }
             // alert() 대신에 상태 변수에 에러 텍스트를 담아, 부드러운 UI 텍스트로 보여주게 합니다.
             setErrorMsg(getT(sourceLangCode, 'errors.micAccess'));
         }
