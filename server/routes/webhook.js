@@ -82,7 +82,13 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 };
                 if (expiresAt) {
-                    updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromMillis(expiresAt);
+                    // 기존 만기일이 더 미래이면 덮어쓰지 않음 (Retry 순서 역전 방지)
+                    const existingExpires = rcUserData.subscriptionExpiresAt?.toDate
+                        ? rcUserData.subscriptionExpiresAt.toDate() : null;
+                    const newExpires = new Date(expiresAt);
+                    if (!existingExpires || newExpires > existingExpires) {
+                        updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromMillis(expiresAt);
+                    }
                 }
                 await adminDb.collection('users').doc(appUserId).update(updateData);
                 console.log(`[Webhook] ${appUserId} → ${tier} (${eventType})`);
