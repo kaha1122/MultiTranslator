@@ -2870,7 +2870,7 @@ function App() {
                   >
                     {sourceLang === lang.code && <CheckCircle2 size={16} />}
                     <span className="lang-flag">{lang.flag}</span>
-                    {lang.name}
+                    {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                   </div>
                 ))}
               </div>
@@ -2891,7 +2891,7 @@ function App() {
                   >
                     {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                     <span className="lang-flag">{lang.flag}</span>
-                    {lang.name}
+                    {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                   </div>
                 ))}
               </div>
@@ -2925,7 +2925,7 @@ function App() {
                     >
                       {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                       <span className="lang-flag">{lang.flag}</span>
-                      {lang.name}
+                      {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                     </div>
                   ))}
                 </div>
