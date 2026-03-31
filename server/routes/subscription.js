@@ -167,31 +167,8 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
             console.log(`[Toss] billing confirmed: ${customerKey} → ${resolvedPlanId} (${resolvedMonths}mo, expires ${expiresAt.toISOString().slice(0,10)})`);
         }
 
-        // 4단계: RevenueCat entitlement 부여
-        if (REVENUECAT_SECRET_KEY) {
-            const rcEntitlement = tier === 'premium' ? 'Premium' : 'Pro';
-            try {
-                await axios.get(
-                    `${REVENUECAT_API}/subscribers/${customerKey}`,
-                    { headers: { Authorization: `Bearer ${REVENUECAT_SECRET_KEY}` } }
-                );
-
-                const rcDuration = resolvedMonths >= 3 ? 'three_month' : 'monthly';
-                await axios.post(
-                    `${REVENUECAT_API}/subscribers/${customerKey}/entitlements/${rcEntitlement}/promotional`,
-                    { duration: rcDuration, start_time_ms: Date.now() },
-                    {
-                        headers: {
-                            Authorization: `Bearer ${REVENUECAT_SECRET_KEY}`,
-                            'Content-Type': 'application/json',
-                        },
-                    }
-                );
-                console.log(`[RevenueCat] granted ${rcEntitlement} to ${customerKey}`);
-            } catch (rcErr) {
-                console.error('[RevenueCat] entitlement grant failed:', rcErr.response?.data || rcErr.message);
-            }
-        }
+        // Toss 결제 유저의 tier는 Firestore(tierSource:'toss')로 관리
+        // RevenueCat 프로모션 부여 불필요 (앱은 onSnapshot으로 Firestore tier를 직접 감지)
 
         res.json({ success: true, orderId });
     } catch (err) {
