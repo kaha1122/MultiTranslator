@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
 import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
-import { useT } from '../utils/i18n';
+import { useT, getT } from '../utils/i18n';
 import { ALL_LANGUAGES, SUPPORTED_LANGUAGES, EXTRA_LANGUAGES } from '../config/languages';
 import './VideoReader.css';
 import AdBanner from './AdBanner';
@@ -127,7 +127,7 @@ function VideoReader({
                         className={`vid-lang-pill ${targetLang === lang.code ? 'active' : ''}`}
                         onClick={() => setTargetLang(lang.code)}
                     >
-                        {lang.name}
+                        {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                     </button>
                 ))}
             </div>
