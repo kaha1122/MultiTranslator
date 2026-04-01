@@ -104,113 +104,123 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     : ''; // 둘 다 지원 안 하면 브라우저 기본값에 맡김
 
             // 블루투스 이어폰 등 외부 오디오 입력장치 자동 감지
-            // iOS Safari: getUserMedia({ audio: true })만으로 OS가 AirPods 마이크를 자동 라우팅
-            // Android/PC Chrome: enumerateDevices()로 BT 장치 감지 후 ideal로 힌트 제공
-            let audioConstraints = true;
+            // Web: 먼저 임시 stream으로 마이크 권한을 확보하여 enumerateDevices()로
+            //       디바이스 라벨에 접근 → BT 장치 식별 시에만 BT deviceId로 재연결
+            //       BT가 없으면 첫 stream을 그대로 사용 (불필요한 재연결 방지)
+            // 네이티브: 위에서 BluetoothAudio 플러그인이 이미 BT 라우팅을 설정했으므로
+            //           getUserMedia({ audio: true })만으로 충분
+            let isBtConnected = btScoActiveRef.current; // 네이티브 BT 상태
+            let stream;
             if (!Capacitor.isNativePlatform()) {
                 try {
+                    // 1단계: 기본 마이크로 stream 열기 (권한 팝업 + 라벨 접근 확보)
+                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    // 2단계: 권한 확보 후 디바이스 목록 조회 (라벨이 채워짐)
                     const devices = await navigator.mediaDevices.enumerateDevices();
                     const audioInputs = devices.filter(d => d.kind === 'audioinput');
                     const btDevice = audioInputs.find(d =>
                         d.label && /bluetooth|airpods|buds|wireless|galaxy buds|wf-|wh-|bt[- ]|헤드셋/i.test(d.label)
                     );
+                    // BT 장치가 감지되었고, 현재 stream이 해당 장치가 아닌 경우에만 재연결
                     if (btDevice && btDevice.deviceId) {
-                        audioConstraints = { deviceId: { ideal: btDevice.deviceId } };
+                        const currentDeviceId = stream.getAudioTracks()[0]?.getSettings()?.deviceId;
+                        if (currentDeviceId !== btDevice.deviceId) {
+                            stream.getTracks().forEach(t => t.stop());
+                            try {
+                                stream = await navigator.mediaDevices.getUserMedia({
+                                    audio: { deviceId: { ideal: btDevice.deviceId } }
+                                });
+                            } catch (btErr) {
+                                console.warn('BT 마이크 재연결 실패, 기본 마이크 사용:', btErr);
+                                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                            }
+                        }
+                        isBtConnected = true;
                         console.log(`블루투스 마이크 감지: ${btDevice.label}`);
                     }
                 } catch (enumErr) {
+                    // enumerateDevices 실패 시 이미 열린 stream이 있으면 그대로 사용
+                    if (!stream) {
+                        stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+                    }
                     console.warn('오디오 장치 목록 조회 실패:', enumErr);
                 }
-            }
-            let stream;
-            try {
-                stream = await navigator.mediaDevices.getUserMedia({ audio: audioConstraints });
-            } catch (firstErr) {
-                // BT 장치 지정 실패 시 기본 마이크로 fallback
-                if (audioConstraints !== true) {
-                    console.warn('지정 마이크 실패, 기본 마이크로 전환:', firstErr);
-                    stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-                } else {
-                    throw firstErr;
-                }
+            } else {
+                stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             }
             // 찾아낸 파일 형식(mimeType)을 녹음기(MediaRecorder)에 알려줍니다.
             mediaRecorder.current = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunks.current = [];
 
-            // --- [신규] 실시간 볼륨 분석기(침묵 감지 조수) 설정 ---
+            // --- 실시간 볼륨 분석기(침묵 감지) 설정 ---
             try {
-                // 웹 브라우저에서 제공하는 오디오 분석 도구를 꺼냅니다.
                 const AudioContext = window.AudioContext || window['webkitAudioContext'];
-                audioContextRef.current = new AudioContext();
+                // [샘플레이트 동기화] BT HFP 마이크는 16kHz 고정이므로,
+                // BT 연결 시 AudioContext도 16kHz로 맞춰 RMS 계산의 정확도를 보장합니다.
+                // 비BT 시에는 스트림의 실제 샘플레이트를 따릅니다.
+                let ctxSampleRate;
+                try {
+                    const trackSettings = stream.getAudioTracks()[0]?.getSettings();
+                    ctxSampleRate = trackSettings?.sampleRate || (isBtConnected ? 16000 : undefined);
+                } catch { ctxSampleRate = isBtConnected ? 16000 : undefined; }
+                audioContextRef.current = new AudioContext(ctxSampleRate ? { sampleRate: ctxSampleRate } : undefined);
+
                 const source = audioContextRef.current.createMediaStreamSource(stream);
                 const analyser = audioContextRef.current.createAnalyser();
-
-                // 소리를 얼마나 세밀하게 쪼개서 볼지 결정합니다
                 analyser.fftSize = 512;
-                source.connect(analyser); // 마이크 소리를 분석기랑 연결!
+                source.connect(analyser);
 
                 const bufferLength = analyser.frequencyBinCount;
                 const dataArray = new Uint8Array(bufferLength);
 
                 let silenceStartTime = null;
-                // 💡 설정값: 2000밀리초(2초) 동안 소리가 없으면 자동으로 멈춥니다!
-                const SILENCE_THRESHOLD = 2000;
-                // 💡 설정값: 소음(숨소리, PC 팬 잡음 등)을 무시할 최소 파동 에너지(RMS) 크기입니다.
-                // 0.02에서 0.05로 2.5배 높여서 약간 시끄러운 환경에서도 확실히 멈추도록 개선했습니다.
+                const SILENCE_THRESHOLD = 2000; // 2초 침묵 → 자동 종료
                 const VOLUME_THRESHOLD = 0.05;
+                // [BT 유예 기간] BT 연결 시 A2DP→HFP 전환(~2초) + 사용자 준비 시간을 감안하여
+                // 녹음 시작 후 3초간은 침묵이어도 자동 종료하지 않습니다.
+                const GRACE_PERIOD = isBtConnected ? 3000 : 1500;
+                const recordingStartedAt = Date.now();
 
                 const checkSilence = () => {
-                    // 녹음 중이 아니면 감지를 멈춥니다.
                     if (!mediaRecorder.current || mediaRecorder.current.state !== 'recording') {
                         clearInterval(silenceAnimationFrameRef.current);
                         return;
                     }
 
-                    // 주파수 전체의 평균이 아닌, [시간에 따른 실제 파동(파형) 데이터]를 가져옵니다 (정확도 대폭 상승)
-                    analyser.getByteTimeDomainData(dataArray);
+                    // 유예 기간 중에는 침묵 감지를 건너뜁니다
+                    if (Date.now() - recordingStartedAt < GRACE_PERIOD) return;
 
+                    analyser.getByteTimeDomainData(dataArray);
                     let sumSquares = 0.0;
                     for (let i = 0; i < bufferLength; i++) {
-                        // 기본값 128을 중심(0)으로 두고, -1.0 ~ 1.0 사이의 파도로 변환합니다.
                         const normSample = (dataArray[i] / 128.0) - 1.0;
                         sumSquares += normSample * normSample;
                     }
-                    // 파동 에너지의 평균 제곱근(RMS: 진짜 소리의 '힘'을 나타냄)을 계산합니다.
                     const rms = Math.sqrt(sumSquares / bufferLength);
 
-                    // 파동 에너지가 우리가 정한 기준치(VOLUME_THRESHOLD)보다 작다 = '조용하다(침묵)'고 판단!
                     if (rms < VOLUME_THRESHOLD) {
-                        // 처음 조용해진 순간의 시간을 기록합니다.
                         if (silenceStartTime === null) {
                             silenceStartTime = Date.now();
                         } else if (Date.now() - silenceStartTime > SILENCE_THRESHOLD) {
-                            // 앗, 조용한 상태가 2초(SILENCE_THRESHOLD) 이상 지속되었어요!
-                            console.log(`침묵 2초 감지: 자동으로 녹음을 종료합니다! (최종 소음 크기: ${rms.toFixed(4)})`);
+                            console.log(`침묵 2초 감지: 자동 녹음 종료 (RMS: ${rms.toFixed(4)})`);
                             clearInterval(silenceAnimationFrameRef.current);
                             if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
                                 mediaRecorder.current.stop();
                                 setIsRecording(false);
                             }
-                            return; // 더 이상 감지하지 않고 끝냅니다.
+                            return;
                         }
                     } else {
-                        // 소리가 컸다 = 사용자가 다시 말을 시작했다!
-                        // 침묵 타이머를 다시 0으로 초기화(리셋)해줍니다.
                         silenceStartTime = null;
                         hasDetectedVoiceRef.current = true;
                     }
                 };
 
-                // requestAnimationFrame 대신 setInterval을 사용하여 컴퓨터 성능 부하를 최소화하고, 
-                // 브라우저 탭이 백그라운드에 있어도 안정적으로 0.1초마다 체크하게 변경했습니다.
                 silenceAnimationFrameRef.current = setInterval(checkSilence, 100);
             } catch (analyserError) {
                 console.warn("오디오 분석기 설정 실패(자동 종료 미작동):", analyserError);
-                // 혹시 마이크 권한 문제나 구형 브라우저 등의 이유로 이 기능이 실패해도, 
-                // 수동 녹음은 정상적으로 되어야 하므로 그냥 넘어갑니다.
             }
-            // --- [신규 끝] ---
+            // --- 침묵 감지 설정 끝 ---
 
             // 녹음 데이터가 들어올 때마다 배열에 저장합니다.
             mediaRecorder.current.ondataavailable = (e) => audioChunks.current.push(e.data);

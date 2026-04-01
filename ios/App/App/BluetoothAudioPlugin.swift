@@ -33,6 +33,22 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
                 options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
             )
             try session.setActive(true, options: [])
+
+            // BT 입력 포트를 명시적으로 선택 (에어팟 한쪽만 착용 등 iOS가 내장 마이크로
+            // 폴백하는 케이스 방지). setPreferredInput은 "선호" 힌트이므로
+            // BT 연결이 끊기면 iOS가 자동으로 내장 마이크로 전환합니다.
+            if let inputs = session.availableInputs {
+                let btInput = inputs.first { input in
+                    input.portType == .bluetoothHFP ||
+                    input.portType == .bluetoothA2DP ||
+                    input.portType == .bluetoothLE
+                }
+                if let btInput = btInput {
+                    try session.setPreferredInput(btInput)
+                    print("[BluetoothAudio] Preferred input set to: \(btInput.portName)")
+                }
+            }
+
             print("[BluetoothAudio] AVAudioSession configured for Bluetooth")
             call.resolve(["success": true])
         } catch {
@@ -41,16 +57,26 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         }
     }
 
-    /// AVAudioSession을 기본 상태로 복원 (녹음 후 호출)
+    /// 녹음 종료 후 오디오 세션을 재생 모드로 전환 (녹음 후 호출)
+    /// setActive(false)로 세션을 완전히 끄면 에어팟 출력 라우트가 리셋되어
+    /// TTS 재생이 스피커로 전환되는 문제가 발생합니다.
+    /// 대신 .playback 카테고리로 전환하여 BT 출력 라우트를 유지합니다.
     @objc func stopBluetoothSco(_ call: CAPPluginCall) {
         let session = AVAudioSession.sharedInstance()
         do {
-            try session.setActive(false, options: [.notifyOthersOnDeactivation])
-            print("[BluetoothAudio] AVAudioSession deactivated")
+            // preferredInput 초기화 (BT 마이크 강제 선택 해제)
+            try session.setPreferredInput(nil)
+            // 재생 전용 모드로 전환 — BT 출력(에어팟 스피커)은 유지됨
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+            print("[BluetoothAudio] AVAudioSession switched to playback mode")
             call.resolve(["success": true])
         } catch {
-            print("[BluetoothAudio] Failed to deactivate AVAudioSession: \(error)")
-            // 비활성화 실패는 치명적이지 않으므로 resolve
+            print("[BluetoothAudio] Failed to switch AVAudioSession: \(error)")
+            // 전환 실패 시에도 치명적이지 않으므로 resolve
             call.resolve(["success": false])
         }
     }

@@ -63,7 +63,9 @@ public class BluetoothAudioPlugin extends Plugin {
 
     /**
      * 블루투스 SCO 오디오 채널을 엽니다.
-     * 이 채널이 열려야 BT 헤드셋의 마이크 입력을 사용할 수 있습니다.
+     * SCO_AUDIO_STATE_CONNECTED 상태가 확인된 후 resolve하여,
+     * JS 측에서 getUserMedia 호출 시 BT 마이크가 확실히 준비되어 있도록 합니다.
+     * 최대 3초 대기 후 타임아웃 시에도 resolve하여 내장 마이크로 폴백합니다.
      */
     @PluginMethod()
     public void startBluetoothSco(PluginCall call) {
@@ -73,33 +75,56 @@ public class BluetoothAudioPlugin extends Plugin {
         }
 
         try {
-            // SCO 연결 상태를 모니터링하는 리시버 등록
-            if (scoReceiver == null) {
-                scoReceiver = new BroadcastReceiver() {
-                    @Override
-                    public void onReceive(Context context, Intent intent) {
-                        int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE,
-                                AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
-                        Log.d(TAG, "SCO state changed: " + state);
+            // 이전 리시버가 있으면 해제
+            if (scoReceiver != null) {
+                try { getContext().unregisterReceiver(scoReceiver); } catch (IllegalArgumentException ignored) {}
+                scoReceiver = null;
+            }
+
+            // SCO 연결 완료를 기다리는 리시버 등록
+            // call을 캡처하여 CONNECTED 상태에서 resolve
+            final android.os.Handler timeoutHandler = new android.os.Handler(android.os.Looper.getMainLooper());
+            final boolean[] resolved = {false};
+
+            scoReceiver = new BroadcastReceiver() {
+                @Override
+                public void onReceive(Context context, Intent intent) {
+                    int state = intent.getIntExtra(AudioManager.EXTRA_SCO_AUDIO_STATE,
+                            AudioManager.SCO_AUDIO_STATE_DISCONNECTED);
+                    Log.d(TAG, "SCO state changed: " + state);
+                    if (state == AudioManager.SCO_AUDIO_STATE_CONNECTED && !resolved[0]) {
+                        resolved[0] = true;
+                        timeoutHandler.removeCallbacksAndMessages(null);
+                        Log.d(TAG, "Bluetooth SCO connected — resolving");
+                        JSObject ret = new JSObject();
+                        ret.put("success", true);
+                        call.resolve(ret);
                     }
-                };
-                IntentFilter filter = new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    getContext().registerReceiver(scoReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
-                } else {
-                    getContext().registerReceiver(scoReceiver, filter);
                 }
+            };
+            IntentFilter filter = new IntentFilter(AudioManager.ACTION_SCO_AUDIO_STATE_UPDATED);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                getContext().registerReceiver(scoReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
+            } else {
+                getContext().registerReceiver(scoReceiver, filter);
             }
 
             audioManager.setMode(AudioManager.MODE_IN_COMMUNICATION);
             audioManager.startBluetoothSco();
             audioManager.setBluetoothScoOn(true);
             scoStarted = true;
+            Log.d(TAG, "Bluetooth SCO start requested, waiting for CONNECTED...");
 
-            Log.d(TAG, "Bluetooth SCO started");
-            JSObject ret = new JSObject();
-            ret.put("success", true);
-            call.resolve(ret);
+            // 최대 3초 대기 — 타임아웃 시에도 resolve하여 내장 마이크로 폴백
+            timeoutHandler.postDelayed(() -> {
+                if (!resolved[0]) {
+                    resolved[0] = true;
+                    Log.w(TAG, "SCO connection timeout (3s) — resolving anyway (fallback to built-in mic)");
+                    JSObject ret = new JSObject();
+                    ret.put("success", true);
+                    call.resolve(ret);
+                }
+            }, 3000);
         } catch (Exception e) {
             Log.e(TAG, "Failed to start BT SCO", e);
             call.reject("Failed to start Bluetooth SCO: " + e.getMessage());

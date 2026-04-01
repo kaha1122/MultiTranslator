@@ -1,5 +1,6 @@
 import UIKit
 import Capacitor
+import AVFoundation
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -7,7 +8,21 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
-        // Override point for customization after application launch.
+        // 앱 시작 시 AVAudioSession을 블루투스 허용 모드로 미리 설정.
+        // 이렇게 해야 WebView의 getUserMedia 호출 전에 iOS가
+        // 에어팟 등 BT 마이크를 라우팅 후보로 인식합니다.
+        // 주의: setActive(true)는 여기서 호출하지 않음 — 실제 녹음 시점에 활성화
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+            )
+            print("[AppDelegate] AVAudioSession category set for Bluetooth")
+        } catch {
+            print("[AppDelegate] Failed to set AVAudioSession category: \(error)")
+        }
         return true
     }
 
