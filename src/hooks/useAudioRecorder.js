@@ -187,9 +187,6 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                         return;
                     }
 
-                    // 유예 기간 중에는 침묵 감지를 건너뜁니다
-                    if (Date.now() - recordingStartedAt < GRACE_PERIOD) return;
-
                     analyser.getByteTimeDomainData(dataArray);
                     let sumSquares = 0.0;
                     for (let i = 0; i < bufferLength; i++) {
@@ -198,7 +195,14 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     }
                     const rms = Math.sqrt(sumSquares / bufferLength);
 
-                    if (rms < VOLUME_THRESHOLD) {
+                    if (rms >= VOLUME_THRESHOLD) {
+                        // 음성 감지는 유예 기간과 무관하게 항상 수행
+                        silenceStartTime = null;
+                        hasDetectedVoiceRef.current = true;
+                    } else {
+                        // 유예 기간 중에는 침묵 타이머만 작동하지 않음 (자동 종료 방지)
+                        if (Date.now() - recordingStartedAt < GRACE_PERIOD) return;
+
                         if (silenceStartTime === null) {
                             silenceStartTime = Date.now();
                         } else if (Date.now() - silenceStartTime > SILENCE_THRESHOLD) {
@@ -210,9 +214,6 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                             }
                             return;
                         }
-                    } else {
-                        silenceStartTime = null;
-                        hasDetectedVoiceRef.current = true;
                     }
                 };
 
