@@ -30,7 +30,7 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             try session.setCategory(
                 .playAndRecord,
                 mode: .measurement,
-                options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+                options: [.allowBluetoothHFP, .allowBluetoothA2DP, .defaultToSpeaker]
             )
             try session.setActive(true, options: [])
 

@@ -17,7 +17,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
             try session.setCategory(
                 .playAndRecord,
                 mode: .default,
-                options: [.allowBluetooth, .allowBluetoothA2DP, .defaultToSpeaker]
+                options: [.allowBluetoothHFP, .allowBluetoothA2DP, .defaultToSpeaker]
             )
             print("[AppDelegate] AVAudioSession category set for Bluetooth")
         } catch {
