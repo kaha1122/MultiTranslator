@@ -1,6 +1,8 @@
 import UIKit
 import Capacitor
 import AVFoundation
+import FirebaseCore
+import FirebaseCrashlytics
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -8,6 +10,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     var window: UIWindow?
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
+        // Firebase 초기화 (Authentication, Crashlytics 등 모든 Firebase 플러그인에 필요)
+        FirebaseApp.configure()
+        Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
+        print("[AppDelegate] Firebase configured with Crashlytics")
+
         // 앱 시작 시 AVAudioSession을 블루투스 허용 모드로 미리 설정.
         // 이렇게 해야 WebView의 getUserMedia 호출 전에 iOS가
         // 에어팟 등 BT 마이크를 라우팅 후보로 인식합니다.
