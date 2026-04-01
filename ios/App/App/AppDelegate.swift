@@ -11,7 +11,9 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Firebase 초기화 (Authentication, Crashlytics 등 모든 Firebase 플러그인에 필요)
-        FirebaseApp.configure()
+        if FirebaseApp.app() == nil {
+            FirebaseApp.configure()
+        }
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         print("[AppDelegate] Firebase configured with Crashlytics")
 
