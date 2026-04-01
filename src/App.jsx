@@ -1564,7 +1564,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
@@ -1577,7 +1577,7 @@ function App() {
         collection(db, "savedCards"),
         where("userId", "==", user.uid),
         where("translatedText", "==", word),
-        where("sourceType", "==", "vocab")
+        where("sourceType", "==", sourceType)
       );
       const dupSnap = await getDocs(dupQ);
       const active = dupSnap.docs.find(d => !d.data().isDeleted);
@@ -1596,7 +1596,7 @@ function App() {
         inputLang: langCode,
         inputType: 'W',               // 단어
         sourceLang,
-        sourceType: 'vocab',
+        sourceType,
         difficulty,
         categoryId,
         topicId,
@@ -2574,7 +2574,7 @@ function App() {
                         transition: 'all 0.2s'
                       }}
                     >
-                      {lang.name}
+                      {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                     </button>
                   );
                 })}
@@ -2738,7 +2738,7 @@ function App() {
             targetLangs={targetLangs}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={incrementDailyPron}
-            onSaveToLibrary={saveVocabCard}
+            onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}

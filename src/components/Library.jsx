@@ -244,6 +244,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'all', label: t('library.filterAll') },
         { value: 'scene', label: t('library.srcScene') },
         { value: 'vocab', label: t('library.srcVocab') },
+        { value: 'listening', label: t('library.srcListening') },
         { value: 'translation', label: t('library.srcTranslation') },
     ];
 

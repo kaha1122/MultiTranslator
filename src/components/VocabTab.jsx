@@ -394,7 +394,7 @@ export default function VocabTab({
                         className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
                         onClick={() => setSelectedLang(code)}
                     >
-                        {getLangName(code)}
+                        {getT(sourceLang, `langNames.${code}`) || getLangName(code)}
                     </button>
                 ))}
             </div>

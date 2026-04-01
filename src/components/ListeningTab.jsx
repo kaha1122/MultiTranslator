@@ -232,7 +232,7 @@ export default function ListeningTab({
                         className={`vocab-lang-pill ${selectedLang === code ? 'active' : ''}`}
                         onClick={() => setSelectedLang(code)}
                     >
-                        {getLangName(code)}
+                        {getT(sourceLang, `langNames.${code}`) || getLangName(code)}
                     </button>
                 ))}
             </div>

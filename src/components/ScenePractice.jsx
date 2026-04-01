@@ -546,7 +546,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
                                 setIsSaved(false);
                             }}
                         >
-                            {getLangName(code)}
+                            {getT(sourceLang, `langNames.${code}`) || getLangName(code)}
                         </button>
                     ))}
                 </div>
