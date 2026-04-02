@@ -64,9 +64,9 @@ export const AuthProvider = ({ children }) => {
                                         geoCountry: info.country,
                                         geoCity: info.city || '',
                                         geoRegion: info.region || '',
-                                    }).catch(() => {});
+                                    }).catch(() => { });
                                 }
-                            }).catch(() => {});
+                            }).catch(() => { });
                         }
                     } catch (e) {
                         console.error('[AuthContext] Anonymous user doc creation failed:', e);
@@ -81,7 +81,21 @@ export const AuthProvider = ({ children }) => {
                     );
                 }
 
+                // [안전장치] onSnapshot이 7초 내에 최초 응답을 못 하면 강제로 loading 해제
+                // iOS에서 네트워크 재연결 시 onSnapshot 소켓이 멈추는 현상 대비
+                let snapshotFirstResponseReceived = false;
+                const snapshotTimeoutId = setTimeout(() => {
+                    if (!snapshotFirstResponseReceived) {
+                        console.warn('[AuthContext] onSnapshot 응답 타임아웃 (7s) → loading 강제 해제');
+                        setLoading(false);
+                    }
+                }, 7000);
+
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
+                    if (!snapshotFirstResponseReceived) {
+                        snapshotFirstResponseReceived = true;
+                        clearTimeout(snapshotTimeoutId);
+                    }
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
@@ -107,13 +121,14 @@ export const AuthProvider = ({ children }) => {
                                     geoCountry: info.country,
                                     geoCity: info.city || '',
                                     geoRegion: info.region || '',
-                                }).catch(() => {});
+                                }).catch(() => { });
                             }
-                        }).catch(() => {});
+                        }).catch(() => { });
                         return; // setDoc 후 onSnapshot이 다시 호출됨
                     }
                     setLoading(false);
                 }, (error) => {
+                    clearTimeout(snapshotTimeoutId);
                     console.error("Error fetching user profile:", error);
                     setProfile(null);
                     setLoading(false);
@@ -125,7 +140,13 @@ export const AuthProvider = ({ children }) => {
                 if (window.Capacitor?.isNativePlatform?.()) {
                     try {
                         const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-                        const result = await FirebaseAuthentication.getCurrentUser();
+                        // [안전장치] getCurrentUser()가 응답 없이 무한 대기할 경우를 대비한 5초 타임아웃
+                        const result = await Promise.race([
+                            FirebaseAuthentication.getCurrentUser(),
+                            new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('getCurrentUser timeout')), 5000)
+                            ),
+                        ]);
                         if (result.user) {
                             // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
                             // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백
@@ -143,7 +164,8 @@ export const AuthProvider = ({ children }) => {
                             return;
                         }
                     } catch (e) {
-                        // 플러그인 오류 시 기존 로직으로 폴백
+                        // 플러그인 오류 또는 타임아웃 시 기존 로직으로 폴백
+                        console.warn('[AuthContext] getCurrentUser 실패/타임아웃 → 익명 로그인 폴백:', e.message);
                     }
                 }
 
@@ -435,8 +457,8 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
-    const byokGeminiKey  = profile?.byokGeminiKey  || null;
-    const byokAzureKey   = profile?.byokAzureKey   || null;
+    const byokGeminiKey = profile?.byokGeminiKey || null;
+    const byokAzureKey = profile?.byokAzureKey || null;
     const byokAzureRegion = profile?.byokAzureRegion || '';
 
     return (

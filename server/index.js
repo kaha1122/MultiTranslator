@@ -9,7 +9,18 @@ require('dotenv').config();
 require('./config/firebase');
 
 const app = express();
-app.use(cors());
+
+const whitelist = ['capacitor://localhost', 'ionic://localhost', 'http://localhost', 'https://localhost', 'http://localhost:5173'];
+app.use(cors({
+    origin: function (origin, callback) {
+        if (!origin || whitelist.indexOf(origin) !== -1 || origin.startsWith('https://')) {
+            callback(null, true);
+        } else {
+            callback(null, true); // Allow others as well for safety, but reflect origin
+        }
+    },
+    credentials: true
+}));
 app.use(express.json({ limit: '10mb' }));
 
 // ── 라우트 모듈 등록 ─────────────────────────────────────────────────────────
