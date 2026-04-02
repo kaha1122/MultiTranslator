@@ -102,8 +102,9 @@ function App() {
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   // 웹: 이미 앱에 진입한 적 있으면 랜딩 건너뜀 (anonymous 복원 시 재진입 방지)
   // 봇(AdSense/검색엔진)은 랜딩 우회 → 앱 콘텐츠 크롤링 허용
+  // 랜딩 페이지는 웹 전용 — 네이티브 앱에서는 항상 건너뜀
   const [showLanding, setShowLanding] = useState(
-    () => !isBot() && localStorage.getItem('webAppEntered') !== '1'
+    () => !window.Capacitor?.isNativePlatform?.() && !isBot() && localStorage.getItem('webAppEntered') !== '1'
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
@@ -474,10 +475,15 @@ function App() {
     // 네이티브 앱 버전 (build.gradle versionName) + Firestore에서 최신 버전 조회
     CapacitorApp.getInfo().then(async (info) => {
       setAppVersion(info.version);
-      // Firestore config/app 문서에서 최신 네이티브 버전 조회
+      // Firestore config/app 문서에서 플랫폼별 최신 네이티브 버전 조회
       try {
         const configDoc = await getDoc(doc(db, 'config', 'app'));
-        const latestVersion = configDoc.data()?.latestNativeVersion;
+        const configData = configDoc.data() || {};
+        const platform = Capacitor.getPlatform(); // 'ios' | 'android'
+        // iOS/Android 각각 별도 필드 우선, 없으면 공통 필드 폴백
+        const latestVersion = platform === 'ios'
+          ? (configData.latestIOSVersion || configData.latestNativeVersion)
+          : (configData.latestAndroidVersion || configData.latestNativeVersion);
         if (latestVersion && info.version && isVersionOlder(info.version, latestVersion)) {
           setShowNativeUpdate(true);
         }
@@ -485,26 +491,29 @@ function App() {
         console.log('[UpdateCheck] config fetch failed:', e);
       }
     }).catch(() => { });
-    // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
-    CapacitorUpdater.current().then(info => {
-      const v = info?.bundle?.version;
-      if (v && v !== 'builtin') setBundleVersion(v);
-    }).catch(() => { });
-    // 이벤트 리스너
-    CapacitorUpdater.addListener('updateAvailable', (res) => {
-      setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
-    });
-    CapacitorUpdater.addListener('downloadComplete', (res) => {
-      setUpdateStatus(`✅ 완료 v${res.bundle.version} — 재시작 시 적용`);
-    });
-    CapacitorUpdater.addListener('downloadFailed', (res) => {
-      setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
-    });
-    CapacitorUpdater.addListener('noNeedUpdate', () => {
-      setUpdateStatus('');
-    });
-    // 채널 등록 (빌드 타임에 결정: staging or production)
-    CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => { });
+    // Capgo OTA — iOS는 아직 Capgo 채널/번들 미준비이므로 건너뜀
+    if (Capacitor.getPlatform() !== 'ios') {
+      // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
+      CapacitorUpdater.current().then(info => {
+        const v = info?.bundle?.version;
+        if (v && v !== 'builtin') setBundleVersion(v);
+      }).catch(() => { });
+      // 이벤트 리스너
+      CapacitorUpdater.addListener('updateAvailable', (res) => {
+        setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
+      });
+      CapacitorUpdater.addListener('downloadComplete', (res) => {
+        setUpdateStatus(`✅ 완료 v${res.bundle.version} — 재시작 시 적용`);
+      });
+      CapacitorUpdater.addListener('downloadFailed', (res) => {
+        setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
+      });
+      CapacitorUpdater.addListener('noNeedUpdate', () => {
+        setUpdateStatus('');
+      });
+      // 채널 등록 (빌드 타임에 결정: staging or production)
+      CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => { });
+    }
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
