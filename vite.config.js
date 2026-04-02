@@ -11,14 +11,4 @@ export default defineConfig({
     // CAPGO_CHANNEL 환경변수가 없으면 'production' 기본값
     __CAPGO_CHANNEL__: JSON.stringify(process.env.CAPGO_CHANNEL || 'production'),
   },
-  build: {
-    rollupOptions: {
-      // Capacitor 전용 플러그인은 네이티브 런타임에서만 동작 → 웹 빌드에서 externalize
-      external: [
-        '@capacitor-community/admob',
-        '@capgo/capacitor-updater',
-      ],
-    },
-  },
 })
-
