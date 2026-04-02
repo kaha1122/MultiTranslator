@@ -28,17 +28,6 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let unsubscribeProfile;
 
-        // [최후 방어막] 어떤 예기치 않은 상황으로든 10초 이상 로딩 상태면 무조건 강제로 엽니다
-        const ultimateFallbackTimer = setTimeout(() => {
-            setLoading(prev => {
-                if (prev) {
-                    console.warn('[BREAK GLASS] 10초 경과로 무조건 로딩 화면을 강제 해제합니다.');
-                    return false;
-                }
-                return prev;
-            });
-        }, 10000);
-
         const unsubscribeAuth = onAuthStateChanged(auth, async (authenticatedUser) => {
             if (authenticatedUser) {
                 // 로그인 성공 시 명시적 로그아웃 플래그 제거
@@ -75,9 +64,9 @@ export const AuthProvider = ({ children }) => {
                                         geoCountry: info.country,
                                         geoCity: info.city || '',
                                         geoRegion: info.region || '',
-                                    }).catch(() => { });
+                                    }).catch(() => {});
                                 }
-                            }).catch(() => { });
+                            }).catch(() => {});
                         }
                     } catch (e) {
                         console.error('[AuthContext] Anonymous user doc creation failed:', e);
@@ -92,20 +81,7 @@ export const AuthProvider = ({ children }) => {
                     );
                 }
 
-                // [안전장치] onSnapshot이 7초 내에 최초 응답을 못 하면 강제로 loading 해제
-                let snapshotFirstResponseReceived = false;
-                const snapshotTimeoutId = setTimeout(() => {
-                    if (!snapshotFirstResponseReceived) {
-                        console.warn('[AuthContext] onSnapshot 응답 타임아웃 (7s) → loading 강제 해제');
-                        setLoading(false);
-                    }
-                }, 7000);
-
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
-                    if (!snapshotFirstResponseReceived) {
-                        snapshotFirstResponseReceived = true;
-                        clearTimeout(snapshotTimeoutId);
-                    }
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
                     } else {
@@ -131,14 +107,13 @@ export const AuthProvider = ({ children }) => {
                                     geoCountry: info.country,
                                     geoCity: info.city || '',
                                     geoRegion: info.region || '',
-                                }).catch(() => { });
+                                }).catch(() => {});
                             }
-                        }).catch(() => { });
+                        }).catch(() => {});
                         return; // setDoc 후 onSnapshot이 다시 호출됨
                     }
                     setLoading(false);
                 }, (error) => {
-                    clearTimeout(snapshotTimeoutId);
                     console.error("Error fetching user profile:", error);
                     setProfile(null);
                     setLoading(false);
@@ -150,12 +125,10 @@ export const AuthProvider = ({ children }) => {
                 if (window.Capacitor?.isNativePlatform?.()) {
                     try {
                         const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-                        // [안전장치] getCurrentUser() 응답 5초 타임아웃
-                        const result = await Promise.race([
-                            FirebaseAuthentication.getCurrentUser(),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('getCurrentUser timeout')), 5000))
-                        ]);
+                        const result = await FirebaseAuthentication.getCurrentUser();
                         if (result.user) {
+                            // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
+                            // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백
                             setTimeout(async () => {
                                 if (!auth.currentUser && !anonSignInInProgress) {
                                     anonSignInInProgress = true;
@@ -170,7 +143,7 @@ export const AuthProvider = ({ children }) => {
                             return;
                         }
                     } catch (e) {
-                        console.warn('[AuthContext] getCurrentUser 실패/타임아웃 → 익명 로그인 폴백:', e.message);
+                        // 플러그인 오류 시 기존 로직으로 폴백
                     }
                 }
 
@@ -462,8 +435,8 @@ export const AuthProvider = ({ children }) => {
         });
     };
 
-    const byokGeminiKey = profile?.byokGeminiKey || null;
-    const byokAzureKey = profile?.byokAzureKey || null;
+    const byokGeminiKey  = profile?.byokGeminiKey  || null;
+    const byokAzureKey   = profile?.byokAzureKey   || null;
     const byokAzureRegion = profile?.byokAzureRegion || '';
 
     return (

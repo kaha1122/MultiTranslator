@@ -9,27 +9,7 @@ require('dotenv').config();
 require('./config/firebase');
 
 const app = express();
-const whitelist = [
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'https://multitranslator-nine.vercel.app',
-    'capacitor://localhost',
-    'ionic://localhost',
-    'http://localhost'
-];
-
-const corsOptions = {
-    origin: function (origin, callback) {
-        if (!origin || whitelist.indexOf(origin) !== -1) {
-            callback(null, true);
-        } else {
-            callback(new Error('Not allowed by CORS'));
-        }
-    },
-    credentials: true,
-};
-
-app.use(cors(corsOptions));
+app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
 // ── 라우트 모듈 등록 ─────────────────────────────────────────────────────────
