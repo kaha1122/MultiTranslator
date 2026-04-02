@@ -1,8 +1,9 @@
 import { initializeApp } from "firebase/app";
-import { getAuth, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, RecaptchaVerifier } from "firebase/auth";
-import { initializeFirestore } from "firebase/firestore";
+import { getAuth, initializeAuth, browserLocalPersistence, GoogleAuthProvider, FacebookAuthProvider, OAuthProvider, RecaptchaVerifier } from "firebase/auth";
+import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
+import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
     apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
@@ -16,10 +17,22 @@ const firebaseConfig = {
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
-export const auth = getAuth(app);
-export const db = initializeFirestore(app, {
-    experimentalForceLongPolling: true,
-});
+
+// ── iOS WKWebView 대응 ──────────────────────────────────────────────────
+// iOS Capacitor는 capacitor://localhost 커스텀 스킴을 사용하는데,
+// 이 스킴에서 두 가지 문제가 발생:
+//   1) Firebase Auth 기본 persistence(IndexedDB)가 hang → browserLocalPersistence 사용
+//   2) Firestore 기본 WebChannel이 작동 안 함 → Long Polling 강제
+// Android(http://localhost)와 Web(https://...)은 기존 방식 그대로 유지
+const isIOS = Capacitor.getPlatform() === 'ios';
+
+export const auth = isIOS
+    ? initializeAuth(app, { persistence: browserLocalPersistence })
+    : getAuth(app);
+
+export const db = isIOS
+    ? initializeFirestore(app, { experimentalForceLongPolling: true })
+    : getFirestore(app);
 export const storage = getStorage(app);
 export const googleProvider = new GoogleAuthProvider();
 export const facebookProvider = new FacebookAuthProvider();

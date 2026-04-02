@@ -25,6 +25,32 @@ export const AuthProvider = ({ children }) => {
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
 
+    // 최종 안전장치: 어떤 코드 경로에서든 loading이 10초 이상 지속되면 강제 해제
+    // iOS WKWebView에서 Firebase 초기화가 hang될 수 있음
+    useEffect(() => {
+        if (!loading) return;
+        const safetyTimer = setTimeout(() => {
+            console.warn('[AuthContext] 로딩 10초 초과 — 강제 해제');
+            // 이미 유저가 있으면(느린 네트워크에서 Firestore만 느린 경우) loading만 해제
+            // 유저가 없으면 익명 로그인 시도
+            if (auth.currentUser) {
+                setUser(auth.currentUser);
+                setLoading(false);
+            } else if (!anonSignInInProgress) {
+                anonSignInInProgress = true;
+                signInAnonymously(auth).catch(() => {
+                    setUser(null);
+                    setProfile(null);
+                    setLoading(false);
+                }).finally(() => { anonSignInInProgress = false; });
+            } else {
+                // 이미 익명 로그인 진행 중 — loading만 강제 해제
+                setLoading(false);
+            }
+        }, 10000);
+        return () => clearTimeout(safetyTimer);
+    }, [loading]);
+
     useEffect(() => {
         let unsubscribeProfile;
 
@@ -130,7 +156,11 @@ export const AuthProvider = ({ children }) => {
                             // 네이티브에 유저 있음 → 웹 SDK가 곧 동기화됨, 익명 로그인 건너뜀
                             // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백
                             setTimeout(async () => {
-                                if (!auth.currentUser && !anonSignInInProgress) {
+                                if (auth.currentUser) {
+                                    // 웹 SDK 동기화 완료됨 — onAuthStateChanged가 이미 처리했으므로 추가 작업 불필요
+                                    return;
+                                }
+                                if (!anonSignInInProgress) {
                                     anonSignInInProgress = true;
                                     console.warn('[AuthContext] 네이티브 sync 타임아웃 → signInAnonymously 폴백');
                                     try { await signInAnonymously(auth); } catch (e) {
@@ -166,17 +196,26 @@ export const AuthProvider = ({ children }) => {
                 anonSignInInProgress = true;
 
                 try {
-                    // IndexedDB 복원 완료까지 대기
-                    await auth.authStateReady();
+                    // IndexedDB 복원 완료까지 대기 (iOS WKWebView hang 방지: 5초 타임아웃)
+                    await Promise.race([
+                        auth.authStateReady(),
+                        new Promise((_, reject) => setTimeout(() => reject(new Error('authStateReady timeout')), 5000))
+                    ]);
                     if (auth.currentUser) return; // 복원된 유저 있음 → 다음 onAuthStateChanged 호출이 처리
 
                     // 비로그인 → 익명으로 자동 로그인 시도
                     await signInAnonymously(auth);
                 } catch (e) {
-                    console.error('Anonymous sign-in failed:', e);
-                    setUser(null);
-                    setProfile(null);
-                    setLoading(false);
+                    console.error('Anonymous sign-in failed or timeout:', e);
+                    // 타임아웃이든 실패든, 익명 로그인 재시도
+                    try {
+                        await signInAnonymously(auth);
+                    } catch (e2) {
+                        console.error('Anonymous sign-in retry failed:', e2);
+                        setUser(null);
+                        setProfile(null);
+                        setLoading(false);
+                    }
                 } finally {
                     anonSignInInProgress = false;
                 }
