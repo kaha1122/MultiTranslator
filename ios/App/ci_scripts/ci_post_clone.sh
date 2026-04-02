@@ -34,4 +34,19 @@ npm run build
 echo "=== [5/5] cap sync ios ==="
 npx cap sync ios
 
+echo "=== [6/6] iOS Capgo autoUpdate 비활성화 ==="
+# cap sync가 루트 capacitor.config.json을 iOS로 복사하는데,
+# iOS에서는 Capgo OTA를 사용하지 않으므로 autoUpdate를 꺼야 함
+# (Android 번들이 iOS에 적용되어 무한 reload 발생 방지)
+IOS_CAP_CONFIG="$CI_PRIMARY_REPOSITORY_PATH/ios/App/App/capacitor.config.json"
+if [ -f "$IOS_CAP_CONFIG" ]; then
+  node -e "
+    const fs = require('fs');
+    const cfg = JSON.parse(fs.readFileSync('$IOS_CAP_CONFIG', 'utf8'));
+    cfg.plugins.CapacitorUpdater = { autoUpdate: false };
+    fs.writeFileSync('$IOS_CAP_CONFIG', JSON.stringify(cfg, null, '\t') + '\n');
+    console.log('✅ iOS capacitor.config.json: autoUpdate → false');
+  "
+fi
+
 echo "=== 빌드 준비 완료 ==="

@@ -47,6 +47,20 @@ echo ""
 # 3. Capacitor sync
 echo "🔄 Capacitor sync iOS..."
 npx cap sync ios
+
+# iOS Capgo autoUpdate 비활성화
+# cap sync가 루트 capacitor.config.json을 iOS로 복사하는데,
+# iOS에서는 Capgo OTA를 사용하지 않으므로 autoUpdate를 꺼야 함
+IOS_CAP_CONFIG="$IOS_DIR/App/App/capacitor.config.json"
+if [ -f "$IOS_CAP_CONFIG" ]; then
+  node -e "
+    const fs = require('fs');
+    const cfg = JSON.parse(fs.readFileSync('$IOS_CAP_CONFIG', 'utf8'));
+    cfg.plugins.CapacitorUpdater = { autoUpdate: false };
+    fs.writeFileSync('$IOS_CAP_CONFIG', JSON.stringify(cfg, null, '\t') + '\n');
+    console.log('✅ iOS capacitor.config.json: autoUpdate → false');
+  "
+fi
 echo ""
 
 # 4. CocoaPods install (필요 시)

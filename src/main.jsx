@@ -6,14 +6,21 @@ import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 
-// Capgo: 번들 정상 로드 확인 (롤백 방지)
-CapacitorUpdater.notifyAppReady()
-
-// iOS: Capgo OTA 미사용 — builtin 번들로 고정, 자동 업데이트 번들 제거
-// autoUpdate가 config에서 true이지만, iOS용 번들이 없거나 호환되지 않으므로
-// 다운로드된 번들이 있으면 builtin으로 리셋하여 reload 루프 방지
+// Capgo OTA 플랫폼별 초기화
 if (Capacitor.getPlatform() === 'ios') {
-  CapacitorUpdater.reset({ toLastSuccessful: false }).catch(() => {});
+  // iOS: Capgo OTA 미사용 — builtin 번들 고정
+  // notifyAppReady() 호출하지 않음 (Capgo 자동업데이트 비활성화 효과)
+  // reset()은 이미 builtin이면 건너뜀 (무한 reload 방지)
+  CapacitorUpdater.current().then(info => {
+    const v = info?.bundle?.version;
+    if (v && v !== 'builtin') {
+      console.log('[Capgo] iOS: non-builtin 감지 → builtin으로 리셋', v);
+      CapacitorUpdater.reset({ toLastSuccessful: false }).catch(() => {});
+    }
+  }).catch(() => {});
+} else {
+  // Android/Web: 정상 Capgo OTA 운영 — 번들 정상 로드 확인 (롤백 방지)
+  CapacitorUpdater.notifyAppReady();
 }
 
 class ErrorBoundary extends Component {
