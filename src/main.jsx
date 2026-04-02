@@ -1,12 +1,20 @@
 import { StrictMode, Component } from 'react'
 import { createRoot } from 'react-dom/client'
 import { CapacitorUpdater } from '@capgo/capacitor-updater'
+import { Capacitor } from '@capacitor/core'
 import './index.css'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext'
 
 // Capgo: 번들 정상 로드 확인 (롤백 방지)
 CapacitorUpdater.notifyAppReady()
+
+// iOS: Capgo OTA 미사용 — builtin 번들로 고정, 자동 업데이트 번들 제거
+// autoUpdate가 config에서 true이지만, iOS용 번들이 없거나 호환되지 않으므로
+// 다운로드된 번들이 있으면 builtin으로 리셋하여 reload 루프 방지
+if (Capacitor.getPlatform() === 'ios') {
+  CapacitorUpdater.reset({ toLastSuccessful: false }).catch(() => {});
+}
 
 class ErrorBoundary extends Component {
   constructor(props) {
