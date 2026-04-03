@@ -107,22 +107,35 @@ if (isNativePlatform()) {
 // --safe-bottom 변수 설정
 // iOS: env(safe-area-inset-bottom)을 JS로 읽어서 CSS 변수에 반영
 // Android/Web: 0px (safe-area가 WebView 밖이므로 불필요)
+// 주의: 모듈 스코프에서 document.body가 null일 수 있으므로 DOMContentLoaded 후 실행
 (() => {
     const r = document.documentElement;
-    if (isIOS()) {
-        // iOS safe-area 값을 CSS에서 읽어 --safe-bottom에 복사
-        // env()는 CSS calc()에서만 동작하므로, 임시 요소로 실측
-        const probe = document.createElement('div');
-        probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden';
-        document.body.appendChild(probe);
-        requestAnimationFrame(() => {
-            const h = probe.offsetHeight || 0;
-            r.style.setProperty('--safe-bottom', `${h}px`);
-            probe.remove();
-            console.log(`[SafeArea] iOS safe-area-inset-bottom: ${h}px`);
-        });
-    } else {
+    if (!isIOS()) {
         r.style.setProperty('--safe-bottom', '0px');
+        return;
+    }
+    // iOS: DOM 준비 후 safe-area 실측
+    const measure = () => {
+        try {
+            const probe = document.createElement('div');
+            probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden';
+            (document.body || document.documentElement).appendChild(probe);
+            requestAnimationFrame(() => {
+                const h = probe.offsetHeight || 0;
+                r.style.setProperty('--safe-bottom', `${h}px`);
+                probe.remove();
+                console.log('[SafeArea] iOS safe-area-inset-bottom:', h, 'px');
+            });
+        } catch (e) {
+            // fallback: iOS 홈 인디케이터 기본값
+            r.style.setProperty('--safe-bottom', '34px');
+            console.warn('[SafeArea] probe failed, using 34px fallback:', e);
+        }
+    };
+    if (document.body) {
+        measure();
+    } else {
+        document.addEventListener('DOMContentLoaded', measure, { once: true });
     }
 })();
 
