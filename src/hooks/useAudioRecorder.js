@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { db } from '../firebase/config';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -297,6 +297,20 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setIsRecording(false);
         }
     };
+
+    // 앱 백그라운드 진입 시 녹음 자동 중단
+    // iOS: 홈 버튼/스와이프, Android: 홈 버튼 — 마이크 리소스 즉시 해제
+    useEffect(() => {
+        const handleBackground = () => {
+            if (mediaRecorder.current && mediaRecorder.current.state === 'recording') {
+                console.log('[AudioRecorder] 앱 백그라운드 → 녹음 자동 중단');
+                mediaRecorder.current.stop();
+                setIsRecording(false);
+            }
+        };
+        window.addEventListener('app-background', handleBackground);
+        return () => window.removeEventListener('app-background', handleBackground);
+    }, []);
 
     // 3. 발음 분석 서버로 전송하는 함수
     const analyzeFullPronunciation = async (blob, mimeType) => {

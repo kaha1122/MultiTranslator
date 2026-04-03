@@ -606,6 +606,23 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sidebarOpen]);
 
+  // ── 앱 백그라운드/포그라운드 전환 처리 (iOS + Android) ──
+  // 백그라운드: 녹음 중단 + 마이크 리소스 해제 (App Store 필수)
+  // 포그라운드: 필요시 상태 갱신
+  React.useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    let listener = null;
+    listener = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+      if (!isActive) {
+        // 백그라운드 진입 → 모든 활성 recorder에 중단 신호
+        console.log('[App] 백그라운드 진입 → 녹음 자동 중단 신호');
+        window.dispatchEvent(new Event('app-background'));
+      }
+    });
+    return () => {
+      if (listener) listener.then(l => l.remove());
+    };
+  }, []);
 
   // 탭 이동 또는 사이드바 열기 시 종료 토스트 즉시 해제
   React.useEffect(() => {
