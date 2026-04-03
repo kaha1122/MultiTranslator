@@ -910,19 +910,30 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // AI 데이터 처리 동의 (App Store 필수 — 모든 플랫폼에서 동일하게 표시)
+  // AI 데이터 처리 동의 (App Store/Play Store 필수 — 모든 플랫폼에서 동일하게 표시)
+  // Firestore users/{uid}.aiConsentAt 을 정본으로, localStorage는 빠른 캐시
   const [showAiConsent, setShowAiConsent] = useState(false);
   useEffect(() => {
     if (!user || !profile) return;
+    // Firestore에 이미 동의 기록이 있으면 스킵 + localStorage 동기화
+    if (profile.aiConsentAt) {
+      localStorage.setItem('aiConsentAccepted', '1');
+      return;
+    }
+    // localStorage 캐시 체크 (Firestore 읽기 전 빠른 패스)
     if (localStorage.getItem('aiConsentAccepted') === '1') return;
     // 온보딩이 안 끝났으면 온보딩 먼저 → 온보딩 완료 후 이 effect가 재평가됨
     if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
     setShowAiConsent(true);
-  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding]);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt]);
 
   const handleAiConsentAccept = () => {
     localStorage.setItem('aiConsentAccepted', '1');
     setShowAiConsent(false);
+    // Firestore에 동의 시각 기록 (기기 간 동기화 + 법적 감사 추적)
+    if (user) {
+      updateUserProfile({ aiConsentAt: new Date() }).catch(() => {});
+    }
   };
 
   // 신규 유저 첫 ��그인 시 온보딩 팝업 표시
