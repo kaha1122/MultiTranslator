@@ -193,6 +193,12 @@
 		</dict>
 	</array>
 
+	<!-- ── 푸시 알림 (백그라운드 수신 허용) ── -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
 	<!-- ── 수출 규정 (HTTPS만 사용, 면제 대상) ── -->
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
