@@ -206,5 +206,7 @@
 	<string>PronunFit needs camera access for text recognition (OCR)</string>
 	<key>NSUserTrackingUsageDescription</key>
 	<string>This identifier will be used to deliver personalized ads to you</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>PronunFit needs photo library access to select images for text recognition (OCR)</string>
 </dict>
 </plist>
