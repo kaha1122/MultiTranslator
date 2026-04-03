@@ -3661,10 +3661,10 @@ function App() {
               {'🤖'}
             </div>
             <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
-              {t('aiConsent.title')}
+              {getT(sourceLang, 'aiConsent.title')}
             </h3>
             <p style={{ margin: '0 0 18px', fontSize: '0.85rem', color: '#64748b', lineHeight: 1.6, textAlign: 'left' }}>
-              {t('aiConsent.body')}
+              {getT(sourceLang, 'aiConsent.body')}
             </p>
             <a
               href="https://pronunfit.com/privacy"
@@ -3672,7 +3672,7 @@ function App() {
               rel="noopener noreferrer"
               style={{ fontSize: '0.78rem', color: '#6366f1', display: 'block', marginBottom: '16px' }}
             >
-              {t('aiConsent.privacyLink')}
+              {getT(sourceLang, 'aiConsent.privacyLink')}
             </a>
             <button
               onClick={handleAiConsentAccept}
@@ -3682,7 +3682,7 @@ function App() {
                 cursor: 'pointer'
               }}
             >
-              {t('aiConsent.accept')}
+              {getT(sourceLang, 'aiConsent.accept')}
             </button>
           </div>
         </div>
