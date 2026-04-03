@@ -126,6 +126,8 @@ const TranslationCard = ({
         coachTip,
         errorMsg,
         saveMessage,
+        micDenied,
+        openAppSettings,
         startRecording,
         stopRecording,
         resetAssessment,
@@ -409,9 +411,16 @@ Return only these 2 lines.`;
                     {isAnalyzing && <p className="analyzing-status">{t('card.analyzing')}</p>}
 
                     {errorMsg && (
-                        <div className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', display: 'flex', alignItems: 'center', gap: '4px', marginTop: '8px', justifyContent: 'center' }}>
-                            <AlertCircle size={14} />
-                            {errorMsg}
+                        <div className="error-message" style={{ color: '#ef4444', fontSize: '0.875rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', marginTop: '8px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <AlertCircle size={14} />
+                                {errorMsg}
+                            </span>
+                            {micDenied && window.Capacitor?.isNativePlatform?.() && (
+                                <button onClick={openAppSettings} style={{ background: 'none', border: '1px solid #6366f1', color: '#6366f1', borderRadius: '8px', padding: '4px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer', marginTop: '4px' }}>
+                                    {t('errors.openSettings')}
+                                </button>
+                            )}
                         </div>
                     )}
 

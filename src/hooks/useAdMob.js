@@ -123,6 +123,15 @@ export const useAdMob = (tier) => {
                 if (!_adMob) return;
 
                 if (!_admobInitialized) {
+                    // iOS: ATT 프롬프트를 AdMob 초기화 전에 표시 (Apple 필수)
+                    if (isIOS()) {
+                        try {
+                            const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
+                            await FirebaseAuthentication.requestAppTrackingTransparencyPermission();
+                        } catch (e) {
+                            console.warn('[ATT] requestPermission failed:', e?.message);
+                        }
+                    }
                     await _adMob.initialize({});
                     _admobInitialized = true;
                 }

@@ -5,6 +5,8 @@
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {
     "micAccess": "Mikrofonzugriff erforderlich. Bitte in den Browsereinstellungen erlauben. 🎤",
+    "micDeniedNative": "Mikrofonzugriff verweigert. Bitte aktivieren Sie das Mikrofon in den Einstellungen.",
+    "openSettings": "Einstellungen öffnen",
     "retryPronunciation": "Keine Stimme erkannt. Bitte versuchen Sie es erneut.",
     "serverConnect": "Verbindung zum Analyseserver fehlgeschlagen. Bitte später erneut versuchen. 🥺",
     "libraryLoad": "Bibliotheksdaten konnten nicht geladen werden. Bitte Internetverbindung prüfen. 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "Passwort (mind. 6 Zeichen)",
     "promptTitle": "Kostenloses Konto erstellen",
     "promptDesc": "Nutze deine eigene ID, um im Web oder auf anderen Geräten weiterzulernen.",
-    "nextTime": "Nächstes Mal"
+    "nextTime": "Nächstes Mal",
+    "restorePurchases": "Käufe wiederherstellen",
+    "restoreSuccess": "Abonnement wiederhergestellt!",
+    "restoreNone": "Keine Käufe zum Wiederherstellen",
+    "loadingProducts": "Produkte werden geladen..."
+  },
+  "aiConsent": {
+    "title": "KI-Datenverarbeitung",
+    "body": "PronunFit verwendet Google Gemini AI für Übersetzungen, Satzgenerierung und Lerninhalte. Ihr eingegebener Text wird zur KI-Verarbeitung an Google-Server gesendet. Persönliche Daten werden nicht separat gespeichert und nur zur Bereitstellung des Dienstes verwendet.",
+    "privacyLink": "Datenschutzrichtlinie anzeigen",
+    "accept": "Zustimmen und fortfahren"
   },
   "home": {
     "weeklyGoal": "Wochenfortschritt",

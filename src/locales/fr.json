@@ -5,6 +5,8 @@
   "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",
   "errors": {
     "micAccess": "Accès au microphone requis. Veuillez l'autoriser dans les paramètres du navigateur. 🎤",
+    "micDeniedNative": "L'accès au microphone a été refusé. Veuillez l'activer dans les Réglages.",
+    "openSettings": "Ouvrir les Réglages",
     "retryPronunciation": "Aucune voix détectée. Veuillez réessayer.",
     "serverConnect": "Impossible de se connecter au serveur d'analyse. Veuillez réessayer. 🥺",
     "libraryLoad": "Impossible de charger la bibliothèque. Vérifiez votre connexion internet. 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "Mot de passe (6 caractères min.)",
     "promptTitle": "Créez un compte gratuit",
     "promptDesc": "Utilisez votre identifiant pour continuer à apprendre sur le web ou tout autre appareil.",
-    "nextTime": "La prochaine fois"
+    "nextTime": "La prochaine fois",
+    "restorePurchases": "Restaurer les achats",
+    "restoreSuccess": "Abonnement restauré !",
+    "restoreNone": "Aucun achat à restaurer",
+    "loadingProducts": "Chargement des produits..."
+  },
+  "aiConsent": {
+    "title": "Traitement des données par l'IA",
+    "body": "PronunFit utilise Google Gemini AI pour fournir des traductions, générer des phrases et du contenu d'apprentissage. Le texte que vous saisissez est envoyé aux serveurs de Google pour le traitement IA. Aucune donnée personnelle n'est stockée séparément et est utilisée uniquement pour fournir le service.",
+    "privacyLink": "Voir la politique de confidentialité",
+    "accept": "Accepter et continuer"
   },
   "home": {
     "weeklyGoal": "Progrès de la semaine",

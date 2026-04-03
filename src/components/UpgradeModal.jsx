@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2 } from 'lucide-react';
+import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2, RotateCcw } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
@@ -662,6 +662,11 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                     </div>
                 )}
 
+                {/* 구매 복원 버튼 — 네이티브(iOS/Android)에서만 표시 */}
+                {isNative && (
+                    <RestorePurchasesButton t={t} />
+                )}
+
                 <p className="upgrade-footer-note">
                     {t('upgrade.footerNote')}
                 </p>
@@ -669,6 +674,59 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         </div>
     );
 };
+
+function RestorePurchasesButton({ t }) {
+    const [loading, setLoading] = useState(false);
+    const [result, setResult] = useState(''); // 'restored' | 'none'
+
+    const handleRestore = async () => {
+        setLoading(true);
+        setResult('');
+        try {
+            const { customerInfo } = await Purchases.restorePurchases();
+            const hasActive = Object.keys(customerInfo.entitlements.active).length > 0;
+            if (hasActive) {
+                setResult('restored');
+                setTimeout(() => window.location.reload(), 1200);
+            } else {
+                setResult('none');
+            }
+        } catch (e) {
+            console.error('[RestorePurchases] failed:', e);
+            setResult('none');
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    return (
+        <div style={{ textAlign: 'center', marginTop: '8px' }}>
+            <button
+                onClick={handleRestore}
+                disabled={loading}
+                style={{
+                    background: 'none', border: 'none', color: '#6366f1',
+                    fontSize: '0.82rem', fontWeight: 600, cursor: 'pointer',
+                    display: 'inline-flex', alignItems: 'center', gap: '5px',
+                    padding: '6px 12px', opacity: loading ? 0.6 : 1,
+                }}
+            >
+                <RotateCcw size={14} />
+                {loading ? (t('upgrade.processing')) : (t('upgrade.restorePurchases'))}
+            </button>
+            {result === 'restored' && (
+                <p style={{ fontSize: '0.78rem', color: '#16a34a', margin: '4px 0 0' }}>
+                    {t('upgrade.restoreSuccess')}
+                </p>
+            )}
+            {result === 'none' && (
+                <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '4px 0 0' }}>
+                    {t('upgrade.restoreNone')}
+                </p>
+            )}
+        </div>
+    );
+}
 
 const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 

@@ -5,6 +5,8 @@
   "splashTagline": "Free Multilingual Pronunciation Note",
   "errors": {
     "micAccess": "Microphone access required. Please allow it in browser settings. 🎤",
+    "micDeniedNative": "Microphone access denied. Please enable it in Settings.",
+    "openSettings": "Open Settings",
     "retryPronunciation": "No voice detected. Please try again.",
     "serverConnect": "Cannot connect to the analysis server. Please try again later. 🥺",
     "libraryLoad": "Cannot load library data. Please check your internet connection. 😥",
@@ -354,7 +356,17 @@
     "passwordPlaceholder": "Password (min. 6 characters)",
     "promptTitle": "Create a free account",
     "promptDesc": "Use your own ID to continue learning on the web or any other device.",
-    "nextTime": "Next time"
+    "nextTime": "Next time",
+    "restorePurchases": "Restore Purchases",
+    "restoreSuccess": "Subscription restored!",
+    "restoreNone": "No purchases to restore",
+    "loadingProducts": "Loading products..."
+  },
+  "aiConsent": {
+    "title": "AI Data Processing Notice",
+    "body": "PronunFit uses Google Gemini AI to provide translations, sentence generation, and learning content. Your input text is sent to Google servers for AI processing. No personal data is stored separately, and it is used solely to provide the service.",
+    "privacyLink": "View Privacy Policy",
+    "accept": "Agree and Continue"
   },
   "home": {
     "weeklyGoal": "This Week's Progress",

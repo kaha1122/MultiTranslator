@@ -46,6 +46,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
     const [coachTip, setCoachTip] = useState(null);
     const [errorMsg, setErrorMsg] = useState(null);
     const [saveMessage, setSaveMessage] = useState(null);
+    const [micDenied, setMicDenied] = useState(false); // iOS 권한 거부 → Settings 이동 안내용
 
     const mediaRecorder = useRef(null);
     const audioChunks = useRef([]);
@@ -57,8 +58,22 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
     const btScoActiveRef = useRef(false);
 
     // 1. 녹음 시작 함수
+    // iOS 설정 앱 열기 (권한 거부 후 사용자가 직접 활성화하도록 안내)
+    const openAppSettings = async () => {
+        try {
+            const { App } = await import('@capacitor/app');
+            // iOS: 앱 설정 페이지로 이동 (UIApplication.openSettingsURLString)
+            // Android: 앱 상세 설정 페이지로 이동
+            await App.openUrl({ url: 'app-settings:' });
+        } catch {
+            // fallback: 일반 설정 열기
+            window.open('App-Prefs:', '_system');
+        }
+    };
+
     const startRecording = async () => {
         setErrorMsg(null);
+        setMicDenied(false);
         setSaveMessage(null);
 
         // 발음 횟수 제한 체크 (Trial 30회 / Pro 500회)
@@ -74,7 +89,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 if (!hasPermission.value) {
                     const reqPermission = await VoiceRecorder.requestAudioRecordingPermission();
                     if (!reqPermission.value) {
-                        setErrorMsg(getT(sourceLangCode, 'errors.micAccess') || "Microphone permission is required.");
+                        setErrorMsg(getT(sourceLangCode, 'errors.micDeniedNative') || getT(sourceLangCode, 'errors.micAccess') || "Microphone permission is required.");
+                        setMicDenied(true);
                         return; // 권한 거부 시 녹음 시작 안 함
                     }
                 }
@@ -380,6 +396,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         coachTip,
         errorMsg,
         saveMessage,
+        micDenied,
+        openAppSettings,
         startRecording,
         stopRecording,
         resetAssessment

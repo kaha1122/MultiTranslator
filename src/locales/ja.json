@@ -5,6 +5,8 @@
   "splashTagline": "無料の多言語発音学習単語帳",
   "errors": {
     "micAccess": "マイクへのアクセスが必要です。ブラウザの設定で許可してください。 🎤",
+    "micDeniedNative": "マイクのアクセスが拒否されました。設定でマイクを許可してください。",
+    "openSettings": "設定を開く",
     "retryPronunciation": "音声が検出されませんでした。もう一度発音してください。",
     "serverConnect": "分析サーバーに接続できません。しばらくしてからもう一度お試しください。 🥺",
     "libraryLoad": "ライブラリデータを読み込めません。インターネット接続をご確認ください。 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "パスワード（6文字以上）",
     "promptTitle": "無料アカウントを作成しましょう",
     "promptDesc": "自分のIDでウェブや他の端末でも学習を続けられます。",
-    "nextTime": "次回"
+    "nextTime": "次回",
+    "restorePurchases": "購入を復元",
+    "restoreSuccess": "サブスクリプションが復元されました！",
+    "restoreNone": "復元する購入履歴がありません",
+    "loadingProducts": "商品を読み込み中..."
+  },
+  "aiConsent": {
+    "title": "AIデータ処理について",
+    "body": "PronunFitはGoogle Gemini AIを使用して翻訳、文章生成、学習コンテンツを提供します。入力されたテキストはAI処理のためGoogleサーバーに送信されます。個人情報は別途保存されず、サービス提供のみに使用されます。",
+    "privacyLink": "プライバシーポリシーを見る",
+    "accept": "同意して続ける"
   },
   "home": {
     "weeklyGoal": "今週の学習状況",

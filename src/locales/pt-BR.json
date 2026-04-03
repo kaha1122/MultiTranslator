@@ -5,6 +5,8 @@
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",
   "errors": {
     "micAccess": "Acesso ao microfone necessário. Por favor, permita nas configurações do navegador. 🎤",
+    "micDeniedNative": "Acesso ao microfone negado. Por favor, ative nas Configurações.",
+    "openSettings": "Abrir Configurações",
     "retryPronunciation": "Nenhuma voz detectada. Por favor, tente novamente.",
     "serverConnect": "Não foi possível conectar ao servidor de análise. Tente novamente mais tarde. 🥺",
     "libraryLoad": "Não foi possível carregar os dados da biblioteca. Verifique sua conexão com a internet. 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "Senha (mín. 6 caracteres)",
     "promptTitle": "Crie uma conta gratuita",
     "promptDesc": "Use seu próprio ID para continuar aprendendo na web ou em outro dispositivo.",
-    "nextTime": "Da próxima vez"
+    "nextTime": "Da próxima vez",
+    "restorePurchases": "Restaurar compras",
+    "restoreSuccess": "Assinatura restaurada!",
+    "restoreNone": "Nenhuma compra para restaurar",
+    "loadingProducts": "Carregando produtos..."
+  },
+  "aiConsent": {
+    "title": "Processamento de dados por IA",
+    "body": "O PronunFit usa o Google Gemini AI para fornecer traduções, geração de frases e conteúdo de aprendizado. O texto digitado é enviado aos servidores do Google para processamento de IA. Dados pessoais não são armazenados separadamente e são usados apenas para fornecer o serviço.",
+    "privacyLink": "Ver Política de Privacidade",
+    "accept": "Concordar e continuar"
   },
   "home": {
     "weeklyGoal": "Progresso da Semana",

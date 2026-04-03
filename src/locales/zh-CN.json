@@ -5,6 +5,8 @@
   "splashTagline": "免费多语言发音学习单词本",
   "errors": {
     "micAccess": "需要麦克风权限。请在浏览器设置中允许。 🎤",
+    "micDeniedNative": "麦克风权限被拒绝，请在设置中开启麦克风。",
+    "openSettings": "打开设置",
     "retryPronunciation": "未检测到语音，请重新发音。",
     "serverConnect": "无法连接到分析服务器。请稍后重试。 🥺",
     "libraryLoad": "无法加载词库数据。请检查您的网络连接。 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "密码（至少6个字符）",
     "promptTitle": "创建免费账户",
     "promptDesc": "使用您的账号，在网页或其他设备上继续学习。",
-    "nextTime": "下次再说"
+    "nextTime": "下次再说",
+    "restorePurchases": "恢复购买",
+    "restoreSuccess": "订阅已恢复！",
+    "restoreNone": "没有可恢复的购买记录",
+    "loadingProducts": "正在加载商品..."
+  },
+  "aiConsent": {
+    "title": "AI数据处理说明",
+    "body": "PronunFit使用Google Gemini AI提供翻译、句子生成和学习内容。您输入的文本将发送至Google服务器进行AI处理。个人信息不会被单独存储，仅用于提供服务。",
+    "privacyLink": "查看隐私政策",
+    "accept": "同意并继续"
   },
   "home": {
     "weeklyGoal": "本周学习进度",

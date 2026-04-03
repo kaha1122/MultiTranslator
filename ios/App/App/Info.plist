@@ -193,6 +193,10 @@
 		</dict>
 	</array>
 
+	<!-- ── 수출 규정 (HTTPS만 사용, 면제 대상) ── -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
 	<!-- ── 권한 요청 메시지 ── -->
 	<key>NSMicrophoneUsageDescription</key>
 	<string>PronunFit needs microphone access for pronunciation practice</string>

@@ -910,7 +910,22 @@ function App() {
     window.scrollTo(0, 0);
   }, [viewMode]);
 
-  // 신규 유저 첫 로그인 시 온보딩 팝업 표시
+  // AI 데이터 처리 동의 (App Store 필수 — 모든 플랫폼에서 동일하게 표시)
+  const [showAiConsent, setShowAiConsent] = useState(false);
+  useEffect(() => {
+    if (!user || !profile) return;
+    if (localStorage.getItem('aiConsentAccepted') === '1') return;
+    // 온보딩이 안 끝났으면 온보딩 먼저 → 온보딩 완료 후 이 effect가 재평가됨
+    if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
+    setShowAiConsent(true);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding]);
+
+  const handleAiConsentAccept = () => {
+    localStorage.setItem('aiConsentAccepted', '1');
+    setShowAiConsent(false);
+  };
+
+  // 신규 유저 첫 ��그인 시 온보딩 팝업 표시
   const [showOnboarding, setShowOnboarding] = useState(false);
   useEffect(() => {
     if (!user || !profile) return;
@@ -3618,6 +3633,59 @@ function App() {
           defaultSourceLang={sourceLang}
           onComplete={handleOnboardingComplete}
         />
+      )}
+
+      {/* AI 데이터 처리 사전 고지 모달 */}
+      {showAiConsent && !showOnboarding && (
+        <div
+          onClick={handleAiConsentAccept}
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+            zIndex: 3000, padding: '20px 20px calc(20px + var(--admob-bottom, 0px))'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white', borderRadius: '20px', padding: '28px 24px',
+              width: '100%', maxWidth: '360px', textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            }}
+          >
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '50%', background: '#eff6ff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
+              fontSize: '24px'
+            }}>
+              {'🤖'}
+            </div>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
+              {t('aiConsent.title')}
+            </h3>
+            <p style={{ margin: '0 0 18px', fontSize: '0.85rem', color: '#64748b', lineHeight: 1.6, textAlign: 'left' }}>
+              {t('aiConsent.body')}
+            </p>
+            <a
+              href="https://pronunfit.com/privacy"
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ fontSize: '0.78rem', color: '#6366f1', display: 'block', marginBottom: '16px' }}
+            >
+              {t('aiConsent.privacyLink')}
+            </a>
+            <button
+              onClick={handleAiConsentAccept}
+              style={{
+                width: '100%', padding: '13px', borderRadius: '12px', border: 'none',
+                background: '#4f46e5', color: 'white', fontSize: '0.9rem', fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              {t('aiConsent.accept')}
+            </button>
+          </div>
+        </div>
       )}
 
       {/* 회원탈퇴 확인 모달 */}

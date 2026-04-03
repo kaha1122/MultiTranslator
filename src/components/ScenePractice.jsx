@@ -63,7 +63,7 @@ const SCENES = {
 function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
-        startRecording, stopRecording, errorMsg,
+        startRecording, stopRecording, errorMsg, micDenied, openAppSettings,
     } = useAudioRecorder(generated.sentence, langCode, sourceLang, onTrialLimitReached, onPronSuccess);
 
     const playMyRecording = () => {
@@ -152,7 +152,16 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                 )}
 
                 {/* 에러 메시지 */}
-                {errorMsg && <p className="scene-error-msg">{errorMsg}</p>}
+                {errorMsg && (
+                    <div className="scene-error-msg" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                        <p style={{ margin: 0 }}>{errorMsg}</p>
+                        {micDenied && window.Capacitor?.isNativePlatform?.() && (
+                            <button onClick={openAppSettings} style={{ background: 'none', border: '1px solid #6366f1', color: '#6366f1', borderRadius: '8px', padding: '4px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+                                {t('errors.openSettings')}
+                            </button>
+                        )}
+                    </div>
+                )}
 
                 {/* 발음 연습 녹음 버튼 (중앙 배치) */}
                 <div className="scene-record-wrap">

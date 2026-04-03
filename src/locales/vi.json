@@ -5,6 +5,8 @@
   "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",
   "errors": {
     "micAccess": "Cần quyền truy cập microphone. Vui lòng cho phép trong cài đặt trình duyệt. 🎤",
+    "micDeniedNative": "Quyền truy cập microphone bị từ chối. Vui lòng bật trong Cài đặt.",
+    "openSettings": "Mở Cài đặt",
     "retryPronunciation": "Không phát hiện giọng nói. Vui lòng thử lại.",
     "serverConnect": "Không thể kết nối máy chủ phân tích. Vui lòng thử lại sau. 🥺",
     "libraryLoad": "Không thể tải dữ liệu thư viện. Vui lòng kiểm tra kết nối internet. 😥",
@@ -348,7 +350,17 @@
     "passwordPlaceholder": "Mật khẩu (tối thiểu 6 ký tự)",
     "promptTitle": "Tạo tài khoản miễn phí",
     "promptDesc": "Dùng ID của bạn để tiếp tục học trên web hoặc thiết bị khác.",
-    "nextTime": "Lần sau"
+    "nextTime": "Lần sau",
+    "restorePurchases": "Khôi phục mua hàng",
+    "restoreSuccess": "Đã khôi phục đăng ký!",
+    "restoreNone": "Không có giao dịch nào để khôi phục",
+    "loadingProducts": "Đang tải sản phẩm..."
+  },
+  "aiConsent": {
+    "title": "Thông báo xử lý dữ liệu AI",
+    "body": "PronunFit sử dụng Google Gemini AI để cung cấp bản dịch, tạo câu và nội dung học tập. Văn bản bạn nhập sẽ được gửi đến máy chủ Google để xử lý AI. Thông tin cá nhân không được lưu trữ riêng và chỉ được sử dụng để cung cấp dịch vụ.",
+    "privacyLink": "Xem Chính sách Bảo mật",
+    "accept": "Đồng ý và tiếp tục"
   },
   "home": {
     "weeklyGoal": "Tiến độ tuần này",

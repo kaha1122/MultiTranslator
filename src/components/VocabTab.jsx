@@ -40,7 +40,7 @@ export function VocabWordCard({
 
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
-        errorMsg, saveMessage, startRecording, stopRecording, resetAssessment,
+        errorMsg, saveMessage, micDenied, openAppSettings, startRecording, stopRecording, resetAssessment,
     } = useAudioRecorder(practiceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
 
     // practiceMode 전환 시 이전 결과 초기화
@@ -176,9 +176,16 @@ export function VocabWordCard({
                     {isAnalyzing && <p className="vocab-pron-status analyzing">{t('card.analyzing')}</p>}
 
                     {errorMsg && (
-                        <div className="vocab-pron-error">
-                            <AlertCircle size={14} />
-                            {errorMsg}
+                        <div className="vocab-pron-error" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                            <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                                <AlertCircle size={14} />
+                                {errorMsg}
+                            </span>
+                            {micDenied && window.Capacitor?.isNativePlatform?.() && (
+                                <button onClick={openAppSettings} style={{ background: 'none', border: '1px solid #6366f1', color: '#6366f1', borderRadius: '8px', padding: '4px 12px', fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer' }}>
+                                    {t('errors.openSettings')}
+                                </button>
+                            )}
                         </div>
                     )}
                     {saveMessage && !isAnalyzing && (
