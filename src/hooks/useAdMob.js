@@ -94,7 +94,37 @@ function setOffset(height) {
     const r = document.documentElement;
     r.style.setProperty('--admob-top', '0px');
     r.style.setProperty('--admob-bottom', height ? `${height}px` : '0px');
+    // 광고 표시 여부를 CSS에서 참조할 수 있도록 플래그 설정
+    r.style.setProperty('--admob-showing', height ? '1' : '0');
 }
+
+// 앱 시작 시 플랫폼 CSS 클래스 + safe-area 변수 설정
+if (isNativePlatform()) {
+    const platform = isIOS() ? 'ios' : 'android';
+    document.documentElement.classList.add(`platform-${platform}`, 'platform-native');
+}
+
+// --safe-bottom 변수 설정
+// iOS: env(safe-area-inset-bottom)을 JS로 읽어서 CSS 변수에 반영
+// Android/Web: 0px (safe-area가 WebView 밖이므로 불필요)
+(() => {
+    const r = document.documentElement;
+    if (isIOS()) {
+        // iOS safe-area 값을 CSS에서 읽어 --safe-bottom에 복사
+        // env()는 CSS calc()에서만 동작하므로, 임시 요소로 실측
+        const probe = document.createElement('div');
+        probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden';
+        document.body.appendChild(probe);
+        requestAnimationFrame(() => {
+            const h = probe.offsetHeight || 0;
+            r.style.setProperty('--safe-bottom', `${h}px`);
+            probe.remove();
+            console.log(`[SafeArea] iOS safe-area-inset-bottom: ${h}px`);
+        });
+    } else {
+        r.style.setProperty('--safe-bottom', '0px');
+    }
+})();
 
 export const useAdMob = (tier) => {
     const bannerShowing = useRef(false);

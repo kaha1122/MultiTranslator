@@ -2005,7 +2005,7 @@ function App() {
           position: 'fixed', inset: 0, zIndex: 9999,
           background: 'rgba(0,0,0,0.45)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          padding: '20px 20px calc(20px + var(--admob-bottom, 0px))',
+          padding: '20px 20px calc(20px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)))',
         }} onClick={() => setShowLoginModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '460px', margin: '0 16px' }}>
             <Login
@@ -2023,7 +2023,7 @@ function App() {
           position: 'fixed', inset: 0, zIndex: 10000,
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           background: 'rgba(0,0,0,0.45)',
-          padding: '20px 20px calc(20px + var(--admob-bottom, 0px))',
+          padding: '20px 20px calc(20px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)))',
         }} onClick={() => setShowAnonSignupPrompt(false)}>
           <div style={{
             width: 'calc(100% - 48px)', maxWidth: '360px',
@@ -3642,7 +3642,7 @@ function App() {
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            zIndex: 3000, padding: '20px 20px calc(20px + var(--admob-bottom, 0px))'
+            zIndex: 3000, padding: '20px 20px calc(20px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)))'
           }}
         >
           <div
