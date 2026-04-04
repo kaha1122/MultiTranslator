@@ -357,7 +357,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
             const freshEmailVerified = auth.currentUser?.emailVerified || false;
             setEmailVerified(freshEmailVerified);
 
-            if (!freshEmailVerified || !profile?.phoneVerified) {
+            if (!freshEmailVerified || needPhoneVerify) {
                 setShowVerifyWarnings(true);
                 return;
             }

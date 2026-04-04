@@ -178,24 +178,46 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
     }
 });
 
-// ── TossPayments 구독 취소 ──────────────────────────────────────────────────
+// ── 구독 취소 (Toss + PayPal 통합) ──────────────────────────────────────────
 router.post('/api/cancel-subscription', requireAuth, async (req, res) => {
     const { userId } = req.body;
     if (!userId) return res.status(400).json({ error: 'userId required' });
 
     try {
-        if (adminDb) {
-            await adminDb.collection('users').doc(userId).update({
-                autoRenew: false,
-                autoRenewPausedAt: admin.firestore.FieldValue.serverTimestamp(),
-                autoRenewPauseCount: admin.firestore.FieldValue.increment(1),
-                tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+        const userDoc = await adminDb.collection('users').doc(userId).get();
+        const userData = userDoc.exists ? userDoc.data() : {};
+
+        // PayPal 구독 취소
+        if (userData.tierSource === 'paypal' && userData.paypalSubscriptionId) {
+            const PAYPAL_API = process.env.PAYPAL_MODE === 'live'
+                ? 'https://api-m.paypal.com'
+                : 'https://api-m.sandbox.paypal.com';
+            const tokenRes = await axios.post(`${PAYPAL_API}/v1/oauth2/token`, 'grant_type=client_credentials', {
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                auth: { username: process.env.VITE_PAYPAL_CLIENT_ID, password: process.env.PAYPAL_SECRET },
             });
-            console.log(`[Toss] auto-renew disabled: ${userId} (service continues until expiry)`);
+            await axios.post(
+                `${PAYPAL_API}/v1/billing/subscriptions/${userData.paypalSubscriptionId}/cancel`,
+                { reason: 'User requested cancellation' },
+                { headers: { Authorization: `Bearer ${tokenRes.data.access_token}`, 'Content-Type': 'application/json' } }
+            );
+            console.log(`[PayPal] subscription cancelled: ${userId} (${userData.paypalSubscriptionId})`);
         }
+
+        // Firestore 업데이트 (Toss/PayPal 공통)
+        await adminDb.collection('users').doc(userId).update({
+            autoRenew: false,
+            autoRenewPausedAt: admin.firestore.FieldValue.serverTimestamp(),
+            autoRenewPauseCount: admin.firestore.FieldValue.increment(1),
+            tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        });
+        console.log(`[Cancel] auto-renew disabled: ${userId} (tierSource: ${userData.tierSource || 'toss'})`);
+
         res.json({ success: true });
     } catch (err) {
-        console.error('[Toss] cancel-subscription error:', err.message);
+        console.error('[Cancel] cancel-subscription error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
