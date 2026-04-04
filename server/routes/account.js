@@ -202,31 +202,43 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
             migrated.subcollections[sub.id] = count;
         }
 
-        // 3. users/{anonUid} 문서의 카운터/진행도를 targetUid에 병합
+        // 3. users/{anonUid} 문서 → targetUid에 병합
+        // 신규 계정: 익명의 모든 필드를 복사
+        // 기존 계정(재설치 재로그인): 카운터만 합산, 나머지는 기존 값 유지
         const anonDoc = await anonRef.get();
         if (anonDoc.exists) {
             const anonData = anonDoc.data();
-            const mergeFields = {};
-            // 누적 카운터는 익명 쪽 값이 더 크면 병합
-            const counterKeys = [
-                'trialCardCount', 'savedCardCount', 'trialPronCount',
-                'translationGenerateCount', 'sceneGenerateCount',
-                'vocabGenerateCount', 'totalGenerateCount',
-            ];
             const targetDoc = await adminDb.collection('users').doc(targetUid).get();
             const targetData = targetDoc.exists ? targetDoc.data() : {};
-            for (const key of counterKeys) {
-                if ((anonData[key] || 0) > 0) {
-                    mergeFields[key] = admin.firestore.FieldValue.increment(anonData[key] || 0);
+            const isExistingAccount = targetDoc.exists && targetData.createdAt;
+
+            const mergeFields = {};
+
+            if (isExistingAccount) {
+                // ── 기존 계정: 카운터만 합산 (tier, 구독, 설정 등 보호) ──
+                const counterKeys = [
+                    'trialCardCount', 'savedCardCount', 'trialPronCount',
+                    'translationGenerateCount', 'sceneGenerateCount',
+                    'vocabGenerateCount', 'totalGenerateCount',
+                ];
+                for (const key of counterKeys) {
+                    if ((anonData[key] || 0) > 0) {
+                        mergeFields[key] = admin.firestore.FieldValue.increment(anonData[key] || 0);
+                    }
+                }
+            } else {
+                // ── 신규 계정: 익명의 모든 필드를 복사 (보호 필드 제외) ──
+                const protectedKeys = ['uid', 'email', 'isAnonymous', 'createdAt', 'updatedAt'];
+                for (const [key, value] of Object.entries(anonData)) {
+                    if (!protectedKeys.includes(key) && value !== undefined && value !== null) {
+                        mergeFields[key] = value;
+                    }
                 }
             }
-            // 온보딩 상태 보존
-            if (anonData.hasCompletedOnboarding && !targetData.hasCompletedOnboarding) {
-                mergeFields.hasCompletedOnboarding = true;
-            }
+
             if (Object.keys(mergeFields).length > 0) {
                 mergeFields.updatedAt = admin.firestore.FieldValue.serverTimestamp();
-                await adminDb.collection('users').doc(targetUid).update(mergeFields);
+                await adminDb.collection('users').doc(targetUid).set(mergeFields, { merge: true });
             }
         }
 
