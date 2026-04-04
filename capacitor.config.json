@@ -2,6 +2,12 @@
   "appId": "com.arigems.pronunfit",
   "appName": "PronunFit",
   "webDir": "dist",
+  "ios": {
+    "backgroundColor": "#f8fafc"
+  },
+  "android": {
+    "backgroundColor": "#f8fafc"
+  },
   "plugins": {
     "CapacitorUpdater": {
       "autoUpdate": true,
