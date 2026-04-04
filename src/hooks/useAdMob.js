@@ -135,9 +135,14 @@ export const useAdMob = (tier) => {
                     if (isIOS()) {
                         try {
                             const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
-                            await FirebaseAuthentication.requestAppTrackingTransparencyPermission();
+                            const attResult = await FirebaseAuthentication.requestAppTrackingTransparencyPermission();
+                            // ATT 승인 상태를 window에 저장 → App.jsx에서 Firestore에 기록
+                            const status = attResult?.status || 'unknown';
+                            window.__attStatus = status;
+                            console.log('[ATT] status:', status);
                         } catch (e) {
                             console.warn('[ATT] requestPermission failed:', e?.message);
+                            window.__attStatus = 'error';
                         }
                     }
                     await _adMob.initialize({});

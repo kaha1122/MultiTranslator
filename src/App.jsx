@@ -264,6 +264,24 @@ function App() {
   // AdMob 배너 광고 (네이티브 전용, Pro/Premium 제외)
   useAdMob(tier);
 
+  // ATT(광고 추적) 승인 상태를 Firestore에 저장 (iOS, 1회)
+  React.useEffect(() => {
+    if (!user || Capacitor.getPlatform() !== 'ios') return;
+    // useAdMob에서 ATT 결과를 window.__attStatus에 저장 → 여기서 Firestore에 기록
+    const checkAtt = setInterval(() => {
+      if (window.__attStatus) {
+        clearInterval(checkAtt);
+        const status = window.__attStatus;
+        if (!profile?.attStatus || profile.attStatus !== status) {
+          updateUserProfile({ attStatus: status, attUpdatedAt: new Date() }).catch(() => {});
+        }
+      }
+    }, 1000);
+    // 10초 후 폴링 중단 (ATT가 안 뜨는 경우 대비)
+    const timeout = setTimeout(() => clearInterval(checkAtt), 10000);
+    return () => { clearInterval(checkAtt); clearTimeout(timeout); };
+  }, [user?.uid]);
+
   // RevenueCat 초기화 (네이티브 앱, 앱 시작 시 1회)
   useEffect(() => {
     if (!Capacitor.isNativePlatform() || !user) return;
