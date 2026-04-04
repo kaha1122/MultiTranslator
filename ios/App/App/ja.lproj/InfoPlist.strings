@@ -1,0 +1,5 @@
+"NSMicrophoneUsageDescription" = "発音練習のためにマイクへのアクセスが必要です";
+"NSCameraUsageDescription" = "テキスト認識（OCR）のためにカメラへのアクセスが必要です";
+"NSUserTrackingUsageDescription" = "パーソナライズされた広告を配信するためにこの識別子が使用されます";
+"NSBluetoothAlwaysUsageDescription" = "発音練習用ワイヤレスヘッドセット接続のためにBluetoothが必要です";
+"NSPhotoLibraryUsageDescription" = "テキスト認識（OCR）用の画像選択のために写真ライブラリへのアクセスが必要です";

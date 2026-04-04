@@ -1,0 +1,5 @@
+"NSMicrophoneUsageDescription" = "PronunFit needs microphone access for pronunciation practice";
+"NSCameraUsageDescription" = "PronunFit needs camera access for text recognition (OCR)";
+"NSUserTrackingUsageDescription" = "This identifier will be used to deliver personalized ads to you";
+"NSBluetoothAlwaysUsageDescription" = "PronunFit uses Bluetooth to connect to your wireless headset for pronunciation practice";
+"NSPhotoLibraryUsageDescription" = "PronunFit needs photo library access to select images for text recognition (OCR)";

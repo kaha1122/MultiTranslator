@@ -1,0 +1,5 @@
+"NSMicrophoneUsageDescription" = "PronunFit需要麦克风权限进行发音练习";
+"NSCameraUsageDescription" = "PronunFit需要相机权限进行文字识别（OCR）";
+"NSUserTrackingUsageDescription" = "此标识符将用于向您投放个性化广告";
+"NSBluetoothAlwaysUsageDescription" = "PronunFit需要蓝牙权限连接无线耳机进行发音练习";
+"NSPhotoLibraryUsageDescription" = "PronunFit需要访问相册以选择图片进行文字识别（OCR）";

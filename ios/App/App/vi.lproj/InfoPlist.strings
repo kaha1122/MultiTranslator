@@ -1,0 +1,5 @@
+"NSMicrophoneUsageDescription" = "PronunFit cần quyền truy cập microphone để luyện phát âm";
+"NSCameraUsageDescription" = "PronunFit cần quyền truy cập camera để nhận dạng văn bản (OCR)";
+"NSUserTrackingUsageDescription" = "Mã định danh này sẽ được sử dụng để cung cấp quảng cáo phù hợp cho bạn";
+"NSBluetoothAlwaysUsageDescription" = "PronunFit cần Bluetooth để kết nối tai nghe không dây luyện phát âm";
+"NSPhotoLibraryUsageDescription" = "PronunFit cần quyền truy cập thư viện ảnh để chọn hình ảnh nhận dạng văn bản (OCR)";
