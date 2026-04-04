@@ -253,7 +253,15 @@ function App() {
   // Daily progress hook
   const { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen } = useDailyProgress(user, dailyGoal);
 
-  // AdMob 배너 광고 (Android 전용, Pro/Premium 제외)
+  // 플랫폼 CSS 클래스 (React 렌더 시점 = Capacitor 브릿지 확실히 준비됨)
+  React.useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    const cls = `platform-${Capacitor.getPlatform()}`;
+    document.documentElement.classList.add(cls, 'platform-native');
+    document.body?.classList.add(cls, 'platform-native');
+  }, []);
+
+  // AdMob 배너 광고 (네이티브 전용, Pro/Premium 제외)
   useAdMob(tier);
 
   // RevenueCat 초기화 (네이티브 앱, 앱 시작 시 1회)

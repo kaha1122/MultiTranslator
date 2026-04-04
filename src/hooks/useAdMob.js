@@ -90,14 +90,7 @@ async function loadAdMob() {
     }
 }
 
-// 앱 시작 시 플랫폼 CSS 클래스 부여 (네이티브 배경색 분기 등)
-// document.documentElement만 접근 — body 접근 없음, 모듈 스코프 안전
-if (isNativePlatform()) {
-    document.documentElement.classList.add(
-        `platform-${isIOS() ? 'ios' : 'android'}`,
-        'platform-native'
-    );
-}
+// 플랫폼 CSS 클래스는 App.jsx useEffect에서 설정 (Capacitor 브릿지 준비 보장)
 
 function setOffset(height) {
     const r = document.documentElement;

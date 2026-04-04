@@ -37,7 +37,8 @@ body {
   padding-top: 0;
 }
 /* 네이티브 앱: 광고 아래 틈을 앱 배경색과 통일 (iOS/Android 동일) */
-.platform-native body {
+html.platform-native body,
+body.platform-native {
   background-color: var(--bg-primary);
   background-image: none;
 }
