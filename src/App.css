@@ -42,6 +42,24 @@ body.platform-native {
   background-color: var(--bg-primary);
   background-image: none;
 }
+/* iOS 광고 배너 아래 safe-area 영역 불투명 커버
+ * AdMob 배너는 safeAreaLayoutGuide.bottom에 정렬되므로,
+ * 그 아래 ~34px(홈 인디케이터)에 WebView 콘텐츠가 비침.
+ * 이 pseudo-element로 해당 영역을 앱 배경색으로 덮음.
+ * - admob-active + platform-native 조합으로만 활성화
+ * - height: env(safe-area-inset-bottom) → Android/Web에서는 0px → 무영향
+ * - pointer-events: none → 터치 이벤트 투과 */
+html.admob-active.platform-native::after {
+  content: '';
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: env(safe-area-inset-bottom, 0px);
+  background: var(--bg-primary);
+  z-index: 99999;
+  pointer-events: none;
+}
 
 /* Global Mobile App Layout
  * 하단 여백 전략 (3 플랫폼 × 2 Tier 통합):
