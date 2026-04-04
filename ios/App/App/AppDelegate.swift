@@ -17,6 +17,12 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         print("[AppDelegate] Firebase configured with Crashlytics")
 
+        // 네이티브 뷰 배경색 — AdMob 배너 아래 safe-area 투명 영역 방지
+        // capacitor.config.json backgroundColor는 WKWebView에만 적용되므로,
+        // UIWindow 배경색을 직접 설정해야 배너 아래 틈이 앱 배경과 통일됨
+        let bgColor = UIColor(red: 248/255.0, green: 250/255.0, blue: 252/255.0, alpha: 1.0) // #f8fafc
+        window?.backgroundColor = bgColor
+
         // 앱 시작 시 AVAudioSession을 블루투스 허용 모드로 미리 설정.
         // 이렇게 해야 WebView의 getUserMedia 호출 전에 iOS가
         // 에어팟 등 BT 마이크를 라우팅 후보로 인식합니다.
@@ -50,7 +56,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     }
 
     func applicationDidBecomeActive(_ application: UIApplication) {
-        // Restart any tasks that were paused (or not yet started) while the application was inactive. If the application was previously in the background, optionally refresh the user interface.
+        // window가 didFinishLaunchingWithOptions 시점에 nil일 수 있으므로 여기서도 보장
+        if window?.backgroundColor == nil || window?.backgroundColor == .systemBackground {
+            let bgColor = UIColor(red: 248/255.0, green: 250/255.0, blue: 252/255.0, alpha: 1.0)
+            window?.backgroundColor = bgColor
+        }
     }
 
     func applicationWillTerminate(_ application: UIApplication) {
