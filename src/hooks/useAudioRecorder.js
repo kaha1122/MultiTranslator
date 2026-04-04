@@ -85,6 +85,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         try {
             // 네이티브 환경: 마이크 하드웨어 권한 확보
             if (Capacitor.isNativePlatform()) {
+                let wasFirstGrant = false;
                 try {
                     const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
                     if (!hasPermission.value) {
@@ -94,10 +95,22 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                             setMicDenied(true);
                             return;
                         }
+                        wasFirstGrant = true;
                     }
                 } catch (permErr) {
-                    // VoiceRecorder 플러그인 실패 시 getUserMedia로 직접 권한 요청 시도
                     console.warn('[Mic] VoiceRecorder permission check failed, trying getUserMedia directly:', permErr);
+                    wasFirstGrant = true;
+                }
+                // iOS: 최초 권한 승인 후 AVAudioSession을 재활성화해야
+                // WKWebView의 getUserMedia가 실제 오디오 데이터를 받을 수 있음.
+                // AppDelegate에서 권한 없이 설정한 세션이 불완전 상태이므로 갱신 필요.
+                if (Capacitor.getPlatform() === 'ios') {
+                    try {
+                        await BluetoothAudio.activateAudioSession();
+                        if (wasFirstGrant) console.log('[Mic] iOS 최초 권한 승인 → AVAudioSession 재활성화');
+                    } catch (e) {
+                        console.warn('[Mic] activateAudioSession failed:', e);
+                    }
                 }
             }
 

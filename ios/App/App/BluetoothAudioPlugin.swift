@@ -14,6 +14,7 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "isBluetoothHeadsetConnected", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "startBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopBluetoothSco", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "activateAudioSession", returnType: CAPPluginReturnPromise),
     ]
 
     /// 블루투스 오디오 장치가 연결되어 있는지 확인
@@ -77,6 +78,26 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         } catch {
             print("[BluetoothAudio] Failed to switch AVAudioSession: \(error)")
             // 전환 실패 시에도 치명적이지 않으므로 resolve
+            call.resolve(["success": false])
+        }
+    }
+
+    /// 오디오 세션을 .playAndRecord로 (재)활성화
+    /// iOS에서 최초 마이크 권한 승인 후 세션을 갱신해야 getUserMedia가 정상 동작함.
+    /// AppDelegate에서 설정한 카테고리가 권한 없이 불완전 초기화되었을 수 있으므로 재설정.
+    @objc func activateAudioSession(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            try session.setCategory(
+                .playAndRecord,
+                mode: .default,
+                options: [.allowBluetoothHFP, .allowBluetoothA2DP, .defaultToSpeaker]
+            )
+            try session.setActive(true, options: [])
+            print("[BluetoothAudio] AVAudioSession activated for recording")
+            call.resolve(["success": true])
+        } catch {
+            print("[BluetoothAudio] Failed to activate AVAudioSession: \(error)")
             call.resolve(["success": false])
         }
     }
