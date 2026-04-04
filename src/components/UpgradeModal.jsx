@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2, RotateCcw } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
@@ -12,6 +13,15 @@ import './UpgradeModal.css';
 
 const TOSS_CLIENT_KEY = import.meta.env.VITE_TOSS_CLIENT_KEY;
 const FRONTEND_URL = window.location.origin;
+const PAYPAL_CLIENT_ID = import.meta.env.VITE_PAYPAL_CLIENT_ID;
+
+// USD planId → PayPal Plan ID 매핑
+const PAYPAL_PLAN_IDS = {
+    pro_1_usd: import.meta.env.VITE_PAYPAL_PLAN_PRO_1,
+    pro_3_usd: import.meta.env.VITE_PAYPAL_PLAN_PRO_3,
+    premium_1_usd: import.meta.env.VITE_PAYPAL_PLAN_PREMIUM_1,
+    premium_3_usd: import.meta.env.VITE_PAYPAL_PLAN_PREMIUM_3,
+};
 
 // ── RevenueCat 대시보드 구성 ──
 // Products:     pro_1(Monthly), Pro_3(3months), Premium_1(Monthly), Premium_3(3months)
@@ -243,6 +253,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     const [emailVerifSent, setEmailVerifSent] = useState(false);
     const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
     const [countryInfo, setCountryInfo] = useState(null);
+    const [paypalPlanId, setPaypalPlanId] = useState(null); // PayPal 결제 진행 중인 플랜
 
     // ── RevenueCat Offering 상태 (네이티브 전용) ──
     const isNative = Capacitor.isNativePlatform();
@@ -381,8 +392,13 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 } finally {
                     setLoadingPlan(null);
                 }
+            } else if (!isKR && PAYPAL_PLAN_IDS[plan.id]) {
+                // USD Web: PayPal — 플랜 카드 내에 PayPal 버튼 표시
+                setPaypalPlanId(plan.id);
+                setLoadingPlan(null);
+                return; // PayPal 버튼이 렌더링되면 사용자가 직접 클릭
             } else {
-                // Web Toss Payments Flow
+                // KRW Web: Toss Payments Flow
                 const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
                 const payment = tossPayments.payment({ customerKey: user.uid });
                 const currency = plan.currency || 'KRW';
@@ -400,9 +416,58 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         }
     };
 
+    // PayPal onApprove 핸들러 — 구독 활성화 확인 후 Firestore 업데이트
+    const handlePayPalApprove = async (data) => {
+        setLoadingPlan(paypalPlanId);
+        setError('');
+        try {
+            const res = await authFetch(`${SERVER_URL}/api/paypal-activate`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    subscriptionId: data.subscriptionID,
+                    userId: user.uid,
+                    planId: paypalPlanId,
+                }),
+            });
+            if (!res.ok) throw new Error(`Server error ${res.status}`);
+            window.location.reload();
+        } catch (e) {
+            setError(e.message || t('upgrade.paymentError'));
+        } finally {
+            setLoadingPlan(null);
+            setPaypalPlanId(null);
+        }
+    };
+
     const currentTier = profile?.tier || 'trial';
     const currentPlanId = (currentTier === 'pro' || currentTier === 'premium') ? (profile?.planId || null) : null;
     const isSubscribed = currentTier === 'pro' || currentTier === 'premium';
+
+    // PayPal 버튼 렌더 (플랜 카드 내부)
+    const renderPayPalButton = (plan) => {
+        if (paypalPlanId !== plan.id || !PAYPAL_PLAN_IDS[plan.id]) return null;
+        return (
+            <PayPalScriptProvider options={{
+                'client-id': PAYPAL_CLIENT_ID,
+                vault: true,
+                intent: 'subscription',
+            }}>
+                <PayPalButtons
+                    style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 35 }}
+                    createSubscription={(data, actions) => {
+                        return actions.subscription.create({
+                            plan_id: PAYPAL_PLAN_IDS[plan.id],
+                            custom_id: user.uid,
+                        });
+                    }}
+                    onApprove={handlePayPalApprove}
+                    onCancel={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+                    onError={(err) => { setError(String(err)); setPaypalPlanId(null); setLoadingPlan(null); }}
+                />
+            </PayPalScriptProvider>
+        );
+    };
 
     return (
         <div className="upgrade-overlay" onClick={onClose}>
@@ -549,6 +614,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                                 ? t('upgrade.currentPlan')
                                                 : t('upgrade.startPlan')}
                                     </button>
+                                    {renderPayPalButton(plan)}
                                 </div>
                             );
                         })}
@@ -623,6 +689,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                                 ? t('upgrade.currentPlan')
                                                 : t('upgrade.startPlan')}
                                     </button>
+                                    {renderPayPalButton(plan)}
                                 </div>
                             );
                         })}

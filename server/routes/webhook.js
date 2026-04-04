@@ -336,4 +336,248 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
     }
 });
 
+// ── PayPal Webhook ─────────────────────────────────────────────────────────
+// PayPal Developer Dashboard → Webhooks에 등록:
+//   https://<server-domain>/api/paypal-webhook
+// 이벤트: BILLING.SUBSCRIPTION.ACTIVATED, CANCELLED, EXPIRED, SUSPENDED
+//         PAYMENT.SALE.COMPLETED
+
+const PAYPAL_CLIENT_ID = process.env.VITE_PAYPAL_CLIENT_ID;
+const PAYPAL_SECRET = process.env.PAYPAL_SECRET;
+const PAYPAL_WEBHOOK_ID = process.env.PAYPAL_WEBHOOK_ID;
+const PAYPAL_API = process.env.PAYPAL_MODE === 'live'
+    ? 'https://api-m.paypal.com'
+    : 'https://api-m.sandbox.paypal.com';
+
+// PayPal Plan ID → 내부 planId 매핑
+const PAYPAL_PLAN_MAP = {
+    [process.env.VITE_PAYPAL_PLAN_PRO_1]: { tier: 'pro', planId: 'pro_1', months: 1 },
+    [process.env.VITE_PAYPAL_PLAN_PRO_3]: { tier: 'pro', planId: 'pro_3', months: 3 },
+    [process.env.VITE_PAYPAL_PLAN_PREMIUM_1]: { tier: 'premium', planId: 'premium_1', months: 1 },
+    [process.env.VITE_PAYPAL_PLAN_PREMIUM_3]: { tier: 'premium', planId: 'premium_3', months: 3 },
+};
+
+// PayPal OAuth2 Access Token 취득
+async function getPayPalAccessToken() {
+    const res = await axios.post(`${PAYPAL_API}/v1/oauth2/token`, 'grant_type=client_credentials', {
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        auth: { username: PAYPAL_CLIENT_ID, password: PAYPAL_SECRET },
+    });
+    return res.data.access_token;
+}
+
+// PayPal Webhook 서명 검증
+async function verifyPayPalWebhook(req) {
+    if (!PAYPAL_WEBHOOK_ID) return true; // 개발 중에는 스킵
+    try {
+        const token = await getPayPalAccessToken();
+        const res = await axios.post(`${PAYPAL_API}/v1/notifications/verify-webhook-signature`, {
+            auth_algo: req.headers['paypal-auth-algo'],
+            cert_url: req.headers['paypal-cert-url'],
+            transmission_id: req.headers['paypal-transmission-id'],
+            transmission_sig: req.headers['paypal-transmission-sig'],
+            transmission_time: req.headers['paypal-transmission-time'],
+            webhook_id: PAYPAL_WEBHOOK_ID,
+            webhook_event: req.body,
+        }, { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } });
+        return res.data.verification_status === 'SUCCESS';
+    } catch (e) {
+        console.error('[PayPalWebhook] Signature verification failed:', e.message);
+        return false;
+    }
+}
+
+router.post('/api/paypal-webhook', async (req, res) => {
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    try {
+        // 서명 검증
+        const valid = await verifyPayPalWebhook(req);
+        if (!valid) {
+            console.warn('[PayPalWebhook] Invalid signature — rejecting');
+            return res.status(401).json({ error: 'Invalid signature' });
+        }
+
+        const event = req.body;
+        const eventType = event?.event_type;
+        const resource = event?.resource;
+
+        console.log(`[PayPalWebhook] ${eventType}`, JSON.stringify(resource).slice(0, 300));
+
+        if (!eventType || !resource) {
+            return res.status(400).json({ error: 'Missing event_type or resource' });
+        }
+
+        switch (eventType) {
+            // ── 구독 활성화 ──
+            case 'BILLING.SUBSCRIPTION.ACTIVATED': {
+                const subscriptionId = resource.id;
+                const paypalPlanId = resource.plan_id;
+                const customId = resource.custom_id; // 우리 앱의 Firebase UID
+                if (!customId) {
+                    console.warn('[PayPalWebhook] No custom_id (Firebase UID) in subscription');
+                    break;
+                }
+
+                const planInfo = PAYPAL_PLAN_MAP[paypalPlanId];
+                if (!planInfo) {
+                    console.warn(`[PayPalWebhook] Unknown plan: ${paypalPlanId}`);
+                    break;
+                }
+
+                // 이중 결제 방지: Toss/RevenueCat 활성 구독 확인
+                const userDoc = await adminDb.collection('users').doc(customId).get();
+                const userData = userDoc.exists ? userDoc.data() : {};
+                if ((userData.tier === 'pro' || userData.tier === 'premium') &&
+                    userData.tierSource !== 'paypal' && userData.autoRenew === true) {
+                    const existingExpires = userData.subscriptionExpiresAt?.toDate?.();
+                    if (existingExpires && existingExpires > new Date()) {
+                        console.log(`[PayPalWebhook] SKIP ${customId} — active ${userData.tierSource} subscription`);
+                        break;
+                    }
+                }
+
+                const nextBilling = resource.billing_info?.next_billing_time;
+                const updateData = {
+                    tier: planInfo.tier,
+                    planId: planInfo.planId,
+                    subscriptionMonths: planInfo.months,
+                    autoRenew: true,
+                    tierSource: 'paypal',
+                    paypalSubscriptionId: subscriptionId,
+                    paypalPlanId,
+                    subscriptionCurrency: 'USD',
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+                };
+                if (nextBilling) {
+                    updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(new Date(nextBilling));
+                }
+                await adminDb.collection('users').doc(customId).update(updateData);
+                console.log(`[PayPalWebhook] ${customId} → ${planInfo.tier} (ACTIVATED, plan=${planInfo.planId})`);
+                break;
+            }
+
+            // ── 갱신 결제 성공 ──
+            case 'PAYMENT.SALE.COMPLETED': {
+                const billingAgreementId = resource.billing_agreement_id;
+                if (!billingAgreementId) break;
+
+                // subscriptionId로 유저 조회
+                const snap = await adminDb.collection('users')
+                    .where('paypalSubscriptionId', '==', billingAgreementId).limit(1).get();
+                if (snap.empty) {
+                    console.warn(`[PayPalWebhook] User not found for subscription: ${billingAgreementId}`);
+                    break;
+                }
+                const userDoc = snap.docs[0];
+                const userData = userDoc.data();
+                const months = userData.subscriptionMonths || 1;
+
+                // 만기일 연장
+                const currentExpiry = userData.subscriptionExpiresAt?.toDate?.() || new Date();
+                const baseDate = currentExpiry > new Date() ? currentExpiry : new Date();
+                const newExpiry = new Date(baseDate);
+                newExpiry.setMonth(newExpiry.getMonth() + months);
+
+                await userDoc.ref.update({
+                    subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(newExpiry),
+                    lastRenewedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[PayPalWebhook] ${userDoc.id} → renewed (expires ${newExpiry.toISOString().slice(0,10)})`);
+                break;
+            }
+
+            // ── 구독 취소 (만료일까지 서비스 유지) ──
+            case 'BILLING.SUBSCRIPTION.CANCELLED': {
+                const customId = resource.custom_id;
+                if (!customId) break;
+                await adminDb.collection('users').doc(customId).update({
+                    autoRenew: false,
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[PayPalWebhook] ${customId} → autoRenew off (CANCELLED)`);
+                break;
+            }
+
+            // ── 구독 만료 / 정지 ──
+            case 'BILLING.SUBSCRIPTION.EXPIRED':
+            case 'BILLING.SUBSCRIPTION.SUSPENDED': {
+                const customId = resource.custom_id;
+                if (!customId) break;
+                await adminDb.collection('users').doc(customId).update({
+                    tier: 'trial',
+                    autoRenew: false,
+                    planId: null,
+                    tierSource: null,
+                    paypalSubscriptionId: null,
+                    paypalPlanId: null,
+                    tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+                console.log(`[PayPalWebhook] ${customId} → trial (${eventType})`);
+                break;
+            }
+
+            default:
+                console.log(`[PayPalWebhook] Unhandled: ${eventType}`);
+        }
+
+        res.status(200).json({ success: true });
+    } catch (err) {
+        console.error('[PayPalWebhook] Error:', err.message);
+        res.status(200).json({ success: false, error: err.message });
+    }
+});
+
+// ── PayPal 구독 활성화 확인 (클라이언트에서 onApprove 후 호출) ──────────────
+router.post('/api/paypal-activate', async (req, res) => {
+    const { subscriptionId, userId, planId } = req.body;
+    if (!subscriptionId || !userId || !planId) {
+        return res.status(400).json({ error: 'subscriptionId, userId, planId required' });
+    }
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    try {
+        const token = await getPayPalAccessToken();
+        const subRes = await axios.get(`${PAYPAL_API}/v1/billing/subscriptions/${subscriptionId}`, {
+            headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+        });
+        const sub = subRes.data;
+
+        if (sub.status !== 'ACTIVE' && sub.status !== 'APPROVED') {
+            return res.status(400).json({ error: `Subscription not active: ${sub.status}` });
+        }
+
+        const planInfo = PAYPAL_PLAN_MAP[sub.plan_id];
+        if (!planInfo) {
+            return res.status(400).json({ error: `Unknown plan: ${sub.plan_id}` });
+        }
+
+        const nextBilling = sub.billing_info?.next_billing_time;
+        const updateData = {
+            tier: planInfo.tier,
+            planId: planInfo.planId,
+            subscriptionMonths: planInfo.months,
+            autoRenew: true,
+            tierSource: 'paypal',
+            paypalSubscriptionId: subscriptionId,
+            paypalPlanId: sub.plan_id,
+            subscriptionCurrency: 'USD',
+            tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+        };
+        if (nextBilling) {
+            updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(new Date(nextBilling));
+        }
+        await adminDb.collection('users').doc(userId).update(updateData);
+        console.log(`[PayPal] Activated: ${userId} → ${planInfo.tier} (${planInfo.planId})`);
+
+        res.json({ success: true, tier: planInfo.tier });
+    } catch (err) {
+        console.error('[PayPal] Activate error:', err.response?.data || err.message);
+        res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;
