@@ -27,16 +27,17 @@ router.post('/api/vocab-words', requireAuth, async (req, res) => {
     const levelDesc = {
         basic: `Beginner (A1/A2)
   - Single words or 2-word phrases only. No idioms or advanced expressions.
-  - Top 500 high-frequency words tied to the topic in ${langName}.
+  - Top 800 high-frequency words tied to the topic in ${langName}.
   - Concrete nouns, basic verbs, simple adjectives that a complete beginner needs first.
   - ${guide.basic}
   - Example sentences: one clause, 3–8 ${unit}.`,
-        intermediate: `Intermediate (B1/B2)
-  - Mix of single words, collocations, common idioms, and fixed expressions natural to ${langName}.
-  - Vocabulary that adds nuance to daily conversations — include expressions unique to ${langName} that have no direct equivalent in other languages.
-  - Include emotion/situation adjectives and practical fixed expressions.
+        intermediate: `Intermediate (B1–B2)
+  - Single words, 2-3 word collocations, and common fixed expressions natural to ${langName}.
+  - Vocabulary for everyday conversations: opinions, feelings, describing experiences, making comparisons.
+  - Include practical phrasal verbs/expressions that bridge the gap from textbook to real conversation.
+  - Avoid rare idioms or culturally obscure expressions — focus on high-utility expressions a confident beginner would encounter.
   - ${guide.inter}
-  - Example sentences: compound sentences, 5–12 ${unit}.`,
+  - Example sentences: 1-2 clauses, 6–12 ${unit}. Past and present tenses allowed.`,
         advanced: `Advanced (C1/C2)
   - Sophisticated idioms, proverbs, slang, domain-specific terms, and multi-word expressions in ${langName}.
   - Nuanced synonyms that native ${langName} speakers prefer over textbook equivalents.

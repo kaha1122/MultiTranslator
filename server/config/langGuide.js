@@ -93,15 +93,15 @@ function getDifficultyDesc(level, langCode) {
     const langName = LANG_NAMES[langCode] || 'the target language';
     const descs = {
         basic: `Beginner (A1/A2)
-  - Vocabulary: Top 500 high-frequency words only. Simple nouns, verbs, adjectives.
+  - Vocabulary: Top 800 high-frequency words only. Simple nouns, verbs, adjectives.
   - Grammar: ${guide.basic} One clause per sentence. No subordinate clauses.
   - Length: 3–8 ${unit}.
   - Goal: Express immediate needs in the simplest form possible.`,
-        intermediate: `Intermediate (B1/B2)
-  - Vocabulary: Common collocations, everyday idioms, and expressions natural to ${langName}.
-  - Grammar: ${guide.inter} Up to 2 clauses per sentence.
-  - Length: 5–12 ${unit}.
-  - Goal: Express opinions, reasons, and polite requests with context.`,
+        intermediate: `Intermediate (B1–B2)
+  - Vocabulary: Common collocations and practical fixed expressions natural to ${langName}. Avoid rare idioms.
+  - Grammar: ${guide.inter} 1-2 clauses per sentence. Past and present tenses allowed.
+  - Length: 6–12 ${unit}.
+  - Goal: Express opinions, reasons, and polite requests in everyday situations.`,
         high: `Advanced (C1/C2)
   - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated expressions.
   - Grammar: ${guide.adv} Complex sentences with 3+ clauses.

@@ -26,11 +26,11 @@ router.post('/api/listening-passage', requireAuth, async (req, res) => {
         basic: `Beginner (A1/A2)
   - Passage: 5-6 sentences, 30-50 ${unit}. Simple structure.
   - ${guide.basic}
-  - Use only top 500 high-frequency words.`,
-        intermediate: `Intermediate (B1/B2)
-  - Passage: 7-8 sentences, 50-80 ${unit}. Compound sentences with connectors.
+  - Use only top 800 high-frequency words.`,
+        intermediate: `Intermediate (B1–B2)
+  - Passage: 7-8 sentences, 50-80 ${unit}. 1-2 clauses per sentence with connectors.
   - ${guide.inter}
-  - Include common idioms and collocations natural to ${targetLangName}.`,
+  - Include common collocations and practical expressions natural to ${targetLangName}. Avoid rare idioms.`,
         advanced: `Advanced (C1/C2)
   - Passage: 9-10 sentences, 80-120 ${unit}. Complex multi-clause sentences.
   - ${guide.adv}
