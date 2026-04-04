@@ -39,14 +39,15 @@ body {
 }
 
 /* Global Mobile App Layout
- * --safe-bottom: 플랫폼별 하단 안전 영역 높이 (JS에서 설정)
- *   - iOS 네이티브: safe-area-inset-bottom 값 (홈 인디케이터 ~34px)
- *   - Android / Web: 0px (safe-area가 WebView 밖에 있음)
- * --admob-bottom: AdMob 배너 높이 (JS에서 동적 설정, 광고 없으면 0px)
+ * 하단 여백 전략 (3 플랫폼 × 2 Tier 통합):
  *
- * iOS에서 AdMob 배너는 safe-area 위에 놓이므로,
- * 광고 있을 때: admob-bottom만, 광고 없을 때: safe-bottom만 적용
- * → max()로 둘 중 큰 값 사용 (동시에 합산하지 않음)
+ * --admob-bottom: AdMob 배너 높이 (JS에서 동적 설정, 광고 없으면 0px)
+ * env(safe-area-inset-bottom): iOS 홈 인디케이터 (~34px), Android/Web은 0px
+ *
+ * 광고 있을 때 (.admob-active): admob-bottom이 safe-area보다 크므로 admob만 사용
+ * 광고 없을 때: safe-area만 사용 (iOS: ~34px, Android/Web: 0px)
+ *
+ * CSS만으로 분기 — JS probe 불필요, 크래시 위험 없음
  */
 .app-container {
   width: 100%;
@@ -56,16 +57,18 @@ body {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  padding: 0 0 calc(40px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px))) 0;
+  /* 기본: safe-area 적용 (광고 없는 Pro/Premium + iOS safe-area) */
+  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
   overflow-y: auto;
   scrollbar-width: none;
-  /* Firefox */
   -ms-overflow-style: none;
-  /* IE/Edge */
-  /* 컨테이너 자체가 스크롤 컨텍스트 → overflow-x: hidden이 sticky를 깨지 않음 */
+}
+/* 광고 있을 때: admob-bottom으로 대체 (배너가 safe-area 포함) */
+.admob-active .app-container {
+  padding-bottom: calc(40px + var(--admob-bottom, 0px));
 }
 
 .app-container::-webkit-scrollbar {
@@ -324,7 +327,12 @@ body {
   flex-direction: column;
   box-shadow: 4px 0 32px rgba(0, 0, 0, 0.18);
   overflow-y: auto;
-  padding-bottom: max(var(--safe-bottom, 0px), var(--admob-bottom, 0px));
+  /* 기본(광고 없음): safe-area 적용 */
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+/* 광고 있을 때: admob 높이만큼 패딩 */
+.admob-active .sidebar {
+  padding-bottom: var(--admob-bottom, 0px);
 }
 
 .sidebar-header {
@@ -482,7 +490,7 @@ body {
 }
 
 .sidebar-footer {
-  padding: 0.6rem 1rem calc(0.6rem + var(--safe-bottom, 0px));
+  padding: 0.6rem 1rem calc(0.6rem + env(safe-area-inset-bottom, 0px));
   border-top: 1px solid #f1f5f9;
 }
 
@@ -558,14 +566,18 @@ body {
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
   position: fixed;
-  /* max(): 광고 있으면 배너 위, 없으면 safe-area 위 (iOS 중복 방지) */
-  bottom: calc(max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)) + 2px);
+  /* 기본(광고 없음): safe-area 위에 배치 */
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 2px);
   padding-bottom: 2px;
   left: 50%;
   transform: translateX(-50%);
   width: calc(100% - 32px);
   max-width: 440px;
   z-index: 1000;
+}
+/* 광고 있을 때: 배너 위에 배치 */
+.admob-active .app-nav {
+  bottom: calc(var(--admob-bottom, 0px) + 2px);
 }
 
 .nav-item {
@@ -1311,8 +1323,8 @@ body {
 /* ── 탭 위치 도트 인디케이터 ─────────────────────────────────────── */
 .tab-dots {
   position: fixed;
-  /* max(): 광고 있으면 배너 위, 없으면 safe-area 위 (iOS 중복 방지) */
-  bottom: max(var(--safe-bottom, 0px), var(--admob-bottom, 0px));
+  /* 기본(광고 없음): safe-area 위에 배치 */
+  bottom: env(safe-area-inset-bottom, 0px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
@@ -1326,6 +1338,10 @@ body {
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+}
+/* 광고 있을 때: 배너 위에 배치 */
+.admob-active .tab-dots {
+  bottom: var(--admob-bottom, 0px);
 }
 
 .tab-dot {

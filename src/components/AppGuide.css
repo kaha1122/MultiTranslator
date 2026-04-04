@@ -4,7 +4,7 @@
   flex-direction: column;
   min-height: 100vh;
   background: #f8fafc;
-  padding-bottom: calc(60px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)));
+  padding-bottom: calc(60px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
 }
 
 .guide-header {

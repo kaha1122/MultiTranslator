@@ -94,50 +94,13 @@ function setOffset(height) {
     const r = document.documentElement;
     r.style.setProperty('--admob-top', '0px');
     r.style.setProperty('--admob-bottom', height ? `${height}px` : '0px');
-    // 광고 표시 여부를 CSS에서 참조할 수 있도록 플래그 설정
-    r.style.setProperty('--admob-showing', height ? '1' : '0');
-}
-
-// 앱 시작 시 플랫폼 CSS 클래스 + safe-area 변수 설정
-if (isNativePlatform()) {
-    const platform = isIOS() ? 'ios' : 'android';
-    document.documentElement.classList.add(`platform-${platform}`, 'platform-native');
-}
-
-// --safe-bottom 변수 설정
-// iOS: env(safe-area-inset-bottom)을 JS로 읽어서 CSS 변수에 반영
-// Android/Web: 0px (safe-area가 WebView 밖이므로 불필요)
-// 주의: 모듈 스코프에서 document.body가 null일 수 있으므로 DOMContentLoaded 후 실행
-(() => {
-    const r = document.documentElement;
-    if (!isIOS()) {
-        r.style.setProperty('--safe-bottom', '0px');
-        return;
-    }
-    // iOS: DOM 준비 후 safe-area 실측
-    const measure = () => {
-        try {
-            const probe = document.createElement('div');
-            probe.style.cssText = 'position:fixed;bottom:0;height:env(safe-area-inset-bottom,0px);pointer-events:none;visibility:hidden';
-            (document.body || document.documentElement).appendChild(probe);
-            requestAnimationFrame(() => {
-                const h = probe.offsetHeight || 0;
-                r.style.setProperty('--safe-bottom', `${h}px`);
-                probe.remove();
-                console.log('[SafeArea] iOS safe-area-inset-bottom:', h, 'px');
-            });
-        } catch (e) {
-            // fallback: iOS 홈 인디케이터 기본값
-            r.style.setProperty('--safe-bottom', '34px');
-            console.warn('[SafeArea] probe failed, using 34px fallback:', e);
-        }
-    };
-    if (document.body) {
-        measure();
+    // 광고 유무에 따라 CSS 클래스 토글 — CSS에서 safe-area 분기에 사용
+    if (height) {
+        r.classList.add('admob-active');
     } else {
-        document.addEventListener('DOMContentLoaded', measure, { once: true });
+        r.classList.remove('admob-active');
     }
-})();
+}
 
 export const useAdMob = (tier) => {
     const bannerShowing = useRef(false);

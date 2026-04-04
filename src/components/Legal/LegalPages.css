@@ -134,7 +134,7 @@
     border-top: 1px solid #f1f5f9;
     background: white;
     /* 하단 홈바 영역(iOS 등)에 걸리지 않도록 여유 공간 확보 */
-    padding-bottom: calc(1.2rem + var(--safe-bottom, 0px));
+    padding-bottom: calc(1.2rem + env(safe-area-inset-bottom, 0px));
 }
 
 .legal-footer a {

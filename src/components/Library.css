@@ -239,7 +239,7 @@
   max-height: 60vh;
   overflow-y: auto;
   /* 36px 도트바 + safe-area 또는 광고 배너 중 큰 값 + 여유 60px */
-  padding: 16px 0 calc(max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)) + 36px + 60px);
+  padding: 16px 0 calc(max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)) + 36px + 60px);
   animation: lib-bs-slide-up 0.25s ease;
 }
 

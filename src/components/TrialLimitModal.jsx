@@ -12,7 +12,7 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
                 background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center',
                 alignItems: 'center', zIndex: 2000,
-                padding: '20px 20px calc(20px + max(var(--safe-bottom, 0px), var(--admob-bottom, 0px)))'
+                padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
             }}
             onClick={onClose}
         >
