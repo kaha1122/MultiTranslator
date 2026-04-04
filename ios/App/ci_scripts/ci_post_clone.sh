@@ -46,8 +46,9 @@ if [ -f "$IOS_CAP_CONFIG" ]; then
     const cfg = JSON.parse(fs.readFileSync('$IOS_CAP_CONFIG', 'utf8'));
     if (!cfg.plugins) cfg.plugins = {};
     cfg.plugins.CapacitorUpdater = { autoUpdate: false };
+    cfg.backgroundColor = '#f8fafc';
     fs.writeFileSync('$IOS_CAP_CONFIG', JSON.stringify(cfg, null, '\t') + '\n');
-    console.log('iOS capacitor.config.json: autoUpdate -> false');
+    console.log('iOS capacitor.config.json: autoUpdate -> false, backgroundColor -> #f8fafc');
   "
 fi
 
