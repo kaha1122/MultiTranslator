@@ -480,9 +480,9 @@ function App() {
         const configDoc = await getDoc(doc(db, 'config', 'app'));
         const configData = configDoc.data() || {};
         const platform = Capacitor.getPlatform(); // 'ios' | 'android'
-        // iOS/Android 각각 별도 필드 우선, 없으면 공통 필드 폴백
+        // 플랫폼별 전용 필드만 사용 — 공통 폴백 제거 (iOS/Android 버전 체계가 다름)
         const latestVersion = platform === 'ios'
-          ? (configData.latestIOSVersion || configData.latestNativeVersion)
+          ? configData.latestIOSVersion
           : (configData.latestAndroidVersion || configData.latestNativeVersion);
         if (latestVersion && info.version && isVersionOlder(info.version, latestVersion)) {
           setShowNativeUpdate(true);
@@ -1814,7 +1814,7 @@ function App() {
         <button
           onClick={() => {
             const storeUrl = Capacitor.getPlatform() === 'ios'
-              ? 'https://apps.apple.com/app/pronunfit/idXXXXXXXXXX' // TODO: App Store ID 등록 후 교체
+              ? 'https://apps.apple.com/app/pronunfit/id6761342764'
               : 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
             window.open(storeUrl, '_system');
           }}
