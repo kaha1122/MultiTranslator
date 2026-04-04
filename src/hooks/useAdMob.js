@@ -90,6 +90,15 @@ async function loadAdMob() {
     }
 }
 
+// 앱 시작 시 플랫폼 CSS 클래스 부여 (네이티브 배경색 분기 등)
+// document.documentElement만 접근 — body 접근 없음, 모듈 스코프 안전
+if (isNativePlatform()) {
+    document.documentElement.classList.add(
+        `platform-${isIOS() ? 'ios' : 'android'}`,
+        'platform-native'
+    );
+}
+
 function setOffset(height) {
     const r = document.documentElement;
     r.style.setProperty('--admob-top', '0px');

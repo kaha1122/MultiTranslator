@@ -34,8 +34,12 @@ body {
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  /* Start from top to prevent clipping */
   padding-top: 0;
+}
+/* 네이티브 앱: 광고 아래 틈을 앱 배경색과 통일 (iOS/Android 동일) */
+.platform-native body {
+  background-color: var(--bg-primary);
+  background-image: none;
 }
 
 /* Global Mobile App Layout
