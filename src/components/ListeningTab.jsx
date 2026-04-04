@@ -1,5 +1,5 @@
-import { useState, useEffect, useRef } from 'react';
-import { ChevronDown, Sparkles, Volume2, Loader2, BookOpen } from 'lucide-react';
+import { useState, useEffect, useRef, useCallback } from 'react';
+import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -83,6 +83,83 @@ export default function ListeningTab({
     const [activeRecIdx, setActiveRecIdx] = useState(null);
     const [playingSentenceIdx, setPlayingSentenceIdx] = useState(null);
 
+    // 장문 TTS 재생 관리
+    const [passagePlaying, setPassagePlaying] = useState(false); // 재생 중 여부
+    const [passageLoading, setPassageLoading] = useState(false); // TTS 로딩 중
+    const [loopMode, setLoopMode] = useState(false); // 반복 재생 모드
+    const passageAudioRef = useRef(null); // 현재 재생 중인 Audio 객체
+    const loopModeRef = useRef(false); // useCallback 내에서 최신 값 접근용
+
+    // loopMode 최신 값 동기화
+    useEffect(() => { loopModeRef.current = loopMode; }, [loopMode]);
+
+    // 장문 재생 정리
+    const stopPassageAudio = useCallback(() => {
+        if (passageAudioRef.current) {
+            passageAudioRef.current.pause();
+            passageAudioRef.current.onended = null;
+            passageAudioRef.current = null;
+        }
+        setPassagePlaying(false);
+        setPassageLoading(false);
+    }, []);
+
+    // 장문 재생/일시정지 토글
+    const handlePassagePlay = useCallback(async () => {
+        if (!passage?.text || !onSpeak) return;
+
+        // 재생 중 → 일시정지
+        if (passagePlaying && passageAudioRef.current) {
+            passageAudioRef.current.pause();
+            setPassagePlaying(false);
+            return;
+        }
+
+        // 일시정지 상태에서 재개
+        if (passageAudioRef.current && passageAudioRef.current.paused && passageAudioRef.current.currentTime > 0) {
+            passageAudioRef.current.play().catch(() => {});
+            setPassagePlaying(true);
+            return;
+        }
+
+        // 새로 재생 시작
+        const ttsText = passageType === 'dialogue' ? cleanDialogueForTTS(passage.text) : passage.text;
+        const SERVER_URL = getServerUrl();
+        setPassageLoading(true);
+
+        try {
+            const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ text: ttsText, langCode: selectedLang }),
+            });
+            if (!res.ok) throw new Error(`TTS ${res.status}`);
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+
+            audio.onended = () => {
+                if (loopModeRef.current) {
+                    audio.currentTime = 0;
+                    audio.play().catch(() => {});
+                } else {
+                    setPassagePlaying(false);
+                    passageAudioRef.current = null;
+                }
+            };
+
+            passageAudioRef.current = audio;
+            await audio.play();
+            setPassagePlaying(true);
+        } catch (e) {
+            console.warn('[ListeningTab] TTS error:', e);
+            // fallback: 기존 onSpeak 사용
+            onSpeak(ttsText, selectedLang);
+        } finally {
+            setPassageLoading(false);
+        }
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio]);
+
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
 
@@ -96,6 +173,7 @@ export default function ListeningTab({
 
     // 조건 변경 시 리셋
     useEffect(() => {
+        stopPassageAudio();
         setPassage(null);
         setKeywords([]);
         setSavedWords(new Set());
@@ -103,7 +181,7 @@ export default function ListeningTab({
         setShowTranslation(false);
         setShowPronunciation(false);
         avoidTitlesRef.current = [];
-    }, [selectedTopic, selectedLang, level, passageType]);
+    }, [selectedTopic, selectedLang, level, passageType]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // ── Firestore History ────────────────────────────────────────
     const loadHistory = async (key) => {
@@ -134,6 +212,7 @@ export default function ListeningTab({
     // ── Generate Passage ─────────────────────────────────────────
     const handleGenerate = async () => {
         if (!selectedTopic) return;
+        stopPassageAudio();
         setIsLoading(true);
         setActiveRecIdx(null);
 
@@ -323,15 +402,33 @@ export default function ListeningTab({
                                     <p className="listening-passage-title-trans">{passage.titleTranslation}</p>
                                 )}
                             </div>
+                            {/* 재생 ↔ 반복 토글 */}
+                            <div className="listening-loop-toggle">
+                                <span className={`listening-loop-label ${!loopMode ? 'active' : ''}`}>
+                                    <Volume2 size={11} />
+                                </span>
+                                <button
+                                    className={`listening-loop-track ${loopMode ? 'on' : ''}`}
+                                    onClick={() => setLoopMode(m => !m)}
+                                >
+                                    <span className="listening-loop-thumb" />
+                                </button>
+                                <span className={`listening-loop-label ${loopMode ? 'active' : ''}`}>
+                                    <Repeat size={11} />
+                                </span>
+                            </div>
+                            {/* 재생/일시정지 버튼 */}
                             <button
-                                className="listening-tts-btn"
-                                onClick={() => onSpeak?.(
-                                    passageType === 'dialogue' ? cleanDialogueForTTS(passage.text) : passage.text,
-                                    selectedLang
-                                )}
-                                title="Listen"
+                                className={`listening-tts-btn ${passagePlaying ? 'playing' : ''}`}
+                                onClick={handlePassagePlay}
+                                disabled={passageLoading}
+                                title={passagePlaying ? 'Pause' : 'Play'}
                             >
-                                <Volume2 size={18} />
+                                {passageLoading
+                                    ? <Loader2 size={18} className="spin" />
+                                    : passagePlaying
+                                        ? <Pause size={18} />
+                                        : <Volume2 size={18} />}
                             </button>
                         </div>
 

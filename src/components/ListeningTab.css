@@ -268,6 +268,65 @@
   background: #dcfce7;
 }
 
+.listening-tts-btn.playing {
+  background: #fef3c7;
+  border-color: #f59e0b;
+  color: #f59e0b;
+}
+
+/* ── Loop Toggle (재생 ↔ 반복) ────────────────────────────── */
+.listening-loop-toggle {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 8px;
+}
+
+.listening-loop-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+}
+
+.listening-loop-label.active {
+  color: #0f172a;
+}
+
+.listening-loop-track {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 9px;
+  border: none;
+  background: #00a884;
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.25s;
+}
+
+.listening-loop-track.on {
+  background: #6366f1;
+}
+
+.listening-loop-thumb {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.25s;
+}
+
+.listening-loop-track.on .listening-loop-thumb {
+  transform: translateX(14px);
+}
+
 .listening-passage-text {
   font-size: 0.92rem;
   line-height: 1.75;
