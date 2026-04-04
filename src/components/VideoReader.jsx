@@ -233,7 +233,7 @@ function VideoReader({
                     <div className="vid-video-wrapper">
                         <iframe
                             className="vid-iframe"
-                            src={`https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0&autoplay=1`}
+                            src={`https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0&autoplay=1&playsinline=1`}
                             allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
                             allowFullScreen
                             title={selected.title || 'YouTube'}
