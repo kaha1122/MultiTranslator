@@ -83,16 +83,21 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         }
 
         try {
-            // [신규] 안드로이드/iOS 네이티브 환경일 경우 마이크 하드웨어 권한 팝업 요청
+            // 네이티브 환경: 마이크 하드웨어 권한 확보
             if (Capacitor.isNativePlatform()) {
-                const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
-                if (!hasPermission.value) {
-                    const reqPermission = await VoiceRecorder.requestAudioRecordingPermission();
-                    if (!reqPermission.value) {
-                        setErrorMsg(getT(sourceLangCode, 'errors.micDeniedNative') || getT(sourceLangCode, 'errors.micAccess') || "Microphone permission is required.");
-                        setMicDenied(true);
-                        return; // 권한 거부 시 녹음 시작 안 함
+                try {
+                    const hasPermission = await VoiceRecorder.hasAudioRecordingPermission();
+                    if (!hasPermission.value) {
+                        const reqPermission = await VoiceRecorder.requestAudioRecordingPermission();
+                        if (!reqPermission.value) {
+                            setErrorMsg(getT(sourceLangCode, 'errors.micDeniedNative') || getT(sourceLangCode, 'errors.micAccess') || "Microphone permission is required.");
+                            setMicDenied(true);
+                            return;
+                        }
                     }
+                } catch (permErr) {
+                    // VoiceRecorder 플러그인 실패 시 getUserMedia로 직접 권한 요청 시도
+                    console.warn('[Mic] VoiceRecorder permission check failed, trying getUserMedia directly:', permErr);
                 }
             }
 
@@ -283,8 +288,13 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 BluetoothAudio.stopBluetoothSco().catch(() => {});
                 btScoActiveRef.current = false;
             }
-            // alert() 대신에 상태 변수에 에러 텍스트를 담아, 부드러운 UI 텍스트로 보여주게 합니다.
-            setErrorMsg(getT(sourceLangCode, 'errors.micAccess'));
+            // 네이티브: 설정에서 마이크 허용 안내 / 웹: 브라우저 설정 안내
+            if (Capacitor.isNativePlatform()) {
+                setErrorMsg(getT(sourceLangCode, 'errors.micDeniedNative') || getT(sourceLangCode, 'errors.micAccess'));
+                setMicDenied(true);
+            } else {
+                setErrorMsg(getT(sourceLangCode, 'errors.micAccess'));
+            }
         }
     };
 
