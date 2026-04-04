@@ -5,6 +5,9 @@
   "ios": {
     "backgroundColor": "#f8fafc"
   },
+  "server": {
+    "iosScheme": "https"
+  },
   "android": {
     "backgroundColor": "#f8fafc"
   },
