@@ -30,6 +30,24 @@ app.get('/ping', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is awake!' });
 });
 
+// IP 기반 국가 감지 — 클라이언트 IP를 서버에서 조회
+app.get('/api/detect-country', async (req, res) => {
+    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    try {
+        const r = await fetch(`https://ipwhois.app/json/${clientIp}?objects=country_code,city,region`, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error(r.status);
+        const d = await r.json();
+        res.json({
+            country: d.country_code || '',
+            city: d.city || '',
+            region: d.region || '',
+        });
+    } catch (e) {
+        console.warn('[detect-country] IP lookup failed:', e.message);
+        res.json({ country: '', city: '', region: '' });
+    }
+});
+
 const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
     const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
