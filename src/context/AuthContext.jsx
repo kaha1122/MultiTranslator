@@ -6,7 +6,7 @@ import { setUserId } from 'firebase/analytics';
 import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
 import { authFetch } from '../utils/authFetch';
-import { detectCountry } from '../utils/detectCountry';
+import { detectGeoInfo } from '../utils/detectCountry';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -84,7 +84,7 @@ export const AuthProvider = ({ children }) => {
                             });
                             docJustCreated = true;
                             // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
-                            detectCountry().then(info => {
+                            detectGeoInfo().then(info => {
                                 if (info.country) {
                                     updateDoc(docRef, {
                                         geoCountry: info.country,
@@ -127,7 +127,7 @@ export const AuthProvider = ({ children }) => {
                             updatedAt: serverTimestamp(),
                         }, { merge: true });
                         // 위치 정보 비동기 저장
-                        detectCountry().then(info => {
+                        detectGeoInfo().then(info => {
                             if (info.country) {
                                 updateDoc(docRef, {
                                     geoCountry: info.country,

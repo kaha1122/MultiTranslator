@@ -30,13 +30,17 @@ app.get('/ping', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is awake!' });
 });
 
-// IP 기반 국가 감지 — 클라이언트 IP를 서버에서 조회
+// IP 기반 국가 감지 (프로필 geoCountry 기록용) — 클라이언트 IP를 서버에서 조회
 app.get('/api/detect-country', async (req, res) => {
-    const clientIp = req.headers['x-forwarded-for']?.split(',')[0]?.trim() || req.ip;
+    const xForwardedFor = req.headers['x-forwarded-for'] || '';
+    const clientIp = xForwardedFor.split(',')[0]?.trim() || req.ip;
+    console.log(`[detect-country] x-forwarded-for: "${xForwardedFor}", req.ip: "${req.ip}", resolved: "${clientIp}"`);
     try {
-        const r = await fetch(`https://ipwhois.app/json/${clientIp}?objects=country_code,city,region`, { signal: AbortSignal.timeout(5000) });
-        if (!r.ok) throw new Error(r.status);
+        const url = `https://ipwhois.app/json/${clientIp}?objects=country_code,city,region`;
+        const r = await fetch(url, { signal: AbortSignal.timeout(5000) });
+        if (!r.ok) throw new Error(`HTTP ${r.status}`);
         const d = await r.json();
+        console.log(`[detect-country] result: country=${d.country_code}, city=${d.city}, region=${d.region}`);
         res.json({
             country: d.country_code || '',
             city: d.city || '',
