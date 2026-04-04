@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef, useImperativeHandle, forwardRef } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
 import { useT, getT } from '../utils/i18n';
 import { ALL_LANGUAGES, SUPPORTED_LANGUAGES, EXTRA_LANGUAGES } from '../config/languages';
@@ -229,13 +230,19 @@ function VideoReader({
                         </a>
                     </div>
 
-                    {/* YouTube 플레이어 (autoplay) */}
+                    {/* YouTube 플레이어 (autoplay)
+                     * iOS WKWebView: capacitor:// 스킴에서 Referer 헤더 미전송 → YouTube 오류 153
+                     * 해결: HTTPS 도메인에서 서빙되는 youtube.html 프록시를 통해 embed
+                     * Android/Web: 직접 embed (정상 동작) */}
                     <div className="vid-video-wrapper">
                         <iframe
                             className="vid-iframe"
-                            src={`https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0&autoplay=1&playsinline=1`}
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                            src={Capacitor.getPlatform() === 'ios'
+                                ? `https://multi-translator-seven.vercel.app/youtube.html?v=${selected.videoId}&cc_load_policy=1&hl=${targetLang}&autoplay=1`
+                                : `https://www.youtube.com/embed/${selected.videoId}?cc_load_policy=1&hl=${targetLang}&rel=0&autoplay=1&playsinline=1`}
+                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                             allowFullScreen
+                            referrerPolicy="strict-origin-when-cross-origin"
                             title={selected.title || 'YouTube'}
                         />
                     </div>
