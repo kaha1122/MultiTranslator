@@ -253,6 +253,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     const [emailVerifSent, setEmailVerifSent] = useState(false);
     const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
     const [countryInfo, setCountryInfo] = useState(null);
+    const [paypalPlanId, setPaypalPlanId] = useState(null); // "선택" 클릭 후 PayPal 버튼 표시용
 
     // ── RevenueCat Offering 상태 (네이티브 전용) ──
     const isNative = Capacitor.isNativePlatform();
@@ -391,6 +392,11 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 } finally {
                     setLoadingPlan(null);
                 }
+            } else if (!isKR && PAYPAL_PLAN_IDS[plan.id]) {
+                // USD Web: "선택" 클릭 → PayPal 버튼 표시
+                setPaypalPlanId(plan.id);
+                setLoadingPlan(null);
+                return;
             } else {
                 // KRW Web: Toss Payments Flow
                 const tossPayments = await loadTossPayments(TOSS_CLIENT_KEY);
@@ -434,36 +440,31 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     const currentPlanId = (currentTier === 'pro' || currentTier === 'premium') ? (profile?.planId || null) : null;
     const isSubscribed = currentTier === 'pro' || currentTier === 'premium';
 
-    // USD 플랜: PayPal 버튼을 "선택" 버튼 대신 직접 표시
-    const isPayPalPlan = (plan) => !isNative && !isKR && PAYPAL_PLAN_IDS[plan.id];
+    const showPayPal = !isNative && !isKR && PAYPAL_CLIENT_ID;
 
+    // "선택" 클릭 후 해당 카드 아래에 PayPal 버튼 표시
     const renderPayPalButton = (plan) => {
-        if (!isPayPalPlan(plan)) return null;
+        if (paypalPlanId !== plan.id || !PAYPAL_PLAN_IDS[plan.id]) return null;
         return (
-            <PayPalScriptProvider options={{
-                'client-id': PAYPAL_CLIENT_ID,
-                vault: true,
-                intent: 'subscription',
-            }}>
-                <div style={{ marginTop: '8px', width: '100%' }}>
-                    <PayPalButtons
-                        style={{ layout: 'horizontal', shape: 'rect', label: 'subscribe', height: 40, tagline: false }}
-                        createSubscription={(data, actions) => {
-                            return actions.subscription.create({
-                                plan_id: PAYPAL_PLAN_IDS[plan.id],
-                                custom_id: user.uid,
-                            });
-                        }}
-                        onApprove={handlePayPalApprove}
-                        onCancel={() => setLoadingPlan(null)}
-                        onError={(err) => { setError(String(err)); setLoadingPlan(null); }}
-                    />
-                </div>
-            </PayPalScriptProvider>
+            <div style={{ marginTop: '10px', width: '100%' }}>
+                <PayPalButtons
+                    style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 40, tagline: false }}
+                    createSubscription={(data, actions) => {
+                        return actions.subscription.create({
+                            plan_id: PAYPAL_PLAN_IDS[plan.id],
+                            custom_id: user.uid,
+                        });
+                    }}
+                    onApprove={handlePayPalApprove}
+                    onCancel={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+                    onError={(err) => { setError(String(err)); setPaypalPlanId(null); setLoadingPlan(null); }}
+                />
+            </div>
         );
     };
 
-    return (
+    // PayPal SDK Provider로 전체 모달 감싸기 (showPayPal일 때만)
+    const modalContent = (
         <div className="upgrade-overlay" onClick={onClose}>
             <div className="upgrade-modal" onClick={e => e.stopPropagation()}>
                 <button className="upgrade-close-btn" onClick={onClose}>
@@ -592,24 +593,23 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                             </div>
                                         )}
                                     </div>
-                                    {isPayPalPlan(plan) ? renderPayPalButton(plan) : (
-                                        <button
-                                            className="upgrade-plan-btn"
-                                            style={{
-                                                background: isCurrentPlan ? '#e2e8f0' : plan.color,
-                                                color: isCurrentPlan ? '#94a3b8' : 'white',
-                                                cursor: isCurrentPlan ? 'default' : 'pointer',
-                                            }}
-                                            onClick={() => !isCurrentPlan && handleUpgrade(plan)}
-                                            disabled={isCurrentPlan || loadingPlan !== null}
-                                        >
-                                            {loadingPlan === plan.id
-                                                ? t('upgrade.processing')
-                                                : isCurrentPlan
-                                                    ? t('upgrade.currentPlan')
-                                                    : t('upgrade.startPlan')}
-                                        </button>
-                                    )}
+                                    <button
+                                        className="upgrade-plan-btn"
+                                        style={{
+                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            color: isCurrentPlan ? '#94a3b8' : 'white',
+                                            cursor: isCurrentPlan ? 'default' : 'pointer',
+                                        }}
+                                        onClick={() => !isCurrentPlan && handleUpgrade(plan)}
+                                        disabled={isCurrentPlan || loadingPlan !== null}
+                                    >
+                                        {loadingPlan === plan.id
+                                            ? t('upgrade.processing')
+                                            : isCurrentPlan
+                                                ? t('upgrade.currentPlan')
+                                                : t('upgrade.startPlan')}
+                                    </button>
+                                    {renderPayPalButton(plan)}
                                 </div>
                             );
                         })}
@@ -668,24 +668,23 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                             </div>
                                         )}
                                     </div>
-                                    {isPayPalPlan(plan) ? renderPayPalButton(plan) : (
-                                        <button
-                                            className="upgrade-plan-btn"
-                                            style={{
-                                                background: isCurrentPlan ? '#e2e8f0' : plan.color,
-                                                color: isCurrentPlan ? '#94a3b8' : 'white',
-                                                cursor: isCurrentPlan ? 'default' : 'pointer',
-                                            }}
-                                            onClick={() => !isCurrentPlan && handleUpgrade(plan)}
-                                            disabled={isCurrentPlan || loadingPlan !== null}
-                                        >
-                                            {loadingPlan === plan.id
-                                                ? t('upgrade.processing')
-                                                : isCurrentPlan
-                                                    ? t('upgrade.currentPlan')
-                                                    : t('upgrade.startPlan')}
-                                        </button>
-                                    )}
+                                    <button
+                                        className="upgrade-plan-btn"
+                                        style={{
+                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            color: isCurrentPlan ? '#94a3b8' : 'white',
+                                            cursor: isCurrentPlan ? 'default' : 'pointer',
+                                        }}
+                                        onClick={() => !isCurrentPlan && handleUpgrade(plan)}
+                                        disabled={isCurrentPlan || loadingPlan !== null}
+                                    >
+                                        {loadingPlan === plan.id
+                                            ? t('upgrade.processing')
+                                            : isCurrentPlan
+                                                ? t('upgrade.currentPlan')
+                                                : t('upgrade.startPlan')}
+                                    </button>
+                                    {renderPayPalButton(plan)}
                                 </div>
                             );
                         })}
@@ -736,6 +735,20 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
             </div>
         </div>
     );
+
+    // PayPal SDK Provider로 감싸기 (USD 웹에서만)
+    if (showPayPal) {
+        return (
+            <PayPalScriptProvider options={{
+                'client-id': PAYPAL_CLIENT_ID,
+                vault: true,
+                intent: 'subscription',
+            }}>
+                {modalContent}
+            </PayPalScriptProvider>
+        );
+    }
+    return modalContent;
 };
 
 function RestorePurchasesButton({ t }) {
