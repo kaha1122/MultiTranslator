@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2, RotateCcw } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
-import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
+import { lazy, Suspense } from 'react';
+
+// PayPal SDK — 웹 USD 결제에서만 동적 로드 (네이티브 앱 크래시 방지)
+const PayPalScriptProvider = lazy(() => import('@paypal/react-paypal-js').then(m => ({ default: m.PayPalScriptProvider })));
+const PayPalButtons = lazy(() => import('@paypal/react-paypal-js').then(m => ({ default: m.PayPalButtons })));
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getAuth, sendEmailVerification } from 'firebase/auth';
@@ -718,83 +722,87 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         </div>
     );
 
-    // PayPal SDK Provider로 감싸기 (USD 웹에서만)
+    // PayPal SDK Provider로 감싸기 (USD 웹에서만, 동적 로드)
     if (showPayPal) {
         return (
-            <PayPalScriptProvider options={{
-                'client-id': PAYPAL_CLIENT_ID,
-                vault: true,
-                intent: 'subscription',
-            }}>
-                {modalContent}
-                {/* PayPal 결제 전용 팝업 */}
-                {selectedPayPalPlan && (
-                    <div className="upgrade-overlay" style={{ zIndex: 10001 }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
-                        <div
-                            className="upgrade-modal"
-                            style={{ maxWidth: '360px', padding: '28px 24px' }}
-                            onClick={e => e.stopPropagation()}
-                        >
-                            <button
-                                className="upgrade-close-btn"
-                                onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+            <Suspense fallback={modalContent}>
+                <PayPalScriptProvider options={{
+                    'client-id': PAYPAL_CLIENT_ID,
+                    vault: true,
+                    intent: 'subscription',
+                }}>
+                    {modalContent}
+                    {/* PayPal 결제 전용 팝업 */}
+                    {selectedPayPalPlan && (
+                        <div className="upgrade-overlay" style={{ zIndex: 10001 }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
+                            <div
+                                className="upgrade-modal"
+                                style={{ maxWidth: '360px', padding: '28px 24px' }}
+                                onClick={e => e.stopPropagation()}
                             >
-                                <X size={20} />
-                            </button>
+                                <button
+                                    className="upgrade-close-btn"
+                                    onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+                                >
+                                    <X size={20} />
+                                </button>
 
-                            <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-                                <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>
-                                    {selectedPayPalPlan.icon}
+                                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                                    <div style={{ fontSize: '1.5rem', marginBottom: '6px' }}>
+                                        {selectedPayPalPlan.icon}
+                                    </div>
+                                    <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: selectedPayPalPlan.color, margin: '0 0 4px' }}>
+                                        {selectedPayPalPlan.name}
+                                    </h3>
+                                    <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
+                                        {selectedPayPalPlan.months === 1
+                                            ? `1 ${t('upgrade.period1m')}`
+                                            : t('upgrade.period3m')}
+                                    </p>
                                 </div>
-                                <h3 style={{ fontSize: '1.1rem', fontWeight: 700, color: selectedPayPalPlan.color, margin: '0 0 4px' }}>
-                                    {selectedPayPalPlan.name}
-                                </h3>
-                                <p style={{ fontSize: '0.85rem', color: '#64748b', margin: 0 }}>
-                                    {selectedPayPalPlan.months === 1
-                                        ? `1 ${t('upgrade.period1m')}`
-                                        : t('upgrade.period3m')}
-                                </p>
-                            </div>
 
-                            <div style={{
-                                background: selectedPayPalPlan.bgColor,
-                                border: `1.5px solid ${selectedPayPalPlan.borderColor}`,
-                                borderRadius: '14px',
-                                padding: '16px',
-                                textAlign: 'center',
-                                marginBottom: '20px',
-                            }}>
-                                <span style={{ fontSize: '1.6rem', fontWeight: 800, color: selectedPayPalPlan.color }}>
-                                    {selectedPayPalPlan.price}
-                                </span>
-                                {selectedPayPalPlan.discount && (
-                                    <span style={{
-                                        display: 'inline-block', marginLeft: '8px',
-                                        fontSize: '0.78rem', fontWeight: 700,
-                                        color: '#dc2626', background: '#fee2e2',
-                                        padding: '2px 8px', borderRadius: '10px',
-                                    }}>
-                                        {selectedPayPalPlan.discount}% {t('upgrade.discount')}
+                                <div style={{
+                                    background: selectedPayPalPlan.bgColor,
+                                    border: `1.5px solid ${selectedPayPalPlan.borderColor}`,
+                                    borderRadius: '14px',
+                                    padding: '16px',
+                                    textAlign: 'center',
+                                    marginBottom: '20px',
+                                }}>
+                                    <span style={{ fontSize: '1.6rem', fontWeight: 800, color: selectedPayPalPlan.color }}>
+                                        {selectedPayPalPlan.price}
                                     </span>
-                                )}
-                            </div>
+                                    {selectedPayPalPlan.discount && (
+                                        <span style={{
+                                            display: 'inline-block', marginLeft: '8px',
+                                            fontSize: '0.78rem', fontWeight: 700,
+                                            color: '#dc2626', background: '#fee2e2',
+                                            padding: '2px 8px', borderRadius: '10px',
+                                        }}>
+                                            {selectedPayPalPlan.discount}% {t('upgrade.discount')}
+                                        </span>
+                                    )}
+                                </div>
 
-                            <PayPalButtons
-                                style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 45, tagline: false }}
-                                createSubscription={(data, actions) => {
-                                    return actions.subscription.create({
-                                        plan_id: PAYPAL_PLAN_IDS[selectedPayPalPlan.id],
-                                        custom_id: user.uid,
-                                    });
-                                }}
-                                onApprove={handlePayPalApprove}
-                                onCancel={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
-                                onError={(err) => { setError(String(err)); setPaypalPlanId(null); setLoadingPlan(null); }}
-                            />
+                                <Suspense fallback={<Loader2 size={24} className="spin" style={{ display: 'block', margin: '20px auto' }} />}>
+                                    <PayPalButtons
+                                        style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 45, tagline: false }}
+                                        createSubscription={(data, actions) => {
+                                            return actions.subscription.create({
+                                                plan_id: PAYPAL_PLAN_IDS[selectedPayPalPlan.id],
+                                                custom_id: user.uid,
+                                            });
+                                        }}
+                                        onApprove={handlePayPalApprove}
+                                        onCancel={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+                                        onError={(err) => { setError(String(err)); setPaypalPlanId(null); setLoadingPlan(null); }}
+                                    />
+                                </Suspense>
+                            </div>
                         </div>
-                    </div>
-                )}
-            </PayPalScriptProvider>
+                    )}
+                </PayPalScriptProvider>
+            </Suspense>
         );
     }
     return modalContent;
