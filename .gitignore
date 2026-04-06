@@ -31,3 +31,6 @@ dist-ssr
 # Google Cloud service account keys (보안)
 android/app/trnaslatorapp-*.json
 GoogleService-Info.plist
+
+# Test files with API keys
+test-gemini*
