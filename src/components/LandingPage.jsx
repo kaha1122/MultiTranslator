@@ -112,7 +112,7 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
         };
 
         return (
-          <section key={card.id} className={`lp-promo-section ${idx === 0 ? 'first' : ''}`}>
+          <section key={card.id} id={card.id} className={`lp-promo-section ${idx === 0 ? 'first' : ''}`}>
             {/* 배경 장식 orb */}
             <div className="lp-promo-orb lp-promo-orb-1" />
             <div className="lp-promo-orb lp-promo-orb-2" />
