@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
 
-const IS_TESTING = true; // TODO: 실 광고 전환 시 false로 변경
+const IS_TESTING = false; // TODO: 실 광고 전환 시 false로 변경
 
 // Android 프로덕션 Ad Unit IDs
 const AD_UNITS_ANDROID = {
