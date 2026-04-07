@@ -10,7 +10,7 @@ const AD_UNITS_ANDROID = {
     bannerTop:      'ca-app-pub-8626604652301297/3986871373', // Banner01
     bannerBottom:   'ca-app-pub-8626604652301297/4166267528', // Banner02
     rewardedCards:  'ca-app-pub-8626604652301297/4860569967', // Bonus01 (RewardC, +5)
-    rewardedProns:  'ca-app-pub-8626604652301297/4166267528', // Bonus02 (RewardP, +10)
+    rewardedProns:  'ca-app-pub-8626604652301297/9921324956', // Bonus02 (RewardP, +10)
     interstitial:   'ca-app-pub-8626604652301297/6443880844', // Interstitial01
 };
 
