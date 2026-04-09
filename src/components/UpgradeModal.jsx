@@ -8,7 +8,7 @@ const PayPalScriptProvider = lazy(() => import('@paypal/react-paypal-js').then(m
 const PayPalButtons = lazy(() => import('@paypal/react-paypal-js').then(m => ({ default: m.PayPalButtons })));
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
-import { getAuth, sendEmailVerification } from 'firebase/auth';
+import { getAuth, sendEmailVerification, verifyBeforeUpdateEmail } from 'firebase/auth';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
 import { detectCountry, isKorea } from '../utils/detectCountry';
@@ -256,6 +256,9 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     const [showVerifyWarnings, setShowVerifyWarnings] = useState(false);
     const [emailVerifSent, setEmailVerifSent] = useState(false);
     const [emailVerified, setEmailVerified] = useState(user?.emailVerified || false);
+    const [newEmailInput, setNewEmailInput] = useState('');
+    const [emailUpdateSent, setEmailUpdateSent] = useState(false);
+    const hasNoEmail = !user?.email;
     const [countryInfo, setCountryInfo] = useState(null);
     const [paypalPlanId, setPaypalPlanId] = useState(null); // "선택" 클릭 후 PayPal 버튼 표시용
 
@@ -345,6 +348,27 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         } catch (e) {
             if (e.code === 'auth/too-many-requests') {
                 setError(t('upgrade.emailTooMany'));
+            } else {
+                setError(t('upgrade.emailSendFailed'));
+            }
+        }
+    };
+
+    const handleAddEmail = async () => {
+        if (!newEmailInput || !newEmailInput.includes('@')) {
+            setError(t('upgrade.invalidEmail'));
+            return;
+        }
+        try {
+            const auth = getAuth();
+            await verifyBeforeUpdateEmail(auth.currentUser, newEmailInput);
+            setEmailUpdateSent(true);
+            setError('');
+        } catch (e) {
+            if (e.code === 'auth/too-many-requests') {
+                setError(t('upgrade.emailTooMany'));
+            } else if (e.code === 'auth/email-already-in-use') {
+                setError(t('auth.emailInUse'));
             } else {
                 setError(t('upgrade.emailSendFailed'));
             }
@@ -482,8 +506,53 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
 
                 {showVerifyWarnings && (needEmailVerify || needPhoneVerify) && (
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '12px' }}>
-                        {/* 1. 이메일 인증 */}
-                        {needEmailVerify && (
+                        {/* 0. 이메일 미등록 — 이메일 추가 입력 */}
+                        {hasNoEmail && (
+                            <div style={{
+                                background: '#fef2f2', border: '1.5px solid #f87171', borderRadius: '12px',
+                                padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px'
+                            }}>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                    <Mail size={18} style={{ color: '#dc2626', flexShrink: 0 }} />
+                                    <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#991b1b' }}>
+                                        {t('upgrade.noEmailTitle')}
+                                    </span>
+                                </div>
+                                <p style={{ fontSize: '0.78rem', color: '#7f1d1d', margin: 0, lineHeight: 1.5 }}>
+                                    {t('upgrade.noEmailDesc')}
+                                </p>
+                                {emailUpdateSent ? (
+                                    <span style={{ fontSize: '0.78rem', color: '#16a34a', fontWeight: 600 }}>
+                                        {t('upgrade.emailUpdateSent')}
+                                    </span>
+                                ) : (
+                                    <div style={{ display: 'flex', gap: '8px' }}>
+                                        <input
+                                            type="email"
+                                            value={newEmailInput}
+                                            onChange={(e) => setNewEmailInput(e.target.value)}
+                                            placeholder={t('auth.email')}
+                                            style={{
+                                                flex: 1, padding: '8px 12px', borderRadius: '8px',
+                                                border: '1px solid #d1d5db', fontSize: '0.82rem', outline: 'none'
+                                            }}
+                                        />
+                                        <button
+                                            onClick={handleAddEmail}
+                                            style={{
+                                                padding: '8px 16px', borderRadius: '10px', border: 'none',
+                                                background: '#dc2626', color: 'white', fontSize: '0.82rem',
+                                                fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
+                                            }}
+                                        >
+                                            {t('upgrade.addEmail')}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        {/* 1. 이메일 인증 (이메일은 있지만 미인증) */}
+                        {needEmailVerify && !hasNoEmail && (
                             <div style={{
                                 background: '#eff6ff', border: '1.5px solid #60a5fa', borderRadius: '12px',
                                 padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '10px'

@@ -87,11 +87,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const credential = FirebaseGoogleAuthProvider.credential(idToken);
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const additionalInfo = getAdditionalUserInfo(userCredential);
+                const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+                const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
                     profileData.displayName = user.displayName || 'Google User';
                     profileData.hasCompletedOnboarding = false;
@@ -103,11 +104,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             }
             const userCredential = await signInWithPopup(auth, googleProvider);
             const user = userCredential.user;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const additionalInfo = getAdditionalUserInfo(userCredential);
+            const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+            const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
                 profileData.displayName = user.displayName || 'Google User';
                 profileData.hasCompletedOnboarding = false;
@@ -142,11 +144,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const credential = FirebaseFacebookAuthProvider.credential(accessToken);
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const additionalInfo = getAdditionalUserInfo(userCredential);
+                const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+                const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
                     profileData.displayName = user.displayName || 'Facebook User';
                     profileData.hasCompletedOnboarding = false;
@@ -158,11 +161,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             }
             const userCredential = await signInWithPopup(auth, facebookProvider);
             const user = userCredential.user;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const additionalInfo = getAdditionalUserInfo(userCredential);
+            const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+            const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
                 profileData.displayName = user.displayName || 'Facebook User';
                 profileData.hasCompletedOnboarding = false;
@@ -195,11 +199,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const credential = new OAuthProvider('apple.com').credential({ idToken, rawNonce });
                 const userCredential = await signInWithCredential(auth, credential);
                 const user = userCredential.user;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const additionalInfo = getAdditionalUserInfo(userCredential);
+                const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-                const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+                const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
                     profileData.displayName = user.displayName || 'Apple User';
                     profileData.hasCompletedOnboarding = false;
@@ -211,11 +216,12 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             }
             const userCredential = await signInWithPopup(auth, appleProvider);
             const user = userCredential.user;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const additionalInfo = getAdditionalUserInfo(userCredential);
+            const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-            const profileData = { uid: user.uid, email: user.email, platform, deviceLang, updatedAt: serverTimestamp() };
+            const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
                 profileData.displayName = user.displayName || 'Apple User';
                 profileData.hasCompletedOnboarding = false;

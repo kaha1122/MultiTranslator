@@ -34,3 +34,6 @@ GoogleService-Info.plist
 
 # Test files with API keys
 test-gemini*
+
+# Local debug/utility scripts (keep locally, do not track)
+server/query-user.js

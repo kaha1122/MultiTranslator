@@ -55,7 +55,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
         }
         // Firestore 프로필 업데이트
         await setDoc(doc(db, 'users', result.user.uid), {
-            email: result.user.email,
+            email: result.user.email || null,
             displayName: profile?.displayName || result.user.displayName || 'User',
             isAnonymous: false,
             updatedAt: serverTimestamp(),
@@ -131,6 +131,11 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 const credential = FirebaseFacebookAuthProvider.credential(accessToken);
                 try {
                     await upgradeAnonymous(credential);
+                    if (!auth.currentUser?.email) {
+                        setError(t('auth.noEmailError'));
+                        setLoadingType(null);
+                        return;
+                    }
                 } catch (linkErr) {
                     if (linkErr.code === 'auth/credential-already-in-use' || linkErr.code === 'auth/account-exists-with-different-credential') {
                         await migrateAndSignIn(credential);
@@ -187,6 +192,11 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 const credential = new OAuthProvider('apple.com').credential({ idToken, rawNonce });
                 try {
                     await upgradeAnonymous(credential);
+                    if (!auth.currentUser?.email) {
+                        setError(t('auth.noEmailError'));
+                        setLoadingType(null);
+                        return;
+                    }
                 } catch (linkErr) {
                     if (linkErr.code === 'auth/credential-already-in-use') {
                         await migrateAndSignIn(credential);

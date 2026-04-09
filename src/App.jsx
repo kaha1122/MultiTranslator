@@ -19,7 +19,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
-import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo, sendEmailVerification, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
+import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo, sendEmailVerification, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider, facebookProvider } from './firebase/config';
 import { setDoc, getDoc, doc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
@@ -956,6 +956,41 @@ function App() {
   // AI 데이터 처리 동의 (App Store/Play Store 필수 — 모든 플랫폼에서 동일하게 표시)
   // Firestore users/{uid}.aiConsentAt 을 정본으로, localStorage는 빠른 캐시
   const [showAiConsent, setShowAiConsent] = useState(false);
+
+  // email 미등록 유저 감지 (소셜 로그인 후 email 없는 경우)
+  const [showEmailRegister, setShowEmailRegister] = useState(false);
+  const [emailRegInput, setEmailRegInput] = useState('');
+  const [emailRegError, setEmailRegError] = useState('');
+  useEffect(() => {
+    if (!user || user.isAnonymous) return;
+    if (!user.email) {
+      setShowEmailRegister(true);
+    } else {
+      setShowEmailRegister(false);
+    }
+  }, [user?.uid, user?.email]);
+
+  const handleEmailRegister = async () => {
+    if (!emailRegInput || !emailRegInput.includes('@')) {
+      setEmailRegError(getT(sourceLang, 'upgrade.invalidEmail'));
+      return;
+    }
+    try {
+      await updateEmail(auth.currentUser, emailRegInput);
+      // Firestore에도 저장
+      await setDoc(doc(db, 'users', user.uid), { email: emailRegInput, updatedAt: serverTimestamp() }, { merge: true });
+      setShowEmailRegister(false);
+      setEmailRegError('');
+    } catch (e) {
+      if (e.code === 'auth/too-many-requests') {
+        setEmailRegError(getT(sourceLang, 'upgrade.emailTooMany'));
+      } else if (e.code === 'auth/email-already-in-use') {
+        setEmailRegError(getT(sourceLang, 'auth.emailInUse'));
+      } else {
+        setEmailRegError(getT(sourceLang, 'upgrade.emailSendFailed'));
+      }
+    }
+  };
   useEffect(() => {
     if (!user || !profile) return;
     // Firestore에 이미 동의 기록이 있으면 스킵 + localStorage 동기화
@@ -3687,6 +3722,66 @@ function App() {
           defaultSourceLang={sourceLang}
           onComplete={handleOnboardingComplete}
         />
+      )}
+
+      {/* email 미등록 유저 — 이메일 등록 모달 */}
+      {showEmailRegister && !showOnboarding && (
+        <div
+          style={{
+            position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
+            background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
+            zIndex: 3100, padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
+          }}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'white', borderRadius: '20px', padding: '28px 24px',
+              width: '100%', maxWidth: '360px', textAlign: 'center',
+              boxShadow: '0 20px 60px rgba(0,0,0,0.2)'
+            }}
+          >
+            <div style={{
+              width: '48px', height: '48px', borderRadius: '50%', background: '#fef2f2',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px',
+              fontSize: '24px'
+            }}>
+              <Mail size={24} style={{ color: '#dc2626' }} />
+            </div>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 800, color: '#1e293b' }}>
+              {getT(sourceLang, 'upgrade.noEmailTitle')}
+            </h3>
+            <p style={{ margin: '0 0 18px', fontSize: '0.85rem', color: '#64748b', lineHeight: 1.6, textAlign: 'left' }}>
+              {getT(sourceLang, 'upgrade.noEmailDesc')}
+            </p>
+            {emailRegError && (
+              <p style={{ fontSize: '0.8rem', color: '#dc2626', margin: '0 0 12px' }}>{emailRegError}</p>
+            )}
+            <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+              <input
+                type="email"
+                value={emailRegInput}
+                onChange={(e) => setEmailRegInput(e.target.value)}
+                placeholder={getT(sourceLang, 'auth.email')}
+                style={{
+                  flex: 1, padding: '12px 14px', borderRadius: '10px',
+                  border: '1.5px solid #d1d5db', fontSize: '0.9rem', outline: 'none'
+                }}
+                onKeyDown={(e) => e.key === 'Enter' && handleEmailRegister()}
+              />
+              <button
+                onClick={handleEmailRegister}
+                style={{
+                  padding: '12px 20px', borderRadius: '10px', border: 'none',
+                  background: '#dc2626', color: 'white', fontSize: '0.9rem',
+                  fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap'
+                }}
+              >
+                {getT(sourceLang, 'upgrade.addEmail')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* AI 데이터 처리 사전 고지 모달 */}
