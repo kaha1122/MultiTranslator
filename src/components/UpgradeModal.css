@@ -245,3 +245,16 @@
     font-size: 0.72rem;
     color: #94a3b8;
 }
+.upgrade-legal-links {
+    text-align: center;
+    margin: 6px 0 0;
+    font-size: 0.72rem;
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    color: #94a3b8;
+}
+.upgrade-legal-links a {
+    color: #6366f1;
+    text-decoration: underline;
+}

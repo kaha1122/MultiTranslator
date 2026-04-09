@@ -638,7 +638,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
+                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}{' '}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>({t('upgrade.autoRenew')})</span></span>
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -712,7 +712,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}</span>
+                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}{' '}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>({t('upgrade.autoRenew')})</span></span>
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -785,8 +785,17 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 )}
 
                 <p className="upgrade-footer-note">
-                    {t('upgrade.footerNote')}
+                    {t('upgrade.autoRenewNote')}
                 </p>
+                <div className="upgrade-legal-links">
+                    <a href="/privacy" onClick={(e) => { e.preventDefault(); onClose(); window.location.hash = ''; setTimeout(() => { window.dispatchEvent(new CustomEvent('navigate', { detail: '/privacy' })); }, 100); }}>
+                        {t('upgrade.privacyPolicy')}
+                    </a>
+                    <span>|</span>
+                    <a href="/terms" onClick={(e) => { e.preventDefault(); onClose(); window.location.hash = ''; setTimeout(() => { window.dispatchEvent(new CustomEvent('navigate', { detail: '/terms' })); }, 100); }}>
+                        {t('upgrade.termsOfUse')}
+                    </a>
+                </div>
             </div>
         </div>
     );
@@ -827,6 +836,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         {selectedPayPalPlan.months === 1
                                             ? `1 ${t('upgrade.period1m')}`
                                             : t('upgrade.period3m')}
+                                        {' '}({t('upgrade.autoRenew')})
                                     </p>
                                 </div>
 
