@@ -29,7 +29,7 @@ const ALL_VOCAB_CATS = [
     'custom',
 ];
 
-const DIFFICULTIES = ['basic', 'intermediate', 'high'];
+const DIFFICULTIES = ['basic', 'intermediate', 'advanced'];
 
 const getMonday = (date) => {
     const d = new Date(date);
@@ -105,7 +105,8 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
         const sourceType = tab === 'dialogue' ? 'scene' : 'vocab';
         return cards.filter(c => {
             if (c.sourceType !== sourceType) return false;
-            if (c.difficulty !== difficulty) return false;
+            const d = c.difficulty === 'high' ? 'advanced' : (c.difficulty || 'basic');
+            if (d !== difficulty) return false;
             if (!c.createdAt) return false;
             return c.createdAt >= dateRange.start && c.createdAt <= dateRange.end;
         });

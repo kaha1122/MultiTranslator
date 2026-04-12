@@ -434,6 +434,9 @@ function App() {
   // 북마크 유도 팝업 상태 (비Library 탭에서 목표 달성 시)
   const [bookmarkPrompt, setBookmarkPrompt] = useState(null); // { score, saveFn }
 
+  // 별표 안내 팝업 (첫 카드 생성 시 1회)
+  const [showStarGuide, setShowStarGuide] = useState(false);
+
   // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
   const [savedCardIds, setSavedCardIds] = useState({});
 
@@ -1043,6 +1046,15 @@ function App() {
     }).catch(() => { });
   };
 
+  // 별표 안내 팝업 — 첫 카드 생성 시 (totalGenerateCount 0→1) 1회만
+  useEffect(() => {
+    if (!profile) return;
+    const count = profile.totalGenerateCount || 0;
+    if (count !== 1) return; // 정확히 1일 때만
+    if (localStorage.getItem('starGuideDone') === '1') return;
+    setShowStarGuide(true);
+  }, [profile?.totalGenerateCount]);
+
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
     // profile이 null이면 user 객체(Firebase Auth)의 정보로 폴백
@@ -1382,10 +1394,10 @@ function App() {
         en: IPA / ja: Hiragana / zh-CN: Pinyin / ru: Rewrite with accent marks (´) on stressed vowels per standard Russian dictionary stress (ё and single-syllable words excluded) / others: Romanization
 
         [Task 5: Difficulty Classification]
-        Classify the source text difficulty as one of: "basic", "intermediate", "high".
+        Classify the source text difficulty as one of: "basic", "intermediate", "advanced".
         - "basic": simple everyday words/phrases a beginner would learn first
         - "intermediate": natural daily expressions, moderate vocabulary
-        - "high": complex structures, idioms, nuanced or specialized language
+        - "advanced": complex structures, idioms, nuanced or specialized language
 
         [Task 6: Example Sentence (word type only)]
         If type is "word", generate ONE natural example sentence for each target language using the translated word.
@@ -1395,7 +1407,7 @@ function App() {
         [Output — valid JSON only, no markdown]
         {
           "type": "word" | "sentence",
-          "difficulty": "basic" | "intermediate" | "high",
+          "difficulty": "basic" | "intermediate" | "advanced",
           "tips": [
             ${targetLangNames.map(name => `["${sourceLangName} tip about ${name} translation", "${sourceLangName} tip 2"]`).join(',\n            ')}
           ],
@@ -3349,6 +3361,22 @@ function App() {
           onDismiss={() => setBookmarkPrompt(null)}
           sourceLang={sourceLang}
         />
+      )}
+
+      {/* 별표 안내 팝업 — 첫 카드 생성 시 1회 */}
+      {showStarGuide && (
+        <div className="bpm-overlay" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
+          <div className="bpm-card" onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>⭐</div>
+            <h3 className="bpm-title">{t('daily.starGuideTitle')}</h3>
+            <p className="bpm-desc">{t('daily.starGuideDesc')}</p>
+            <div className="bpm-actions">
+              <button className="bpm-btn-later" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
+                {t('daily.bookmarkConfirm')}
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}

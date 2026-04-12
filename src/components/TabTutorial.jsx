@@ -3,6 +3,7 @@ import './TabTutorial.css';
 
 // 탭별 아이콘만 정의 (텍스트는 i18n)
 const TAB_ICONS = {
+  home: ['📖', '⭐'],
   scene: ['📍', '🎙️'],
   vocab: ['📖', '🔊'],
   translation: ['🔤', '🎯'],
@@ -13,12 +14,13 @@ const TAB_ICONS = {
 
 // 탭별 팁 개수 (TAB_TUTORIALS 대체용)
 export const TAB_TUTORIALS = {
-  scene: [1, 2],
-  vocab: [1, 2],
-  translation: [1, 2],
-  library: [1, 2],
-  video: [1, 2],
-  settings: [1, 2],
+  home: [1, 2],
+  scene: [1],
+  vocab: [1],
+  translation: [1],
+  library: [1],
+  video: [1],
+  settings: [1],
 };
 
 export default function TabTutorial({ tab, step, total, onNext, onSkip, sourceLang }) {
@@ -55,7 +57,7 @@ export default function TabTutorial({ tab, step, total, onNext, onSkip, sourceLa
             ))}
           </div>
           <button className="tutorial-next-btn" onClick={onNext}>
-            {isLast ? t('tutorial.start') : t('tutorial.next')}
+            {isLast ? t('tutorial.confirm') : t('tutorial.next')}
           </button>
         </div>
       </div>

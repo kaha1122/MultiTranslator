@@ -192,7 +192,10 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     }
 
     if (filterDifficulty !== 'all') {
-        filteredCards = filteredCards.filter(card => (card.difficulty || 'basic') === filterDifficulty);
+        filteredCards = filteredCards.filter(card => {
+            const d = card.difficulty === 'high' ? 'advanced' : (card.difficulty || 'basic');
+            return d === filterDifficulty;
+        });
     }
 
     if (searchTerm.trim() !== '') {
@@ -253,7 +256,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'all', label: t('library.filterAll') },
         { value: 'basic', label: t('scene.diffBasic') },
         { value: 'intermediate', label: t('scene.diffIntermediate') },
-        { value: 'high', label: t('scene.diffHigh') },
+        { value: 'advanced', label: t('scene.diffAdvanced') },
     ];
 
     // W/S 옵션

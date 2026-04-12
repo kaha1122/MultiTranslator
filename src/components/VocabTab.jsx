@@ -380,7 +380,7 @@ export default function VocabTab({
             topic: selectedTopic ? getT(sourceLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim(),
             categoryId: selectedTopic?.catId || 'custom',
             topicId: selectedTopic?.topicId || 'custom',
-            difficulty: level === 'advanced' ? 'high' : level,
+            difficulty: level,
             pronunciationScore,
         });
 
@@ -411,7 +411,7 @@ export default function VocabTab({
                 {[
                     { value: 'basic', key: 'diffBasic' },
                     { value: 'intermediate', key: 'diffIntermediate' },
-                    { value: 'advanced', key: 'diffHigh' },
+                    { value: 'advanced', key: 'diffAdvanced' },
                 ].map(lv => (
                     <button
                         key={lv.value}

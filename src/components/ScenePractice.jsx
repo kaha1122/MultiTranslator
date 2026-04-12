@@ -498,7 +498,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
                 <div className="scene-option-row">
                     <span className="scene-option-label">{t('scene.diffTitle')}</span>
                     <div className="scene-option-pills">
-                        {['basic', 'intermediate', 'high'].map(d => (
+                        {['basic', 'intermediate', 'advanced'].map(d => (
                             <button
                                 key={d}
                                 className={`scene-option-pill ${difficulty === d ? 'active' : ''}`}

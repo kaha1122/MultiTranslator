@@ -12,8 +12,8 @@ const getMonday = (date) => {
 };
 
 /**
- * 이번 주 savedCards를 sourceType(scene/vocab) × difficulty(basic/intermediate/high)로 집계
- * Returns: { scene: { basic: n, intermediate: n, high: n }, vocab: { basic: n, intermediate: n, high: n }, loading }
+ * 이번 주 savedCards를 sourceType(scene/vocab) × difficulty(basic/intermediate/advanced)로 집계
+ * Returns: { scene: { basic: n, intermediate: n, advanced: n }, vocab: { basic: n, intermediate: n, advanced: n }, loading }
  */
 export const useWeeklyCardStats = (user, isActive = true) => {
     const [cards, setCards] = useState([]);
@@ -52,19 +52,21 @@ export const useWeeklyCardStats = (user, isActive = true) => {
         const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
 
         const w = {
-            scene: { basic: 0, intermediate: 0, high: 0 },
-            vocab: { basic: 0, intermediate: 0, high: 0 },
+            scene: { basic: 0, intermediate: 0, advanced: 0 },
+            vocab: { basic: 0, intermediate: 0, advanced: 0 },
         };
         const m = {
-            scene: { basic: 0, intermediate: 0, high: 0 },
-            vocab: { basic: 0, intermediate: 0, high: 0 },
+            scene: { basic: 0, intermediate: 0, advanced: 0 },
+            vocab: { basic: 0, intermediate: 0, advanced: 0 },
         };
 
         cards.forEach(c => {
             if (!c.createdAt || c.createdAt > now) return;
             const type = c.sourceType === 'scene' ? 'scene' : c.sourceType === 'vocab' ? 'vocab' : null;
             if (!type) return;
-            const diff = ['basic', 'intermediate', 'high'].includes(c.difficulty) ? c.difficulty : 'basic';
+            const diff = ['basic', 'intermediate', 'advanced'].includes(c.difficulty)
+                ? c.difficulty
+                : c.difficulty === 'high' ? 'advanced' : 'basic';
             if (c.createdAt >= weekStart) w[type][diff]++;
             if (c.createdAt >= monthStart) m[type][diff]++;
         });

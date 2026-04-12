@@ -323,19 +323,19 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                     <td className="home-stats-row-label">{t('home.tWeek')}</td>
                                     <td>{stats.vocab.basic}/{targets.vocab}</td>
                                     <td>{stats.vocab.intermediate}/{targets.vocab}</td>
-                                    <td>{stats.vocab.high}/{targets.vocab}</td>
+                                    <td>{stats.vocab.advanced}/{targets.vocab}</td>
                                     <td>{stats.scene.basic}/{targets.scene}</td>
                                     <td>{stats.scene.intermediate}/{targets.scene}</td>
-                                    <td>{stats.scene.high}/{targets.scene}</td>
+                                    <td>{stats.scene.advanced}/{targets.scene}</td>
                                 </tr>
                                 <tr>
                                     <td className="home-stats-row-label">{t('home.tMonth')}</td>
                                     <td>{monthly.vocab.basic}/{monthlyTargets.vocab}</td>
                                     <td>{monthly.vocab.intermediate}/{monthlyTargets.vocab}</td>
-                                    <td>{monthly.vocab.high}/{monthlyTargets.vocab}</td>
+                                    <td>{monthly.vocab.advanced}/{monthlyTargets.vocab}</td>
                                     <td>{monthly.scene.basic}/{monthlyTargets.scene}</td>
                                     <td>{monthly.scene.intermediate}/{monthlyTargets.scene}</td>
-                                    <td>{monthly.scene.high}/{monthlyTargets.scene}</td>
+                                    <td>{monthly.scene.advanced}/{monthlyTargets.scene}</td>
                                 </tr>
                             </tbody>
                         </table>

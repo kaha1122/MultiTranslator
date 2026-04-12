@@ -102,7 +102,7 @@ function getDifficultyDesc(level, langCode) {
   - Grammar: ${guide.inter} 1-2 clauses per sentence. Past and present tenses allowed.
   - Length: 6–12 ${unit}.
   - Goal: Express opinions, reasons, and polite requests in everyday situations.`,
-        high: `Advanced (C1/C2)
+        advanced: `Advanced (C1/C2)
   - Vocabulary: Nuanced idioms, domain-specific terms, sophisticated expressions.
   - Grammar: ${guide.adv} Complex sentences with 3+ clauses.
   - Length: 8–20 ${unit}.
