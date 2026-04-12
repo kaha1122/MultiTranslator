@@ -26,7 +26,7 @@ import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
-import { getT } from './utils/i18n';
+import { getT, useT } from './utils/i18n';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 import { authFetch, getIdToken } from './utils/authFetch';
 
@@ -754,6 +754,9 @@ function App() {
       return detectBrowserSourceLang();
     }
   });
+
+  // i18n — 다른 컴포넌트와 동일하게 t('key') 패턴 사용
+  const t = useT(sourceLang);
 
   // [신규] 실제로 입력하는 텍스트의 언어 (기본은 sourceLang과 동일)
   const [inputLang, setInputLang] = useState(() => {
