@@ -411,9 +411,16 @@
     "moreLang": "他に学びたい言語は\nありますか？",
     "noMore": "いいえ、十分です",
     "next": "次へ",
-    "doneTitle": "言語が設定されました。",
-    "doneDesc": "変更は設定から行えます。",
-    "doneBtn": "OK"
+    "levelTitle": "学習レベルを選んでください",
+    "level_basic": "基礎",
+    "level_intermediate": "中級",
+    "level_advanced": "上級",
+    "levelDesc_basic": "簡単な単語と基礎文法から",
+    "levelDesc_intermediate": "日常会話、多様な表現",
+    "levelDesc_advanced": "専門的な表現、複雑な文構造",
+    "doneTitle": "設定が完了しました！",
+    "doneDesc": "言語とレベルは設定からいつでも変更できます。",
+    "doneBtn": "始めよう！"
   },
   "exit": {
     "backToast": "もう一度押すと終了します。\nホームに戻るには上部のホームアイコンをタップしてください。"

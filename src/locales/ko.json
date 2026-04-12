@@ -417,9 +417,16 @@
     "moreLang": "함께 학습할 또 다른\n언어가 있나요?",
     "noMore": "아니오, 충분합니다",
     "next": "다음",
-    "doneTitle": "언어가 설정되었습니다.",
-    "doneDesc": "변경하시려면, 설정에서 변경하실 수 있습니다.",
-    "doneBtn": "확인"
+    "levelTitle": "학습 난이도를 선택하세요",
+    "level_basic": "기초",
+    "level_intermediate": "중급",
+    "level_advanced": "고급",
+    "levelDesc_basic": "간단한 단어와 기초 문법부터",
+    "levelDesc_intermediate": "일상 대화, 다양한 표현",
+    "levelDesc_advanced": "전문 표현, 복잡한 문장 구조",
+    "doneTitle": "설정이 완료되었습니다!",
+    "doneDesc": "언어와 난이도는 설정에서 언제든 변경할 수 있습니다.",
+    "doneBtn": "시작하기"
   },
   "exit": {
     "backToast": "한 번 더 누르면 종료됩니다.\n홈으로 가시려면 상단 홈키를 눌러주세요."

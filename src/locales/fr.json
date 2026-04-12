@@ -411,9 +411,16 @@
     "moreLang": "Une autre langue à\napprendre ?",
     "noMore": "Non, ça suffit",
     "next": "Suivant",
-    "doneTitle": "Les langues ont été configurées.",
-    "doneDesc": "Vous pouvez les modifier dans les paramètres.",
-    "doneBtn": "OK"
+    "levelTitle": "Choisissez votre niveau",
+    "level_basic": "Débutant",
+    "level_intermediate": "Intermédiaire",
+    "level_advanced": "Avancé",
+    "levelDesc_basic": "Mots simples et grammaire de base",
+    "levelDesc_intermediate": "Conversations quotidiennes et expressions variées",
+    "levelDesc_advanced": "Expressions spécialisées et phrases complexes",
+    "doneTitle": "Configuration terminée !",
+    "doneDesc": "Vous pouvez modifier la langue et le niveau à tout moment dans les paramètres.",
+    "doneBtn": "C'est parti !"
   },
   "exit": {
     "backToast": "Appuyez à nouveau pour quitter.\nAppuyez sur l'icône d'accueil en haut pour revenir."

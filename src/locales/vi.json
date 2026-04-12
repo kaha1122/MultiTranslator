@@ -411,9 +411,16 @@
     "moreLang": "Bạn có muốn học thêm\nngôn ngữ nào không?",
     "noMore": "Không, đủ rồi",
     "next": "Tiếp",
-    "doneTitle": "Ngôn ngữ đã được thiết lập.",
-    "doneDesc": "Bạn có thể thay đổi trong Cài đặt.",
-    "doneBtn": "OK"
+    "levelTitle": "Chọn cấp độ học tập",
+    "level_basic": "Cơ bản",
+    "level_intermediate": "Trung cấp",
+    "level_advanced": "Nâng cao",
+    "levelDesc_basic": "Từ vựng đơn giản và ngữ pháp cơ bản",
+    "levelDesc_intermediate": "Hội thoại hàng ngày, biểu đạt đa dạng",
+    "levelDesc_advanced": "Biểu đạt chuyên sâu, cấu trúc phức tạp",
+    "doneTitle": "Thiết lập hoàn tất!",
+    "doneDesc": "Bạn có thể thay đổi ngôn ngữ và cấp độ bất cứ lúc nào trong Cài đặt.",
+    "doneBtn": "Bắt đầu!"
   },
   "exit": {
     "backToast": "Nhấn lần nữa để thoát.\nNhấn biểu tượng trang chủ ở trên để về Home."

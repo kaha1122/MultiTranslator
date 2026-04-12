@@ -246,6 +246,7 @@ export default function VocabTab({
     onBookmarkPrompt,
     onGenerate,
     onNavigateToLibrary,
+    userLevel,
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -261,7 +262,7 @@ export default function VocabTab({
     const initialTopic = pickRandomTopic();
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState('basic');
+    const [level, setLevel] = useState(userLevel || 'basic');
     const [openCat, setOpenCat] = useState(initialTopic.catId);
     const [selectedTopic, setSelectedTopic] = useState(initialTopic);
     const [customInput, setCustomInput] = useState('');

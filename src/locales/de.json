@@ -411,9 +411,16 @@
     "moreLang": "Noch eine weitere Sprache\nlernen?",
     "noMore": "Nein, das reicht",
     "next": "Weiter",
-    "doneTitle": "Sprachen wurden eingestellt.",
-    "doneDesc": "Sie können dies in den Einstellungen ändern.",
-    "doneBtn": "OK"
+    "levelTitle": "Wähle dein Lernniveau",
+    "level_basic": "Grundstufe",
+    "level_intermediate": "Mittelstufe",
+    "level_advanced": "Fortgeschritten",
+    "levelDesc_basic": "Einfache Wörter und Grundgrammatik",
+    "levelDesc_intermediate": "Alltagsgespräche und vielfältige Ausdrücke",
+    "levelDesc_advanced": "Fachausdrücke und komplexe Satzstrukturen",
+    "doneTitle": "Einrichtung abgeschlossen!",
+    "doneDesc": "Sprache und Niveau können jederzeit in den Einstellungen geändert werden.",
+    "doneBtn": "Los geht's!"
   },
   "exit": {
     "backToast": "Erneut drücken zum Beenden.\nTippen Sie oben auf das Home-Symbol."

@@ -22,10 +22,17 @@ const LANGUAGES = [
  * step 1: 학습 언어 선택
  * step 2+: 추가 학습 언어 선택 (최대 3개까지)
  */
+const LEVELS = [
+  { value: 'basic', icon: '🌱', color: '#059669' },
+  { value: 'intermediate', icon: '📚', color: '#6366f1' },
+  { value: 'advanced', icon: '🎓', color: '#dc2626' },
+];
+
 export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(defaultSourceLang || 'ko');
   const [targets, setTargets] = useState([]);
+  const [level, setLevel] = useState('basic');
 
   // 모국어로 선택된 언어를 제외한 목록
   const availableForTarget = LANGUAGES.filter(l => l.code !== source);
@@ -43,14 +50,14 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
       if (availableForTarget.length > 1) {
         setStep(2); // 추가 언어 질문으로
       } else {
-        setStep('done');
+        setStep('level');
       }
     } else {
       // 추가 학습 언어
       const newTargets = [...targets, code];
       setTargets(newTargets);
       if (newTargets.length >= 3 || availableForMore.length <= 1) {
-        setStep('done');
+        setStep('level');
       } else {
         setStep(step + 1); // 다음 추가 언어 질문
       }
@@ -58,11 +65,19 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   };
 
   const handleNoMore = () => {
+    setStep('level');
+  };
+
+  const handleLevelSelect = (val) => {
+    setLevel(val);
+  };
+
+  const handleLevelConfirm = () => {
     setStep('done');
   };
 
   const handleDone = () => {
-    onComplete(source, targets);
+    onComplete(source, targets, level);
   };
 
   const handleNextFromSource = () => {
@@ -88,9 +103,10 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
       >
         {/* 단계 인디케이터 */}
         <div className="onb-steps">
-          {[0, 1, 2].map(i => (
-            <span key={i} className={`onb-step-dot ${step >= i ? 'active' : ''}`} />
-          ))}
+          {[0, 1, 2, 3].map(i => {
+            const stepIdx = step === 'level' ? 3 : step === 'done' ? 4 : (typeof step === 'number' ? step : 3);
+            return <span key={i} className={`onb-step-dot ${stepIdx >= i ? 'active' : ''}`} />;
+          })}
         </div>
 
         {/* 질문 */}
@@ -103,7 +119,28 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
             transition={{ duration: 0.2 }}
             className="onb-body"
           >
-            {step === 'done' ? (
+            {step === 'level' ? (
+              <>
+                <h2 className="onb-title">{t('onboarding.levelTitle')}</h2>
+                <div className="onb-level-grid">
+                  {LEVELS.map(lv => (
+                    <button
+                      key={lv.value}
+                      className={`onb-level-card ${level === lv.value ? 'selected' : ''}`}
+                      style={{ '--lv-color': lv.color }}
+                      onClick={() => handleLevelSelect(lv.value)}
+                    >
+                      <span className="onb-level-icon">{lv.icon}</span>
+                      <span className="onb-level-name">{t(`onboarding.level_${lv.value}`)}</span>
+                      <span className="onb-level-desc">{t(`onboarding.levelDesc_${lv.value}`)}</span>
+                    </button>
+                  ))}
+                </div>
+                <button className="onb-next-btn" onClick={handleLevelConfirm}>
+                  {t('onboarding.next')} →
+                </button>
+              </>
+            ) : step === 'done' ? (
               <>
                 <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>✅</div>
                 <h2 className="onb-title">{t('onboarding.doneTitle')}</h2>

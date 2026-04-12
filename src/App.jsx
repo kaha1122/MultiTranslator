@@ -736,6 +736,14 @@ function App() {
     }
   });
 
+  // 기본 학습 레벨 (온보딩에서 선택, 각 탭 초기값으로 사용)
+  const [userLevel, setUserLevel] = useState(() => {
+    try {
+      const saved = localStorage.getItem('userLevel');
+      return ['basic', 'intermediate', 'advanced'].includes(saved) ? saved : 'basic';
+    } catch (e) { return 'basic'; }
+  });
+
   // 번역의 기준이 되는 언어 (출발어, 모국어)
   const [sourceLang, setSourceLang] = useState(() => {
     try {
@@ -1028,10 +1036,14 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
 
-  const handleOnboardingComplete = (src, tgts) => {
+  const handleOnboardingComplete = (src, tgts, lvl) => {
     setSourceLang(src);
     setInputLang(src);
     setTargetLangs(tgts);
+    if (lvl) {
+      setUserLevel(lvl);
+      localStorage.setItem('userLevel', lvl);
+    }
     localStorage.setItem('sourceLang', src);
     localStorage.setItem('inputLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
@@ -1043,6 +1055,7 @@ function App() {
       sourceLang: src,
       targetLang: tgts[0] || null,
       targetLangs: tgts,
+      defaultLevel: lvl || 'basic',
     }).catch(() => { });
   };
 
@@ -2840,6 +2853,7 @@ function App() {
           <VocabTab
             sourceLang={sourceLang}
             targetLangs={targetLangs}
+            userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveVocabCard}
@@ -2861,6 +2875,7 @@ function App() {
           <ListeningTab
             sourceLang={sourceLang}
             targetLangs={targetLangs}
+            userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={incrementDailyPron}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
@@ -2902,6 +2917,7 @@ function App() {
           <ScenePractice
             sourceLang={sourceLang}
             targetLangs={targetLangs}
+            userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={incrementDailyPron}
             onSaveToLibrary={saveSceneCard}

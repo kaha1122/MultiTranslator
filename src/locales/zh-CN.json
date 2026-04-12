@@ -411,9 +411,16 @@
     "moreLang": "还有其他想学的语言吗？",
     "noMore": "不了，够了",
     "next": "下一步",
-    "doneTitle": "语言已设置。",
-    "doneDesc": "如需更改，请在设置中修改。",
-    "doneBtn": "确认"
+    "levelTitle": "选择你的学习难度",
+    "level_basic": "基础",
+    "level_intermediate": "中级",
+    "level_advanced": "高级",
+    "levelDesc_basic": "简单词汇和基础语法",
+    "levelDesc_intermediate": "日常对话，丰富表达",
+    "levelDesc_advanced": "专业表达，复杂句型",
+    "doneTitle": "设置完成！",
+    "doneDesc": "语言和难度可以随时在设置中更改。",
+    "doneBtn": "开始吧！"
   },
   "exit": {
     "backToast": "再按一次退出。\n点击顶部主页图标返回首页。"

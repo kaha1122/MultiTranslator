@@ -220,7 +220,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved }) => {
+const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved }) => {
     // 랜덤 초기 장소 선택 (custom 제외)
     const pickRandomScene = (cat = 'locations') => {
         const list = SCENES[cat].filter(s => s.id !== 'custom');
@@ -231,7 +231,7 @@ const ScenePractice = ({ sourceLang, targetLangs, onTrialLimitReached, onPronSuc
     const [selectedScene, setSelectedScene] = useState(() => pickRandomScene('locations'));
     const [customInput, setCustomInput] = useState('');
     const [selectedLang, setSelectedLang] = useState(targetLangs?.[0] || 'en');
-    const [difficulty, setDifficulty] = useState('basic');
+    const [difficulty, setDifficulty] = useState(userLevel || 'basic');
     const [speechStyle, setSpeechStyle] = useState('formal');
     const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);

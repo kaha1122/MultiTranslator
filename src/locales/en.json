@@ -417,9 +417,16 @@
     "moreLang": "Any other language you\nwould like to learn?",
     "noMore": "No, that's enough",
     "next": "Next",
-    "doneTitle": "Languages have been set.",
-    "doneDesc": "You can change them in Settings.",
-    "doneBtn": "OK"
+    "levelTitle": "Choose your learning level",
+    "level_basic": "Basic",
+    "level_intermediate": "Intermediate",
+    "level_advanced": "Advanced",
+    "levelDesc_basic": "Simple words & basic grammar",
+    "levelDesc_intermediate": "Daily conversations & expressions",
+    "levelDesc_advanced": "Complex sentences & specialized topics",
+    "doneTitle": "You're all set!",
+    "doneDesc": "You can change language and level anytime in Settings.",
+    "doneBtn": "Let's go!"
   },
   "exit": {
     "backToast": "Press back again to exit.\nTap the home icon at top to go Home."

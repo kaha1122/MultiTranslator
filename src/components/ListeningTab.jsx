@@ -55,6 +55,7 @@ export default function ListeningTab({
     onBookmarkPrompt,
     onGenerate,
     onNavigateToLibrary,
+    userLevel,
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -69,7 +70,7 @@ export default function ListeningTab({
     };
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState('basic');
+    const [level, setLevel] = useState(userLevel || 'basic');
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [showCategorySheet, setShowCategorySheet] = useState(false);
