@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Establece tu puntuación objetivo de pronunciación para cada idioma.",
     "extraLangs": "Otros idiomas",
     "noTarget": "Por favor, selecciona primero un idioma objetivo arriba.",
-    "saveReturn": "Guardar ajustes y volver"
+    "saveReturn": "Guardar ajustes y volver",
+    "defaultLevel": "Nivel de aprendizaje predeterminado"
   },
   "scene": {
     "tabTitle": "Práctica de Escenas",

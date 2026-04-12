@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "设置各语言的发音目标分数。",
     "extraLangs": "其他语言",
     "noTarget": "请先在上方选择学习语言。",
-    "saveReturn": "保存设置并返回"
+    "saveReturn": "保存设置并返回",
+    "defaultLevel": "默认学习难度"
   },
   "scene": {
     "tabTitle": "场景练习",

@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Defina sua meta de pontuação de pronúncia para cada idioma.",
     "extraLangs": "Outros idiomas",
     "noTarget": "Selecione um idioma de destino acima primeiro.",
-    "saveReturn": "Salvar Configurações e Voltar"
+    "saveReturn": "Salvar Configurações e Voltar",
+    "defaultLevel": "Nível de aprendizado padrão"
   },
   "scene": {
     "tabTitle": "Prática de Cenas",

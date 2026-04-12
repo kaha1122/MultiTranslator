@@ -232,6 +232,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
     const [customInput, setCustomInput] = useState('');
     const [selectedLang, setSelectedLang] = useState(targetLangs?.[0] || 'en');
     const [difficulty, setDifficulty] = useState(userLevel || 'basic');
+    useEffect(() => { if (userLevel) setDifficulty(userLevel); }, [userLevel]);
     const [speechStyle, setSpeechStyle] = useState('formal');
     const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);

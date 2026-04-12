@@ -71,6 +71,7 @@ export default function ListeningTab({
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState(userLevel || 'basic');
+    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [showCategorySheet, setShowCategorySheet] = useState(false);

@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "言語別の発音目標スコアを設定してください。",
     "extraLangs": "その他の言語",
     "noTarget": "まず上で学習言語を選択してください。",
-    "saveReturn": "設定を保存して戻る"
+    "saveReturn": "設定を保存して戻る",
+    "defaultLevel": "デフォルト学習レベル"
   },
   "scene": {
     "tabTitle": "シーン練習",

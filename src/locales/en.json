@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Set your pronunciation target score for each language.",
     "extraLangs": "Other Languages",
     "noTarget": "Please select a target language above first.",
-    "saveReturn": "Save Settings & Return"
+    "saveReturn": "Save Settings & Return",
+    "defaultLevel": "Default Learning Level"
   },
   "scene": {
     "tabTitle": "Scene Practice",

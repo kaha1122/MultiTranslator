@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Đặt điểm mục tiêu phát âm cho từng ngôn ngữ.",
     "extraLangs": "Ngôn ngữ khác",
     "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
-    "saveReturn": "Lưu cài đặt & Quay lại"
+    "saveReturn": "Lưu cài đặt & Quay lại",
+    "defaultLevel": "Cấp độ học mặc định"
   },
   "scene": {
     "tabTitle": "Luyện Tình Huống",

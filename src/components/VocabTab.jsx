@@ -263,6 +263,7 @@ export default function VocabTab({
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState(userLevel || 'basic');
+    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
     const [openCat, setOpenCat] = useState(initialTopic.catId);
     const [selectedTopic, setSelectedTopic] = useState(initialTopic);
     const [customInput, setCustomInput] = useState('');

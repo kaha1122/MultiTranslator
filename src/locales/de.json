@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Setze dein Aussprache-Ziel für jede Sprache.",
     "extraLangs": "Weitere Sprachen",
     "noTarget": "Bitte wähle zuerst oben eine Zielsprache aus.",
-    "saveReturn": "Einstellungen speichern & Zurück"
+    "saveReturn": "Einstellungen speichern & Zurück",
+    "defaultLevel": "Standard-Lernstufe"
   },
   "scene": {
     "tabTitle": "Szenen-Übung",

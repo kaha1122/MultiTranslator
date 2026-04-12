@@ -3128,6 +3128,27 @@ function App() {
               </div>
             </div>
 
+            {/* 기본 학습 난이도 */}
+            <div className="settings-group">
+              <label className="settings-label">{t('settings.defaultLevel')} 📊</label>
+              <div style={{ display: 'flex', gap: '8px' }}>
+                {['basic', 'intermediate', 'advanced'].map(lv => (
+                  <button
+                    key={lv}
+                    className={`vocab-level-btn ${userLevel === lv ? 'active' : ''}`}
+                    onClick={() => {
+                      setUserLevel(lv);
+                      localStorage.setItem('userLevel', lv);
+                      updateUserProfile({ defaultLevel: lv }).catch(() => {});
+                    }}
+                    style={{ flex: 1 }}
+                  >
+                    {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* [신규] 하루 학습 목표 카드 수 */}
             <div className="settings-group">
               <label className="settings-label">{getT(sourceLang, 'daily.settingsTitle')} 🎯</label>

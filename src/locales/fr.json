@@ -109,7 +109,8 @@
     "scoreGoalsDesc": "Définissez votre score cible de prononciation pour chaque langue.",
     "extraLangs": "Autres langues",
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
-    "saveReturn": "Enregistrer & Retour"
+    "saveReturn": "Enregistrer & Retour",
+    "defaultLevel": "Niveau par défaut"
   },
   "scene": {
     "tabTitle": "Pratique Scène",
