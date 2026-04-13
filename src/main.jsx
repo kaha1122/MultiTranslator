@@ -18,8 +18,25 @@ if (Capacitor.getPlatform() === 'ios') {
       CapacitorUpdater.reset({ toLastSuccessful: false }).catch(() => {});
     }
   }).catch(() => {});
+} else if (Capacitor.getPlatform() === 'android') {
+  // Android: 수동 Capgo OTA 운영 (autoUpdate: false)
+  // — autoUpdate: true 시 appMovedToBackground → semaphoreWait 메인스레드 블로킹 → ANR 발생
+  // — 수동 모드: 포그라운드에서 다운로드 → 다음 앱 실행 시 자동 적용
+  CapacitorUpdater.notifyAppReady();
+
+  CapacitorUpdater.getLatest().then(latest => {
+    if (latest?.url) {
+      console.log('[Capgo] Android: 새 번들 감지, 다운로드 시작', latest.version);
+      CapacitorUpdater.download({ url: latest.url, version: latest.version })
+        .then(bundle => {
+          console.log('[Capgo] Android: 다운로드 완료, 다음 실행 시 적용', bundle.version);
+          CapacitorUpdater.set({ id: bundle.id });
+        })
+        .catch(err => console.warn('[Capgo] Android: 다운로드 실패', err));
+    }
+  }).catch(err => console.warn('[Capgo] Android: 최신 버전 확인 실패', err));
 } else {
-  // Android/Web: 정상 Capgo OTA 운영 — 번들 정상 로드 확인 (롤백 방지)
+  // Web: Capacitor 네이티브 플러그인 미동작 — notifyAppReady만 호출
   CapacitorUpdater.notifyAppReady();
 }
 
