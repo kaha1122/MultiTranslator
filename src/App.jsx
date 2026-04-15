@@ -47,7 +47,8 @@ import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
-import { useAdMob, showInterstitialAd, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { adsReady, showInterstitial } from './lib/adProvider';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
@@ -352,18 +353,47 @@ function App() {
     })();
   }, [user?.uid]);
 
-  // 카드 5장 저장마다 인터스티셜 광고 (Trial만)
-  const triggerInterstitialOnSave = () => {
+  // 액션별 점수 누적 → 임계치 도달 시 전면광고 (Trial 전용, 플랫폼 공통)
+  //   카드 저장 2점 / Generate(Vocab·Listening·Scene) 1점 / TTS 재생 제외
+  //   localStorage 영속 누적 → 앱/탭 닫아도 유지 (Web/Android/iOS 동일)
+  const AD_POINT_THRESHOLD = 15;
+  const AD_POINT_KEY = 'interstitialPoints';
+  const AD_COOLDOWN_MS = 60_000;
+  const lastAdAtRef = useRef(0);
+
+  const addAdPoints = async (points) => {
     if (tier !== 'trial') return;
-    const key = 'interstitialSaveCount';
-    const count = (parseInt(localStorage.getItem(key) || '0', 10) + 1);
-    if (count >= 5) {
-      localStorage.setItem(key, '0');
-      showInterstitialAd();
-    } else {
-      localStorage.setItem(key, String(count));
+    if (!adsReady()) return;
+
+    const prev = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
+    const next = prev + points;
+
+    if (next < AD_POINT_THRESHOLD) {
+      localStorage.setItem(AD_POINT_KEY, String(next));
+      return;
+    }
+
+    const now = Date.now();
+    if (now - lastAdAtRef.current < AD_COOLDOWN_MS) {
+      // 임계 도달했지만 쿨다운 중 — 점수는 유지해 다음 액션에서 재시도
+      localStorage.setItem(AD_POINT_KEY, String(next));
+      return;
+    }
+
+    lastAdAtRef.current = now;
+    localStorage.setItem(AD_POINT_KEY, '0');
+    const ok = await showInterstitial();
+    if (!ok) {
+      // 광고 로드/표시 실패 — 점수 롤백
+      localStorage.setItem(AD_POINT_KEY, String(next));
+      lastAdAtRef.current = 0;
     }
   };
+
+  // 구버전 키 정리 (1회)
+  useEffect(() => {
+    try { localStorage.removeItem('interstitialSaveCount'); } catch {}
+  }, []);
 
   // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
   const getBonusForToday = () => {
@@ -1579,7 +1609,7 @@ function App() {
 
       const docRef = await addDoc(collection(db, "savedCards"), cardData);
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      triggerInterstitialOnSave();
+      addAdPoints(2);
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -1634,7 +1664,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      triggerInterstitialOnSave();
+      addAdPoints(2);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -1691,7 +1721,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      triggerInterstitialOnSave();
+      addAdPoints(2);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -1751,7 +1781,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      triggerInterstitialOnSave();
+      addAdPoints(2);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2863,7 +2893,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={incrementVocabGenerate}
+            onGenerate={() => { incrementVocabGenerate(); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('vocab');
@@ -2876,6 +2906,7 @@ function App() {
         {/* Listening 탭 — 듣기 학습 */}
         <div style={{ display: viewMode === 'listening' ? 'block' : 'none', width: '100%' }}>
           <ListeningTab
+            isActive={viewMode === 'listening'}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
@@ -2885,7 +2916,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementVocabGenerate(); incrementDailyListen(); }}
+            onGenerate={() => { incrementVocabGenerate(); incrementDailyListen(); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
@@ -2927,7 +2958,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={incrementSceneGenerate}
+            onGenerate={() => { incrementSceneGenerate(); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('scene');

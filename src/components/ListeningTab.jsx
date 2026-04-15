@@ -56,6 +56,7 @@ export default function ListeningTab({
     onGenerate,
     onNavigateToLibrary,
     userLevel,
+    isActive = true,
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -75,6 +76,7 @@ export default function ListeningTab({
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [showCategorySheet, setShowCategorySheet] = useState(false);
+    const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
 
     const [passage, setPassage] = useState(null);
     const [keywords, setKeywords] = useState([]);
@@ -90,17 +92,30 @@ export default function ListeningTab({
     const [passageLoading, setPassageLoading] = useState(false); // TTS 로딩 중
     const [loopMode, setLoopMode] = useState(false); // 반복 재생 모드
     const passageAudioRef = useRef(null); // 현재 재생 중인 Audio 객체
+    const passageAudioUrlRef = useRef(null); // blob URL (누수 방지용)
     const loopModeRef = useRef(false); // useCallback 내에서 최신 값 접근용
+    const playGenRef = useRef(0); // 재생 세대 토큰 (stale fetch 응답 무효화)
+    const ttsAbortRef = useRef(null); // 진행 중 TTS fetch 취소용
 
     // loopMode 최신 값 동기화
     useEffect(() => { loopModeRef.current = loopMode; }, [loopMode]);
 
-    // 장문 재생 정리
+    // 장문 재생 정리 — in-flight fetch 취소 + stale 응답 무효화 + audio/blob 정리
     const stopPassageAudio = useCallback(() => {
+        playGenRef.current += 1; // 이후 도착할 fetch 응답은 stale 로 간주됨
+        if (ttsAbortRef.current) {
+            try { ttsAbortRef.current.abort(); } catch {}
+            ttsAbortRef.current = null;
+        }
         if (passageAudioRef.current) {
-            passageAudioRef.current.pause();
+            try { passageAudioRef.current.pause(); } catch {}
             passageAudioRef.current.onended = null;
+            try { passageAudioRef.current.src = ''; } catch {}
             passageAudioRef.current = null;
+        }
+        if (passageAudioUrlRef.current) {
+            try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
+            passageAudioUrlRef.current = null;
         }
         setPassagePlaying(false);
         setPassageLoading(false);
@@ -124,41 +139,62 @@ export default function ListeningTab({
             return;
         }
 
-        // 새로 재생 시작
+        // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const ttsText = passageType === 'dialogue' ? cleanDialogueForTTS(passage.text) : passage.text;
         const SERVER_URL = getServerUrl();
+        const myGen = ++playGenRef.current;
+        const controller = new AbortController();
+        ttsAbortRef.current = controller;
         setPassageLoading(true);
 
+        let objectUrl = null;
         try {
             const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ text: ttsText, langCode: selectedLang }),
+                signal: controller.signal,
             });
+            if (myGen !== playGenRef.current) return; // stale
             if (!res.ok) throw new Error(`TTS ${res.status}`);
             const blob = await res.blob();
-            const url = URL.createObjectURL(blob);
-            const audio = new Audio(url);
+            if (myGen !== playGenRef.current) return; // stale
+
+            objectUrl = URL.createObjectURL(blob);
+            const audio = new Audio(objectUrl);
 
             audio.onended = () => {
+                if (myGen !== playGenRef.current) return;
                 if (loopModeRef.current) {
                     audio.currentTime = 0;
                     audio.play().catch(() => {});
                 } else {
                     setPassagePlaying(false);
+                    if (passageAudioUrlRef.current) {
+                        try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
+                        passageAudioUrlRef.current = null;
+                    }
                     passageAudioRef.current = null;
                 }
             };
 
             passageAudioRef.current = audio;
+            passageAudioUrlRef.current = objectUrl;
+            objectUrl = null; // ref 로 이전됨 — finally 에서 revoke 하지 않도록
             await audio.play();
+            if (myGen !== playGenRef.current) return; // 재생 직후에도 체크 (중간에 stop 된 경우)
             setPassagePlaying(true);
         } catch (e) {
+            if (e?.name === 'AbortError') return; // 정상 취소
             console.warn('[ListeningTab] TTS error:', e);
             // fallback: 기존 onSpeak 사용
-            onSpeak(ttsText, selectedLang);
+            if (myGen === playGenRef.current) onSpeak(ttsText, selectedLang);
         } finally {
-            setPassageLoading(false);
+            if (objectUrl) {
+                try { URL.revokeObjectURL(objectUrl); } catch {}
+            }
+            if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
+            if (myGen === playGenRef.current) setPassageLoading(false);
         }
     }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio]);
 
@@ -184,6 +220,14 @@ export default function ListeningTab({
         setShowPronunciation(false);
         avoidTitlesRef.current = [];
     }, [selectedTopic, selectedLang, level, passageType]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 탭 이탈 시 TTS 정지 (다른 탭의 Generate 등으로 이동하는 경우 대응)
+    useEffect(() => {
+        if (!isActive) stopPassageAudio();
+    }, [isActive, stopPassageAudio]);
+
+    // 언마운트 시 정리
+    useEffect(() => () => stopPassageAudio(), [stopPassageAudio]);
 
     // ── Firestore History ────────────────────────────────────────
     const loadHistory = async (key) => {
@@ -213,14 +257,20 @@ export default function ListeningTab({
 
     // ── Generate Passage ─────────────────────────────────────────
     const handleGenerate = async () => {
-        if (!selectedTopic) return;
+        const hasCustom = customInput.trim().length > 0;
+        if (!selectedTopic && !hasCustom) return;
         stopPassageAudio();
         setIsLoading(true);
         setActiveRecIdx(null);
 
-        const topicLabel = getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`);
-        const categoryLabel = getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
-        const historyKey = makeHistoryKey(selectedTopic.topicId, passageType, level, selectedLang);
+        const topicId = hasCustom ? 'custom' : selectedTopic.topicId;
+        const topicLabel = hasCustom
+            ? customInput.trim()
+            : getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`);
+        const categoryLabel = hasCustom
+            ? customInput.trim()
+            : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
+        const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
         const persistedTitles = await loadHistory(historyKey);
         const allAvoid = [...new Set([...persistedTitles, ...avoidTitlesRef.current])];
 
@@ -229,7 +279,7 @@ export default function ListeningTab({
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    topic: selectedTopic.topicId,
+                    topic: topicId,
                     topicLabel,
                     category: categoryLabel,
                     level,
@@ -298,6 +348,7 @@ export default function ListeningTab({
 
     // ── Topic selection from bottom sheet ─────────────────────────
     const handleTopicSelect = (catId, subId, topicId) => {
+        setCustomInput('');
         setSelectedTopic({ catId, subId, topicId });
         setShowCategorySheet(false);
     };
@@ -372,11 +423,22 @@ export default function ListeningTab({
                 </button>
             </div>
 
+            {/* Custom Input — 사용자 직접 주제 입력 */}
+            <input
+                className="vocab-custom-input"
+                placeholder={t('scene.customPlaceholder')}
+                value={customInput}
+                onChange={e => {
+                    setCustomInput(e.target.value);
+                    if (e.target.value.trim()) setSelectedTopic(null);
+                }}
+            />
+
             {/* Generate Button */}
             <button
                 className="listening-generate-btn"
                 onClick={handleGenerate}
-                disabled={!selectedTopic || isLoading}
+                disabled={isLoading || (!selectedTopic && !customInput.trim())}
             >
                 {isLoading ? (
                     <><Loader2 size={18} className="spin" /> {t('listening.generating')}</>

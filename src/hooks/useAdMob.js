@@ -36,39 +36,42 @@ const AD_UNITS = IS_TESTING ? AD_UNITS_TEST : (isIOS() ? AD_UNITS_IOS : AD_UNITS
 export { AD_UNITS, IS_TESTING };
 
 export async function showInterstitialAd() {
-    if (!isNativePlatform()) return;
+    if (!isNativePlatform()) return false;
     try {
         await loadAdMob();
-        if (!_adMob) return;
+        if (!_adMob) return false;
 
         const { InterstitialAdPluginEvents } = await import('@capacitor-community/admob');
 
-        await new Promise(async (resolve) => {
+        return await new Promise(async (resolve) => {
             const handles = [];
+            let shown = false;
             const cleanup = () => handles.forEach(h => h?.remove?.());
 
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
-                cleanup(); resolve();
+                cleanup(); resolve(shown);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {
                 console.error('[AdMob Interstitial] FailedToLoad:', JSON.stringify(e));
-                cleanup(); resolve();
+                cleanup(); resolve(false);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToShow, (e) => {
                 console.error('[AdMob Interstitial] FailedToShow:', JSON.stringify(e));
-                cleanup(); resolve();
+                cleanup(); resolve(false);
             }));
 
             try {
                 await _adMob.prepareInterstitial({ adId: AD_UNITS.interstitial, isTesting: IS_TESTING });
                 await _adMob.showInterstitial();
+                shown = true;
             } catch (e) {
                 console.error('[AdMob Interstitial] 실패:', e?.message);
-                cleanup(); resolve();
+                cleanup(); resolve(false);
             }
         });
     } catch (e) {
         console.error('[AdMob Interstitial] 오류:', e?.message);
+        return false;
     }
 }
 

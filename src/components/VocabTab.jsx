@@ -273,6 +273,16 @@ export default function VocabTab({
     const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
+    const generateBtnRef = useRef(null);
+
+    // 최초 마운트 시 Generate 버튼이 보이도록 스크롤 — 랜덤 프리셀렉트로 카테고리가 펼쳐져
+    // 버튼이 화면 아래로 밀리는 문제 대응 (한 번만 실행)
+    useEffect(() => {
+        const t = setTimeout(() => {
+            generateBtnRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+        }, 100);
+        return () => clearTimeout(t);
+    }, []);
 
     // Firebase에서 해당 키의 이력 읽기
     const loadVocabHistory = async (key) => {
@@ -501,6 +511,7 @@ export default function VocabTab({
             {/* Generate Button */}
             <div className="vocab-generate-row">
                 <button
+                    ref={generateBtnRef}
                     className="vocab-generate-btn"
                     onClick={handleGenerate}
                     disabled={isLoading || (!selectedTopic && !customInput.trim())}
