@@ -291,7 +291,9 @@ export const AuthProvider = ({ children }) => {
     // Pro 월별 카운터 리셋
     useEffect(() => {
         if (!user || tier !== 'pro') return;
-        const currentMonth = new Date().toISOString().slice(0, 7);
+        // 로컬 타임존 기준 YYYY-MM — UTC 면 월말/월초 경계가 어긋남
+        const _now = new Date();
+        const currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`;
         if (proPronResetMonth && proPronResetMonth === currentMonth) return;
         updateDoc(doc(db, 'users', user.uid), {
             proPronCount: 0,

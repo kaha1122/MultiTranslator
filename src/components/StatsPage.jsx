@@ -15,7 +15,13 @@ const getMonday = (date) => {
     return d;
 };
 
-const formatDate = (d) => d.toISOString().slice(0, 10);
+// 로컬 타임존 기준 — Firestore dailyProgress 문서 키(로컬 기준)와 일치시킴
+const formatDate = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+};
 
 const getMonthDates = (year, month) => {
     const dates = [];

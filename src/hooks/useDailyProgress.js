@@ -2,9 +2,17 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
-export const getToday = () => new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+// 로컬 타임존 기준 YYYY-MM-DD — toISOString()은 UTC 라 자정 경계에서 어긋남
+const toLocalDateStr = (d) => {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+};
 
-// Returns Mon-Sun dates of the current week (ISO strings)
+export const getToday = () => toLocalDateStr(new Date());
+
+// Returns Mon-Sun dates of the current week (local date strings)
 const getWeekDates = () => {
     const today = new Date();
     const dayOfWeek = today.getDay(); // 0=Sun ... 6=Sat
@@ -13,7 +21,7 @@ const getWeekDates = () => {
     return Array.from({ length: 7 }, (_, i) => {
         const d = new Date(monday);
         d.setDate(monday.getDate() + i);
-        return d.toISOString().slice(0, 10);
+        return toLocalDateStr(d);
     });
 };
 
