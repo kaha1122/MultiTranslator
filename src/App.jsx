@@ -2884,6 +2884,7 @@ function App() {
         {/* Vocab 탭 — AI 단어 학습 */}
         <div style={{ display: viewMode === 'vocab' ? 'block' : 'none', width: '100%' }}>
           <VocabTab
+            isActive={viewMode === 'vocab'}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}

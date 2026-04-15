@@ -247,6 +247,7 @@ export default function VocabTab({
     onGenerate,
     onNavigateToLibrary,
     userLevel,
+    isActive = true,
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -274,15 +275,21 @@ export default function VocabTab({
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
     const generateBtnRef = useRef(null);
+    const didInitialScrollRef = useRef(false);
 
-    // 최초 마운트 시 Generate 버튼이 보이도록 스크롤 — 랜덤 프리셀렉트로 카테고리가 펼쳐져
-    // 버튼이 화면 아래로 밀리는 문제 대응 (한 번만 실행)
+    // 탭이 처음으로 보여질 때 Generate 버튼으로 스크롤
+    //   - VocabTab 은 display:none 상태로 선마운트되므로 마운트 시점엔 요소가 숨겨져 scrollIntoView 무효
+    //   - isActive 가 true 로 전환되는 최초 1회에만 실행 (재진입 시에는 유저 스크롤 위치 존중)
     useEffect(() => {
-        const t = setTimeout(() => {
-            generateBtnRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-        }, 100);
-        return () => clearTimeout(t);
-    }, []);
+        if (!isActive || didInitialScrollRef.current) return;
+        didInitialScrollRef.current = true;
+        // 탭이 방금 display:block 이 된 직후라 레이아웃 측정을 위해 두 단계 지연
+        requestAnimationFrame(() => {
+            setTimeout(() => {
+                generateBtnRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
+            }, 120);
+        });
+    }, [isActive]);
 
     // Firebase에서 해당 키의 이력 읽기
     const loadVocabHistory = async (key) => {
