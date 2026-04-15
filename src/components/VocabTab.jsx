@@ -278,16 +278,38 @@ export default function VocabTab({
     const didInitialScrollRef = useRef(false);
 
     // 탭이 처음으로 보여질 때 Generate 버튼으로 스크롤
-    //   - VocabTab 은 display:none 상태로 선마운트되므로 마운트 시점엔 요소가 숨겨져 scrollIntoView 무효
-    //   - isActive 가 true 로 전환되는 최초 1회에만 실행 (재진입 시에는 유저 스크롤 위치 존중)
+    //   - VocabTab 은 display:none 상태로 선마운트되므로 마운트 시점엔 요소가 숨겨져 측정 불가
+    //   - isActive 가 true 로 전환되는 최초 1회에만 실행 (재진입 시 유저 스크롤 위치 존중)
+    //   - scrollIntoView 는 중첩 스크롤 컨테이너 + Android WebView 조합에서 불안정 → getBoundingClientRect 직접 계산
     useEffect(() => {
         if (!isActive || didInitialScrollRef.current) return;
         didInitialScrollRef.current = true;
-        // 탭이 방금 display:block 이 된 직후라 레이아웃 측정을 위해 두 단계 지연
+
+        // 여러 단계 지연 — display:none→block, 카테고리 확장 렌더, admob 배너 높이 반영 대기
+        const tryScroll = (attempt = 0) => {
+            const btn = generateBtnRef.current;
+            if (!btn) return;
+            const container = btn.closest('.app-container');
+            if (!container) {
+                btn.scrollIntoView({ block: 'center' });
+                return;
+            }
+            const btnRect = btn.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            // 버튼이 아직 레이아웃에 안 잡혔으면 (height 0) 재시도
+            if (btnRect.height === 0 && attempt < 5) {
+                setTimeout(() => tryScroll(attempt + 1), 100);
+                return;
+            }
+            const target = container.scrollTop
+                + (btnRect.top - containerRect.top)
+                - (containerRect.height / 2)
+                + (btnRect.height / 2);
+            container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+        };
+
         requestAnimationFrame(() => {
-            setTimeout(() => {
-                generateBtnRef.current?.scrollIntoView({ block: 'center', behavior: 'smooth' });
-            }, 120);
+            setTimeout(() => tryScroll(0), 150);
         });
     }, [isActive]);
 
