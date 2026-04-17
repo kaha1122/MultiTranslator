@@ -11,11 +11,45 @@ import { playStarSound } from '../utils/soundEffects';
 import { getLangName } from '../config/languages';
 import './ListeningTab.css';
 
-// 대화형 지문에서 A:/B: 레이블 제거 + 줄바꿈을 SSML pause로 변환
+// 대화형 지문에서 A:/B: 레이블 제거 + 줄바꿈을 SSML pause로 변환 (단일 voice 폴백용)
 const cleanDialogueForTTS = (text) => {
     if (!text) return text;
     // A: B: 등 화자 레이블 제거, 줄바꿈 유지 (TTS 엔진이 줄바꿈에서 자연스럽게 쉼)
     return text.replace(/^[A-Z]:\s*/gm, '\n').replace(/\n{2,}/g, '\n\n');
+};
+
+// 대화 텍스트를 A:/B: 턴 배열로 파싱
+const parseDialogueTurns = (text) => {
+    if (!text) return [];
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const turns = [];
+    for (const line of lines) {
+        const m = line.match(/^([A-Z]):\s*(.+)$/);
+        if (m) {
+            turns.push({ speaker: m[1], text: m[2].trim() });
+        } else if (turns.length > 0) {
+            // 턴 연속(줄바꿈) — 직전 턴에 이어붙임
+            turns[turns.length - 1].text += ' ' + line;
+        }
+    }
+    return turns;
+};
+
+// 개별 문장 라인에서 speaker/text 분리 (개별 재생용)
+const extractSpeaker = (line) => {
+    if (!line) return { speaker: null, text: '' };
+    const m = String(line).match(/^([A-Z]):\s*(.+)$/);
+    return m ? { speaker: m[1], text: m[2].trim() } : { speaker: null, text: String(line).trim() };
+};
+
+// 간단한 deterministic 해시 (서버와 동일 규칙) — dialogueSeed 생성용
+const simpleHashString = (str) => {
+    let h = 0;
+    const s = String(str || '');
+    for (let i = 0; i < s.length; i++) {
+        h = ((h << 5) - h + s.charCodeAt(i)) | 0;
+    }
+    return String(Math.abs(h));
 };
 
 // 지문을 문장 단위로 분리 (대화: 줄 단위 / 에세이: 문장부호 기준)
@@ -140,7 +174,12 @@ export default function ListeningTab({
         }
 
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
-        const ttsText = passageType === 'dialogue' ? cleanDialogueForTTS(passage.text) : passage.text;
+        const isDialogue = passageType === 'dialogue';
+        const dialogueTurns = isDialogue ? parseDialogueTurns(passage.text) : [];
+        const hasTurns = dialogueTurns.length > 0;
+        // 대화: turns 기반 다중 voice / 에세이(또는 turns 파싱 실패): 기존 단일 voice 경로
+        const ttsText = isDialogue ? cleanDialogueForTTS(passage.text) : passage.text;
+        const dialogueSeed = hasTurns ? simpleHashString(passage.text) : null;
         const SERVER_URL = getServerUrl();
         const myGen = ++playGenRef.current;
         const controller = new AbortController();
@@ -152,7 +191,11 @@ export default function ListeningTab({
             const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: ttsText, langCode: selectedLang }),
+                body: JSON.stringify(
+                    hasTurns
+                        ? { turns: dialogueTurns, dialogueSeed, langCode: selectedLang }
+                        : { text: ttsText, langCode: selectedLang }
+                ),
                 signal: controller.signal,
             });
             if (myGen !== playGenRef.current) return; // stale
@@ -197,6 +240,42 @@ export default function ListeningTab({
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
     }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio]);
+
+    // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
+    const playSentence = useCallback(async (sentence) => {
+        const isDialogue = passageType === 'dialogue';
+        if (isDialogue) {
+            const { speaker, text } = extractSpeaker(sentence);
+            if (speaker && text) {
+                const SERVER_URL = getServerUrl();
+                const dialogueSeed = simpleHashString(passage?.text || '');
+                let objectUrl = null;
+                try {
+                    const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ turns: [{ speaker, text }], dialogueSeed, langCode: selectedLang }),
+                    });
+                    if (!res.ok) throw new Error(`TTS ${res.status}`);
+                    const blob = await res.blob();
+                    objectUrl = URL.createObjectURL(blob);
+                    const audio = new Audio(objectUrl);
+                    const localUrl = objectUrl;
+                    audio.onended = () => { try { URL.revokeObjectURL(localUrl); } catch {} };
+                    objectUrl = null; // revoke 책임 onended로 이전
+                    await audio.play();
+                    return;
+                } catch (e) {
+                    console.warn('[ListeningTab] sentence TTS error, falling back:', e);
+                    if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch {} }
+                    // fallback → 아래 단일 voice onSpeak
+                }
+            }
+        }
+        // 폴백/에세이: 기존 onSpeak
+        const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
+        onSpeak?.(ttsText, selectedLang);
+    }, [passageType, passage, selectedLang, onSpeak]);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
@@ -503,10 +582,7 @@ export default function ListeningTab({
                                     className={`listening-sentence ${playingSentenceIdx === idx ? 'playing' : ''}`}
                                     onClick={() => {
                                         setPlayingSentenceIdx(idx);
-                                        const ttsText = passageType === 'dialogue'
-                                            ? sentence.replace(/^[A-Z]:\s*/, '')
-                                            : sentence;
-                                        onSpeak?.(ttsText, selectedLang);
+                                        playSentence(sentence);
                                     }}
                                 >
                                     {sentence}
