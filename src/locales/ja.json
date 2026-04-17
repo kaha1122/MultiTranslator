@@ -28,7 +28,8 @@
     "noPhonemeData": "この単語の詳細な音素データはありません。",
     "errOmission": "省略",
     "errInsertion": "追加",
-    "errMispronunciation": "誤発音"
+    "errMispronunciation": "誤発音",
+    "tapHint": "単語をタップすると音素別の詳細分析が見られます"
   },
   "library": {
     "empty": "ライブラリが空です。\n重要なカードをスワイプして保存しましょう！",

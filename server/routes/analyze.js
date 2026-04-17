@@ -78,10 +78,28 @@ async function analyzePronunciation(audioPath, referenceText, langCode, azureKey
                     word: w.Word,
                     accuracyScore: w.PronunciationAssessment.AccuracyScore,
                     errorType: w.PronunciationAssessment.ErrorType,
-                    phonemes: w.Phonemes ? w.Phonemes.map(p => ({
-                        phoneme: p.Phoneme,
-                        accuracyScore: p.PronunciationAssessment.AccuracyScore
-                    })) : []
+                    // 1순위: Phonemes에 실제 기호가 있으면 사용 (영/불/독/서/러 등 IPA)
+                    // 2순위: Syllables (ja/zh/ko CJK에서 의미 있는 음절)
+                    // 3순위: Phonemes 원본(빈 값이어도 점수는 있으므로 표시)
+                    phonemes: (() => {
+                        const hasPhonemeSymbols = w.Phonemes && w.Phonemes.some(p => p.Phoneme);
+                        if (hasPhonemeSymbols) {
+                            return w.Phonemes.map(p => ({
+                                phoneme: p.Phoneme || '',
+                                accuracyScore: p.PronunciationAssessment.AccuracyScore
+                            }));
+                        }
+                        if (w.Syllables && w.Syllables.length > 0) {
+                            return w.Syllables.map(s => ({
+                                phoneme: s.Syllable || '',
+                                accuracyScore: s.PronunciationAssessment.AccuracyScore
+                            }));
+                        }
+                        return (w.Phonemes || []).map(p => ({
+                            phoneme: p.Phoneme || '',
+                            accuracyScore: p.PronunciationAssessment.AccuracyScore
+                        }));
+                    })()
                 }))
             };
             recognizer.close();

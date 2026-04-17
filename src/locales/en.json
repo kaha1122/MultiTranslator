@@ -28,7 +28,8 @@
     "noPhonemeData": "No detailed phoneme data for this word.",
     "errOmission": "Omitted",
     "errInsertion": "Inserted",
-    "errMispronunciation": "Mispronounced"
+    "errMispronunciation": "Mispronounced",
+    "tapHint": "Tap a word to see the detailed phoneme analysis"
   },
   "library": {
     "empty": "Library is empty.\nSwipe important cards to save them!",

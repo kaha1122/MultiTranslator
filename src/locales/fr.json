@@ -28,7 +28,8 @@
     "noPhonemeData": "Aucune donnée phonémique détaillée pour ce mot.",
     "errOmission": "Omis",
     "errInsertion": "Ajouté",
-    "errMispronunciation": "Mal prononcé"
+    "errMispronunciation": "Mal prononcé",
+    "tapHint": "Appuyez sur un mot pour voir l'analyse phonémique détaillée"
   },
   "library": {
     "empty": "La bibliothèque est vide.\nFaites glisser les cartes importantes pour les sauvegarder !",

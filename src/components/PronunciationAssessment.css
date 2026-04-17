@@ -73,17 +73,53 @@
     cursor: pointer;
     position: relative;
     transition: transform 0.2s;
+    /* 모바일 터치 타겟 보장 (44dp) + 탭 피드백 */
+    padding: 6px 8px;
+    min-width: 44px;
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.15);
+    user-select: none;
 }
 
-/* 터치/마우스 오버 시 단어가 살짝 위로 떠오르는 인터랙션 */
-.word-item:hover {
-    transform: translateY(-2px);
+/* hover는 데스크탑(마우스)에서만 — 모바일 이중 탭 방지 */
+@media (hover: hover) {
+    .word-item:hover {
+        transform: translateY(-2px);
+    }
+}
+
+.word-item:active {
+    transform: scale(0.96);
 }
 
 .word-text {
     font-size: 1.2rem;
     font-weight: 700;
     padding-bottom: 2px;
+}
+
+/* 단어 아래 작은 회색 점수 — 항상 표시, 시각적으로 절제 */
+.word-score {
+    margin-top: 4px;
+    font-size: 0.65rem;
+    font-weight: 600;
+    color: #94a3b8;
+    letter-spacing: 0.02em;
+    line-height: 1;
+}
+
+/* 💡 탭 안내 힌트 — 첫 3회 평가까지 단어 신호등 위에 표시 */
+.pron-assess-hint {
+    font-size: 0.78rem;
+    color: #4338ca;
+    background: #eef2ff;
+    border: 1px solid #e0e7ff;
+    padding: 8px 12px;
+    border-radius: 10px;
+    text-align: center;
+    font-weight: 500;
+    line-height: 1.4;
+    margin: 4px auto 0;
+    max-width: 360px;
 }
 
 /* 밑줄 색상 분기 */

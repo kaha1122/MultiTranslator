@@ -28,7 +28,8 @@
     "noPhonemeData": "이 단어는 세부 음소 데이터가 없습니다.",
     "errOmission": "생략됨",
     "errInsertion": "추가됨",
-    "errMispronunciation": "오발음"
+    "errMispronunciation": "오발음",
+    "tapHint": "단어를 탭하면 음소별 상세 분석이 나와요"
   },
   "library": {
     "empty": "보관함이 비어있습니다.\n중요한 카드를 스와이프해서 저장해보세요!",

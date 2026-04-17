@@ -28,7 +28,8 @@
     "noPhonemeData": "Keine detaillierten Phonem-Daten für dieses Wort.",
     "errOmission": "Ausgelassen",
     "errInsertion": "Eingefügt",
-    "errMispronunciation": "Falsch ausgesprochen"
+    "errMispronunciation": "Falsch ausgesprochen",
+    "tapHint": "Tippen Sie auf ein Wort, um die detaillierte Phonemanalyse zu sehen"
   },
   "library": {
     "empty": "Bibliothek ist leer.\nWischen Sie wichtige Karten, um sie zu speichern!",

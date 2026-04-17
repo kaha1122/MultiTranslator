@@ -28,7 +28,8 @@
     "noPhonemeData": "No hay datos fonéticos detallados para esta palabra.",
     "errOmission": "Omitido",
     "errInsertion": "Insertado",
-    "errMispronunciation": "Pronunciación incorrecta"
+    "errMispronunciation": "Pronunciación incorrecta",
+    "tapHint": "Toca una palabra para ver el análisis detallado de fonemas"
   },
   "library": {
     "empty": "La biblioteca está vacía.\n¡Desliza las tarjetas importantes para guardarlas!",

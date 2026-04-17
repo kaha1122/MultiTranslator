@@ -1,13 +1,45 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useT } from '../utils/i18n';
 import './PronunciationAssessment.css';
+
+// 첫 3회 평가까지만 힌트 + 첫 poor 단어 자동 오픈 (이후 자동 동작 없음)
+const HINT_MAX_COUNT = 3;
+const HINT_COUNT_KEY = 'pronAssessHintCount';
 
 // 🎤 발음 평가 결과를 시각적으로 매력적이게 보여주는 전담 컴포넌트입니다.
 // 이 컴포넌트는 Azure Speech API가 반환한 상세한 5가지 데이터를 해석하여
 // 사용자에게 3가지 영역(게이지, 단어 신호등, 음소 현미경)으로 보여줍니다.
 const PronunciationAssessment = ({ data, sourceLangCode }) => {
     const [selectedWord, setSelectedWord] = useState(null);
+    const [showTapHint, setShowTapHint] = useState(false);
+    const lastDataRef = useRef(null);
     const t = useT(sourceLangCode);
+
+    // 새 평가 결과가 들어올 때 1회만 발동: 힌트 표시 + poor 단어 자동 오픈 (첫 3회까지)
+    useEffect(() => {
+        if (!data) {
+            lastDataRef.current = null;
+            setShowTapHint(false);
+            return;
+        }
+        if (data === lastDataRef.current) return;
+        lastDataRef.current = data;
+
+        let count = 0;
+        try {
+            count = parseInt(localStorage.getItem(HINT_COUNT_KEY) || '0', 10) || 0;
+        } catch { /* ignore */ }
+
+        if (count < HINT_MAX_COUNT) {
+            setShowTapHint(true);
+            try { localStorage.setItem(HINT_COUNT_KEY, String(count + 1)); } catch { /* ignore */ }
+            // 첫 poor(<60) 단어 자동 오픈 — 교육 효과
+            const firstPoor = Array.isArray(data.words) ? data.words.find(w => (w?.accuracyScore ?? 100) < 60) : null;
+            if (firstPoor) setSelectedWord(firstPoor);
+        } else {
+            setShowTapHint(false);
+        }
+    }, [data]);
 
     if (!data) return null;
 
@@ -80,6 +112,13 @@ const PronunciationAssessment = ({ data, sourceLangCode }) => {
                 </div>
             )}
 
+            {/* 💡 탭 안내 힌트 — 첫 3회 평가까지만 노출 */}
+            {showTapHint && (
+                <div className="pron-assess-hint">
+                    💡 {t('scores.tapHint')}
+                </div>
+            )}
+
             {/* 🚥 영역 B: 단어별 신호등 */}
             <div className="words-traffic-light">
                 {words.map((w, idx) => (
@@ -90,6 +129,7 @@ const PronunciationAssessment = ({ data, sourceLangCode }) => {
                     >
                         {getErrorBadge(w.errorType)}
                         <span className="word-text">{w.word}</span>
+                        <span className="word-score">{w.accuracyScore}</span>
                     </div>
                 ))}
             </div>

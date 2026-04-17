@@ -28,7 +28,8 @@
     "noPhonemeData": "Không có dữ liệu âm vị chi tiết cho từ này.",
     "errOmission": "Bỏ sót",
     "errInsertion": "Thêm thừa",
-    "errMispronunciation": "Phát âm sai"
+    "errMispronunciation": "Phát âm sai",
+    "tapHint": "Chạm vào từ để xem phân tích âm vị chi tiết"
   },
   "library": {
     "empty": "Thư viện trống.\nVuốt các thẻ quan trọng để lưu!",

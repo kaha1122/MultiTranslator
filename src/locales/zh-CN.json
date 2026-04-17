@@ -28,7 +28,8 @@
     "noPhonemeData": "该单词没有详细的音素数据。",
     "errOmission": "省略",
     "errInsertion": "多余",
-    "errMispronunciation": "发音错误"
+    "errMispronunciation": "发音错误",
+    "tapHint": "点击单词可查看音素级详细分析"
   },
   "library": {
     "empty": "词库为空。\n滑动重要卡片以保存！",
