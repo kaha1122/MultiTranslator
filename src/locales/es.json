@@ -69,6 +69,7 @@
     "limitTitle": "¡Límite diario de prueba alcanzado!",
     "limitDesc": "Has alcanzado el límite diario de 10 tarjetas o 20 pruebas de pronunciación.",
     "seeYouTomorrow": "¡Nos vemos mañana!",
+    "seeSidebarReward": "¿Quieres seguir aprendiendo? Usa los botones +5 tarjetas / +10 pronunciaciones en la barra lateral",
     "upgradeBtn": "Mejorar plan"
   },
   "apiSetup": {

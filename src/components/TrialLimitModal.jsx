@@ -5,6 +5,9 @@ import { X } from 'lucide-react';
 const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade }) => {
     const t = useT(sourceLang);
     const { TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT } = useAuth();
+    // 네이티브 앱(Android/iOS)에서는 사이드바의 보상형 광고 버튼 안내, 웹에서는 기존 메시지
+    const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+    const messageKey = isNative ? 'trial.seeSidebarReward' : 'trial.seeYouTomorrow';
 
     return (
         <div
@@ -40,8 +43,15 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
                     <p style={{ margin: '0 0 2px', color: '#64748b', fontSize: '0.85rem', lineHeight: 1.4 }}>
                         {t('trial.limitDesc')}
                     </p>
-                    <p style={{ margin: 0, color: '#6366f1', fontSize: '0.9rem', fontWeight: '700', lineHeight: 1.4 }}>
-                        {t('trial.seeYouTomorrow')}
+                    <p style={{
+                        margin: '6px 0 0',
+                        color: '#6366f1',
+                        fontSize: isNative ? '0.82rem' : '0.9rem',
+                        fontWeight: '700',
+                        lineHeight: 1.45,
+                        wordBreak: 'keep-all',
+                    }}>
+                        {t(messageKey)}
                     </p>
                     {/* 사용량 표시 */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
