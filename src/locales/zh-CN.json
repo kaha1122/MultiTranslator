@@ -113,7 +113,8 @@
     "defaultLevel": "默认学习难度"
   },
   "translate": {
-    "detectionFailed": "无法检测输入语言，仅显示目标翻译。请检查是否有拼写错误。"
+    "detectionFailed": "无法检测输入语言，仅显示目标翻译。请检查是否有拼写错误。",
+    "placeholder": "请输入要翻译的文本（支持38种语言）"
   },
   "scene": {
     "tabTitle": "场景练习",

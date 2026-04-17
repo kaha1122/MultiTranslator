@@ -113,7 +113,8 @@
     "defaultLevel": "Cấp độ học mặc định"
   },
   "translate": {
-    "detectionFailed": "Không thể phát hiện ngôn ngữ đầu vào; chỉ hiển thị bản dịch mục tiêu. Vui lòng kiểm tra lỗi chính tả."
+    "detectionFailed": "Không thể phát hiện ngôn ngữ đầu vào; chỉ hiển thị bản dịch mục tiêu. Vui lòng kiểm tra lỗi chính tả.",
+    "placeholder": "Nhập văn bản cần dịch (hỗ trợ 38 ngôn ngữ)"
   },
   "scene": {
     "tabTitle": "Luyện Tình Huống",

@@ -113,7 +113,8 @@
     "defaultLevel": "Standard-Lernstufe"
   },
   "translate": {
-    "detectionFailed": "Eingabesprache konnte nicht erkannt werden; es werden nur Zielübersetzungen angezeigt. Bitte überprüfen Sie die Rechtschreibung."
+    "detectionFailed": "Eingabesprache konnte nicht erkannt werden; es werden nur Zielübersetzungen angezeigt. Bitte überprüfen Sie die Rechtschreibung.",
+    "placeholder": "Text zum Übersetzen eingeben (38 Sprachen unterstützt)"
   },
   "scene": {
     "tabTitle": "Szenen-Übung",

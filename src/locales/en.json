@@ -113,7 +113,8 @@
     "defaultLevel": "Default Learning Level"
   },
   "translate": {
-    "detectionFailed": "Couldn't detect the input language; showing target translations only. Please check for typos."
+    "detectionFailed": "Couldn't detect the input language; showing target translations only. Please check for typos.",
+    "placeholder": "Enter text to translate (38 languages supported)"
   },
   "scene": {
     "tabTitle": "Scene Practice",

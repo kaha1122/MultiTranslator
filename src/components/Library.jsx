@@ -406,6 +406,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 cardNumber={cardNumber}
                                 sourceLangCode={card.sourceLang || 'ko'}
                                 text={card.translatedText}
+                                sourceTranslation={card.sourceTranslation || ''}
                                 pronunciation={card.pronunciation}
                                 learningTip={card.learningTip}
                                 example={card.example || ''}

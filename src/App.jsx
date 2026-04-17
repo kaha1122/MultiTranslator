@@ -1503,9 +1503,11 @@ function App() {
 
       // 감지 실패(숫자/이모지/식별불가)만 배너 표시 (진짜 감지 시도가 실패한 경우)
       setDetectionFailed(rawDetected === 'other');
-      // 케이스 B·C 모두에서 부가 표시할 sourceLang 번역값 (감지 카드에만 렌더)
+      // 모든 카드에 부가 표시할 sourceLang 번역값 — 저장/재학습용
+      // 케이스 A (감지 = sourceLang): 입력 텍스트 자체가 모국어 번역
+      // 케이스 B/C: Gemini가 반환한 sourceTranslation
       setDetectedLang(isNative ? '' : rawDetected);
-      setSourceTranslation(!isNative ? (result.sourceTranslation || '') : '');
+      setSourceTranslation(isNative ? inputText : (result.sourceTranslation || ''));
 
       const newTranslations = {};
       const newTips = {};
@@ -1628,6 +1630,7 @@ function App() {
         inputLang: detectedLang || sourceLang,   // AI 감지 언어 (폴백: sourceLang)
         inputType: inputType,   // [신규] 'W' (Word) 또는 'S' (Sentence)
         translatedText: translations[langCode],
+        sourceTranslation: (langCode !== sourceLang && sourceTranslation) ? sourceTranslation : '',
         learningTip: learningTips[langCode] || [],
         pronunciation: pronunciations[langCode] || "",
         pronunciationScore: practiceResults[langCode]?.pronunciationScore || null,
@@ -2771,7 +2774,7 @@ function App() {
                       el.style.height = el.scrollHeight + 'px';
                     }
                   }}
-                  placeholder="Enter text to translate"
+                  placeholder={t('translate.placeholder')}
                   className="text-input"
                   style={{ overflow: 'hidden', resize: 'none' }}
                 />
@@ -2844,7 +2847,8 @@ function App() {
                 const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
                 const goal = languageGoals[langCode] || 80;
-                const isDetectedCard = detectedLang && langCode === detectedLang;
+                // 모국어(sourceLang)가 아닌 모든 카드에 sourceLang 번역 부가 표시
+                const showSourceTranslation = langCode !== sourceLang && sourceTranslation;
                 return (
                   <div key={langCode} className="library-card-wrapper">
                     <TranslationCard
@@ -2856,7 +2860,7 @@ function App() {
                       learningTip={learningTips[langCode]}
                       example={translationExamples[langCode]?.example || ''}
                       exampleTranslation={translationExamples[langCode]?.exampleTranslation || ''}
-                      sourceTranslation={isDetectedCard ? sourceTranslation : ''}
+                      sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
                       onSpeak={() => handleSpeak(translations[langCode], langCode)}

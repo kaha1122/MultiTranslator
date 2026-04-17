@@ -113,7 +113,8 @@
     "defaultLevel": "Niveau par défaut"
   },
   "translate": {
-    "detectionFailed": "Impossible de détecter la langue saisie ; affichage des traductions cibles uniquement. Veuillez vérifier les fautes de frappe."
+    "detectionFailed": "Impossible de détecter la langue saisie ; affichage des traductions cibles uniquement. Veuillez vérifier les fautes de frappe.",
+    "placeholder": "Entrez le texte à traduire (38 langues prises en charge)"
   },
   "scene": {
     "tabTitle": "Pratique Scène",
