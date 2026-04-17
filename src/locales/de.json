@@ -112,6 +112,9 @@
     "saveReturn": "Einstellungen speichern & Zurück",
     "defaultLevel": "Standard-Lernstufe"
   },
+  "translate": {
+    "detectionFailed": "Eingabesprache konnte nicht erkannt werden; es werden nur Zielübersetzungen angezeigt. Bitte überprüfen Sie die Rechtschreibung."
+  },
   "scene": {
     "tabTitle": "Szenen-Übung",
     "locations": "Orte",

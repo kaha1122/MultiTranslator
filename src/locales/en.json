@@ -112,6 +112,9 @@
     "saveReturn": "Save Settings & Return",
     "defaultLevel": "Default Learning Level"
   },
+  "translate": {
+    "detectionFailed": "Couldn't detect the input language; showing target translations only. Please check for typos."
+  },
   "scene": {
     "tabTitle": "Scene Practice",
     "locations": "Locations",

@@ -112,6 +112,9 @@
     "saveReturn": "Salvar Configurações e Voltar",
     "defaultLevel": "Nível de aprendizado padrão"
   },
+  "translate": {
+    "detectionFailed": "Não foi possível detectar o idioma de entrada; mostrando apenas as traduções de destino. Verifique se há erros de digitação."
+  },
   "scene": {
     "tabTitle": "Prática de Cenas",
     "locations": "Locais",

@@ -112,6 +112,9 @@
     "saveReturn": "Enregistrer & Retour",
     "defaultLevel": "Niveau par défaut"
   },
+  "translate": {
+    "detectionFailed": "Impossible de détecter la langue saisie ; affichage des traductions cibles uniquement. Veuillez vérifier les fautes de frappe."
+  },
   "scene": {
     "tabTitle": "Pratique Scène",
     "locations": "Lieux",

@@ -159,6 +159,19 @@
     overflow-wrap: anywhere;
 }
 
+/* 감지 카드의 모국어(sourceLang) 부가 번역 — 원문 아래에 작게 표시 */
+.source-translation-text {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #6b7280;
+    line-height: 1.4;
+    margin: 0 0 10px 0;
+    padding-left: 10px;
+    border-left: 3px solid #e5e7eb;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+}
+
 /* Assessment View */
 .assessment-display {
     display: flex;

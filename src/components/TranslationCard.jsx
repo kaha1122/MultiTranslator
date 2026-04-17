@@ -82,6 +82,8 @@ const TranslationCard = ({
     // Scene 태그
     selectedEmotion = '',
     interactionType = '',
+    // 감지 카드에만 표시되는 sourceLang 부가 번역 (Translate 탭 B·C 케이스)
+    sourceTranslation = '',
 }) => {
     const t = useT(sourceLangCode);
     const { byokGeminiKey, currentUser } = useAuth();
@@ -338,6 +340,11 @@ Return only these 2 lines.`;
                 <p className={`translated-text font-${langCode}`}>
                     {text || '...'}
                 </p>
+                {sourceTranslation && (
+                    <p className={`source-translation-text font-${sourceLangCode}`}>
+                        {sourceTranslation}
+                    </p>
+                )}
                 {pronunciation && !assessmentResult && (
                     <p className={`pronunciation-text font-${langCode}`}>
                         {pronunciation}

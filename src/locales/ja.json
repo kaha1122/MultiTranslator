@@ -112,6 +112,9 @@
     "saveReturn": "設定を保存して戻る",
     "defaultLevel": "デフォルト学習レベル"
   },
+  "translate": {
+    "detectionFailed": "入力言語を検出できませんでした。基本翻訳のみ表示します。入力ミスがないかご確認ください。"
+  },
   "scene": {
     "tabTitle": "シーン練習",
     "locations": "場所",

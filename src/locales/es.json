@@ -112,6 +112,9 @@
     "saveReturn": "Guardar ajustes y volver",
     "defaultLevel": "Nivel de aprendizaje predeterminado"
   },
+  "translate": {
+    "detectionFailed": "No se pudo detectar el idioma de entrada; se muestran solo las traducciones de destino. Por favor, verifique si hay errores tipográficos."
+  },
   "scene": {
     "tabTitle": "Práctica de Escenas",
     "locations": "Lugares",

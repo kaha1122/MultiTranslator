@@ -112,6 +112,9 @@
     "saveReturn": "保存设置并返回",
     "defaultLevel": "默认学习难度"
   },
+  "translate": {
+    "detectionFailed": "无法检测输入语言，仅显示目标翻译。请检查是否有拼写错误。"
+  },
   "scene": {
     "tabTitle": "场景练习",
     "locations": "场所",

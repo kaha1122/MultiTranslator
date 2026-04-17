@@ -788,16 +788,10 @@ function App() {
   // i18n — 다른 컴포넌트와 동일하게 t('key') 패턴 사용
   const t = useT(sourceLang);
 
-  // [신규] 실제로 입력하는 텍스트의 언어 (기본은 sourceLang과 동일)
-  const [inputLang, setInputLang] = useState(() => {
-    try {
-      const saved = localStorage.getItem('inputLang');
-      const detected = detectBrowserSourceLang();
-      return (saved && SUPPORTED_LANGUAGES.some(l => l.code === saved)) ? saved : detected;
-    } catch (e) {
-      return detectBrowserSourceLang();
-    }
-  });
+  // AI가 자동 감지한 입력 언어 코드 (A: sourceLang과 동일 / B: targetLangs 포함 / C: 그 외 지원 언어 / '' 또는 'other': 감지 실패)
+  const [detectedLang, setDetectedLang] = useState('');
+  const [sourceTranslation, setSourceTranslation] = useState('');
+  const [detectionFailed, setDetectionFailed] = useState(false);
 
   // 번역해서 보고 싶은 언어들 (도착어, 최대 3개)
   const [targetLangs, setTargetLangs] = useState(() => {
@@ -964,7 +958,6 @@ function App() {
     try {
       localStorage.setItem('inputText', inputText);
       localStorage.setItem('sourceLang', sourceLang);
-      localStorage.setItem('inputLang', inputLang);
       localStorage.setItem('inputType', inputType); // [신규] 타입 저장
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('translations', JSON.stringify(translations));
@@ -975,7 +968,7 @@ function App() {
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, inputLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
+  }, [inputText, sourceLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
 
   // Translation 탭을 벗어나면 inputText를 비워줍니다 (카드 내역은 유지)
   useEffect(() => {
@@ -983,14 +976,6 @@ function App() {
       setInputText('');
     }
   }, [viewMode]);
-
-  // [신규] sourceLang이나 targetLangs가 바뀔 때, inputLang이 사용 가능한 언어 조합에 없다면 기본값(sourceLang)으로 되돌립니다.
-  useEffect(() => {
-    const availableLangs = [sourceLang, ...targetLangs];
-    if (!availableLangs.includes(inputLang)) {
-      setInputLang(sourceLang);
-    }
-  }, [sourceLang, targetLangs, inputLang]);
 
   // 화면이 바뀔 때 스크롤을 맨 위로 올려주는 효과
   useEffect(() => {
@@ -1071,14 +1056,12 @@ function App() {
 
   const handleOnboardingComplete = (src, tgts, lvl) => {
     setSourceLang(src);
-    setInputLang(src);
     setTargetLangs(tgts);
     if (lvl) {
       setUserLevel(lvl);
       localStorage.setItem('userLevel', lvl);
     }
     localStorage.setItem('sourceLang', src);
-    localStorage.setItem('inputLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
     setShowOnboarding(false);
@@ -1376,10 +1359,9 @@ function App() {
   const handleSaveSettings = () => {
     // ❗ [Bug 수정] 언어 설정을 localStorage에 저장합니다.
     //   이전에는 저장을 하지 않아서 로그아웃 후 재접속하면
-    //   sourceLang·targetLangs·inputLang이 기본값(한국어+영어)으로 초기화됐습니다.
+    //   sourceLang·targetLangs가 기본값(한국어+영어)으로 초기화됐습니다.
     try {
       localStorage.setItem('sourceLang', sourceLang);
-      localStorage.setItem('inputLang', inputLang);
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals));
     } catch (e) {
@@ -1392,7 +1374,7 @@ function App() {
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
   // '번역' 버튼을 눌렀을 때 실행되는 메인 함수
-  // MyMemory 대신 Gemini가 번역 + 팁 + 발음을 한 번에 처리합니다.
+  // AI가 입력 언어를 자동 감지한 뒤 38개 언어 중 적절한 타겟으로 번역합니다.
   const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
 
@@ -1403,34 +1385,39 @@ function App() {
     setPronunciations({});
     setPracticeResults({});
     setTranslationExamples({});
+    setDetectedLang('');
+    setSourceTranslation('');
+    setDetectionFailed(false);
 
     try {
       const sourceLangName = getLangName(sourceLang);
-      const inputLangName = getLangName(inputLang);
-
-
-      const targetLangNames = targetLangs.map(code =>
-        getLangName(code)
-      );
+      const targetLangNames = targetLangs.map(code => getLangName(code));
+      const supportedCodes = ALL_LANGUAGES.map(l => l.code);
 
       const prompt = `
         You are a professional multilingual translator and language tutor.
 
         [Context]
-        - User's native language: ${sourceLangName}
-        - Input text language: ${inputLangName}
+        - User's native language: ${sourceLangName} (code: ${sourceLang})
         - Source text: "${inputText}"
-        - Target languages (in order): ${targetLangNames.join(', ')}
+        - Target languages (in order): ${targetLangNames.join(', ')} (codes: ${targetLangs.join(', ')})
+        - Supported language codes: ${supportedCodes.join(', ')}
+
+        [Task 0: Input Language Detection]
+        Detect the language of the source text and return as "detectedLang".
+        It MUST be one of the supported codes above.
+        If the text is ambiguous, numeric, emoji-only, or not a natural language, return "other".
 
         [Task 1: Translation]
-        Translate the source text into each target language. If input matches a target, copy as-is.
+        Translate the source text into each target language listed above.
+        If a target language equals detectedLang, copy the source text as-is.
 
         [Task 2: Input Type]
         Classify as "word" (single word/idiom) or "sentence".
 
         [Task 3: Educational Tips — language rule]
-        "tips" is an ordered array matching the target languages above.
-        Every string in "tips" MUST be written in ${sourceLangName}.
+        "tips" is an ordered array of length ${targetLangs.length}, matching the target languages above.
+        Every string MUST be written in ${sourceLangName}.
         Do not use any other language for tips — not English, not French, not Korean.
         Only ${sourceLangName}.
         - sentence type: 2-3 grammar/nuance/usage tips per translation.
@@ -1450,8 +1437,21 @@ function App() {
         Also provide a translation of that example sentence in ${sourceLangName}.
         If type is "sentence", omit the "example" and "exampleTranslation" fields from each entry.
 
+        [Task 7: Source-Side Translation — conditional]
+        If detectedLang is a supported code AND detectedLang !== "${sourceLang}",
+        translate the source text into ${sourceLangName} and return as top-level "sourceTranslation".
+        Otherwise omit the "sourceTranslation" field entirely.
+
+        [Task 8: Detected-Language Extra Card — conditional]
+        If detectedLang is a supported code AND detectedLang !== "${sourceLang}" AND detectedLang is NOT in [${targetLangs.join(', ')}],
+        also return:
+        - "detectedLangData": { "translation": "<the original source text, verbatim>", "pronunciation": "<per Task 4 rule for detectedLang>" }
+        - "detectedLangTip": [ one array of 2-3 tips about detectedLang grammar/usage for the source text, written in ${sourceLangName} ]
+        Otherwise omit both "detectedLangData" and "detectedLangTip" fields entirely.
+
         [Output — valid JSON only, no markdown]
         {
+          "detectedLang": "<code or 'other'>",
           "type": "word" | "sentence",
           "difficulty": "basic" | "intermediate" | "advanced",
           "tips": [
@@ -1460,6 +1460,7 @@ function App() {
           "data": {
             ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "...", "example": "...", "exampleTranslation": "..." }`).join(',\n            ')}
           }
+          // Optional: "sourceTranslation", "detectedLangData", "detectedLangTip" per Tasks 7 & 8
         }
       `;
 
@@ -1492,10 +1493,24 @@ function App() {
         setTranslationDifficulty('basic');
       }
 
+      // ── detectedLang 분기 판정 ──
+      const rawDetected = (result.detectedLang || '').trim();
+      const detectedIsValid = rawDetected && rawDetected !== 'other' && supportedCodes.includes(rawDetected);
+      const isNative = !detectedIsValid || rawDetected === sourceLang;
+      const inTargets = detectedIsValid && targetLangs.includes(rawDetected);
+      const isCaseC = detectedIsValid && !isNative && !inTargets;
+
+      // 감지 실패(숫자/이모지/식별불가)만 배너 표시 (진짜 감지 시도가 실패한 경우)
+      setDetectionFailed(rawDetected === 'other');
+      // 케이스 B·C 모두에서 부가 표시할 sourceLang 번역값 (감지 카드에만 렌더)
+      setDetectedLang(isNative ? '' : rawDetected);
+      setSourceTranslation(!isNative ? (result.sourceTranslation || '') : '');
+
       const newTranslations = {};
       const newTips = {};
       const newProns = {};
       const newExamples = {};
+      // targetLangs 순회 — 기존과 동일
       if (result.data) {
         targetLangs.forEach(langCode => {
           const entry = result.data[langCode];
@@ -1511,7 +1526,20 @@ function App() {
           }
         });
       }
-      // tips 파싱 — 배열 인덱스로 언어코드에 매핑 (키 없음 → 언어 연상 차단)
+      // 케이스 C: 감지 언어 카드 데이터 병합 (targetLangs에 없는 새 카드)
+      if (isCaseC && result.detectedLangData) {
+        const entry = result.detectedLangData;
+        newTranslations[rawDetected] = entry.translation || inputText;
+        newProns[rawDetected] = entry.pronunciation || '';
+        if (entry.example) {
+          newExamples[rawDetected] = {
+            example: entry.example,
+            exampleTranslation: entry.exampleTranslation || '',
+          };
+        }
+      }
+
+      // tips 파싱 — 배열 인덱스로 targetLangs에 매핑 (키 없음 → 언어 연상 차단)
       if (Array.isArray(result.tips)) {
         targetLangs.forEach((langCode, i) => {
           newTips[langCode] = result.tips[i] || [];
@@ -1525,6 +1553,10 @@ function App() {
         targetLangs.forEach(langCode => {
           if (result.data[langCode]?.tips) newTips[langCode] = result.data[langCode].tips;
         });
+      }
+      // 케이스 C: 감지 언어 tip 병합
+      if (isCaseC) {
+        newTips[rawDetected] = Array.isArray(result.detectedLangTip) ? result.detectedLangTip : [];
       }
 
       setTranslations(newTranslations);
@@ -1592,7 +1624,7 @@ function App() {
         langCode: langCode,
         sourceText: inputText,
         sourceLang: sourceLang, // 모국어 (UI 기준 언어)
-        inputLang: inputLang,   // 실제 텍스트가 입력된 언어
+        inputLang: detectedLang || sourceLang,   // AI 감지 언어 (폴백: sourceLang)
         inputType: inputType,   // [신규] 'W' (Word) 또는 'S' (Sentence)
         translatedText: translations[langCode],
         learningTip: learningTips[langCode] || [],
@@ -2721,35 +2753,6 @@ function App() {
         <div style={{ display: viewMode === 'translation' ? 'block' : 'none', width: '100%' }}>
           <>
             <div className="primary-sentence-container">
-              <div className="input-lang-selector" style={{ display: 'flex', gap: '8px', overflowX: 'auto', paddingBottom: '4px' }}>
-                {/* 모국어 + 번역 도착어들을 입력 언어 옵션으로 제공합니다 */}
-                {[sourceLang, ...targetLangs].filter((value, index, self) => self.indexOf(value) === index).map((langCode) => {
-                  const lang = getLangInfo(langCode);
-                  if (!lang) return null;
-                  const isSelected = inputLang === langCode;
-                  return (
-                    <button
-                      key={langCode}
-                      onClick={() => setInputLang(langCode)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: '16px',
-                        border: isSelected ? 'none' : '1px solid #e2e8f0',
-                        background: isSelected ? lang.color : 'white',
-                        color: isSelected ? lang.textColor : '#64748b',
-                        fontWeight: '700',
-                        fontSize: '0.8rem',
-                        cursor: 'pointer',
-                        whiteSpace: 'nowrap',
-                        boxShadow: isSelected ? '0 2px 8px rgba(0,0,0,0.05)' : 'none',
-                        transition: 'all 0.2s'
-                      }}
-                    >
-                      {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
-                    </button>
-                  );
-                })}
-              </div>
               <div className="text-input-wrapper">
                 <textarea
                   rows={2}
@@ -2813,12 +2816,34 @@ function App() {
               </div>
             </div>
 
+            {/* 감지 실패 안내 배너 — 숫자/이모지/식별불가 입력 */}
+            {detectionFailed && (
+              <div style={{
+                margin: '8px 0',
+                padding: '10px 14px',
+                background: '#fef3c7',
+                border: '1px solid #fde68a',
+                borderRadius: '10px',
+                color: '#92400e',
+                fontSize: '0.85rem',
+                lineHeight: 1.4,
+              }}>
+                {t('translate.detectionFailed')}
+              </div>
+            )}
+
             {/* 번역 결과 카드들이 나오는 영역 */}
             <div className="cards-grid">
-              {targetLangs.map((langCode) => {
+              {(() => {
+                // 케이스 C: 감지 언어가 targetLangs에 없으면 맨 앞에 추가
+                const displayLangs = (detectedLang && !targetLangs.includes(detectedLang))
+                  ? [detectedLang, ...targetLangs]
+                  : targetLangs;
+                return displayLangs.map((langCode) => {
                 const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
                 const goal = languageGoals[langCode] || 80;
+                const isDetectedCard = detectedLang && langCode === detectedLang;
                 return (
                   <div key={langCode} className="library-card-wrapper">
                     <TranslationCard
@@ -2830,6 +2855,7 @@ function App() {
                       learningTip={learningTips[langCode]}
                       example={translationExamples[langCode]?.example || ''}
                       exampleTranslation={translationExamples[langCode]?.exampleTranslation || ''}
+                      sourceTranslation={isDetectedCard ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
                       onSpeak={() => handleSpeak(translations[langCode], langCode)}
@@ -2868,7 +2894,8 @@ function App() {
                     </div>
                   </div>
                 );
-              })}
+              });
+              })()}
               {/* 선택한 언어가 하나도 없을 때 보여주는 메시지 */}
               {targetLangs.length === 0 && (
                 <p style={{ gridColumn: '1/-1', textAlign: 'center', color: 'var(--text-secondary)', padding: '2rem' }}>
@@ -2938,9 +2965,8 @@ function App() {
             onBookmarkPrompt={handleBookmarkPrompt}
             languageGoals={languageGoals}
             targetLangs={targetLangs}
-            onSendToTranslation={(text, langCode) => {
+            onSendToTranslation={(text) => {
               setInputText(text);
-              setInputLang(langCode);
               pendingTranslateRef.current = true;
               setViewMode('translation');
             }}
