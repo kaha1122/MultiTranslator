@@ -159,7 +159,7 @@
 .phoneme-microscope {
     background: #ffffff;
     border-radius: 12px;
-    padding: 16px;
+    padding: 10px 12px 12px;
     border: 1px solid #e2e8f0;
     box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
     /* 팝업이 아래에서 쓰윽 올라오는 애니메이션 */
@@ -182,15 +182,45 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 12px;
+    margin-bottom: 4px;
     border-bottom: 1px solid #f1f5f9;
-    padding-bottom: 8px;
+    padding-bottom: 4px;
+    gap: 8px;
 }
 
 .phoneme-header h4 {
     margin: 0;
-    font-size: 0.95rem;
+    font-size: 0.9rem;
     color: #334155;
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.phoneme-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.phoneme-speak-btn {
+    background: none;
+    border: none;
+    cursor: pointer;
+    color: #6366f1;
+    padding: 4px 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+    -webkit-tap-highlight-color: rgba(99, 102, 241, 0.2);
+    transition: background 0.15s;
+}
+
+.phoneme-speak-btn:hover,
+.phoneme-speak-btn:active {
+    background: #eef2ff;
 }
 
 .close-btn {
@@ -200,7 +230,7 @@
     color: #94a3b8;
     cursor: pointer;
     line-height: 1;
-    padding: 0;
+    padding: 2px 6px;
 }
 
 .close-btn:hover {
@@ -210,7 +240,8 @@
 .phoneme-list {
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 6px;
+    margin-top: 4px;
 }
 
 .phoneme-item {

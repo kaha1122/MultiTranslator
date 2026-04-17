@@ -195,7 +195,7 @@ export function VocabWordCard({
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} />
 
                     {/* 녹음 버튼 */}
                     <div className="practice-actions">

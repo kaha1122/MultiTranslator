@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Volume2 } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import './PronunciationAssessment.css';
 
@@ -9,7 +10,7 @@ const HINT_COUNT_KEY = 'pronAssessHintCount';
 // 🎤 발음 평가 결과를 시각적으로 매력적이게 보여주는 전담 컴포넌트입니다.
 // 이 컴포넌트는 Azure Speech API가 반환한 상세한 5가지 데이터를 해석하여
 // 사용자에게 3가지 영역(게이지, 단어 신호등, 음소 현미경)으로 보여줍니다.
-const PronunciationAssessment = ({ data, sourceLangCode }) => {
+const PronunciationAssessment = ({ data, sourceLangCode, langCode, onSpeak }) => {
     const [selectedWord, setSelectedWord] = useState(null);
     const [showTapHint, setShowTapHint] = useState(false);
     const lastDataRef = useRef(null);
@@ -135,35 +136,59 @@ const PronunciationAssessment = ({ data, sourceLangCode }) => {
             </div>
 
             {/* 🔍 영역 C: 발음 현미경 (음소 단위 팝업) */}
-            {selectedWord && (
-                <div className="phoneme-microscope">
-                    <div className="phoneme-header">
-                        <h4>🔍 "{selectedWord.word}" {t('scores.anatomy')}</h4>
-                        <button className="close-btn" onClick={() => setSelectedWord(null)}>×</button>
-                    </div>
-                    <div className="phoneme-list">
-                        {selectedWord.phonemes && selectedWord.phonemes.length > 0 ? (
-                            selectedWord.phonemes.map((p, i) => (
-                                <div key={i} className="phoneme-item">
-                                    <span className="phoneme-symbol">/{p.phoneme || p.symbol}/</span>
-                                    <div className="phoneme-score-bar">
-                                        <div
-                                            className="phoneme-fill"
-                                            style={{
-                                                width: `${p.accuracyScore}%`,
-                                                backgroundColor: getScoreColor(p.accuracyScore)
-                                            }}
-                                        ></div>
+            {selectedWord && (() => {
+                // 음소 기호 폴백: Azure가 비어있게 반환할 때 CJK는 글자 수가 phoneme 수와 같으면 글자 단위로 대체
+                const rawPhonemes = Array.isArray(selectedWord.phonemes) ? selectedWord.phonemes : [];
+                const hasAnySymbol = rawPhonemes.some(p => (p?.phoneme || p?.symbol || '').trim());
+                let displayPhonemes = rawPhonemes;
+                if (!hasAnySymbol && rawPhonemes.length > 0) {
+                    const chars = Array.from(selectedWord.word || '');
+                    if (chars.length === rawPhonemes.length) {
+                        displayPhonemes = rawPhonemes.map((p, i) => ({ phoneme: chars[i], accuracyScore: p.accuracyScore }));
+                    }
+                }
+                return (
+                    <div className="phoneme-microscope">
+                        <div className="phoneme-header">
+                            <h4>"{selectedWord.word}" {t('scores.anatomy')}</h4>
+                            <div className="phoneme-header-actions">
+                                {onSpeak && langCode && (
+                                    <button
+                                        className="phoneme-speak-btn"
+                                        onClick={() => onSpeak(selectedWord.word, langCode)}
+                                        title="Listen"
+                                        aria-label="Listen to word"
+                                    >
+                                        <Volume2 size={16} />
+                                    </button>
+                                )}
+                                <button className="close-btn" onClick={() => setSelectedWord(null)}>×</button>
+                            </div>
+                        </div>
+                        <div className="phoneme-list">
+                            {displayPhonemes.length > 0 ? (
+                                displayPhonemes.map((p, i) => (
+                                    <div key={i} className="phoneme-item">
+                                        <span className="phoneme-symbol">/{p.phoneme || p.symbol}/</span>
+                                        <div className="phoneme-score-bar">
+                                            <div
+                                                className="phoneme-fill"
+                                                style={{
+                                                    width: `${p.accuracyScore}%`,
+                                                    backgroundColor: getScoreColor(p.accuracyScore)
+                                                }}
+                                            ></div>
+                                        </div>
+                                        <span className="phoneme-score-text">{p.accuracyScore}</span>
                                     </div>
-                                    <span className="phoneme-score-text">{p.accuracyScore}</span>
-                                </div>
-                            ))
-                        ) : (
-                            <p className="no-phoneme-data">{t('scores.noPhonemeData')}</p>
-                        )}
+                                ))
+                            ) : (
+                                <p className="no-phoneme-data">{t('scores.noPhonemeData')}</p>
+                            )}
+                        </div>
                     </div>
-                </div>
-            )}
+                );
+            })()}
         </div>
     );
 };

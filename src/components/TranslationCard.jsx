@@ -438,7 +438,7 @@ Return only these 2 lines.`;
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLangCode} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLangCode} langCode={langCode} onSpeak={onSpeakText} />
 
                     <div className="practice-actions">
                         <button
