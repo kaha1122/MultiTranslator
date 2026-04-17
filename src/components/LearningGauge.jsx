@@ -219,7 +219,7 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
                         className={`gauge-diff-btn ${difficulty === d ? 'active' : ''}`}
                         onClick={() => setDifficulty(d)}
                     >
-                        {t(`scene.diff${d === 'basic' ? 'Basic' : d === 'intermediate' ? 'Intermediate' : 'High'}`)}
+                        {t(`scene.diff${d.charAt(0).toUpperCase() + d.slice(1)}`)}
                     </button>
                 ))}
             </div>
