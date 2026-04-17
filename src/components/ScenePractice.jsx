@@ -139,7 +139,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
                         <div className="score-badge">
                             <Award size={12} /> {assessmentResult.pronunciationScore}Pt
                         </div>
-                        <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} />
+                        <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={langCode} onSpeak={onSpeak} />
                     </>
                 )}
 

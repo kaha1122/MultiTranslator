@@ -137,14 +137,18 @@ const PronunciationAssessment = ({ data, sourceLangCode, langCode, onSpeak }) =>
 
             {/* 🔍 영역 C: 발음 현미경 (음소 단위 팝업) */}
             {selectedWord && (() => {
-                // 음소 기호 폴백: Azure가 비어있게 반환할 때 CJK는 글자 수가 phoneme 수와 같으면 글자 단위로 대체
+                // 음소 기호 폴백 (서버가 빈 문자열만 돌려준 경우):
+                // ① 글자 수가 phoneme 수와 같으면 글자 단위로 대체 (히라가나 등)
+                // ② Azure가 단일 엔트리만 반환(카타카나 외래어 등) → 단어 전체를 심볼로 표시
                 const rawPhonemes = Array.isArray(selectedWord.phonemes) ? selectedWord.phonemes : [];
                 const hasAnySymbol = rawPhonemes.some(p => (p?.phoneme || p?.symbol || '').trim());
                 let displayPhonemes = rawPhonemes;
                 if (!hasAnySymbol && rawPhonemes.length > 0) {
                     const chars = Array.from(selectedWord.word || '');
-                    if (chars.length === rawPhonemes.length) {
+                    if (chars.length === rawPhonemes.length && chars.length > 0) {
                         displayPhonemes = rawPhonemes.map((p, i) => ({ phoneme: chars[i], accuracyScore: p.accuracyScore }));
+                    } else if (rawPhonemes.length === 1 && selectedWord.word) {
+                        displayPhonemes = [{ phoneme: selectedWord.word, accuracyScore: rawPhonemes[0].accuracyScore }];
                     }
                 }
                 return (
