@@ -1415,13 +1415,14 @@ function App() {
         [Task 2: Input Type]
         Classify as "word" (single word/idiom) or "sentence".
 
-        [Task 3: Educational Tips — language rule]
-        "tips" is an ordered array of length ${targetLangs.length}, matching the target languages above.
-        Every string MUST be written in ${sourceLangName}.
-        Do not use any other language for tips — not English, not French, not Korean.
-        Only ${sourceLangName}.
-        - sentence type: 2-3 grammar/nuance/usage tips per translation.
-        - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
+        [Task 3: Educational Tips]
+        "tips" is an ordered array of length ${targetLangs.length}, one entry per target language in the same order as listed above.
+        Each entry is an array of 2-3 tip strings.
+        CRITICAL LANGUAGE RULE: Every tip string MUST be written in ${sourceLangName} (language code "${sourceLang}"), because ${sourceLangName} is the user's native language and the only language they read fluently.
+        Do NOT write tips in any target language. Do NOT mix languages within a tip.
+        If you are unsure, default to ${sourceLangName}.
+        - sentence type: 2-3 grammar/nuance/usage notes explaining how the translation in that target language works, written in ${sourceLangName}.
+        - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence — all explained in ${sourceLangName}.
 
         [Task 4: Pronunciation]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / ru: Rewrite with accent marks (´) on stressed vowels per standard Russian dictionary stress (ё and single-syllable words excluded) / others: Romanization
@@ -1446,7 +1447,7 @@ function App() {
         If detectedLang is a supported code AND detectedLang !== "${sourceLang}" AND detectedLang is NOT in [${targetLangs.join(', ')}],
         also return:
         - "detectedLangData": { "translation": "<the original source text, verbatim>", "pronunciation": "<per Task 4 rule for detectedLang>" }
-        - "detectedLangTip": [ one array of 2-3 tips about detectedLang grammar/usage for the source text, written in ${sourceLangName} ]
+        - "detectedLangTip": [ 2-3 tips about detectedLang grammar/usage for the source text, each string written in ${sourceLangName} (code "${sourceLang}") — DO NOT write in detectedLang or any other language ]
         Otherwise omit both "detectedLangData" and "detectedLangTip" fields entirely.
 
         [Output — valid JSON only, no markdown]
