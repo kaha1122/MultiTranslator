@@ -38,10 +38,18 @@ export function VocabWordCard({
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 
+    // 일본어(ja)만 한자 대신 히라가나(pronunciation/examplePronunciation)를 Azure 기준으로 사용.
+    // 중국어/러시아어는 원문이 더 정확히 평가됨 → 치환하지 않음.
+    const referenceText = (selectedLang === 'ja')
+        ? (practiceMode === 'word'
+            ? (w.pronunciation || w.word)
+            : (w.examplePronunciation || w.example || ''))
+        : practiceText;
+
     const {
         isRecording, isAnalyzing, assessmentResult, coachTip,
         errorMsg, saveMessage, micDenied, openAppSettings, startRecording, stopRecording, resetAssessment,
-    } = useAudioRecorder(practiceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
+    } = useAudioRecorder(referenceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
 
     // practiceMode 전환 시 이전 결과 초기화
     const handleModeChange = (mode) => {
