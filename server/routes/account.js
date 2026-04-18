@@ -311,4 +311,73 @@ router.post('/api/admin/delete-auth-by-email', async (req, res) => {
     }
 });
 
+// ── [Admin] 기존 savedCards에 serialNumber 일괄 부여 (1회성 마이그레이션) ──
+// 각 user의 savedCards를 createdAt asc로 정렬하여 1부터 순차 배정.
+// serialNumber가 이미 있는 카드는 skip (재실행 안전).
+// 요청 body: { dryRun?: boolean }
+router.post('/api/admin/assign-card-serials', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    const dryRun = req.body?.dryRun === true;
+    const stats = { usersProcessed: 0, cardsAssigned: 0, cardsSkipped: 0 };
+
+    try {
+        const usersSnap = await adminDb.collection('users').get();
+        for (const userDoc of usersSnap.docs) {
+            const uid = userDoc.id;
+            const cardsSnap = await adminDb.collection('savedCards')
+                .where('userId', '==', uid)
+                .orderBy('createdAt', 'asc')
+                .get();
+            const activeCards = cardsSnap.docs.filter(d => !d.data().isDeleted);
+            if (activeCards.length === 0) continue;
+
+            // 시작점 보호: 이미 serialNumber가 있는 카드(신규 로직으로 생성됨)의 최댓값과
+            // 유저 문서의 cardSerialMax 중 더 큰 값부터 이어서 부여 → 번호 충돌 방지.
+            const existingMaxSerial = activeCards
+                .map(c => c.data().serialNumber)
+                .filter(s => typeof s === 'number')
+                .reduce((m, s) => Math.max(m, s), 0);
+            const currentCounter = userDoc.data().cardSerialMax || 0;
+            let serialMax = Math.max(currentCounter, existingMaxSerial);
+            const cardsToAssign = [];
+            for (const c of activeCards) {
+                if (c.data().serialNumber != null) { stats.cardsSkipped++; continue; }
+                serialMax++;
+                cardsToAssign.push({ ref: c.ref, serial: serialMax });
+                stats.cardsAssigned++;
+            }
+
+            if (cardsToAssign.length === 0) continue;
+            stats.usersProcessed++;
+
+            if (!dryRun) {
+                // 500건씩 배치 분할 (Firestore 한도)
+                for (let i = 0; i < cardsToAssign.length; i += 400) {
+                    const batch = adminDb.batch();
+                    const chunk = cardsToAssign.slice(i, i + 400);
+                    for (const { ref, serial } of chunk) {
+                        batch.update(ref, { serialNumber: serial });
+                    }
+                    // 마지막 청크에 user 카운터도 함께 업데이트
+                    if (i + 400 >= cardsToAssign.length) {
+                        batch.update(userDoc.ref, { cardSerialMax: serialMax });
+                    }
+                    await batch.commit();
+                }
+            }
+        }
+        console.log(`[AssignSerials] dryRun=${dryRun}`, stats);
+        res.json({ success: true, dryRun, stats });
+    } catch (err) {
+        console.error('[AssignSerials] error:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
 module.exports = router;
