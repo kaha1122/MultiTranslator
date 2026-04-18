@@ -5,6 +5,7 @@ import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { UserPlus, Mail, Lock, AlertCircle, User, Phone, Smartphone } from 'lucide-react';
 import { getT } from '../../utils/i18n';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from '../../utils/phoneFormat';
+import { readAnonProfileFields } from '../../utils/anonProfileMigrate';
 import './Auth.css';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
@@ -54,20 +55,24 @@ function Signup({ onSwitchToLogin, sourceLang }) {
         setIsLoading(true);
         setError('');
         const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
+        // 익명→실계정 전환 시 서버 migrate race condition 대비: 언어/온보딩 필드 미리 읽기
+        const anonFields = prevAnonUid ? await readAnonProfileFields(prevAnonUid) : {};
         try {
             const userCredential = await createUserWithEmailAndPassword(auth, email, password);
             const user = userCredential.user;
             if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
             const rawDigits = phone.replace(/\D/g, '');
             await setDoc(doc(db, 'users', user.uid), {
+                ...anonFields,
                 uid: user.uid,
                 email: email,
                 displayName: nickname,
                 phoneNumber: rawDigits ? `${selectedCountry.dial}${rawDigits}` : '',
                 phoneCountry: phoneCountry,
+                hasCompletedOnboarding: anonFields.hasCompletedOnboarding === true,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp()
-            });
+            }, { merge: true });
         } catch (err) {
             console.error(err);
             if (err.code === 'auth/email-already-in-use') {
@@ -90,6 +95,8 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             return;
         }
         const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
+        // 익명→실계정 전환 시 서버 migrate race condition 대비: 언어/온보딩 필드 미리 읽기
+        const anonFields = prevAnonUid ? await readAnonProfileFields(prevAnonUid) : {};
         try {
             if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
@@ -106,9 +113,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
+                    // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                    Object.assign(profileData, anonFields);
                     profileData.displayName = user.displayName || 'Google User';
-                    profileData.hasCompletedOnboarding = false;
                     profileData.createdAt = serverTimestamp();
+                    profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
                 }
                 await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
                 setIsLoading(false);
@@ -129,9 +138,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
+                // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                Object.assign(profileData, anonFields);
                 profileData.displayName = user.displayName || 'Google User';
-                profileData.hasCompletedOnboarding = false;
                 profileData.createdAt = serverTimestamp();
+                profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
             }
             await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
         } catch (err) {
@@ -154,6 +165,8 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             return;
         }
         const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
+        // 익명→실계정 전환 시 서버 migrate race condition 대비: 언어/온보딩 필드 미리 읽기
+        const anonFields = prevAnonUid ? await readAnonProfileFields(prevAnonUid) : {};
         try {
             if (isNative) {
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication');
@@ -170,9 +183,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
+                    // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                    Object.assign(profileData, anonFields);
                     profileData.displayName = user.displayName || 'Facebook User';
-                    profileData.hasCompletedOnboarding = false;
                     profileData.createdAt = serverTimestamp();
+                    profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
                 }
                 await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
                 setIsLoading(false);
@@ -193,9 +208,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
+                // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                Object.assign(profileData, anonFields);
                 profileData.displayName = user.displayName || 'Facebook User';
-                profileData.hasCompletedOnboarding = false;
                 profileData.createdAt = serverTimestamp();
+                profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
             }
             await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
         } catch (err) {
@@ -214,6 +231,8 @@ function Signup({ onSwitchToLogin, sourceLang }) {
         setIsLoading(true);
         setError('');
         const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
+        // 익명→실계정 전환 시 서버 migrate race condition 대비: 언어/온보딩 필드 미리 읽기
+        const anonFields = prevAnonUid ? await readAnonProfileFields(prevAnonUid) : {};
         try {
             const isNative = window.Capacitor?.isNativePlatform?.();
             if (isNative) {
@@ -232,9 +251,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
                 if (additionalInfo?.isNewUser) {
+                    // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                    Object.assign(profileData, anonFields);
                     profileData.displayName = user.displayName || 'Apple User';
-                    profileData.hasCompletedOnboarding = false;
                     profileData.createdAt = serverTimestamp();
+                    profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
                 }
                 await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });
                 setIsLoading(false);
@@ -255,8 +276,11 @@ function Signup({ onSwitchToLogin, sourceLang }) {
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
             if (additionalInfo?.isNewUser) {
+                // 익명→신규 전환만 anonFields 이관 (재로그인=기존 계정은 Firestore 값 보호)
+                Object.assign(profileData, anonFields);
                 profileData.displayName = user.displayName || 'Apple User';
-                profileData.hasCompletedOnboarding = false;
+                profileData.createdAt = serverTimestamp();
+                profileData.hasCompletedOnboarding = anonFields.hasCompletedOnboarding === true;
                 profileData.createdAt = serverTimestamp();
             }
             await setDoc(doc(db, 'users', user.uid), profileData, { merge: true });

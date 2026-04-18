@@ -1084,6 +1084,45 @@ function App() {
     setShowStarGuide(true);
   }, [profile?.totalGenerateCount]);
 
+  // Profile 자가치유(self-heal): 익명→실계정 전환 과정의 race condition 등으로
+  // profile에 sourceLang/targetLangs/tier가 누락된 기존 사용자를 발견 즉시 복원.
+  // 현재 기기의 localStorage/navigator.language 기반 폴백 값을 Firestore에 저장.
+  useEffect(() => {
+    if (!user || !profile || user.isAnonymous) return;
+    const missing = {};
+    if (!profile.sourceLang && sourceLang) missing.sourceLang = sourceLang;
+    if ((!profile.targetLangs || profile.targetLangs.length === 0) && targetLangs?.length) {
+      missing.targetLangs = targetLangs;
+      missing.targetLang = targetLangs[0];
+    }
+    if (!profile.defaultLevel) missing.defaultLevel = userLevel || 'basic';
+    if (!profile.tier) missing.tier = 'trial';
+    if (Object.keys(missing).length > 0) {
+      console.log('[ProfileHeal] restoring missing fields:', Object.keys(missing));
+      updateUserProfile(missing).catch(() => {});
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, profile?.sourceLang, profile?.tier]);
+
+  // 설정 언어 변경 → Firestore 자동 동기화 (debounce 500ms).
+  // 설정 메뉴에서 sourceLang/targetLangs 변경 시 auto-sync가 localStorage만 저장하던
+  // 한계를 보완 — 다른 기기/재설치에서도 동일 설정 유지.
+  useEffect(() => {
+    if (!user || !profile || user.isAnonymous) return;
+    const sameSource = profile.sourceLang === sourceLang;
+    const sameTargets = JSON.stringify(profile.targetLangs || []) === JSON.stringify(targetLangs || []);
+    if (sameSource && sameTargets) return;
+    const timer = setTimeout(() => {
+      updateUserProfile({
+        sourceLang,
+        targetLang: targetLangs[0] || null,
+        targetLangs,
+      }).catch(() => {});
+    }, 500);
+    return () => clearTimeout(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, sourceLang, JSON.stringify(targetLangs)]);
+
   // [수정] 프로필 수정 모달 열기
   const handleEditProfile = () => {
     // profile이 null이면 user 객체(Firebase Auth)의 정보로 폴백
