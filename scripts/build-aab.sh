@@ -22,9 +22,9 @@ GRADLE_FILE="$ANDROID_DIR/app/build.gradle"
 SERVER_URL="${SERVER_URL:-https://multitranslator.onrender.com}"
 BUILD_SECRET="${BUILD_SECRET:-pronunfit-build-2026-secret}"
 
-# 1. build.gradle에서 버전 읽기
-VERSION_NAME=$(grep -oP 'versionName\s+"\K[^"]+' "$GRADLE_FILE")
-VERSION_CODE=$(grep -oP 'versionCode\s+\K[0-9]+' "$GRADLE_FILE")
+# 1. build.gradle에서 버전 읽기 (awk 기반, Windows Git Bash/macOS/Linux 호환)
+VERSION_NAME=$(grep 'versionName' "$GRADLE_FILE" | head -1 | awk -F'"' '{print $2}')
+VERSION_CODE=$(grep 'versionCode' "$GRADLE_FILE" | head -1 | awk '{print $2}')
 
 if [ -z "$VERSION_NAME" ]; then
   echo "❌ versionName을 찾을 수 없습니다."
