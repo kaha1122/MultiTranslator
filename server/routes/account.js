@@ -330,11 +330,17 @@ router.post('/api/admin/assign-card-serials', async (req, res) => {
         const usersSnap = await adminDb.collection('users').get();
         for (const userDoc of usersSnap.docs) {
             const uid = userDoc.id;
+            // orderBy를 서버에서 하면 복합 인덱스 필요 → 1회성이라 메모리 정렬로 회피
             const cardsSnap = await adminDb.collection('savedCards')
                 .where('userId', '==', uid)
-                .orderBy('createdAt', 'asc')
                 .get();
-            const activeCards = cardsSnap.docs.filter(d => !d.data().isDeleted);
+            const activeCards = cardsSnap.docs
+                .filter(d => !d.data().isDeleted)
+                .sort((a, b) => {
+                    const at = a.data().createdAt?.toMillis?.() ?? 0;
+                    const bt = b.data().createdAt?.toMillis?.() ?? 0;
+                    return at - bt; // asc: 오래된 것이 먼저
+                });
             if (activeCards.length === 0) continue;
 
             // 시작점 보호: 이미 serialNumber가 있는 카드(신규 로직으로 생성됨)의 최댓값과
