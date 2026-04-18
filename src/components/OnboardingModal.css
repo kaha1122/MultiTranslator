@@ -67,6 +67,7 @@
 }
 
 .onb-lang-btn {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -82,8 +83,10 @@
 }
 .onb-lang-btn.selected {
   border-color: #00a884;
-  background: #f0fdf4;
-  box-shadow: 0 2px 8px rgba(0, 168, 132, 0.15);
+  border-width: 3px;
+  background: #ecfdf5;
+  box-shadow: 0 4px 14px rgba(0, 168, 132, 0.28);
+  transform: translateY(-1px);
 }
 
 .onb-lang-flag {
@@ -97,6 +100,23 @@
 }
 .onb-lang-btn.selected .onb-lang-name {
   color: #047857;
+}
+
+/* 선택된 언어 체크 배지 */
+.onb-lang-check {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #00a884;
+  color: white;
+  font-size: 0.78rem;
+  font-weight: 900;
+  line-height: 22px;
+  text-align: center;
+  box-shadow: 0 2px 6px rgba(0, 168, 132, 0.4);
 }
 
 /* 다음 버튼 */

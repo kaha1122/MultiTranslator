@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getT } from '../utils/i18n';
 import './OnboardingModal.css';
@@ -15,6 +15,15 @@ const LANGUAGES = [
   { code: 'ru', name: 'Русский', flag: '🇷🇺' },
   { code: 'pt-BR', name: 'Português', flag: '🇧🇷' },
 ];
+
+// 감지된 사용자 언어를 맨 앞으로 재정렬 (첫 화면에서 즉시 눈에 띄도록)
+const reorderByDefault = (list, defaultCode) => {
+  if (!defaultCode) return list;
+  const idx = list.findIndex(l => l.code === defaultCode);
+  if (idx <= 0) return list;
+  const picked = list[idx];
+  return [picked, ...list.slice(0, idx), ...list.slice(idx + 1)];
+};
 
 /**
  * 온보딩 팝업: 3단계 언어 선택
@@ -33,6 +42,12 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   const [source, setSource] = useState(defaultSourceLang || 'ko');
   const [targets, setTargets] = useState([]);
   const [level, setLevel] = useState('basic');
+
+  // 첫 화면(step 0)용: 감지된 기본 언어를 맨 위로 올려 "당신 언어" 즉시 인식
+  const orderedForSource = useMemo(
+    () => reorderByDefault(LANGUAGES, defaultSourceLang),
+    [defaultSourceLang]
+  );
 
   // 모국어로 선택된 언어를 제외한 목록
   const availableForTarget = LANGUAGES.filter(l => l.code !== source);
@@ -160,7 +175,7 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
 
                 {/* 언어 버튼 그리드 */}
                 <div className="onb-lang-grid">
-                  {(step === 0 ? LANGUAGES : (step === 1 ? availableForTarget : availableForMore)).map(lang => {
+                  {(step === 0 ? orderedForSource : (step === 1 ? availableForTarget : availableForMore)).map(lang => {
                     const isSelected = step === 0
                       ? source === lang.code
                       : targets.includes(lang.code);
@@ -172,6 +187,7 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
                       >
                         <span className="onb-lang-flag">{lang.flag}</span>
                         <span className="onb-lang-name">{lang.name}</span>
+                        {isSelected && <span className="onb-lang-check" aria-hidden="true">✓</span>}
                       </button>
                     );
                   })}
