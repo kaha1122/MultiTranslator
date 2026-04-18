@@ -324,7 +324,7 @@ router.post('/api/admin/assign-card-serials', async (req, res) => {
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
     const dryRun = req.body?.dryRun === true;
-    const stats = { usersProcessed: 0, cardsAssigned: 0, cardsSkipped: 0 };
+    const stats = { usersProcessed: 0, cardsAssigned: 0, cardsSkipped: 0, savedCountFixed: 0 };
 
     try {
         const usersSnap = await adminDb.collection('users').get();
@@ -359,22 +359,35 @@ router.post('/api/admin/assign-card-serials', async (req, res) => {
                 stats.cardsAssigned++;
             }
 
-            if (cardsToAssign.length === 0) continue;
+            // savedCardCount 정합성 검사 (실제 활성 카드 수와 불일치 시 보정)
+            const actualSavedCount = activeCards.length;
+            const currentSavedCount = userDoc.data().savedCardCount || 0;
+            const needRecount = actualSavedCount !== currentSavedCount;
+
+            if (cardsToAssign.length === 0 && !needRecount) continue;
             stats.usersProcessed++;
+            if (needRecount) stats.savedCountFixed++;
 
             if (!dryRun) {
-                // 500건씩 배치 분할 (Firestore 한도)
-                for (let i = 0; i < cardsToAssign.length; i += 400) {
-                    const batch = adminDb.batch();
-                    const chunk = cardsToAssign.slice(i, i + 400);
-                    for (const { ref, serial } of chunk) {
-                        batch.update(ref, { serialNumber: serial });
+                if (cardsToAssign.length > 0) {
+                    // 500건씩 배치 분할 (Firestore 한도)
+                    for (let i = 0; i < cardsToAssign.length; i += 400) {
+                        const batch = adminDb.batch();
+                        const chunk = cardsToAssign.slice(i, i + 400);
+                        for (const { ref, serial } of chunk) {
+                            batch.update(ref, { serialNumber: serial });
+                        }
+                        // 마지막 청크에 user 카운터도 함께 업데이트
+                        if (i + 400 >= cardsToAssign.length) {
+                            const userUpdates = { cardSerialMax: serialMax };
+                            if (needRecount) userUpdates.savedCardCount = actualSavedCount;
+                            batch.update(userDoc.ref, userUpdates);
+                        }
+                        await batch.commit();
                     }
-                    // 마지막 청크에 user 카운터도 함께 업데이트
-                    if (i + 400 >= cardsToAssign.length) {
-                        batch.update(userDoc.ref, { cardSerialMax: serialMax });
-                    }
-                    await batch.commit();
+                } else if (needRecount) {
+                    // serialNumber 배정은 불필요하지만 savedCardCount 보정만 필요한 케이스
+                    await userDoc.ref.update({ savedCardCount: actualSavedCount });
                 }
             }
         }
