@@ -1,23 +1,33 @@
 /* ==========================================================================
-   SplashScreen.css — 이미지 배경 기반 스플래시
-   배경 이미지에 로고/서브텍스트/장면이 모두 포함되어 있음
+   SplashScreen.css — 이미지 배경 스플래시
+   - 모바일: 이미지가 화면 꽉 채움
+   - 데스크톱(넓은 화면): 원본 비율(768:1408) 유지하는 중앙 세로 박스, 양옆은 배경색
    ========================================================================== */
 
 .splash-screen {
     position: fixed;
     inset: 0;
     z-index: 9999;
-    background-color: #f3efe8;           /* 이미지 로딩 전/레터박스 영역 톤 (마블/우드 중간) */
-    background-image: none;              /* JSX에서 인라인으로 주입 */
-    background-repeat: no-repeat;
-    background-position: center center;
-    background-size: cover;              /* 9:16 이미지를 기기 비율에 맞춰 꽉 채움 (일부 crop 허용) */
+    background-color: #f3efe8;           /* 데스크톱에서 이미지 양옆 여백 컬러 (마블/우드 톤) */
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
     opacity: 1;
     transition: opacity 0.5s ease-in-out;
+    overflow: hidden;
 }
 
-/* 페이드 아웃 */
 .splash-fading {
     opacity: 0;
     pointer-events: none;
+}
+
+.splash-inner {
+    width: 100%;
+    height: 100%;
+    /* 이미지 원본 비율(768/1408 ≈ 0.5455)로 가로 상한 제한 → 데스크톱에서 세로 박스화 */
+    max-width: calc(100vh * 768 / 1408);
+    background-repeat: no-repeat;
+    background-position: center center;
+    background-size: cover;
 }

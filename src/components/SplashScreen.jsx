@@ -3,6 +3,7 @@ import splashBg from '../assets/splash-bg.jpg';
 import './SplashScreen.css';
 
 // 앱 시작 시 잠깐 보이는 스플래시. 배경 이미지에 로고/서브텍스트가 이미 포함돼 있음.
+// 데스크톱 브라우저에서도 이미지가 원본 비율(9:16.5)로 중앙에 표시되도록 inner 박스 사용.
 function SplashScreen({ onFinish }) {
     const [isFading, setIsFading] = useState(false);
 
@@ -18,10 +19,14 @@ function SplashScreen({ onFinish }) {
     return (
         <div
             className={`splash-screen ${isFading ? 'splash-fading' : ''}`}
-            style={{ backgroundImage: `url(${splashBg})` }}
             role="img"
             aria-label="PronunFit"
-        />
+        >
+            <div
+                className="splash-inner"
+                style={{ backgroundImage: `url(${splashBg})` }}
+            />
+        </div>
     );
 }
 
