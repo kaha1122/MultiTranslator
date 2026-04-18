@@ -57,6 +57,7 @@ import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
+import { assignNextCardSerial } from './utils/cardSerial';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -1682,7 +1683,8 @@ function App() {
         createdAt: serverTimestamp()
       };
 
-      const docRef = await addDoc(collection(db, "savedCards"), cardData);
+      const serialNumber = await assignNextCardSerial(user.uid);
+      const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
       addAdPoints(2);
       return { status: "success", id: docRef.id };
@@ -1720,6 +1722,7 @@ function App() {
     }
     const langInfo = getLangInfo(langCode);
     try {
+      const serialNumber = await assignNextCardSerial(user.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
@@ -1735,6 +1738,7 @@ function App() {
         learningTip: [],
         pronunciation: '',
         pronunciationScore,
+        serialNumber,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
@@ -1773,6 +1777,7 @@ function App() {
 
     const langInfo = getLangInfo(langCode);
     try {
+      const serialNumber = await assignNextCardSerial(user.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
@@ -1792,6 +1797,7 @@ function App() {
         pronunciationScore,
         selectedEmotion,
         interactionType,
+        serialNumber,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();
@@ -1832,6 +1838,7 @@ function App() {
 
     const langInfo = getLangInfo(langCode);
     try {
+      const serialNumber = await assignNextCardSerial(user.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
         userId: user.uid,
         userEmail: user.email,
@@ -1852,6 +1859,7 @@ function App() {
         exampleTranslation: exampleTranslation || '',
         pronunciation: pronunciation || '',
         pronunciationScore,
+        serialNumber,
         createdAt: serverTimestamp(),
       });
       incrementSavedCard();

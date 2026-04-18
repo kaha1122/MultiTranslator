@@ -43,7 +43,6 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     const [errorMsg, setErrorMsg] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
     const [limitCount, setLimitCount] = useState(10);
-    const [hasMore, setHasMore] = useState(true);
     const observerTarget = useRef(null);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [sessionAudioUrls, setSessionAudioUrls] = useState({});
@@ -66,18 +65,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
 
     // ── Firebase 실시간 구독 ──
+    // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 모든 savedCards를
+    // 한 번에 로드. 표시는 아래 visibleCards에서 limitCount만큼만 slice (화면 페이지네이션).
     useEffect(() => {
         if (!user) return;
-        let q;
-        if (searchTerm.trim() !== '') {
-            q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
-        } else {
-            q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"), limit(limitCount));
-        }
+        const q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(card => !card.isDeleted);
             setSavedCards(cards);
-            if (!searchTerm && cards.length < limitCount) setHasMore(false); else setHasMore(true);
             setIsLoading(false);
             setErrorMsg(null);
         }, (error) => {
@@ -86,16 +81,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             setIsLoading(false);
         });
         return () => unsubscribe();
-    }, [user, limitCount, searchTerm]);
-
-    // ── 무한 스크롤 ──
-    useEffect(() => {
-        const observer = new IntersectionObserver(entries => {
-            if (entries[0].isIntersecting && hasMore && !searchTerm) setLimitCount(prev => prev + 10);
-        }, { threshold: 1.0 });
-        if (observerTarget.current) observer.observe(observerTarget.current);
-        return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
-    }, [hasMore, searchTerm]);
+    }, [user]);
 
     // ── Vocab에서 넘어온 카드 포커스: 필터 초기화 + 스크롤 ──
     const focusCardPending = useRef(null);
@@ -238,6 +224,21 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             return true;
         });
     }
+
+    // 화면 페이지네이션: 필터/검색을 거친 전체 리스트에서 limitCount만큼만 렌더.
+    // 검색어가 있을 때는 검색 결과 전체 노출 (검색은 사용자가 명확한 의도로 줄인 결과라 페이지 나누지 않음).
+    const visibleCards = searchTerm ? filteredCards : filteredCards.slice(0, limitCount);
+    const hasMore = !searchTerm && filteredCards.length > limitCount;
+
+    // 무한 스크롤 — 하단 observer에 닿으면 limitCount를 10씩 증가
+    // (DB에서 더 가져오는 게 아니라 이미 받아둔 filteredCards를 더 보여줌)
+    useEffect(() => {
+        const observer = new IntersectionObserver(entries => {
+            if (entries[0].isIntersecting && hasMore) setLimitCount(prev => prev + 10);
+        }, { threshold: 1.0 });
+        if (observerTarget.current) observer.observe(observerTarget.current);
+        return () => { if (observerTarget.current) observer.unobserve(observerTarget.current); };
+    }, [hasMore]);
 
     // 언어 목록 추출
     const availableLangs = ['all', ...new Set(savedCards.map(c => c.langCode))];
@@ -394,10 +395,11 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             {/* ── 카드 목록 ── */}
             <div className="cards-grid">
                 {filteredCards.length > 0 ? (
-                    filteredCards.map((card, idx) => {
-                        // 카드 번호: 전체 savedCards에서의 순서 (오래된 카드부터 1번)
+                    visibleCards.map((card, idx) => {
+                        // 카드 번호: serialNumber 필드(고정 번호) 우선. 없으면 기존 순번 계산 폴백.
                         const globalIndex = savedCards.indexOf(card);
-                        const cardNumber = globalIndex >= 0 ? savedCards.length - globalIndex : filteredCards.length - idx;
+                        const cardNumber = card.serialNumber
+                            ?? (globalIndex >= 0 ? savedCards.length - globalIndex : filteredCards.length - idx);
                         return (
                         <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
