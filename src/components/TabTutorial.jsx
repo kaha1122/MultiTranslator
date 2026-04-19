@@ -2,6 +2,8 @@ import { useT } from '../utils/i18n';
 import './TabTutorial.css';
 
 // 탭별 아이콘만 정의 (텍스트는 i18n)
+// settings 탭 튜토리얼은 제거됨 — 온보딩이 언어 설정을 이미 커버하고
+// 알림 섹션 auto-scroll/NEW 뱃지와 충돌 유발 (2026-04-19)
 const TAB_ICONS = {
   home: ['📖', '⭐'],
   scene: ['📍', '🎙️'],
@@ -9,7 +11,6 @@ const TAB_ICONS = {
   translation: ['🔤', '🎯'],
   library: ['🗂️', '🎯'],
   video: ['🎬', '📝'],
-  settings: ['🌍', '🎯'],
 };
 
 // 탭별 팁 개수 (TAB_TUTORIALS 대체용)
@@ -20,7 +21,6 @@ export const TAB_TUTORIALS = {
   translation: [1],
   library: [1],
   video: [1],
-  settings: [1],
 };
 
 export default function TabTutorial({ tab, step, total, onNext, onSkip, sourceLang }) {

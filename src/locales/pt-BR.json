@@ -6,7 +6,7 @@
     "newBadge": "NOVO"
   },
   "pushOptIn": {
-    "title": "Fique informado sobre sua assinatura",
+    "title": "Permitir avisos essenciais de assinatura e pagamento? (sem marketing)",
     "body": "Avisaremos apenas sobre renovações, problemas de pagamento e expirações — sem marketing.",
     "allow": "Permitir",
     "later": "Depois"

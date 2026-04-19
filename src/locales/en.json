@@ -6,7 +6,7 @@
     "newBadge": "NEW"
   },
   "pushOptIn": {
-    "title": "Stay informed about your subscription",
+    "title": "Allow essential notifications for subscription & payment? (no marketing)",
     "body": "We'll only notify you about renewals, payment issues, and expirations — no marketing.",
     "allow": "Allow",
     "later": "Later"

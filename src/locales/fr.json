@@ -6,7 +6,7 @@
     "newBadge": "NOUVEAU"
   },
   "pushOptIn": {
-    "title": "Restez informé de votre abonnement",
+    "title": "Autoriser les notifications essentielles (abonnement, paiement) ? (sans marketing)",
     "body": "Nous vous notifierons uniquement des renouvellements, problèmes de paiement et expirations — aucun marketing.",
     "allow": "Autoriser",
     "later": "Plus tard"

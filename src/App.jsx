@@ -167,7 +167,7 @@ function App() {
           const tk = token?.value;
           const uid = auth.currentUser?.uid;
           if (!tk || !uid) return;
-          await saveFcmTokenToFirestore(uid, tk, Capacitor.getPlatform());
+          await saveFcmTokenToFirestore(uid, tk);
           console.log('[Push] token saved:', tk.slice(0, 12) + '...');
         });
         removers.push(hReg);
@@ -201,6 +201,47 @@ function App() {
     })();
     return () => { removers.forEach(h => { try { h.remove?.(); } catch {} }); };
   }, []);
+
+  // 네이티브 앱 버전 추적 — 앱 실행 시마다 users.currentNativeVersion + currentNativePlatform 업데이트
+  // + 최초 1회 users.firstNativeVersion + firstNativePlatform 설정 (향후 feature launch 판정용)
+  // iOS/Android 버전이 독립적으로 관리되므로 플랫폼 필드 함께 저장 (예: iOS v1.2.4 vs Android v1.2.7)
+  // 웹은 네이티브 버전 없으므로 skip
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform?.()) return;
+    if (!user?.uid || !profile) return;
+
+    (async () => {
+      try {
+        const { App: CapApp } = await import('@capacitor/app');
+        const info = await CapApp.getInfo();
+        const version = info?.version;
+        const platform = Capacitor.getPlatform(); // 'android' | 'ios'
+        if (!version) return;
+
+        // 이미 동일 버전+플랫폼이 기록돼 있으면 skip (불필요 Firestore write 방지)
+        if (profile.currentNativeVersion === version &&
+            profile.currentNativePlatform === platform &&
+            profile.firstNativeVersion) return;
+
+        const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
+        const { db } = await import('./firebase/config');
+        const updateData = {
+          currentNativeVersion: version,
+          currentNativePlatform: platform,
+          currentNativeVersionUpdatedAt: serverTimestamp(),
+        };
+        if (!profile.firstNativeVersion) {
+          updateData.firstNativeVersion = version;
+          updateData.firstNativePlatform = platform;
+          updateData.firstNativeVersionSetAt = serverTimestamp();
+        }
+        await updateDoc(doc(db, 'users', user.uid), updateData);
+        console.log('[Version] tracked:', platform, version, 'first:', !profile.firstNativeVersion);
+      } catch (e) {
+        console.warn('[Version] tracking failed:', e?.message);
+      }
+    })();
+  }, [user?.uid, profile?.currentNativeVersion, profile?.currentNativePlatform, profile?.firstNativeVersion]);
 
   // Tier 변경 감지 — PushOptIn 모달 (trial→paid) + SubscriptionEvent 팝업 (paid→trial)
   useEffect(() => {
@@ -1150,8 +1191,30 @@ function App() {
       }
     }
   };
+  // 구독 알림 필수 안내 모달 — OnboardingModal 이후, AI 동의 전에 등장
+  // (Native + 온보딩완료 + fcmTokens 없음 + 아직 안 보여준 유저 대상, 1회 영구 표시)
+  const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
+
+  const shouldShowSubscriptionPrompt = (p) => {
+    if (!Capacitor.isNativePlatform?.()) return false;
+    if (!p) return false;
+    if (p.subscriptionAlertPromptShown === true) return false;
+    if (Array.isArray(p.fcmTokens) && p.fcmTokens.length > 0) return false;
+    if (p.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return false;
+    return true;
+  };
+
   useEffect(() => {
     if (!user || !profile) return;
+    if (shouldShowSubscriptionPrompt(profile)) {
+      setShowSubscriptionPrompt(true);
+    }
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
+
+  useEffect(() => {
+    if (!user || !profile) return;
+    // 구독 알림 모달이 먼저 떠야 하면 AI 동의는 대기
+    if (shouldShowSubscriptionPrompt(profile)) return;
     // Firestore에 이미 동의 기록이 있으면 스킵 + localStorage 동기화
     if (profile.aiConsentAt) {
       localStorage.setItem('aiConsentAccepted', '1');
@@ -1162,7 +1225,7 @@ function App() {
     // 온보딩이 안 끝났으면 온보딩 먼저 → 온보딩 완료 후 이 effect가 재평가됨
     if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
     setShowAiConsent(true);
-  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt]);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
 
   const handleAiConsentAccept = () => {
     localStorage.setItem('aiConsentAccepted', '1');
@@ -4233,11 +4296,24 @@ function App() {
       )}
 
       {/* 구독 성공 직후 push opt-in 모달 (D) */}
-      {showPushOptIn && (
+      {showPushOptIn && !showSubscriptionPrompt && (
         <PushOptInModal
           sourceLang={sourceLang}
           uid={user?.uid}
           onClose={() => setShowPushOptIn(false)}
+        />
+      )}
+
+      {/* 신규/기존 유저 첫 실행 시 구독 알림 필수 안내 — OnboardingModal 이후, AI 동의 이전 */}
+      {showSubscriptionPrompt && !showOnboarding && (
+        <PushOptInModal
+          sourceLang={sourceLang}
+          uid={user?.uid}
+          onClose={() => {
+            setShowSubscriptionPrompt(false);
+            // 영구 플래그 저장 → 재표시 방지 (허용/나중에 선택 무관, 1회 영구)
+            updateUserProfile({ subscriptionAlertPromptShown: true }).catch(() => {});
+          }}
         />
       )}
 

@@ -6,7 +6,7 @@
     "newBadge": "MỚI"
   },
   "pushOptIn": {
-    "title": "Cập nhật thông tin về gói đăng ký của bạn",
+    "title": "Đồng ý nhận thông báo cần thiết về đăng ký, thanh toán? (không có tiếp thị)",
     "body": "Chúng tôi chỉ thông báo về gia hạn, sự cố thanh toán và hết hạn — không có thông báo tiếp thị.",
     "allow": "Cho phép",
     "later": "Để sau"

@@ -1,5 +1,11 @@
 // 신규 기능 "확인 여부" 추적 — localStorage(즉시) + Firestore(크로스기기) 하이브리드
 // 사용 예: const { seen, markSeen } = useFeatureSeen(uid, 'notifications');
+//
+// NEW 뱃지 자동 스킵 정책:
+// 1. 온보딩 완료 시점에 featuresSeen.{key}=true를 Firestore에 직접 설정 (신규 유저 대응) — 구현됨
+// 2. 향후: users.firstNativePlatform 별로 FEATURE_LAUNCH_VERSIONS 비교 자동 스킵 (미구현)
+//    예: { notifications: { android: '1.2.7', ios: '1.2.4' } }
+//    iOS/Android가 독립된 스토어 버전이므로 플랫폼별로 launch 버전이 다름 — 플랫폼 구분 필수
 import { useCallback, useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
@@ -29,7 +35,7 @@ function writeLocal(key, value) {
 export function useFeatureSeen(uid, featureKey, profile) {
     const [seen, setSeen] = useState(() => readLocal(featureKey));
 
-    // Firestore profile 동기화 — 다른 기기에서 본 경우 반영
+    // Firestore profile 동기화 — 다른 기기에서 본 경우 또는 온보딩 완료 시 반영
     useEffect(() => {
         if (profile?.featuresSeen?.[featureKey] === true && !seen) {
             writeLocal(featureKey, true);

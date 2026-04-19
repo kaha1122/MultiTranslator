@@ -57,12 +57,43 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
     };
 
     // 설정 화면 진입 + 미확인 시 이 섹션으로 부드럽게 스크롤 (1회만)
+    // VocabTab 패턴 참조: scrollIntoView는 중첩 스크롤 컨테이너 + Android WebView에서 불안정
+    // → .app-container (실제 scroll host)를 직접 찾아서 scrollTop 계산
+    // → sticky .app-header 높이 빼서 알림 섹션이 헤더 뒤에 가려지지 않도록
+    // → 레이아웃 완료 대기를 위한 retry 로직 (display:none→block 직후 height=0 케이스 방어)
     useEffect(() => {
         if (!active || seen || autoScrolledRef.current) return;
         autoScrolledRef.current = true;
-        setTimeout(() => {
-            sectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 300);
+
+        const tryScroll = (attempt = 0) => {
+            const target = sectionRef.current;
+            if (!target) return;
+            const container = target.closest('.app-container');
+            if (!container) {
+                // 컨테이너 못 찾으면 fallback
+                target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                return;
+            }
+            const targetRect = target.getBoundingClientRect();
+            const containerRect = container.getBoundingClientRect();
+            // 레이아웃 아직 안 잡혔으면 (height 0) 재시도 (최대 5회, 100ms 간격)
+            if (targetRect.height === 0 && attempt < 5) {
+                setTimeout(() => tryScroll(attempt + 1), 100);
+                return;
+            }
+            const header = document.querySelector('.app-header');
+            const headerHeight = header?.getBoundingClientRect().height ?? 140;
+            // container.scrollTop + (target 상대 offset) - sticky 헤더 높이 - 12px 여유
+            const newTop = container.scrollTop
+                + (targetRect.top - containerRect.top)
+                - headerHeight
+                - 12;
+            container.scrollTo({ top: Math.max(0, newTop), behavior: 'smooth' });
+        };
+
+        requestAnimationFrame(() => {
+            setTimeout(() => tryScroll(0), 150);
+        });
     }, [active, seen]);
 
     useEffect(() => { setReminder(loadReminderPrefs()); }, []);
@@ -145,6 +176,18 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
                     }],
                 });
                 showStatus(formatReminderOnAt(updated.hour, updated.minute));
+
+                // Android 13+: POST_NOTIFICATIONS는 로컬/푸시 공유 권한 — 이 시점에 FCM도 자동 등록
+                // (구독 알림 기본 ON이지만 UI 트리거 없이 토큰이 안 저장되는 갭 해결)
+                // iOS는 로컬/푸시 권한이 분리되어 있어 별도 다이얼로그 발생 → Android 한정
+                if (Capacitor.getPlatform() === 'android') {
+                    try {
+                        const pushMod = await import('@capacitor/push-notifications');
+                        await pushMod.PushNotifications.register();
+                    } catch (e) {
+                        console.warn('[Push] auto-register after local grant failed:', e?.message);
+                    }
+                }
             } catch (schedErr) {
                 setReminder({ ...reminder, enabled: false });
                 saveReminderPrefs({ ...reminder, enabled: false });
@@ -331,7 +374,8 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
                     <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
                         <input
                             type="checkbox"
-                            checked={subAlert && isNative}
+                            // Option B: 실제 FCM 토큰이 있을 때만 "켜짐"으로 표시 (체크박스 = 진짜 상태)
+                            checked={subAlert && isNative && Array.isArray(profile?.fcmTokens) && profile.fcmTokens.length > 0}
                             disabled={!isNative}
                             onChange={(e) => handleSubAlertToggle(e.target.checked)}
                             style={{ width: 18, height: 18, cursor: isNative ? 'pointer' : 'not-allowed' }}
