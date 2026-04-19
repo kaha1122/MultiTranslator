@@ -57,7 +57,7 @@ import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 
 import NotificationSettings from './components/NotificationSettings';
 import PushOptInModal from './components/PushOptInModal';
 import SubscriptionEventModal from './components/SubscriptionEventModal';
-import { useFeatureSeen } from './utils/featureSeen';
+import { useFeatureSeen, supportsFeature } from './utils/featureSeen';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
@@ -257,6 +257,8 @@ function App() {
     if (becamePaid) {
       // PushOptIn 모달 트리거 (토큰 없고 7일 스누즈 아닐 때)
       if (Array.isArray(profile?.fcmTokens) && profile.fcmTokens.length > 0) return;
+      // 버전 가드 — 네이티브 플러그인 미포함 버전 유저에겐 모달 표시 안 함 (에러 방지)
+      if (!supportsFeature('notifications', profile)) return;
       try {
         const snoozedAt = parseInt(localStorage.getItem('pronunfit.pushOptIn.snoozedAt') || '0', 10);
         if (snoozedAt && (Date.now() - snoozedAt) < 7 * 24 * 60 * 60 * 1000) return;
@@ -1201,6 +1203,8 @@ function App() {
     if (p.subscriptionAlertPromptShown === true) return false;
     if (Array.isArray(p.fcmTokens) && p.fcmTokens.length > 0) return false;
     if (p.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return false;
+    // 버전 가드 — 네이티브 플러그인 없는 구버전 유저에겐 프롬프트 안 띄움 (깨진 UI 방지)
+    if (!supportsFeature('notifications', p)) return false;
     return true;
   };
 
@@ -2733,7 +2737,7 @@ function App() {
                 onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon">
                   <SettingsIcon size={16} />
-                  {!notificationsSeen && <span className="nav-new-dot" />}
+                  {!notificationsSeen && supportsFeature('notifications', profile) && <span className="nav-new-dot" />}
                 </span>
                 {getT(sourceLang, 'nav.settings')}
               </button>

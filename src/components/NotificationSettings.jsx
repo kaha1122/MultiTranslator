@@ -7,7 +7,7 @@ import {
     loadSubscriptionAlertPref,
     setSubscriptionAlertPref,
 } from '../utils/pushNotifications';
-import { useFeatureSeen } from '../utils/featureSeen';
+import { useFeatureSeen, supportsFeature } from '../utils/featureSeen';
 
 const REMINDER_ID = 1001;
 const STATUS_AUTO_DISMISS_MS = 3000;
@@ -290,6 +290,12 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
             );
         }
     };
+
+    // 버전 가드 — 네이티브 플러그인 미포함 버전(v1.2.6 이하) 유저에겐 섹션 숨김
+    // Play Store 배포 완료 전 전환 기간 동안 깨진 UI 보호 (Capgo 먼저 배포되는 구조상 필요)
+    // v1.2.7+ 로 업데이트되면 자동으로 나타남 (self-healing)
+    // Hooks 규칙: 모든 hook 호출 후, JSX return 직전에 위치시킬 것
+    if (!supportsFeature('notifications', profile)) return null;
 
     return (
         <div className="settings-group" ref={sectionRef}>

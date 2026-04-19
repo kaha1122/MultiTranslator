@@ -8,9 +8,46 @@
 //    iOS/Android가 독립된 스토어 버전이므로 플랫폼별로 launch 버전이 다름 — 플랫폼 구분 필수
 import { useCallback, useEffect, useState } from 'react';
 import { doc, updateDoc } from 'firebase/firestore';
+import { Capacitor } from '@capacitor/core';
 import { db } from '../firebase/config';
 
 const LS_PREFIX = 'pronunfit.featureSeen.';
+
+// 플랫폼별 기능 최소 지원 버전 — 새 기능 추가 시 여기에 등록
+// iOS는 심사 통과 + 실제 출시된 후에만 버전 기록 (지금은 TBD)
+export const FEATURE_LAUNCH_VERSIONS = {
+    notifications: { android: '1.2.7', ios: null },
+};
+
+// semver 스타일 버전 비교 ("1.2.10" > "1.2.9" 정확히 판정)
+function compareVersions(a, b) {
+    if (!a || !b) return 0;
+    const aParts = a.split('.').map(n => parseInt(n, 10) || 0);
+    const bParts = b.split('.').map(n => parseInt(n, 10) || 0);
+    const len = Math.max(aParts.length, bParts.length);
+    for (let i = 0; i < len; i++) {
+        const av = aParts[i] || 0;
+        const bv = bParts[i] || 0;
+        if (av !== bv) return av - bv;
+    }
+    return 0;
+}
+
+// 현재 유저의 플랫폼 + 네이티브 버전이 해당 기능을 지원하는지
+// - 웹 유저: true (UI는 보여주되 토글은 isNative 가드로 disabled)
+// - 네이티브 유저: firstNativeVersion을 기준으로 비교 (앱 실행 시 업데이트됨)
+// - iOS는 null이면 false (미출시)
+export function supportsFeature(featureKey, profile) {
+    if (!Capacitor.isNativePlatform?.()) return true; // 웹은 항상 렌더 (내부 가드 존재)
+    const platform = profile?.currentNativePlatform;
+    if (!platform) return false; // 플랫폼 미기록 (신규 유저 첫 로드 구간) → 안전하게 false
+    const launchMap = FEATURE_LAUNCH_VERSIONS[featureKey];
+    const requiredVersion = launchMap?.[platform];
+    if (!requiredVersion) return false; // 해당 플랫폼 미출시
+    const currentVersion = profile?.currentNativeVersion;
+    if (!currentVersion) return false;
+    return compareVersions(currentVersion, requiredVersion) >= 0;
+}
 
 function readLocal(key) {
     try {
