@@ -55,26 +55,18 @@ echo ""
 echo "✅ AAB 빌드 완료: $AAB_PATH"
 echo ""
 
-# 5. 서버 API로 Firestore 업데이트
-echo "☁️  Firestore 업데이트 중... (latestNativeVersion → $VERSION_NAME)"
-HTTP_CODE=$(curl -s -o /tmp/config_response.txt -w "%{http_code}" \
-  -X POST "${SERVER_URL}/api/config/app" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${BUILD_SECRET}" \
-  -d "{\"latestNativeVersion\": \"${VERSION_NAME}\"}")
+# ⚠️ Firestore latestNativeVersion 자동 업데이트는 의도적으로 제거됨 (2026-04-19)
+# 이유: AAB 빌드와 Play Store 공개 시점 사이에 수시간~수일 괴리가 있는데,
+# 자동 업데이트하면 기존 사용자에게 "아직 받을 수 없는 버전" 업데이트 팝업이 뜸.
+# Play Store에 프로덕션 승격이 실제로 완료된 후 Firestore에서 수동으로 업데이트할 것:
+#   Firebase Console → Firestore → config/app → latestNativeVersion = "$VERSION_NAME"
 
-if [ "$HTTP_CODE" = "200" ]; then
-  echo "✅ Firestore 업데이트 완료"
-else
-  echo "⚠️  Firestore 업데이트 실패 (HTTP $HTTP_CODE)"
-  cat /tmp/config_response.txt 2>/dev/null
-  echo ""
-  echo "   서버에 BUILD_SECRET 환경변수가 설정되어 있는지 확인하세요."
-fi
-
-echo ""
 echo "🎉 빌드 완료!"
 echo "   AAB: $AAB_PATH"
 echo "   네이티브: v${VERSION_NAME} (code ${VERSION_CODE})"
 echo ""
-echo "👉 다음 단계: Google Play Console에 AAB를 업로드하세요."
+echo "👉 다음 단계:"
+echo "   1. Google Play Console에 AAB 업로드"
+echo "   2. 내부 테스트 → 프로덕션 승격 완료 확인"
+echo "   3. Firebase Console에서 config/app.latestNativeVersion을 \"${VERSION_NAME}\"로 수동 업데이트"
+echo "      (이 순서를 지켜야 기존 사용자에게 '없는 버전' 업데이트 팝업이 안 뜸)"
