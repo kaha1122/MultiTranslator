@@ -54,6 +54,10 @@ import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 OCR 모달
+import NotificationSettings from './components/NotificationSettings';
+import PushOptInModal from './components/PushOptInModal';
+import SubscriptionEventModal from './components/SubscriptionEventModal';
+import { useFeatureSeen } from './utils/featureSeen';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
@@ -101,6 +105,131 @@ function App() {
     incrementSceneGenerate, incrementVocabGenerate,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
+
+  // 신규 기능 "알림" NEW 뱃지 — 사용자가 설정에서 토글 한 번이라도 건드릴 때까지 표시
+  const { seen: notificationsSeen } = useFeatureSeen(user?.uid, 'notifications', profile);
+  // 구독 성공 직후 push opt-in 모달 제어 (D)
+  const [showPushOptIn, setShowPushOptIn] = useState(false);
+  const prevTierRef = useRef(null);
+
+  // 구독 이벤트 팝업 (renewal/expiration/billingIssue/cancellation)
+  const [subscriptionEvent, setSubscriptionEvent] = useState(null);
+  const subscriptionSectionRef = useRef(null);
+
+  // 이벤트당 1회만 표시 (eventId = `${type}.${tierUpdatedAt}` 기반 localStorage 기록)
+  const tryShowSubscriptionEvent = useCallback((type) => {
+    if (!['renewal', 'expiration', 'billingIssue', 'cancellation'].includes(type)) return;
+    const ts = profile?.tierUpdatedAt;
+    const millis = ts?.toMillis?.() ?? (ts?.seconds ? ts.seconds * 1000 : Date.now());
+    const eventId = `${type}.${millis}`;
+    try {
+      if (localStorage.getItem(`pronunfit.shown.subEvent.${eventId}`) === '1') return;
+      localStorage.setItem(`pronunfit.shown.subEvent.${eventId}`, '1');
+    } catch {}
+    setSubscriptionEvent({ type });
+  }, [profile?.tierUpdatedAt]);
+
+  // 로컬 알림 탭 리스너 — 매일 리마인더(id=1001) 탭 시 홈 탭으로 이동
+  // (기본 Capacitor는 탭 시 앱을 foreground로 올리지만 "포그라운드에서 탭" 시엔 JS 이벤트만 fire)
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform?.()) return;
+    let handle;
+    (async () => {
+      try {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        handle = await LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+          console.log('[LocalNotif] tap:', action.notification?.id);
+          if (action.notification?.id === 1001) {
+            setViewMode('home');
+            setSidebarOpen(false);
+          }
+        });
+      } catch (e) {
+        console.warn('[LocalNotif] listener setup failed:', e.message);
+      }
+    })();
+    return () => { if (handle) handle.remove?.(); };
+  }, []);
+
+  // FCM 푸시 알림 전역 리스너 — 앱 시작 시 1회 등록
+  // - 'registration' → 토큰 받으면 Firestore에 저장
+  // - 'pushNotificationActionPerformed' → 탭 시 화면 이동 (subscription → 설정 탭)
+  // 앱 열림은 Android/iOS가 기본 PendingIntent로 처리, 이 리스너는 "화면 라우팅"만 담당
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform?.()) return;
+    const removers = [];
+    (async () => {
+      try {
+        const { PushNotifications } = await import('@capacitor/push-notifications');
+        const { saveFcmTokenToFirestore } = await import('./utils/pushNotifications');
+
+        const hReg = await PushNotifications.addListener('registration', async (token) => {
+          const tk = token?.value;
+          const uid = auth.currentUser?.uid;
+          if (!tk || !uid) return;
+          await saveFcmTokenToFirestore(uid, tk, Capacitor.getPlatform());
+          console.log('[Push] token saved:', tk.slice(0, 12) + '...');
+        });
+        removers.push(hReg);
+
+        const hAction = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
+          console.log('[Push] tap:', action.notification?.data);
+          const pushType = action.notification?.data?.type;
+          // 구독 이벤트 타입이면 팝업 표시 (eventId로 중복 방지)
+          if (['renewal', 'expiration', 'billingIssue', 'cancellation'].includes(pushType)) {
+            tryShowSubscriptionEvent(pushType);
+          }
+        });
+        removers.push(hAction);
+
+        const hErr = await PushNotifications.addListener('registrationError', (err) => {
+          console.warn('[Push] registrationError:', err?.error);
+        });
+        removers.push(hErr);
+
+        // 리스너 중복 등록 방지 플래그 — 토글/모달/AuthContext가 재등록 안 하도록
+        window.__pushListenersBound = true;
+
+        // 권한 이미 부여된 경우 자동으로 register() 호출 → 토큰 최신화
+        const perm = await PushNotifications.checkPermissions();
+        if (perm.receive === 'granted') {
+          await PushNotifications.register();
+        }
+      } catch (e) {
+        console.warn('[App] push listener setup failed:', e?.message);
+      }
+    })();
+    return () => { removers.forEach(h => { try { h.remove?.(); } catch {} }); };
+  }, []);
+
+  // Tier 변경 감지 — PushOptIn 모달 (trial→paid) + SubscriptionEvent 팝업 (paid→trial)
+  useEffect(() => {
+    const curr = profile?.tier;
+    const prev = prevTierRef.current;
+    if (!prev) { prevTierRef.current = curr; return; }
+    if (prev === curr) return;
+
+    const becamePaid = (prev === 'trial' || prev === null) && (curr === 'pro' || curr === 'premium');
+    const lostPaid = (prev === 'pro' || prev === 'premium') && curr === 'trial';
+    prevTierRef.current = curr;
+
+    if (becamePaid) {
+      // PushOptIn 모달 트리거 (토큰 없고 7일 스누즈 아닐 때)
+      if (Array.isArray(profile?.fcmTokens) && profile.fcmTokens.length > 0) return;
+      try {
+        const snoozedAt = parseInt(localStorage.getItem('pronunfit.pushOptIn.snoozedAt') || '0', 10);
+        if (snoozedAt && (Date.now() - snoozedAt) < 7 * 24 * 60 * 60 * 1000) return;
+      } catch {}
+      const timer = setTimeout(() => setShowPushOptIn(true), 1500);
+      return () => clearTimeout(timer);
+    }
+
+    if (lostPaid) {
+      // 만료/결제실패 → expiration 팝업 (push 못 받았거나 탭 놓친 유저 대상 fallback)
+      tryShowSubscriptionEvent('expiration');
+    }
+  }, [profile?.tier, profile?.fcmTokens, tryShowSubscriptionEvent]);
+
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   // 웹: 이미 앱에 진입한 적 있으면 랜딩 건너뜀 (anonymous 복원 시 재진입 방지)
   // 봇(AdSense/검색엔진)은 랜딩 우회 → 앱 콘텐츠 크롤링 허용
@@ -2539,7 +2668,10 @@ function App() {
               {/* 설정 */}
               <button className={`sidebar-nav-item sidebar-nav-util ${viewMode === 'settings' ? 'active' : ''}`}
                 onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
-                <span className="sidebar-nav-icon"><SettingsIcon size={16} /></span>
+                <span className="sidebar-nav-icon">
+                  <SettingsIcon size={16} />
+                  {!notificationsSeen && <span className="nav-new-dot" />}
+                </span>
                 {getT(sourceLang, 'nav.settings')}
               </button>
 
@@ -3312,7 +3444,14 @@ function App() {
             </button>
 
             {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
-            <div className="settings-group" style={{ marginTop: '4px' }}>
+            <NotificationSettings
+              sourceLang={sourceLang}
+              uid={user?.uid}
+              profile={profile}
+              active={viewMode === 'settings'}
+            />
+
+            <div className="settings-group" style={{ marginTop: '4px' }} ref={subscriptionSectionRef}>
               <label className="settings-label">
                 <Lock size={16} /> {getT(sourceLang, 'settings.mySubscription')}
               </label>
@@ -4091,6 +4230,38 @@ function App() {
             </button>
           </div>
         </div>
+      )}
+
+      {/* 구독 성공 직후 push opt-in 모달 (D) */}
+      {showPushOptIn && (
+        <PushOptInModal
+          sourceLang={sourceLang}
+          uid={user?.uid}
+          onClose={() => setShowPushOptIn(false)}
+        />
+      )}
+
+      {/* 구독 이벤트 팝업 — push 탭 / tier 변경 감지 시 표시 */}
+      {subscriptionEvent && (
+        <SubscriptionEventModal
+          type={subscriptionEvent.type}
+          sourceLang={sourceLang}
+          onClose={() => setSubscriptionEvent(null)}
+          onAction={(action) => {
+            setSubscriptionEvent(null);
+            if (action === 'renew') {
+              // 갱신하기 → UpgradeModal 열기
+              setShowUpgradeModal(true);
+            } else if (action === 'retry') {
+              // 재결제 → 설정 탭 + 구독 섹션 스크롤
+              setViewMode('settings');
+              setSidebarOpen(false);
+              setTimeout(() => {
+                subscriptionSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }, 300);
+            }
+          }}
+        />
       )}
 
       {/* 결제 실패 토스트 */}

@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "Bestätigen"
+    "confirm": "Bestätigen",
+    "cancel": "Abbrechen",
+    "continue": "Weiter",
+    "newBadge": "NEU"
+  },
+  "pushOptIn": {
+    "title": "Bleiben Sie über Ihr Abonnement informiert",
+    "body": "Wir benachrichtigen Sie nur über Verlängerungen, Zahlungsprobleme und Ablauf — keine Werbung.",
+    "allow": "Erlauben",
+    "later": "Später"
+  },
+  "notifications": {
+    "sectionTitle": "Benachrichtigungen",
+    "webOnly": "Benachrichtigungen sind nur in der mobilen App verfügbar.",
+    "dailyReminder": "Tägliche Übungs-Erinnerung",
+    "dailyReminderDesc": "Eine kleine Erinnerung, jeden Tag zu üben.",
+    "reminderTime": "Uhrzeit",
+    "reminderTitle": "Zeit zum Üben!",
+    "reminderBody": "Nur ein paar Minuten heute — halte deine Serie am Leben.",
+    "reminderOn": "Tägliche Erinnerung aktiviert.",
+    "reminderOnAt": "⏰ Tägliche Erinnerung um {time} Uhr.",
+    "subEvent": {
+      "renewalTitle": "Abo verlängert.",
+      "renewalBody": "Dein Abo wurde verlängert. Danke für deine fortlaufende Unterstützung.",
+      "expirationTitle": "Abo abgelaufen.",
+      "expirationBody": "Dein Abo ist abgelaufen. Verlängere es, um weiterzulernen.",
+      "billingIssueTitle": "Zahlungsproblem.",
+      "billingIssueBody": "Zahlung fehlgeschlagen. Bitte erneut versuchen.",
+      "cancellationTitle": "Auto-Verlängerung deaktiviert.",
+      "cancellationBody": "Du kannst bis zum Ablaufdatum weiter nutzen.",
+      "btnConfirm": "OK",
+      "btnLater": "Später",
+      "btnRenew": "Verlängern",
+      "btnRetry": "Erneut"
+    },
+    "reminderOff": "Tägliche Erinnerung deaktiviert.",
+    "scheduleFailed": "Planung fehlgeschlagen. Bitte Berechtigungen prüfen.",
+    "permissionDenied": "Berechtigung verweigert. Bitte in den Systemeinstellungen aktivieren.",
+    "subAlerts": "Abo-Benachrichtigungen",
+    "subAlertsDesc": "Zahlungsprobleme, Verlängerungen und Abläufe.",
+    "subAlertOn": "Abo-Benachrichtigungen aktiviert.",
+    "subAlertOff": "Abo-Benachrichtigungen deaktiviert.",
+    "prePromptReminderTitle": "Übungs-Erinnerungen aktivieren?",
+    "prePromptReminderDesc": "Wir senden einmal täglich zu deiner gewählten Zeit eine Erinnerung.",
+    "prePromptPushTitle": "Abo-Benachrichtigungen aktivieren?",
+    "prePromptPushDesc": "Wir informieren dich nur über Abo-Verlängerungen und Zahlungsprobleme."
   },
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {

@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "確認"
+    "confirm": "確認",
+    "cancel": "キャンセル",
+    "continue": "続ける",
+    "newBadge": "NEW"
+  },
+  "pushOptIn": {
+    "title": "サブスクリプションの状況をお知らせしますか？",
+    "body": "更新・お支払い・期限切れの通知のみお送りします。マーケティング通知はありません。",
+    "allow": "許可",
+    "later": "後で"
+  },
+  "notifications": {
+    "sectionTitle": "通知",
+    "webOnly": "通知はモバイルアプリでのみ利用できます。",
+    "dailyReminder": "毎日の練習リマインダー",
+    "dailyReminderDesc": "毎日練習できるよう、やさしくお知らせします。",
+    "reminderTime": "時刻",
+    "reminderTitle": "練習の時間です！",
+    "reminderBody": "今日も数分だけ、連続記録を続けましょう。",
+    "reminderOn": "毎日のリマインダーを設定しました。",
+    "reminderOnAt": "⏰ 毎日 {time} にお知らせします。",
+    "subEvent": {
+      "renewalTitle": "サブスクリプションが更新されました。",
+      "renewalBody": "サブスクリプションが更新されました。引き続きご利用いただきありがとうございます。",
+      "expirationTitle": "サブスクリプションが期限切れです。",
+      "expirationBody": "サブスクリプションの有効期限が切れました。学習を続けるには更新してください。",
+      "billingIssueTitle": "お支払いに問題が発生しました。",
+      "billingIssueBody": "お支払いに失敗しました。もう一度お試しください。",
+      "cancellationTitle": "自動更新を解除しました。",
+      "cancellationBody": "有効期限までは引き続きご利用いただけます。",
+      "btnConfirm": "OK",
+      "btnLater": "後で",
+      "btnRenew": "更新する",
+      "btnRetry": "再試行"
+    },
+    "reminderOff": "毎日のリマインダーをオフにしました。",
+    "scheduleFailed": "設定に失敗しました。権限を確認してください。",
+    "permissionDenied": "権限が拒否されました。システム設定で有効にしてください。",
+    "subAlerts": "サブスク通知",
+    "subAlertsDesc": "支払いの問題、更新、有効期限についての通知です。",
+    "subAlertOn": "サブスク通知を有効にしました。",
+    "subAlertOff": "サブスク通知を無効にしました。",
+    "prePromptReminderTitle": "練習リマインダーをオンにしますか？",
+    "prePromptReminderDesc": "選択した時刻に1日1回だけお知らせします。",
+    "prePromptPushTitle": "サブスク通知を受け取りますか？",
+    "prePromptPushDesc": "サブスクの更新と支払いの問題のみお知らせします。"
   },
   "splashTagline": "無料の多言語発音学習単語帳",
   "errors": {

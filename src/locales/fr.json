@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "Confirmer"
+    "confirm": "Confirmer",
+    "cancel": "Annuler",
+    "continue": "Continuer",
+    "newBadge": "NOUVEAU"
+  },
+  "pushOptIn": {
+    "title": "Restez informé de votre abonnement",
+    "body": "Nous vous notifierons uniquement des renouvellements, problèmes de paiement et expirations — aucun marketing.",
+    "allow": "Autoriser",
+    "later": "Plus tard"
+  },
+  "notifications": {
+    "sectionTitle": "Notifications",
+    "webOnly": "Les notifications nécessitent l'application mobile.",
+    "dailyReminder": "Rappel de pratique quotidien",
+    "dailyReminderDesc": "Un petit rappel pour pratiquer chaque jour.",
+    "reminderTime": "Heure",
+    "reminderTitle": "C'est l'heure de pratiquer !",
+    "reminderBody": "Quelques minutes aujourd'hui pour continuer votre série.",
+    "reminderOn": "Rappel quotidien programmé.",
+    "reminderOnAt": "⏰ Rappel quotidien à {time}.",
+    "subEvent": {
+      "renewalTitle": "Abonnement renouvelé.",
+      "renewalBody": "Votre abonnement a été renouvelé. Merci de votre fidélité.",
+      "expirationTitle": "Abonnement expiré.",
+      "expirationBody": "Votre abonnement a expiré. Renouvelez pour continuer à apprendre.",
+      "billingIssueTitle": "Problème de paiement.",
+      "billingIssueBody": "Le paiement a échoué. Veuillez réessayer.",
+      "cancellationTitle": "Renouvellement auto désactivé.",
+      "cancellationBody": "Vous pouvez continuer jusqu'à la date d'expiration.",
+      "btnConfirm": "OK",
+      "btnLater": "Plus tard",
+      "btnRenew": "Renouveler",
+      "btnRetry": "Réessayer"
+    },
+    "reminderOff": "Rappel quotidien désactivé.",
+    "scheduleFailed": "Échec de la programmation. Vérifiez les autorisations.",
+    "permissionDenied": "Autorisation refusée. Activez-la dans les paramètres système.",
+    "subAlerts": "Alertes d'abonnement",
+    "subAlertsDesc": "Problèmes de paiement, renouvellements et expirations.",
+    "subAlertOn": "Alertes d'abonnement activées.",
+    "subAlertOff": "Alertes d'abonnement désactivées.",
+    "prePromptReminderTitle": "Activer les rappels de pratique ?",
+    "prePromptReminderDesc": "Nous enverrons un seul rappel par jour à l'heure choisie.",
+    "prePromptPushTitle": "Activer les alertes d'abonnement ?",
+    "prePromptPushDesc": "Nous vous informerons uniquement des renouvellements et des problèmes de paiement."
   },
   "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",
   "errors": {

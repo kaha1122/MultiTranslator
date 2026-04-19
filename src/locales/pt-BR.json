@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "newBadge": "NOVO"
+  },
+  "pushOptIn": {
+    "title": "Fique informado sobre sua assinatura",
+    "body": "Avisaremos apenas sobre renovações, problemas de pagamento e expirações — sem marketing.",
+    "allow": "Permitir",
+    "later": "Depois"
+  },
+  "notifications": {
+    "sectionTitle": "Notificações",
+    "webOnly": "As notificações exigem o aplicativo móvel.",
+    "dailyReminder": "Lembrete diário de prática",
+    "dailyReminderDesc": "Um aviso leve para praticar todos os dias.",
+    "reminderTime": "Hora",
+    "reminderTitle": "Hora de praticar!",
+    "reminderBody": "Apenas alguns minutos hoje — mantenha sua sequência viva.",
+    "reminderOn": "Lembrete diário agendado.",
+    "reminderOnAt": "⏰ Lembrete diário às {time}.",
+    "subEvent": {
+      "renewalTitle": "Assinatura renovada.",
+      "renewalBody": "Sua assinatura foi renovada. Obrigado pelo seu apoio contínuo.",
+      "expirationTitle": "Assinatura expirada.",
+      "expirationBody": "Sua assinatura expirou. Renove para continuar aprendendo.",
+      "billingIssueTitle": "Problema no pagamento.",
+      "billingIssueBody": "Falha no pagamento. Tente novamente.",
+      "cancellationTitle": "Renovação auto cancelada.",
+      "cancellationBody": "Você pode usar até a data de expiração.",
+      "btnConfirm": "OK",
+      "btnLater": "Depois",
+      "btnRenew": "Renovar",
+      "btnRetry": "Tentar"
+    },
+    "reminderOff": "Lembrete diário desativado.",
+    "scheduleFailed": "Falha ao agendar. Verifique as permissões.",
+    "permissionDenied": "Permissão negada. Ative nas configurações do sistema.",
+    "subAlerts": "Alertas de assinatura",
+    "subAlertsDesc": "Problemas de pagamento, renovações e vencimentos.",
+    "subAlertOn": "Alertas de assinatura ativados.",
+    "subAlertOff": "Alertas de assinatura desativados.",
+    "prePromptReminderTitle": "Ativar lembretes de prática?",
+    "prePromptReminderDesc": "Enviaremos um único lembrete por dia no horário escolhido.",
+    "prePromptPushTitle": "Ativar alertas de assinatura?",
+    "prePromptPushDesc": "Só enviaremos avisos sobre renovações e problemas de pagamento."
   },
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",
   "errors": {

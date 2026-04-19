@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "Confirmar"
+    "confirm": "Confirmar",
+    "cancel": "Cancelar",
+    "continue": "Continuar",
+    "newBadge": "NUEVO"
+  },
+  "pushOptIn": {
+    "title": "Mantente informado sobre tu suscripción",
+    "body": "Solo te avisaremos de renovaciones, problemas de pago y vencimientos — sin marketing.",
+    "allow": "Permitir",
+    "later": "Más tarde"
+  },
+  "notifications": {
+    "sectionTitle": "Notificaciones",
+    "webOnly": "Las notificaciones requieren la aplicación móvil.",
+    "dailyReminder": "Recordatorio diario de práctica",
+    "dailyReminderDesc": "Un pequeño aviso para practicar cada día.",
+    "reminderTime": "Hora",
+    "reminderTitle": "¡Hora de practicar!",
+    "reminderBody": "Solo unos minutos hoy — mantén tu racha viva.",
+    "reminderOn": "Recordatorio diario programado.",
+    "reminderOnAt": "⏰ Recordatorio diario a las {time}.",
+    "subEvent": {
+      "renewalTitle": "Suscripción renovada.",
+      "renewalBody": "Tu suscripción se ha renovado. Gracias por tu apoyo continuo.",
+      "expirationTitle": "Suscripción caducada.",
+      "expirationBody": "Tu suscripción ha caducado. Renueva para seguir aprendiendo.",
+      "billingIssueTitle": "Problema de pago.",
+      "billingIssueBody": "El pago falló. Inténtalo de nuevo.",
+      "cancellationTitle": "Renovación auto cancelada.",
+      "cancellationBody": "Puedes seguir usando hasta la fecha de vencimiento.",
+      "btnConfirm": "OK",
+      "btnLater": "Luego",
+      "btnRenew": "Renovar",
+      "btnRetry": "Reintentar"
+    },
+    "reminderOff": "Recordatorio diario desactivado.",
+    "scheduleFailed": "No se pudo programar. Comprueba los permisos.",
+    "permissionDenied": "Permiso denegado. Actívalo en los ajustes del sistema.",
+    "subAlerts": "Alertas de suscripción",
+    "subAlertsDesc": "Problemas de pago, renovaciones y vencimientos.",
+    "subAlertOn": "Alertas de suscripción activadas.",
+    "subAlertOff": "Alertas de suscripción desactivadas.",
+    "prePromptReminderTitle": "¿Activar recordatorios de práctica?",
+    "prePromptReminderDesc": "Te enviaremos un solo recordatorio al día a la hora que elijas.",
+    "prePromptPushTitle": "¿Activar alertas de suscripción?",
+    "prePromptPushDesc": "Solo te notificaremos sobre renovaciones y problemas de pago."
   },
   "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",
   "errors": {

@@ -1,6 +1,54 @@
 {
   "common": {
-    "confirm": "OK"
+    "confirm": "OK",
+    "cancel": "Cancel",
+    "continue": "Continue",
+    "newBadge": "NEW"
+  },
+  "pushOptIn": {
+    "title": "Stay informed about your subscription",
+    "body": "We'll only notify you about renewals, payment issues, and expirations — no marketing.",
+    "allow": "Allow",
+    "later": "Later"
+  },
+  "notifications": {
+    "sectionTitle": "Notifications",
+    "webOnly": "Notifications require the mobile app.",
+    "dailyReminder": "Daily Practice Reminder",
+    "dailyReminderDesc": "Get a gentle nudge to practice every day.",
+    "reminderTime": "Time",
+    "reminderTitle": "Time to practice!",
+    "reminderBody": "Keep your streak alive — just a few minutes today.",
+    "reminderOn": "Daily reminder scheduled.",
+    "reminderOnAt": "⏰ Daily reminder set for {time}.",
+    "subEvent": {
+        "renewalTitle": "Subscription Renewed",
+        "renewalBody": "Your subscription has been renewed. Thank you for your continued support.",
+        "expirationTitle": "Subscription Expired",
+        "expirationBody": "Your subscription has expired. Renew to keep learning.",
+        "billingIssueTitle": "Payment Issue",
+        "billingIssueBody": "Payment failed. Please try again.",
+        "cancellationTitle": "Auto-renew Cancelled",
+        "cancellationBody": "You can keep using until the expiration date.",
+        "btnConfirm": "OK",
+        "btnLater": "Later",
+        "btnRenew": "Renew",
+        "btnRetry": "Try again"
+    },
+    "reminderOff": "Daily reminder turned off.",
+    "scheduleFailed": "Failed to schedule. Check permissions.",
+    "permissionDenied": "Permission denied. Enable in system settings.",
+    "permissionDeniedPersistent": "Notification permission was previously denied. The system dialog no longer appears — please enable it manually in phone settings.",
+    "openSettingsBtn": "How to open system settings",
+    "openSettingsManual": "Phone Settings → Apps → PronunFit → Notifications → Allow",
+    "subAlerts": "Subscription Alerts",
+    "subAlertsDesc": "Payment issues, renewals, and expirations.",
+    "subAlertOn": "Subscription alerts enabled.",
+    "subAlertOff": "Subscription alerts turned off.",
+    "prePromptReminderTitle": "Enable practice reminders?",
+    "prePromptReminderDesc": "We will send one gentle reminder per day at your chosen time.",
+    "prePromptPushTitle": "Enable subscription alerts?",
+    "prePromptPushDesc": "We will notify you only about subscription renewals and payment issues."
   },
   "splashTagline": "Free Multilingual Pronunciation Note",
   "errors": {

@@ -17,6 +17,13 @@
       "skipNativeAuth": true,
       "providers": ["google.com", "facebook.com", "phone", "apple.com"],
       "googleProviderWebClientId": "879220793558-vj72ish8ijtd8ghj2919l7de9t66ilqt.apps.googleusercontent.com"
+    },
+    "PushNotifications": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
+    "LocalNotifications": {
+      "smallIcon": "ic_stat_icon_config_sample",
+      "iconColor": "#7B2D8E"
     }
   }
 }

@@ -1,6 +1,51 @@
 {
   "common": {
-    "confirm": "Xác nhận"
+    "confirm": "Xác nhận",
+    "cancel": "Hủy",
+    "continue": "Tiếp tục",
+    "newBadge": "MỚI"
+  },
+  "pushOptIn": {
+    "title": "Cập nhật thông tin về gói đăng ký của bạn",
+    "body": "Chúng tôi chỉ thông báo về gia hạn, sự cố thanh toán và hết hạn — không có thông báo tiếp thị.",
+    "allow": "Cho phép",
+    "later": "Để sau"
+  },
+  "notifications": {
+    "sectionTitle": "Thông báo",
+    "webOnly": "Thông báo chỉ hoạt động trên ứng dụng di động.",
+    "dailyReminder": "Nhắc nhở luyện tập hàng ngày",
+    "dailyReminderDesc": "Nhắc nhở nhẹ nhàng để bạn luyện tập mỗi ngày.",
+    "reminderTime": "Thời gian",
+    "reminderTitle": "Đến giờ luyện tập rồi!",
+    "reminderBody": "Chỉ vài phút hôm nay — hãy duy trì chuỗi ngày luyện tập.",
+    "reminderOn": "Đã đặt nhắc nhở hàng ngày.",
+    "reminderOnAt": "⏰ Nhắc nhở hằng ngày lúc {time}.",
+    "subEvent": {
+      "renewalTitle": "Đã gia hạn gói đăng ký.",
+      "renewalBody": "Gói đăng ký của bạn đã được gia hạn. Cảm ơn bạn đã tiếp tục ủng hộ.",
+      "expirationTitle": "Gói đăng ký đã hết hạn.",
+      "expirationBody": "Gói đăng ký của bạn đã hết hạn. Hãy gia hạn để tiếp tục học.",
+      "billingIssueTitle": "Vấn đề thanh toán.",
+      "billingIssueBody": "Thanh toán thất bại. Vui lòng thử lại.",
+      "cancellationTitle": "Đã tắt tự động gia hạn.",
+      "cancellationBody": "Bạn vẫn có thể sử dụng đến ngày hết hạn.",
+      "btnConfirm": "OK",
+      "btnLater": "Để sau",
+      "btnRenew": "Gia hạn",
+      "btnRetry": "Thử lại"
+    },
+    "reminderOff": "Đã tắt nhắc nhở hàng ngày.",
+    "scheduleFailed": "Đặt lịch thất bại. Vui lòng kiểm tra quyền.",
+    "permissionDenied": "Quyền bị từ chối. Hãy bật trong cài đặt hệ thống.",
+    "subAlerts": "Thông báo gói đăng ký",
+    "subAlertsDesc": "Vấn đề thanh toán, gia hạn và hết hạn.",
+    "subAlertOn": "Đã bật thông báo gói đăng ký.",
+    "subAlertOff": "Đã tắt thông báo gói đăng ký.",
+    "prePromptReminderTitle": "Bật nhắc nhở luyện tập?",
+    "prePromptReminderDesc": "Chúng tôi sẽ gửi một nhắc nhở mỗi ngày vào giờ bạn chọn.",
+    "prePromptPushTitle": "Bật thông báo gói đăng ký?",
+    "prePromptPushDesc": "Chúng tôi chỉ thông báo về việc gia hạn và vấn đề thanh toán."
   },
   "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",
   "errors": {

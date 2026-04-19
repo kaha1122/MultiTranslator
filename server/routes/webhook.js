@@ -2,6 +2,7 @@ const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
 const { admin, adminDb } = require('../config/firebase');
+const { sendSubscriptionPush } = require('../utils/sendPush');
 
 const router = express.Router();
 
@@ -90,6 +91,10 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                 }
                 await adminDb.collection('users').doc(appUserId).update(updateData);
                 console.log(`[Webhook] ${appUserId} → ${tier} (${eventType})`);
+                // Push: RENEWAL만 알림 (INITIAL_PURCHASE는 앱 내 성공 팝업으로 충분)
+                if (eventType === 'RENEWAL') {
+                    sendSubscriptionPush(appUserId, 'renewal').catch(() => {});
+                }
                 break;
             }
 
@@ -100,6 +105,7 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[Webhook] ${appUserId} → autoRenew off (CANCELLATION)`);
+                sendSubscriptionPush(appUserId, 'cancellation').catch(() => {});
                 break;
             }
 
@@ -115,6 +121,7 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[Webhook] ${appUserId} → trial (${eventType})`);
+                sendSubscriptionPush(appUserId, eventType === 'BILLING_ISSUE' ? 'billingIssue' : 'expiration').catch(() => {});
                 break;
             }
 
@@ -247,6 +254,7 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
                         }
                     }
                     console.log(`[TossWebhook] ${customerKey} → trial (FULL REFUND: ${cancelAmount}, reason: ${cancelReason})`);
+                    sendSubscriptionPush(userDoc.id, 'expiration').catch(() => {});
 
                 } else if (status === 'PARTIAL_CANCELED') {
                     // 부분 환불 → tier 유지, 로그만 기록
@@ -486,6 +494,7 @@ router.post('/api/paypal-webhook', async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[PayPalWebhook] ${userDoc.id} → renewed (expires ${newExpiry.toISOString().slice(0,10)})`);
+                sendSubscriptionPush(userDoc.id, 'renewal').catch(() => {});
                 break;
             }
 
@@ -498,6 +507,7 @@ router.post('/api/paypal-webhook', async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[PayPalWebhook] ${customId} → autoRenew off (CANCELLED)`);
+                sendSubscriptionPush(customId, 'cancellation').catch(() => {});
                 break;
             }
 
@@ -516,6 +526,7 @@ router.post('/api/paypal-webhook', async (req, res) => {
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
                 console.log(`[PayPalWebhook] ${customId} → trial (${eventType})`);
+                sendSubscriptionPush(customId, eventType === 'BILLING.SUBSCRIPTION.SUSPENDED' ? 'billingIssue' : 'expiration').catch(() => {});
                 break;
             }
 

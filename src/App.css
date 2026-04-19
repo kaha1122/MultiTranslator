@@ -450,6 +450,44 @@ html.admob-active.platform-native::after {
   flex-shrink: 0;
   display: flex;
   align-items: center;
+  position: relative;
+}
+
+/* 신규 기능 빨간 점 (사이드바 아이콘 우상단) */
+.sidebar-nav-icon .nav-new-dot {
+  position: absolute;
+  top: -2px;
+  right: -4px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  box-shadow: 0 0 0 2px white;
+  animation: nav-new-dot-pulse 2s ease-in-out infinite;
+}
+
+@keyframes nav-new-dot-pulse {
+  0%, 100% { box-shadow: 0 0 0 2px white, 0 0 0 0 rgba(239, 68, 68, 0.4); }
+  50%      { box-shadow: 0 0 0 2px white, 0 0 0 6px rgba(239, 68, 68, 0); }
+}
+
+/* 섹션 헤더 NEW 뱃지 */
+.feature-new-badge {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 8px;
+  font-size: 0.65rem;
+  font-weight: 800;
+  color: white;
+  background: linear-gradient(135deg, #ef4444, #f97316);
+  border-radius: 999px;
+  letter-spacing: 0.5px;
+  animation: feature-new-pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes feature-new-pulse {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50%      { transform: scale(1.08); opacity: 0.9; }
 }
 
 .sidebar-submenu {

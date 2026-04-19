@@ -107,6 +107,9 @@ export const AuthProvider = ({ children }) => {
                     );
                 }
 
+                // Push 토큰 재등록은 App.jsx mount에서 전역 리스너가 처리
+                // (여기서는 별도 처리 불필요 — App.jsx가 checkPermissions + register 자동 수행)
+
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
