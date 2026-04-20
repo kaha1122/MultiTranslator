@@ -79,10 +79,19 @@
 .upgrade-tier-label {
     display: flex;
     align-items: center;
+    flex-wrap: wrap;
     gap: 5px;
     font-weight: 800;
     font-size: 0.92rem;
     margin-bottom: 8px;
+}
+
+/* tier 이름 옆 '(자동갱신)' 라벨 — 언어별 길이 차 대응 */
+.upgrade-tier-autorenew {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: #94a3b8;
+    word-break: keep-all;
 }
 
 /* ── Plans Row (가로 바 형태, 세로 스택) ── */

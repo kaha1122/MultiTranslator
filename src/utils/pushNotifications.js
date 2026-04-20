@@ -44,16 +44,22 @@ export function getRegisteredFcmToken() {
 // FCM 토큰을 Firestore users/{uid}.fcmTokens 배열에 병합 저장
 // 플랫폼 정보는 별도의 currentNativePlatform 필드에서 관리 (App.jsx 버전 추적 useEffect)
 // 과거 fcmPlatform 필드는 더 이상 쓰지 않음 (기존 데이터는 호환성을 위해 유지)
+// localStorage 쇼트서킷은 쓰지 않는다:
+//   - arrayUnion은 멱등이라 중복 write가 Firestore에 누적되지 않음
+//   - 서버의 stale-token 정리(sendPush.js)가 실행되면 Firestore에서는 토큰이 빠지지만
+//     기기 localStorage에는 남아있어서, 과거 쇼트서킷으로 인해 영원히 복구 불가 divergence 발생
 export async function saveFcmTokenToFirestore(uid, token) {
-    if (!uid || !token) return { ok: false, reason: 'missing-arg' };
-    const stored = getRegisteredFcmToken();
-    if (stored === token) return { ok: true, reason: 'already-saved' };
+    if (!uid || !token) {
+        console.warn('[Push] saveFcmTokenToFirestore missing arg:', { uid: !!uid, token: !!token });
+        return { ok: false, reason: 'missing-arg' };
+    }
     try {
         await updateDoc(doc(db, 'users', uid), {
             fcmTokens: arrayUnion(token),
             fcmTokenUpdatedAt: serverTimestamp(),
         });
         try { localStorage.setItem(STORAGE_KEY_REGISTERED_TOKEN, token); } catch {}
+        console.log('[Push] token saved to Firestore:', token.slice(0, 12) + '...');
         return { ok: true };
     } catch (e) {
         console.warn('[Push] token save failed:', e.message);

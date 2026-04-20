@@ -166,9 +166,13 @@ function App() {
         const hReg = await PushNotifications.addListener('registration', async (token) => {
           const tk = token?.value;
           const uid = auth.currentUser?.uid;
-          if (!tk || !uid) return;
-          await saveFcmTokenToFirestore(uid, tk);
-          console.log('[Push] token saved:', tk.slice(0, 12) + '...');
+          console.log('[Push] registration event fired:', { hasToken: !!tk, hasUid: !!uid });
+          if (!tk || !uid) {
+            console.warn('[Push] registration skipped — missing token or uid', { tk: !!tk, uid: !!uid });
+            return;
+          }
+          const res = await saveFcmTokenToFirestore(uid, tk);
+          console.log('[Push] global listener saveFcmTokenToFirestore:', res);
         });
         removers.push(hReg);
 
@@ -183,7 +187,10 @@ function App() {
         removers.push(hAction);
 
         const hErr = await PushNotifications.addListener('registrationError', (err) => {
-          console.warn('[Push] registrationError:', err?.error);
+          console.warn('[Push] registrationError event:', {
+            error: err?.error,
+            raw: JSON.stringify(err),
+          });
         });
         removers.push(hErr);
 

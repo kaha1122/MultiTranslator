@@ -246,7 +246,11 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
         showStatus(t('notifications.subAlertOff') || 'Subscription alerts turned off.');
     };
 
-    // v1.4.37: 래퍼 우회, 플러그인 직접 호출 (로컬 알림과 동일한 패턴)
+    // 구독 알림은 FCM 토큰이 실제 Firestore에 들어가야 서버가 푸시를 보낼 수 있음.
+    // 로컬 리마인더와 달리 "로컬 state만 true"로 두면 silent failure 가능 →
+    // register() 후 'registration' 이벤트를 최대 PUSH_TOKEN_TIMEOUT_MS 대기하고
+    // 실패/타임아웃 시 사용자에게 구체 사유를 표시한다.
+    const PUSH_TOKEN_TIMEOUT_MS = 8000;
     const confirmPushPermission = async () => {
         setPrePrompt(null);
         setNeedsSystemSettings(false);
@@ -260,6 +264,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
             const plugin = mod.PushNotifications;
 
             let perm = await plugin.checkPermissions();
+            console.log('[Push] checkPermissions:', perm);
             if (perm.receive !== 'granted') {
                 if (perm.receive === 'denied') {
                     showStatus(
@@ -269,6 +274,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
                     return;
                 }
                 const result = await plugin.requestPermissions();
+                console.log('[Push] requestPermissions result:', result);
                 if (result.receive !== 'granted') {
                     showStatus(
                         `${t('notifications.permissionDenied') || 'Permission denied.'} [${result.receive}]`,
@@ -278,12 +284,71 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
                 }
             }
 
-            // 리스너는 App.jsx mount에서 이미 등록됨 — register()만 호출
-            await plugin.register();
+            // 임시 로컬 listener + 타임아웃으로 토큰 수신을 확실히 확인
+            // 글로벌 listener(App.jsx)도 같은 이벤트를 받아 Firestore에 저장하지만,
+            // 사용자에게 성공/실패를 정확히 피드백하려면 여기서도 대기해야 함.
+            // arrayUnion은 멱등이라 양쪽에서 저장해도 문제 없음.
+            const tokenResult = await new Promise(async (resolve) => {
+                let regHandle; let errHandle;
+                const cleanup = () => {
+                    try { regHandle?.remove?.(); } catch {}
+                    try { errHandle?.remove?.(); } catch {}
+                };
+                const timer = setTimeout(() => {
+                    cleanup();
+                    resolve({ ok: false, reason: 'timeout' });
+                }, PUSH_TOKEN_TIMEOUT_MS);
+                try {
+                    regHandle = await plugin.addListener('registration', (tok) => {
+                        clearTimeout(timer); cleanup();
+                        resolve({ ok: true, token: tok?.value });
+                    });
+                    errHandle = await plugin.addListener('registrationError', (err) => {
+                        clearTimeout(timer); cleanup();
+                        resolve({ ok: false, reason: err?.error || 'registrationError' });
+                    });
+                    await plugin.register();
+                    console.log('[Push] register() called, awaiting registration event...');
+                } catch (e) {
+                    clearTimeout(timer); cleanup();
+                    resolve({ ok: false, reason: e?.message || 'listener-setup-failed' });
+                }
+            });
+
+            console.log('[Push] confirmPushPermission tokenResult:', tokenResult);
+
+            if (!tokenResult.ok) {
+                // 토큰 수신 실패 — 체크박스는 Option B 설계대로 계속 uncheck 상태
+                setSubAlert(false);
+                await setSubscriptionAlertPref(uid, false);
+                showStatus(
+                    `${t('notifications.tokenFailed') || '알림 등록 실패 — 네트워크/Google Play services를 확인한 뒤 다시 시도해 주세요.'} [${tokenResult.reason}]`,
+                    { isError: true }
+                );
+                return;
+            }
+
+            // 토큰 확보 — Firestore 보조 저장 (글로벌 listener와 중복되지만 arrayUnion이라 안전)
+            if (tokenResult.token && uid) {
+                const { saveFcmTokenToFirestore } = await import('../utils/pushNotifications');
+                const saveResult = await saveFcmTokenToFirestore(uid, tokenResult.token);
+                console.log('[Push] confirmPushPermission saveResult:', saveResult);
+                if (!saveResult.ok) {
+                    setSubAlert(false);
+                    await setSubscriptionAlertPref(uid, false);
+                    showStatus(
+                        `${t('notifications.tokenFailed') || '알림 등록 실패 — 네트워크 상태를 확인해 주세요.'} [save:${saveResult.reason}]`,
+                        { isError: true }
+                    );
+                    return;
+                }
+            }
+
             setSubAlert(true);
             await setSubscriptionAlertPref(uid, true);
             showStatus(t('notifications.subAlertOn') || 'Subscription alerts enabled.');
         } catch (e) {
+            console.warn('[Push] confirmPushPermission error:', e);
             showStatus(
                 `${t('notifications.permissionDenied') || 'Permission denied.'} [${e?.message || String(e)}]`,
                 { isError: true }

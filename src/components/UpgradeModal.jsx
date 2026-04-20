@@ -620,6 +620,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 <div className="upgrade-tier-group">
                     <div className="upgrade-tier-label" style={{ color: '#4338ca' }}>
                         <Zap size={16} /> Pro
+                        <span className="upgrade-tier-autorenew">({t('upgrade.autoRenew')})</span>
                     </div>
                     <div className="upgrade-plans-row">
                         {PLAN_CONFIGS.filter(p => p.tier === 'pro').map(plan => {
@@ -638,7 +639,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}{' '}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>({t('upgrade.autoRenew')})</span></span>
+                                        {plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
@@ -694,6 +695,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 <div className="upgrade-tier-group" style={{ marginTop: initialTier ? '0' : '10px' }}>
                     <div className="upgrade-tier-label" style={{ color: '#b45309' }}>
                         <Crown size={16} /> Premium
+                        <span className="upgrade-tier-autorenew">({t('upgrade.autoRenew')})</span>
                     </div>
                     <div className="upgrade-plans-row">
                         {PLAN_CONFIGS.filter(p => p.tier === 'premium').map(plan => {
@@ -712,7 +714,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                         </span>
                                     )}
                                     <div className="upgrade-plan-duration">
-                                        <span>{plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}{' '}<span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>({t('upgrade.autoRenew')})</span></span>
+                                        {plan.months === 1 ? `1 ${t('upgrade.period1m')}` : t('upgrade.period3m')}
                                     </div>
                                     <div className="upgrade-plan-price-block">
                                         <span className="upgrade-plan-amount" style={{ color: plan.color }}>
