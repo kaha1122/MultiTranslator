@@ -272,8 +272,17 @@ router.post('/api/check-subscription', requireAuth, async (req, res) => {
                 const userDoc = await adminDb.collection('users').doc(uid).get();
                 const userData = userDoc.exists ? userDoc.data() : {};
                 if ((userData.tier === 'pro' || userData.tier === 'premium') && userData.tierSource === 'revenuecat') {
-                    updateData.tier = 'trial';
-                    updateData.autoRenew = false;
+                    // Firestore subscriptionExpiresAt이 아직 유효하면 RC promo 미반영/일시 miss일 수 있으므로 다운그레이드 보류
+                    // 실제 만기는 클라이언트 '구독 만료 체크' useEffect 또는 RC EXPIRATION webhook이 처리
+                    const expiresRaw = userData.subscriptionExpiresAt;
+                    const expiresAt = expiresRaw?.toDate?.()
+                        ?? (expiresRaw ? new Date(expiresRaw) : null);
+                    if (expiresAt && new Date() < expiresAt) {
+                        console.log(`[CheckSubscription] ${uid}: no RC entitlement but Firestore expiry valid (${expiresAt.toISOString()}) — skip downgrade`);
+                    } else {
+                        updateData.tier = 'trial';
+                        updateData.autoRenew = false;
+                    }
                 }
             }
             await adminDb.collection('users').doc(uid).update(updateData);
