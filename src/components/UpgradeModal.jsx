@@ -869,9 +869,19 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                     <PayPalButtons
                                         style={{ layout: 'vertical', shape: 'rect', label: 'subscribe', height: 45, tagline: false }}
                                         createSubscription={(data, actions) => {
+                                            // 기존 구독 만기일이 미래면 그 시점부터 첫 결제 (이중 결제 방지)
+                                            // PayPal은 start_time을 승인 후 "scheduled" 상태로 대기시키고, 해당 시각에 첫 청구 발생
+                                            const existingExpiryRaw = profile?.subscriptionExpiresAt;
+                                            const existingExpiry = existingExpiryRaw?.toDate?.()
+                                                ?? (existingExpiryRaw ? new Date(existingExpiryRaw) : null);
+                                            const startTime = existingExpiry && existingExpiry > new Date()
+                                                ? existingExpiry.toISOString()
+                                                : undefined;
+
                                             return actions.subscription.create({
                                                 plan_id: PAYPAL_PLAN_IDS[selectedPayPalPlan.id],
                                                 custom_id: user.uid,
+                                                ...(startTime ? { start_time: startTime } : {}),
                                             });
                                         }}
                                         onApprove={handlePayPalApprove}
