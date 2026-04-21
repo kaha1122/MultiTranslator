@@ -1,11 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { X, Zap, Crown, Check, ShieldCheck, Mail, Loader2, RotateCcw } from 'lucide-react';
 import { loadTossPayments } from '@tosspayments/tosspayments-sdk';
-import { lazy, Suspense } from 'react';
-
-// PayPal SDK — 웹 USD 결제에서만 동적 로드 (네이티브 앱 크래시 방지)
-const PayPalScriptProvider = lazy(() => import('@paypal/react-paypal-js').then(m => ({ default: m.PayPalScriptProvider })));
-const PayPalButtons = lazy(() => import('@paypal/react-paypal-js').then(m => ({ default: m.PayPalButtons })));
+// PayPal SDK wrapper — 정적 import로 전환 (lazy waterfall 제거). SDK script는 Provider mount 시점에 CDN에서 로드.
+import { PayPalScriptProvider, PayPalButtons } from '@paypal/react-paypal-js';
 import { Capacitor } from '@capacitor/core';
 import { Purchases } from '@revenuecat/purchases-capacitor';
 import { getAuth, sendEmailVerification, verifyBeforeUpdateEmail } from 'firebase/auth';
