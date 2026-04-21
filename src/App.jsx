@@ -275,10 +275,16 @@ function App() {
     }
 
     if (lostPaid) {
+      // Firestore subscriptionExpiresAt이 아직 유효하면 RC sync 일시 오탐 가능성 → 팝업 보류
+      // (실제 만료는 서버 webhook → push 경로 또는 만기 후 재동기화에서 처리)
+      const expiresAtRaw = profile?.subscriptionExpiresAt;
+      const expiresAt = expiresAtRaw?.toDate?.()
+        ?? (expiresAtRaw ? new Date(expiresAtRaw) : null);
+      if (expiresAt && new Date() < expiresAt) return;
       // 만료/결제실패 → expiration 팝업 (push 못 받았거나 탭 놓친 유저 대상 fallback)
       tryShowSubscriptionEvent('expiration');
     }
-  }, [profile?.tier, profile?.fcmTokens, tryShowSubscriptionEvent]);
+  }, [profile?.tier, profile?.fcmTokens, profile?.subscriptionExpiresAt, tryShowSubscriptionEvent]);
 
   const [authMode, setAuthMode] = useState('login'); // 'login' or 'signup'
   // 웹: 이미 앱에 진입한 적 있으면 랜딩 건너뜀 (anonymous 복원 시 재진입 방지)
@@ -516,12 +522,20 @@ function App() {
             const userDoc = await getDoc(doc(db, 'users', user.uid));
             const userData = userDoc.exists() ? userDoc.data() : {};
             if ((userData.tier === 'pro' || userData.tier === 'premium') && userData.tierSource === 'revenuecat') {
-              await setDoc(doc(db, 'users', user.uid), {
-                tier: 'trial',
-                autoRenew: false,
-                updatedAt: serverTimestamp(),
-              }, { merge: true });
-              console.log('[RevenueCat] No active entitlement → downgraded to trial');
+              // Firestore subscriptionExpiresAt이 아직 유효하면 RC 일시 miss / promo 미반영일 수 있으므로 다운그레이드 보류
+              const expiresAtRaw = userData.subscriptionExpiresAt;
+              const expiresAt = expiresAtRaw?.toDate?.()
+                ?? (expiresAtRaw ? new Date(expiresAtRaw) : null);
+              if (expiresAt && new Date() < expiresAt) {
+                console.log('[RevenueCat] restore: no entitlement but Firestore expiry still valid — skip downgrade');
+              } else {
+                await setDoc(doc(db, 'users', user.uid), {
+                  tier: 'trial',
+                  autoRenew: false,
+                  updatedAt: serverTimestamp(),
+                }, { merge: true });
+                console.log('[RevenueCat] No active entitlement → downgraded to trial');
+              }
             }
           }
         } catch (restoreErr) {

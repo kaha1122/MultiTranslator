@@ -372,9 +372,15 @@ export const AuthProvider = ({ children }) => {
                     await updateDoc(doc(db, 'users', user.uid), syncData);
                     console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId}), expires: ${expiresDateStr}`);
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
-                    // RevenueCat에 활성 entitlement 없는데 Firestore가 pro/premium → trial로 다운그레이드
-                    // 구독 필드만 초기화, 나머지(phone, 카운터 등) 보존
-                    // subscriptionExpiresAt/subscriptionMonths는 이력 보존을 위해 유지
+                    // Firestore subscriptionExpiresAt이 아직 유효하면 RC 일시 miss / promo 미반영일 수 있으므로 다운그레이드 보류
+                    // 실제 만기는 line 308 '구독 만료 체크' useEffect이 처리
+                    const expiresAtRaw = profile?.subscriptionExpiresAt;
+                    const expiresAt = expiresAtRaw?.toDate?.()
+                        ?? (expiresAtRaw ? new Date(expiresAtRaw) : null);
+                    if (expiresAt && new Date() < expiresAt) {
+                        console.log('[RevenueCat] no entitlement but Firestore expiry still valid — skip downgrade');
+                        return;
+                    }
                     await updateDoc(doc(db, 'users', user.uid), {
                         tier: 'trial',
                         autoRenew: false,
