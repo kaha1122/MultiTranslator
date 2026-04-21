@@ -254,18 +254,51 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
     const questionCardRef = useRef(null);
     const answerCardRef = useRef(null);
 
-    // 카드 생성 후 DOM이 확실히 렌더된 시점에 중앙 스크롤
-    const [scrollTarget, setScrollTarget] = useState(null);
+    // 카드 생성 후 해당 카드로 스크롤.
+    // VocabTab / NotificationSettings 에서 검증된 패턴을 이식:
+    //   - scrollIntoView는 중첩 스크롤 컨테이너(.app-container) + Android WebView에서 불안정 →
+    //     .app-container 를 직접 찾아 scrollTop 계산
+    //   - 조건부 렌더 + React commit 직후 race 방지를 위해 RAF + setTimeout(150) + height=0 재시도
+    //   - sticky .app-header 높이 차감으로 타이틀이 헤더 뒤에 가려지지 않도록
+    const scrolledQRef = useRef(null);
+    const scrolledARef = useRef(null);
+    const scrollToCard = (targetRef) => {
+        const tryScroll = (attempt = 0) => {
+            const el = targetRef.current;
+            if (!el) {
+                if (attempt < 5) setTimeout(() => tryScroll(attempt + 1), 100);
+                return;
+            }
+            const container = el.closest('.app-container');
+            if (!container) { el.scrollIntoView({ block: 'start' }); return; }
+            const r = el.getBoundingClientRect();
+            const cr = container.getBoundingClientRect();
+            if (r.height === 0 && attempt < 5) {
+                setTimeout(() => tryScroll(attempt + 1), 100);
+                return;
+            }
+            const headerH = document.querySelector('.app-header')?.getBoundingClientRect().height ?? 0;
+            const newTop = container.scrollTop + (r.top - cr.top) - headerH - 12;
+            container.scrollTo({ top: Math.max(0, newTop), behavior: 'smooth' });
+        };
+        requestAnimationFrame(() => setTimeout(() => tryScroll(0), 150));
+    };
+
     useEffect(() => {
-        if (!scrollTarget) return;
-        const ref = scrollTarget === 'question' ? questionCardRef : answerCardRef;
-        // requestAnimationFrame으로 브라우저 페인트 직후 실행
-        const raf = requestAnimationFrame(() => {
-            ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-        setScrollTarget(null);
-        return () => cancelAnimationFrame(raf);
-    }, [scrollTarget]);
+        if (!generated) return;
+        const token = generated.sentence;
+        if (scrolledQRef.current === token) return;
+        scrolledQRef.current = token;
+        scrollToCard(questionCardRef);
+    }, [generated]);
+
+    useEffect(() => {
+        if (!generatedAnswer) return;
+        const token = generatedAnswer.sentence;
+        if (scrolledARef.current === token) return;
+        scrolledARef.current = token;
+        scrollToCard(answerCardRef);
+    }, [generatedAnswer]);
 
     // 세션 + Firebase 중복 방지 이력 캐시 — ref로 관리 (렌더 트리거 없음, 동기 읽기 보장)
     const historyCacheRef = useRef({});
@@ -365,7 +398,6 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
             setGenerated(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setScrollTarget('question');
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {
@@ -415,7 +447,6 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
             setGeneratedAnswer(data);
             if (data.sentence) appendHistory(historyKey, data.sentence);
             if (onGenerate) onGenerate();
-            setScrollTarget('answer');
         } catch (e) {
             setError(t('scene.loadError'));
         } finally {

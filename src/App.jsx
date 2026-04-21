@@ -1654,6 +1654,20 @@ function App() {
       const prompt = `
         You are a professional multilingual translator and language tutor.
 
+        [ABSOLUTE OUTPUT RULE — READ FIRST, APPLIES TO ALL TASKS BELOW]
+        All explanatory text inside these fields MUST be written 100% in ${sourceLangName} (language code "${sourceLang}"), the user's native language:
+          - every string in "tips"
+          - every string in "detectedLangTip"
+          - every "exampleTranslation"
+        Target-language phrases/words may be quoted verbatim inside those strings, but ALL SURROUNDING EXPLANATION MUST BE ${sourceLangName}. Never write an entire tip in a target language. Never mix languages mid-sentence. If uncertain, default to ${sourceLangName}.
+
+        Example — sourceLang="ko" (Korean), targetLang="ja" (Japanese):
+          ✅ CORRECT (explanation in Korean, Japanese only quoted):
+             "「主要な点」은 '주요한 점'이라는 뜻으로, 회의의 핵심 요지를 가리킬 때 씁니다."
+          ❌ WRONG (explanation in Japanese — FORBIDDEN):
+             "「主要な点（しゅうようなてん）」は「main points」の訳で、文脈から「会議の要点」などを指します。"
+        The same principle applies to every sourceLang/targetLang pair: explanation stays in ${sourceLangName}; only the quoted foreign phrase is in the target language.
+
         [Context]
         - User's native language: ${sourceLangName} (code: ${sourceLang})
         - Source text: "${inputText}"
@@ -1674,12 +1688,10 @@ function App() {
 
         [Task 3: Educational Tips]
         "tips" is an ordered array of length ${targetLangs.length}, one entry per target language in the same order as listed above.
-        Each entry is an array of 2-3 tip strings.
-        CRITICAL LANGUAGE RULE: Every tip string MUST be written in ${sourceLangName} (language code "${sourceLang}"), because ${sourceLangName} is the user's native language and the only language they read fluently.
-        Do NOT write tips in any target language. Do NOT mix languages within a tip.
-        If you are unsure, default to ${sourceLangName}.
-        - sentence type: 2-3 grammar/nuance/usage notes explaining how the translation in that target language works, written in ${sourceLangName}.
-        - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence — all explained in ${sourceLangName}.
+        Each entry is an array of 2-3 tip strings — ALL written in ${sourceLangName} per the ABSOLUTE OUTPUT RULE above.
+        - sentence type: 2-3 grammar/nuance/usage notes explaining how the translation in that target language works.
+        - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
+        Self-check before returning: if any tip string reads as if written in the target language (Japanese, Chinese, etc.), rewrite it in ${sourceLangName}.
 
         [Task 4: Pronunciation]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / ru: Rewrite with accent marks (´) on stressed vowels per standard Russian dictionary stress (ё and single-syllable words excluded) / others: Romanization
@@ -1713,7 +1725,7 @@ function App() {
           "type": "word" | "sentence",
           "difficulty": "basic" | "intermediate" | "advanced",
           "tips": [
-            ${targetLangNames.map(name => `["${sourceLangName} tip about ${name} translation", "${sourceLangName} tip 2"]`).join(',\n            ')}
+            ${targetLangNames.map(name => `["<explanation in ${sourceLangName} about how the ${name} translation works>", "<another explanation in ${sourceLangName}>"]`).join(',\n            ')}
           ],
           "data": {
             ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "...", "example": "...", "exampleTranslation": "..." }`).join(',\n            ')}
