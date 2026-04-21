@@ -96,6 +96,17 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
         });
     }, [active, seen]);
 
+    // Auto-markSeen — 설정 탭 진입 + 컴포넌트 렌더됨 → 사용자가 섹션을 봤다고 간주
+    // 웹 유저는 토글이 disabled라 onChange를 못 발생시키므로 handler 기반 markSeen이 작동하지 않음
+    // 1.5s 지연으로 단순 transient render 제외 (사용자가 실제로 머무른 경우만)
+    useEffect(() => {
+        if (!active || seen) return;
+        const timer = setTimeout(() => {
+            markSeen();
+        }, 1500);
+        return () => clearTimeout(timer);
+    }, [active, seen, markSeen]);
+
     useEffect(() => { setReminder(loadReminderPrefs()); }, []);
 
     useEffect(() => () => {
