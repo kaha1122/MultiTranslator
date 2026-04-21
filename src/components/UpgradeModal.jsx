@@ -327,7 +327,14 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
         return () => document.removeEventListener('visibilitychange', handleVisibility);
     }, [emailVerified]);
 
-    const isKR = isKorea(countryInfo);
+    // 결제 통화 결정 (2026-04-21 재설계):
+    // phoneCountry === 'KR' 만 한국 플로우(KRW/Toss). 그 외 모두 USD/PayPal.
+    // 근거:
+    //   - 한국 유저는 한국 번호 외에 쓸 이유 없음 (결정적 신호)
+    //   - IP 기반(ipwhois.app) 감지는 rate limit/CORS로 간헐 실패 → 한국인 USD 오탐
+    //   - 해외 거주 한국인도 한국 카드(KRW) 결제 선호 (해외 수수료 절약)
+    //   - phoneCountry null인 기존 유저(~96%)는 AuthContext에서 로그인 시 자동 보완됨
+    const isKR = profile?.phoneCountry === 'KR';
     // 웹: 기존 하드코딩 플랜 / 네이티브: RevenueCat offering에서 가져온 플랜
     const webPlanConfigs = isKR ? PLAN_CONFIGS_KRW : PLAN_CONFIGS_USD;
     const PLAN_CONFIGS = isNative

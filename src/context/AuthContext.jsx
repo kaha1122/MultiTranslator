@@ -84,12 +84,14 @@ export const AuthProvider = ({ children }) => {
                             });
                             docJustCreated = true;
                             // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
+                            // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                             detectGeoInfo().then(info => {
                                 if (info.country) {
                                     updateDoc(docRef, {
                                         geoCountry: info.country,
                                         geoCity: info.city || '',
                                         geoRegion: info.region || '',
+                                        phoneCountry: info.country,
                                     }).catch(() => {});
                                 }
                             }).catch(() => {});
@@ -130,12 +132,14 @@ export const AuthProvider = ({ children }) => {
                             updatedAt: serverTimestamp(),
                         }, { merge: true });
                         // 위치 정보 비동기 저장
+                        // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                         detectGeoInfo().then(info => {
                             if (info.country) {
                                 updateDoc(docRef, {
                                     geoCountry: info.country,
                                     geoCity: info.city || '',
                                     geoRegion: info.region || '',
+                                    phoneCountry: info.country,
                                 }).catch(() => {});
                             }
                         }).catch(() => {});
@@ -290,6 +294,18 @@ export const AuthProvider = ({ children }) => {
     const isTrialSavedCardLimitReached = tier === 'trial' && dailyTrialCardReached;
     const isTrialPronLimitReached = tier === 'trial' && dailyTrialPronReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
+
+    // phoneCountry 자동 보완 — 기존 null 유저(~96%) 대응
+    // 결제 통화 판정은 phoneCountry === 'KR' 기준이므로 null이면 USD로 오탐
+    // 다음 로그인 시 geoCountry/sourceLang 기반 추론해서 자동 세팅 (사용자는 이후에도 수정 가능)
+    useEffect(() => {
+        if (!user?.uid || !profile) return;
+        if (profile.phoneCountry) return; // 이미 있으면 skip
+        const inferred = profile.geoCountry
+            || (profile.sourceLang === 'ko' ? 'KR' : null);
+        if (!inferred) return;
+        updateDoc(doc(db, 'users', user.uid), { phoneCountry: inferred }).catch(() => {});
+    }, [user?.uid, profile?.phoneCountry, profile?.geoCountry, profile?.sourceLang]);
 
     // Pro 월별 카운터 리셋
     useEffect(() => {
