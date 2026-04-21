@@ -62,6 +62,7 @@ import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
 import { assignNextCardSerial } from './utils/cardSerial';
+import { stripAnnotations } from './utils/stripAnnotations';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
 import { PrivacyPolicyPage, TermsOfServicePage, ContactPage } from './components/Legal/LegalPages';
@@ -1787,11 +1788,12 @@ function App() {
         targetLangs.forEach(langCode => {
           const entry = result.data[langCode];
           if (entry) {
-            newTranslations[langCode] = entry.translation || inputText;
+            // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+            newTranslations[langCode] = stripAnnotations(entry.translation, langCode) || inputText;
             newProns[langCode] = entry.pronunciation;
             if (entry.example) {
               newExamples[langCode] = {
-                example: entry.example,
+                example: stripAnnotations(entry.example, langCode),
                 exampleTranslation: entry.exampleTranslation || '',
               };
             }
@@ -1801,11 +1803,11 @@ function App() {
       // 케이스 C: 감지 언어 카드 데이터 병합 (targetLangs에 없는 새 카드)
       if (isCaseC && result.detectedLangData) {
         const entry = result.detectedLangData;
-        newTranslations[rawDetected] = entry.translation || inputText;
+        newTranslations[rawDetected] = stripAnnotations(entry.translation, rawDetected) || inputText;
         newProns[rawDetected] = entry.pronunciation || '';
         if (entry.example) {
           newExamples[rawDetected] = {
-            example: entry.example,
+            example: stripAnnotations(entry.example, rawDetected),
             exampleTranslation: entry.exampleTranslation || '',
           };
         }

@@ -8,6 +8,7 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const { geminiUrl } = require('../config/gemini');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE, getDifficultyDesc } = require('../config/langGuide');
+const { stripAnnotations } = require('../utils/stripAnnotations');
 // scene.js에서 기존 LANG_NAMES_FOR_SCENE → LANG_NAMES로 통일
 const LANG_NAMES_FOR_SCENE = LANG_NAMES;
 
@@ -123,6 +124,8 @@ ${avoidBlock}
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
         const parsed = JSON.parse(jsonStr);
+        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
         res.json(parsed);
     } catch (e) {
         console.error('[SceneSentence] Error:', e.response?.data || e.message);
@@ -231,6 +234,7 @@ ${avoidBlock}
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
         const parsed = JSON.parse(jsonStr);
+        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
         res.json(parsed);
     } catch (e) {
         console.error('[SceneAnswer] Error:', e.response?.data || e.message);

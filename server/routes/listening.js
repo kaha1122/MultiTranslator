@@ -3,6 +3,7 @@ const axios = require('axios');
 const { requireAuth } = require('../middleware/auth');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { geminiUrl } = require('../config/gemini');
+const { stripAnnotations } = require('../utils/stripAnnotations');
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -117,6 +118,14 @@ Return ONLY valid JSON (no markdown):
         const raw = response.data.candidates[0].content.parts[0].text;
         const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
         const parsed = JSON.parse(jsonStr);
+        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+        parsed.passage = stripAnnotations(parsed.passage, targetLang);
+        if (Array.isArray(parsed.words)) {
+            parsed.words.forEach(w => {
+                w.word = stripAnnotations(w.word, targetLang);
+                w.example = stripAnnotations(w.example, targetLang);
+            });
+        }
         res.json(parsed);
     } catch (e) {
         console.error('[ListeningPassage] Error:', e.response?.data || e.message);
