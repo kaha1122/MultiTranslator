@@ -64,7 +64,7 @@
 		<dict>
 			<key>CFBundleURLSchemes</key>
 			<array>
-				<string>fb2187242868692310</string>
+				<string>fb1549474396756439</string>
 			</array>
 			<key>CFBundleURLName</key>
 			<string>Facebook Login</string>
@@ -73,11 +73,15 @@
 
 	<!-- ── Facebook SDK 설정 ── -->
 	<key>FacebookAppID</key>
-	<string>2187242868692310</string>
+	<string>1549474396756439</string>
 	<key>FacebookClientToken</key>
-	<string>5f360e381f479219823873599aa72057</string>
+	<string>f45e7d5ec592528ef747e10a8af85b10</string>
 	<key>FacebookDisplayName</key>
 	<string>PronunFit</string>
+	<key>FacebookAutoLogAppEventsEnabled</key>
+	<true/>
+	<key>FacebookAdvertiserIDCollectionEnabled</key>
+	<true/>
 
 	<!-- Facebook 앱 호출 허용 목록 -->
 	<key>LSApplicationQueriesSchemes</key>

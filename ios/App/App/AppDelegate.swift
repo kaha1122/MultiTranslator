@@ -3,6 +3,7 @@ import Capacitor
 import AVFoundation
 import FirebaseCore
 import FirebaseCrashlytics
+import FBSDKCoreKit
 
 @UIApplicationMain
 class AppDelegate: UIResponder, UIApplicationDelegate {
@@ -16,6 +17,11 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         }
         Crashlytics.crashlytics().setCrashlyticsCollectionEnabled(true)
         print("[AppDelegate] Firebase configured with Crashlytics")
+
+        // Facebook SDK 초기화 + App Events activate (Meta Events Manager 귀인용)
+        ApplicationDelegate.shared.application(application, didFinishLaunchingWithOptions: launchOptions)
+        AppEvents.shared.activateApp()
+        print("[AppDelegate] Facebook SDK initialized, AppEvents activated")
 
         // 네이티브 뷰 배경색 — AdMob 배너 아래 safe-area 투명 영역 방지
         // capacitor.config.json backgroundColor는 WKWebView에만 적용되므로,
