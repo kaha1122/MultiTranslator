@@ -5,6 +5,6 @@
     <string name="package_name">com.arigems.pronunfit</string>
     <string name="custom_url_scheme">com.arigems.pronunfit</string>
     <string name="facebook_app_id">1549474396756439</string>
-    <string name="facebook_client_token">f45e7d5ec592528ef747e10a8af85b10</string>
+    <string name="facebook_client_token">851f50dcf4474fc9cb43333c87574174</string>
     <string name="fb_login_protocol_scheme">fb1549474396756439</string>
 </resources>
