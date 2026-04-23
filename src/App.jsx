@@ -2254,20 +2254,10 @@ function App() {
           style={{
             width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
             background: '#00a884', color: 'white', fontSize: '0.95rem',
-            fontWeight: 700, cursor: 'pointer', marginBottom: 10,
+            fontWeight: 700, cursor: 'pointer',
           }}
         >
           {getT(sourceLang, 'update.btn') !== 'update.btn' ? getT(sourceLang, 'update.btn') : (Capacitor.getPlatform() === 'ios' ? 'App Store에서 업데이트' : 'Play Store에서 업데이트')}
-        </button>
-        <button
-          onClick={() => setShowNativeUpdate(false)}
-          style={{
-            width: '100%', padding: '10px 0', border: 'none', borderRadius: 10,
-            background: '#f1f5f9', color: '#94a3b8', fontSize: '0.82rem',
-            fontWeight: 600, cursor: 'pointer',
-          }}
-        >
-          {getT(sourceLang, 'update.later') !== 'update.later' ? getT(sourceLang, 'update.later') : '나중에'}
         </button>
       </div>
     </div>
