@@ -14,8 +14,8 @@ import { authFetch } from '../utils/authFetch';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
-// Facebook 로그인 버튼 노출 여부 — Meta App Review 승인 + APronunFit 전환 완료 시까지 숨김
-const SHOW_FACEBOOK_LOGIN = false;
+// Facebook 로그인 버튼 노출 여부 — APronunFit 전환 + Firebase OAuth 등록 완료, 재활성화 (2026-04-23)
+const SHOW_FACEBOOK_LOGIN = true;
 
 const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang = 'ko' }) => {
     const handleComplete = onSuccess || onClose; // 계정 생성 성공 시 콜백
