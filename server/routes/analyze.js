@@ -57,6 +57,21 @@ async function analyzePronunciationAttempt(audioBuffer, referenceText, langCode,
 
         recognizer.recognizeOnceAsync(result => {
             try {
+                // 진단 로그: Azure 응답의 실제 내용 파악 (2026-04-24 장애 조사)
+                const reasonName = sdk.ResultReason[result.reason] ?? `unknown(${result.reason})`;
+                console.log(`[Azure-Diag] reason=${reasonName} lang=${targetLanguage} text="${(result.text || '').slice(0,60)}" refText="${(referenceText || '').slice(0,60)}" duration=${result.duration || 0}`);
+                if (result.reason === sdk.ResultReason.Canceled) {
+                    try {
+                        const cancel = sdk.CancellationDetails.fromResult(result);
+                        console.error(`[Azure-Diag] Cancelled: reason=${cancel.reason} errorCode=${cancel.errorCode} errorDetails="${cancel.errorDetails}"`);
+                    } catch (e) {
+                        console.error(`[Azure-Diag] fromResult(cancel) 실패:`, e?.message);
+                    }
+                }
+                const jsonRaw = result.properties?.getProperty(sdk.PropertyId.SpeechServiceResponse_JsonResult);
+                if (!jsonRaw) {
+                    console.warn(`[Azure-Diag] SpeechServiceResponse_JsonResult 비어있음 — NoMatch 또는 Cancel 상황`);
+                }
                 const pronResult = sdk.PronunciationAssessmentResult.fromResult(result);
                 const realProsody = pronResult.prosodyScore;
                 const displayProsody = realProsody > 0
