@@ -20,11 +20,11 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const { geminiUrl } = require('../config/gemini');
 
 /**
- * 1. Azure Pronunciation Assessment
+ * 1. Azure Pronunciation Assessment (single attempt)
  */
-async function analyzePronunciation(audioPath, referenceText, langCode, azureKey = AZURE_KEY, azureRegion = AZURE_REGION) {
+async function analyzePronunciationAttempt(audioBuffer, referenceText, langCode, azureKey, azureRegion) {
     return new Promise((resolve, reject) => {
-        const audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(audioPath));
+        const audioConfig = sdk.AudioConfig.fromWavFileInput(audioBuffer);
         const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
 
         const azureLangMap = {
@@ -56,68 +56,96 @@ async function analyzePronunciation(audioPath, referenceText, langCode, azureKey
         pronConfig.applyTo(recognizer);
 
         recognizer.recognizeOnceAsync(result => {
-            const pronResult = sdk.PronunciationAssessmentResult.fromResult(result);
-            const realProsody = pronResult.prosodyScore;
-            const displayProsody = realProsody > 0
-                ? realProsody
-                : Math.round((pronResult.fluencyScore + pronResult.accuracyScore) / 2);
-            const output = {
-                pronunciationScore: realProsody > 0
-                    ? pronResult.pronunciationScore
-                    : Math.round(
-                        pronResult.accuracyScore * 0.4 +
-                        pronResult.completenessScore * 0.2 +
-                        pronResult.fluencyScore * 0.2 +
-                        displayProsody * 0.2
-                      ),
-                accuracyScore: pronResult.accuracyScore,
-                fluencyScore: pronResult.fluencyScore,
-                completenessScore: pronResult.completenessScore,
-                prosodyScore: displayProsody,
-                words: pronResult.detailResult.Words.map(w => ({
-                    word: w.Word,
-                    accuracyScore: w.PronunciationAssessment.AccuracyScore,
-                    errorType: w.PronunciationAssessment.ErrorType,
-                    // 1순위: Phonemes에 실제 기호 (영/불/독/서/러 등 IPA)
-                    // 2순위: Phonemes의 NBestPhonemes 첫 후보 (Azure 내부 대체 기호)
-                    // 3순위: Syllables (ja/zh/ko CJK 음절)
-                    // 4순위: Phonemes 원본(빈 값이어도 점수는 있으므로 표시)
-                    phonemes: (() => {
-                        const hasPhonemeSymbols = w.Phonemes && w.Phonemes.some(p => p.Phoneme);
-                        if (hasPhonemeSymbols) {
-                            return w.Phonemes.map(p => ({
+            try {
+                const pronResult = sdk.PronunciationAssessmentResult.fromResult(result);
+                const realProsody = pronResult.prosodyScore;
+                const displayProsody = realProsody > 0
+                    ? realProsody
+                    : Math.round((pronResult.fluencyScore + pronResult.accuracyScore) / 2);
+                const output = {
+                    pronunciationScore: realProsody > 0
+                        ? pronResult.pronunciationScore
+                        : Math.round(
+                            pronResult.accuracyScore * 0.4 +
+                            pronResult.completenessScore * 0.2 +
+                            pronResult.fluencyScore * 0.2 +
+                            displayProsody * 0.2
+                          ),
+                    accuracyScore: pronResult.accuracyScore,
+                    fluencyScore: pronResult.fluencyScore,
+                    completenessScore: pronResult.completenessScore,
+                    prosodyScore: displayProsody,
+                    words: pronResult.detailResult.Words.map(w => ({
+                        word: w.Word,
+                        accuracyScore: w.PronunciationAssessment.AccuracyScore,
+                        errorType: w.PronunciationAssessment.ErrorType,
+                        // 1순위: Phonemes에 실제 기호 (영/불/독/서/러 등 IPA)
+                        // 2순위: Phonemes의 NBestPhonemes 첫 후보 (Azure 내부 대체 기호)
+                        // 3순위: Syllables (ja/zh/ko CJK 음절)
+                        // 4순위: Phonemes 원본(빈 값이어도 점수는 있으므로 표시)
+                        phonemes: (() => {
+                            const hasPhonemeSymbols = w.Phonemes && w.Phonemes.some(p => p.Phoneme);
+                            if (hasPhonemeSymbols) {
+                                return w.Phonemes.map(p => ({
+                                    phoneme: p.Phoneme || '',
+                                    accuracyScore: p.PronunciationAssessment.AccuracyScore
+                                }));
+                            }
+                            // NBestPhonemes fallback — 카타카나/한자 외래어 등에서 간혹 채워져 있음
+                            const hasNBest = w.Phonemes && w.Phonemes.some(p => Array.isArray(p.NBestPhonemes) && p.NBestPhonemes.some(np => np.Phoneme));
+                            if (hasNBest) {
+                                return w.Phonemes.map(p => ({
+                                    phoneme: (p.NBestPhonemes && p.NBestPhonemes[0] && p.NBestPhonemes[0].Phoneme) || '',
+                                    accuracyScore: p.PronunciationAssessment.AccuracyScore
+                                }));
+                            }
+                            if (w.Syllables && w.Syllables.length > 0) {
+                                return w.Syllables.map(s => ({
+                                    phoneme: s.Syllable || '',
+                                    accuracyScore: s.PronunciationAssessment.AccuracyScore
+                                }));
+                            }
+                            return (w.Phonemes || []).map(p => ({
                                 phoneme: p.Phoneme || '',
                                 accuracyScore: p.PronunciationAssessment.AccuracyScore
                             }));
-                        }
-                        // NBestPhonemes fallback — 카타카나/한자 외래어 등에서 간혹 채워져 있음
-                        const hasNBest = w.Phonemes && w.Phonemes.some(p => Array.isArray(p.NBestPhonemes) && p.NBestPhonemes.some(np => np.Phoneme));
-                        if (hasNBest) {
-                            return w.Phonemes.map(p => ({
-                                phoneme: (p.NBestPhonemes && p.NBestPhonemes[0] && p.NBestPhonemes[0].Phoneme) || '',
-                                accuracyScore: p.PronunciationAssessment.AccuracyScore
-                            }));
-                        }
-                        if (w.Syllables && w.Syllables.length > 0) {
-                            return w.Syllables.map(s => ({
-                                phoneme: s.Syllable || '',
-                                accuracyScore: s.PronunciationAssessment.AccuracyScore
-                            }));
-                        }
-                        return (w.Phonemes || []).map(p => ({
-                            phoneme: p.Phoneme || '',
-                            accuracyScore: p.PronunciationAssessment.AccuracyScore
-                        }));
-                    })()
-                }))
-            };
-            recognizer.close();
-            resolve(output);
+                        })()
+                    }))
+                };
+                recognizer.close();
+                resolve(output);
+            } catch (err) {
+                // fromResult 내부에서 throwIfNullOrUndefined:json 등이 동기 throw되는 경우 보호
+                recognizer.close();
+                reject(err);
+            }
         }, err => {
             recognizer.close();
             reject(err);
         });
     });
+}
+
+// Azure Speech transient 장애(throwIfNullOrUndefined:json, 지역 블립 등) 대응:
+// 3회 시도(500ms → 1500ms backoff). 정상 케이스는 1회차에서 성공하므로 p50 영향 없음.
+async function analyzePronunciation(audioPath, referenceText, langCode, azureKey = AZURE_KEY, azureRegion = AZURE_REGION) {
+    const audioBuffer = fs.readFileSync(audioPath);
+    const delays = [0, 500, 1500];
+    let lastError;
+    for (let attempt = 1; attempt <= delays.length; attempt++) {
+        if (delays[attempt - 1] > 0) {
+            await new Promise(r => setTimeout(r, delays[attempt - 1]));
+        }
+        try {
+            const result = await analyzePronunciationAttempt(audioBuffer, referenceText, langCode, azureKey, azureRegion);
+            if (attempt > 1) console.log(`[Azure] Pronunciation retry succeeded on attempt ${attempt}`);
+            return result;
+        } catch (err) {
+            lastError = err;
+            console.warn(`[Azure] Pronunciation attempt ${attempt}/${delays.length} failed: ${err?.message || err}`);
+        }
+    }
+    throw lastError;
 }
 
 /**
