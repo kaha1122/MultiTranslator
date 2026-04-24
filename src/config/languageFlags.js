@@ -46,7 +46,13 @@ export const LANG_FLAG_VARIANTS = {
   },
   ru: {
     default: '🇷🇺',
-    byCountry: { BY: '🇧🇾', KZ: '🇰🇿', KG: '🇰🇬' },
+    // BY 벨라루스, KZ 카자흐스탄, KG 키르기스스탄: 러시아어 공용어
+    // UZ 우즈베키스탄, AM 아르메니아: 비공식이지만 인종간 공용어/광범위 사용
+    // ⚠️ 의도적으로 제외: UA(우크라이나), GE(조지아) — 정치적 민감
+    byCountry: {
+      BY: '🇧🇾', KZ: '🇰🇿', KG: '🇰🇬',
+      UZ: '🇺🇿', AM: '🇦🇲',
+    },
   },
 };
 
