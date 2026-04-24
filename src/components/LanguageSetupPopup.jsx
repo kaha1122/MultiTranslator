@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
+import { resolveFlag } from '../config/languageFlags';
+import { useUserCountry } from '../hooks/useUserCountry';
 
 const LANGS = [
     { code: 'ko', name: '한국어', flag: '🇰🇷' },
@@ -34,6 +36,7 @@ const getDefaultTarget = (src) => src === 'en' ? 'ko' : 'en';
 
 const LanguageSetupPopup = ({ onComplete }) => {
     const { updateUserProfile } = useAuth();
+    const userCountry = useUserCountry();
     const [step, setStep] = useState(1); // 1: 모국어, 2: 학습언어
     const [sourceLang, setSourceLang] = useState(detectNativeLang());
     const [targetLang, setTargetLang] = useState('');
@@ -127,7 +130,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
                                         transition: 'all 0.15s',
                                     }}
                                 >
-                                    <span style={{ fontSize: '1.3rem' }}>{l.flag}</span>
+                                    <span style={{ fontSize: '1.3rem' }}>{resolveFlag(l.code, userCountry, l.flag)}</span>
                                     {l.name}
                                 </button>
                             ))}
@@ -162,7 +165,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
                                         transition: 'all 0.15s',
                                     }}
                                 >
-                                    <span style={{ fontSize: '1.3rem' }}>{l.flag}</span>
+                                    <span style={{ fontSize: '1.3rem' }}>{resolveFlag(l.code, userCountry, l.flag)}</span>
                                     {l.name}
                                 </button>
                             ))}

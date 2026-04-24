@@ -1,6 +1,8 @@
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { getT } from '../utils/i18n';
+import { resolveFlag } from '../config/languageFlags';
+import { useUserCountry } from '../hooks/useUserCountry';
 import './OnboardingModal.css';
 
 const LANGUAGES = [
@@ -38,6 +40,7 @@ const LEVELS = [
 ];
 
 export default function OnboardingModal({ defaultSourceLang, onComplete }) {
+  const userCountry = useUserCountry();
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(defaultSourceLang || 'ko');
   const [targets, setTargets] = useState([]);
@@ -185,7 +188,7 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
                         className={`onb-lang-btn ${isSelected ? 'selected' : ''}`}
                         onClick={() => step === 0 ? handleSourceSelect(lang.code) : handleTargetSelect(lang.code)}
                       >
-                        <span className="onb-lang-flag">{lang.flag}</span>
+                        <span className="onb-lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                         <span className="onb-lang-name">{lang.name}</span>
                         {isSelected && <span className="onb-lang-check" aria-hidden="true">✓</span>}
                       </button>

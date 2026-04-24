@@ -72,6 +72,8 @@ import SplashScreen from './components/SplashScreen';
 
 // 언어 목록 중앙 관리 모듈
 import { SUPPORTED_LANGUAGES, EXTRA_LANGUAGES, ALL_LANGUAGES, getLangName, getLangInfo } from './config/languages';
+import { resolveFlag } from './config/languageFlags';
+import { useUserCountry } from './hooks/useUserCountry';
 
 // 브라우저/기기 언어를 감지하여 지원 언어 코드로 변환
 const detectBrowserSourceLang = () => {
@@ -106,6 +108,9 @@ function App() {
     incrementSceneGenerate, incrementVocabGenerate,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
+
+  // 사용자 국가 (언어별 국기 표시 변형용 — phoneCountry > navigator.language > geoCountry)
+  const userCountry = useUserCountry();
 
   // 신규 기능 "알림" NEW 뱃지 — 사용자가 설정에서 토글 한 번이라도 건드릴 때까지 표시
   const { seen: notificationsSeen } = useFeatureSeen(user?.uid, 'notifications', profile);
@@ -3343,7 +3348,7 @@ function App() {
                     onClick={() => setSourceLang(lang.code)}
                   >
                     {sourceLang === lang.code && <CheckCircle2 size={16} />}
-                    <span className="lang-flag">{lang.flag}</span>
+                    <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                     {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                   </div>
                 ))}
@@ -3364,7 +3369,7 @@ function App() {
                     onClick={() => toggleTargetLang(lang.code)}
                   >
                     {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
-                    <span className="lang-flag">{lang.flag}</span>
+                    <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                     {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                   </div>
                 ))}
@@ -3398,7 +3403,7 @@ function App() {
                       onClick={() => toggleTargetLang(lang.code)}
                     >
                       {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
-                      <span className="lang-flag">{lang.flag}</span>
+                      <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                       {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
                     </div>
                   ))}
