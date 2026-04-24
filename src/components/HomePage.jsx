@@ -93,75 +93,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
 
     return (
         <div className="home-page">
-            {/* 섹션 1: 주간 목표 별 */}
-            <div className="home-section home-weekly">
-                <h3 className="home-section-title">{t('home.weeklyGoal')}</h3>
-                <div className="home-weekly-stars">
-                    {weeklyData.map((d, i) => {
-                        const isToday = d.date === today;
-                        const isFuture = d.date > today;
-                        let icon = '○';
-                        if (d.achieved) icon = '⭐';
-                        else if (!isFuture && d.date < today) icon = '🌙';
-                        return (
-                            <div key={d.date} className={`home-star-day ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}`}>
-                                <span className="home-star-label">{dayLabels[i] || ''}</span>
-                                <span className="home-star-icon">{icon}</span>
-                                {!isFuture && <span className="home-star-count">{d.count || 0}</span>}
-                            </div>
-                        );
-                    })}
-                </div>
-            </div>
-
-            {/* 섹션 2: 오늘의 진도 — 3개 게이지 */}
-            <div className="home-section home-gauge">
-                <span className="home-gauge-title">{t('home.todayProgress')}</span>
-
-                {/* 카드 달성 */}
-                <div className="home-gauge-row">
-                    <span className="home-gauge-row-label">🎯</span>
-                    <div className="home-gauge-track">
-                        <motion.div
-                            className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${gaugePercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
-                        />
-                    </div>
-                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
-                </div>
-
-                {/* 발음 연습 */}
-                <div className="home-gauge-row">
-                    <span className="home-gauge-row-label">🎙</span>
-                    <div className="home-gauge-track">
-                        <motion.div
-                            className="home-gauge-fill pron"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pronPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
-                        />
-                    </div>
-                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
-                </div>
-
-                {/* 듣기 조회 */}
-                <div className="home-gauge-row">
-                    <span className="home-gauge-row-label">🎧</span>
-                    <div className="home-gauge-track">
-                        <motion.div
-                            className="home-gauge-fill listen"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${listenPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
-                        />
-                    </div>
-                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
-                </div>
-            </div>
-
-            {/* 섹션 3: 상단 폴더 탭 + 하단 콘텐츠 */}
+            {/* 섹션 1: 학습 메뉴 (folders) — 신규 사용자 첫 화면에 즉시 노출 */}
             <div className="home-section home-folders-section">
                 <h3 className="home-section-title">{t('home.folders')}</h3>
                 {folders.map(folder => {
@@ -231,7 +163,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 })}
             </div>
 
-            {/* 섹션 3-2: 학습기록 */}
+            {/* 섹션 2: 학습기록 */}
             <div className="home-section home-folders-section">
                 <h3 className="home-section-title">{t('home.recordSection')}</h3>
                 {recordFolders.map(folder => {
@@ -292,7 +224,75 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 })}
             </div>
 
-            {/* 섹션 4: 이번 주 학습 통계표 */}
+            {/* 섹션 3: 이번주 학습현황 (주간 목표 별) — 학습기록 아래로 이동 */}
+            <div className="home-section home-weekly">
+                <h3 className="home-section-title">{t('home.weeklyGoal')}</h3>
+                <div className="home-weekly-stars">
+                    {weeklyData.map((d, i) => {
+                        const isToday = d.date === today;
+                        const isFuture = d.date > today;
+                        let icon = '○';
+                        if (d.achieved) icon = '⭐';
+                        else if (!isFuture && d.date < today) icon = '🌙';
+                        return (
+                            <div key={d.date} className={`home-star-day ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}`}>
+                                <span className="home-star-label">{dayLabels[i] || ''}</span>
+                                <span className="home-star-icon">{icon}</span>
+                                {!isFuture && <span className="home-star-count">{d.count || 0}</span>}
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* 섹션 4: 오늘의 진도 — 3개 게이지 — 학습기록 아래로 이동 */}
+            <div className="home-section home-gauge">
+                <span className="home-gauge-title">{t('home.todayProgress')}</span>
+
+                {/* 카드 달성 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎯</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
+                            initial={{ width: 0 }}
+                            animate={{ width: `${gaugePercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
+                </div>
+
+                {/* 발음 연습 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎙</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className="home-gauge-fill pron"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${pronPercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
+                </div>
+
+                {/* 듣기 조회 */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">🎧</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className="home-gauge-fill listen"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${listenPercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
+                </div>
+            </div>
+
+            {/* 섹션 5: 이번 주 학습 통계표 */}
             <div className="home-section home-stats">
                 <div className="home-stats-header">
                     <h3 className="home-section-title">{t('home.weeklyStats')}</h3>
