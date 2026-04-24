@@ -237,6 +237,15 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
     const [selectedScene, setSelectedScene] = useState(() => pickRandomScene('locations'));
     const [customInput, setCustomInput] = useState('');
     const [selectedLang, setSelectedLang] = useState(targetLangs?.[0] || 'en');
+    // Scene 탭은 display:none으로 상시 마운트되어 초깃값이 stale해짐 → 온보딩 후 targetLangs 변경 시 동기화
+    useEffect(() => {
+        if (!Array.isArray(targetLangs) || targetLangs.length === 0) return;
+        if (!targetLangs.includes(selectedLang)) {
+            setSelectedLang(targetLangs[0]);
+            setGenerated(null);
+            setIsSaved(false);
+        }
+    }, [targetLangs, selectedLang]);
     const [difficulty, setDifficulty] = useState(userLevel || 'basic');
     useEffect(() => { if (userLevel) setDifficulty(userLevel); }, [userLevel]);
     const [speechStyle, setSpeechStyle] = useState('formal');
