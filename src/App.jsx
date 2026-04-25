@@ -1304,13 +1304,24 @@ function App() {
   }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
 
   // 보너스 캠페인 출시 안내 — lifecycleStage 있는 사용자에게 1회 표시
-  // lifecycleStage non-null = Generate 1회 이상 = 온보딩 통과한 활성 유저
-  // (hasCompletedOnboarding 필드는 legacy 유저에게 false로 남아있을 수 있어 사용 X)
+  // 옵션 D: 이번 세션 시작 시 lifecycleStage 이미 있었어야 노출 (mid-session 전이 시 노출 X)
+  // → 신규 유저는 첫 Generate 후 앱 재시작 시 다음 세션에서 자연스럽게 노출
+  // → 기존 활성 유저(OTA 받은 시점)는 다음 앱 시작 시 즉시 노출
+  const initialLifecycleStageRef = useRef(undefined);
+  useEffect(() => {
+    if (!profile) return;
+    if (initialLifecycleStageRef.current === undefined) {
+      // profile 첫 로드 — 이번 세션 시작 시점의 stage 캡처
+      initialLifecycleStageRef.current = profile.lifecycleStage || null;
+    }
+  }, [!!profile]);
+
   useEffect(() => {
     if (!user?.uid || !profile) return;
-    if (!profile.lifecycleStage) return; // null/undefined인 사용자 제외 (Generate 한 번도 안 한 신규)
-    if (profile.bonusCampaignSeenAt) return; // 이미 표시함
-    // 다른 모달 충돌 방지 — 약간의 지연 후 노출
+    if (!profile.lifecycleStage) return;
+    if (profile.bonusCampaignSeenAt) return;
+    // 옵션 D 게이트: 세션 시작 시점에 stage 없었으면 다음 세션 기다림
+    if (!initialLifecycleStageRef.current) return;
     const timer = setTimeout(() => setShowBonusCampaign(true), 1500);
     return () => clearTimeout(timer);
   }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
