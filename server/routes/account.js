@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const { admin, adminDb } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
+const { grantBonusPoints } = require('../utils/bonusPoints');
 
 const router = express.Router();
 
@@ -220,6 +221,7 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                     'trialCardCount', 'savedCardCount', 'trialPronCount',
                     'translationGenerateCount', 'sceneGenerateCount',
                     'vocabGenerateCount', 'listenGenerateCount', 'totalGenerateCount',
+                    'bonusPoints',
                 ];
                 for (const key of counterKeys) {
                     if ((anonData[key] || 0) > 0) {
@@ -396,6 +398,47 @@ router.post('/api/admin/assign-card-serials', async (req, res) => {
     } catch (err) {
         console.error('[AssignSerials] error:', err);
         res.status(500).json({ error: err.message, stack: err.stack });
+    }
+});
+
+// ── [Admin] 보너스 포인트 수동 부여 (테스트/캠페인 보정용, BUILD_SECRET 인증) ──
+// body: { uidOrEmail: string, amount: number, source?: string, meta?: object }
+router.post('/api/admin/grant-bonus', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!admin.apps.length) return res.status(500).json({ error: 'Firebase Admin not initialized' });
+
+    const { uidOrEmail, amount, source, meta } = req.body;
+    if (!uidOrEmail || typeof amount !== 'number') {
+        return res.status(400).json({ error: 'uidOrEmail and amount(number) required' });
+    }
+
+    try {
+        // email인 경우 uid 조회
+        let uid = uidOrEmail;
+        if (uidOrEmail.includes('@')) {
+            const authUser = await admin.auth().getUserByEmail(uidOrEmail);
+            uid = authUser.uid;
+        }
+
+        const result = await grantBonusPoints({
+            uid,
+            amount,
+            source: source || 'admin_manual',
+            meta: meta || {},
+        });
+
+        // 부여 후 잔여 조회
+        const userSnap = await adminDb.collection('users').doc(uid).get();
+        const newBalance = userSnap.data()?.bonusPoints || 0;
+
+        res.json({ success: true, uid, granted: amount, newBalance, source: result.source });
+    } catch (err) {
+        console.error('[Admin grant-bonus] error:', err.message);
+        res.status(500).json({ error: err.message });
     }
 });
 

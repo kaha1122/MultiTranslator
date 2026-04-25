@@ -106,6 +106,7 @@ function App() {
     setDailyTrialCardReached, setDailyTrialPronReached,
     incrementTrialCard, incrementSavedCard,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
+    bonusPoints, hasBonusActive, consumeBonusPoints,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
 
@@ -554,38 +555,58 @@ function App() {
   }, [user?.uid]);
 
   // 액션별 점수 누적 → 임계치 도달 시 전면광고 (Trial 전용, 플랫폼 공통)
-  //   카드 저장 2점 / Generate(Vocab·Listening·Scene) 1점 / TTS 재생 제외
+  //   카드 저장 2점 / Generate(Vocab·Listening·Scene/Translation) 1점 / 발음 1점(보너스 활성 시만 차감)
   //   localStorage 영속 누적 → 앱/탭 닫아도 유지 (Web/Android/iOS 동일)
+  //   추가: React state로도 동기화 → 헤더에 "광고까지 N점" 카운터 실시간 표시
   const AD_POINT_THRESHOLD = 15;
   const AD_POINT_KEY = 'interstitialPoints';
   const AD_COOLDOWN_MS = 60_000;
   const lastAdAtRef = useRef(0);
 
-  const addAdPoints = async (points) => {
+  // 헤더 카운터용 React state — localStorage와 동기화
+  const [adPointsState, setAdPointsState] = useState(() => {
+    try { return parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10); } catch { return 0; }
+  });
+  const setAdPoints = useCallback((value) => {
+    try { localStorage.setItem(AD_POINT_KEY, String(value)); } catch {}
+    setAdPointsState(value);
+  }, []);
+
+  const addAdPoints = async (points, options = {}) => {
     if (tier !== 'trial') return;
+
+    // 보너스 활성 시: 점수 차감만, 인터스티셜 누적 안 함
+    if (hasBonusActive) {
+      await consumeBonusPoints(points);
+      return;
+    }
+
+    // bonusOnly 모드 (예: 발음 평가) — 보너스 없으면 패스 (일반 trial 인터스티셜 빈도 ↑ 방지)
+    if (options.bonusOnly) return;
+
     if (!adsReady()) return;
 
     const prev = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
     const next = prev + points;
 
     if (next < AD_POINT_THRESHOLD) {
-      localStorage.setItem(AD_POINT_KEY, String(next));
+      setAdPoints(next);
       return;
     }
 
     const now = Date.now();
     if (now - lastAdAtRef.current < AD_COOLDOWN_MS) {
       // 임계 도달했지만 쿨다운 중 — 점수는 유지해 다음 액션에서 재시도
-      localStorage.setItem(AD_POINT_KEY, String(next));
+      setAdPoints(next);
       return;
     }
 
     lastAdAtRef.current = now;
-    localStorage.setItem(AD_POINT_KEY, '0');
+    setAdPoints(0);
     const ok = await showInterstitial();
     if (!ok) {
       // 광고 로드/표시 실패 — 점수 롤백
-      localStorage.setItem(AD_POINT_KEY, String(next));
+      setAdPoints(next);
       lastAdAtRef.current = 0;
     }
   };
@@ -594,6 +615,13 @@ function App() {
   useEffect(() => {
     try { localStorage.removeItem('interstitialSaveCount'); } catch {}
   }, []);
+
+  // 발음 평가 성공 통합 핸들러 — 일일 카운터 증가 + 보너스 활성 시만 1pt 차감
+  // (각 탭에 onPronSuccess prop으로 주입, bonusOnly로 일반 trial 인터스티셜 영향 X)
+  const onPronSuccess = useCallback(() => {
+    incrementDailyPron();
+    addAdPoints(1, { bonusOnly: true });
+  }, [incrementDailyPron, hasBonusActive]); // addAdPoints는 클로저로 hasBonusActive 캡처
 
   // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
   const getBonusForToday = () => {
@@ -2718,6 +2746,30 @@ function App() {
 
               <div className="sidebar-divider" />
 
+              {/* 보너스 포인트 카드 — bonusPoints > 0 일 때만 표시 */}
+              {hasBonusActive && (
+                <div style={{
+                  padding: '12px 14px', margin: '4px 8px',
+                  borderRadius: '14px',
+                  background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
+                  border: '1px solid #d8b4fe',
+                  display: 'flex', alignItems: 'center', gap: '12px',
+                }}>
+                  <div style={{ fontSize: '1.6rem' }}>🎁</div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: '0.7rem', color: '#7c3aed', fontWeight: 700, letterSpacing: '0.03em' }}>
+                      보너스 포인트
+                    </div>
+                    <div style={{ fontSize: '1.3rem', color: '#6b21a8', fontWeight: 800, lineHeight: 1 }}>
+                      {bonusPoints}<span style={{ fontSize: '0.75rem', marginLeft: '2px' }}>pt</span>
+                    </div>
+                    <div style={{ fontSize: '0.7rem', color: '#9333ea', marginTop: '2px' }}>
+                      광고 면제 중 ✓
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {/* 구독 플랜 섹션 */}
               <div style={{ padding: '8px 12px 4px' }}>
                 <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -2824,6 +2876,16 @@ function App() {
           <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
             <Menu size={26} strokeWidth={2.5} />
           </button>
+
+          {/* 인터스티셜 광고까지 남은 점수 — Trial + 보너스 0 일 때만 표시 */}
+          {tier === 'trial' && !hasBonusActive && (
+            <span style={{
+              color: '#dc2626', fontWeight: 700, fontSize: '0.95rem',
+              minWidth: '20px', textAlign: 'center', userSelect: 'none',
+            }}>
+              {Math.max(0, AD_POINT_THRESHOLD - adPointsState)}
+            </span>
+          )}
 
           <h1 className="main-logo-3d">
             {"PronunFit".split("").map((char, index) => (
@@ -3027,6 +3089,8 @@ function App() {
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
+            hasBonusActive={hasBonusActive}
+            bonusPoints={bonusPoints}
           />
         </div>
 
@@ -3147,7 +3211,7 @@ function App() {
                       savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
                       onTrialLimitReached={() => setShowTrialLimitModal(true)}
-                      onPronSuccess={incrementDailyPron}
+                      onPronSuccess={onPronSuccess}
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
@@ -3198,7 +3262,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={incrementDailyPron}
+            onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -3221,7 +3285,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={incrementDailyPron}
+            onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -3241,7 +3305,7 @@ function App() {
             ref={videoReaderRef}
             sourceLang={sourceLang}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={incrementDailyPron}
+            onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVideoCard}
             onDetailChange={setVideoDetailOpen}
             onBookmarkPrompt={handleBookmarkPrompt}
@@ -3262,7 +3326,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={incrementDailyPron}
+            onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
@@ -3301,7 +3365,7 @@ function App() {
               setViewMode(target);
             }}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={incrementDailyPron}
+            onPronSuccess={onPronSuccess}
           />
         </div>
 

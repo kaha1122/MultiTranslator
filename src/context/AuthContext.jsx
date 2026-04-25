@@ -287,13 +287,36 @@ export const AuthProvider = ({ children }) => {
     const proPronCount = profile?.proPronCount || 0;
     const proPronResetMonth = profile?.proPronResetMonth || '';
 
+    // 보너스 포인트 — 캠페인 보상 (리뷰/추천/스트릭). 활성 시: 일일 한도 해제 + 인터스티셜 면제, 배너는 유지
+    const bonusPoints = profile?.bonusPoints || 0;
+    const hasBonusActive = bonusPoints > 0;
+
     // ⚠ Trial 제한은 이제 일간 — todayCount/todayPronCount는 App.jsx에서 주입
     const [dailyTrialCardReached, setDailyTrialCardReached] = useState(false);
     const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
 
-    const isTrialSavedCardLimitReached = tier === 'trial' && dailyTrialCardReached;
-    const isTrialPronLimitReached = tier === 'trial' && dailyTrialPronReached;
+    // 보너스 활성 시 일일 한도 우회
+    const isTrialSavedCardLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialCardReached;
+    const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
+
+    // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지. 부족하면 false 반환 (호출자가 fallback)
+    const consumeBonusPoints = async (amount) => {
+        if (!user?.uid || amount <= 0) return false;
+        if (bonusPoints < amount) return false;
+        try {
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const current = snap.data()?.bonusPoints || 0;
+                if (current < amount) throw new Error('insufficient');
+                tx.update(ref, { bonusPoints: increment(-amount) });
+            });
+            return true;
+        } catch (e) {
+            return false;
+        }
+    };
 
     // phoneCountry 자동 보완 — 기존 null 유저(~96%) 대응
     // 결제 통화 판정은 phoneCountry === 'KR' 기준이므로 null이면 USD로 오탐
@@ -548,6 +571,7 @@ export const AuthProvider = ({ children }) => {
             isProPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementPronCount,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
+            bonusPoints, hasBonusActive, consumeBonusPoints,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
             upgradeAnonymous,

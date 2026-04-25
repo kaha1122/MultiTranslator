@@ -6,7 +6,7 @@ import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, dailyGoal, dailyCardLimit = 10, dailyPronLimit = 20, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
+const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, dailyGoal, dailyCardLimit = 10, dailyPronLimit = 20, dailyListenLimit = 10, sourceLang, onNavigate, isActive, hasBonusActive = false, bonusPoints = 0 }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
@@ -274,7 +274,9 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
-                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
+                    <span className="home-gauge-count pron">
+                        {hasBonusActive ? <>{todayPronCount} <span style={{ color: '#9333ea' }}>🎁</span></> : <>{todayPronCount}/{dailyPronLimit}</>}
+                    </span>
                 </div>
 
                 {/* 듣기 조회 */}
@@ -288,8 +290,22 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
-                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
+                    <span className="home-gauge-count listen">
+                        {hasBonusActive ? <>{todayListenCount} <span style={{ color: '#9333ea' }}>🎁</span></> : <>{todayListenCount}/{dailyListenLimit}</>}
+                    </span>
                 </div>
+
+                {/* 보너스 활성 안내 — 게이지 영역 하단 */}
+                {hasBonusActive && (
+                    <div style={{
+                        marginTop: '8px', padding: '6px 10px',
+                        background: 'linear-gradient(90deg, #faf5ff, #f3e8ff)',
+                        borderRadius: '8px', textAlign: 'center',
+                        fontSize: '0.78rem', color: '#7c3aed', fontWeight: 600,
+                    }}>
+                        🎁 보너스 {bonusPoints}pt — 광고 면제 + 한도 해제
+                    </div>
+                )}
             </div>
 
             {/* 섹션 5: 이번 주 학습 통계표 */}
