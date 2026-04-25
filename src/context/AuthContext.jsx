@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
-import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc } from 'firebase/firestore';
+import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
 import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
@@ -436,6 +436,22 @@ export const AuthProvider = ({ children }) => {
         return () => { cancelled = true; };
     }, [user?.uid, profile?.tierSource]);
 
+    // lifecycleStage 'starter' 전이 — null/undefined일 때만 set, 상위 stage는 보존
+    // 트랜잭션으로 race-safe (engaged/subscriber 다운그레이드 방지)
+    const advanceToStarter = async () => {
+        if (!user?.uid) return;
+        if (profile?.lifecycleStage) return; // 빠른 우회: 이미 stage 있으면 트랜잭션 생략
+        try {
+            const userRef = doc(db, 'users', user.uid);
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(userRef);
+                if (!snap.data()?.lifecycleStage) {
+                    tx.update(userRef, { lifecycleStage: 'starter' });
+                }
+            });
+        } catch (e) { console.error('advanceToStarter:', e); }
+    };
+
     // 번역 클릭 카운터 (분석용)
     const incrementTrialCard = async () => {
         if (!user) return;
@@ -445,6 +461,7 @@ export const AuthProvider = ({ children }) => {
                 translationGenerateCount: increment(1),
                 totalGenerateCount: increment(1),
             });
+            advanceToStarter();
         } catch (e) { console.error("incrementTrialCard failed:", e); }
     };
 
@@ -476,6 +493,7 @@ export const AuthProvider = ({ children }) => {
                 sceneGenerateCount: increment(1),
                 totalGenerateCount: increment(1),
             });
+            advanceToStarter();
         } catch (e) { console.error("incrementSceneGenerate failed:", e); }
     };
 
@@ -487,6 +505,7 @@ export const AuthProvider = ({ children }) => {
                 vocabGenerateCount: increment(1),
                 totalGenerateCount: increment(1),
             });
+            advanceToStarter();
         } catch (e) { console.error("incrementVocabGenerate failed:", e); }
     };
 
@@ -498,6 +517,7 @@ export const AuthProvider = ({ children }) => {
                 listenGenerateCount: increment(1),
                 totalGenerateCount: increment(1),
             });
+            advanceToStarter();
         } catch (e) { console.error("incrementListenGenerate failed:", e); }
     };
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, increment, runTransaction } from 'firebase/firestore';
 
 // 로컬 타임존 기준 YYYY-MM-DD — toISOString()은 UTC 라 자정 경계에서 어긋남
 const toLocalDateStr = (d) => {
@@ -36,6 +36,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     const todaySaveCountRef = useRef(0);
     const todayPronCountRef = useRef(0);
     const todayListenCountRef = useRef(0);
+    const lastMarkedActiveDayRef = useRef(null); // 그날 activeDayCount 증가 처리 완료한 YYYY-MM-DD
 
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
     useEffect(() => { todaySaveCountRef.current = todaySaveCount; }, [todaySaveCount]);
@@ -55,6 +56,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             todaySaveCountRef.current = 0;
             todayPronCountRef.current = 0;
             todayListenCountRef.current = 0;
+            lastMarkedActiveDayRef.current = null;
             return;
         }
 
@@ -114,10 +116,45 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         loadData();
     }, [user?.uid]); // uid만 의존 — 토큰 갱신 시 user 객체 레퍼런스 변경으로 인한 재실행 방지
 
+    // 그날 첫 활동 시 user 문서의 activeDayCount += 1 + engaged 전이
+    // - lastActiveDay 필드로 멀티 디바이스/세션/자정 경계 모두 idempotent 보장
+    // - activeDayCount === 2 도달 + 현재 stage가 engaged/subscriber 아닐 때만 'engaged'로 advance
+    const markActiveDayIfFirst = useCallback(async () => {
+        if (!user?.uid) return;
+        const today = getToday();
+        if (lastMarkedActiveDayRef.current === today) return; // 같은 세션 내 중복 방지
+        lastMarkedActiveDayRef.current = today;
+
+        const userRef = doc(db, 'users', user.uid);
+        try {
+            await runTransaction(db, async (tx) => {
+                const snap = await tx.get(userRef);
+                const data = snap.data() || {};
+                if (data.lastActiveDay === today) return; // 다른 디바이스/탭이 이미 처리
+
+                const newCount = (data.activeDayCount || 0) + 1;
+                const updates = {
+                    activeDayCount: increment(1),
+                    lastActiveDay: today,
+                };
+                const stage = data.lifecycleStage;
+                if (newCount >= 2 && stage !== 'engaged' && stage !== 'subscriber') {
+                    updates.lifecycleStage = 'engaged';
+                }
+                tx.update(userRef, updates);
+            });
+        } catch (e) {
+            console.error('[useDailyProgress] markActiveDay transaction 실패:', e);
+            lastMarkedActiveDayRef.current = null; // 다음 액션 시 재시도 가능하게 롤백
+        }
+    }, [user?.uid]);
+
     const incrementAchievement = useCallback(async (key) => {
         if (!user?.uid) return false;
         // Deduplication: skip if this key was already counted today
         if (achievedKeysRef.current.has(key)) return false;
+
+        markActiveDayIfFirst();
 
         const today = getToday();
         achievedKeysRef.current.add(key);
@@ -152,6 +189,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     // 카드 저장 일간 카운터 증가 (Trial 게이지용 — 발음 점수 무관)
     const incrementDailySave = useCallback(async () => {
         if (!user?.uid) return;
+        markActiveDayIfFirst();
         const today = getToday();
         const newSaveCount = todaySaveCountRef.current + 1;
         todaySaveCountRef.current = newSaveCount;
@@ -170,6 +208,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     // 발음 연습 일간 카운터 증가
     const incrementDailyPron = useCallback(async () => {
         if (!user?.uid) return;
+        markActiveDayIfFirst();
         const today = getToday();
         const newPronCount = todayPronCountRef.current + 1;
         todayPronCountRef.current = newPronCount;
@@ -189,6 +228,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     // Listening 지문 조회 일간 카운터 증가
     const incrementDailyListen = useCallback(async () => {
         if (!user?.uid) return;
+        markActiveDayIfFirst();
         const today = getToday();
         const newListenCount = todayListenCountRef.current + 1;
         todayListenCountRef.current = newListenCount;
@@ -210,6 +250,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     const incrementDailyGenerate = useCallback(async (kind) => {
         if (!user?.uid) return;
         if (kind !== 'translation' && kind !== 'scene' && kind !== 'vocab') return;
+        markActiveDayIfFirst();
         const today = getToday();
         const field = `${kind}GenCount`;
         try {

@@ -82,6 +82,8 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                     autoRenew: true,
                     tierSource: 'revenuecat',
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    hasEverSubscribed: true,
+                    lifecycleStage: 'subscriber',
                 };
                 if (purchasedAt) {
                     updateData.subscriptionStartedAt = admin.firestore.Timestamp.fromMillis(purchasedAt);
@@ -457,6 +459,8 @@ router.post('/api/paypal-webhook', async (req, res) => {
                     subscriptionCurrency: 'USD',
                     tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                     subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    hasEverSubscribed: true,
+                    lifecycleStage: 'subscriber',
                 };
                 if (nextBilling) {
                     updateData.subscriptionExpiresAt = admin.firestore.Timestamp.fromDate(new Date(nextBilling));

@@ -162,6 +162,8 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
                 tierUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionStartedAt: admin.firestore.FieldValue.serverTimestamp(),
                 subscriptionExpiresAt: admin.firestore.Timestamp.fromDate(expiresAt),
+                hasEverSubscribed: true,
+                lifecycleStage: 'subscriber',
             };
             await adminDb.collection('users').doc(customerKey).update(updateData);
             console.log(`[Toss] billing confirmed: ${customerKey} → ${resolvedPlanId} (${resolvedMonths}mo, expires ${expiresAt.toISOString().slice(0,10)})`);
