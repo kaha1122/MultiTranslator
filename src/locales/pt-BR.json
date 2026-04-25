@@ -1081,6 +1081,7 @@
       "success": "🎉 Você recebeu 100 pontos bônus!",
       "shareMessage": "Vamos usar o PronunFit juntos! Insira este código e ambos recebemos 100 pontos bônus!\n\n{code}\n\nBaixe o app: {url}",
       "shareTitle": "Indicação PronunFit",
+      "shareHint": "Mensagem copiada. Cole em um app de mensagens para compartilhar com seu amigo.",
       "needLoginTitle": "Cadastro necessário",
       "needLoginDesc": "O recurso de indicação está disponível após criar uma conta gratuita.",
       "signupBtn": "Criar conta gratuita",

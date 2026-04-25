@@ -1081,6 +1081,7 @@
       "success": "🎉 Du hast 100 Bonuspunkte erhalten!",
       "shareMessage": "Lass uns PronunFit zusammen nutzen! Gib diesen Code ein und wir erhalten beide 100 Bonuspunkte!\n\n{code}\n\nApp herunterladen: {url}",
       "shareTitle": "PronunFit Empfehlung",
+      "shareHint": "Nachricht kopiert. Füge sie in eine Chat-App ein, um sie mit deinem Freund zu teilen.",
       "needLoginTitle": "Anmeldung erforderlich",
       "needLoginDesc": "Die Empfehlungsfunktion ist nach der Erstellung eines kostenlosen Kontos verfügbar.",
       "signupBtn": "Kostenloses Konto erstellen",

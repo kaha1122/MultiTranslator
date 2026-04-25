@@ -1081,6 +1081,7 @@
       "success": "🎉 Vous avez reçu 100 points bonus !",
       "shareMessage": "Utilisons PronunFit ensemble ! Entrez ce code et nous recevons tous les deux 100 points bonus !\n\n{code}\n\nTélécharger l'app : {url}",
       "shareTitle": "Parrainage PronunFit",
+      "shareHint": "Message copié. Collez-le dans une appli de messagerie pour le partager avec un ami.",
       "needLoginTitle": "Inscription requise",
       "needLoginDesc": "La fonction de parrainage est disponible après la création d'un compte gratuit.",
       "signupBtn": "Créer un compte gratuit",

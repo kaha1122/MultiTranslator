@@ -28,6 +28,7 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [copiedFlash, setCopiedFlash] = useState(false);
+    const [shareHintVisible, setShareHintVisible] = useState(false);
 
     // 모달 첫 오픈 시 lazy 코드 발급/조회
     useEffect(() => {
@@ -96,31 +97,28 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
             .replace('{url}', getShareUrl());
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
 
-        // [DIAG 1.4.72] 단말 화면에 어느 분기로 빠지는지 표시 — 진단 후 제거
-        const diag = (msg) => setErrorMsg(`[diag] ${msg}`);
-        const platform = Capacitor.getPlatform();
-        const hasNavShare = typeof navigator.share === 'function';
-        diag(`platform=${platform} nav.share=${hasNavShare}`);
-
-        if (hasNavShare) {
+        // Android System WebView는 navigator.share 미노출(2026-04-26 단말 검증).
+        // 데스크탑 Chrome/Edge·iOS WKWebView 등에서는 동작할 수 있어 시도는 유지.
+        // 안드로이드 native Share 플러그인은 다음 AAB 빌드 시 cap sync 후 부활 예정.
+        if (typeof navigator.share === 'function') {
             try {
                 await navigator.share({ title, text: message });
-                diag(`nav.share OK`);
                 return;
             } catch (e) {
-                if (e?.name === 'AbortError') { diag(`nav.share aborted`); return; }
-                diag(`nav.share FAIL ${e?.name}:${e?.message}`);
+                if (e?.name === 'AbortError') return;
+                console.warn('[Referral] navigator.share failed:', e?.name, e?.message);
             }
         }
 
-        // Fallback — 클립보드
+        // Fallback — 메시지 전체를 클립보드 복사 + 사용자에게 다음 동작 안내
         try {
             await navigator.clipboard.writeText(message);
-            diag(`clipboard fallback OK (nav.share=${hasNavShare})`);
             setCopiedFlash(true);
+            setShareHintVisible(true);
             setTimeout(() => setCopiedFlash(false), 1500);
+            setTimeout(() => setShareHintVisible(false), 4000);
         } catch (e) {
-            diag(`clipboard FAIL ${e?.name}:${e?.message}`);
+            console.error('[Referral] clipboard failed:', e);
         }
     };
 
@@ -254,6 +252,16 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
                                     {t('bonus.referral.share')}
                                 </button>
                             </div>
+                            {shareHintVisible && (
+                                <div style={{
+                                    marginTop: '10px', padding: '8px 10px',
+                                    background: '#dbeafe', borderRadius: '8px',
+                                    fontSize: '0.78rem', color: '#1e40af', fontWeight: 500,
+                                    textAlign: 'center', lineHeight: 1.45,
+                                }}>
+                                    {t('bonus.referral.shareHint')}
+                                </div>
+                            )}
                         </div>
                     </motion.div>
                 </motion.div>

@@ -1121,6 +1121,7 @@
       "success": "🎉 ¡Recibiste 100 puntos bonus!",
       "shareMessage": "¡Usemos PronunFit juntos! Ingresa este código y ambos recibimos 100 puntos bonus!\n\n{code}\n\nObtén la app: {url}",
       "shareTitle": "Referido PronunFit",
+      "shareHint": "Mensaje copiado. Pégalo en una app de chat para compartirlo con tu amigo.",
       "needLoginTitle": "Registro requerido",
       "needLoginDesc": "La función de referidos está disponible después de crear una cuenta gratuita.",
       "signupBtn": "Crear cuenta gratis",
