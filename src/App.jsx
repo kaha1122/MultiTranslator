@@ -6,6 +6,7 @@ import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이�
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
 import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
+import EmailVerifyChangeModal from './components/EmailVerifyChangeModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -309,6 +310,7 @@ function App() {
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
+  const [showEmailVerifyChange, setShowEmailVerifyChange] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
   const [showExtraLangs, setShowExtraLangs] = useState(false);
@@ -2555,6 +2557,15 @@ function App() {
         sourceLang={sourceLang}
       />
 
+      {/* 이메일 인증/변경 통합 모달 */}
+      <EmailVerifyChangeModal
+        open={showEmailVerifyChange}
+        onClose={() => setShowEmailVerifyChange(false)}
+        currentEmail={user?.email}
+        isVerified={!!user?.emailVerified}
+        sourceLang={sourceLang}
+      />
+
       {/* 익명 사용자 → 가입 안내 모달 */}
       {showAnonGateModal && (
         <div style={{
@@ -4081,36 +4092,43 @@ function App() {
               </div>
 
               <form onSubmit={handleSaveProfile} className="auth-form">
-                {/* 이메일 + 인증 상태 */}
+                {/* 이메일 + 인증/변경 통합 버튼 */}
                 <div className="input-wrapper">
                   <label className="input-label">{getT(sourceLang, 'auth.email')}</label>
-                  <div className="input-group">
-                    <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
-                    <input
-                      type="email"
-                      value={user.email || ''}
-                      disabled
-                      style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0' }}
-                    />
+                  <div className="input-group" style={{ display: 'flex', gap: '6px', alignItems: 'stretch' }}>
+                    <div style={{ position: 'relative', flex: 1 }}>
+                      <Mail size={18} className="input-icon" style={{ color: '#cbd5e1' }} />
+                      <input
+                        type="email"
+                        value={user.email || ''}
+                        disabled
+                        style={{ background: '#f1f5f9', color: '#94a3b8', cursor: 'not-allowed', borderColor: '#e2e8f0', width: '100%' }}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowEmailVerifyChange(true)}
+                      style={{
+                        padding: '0 14px', borderRadius: '8px',
+                        background: user.emailVerified ? 'white' : '#2563eb',
+                        color: user.emailVerified ? '#2563eb' : 'white',
+                        border: user.emailVerified ? '1px solid #2563eb' : 'none',
+                        fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', whiteSpace: 'nowrap',
+                      }}
+                    >
+                      {user.emailVerified
+                        ? getT(sourceLang, 'auth.changeEmailBtn')
+                        : getT(sourceLang, 'auth.verifyOrChangeBtn')}
+                    </button>
                   </div>
                   {user.emailVerified ? (
                     <span style={{ fontSize: '0.75rem', color: '#16a34a', fontWeight: '600', marginLeft: '4px', display: 'flex', alignItems: 'center', gap: '3px' }}>
                       <CheckCircle2 size={13} /> {getT(sourceLang, 'auth.emailVerified')}
                     </span>
                   ) : (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '4px', marginTop: '2px' }}>
-                      <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '600' }}>⚠️ {getT(sourceLang, 'auth.emailNotVerified')}</span>
-                      {emailVerifSent ? (
-                        <span style={{ fontSize: '0.72rem', color: '#16a34a', fontWeight: '500' }}>✅ {getT(sourceLang, 'auth.verifEmailSent')}</span>
-                      ) : (
-                        <span
-                          onClick={handleSendEmailVerification}
-                          style={{ fontSize: '0.72rem', color: '#6366f1', cursor: 'pointer', fontWeight: '600', textDecoration: 'underline' }}
-                        >
-                          {getT(sourceLang, 'auth.sendVerifEmail')}
-                        </span>
-                      )}
-                    </div>
+                    <span style={{ fontSize: '0.75rem', color: '#dc2626', fontWeight: '600', marginLeft: '4px' }}>
+                      ⚠️ {getT(sourceLang, 'auth.emailNotVerified')}
+                    </span>
                   )}
                   {!user.emailVerified && (
                     <p style={{ fontSize: '0.7rem', color: '#94a3b8', marginLeft: '4px', marginTop: '1px' }}>

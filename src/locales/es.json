@@ -876,7 +876,21 @@
     "deleteAccountDesc": "Todos los datos se eliminarán permanentemente y no se podrán recuperar.",
     "deleteConfirm": "¿Seguro que desea eliminar su cuenta? Se eliminarán todos los datos de aprendizaje y suscripción.",
     "deleteConfirm2": "Confirmación final. Esta acción no se puede deshacer. ¿Eliminar su cuenta?",
-    "deleteFailed": "Error al eliminar la cuenta. Inténtelo de nuevo."
+    "deleteFailed": "Error al eliminar la cuenta. Inténtelo de nuevo.",
+    "verifyOrChangeBtn": "Verificar",
+    "changeEmailBtn": "Cambiar",
+    "emailVerifyChange": {
+      "title": "Verificar / Cambiar Email",
+      "desc": "Se enviará un email de verificación a la dirección indicada. Haz clic en el enlace del email para completar la verificación o el cambio.",
+      "emailLabel": "Email",
+      "sendBtn": "Enviar email de verificación",
+      "sending": "Enviando...",
+      "sentSame": "Email de verificación enviado. Revisa tu bandeja de entrada.",
+      "sentNew": "Email de verificación enviado a la nueva dirección. Haz clic en el enlace para completar el cambio.",
+      "alreadyVerifiedSame": "Este email ya está verificado",
+      "requiresRecentLogin": "Por seguridad, cierra sesión y vuelve a iniciar sesión, luego intenta de nuevo",
+      "cancel": "Cerrar"
+    }
   },
   "tags": {
     "emotion": {

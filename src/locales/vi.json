@@ -876,7 +876,21 @@
     "deleteAccountDesc": "Tất cả dữ liệu sẽ bị xóa vĩnh viễn và không thể khôi phục.",
     "deleteConfirm": "Bạn có chắc muốn xóa tài khoản? Tất cả dữ liệu học tập và thông tin đăng ký sẽ bị xóa.",
     "deleteConfirm2": "Xác nhận lần cuối. Hành động này không thể hoàn tác. Xóa tài khoản?",
-    "deleteFailed": "Xóa tài khoản thất bại. Vui lòng thử lại."
+    "deleteFailed": "Xóa tài khoản thất bại. Vui lòng thử lại.",
+    "verifyOrChangeBtn": "Xác thực",
+    "changeEmailBtn": "Thay đổi",
+    "emailVerifyChange": {
+      "title": "Xác thực / Thay đổi email",
+      "desc": "Email xác thực sẽ được gửi đến địa chỉ bên dưới. Nhấp vào liên kết trong email để hoàn tất xác thực hoặc thay đổi.",
+      "emailLabel": "Email",
+      "sendBtn": "Gửi email xác thực",
+      "sending": "Đang gửi...",
+      "sentSame": "Email xác thực đã gửi. Vui lòng kiểm tra hộp thư.",
+      "sentNew": "Email xác thực đã gửi đến địa chỉ mới. Nhấp vào liên kết để hoàn tất thay đổi.",
+      "alreadyVerifiedSame": "Email này đã được xác thực",
+      "requiresRecentLogin": "Vì lý do bảo mật, vui lòng đăng xuất và đăng nhập lại, sau đó thử lại",
+      "cancel": "Đóng"
+    }
   },
   "tags": {
     "emotion": {

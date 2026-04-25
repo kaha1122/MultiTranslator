@@ -886,7 +886,21 @@
     "deleteAccountDesc": "탈퇴 시 모든 데이터가 영구 삭제되며 복구할 수 없습니다.",
     "deleteConfirm": "정말 회원 탈퇴하시겠습니까? 모든 학습 데이터, 구독 정보가 삭제됩니다.",
     "deleteConfirm2": "마지막 확인입니다. 이 작업은 되돌릴 수 없습니다. 정말 탈퇴하시겠습니까?",
-    "deleteFailed": "회원 탈퇴에 실패했습니다. 다시 시도해 주세요."
+    "deleteFailed": "회원 탈퇴에 실패했습니다. 다시 시도해 주세요.",
+    "verifyOrChangeBtn": "인증",
+    "changeEmailBtn": "변경",
+    "emailVerifyChange": {
+      "title": "이메일 인증/변경",
+      "desc": "입력한 이메일로 인증 메일이 발송됩니다. 메일의 링크를 클릭하면 인증 또는 변경이 완료됩니다.",
+      "emailLabel": "이메일",
+      "sendBtn": "인증 메일 보내기",
+      "sending": "전송 중...",
+      "sentSame": "인증 메일을 보냈어요. 메일함에서 링크를 클릭해주세요.",
+      "sentNew": "새 이메일로 인증 메일을 보냈어요. 링크 클릭 시 변경이 완료됩니다.",
+      "alreadyVerifiedSame": "이미 인증된 이메일이에요",
+      "requiresRecentLogin": "보안을 위해 로그아웃 후 다시 로그인하시고 시도해주세요",
+      "cancel": "닫기"
+    }
   },
   "tags": {
     "emotion": {

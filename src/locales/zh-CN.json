@@ -837,7 +837,21 @@
     "deleteAccountDesc": "注销后所有数据将被永久删除，无法恢复。",
     "deleteConfirm": "确定要注销账号吗？所有学习数据和订阅信息将被删除。",
     "deleteConfirm2": "最后确认。此操作不可撤销。确定注销吗？",
-    "deleteFailed": "账号注销失败，请重试。"
+    "deleteFailed": "账号注销失败，请重试。",
+    "verifyOrChangeBtn": "验证",
+    "changeEmailBtn": "更改",
+    "emailVerifyChange": {
+      "title": "邮箱验证 / 更改",
+      "desc": "将向下方邮箱发送验证邮件。点击邮件中的链接即可完成验证或更改。",
+      "emailLabel": "邮箱",
+      "sendBtn": "发送验证邮件",
+      "sending": "发送中...",
+      "sentSame": "验证邮件已发送。请查收您的收件箱。",
+      "sentNew": "验证邮件已发送至新邮箱。点击链接即可完成更改。",
+      "alreadyVerifiedSame": "此邮箱已验证",
+      "requiresRecentLogin": "出于安全考虑,请退出登录后重新登录再试",
+      "cancel": "关闭"
+    }
   },
   "tags": {
     "emotion": {

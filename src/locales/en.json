@@ -886,7 +886,21 @@
     "deleteAccountDesc": "All data will be permanently deleted and cannot be recovered.",
     "deleteConfirm": "Are you sure you want to delete your account? All learning data and subscription info will be removed.",
     "deleteConfirm2": "Final confirmation. This action cannot be undone. Delete your account?",
-    "deleteFailed": "Account deletion failed. Please try again."
+    "deleteFailed": "Account deletion failed. Please try again.",
+    "verifyOrChangeBtn": "Verify",
+    "changeEmailBtn": "Change",
+    "emailVerifyChange": {
+      "title": "Verify / Change Email",
+      "desc": "A verification email will be sent to the address below. Click the link in the email to complete verification or change.",
+      "emailLabel": "Email",
+      "sendBtn": "Send verification email",
+      "sending": "Sending...",
+      "sentSame": "Verification email sent. Please check your inbox.",
+      "sentNew": "Verification email sent to the new address. Click the link to complete the change.",
+      "alreadyVerifiedSame": "This email is already verified",
+      "requiresRecentLogin": "For security, please log out and log back in, then try again",
+      "cancel": "Close"
+    }
   },
   "tags": {
     "emotion": {

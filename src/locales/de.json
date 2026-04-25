@@ -836,7 +836,21 @@
     "deleteAccountDesc": "Alle Daten werden dauerhaft gelöscht und können nicht wiederhergestellt werden.",
     "deleteConfirm": "Möchten Sie Ihr Konto wirklich löschen? Alle Lerndaten und Abo-Informationen werden gelöscht.",
     "deleteConfirm2": "Letzte Bestätigung. Diese Aktion kann nicht rückgängig gemacht werden. Konto löschen?",
-    "deleteFailed": "Kontolöschung fehlgeschlagen. Bitte versuchen Sie es erneut."
+    "deleteFailed": "Kontolöschung fehlgeschlagen. Bitte versuchen Sie es erneut.",
+    "verifyOrChangeBtn": "Verifizieren",
+    "changeEmailBtn": "Ändern",
+    "emailVerifyChange": {
+      "title": "E-Mail verifizieren / ändern",
+      "desc": "Eine Verifizierungs-E-Mail wird an die unten angegebene Adresse gesendet. Klicke auf den Link in der E-Mail, um die Verifizierung oder Änderung abzuschließen.",
+      "emailLabel": "E-Mail",
+      "sendBtn": "Verifizierungs-E-Mail senden",
+      "sending": "Wird gesendet...",
+      "sentSame": "Verifizierungs-E-Mail gesendet. Bitte prüfe deinen Posteingang.",
+      "sentNew": "Verifizierungs-E-Mail an neue Adresse gesendet. Klicke auf den Link, um die Änderung abzuschließen.",
+      "alreadyVerifiedSame": "Diese E-Mail ist bereits verifiziert",
+      "requiresRecentLogin": "Aus Sicherheitsgründen logge dich bitte aus und wieder ein, und versuche es dann erneut",
+      "cancel": "Schließen"
+    }
   },
   "tags": {
     "emotion": {

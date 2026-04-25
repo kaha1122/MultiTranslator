@@ -836,7 +836,21 @@
     "deleteAccountDesc": "Toutes les données seront définitivement supprimées et irrécupérables.",
     "deleteConfirm": "Êtes-vous sûr de vouloir supprimer votre compte ? Toutes les données d'apprentissage et d'abonnement seront supprimées.",
     "deleteConfirm2": "Confirmation finale. Cette action est irréversible. Supprimer votre compte ?",
-    "deleteFailed": "La suppression du compte a échoué. Veuillez réessayer."
+    "deleteFailed": "La suppression du compte a échoué. Veuillez réessayer.",
+    "verifyOrChangeBtn": "Vérifier",
+    "changeEmailBtn": "Modifier",
+    "emailVerifyChange": {
+      "title": "Vérifier / Modifier l'email",
+      "desc": "Un email de vérification sera envoyé à l'adresse ci-dessous. Cliquez sur le lien dans l'email pour terminer la vérification ou la modification.",
+      "emailLabel": "Email",
+      "sendBtn": "Envoyer l'email de vérification",
+      "sending": "Envoi...",
+      "sentSame": "Email de vérification envoyé. Vérifiez votre boîte de réception.",
+      "sentNew": "Email de vérification envoyé à la nouvelle adresse. Cliquez sur le lien pour terminer la modification.",
+      "alreadyVerifiedSame": "Cet email est déjà vérifié",
+      "requiresRecentLogin": "Pour des raisons de sécurité, déconnectez-vous et reconnectez-vous, puis réessayez",
+      "cancel": "Fermer"
+    }
   },
   "tags": {
     "emotion": {
