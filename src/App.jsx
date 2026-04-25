@@ -584,12 +584,18 @@ function App() {
     // bonusOnly 모드 (예: 발음 평가) — 보너스 없으면 패스 (일반 trial 인터스티셜 빈도 ↑ 방지)
     if (options.bonusOnly) return;
 
-    if (!adsReady()) return;
-
+    // 점수는 항상 누적 (웹·광고미준비 환경에서도 헤더 카운터 표시 위해)
     const prev = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
     const next = prev + points;
 
     if (next < AD_POINT_THRESHOLD) {
+      setAdPoints(next);
+      return;
+    }
+
+    // 임계 도달 — 광고 표시 가능한 경우만 인터스티셜 시도
+    if (!adsReady()) {
+      // 웹/광고 미준비: 누적값 유지 (다음 액션 시 재시도, 카운터는 0으로 보임)
       setAdPoints(next);
       return;
     }
@@ -2881,7 +2887,7 @@ function App() {
           {tier === 'trial' && !hasBonusActive && (
             <span style={{
               color: '#dc2626', fontWeight: 700, fontSize: '0.95rem',
-              minWidth: '20px', textAlign: 'center', userSelect: 'none',
+              marginLeft: '24px', minWidth: '20px', textAlign: 'center', userSelect: 'none',
             }}>
               {Math.max(0, AD_POINT_THRESHOLD - adPointsState)}
             </span>
