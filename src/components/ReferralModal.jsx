@@ -96,26 +96,31 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
             .replace('{url}', getShareUrl());
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
 
-        // Web Share API — Capacitor Android WebView(Chromium) 및 iOS WKWebView 모두 지원
-        // @capacitor/share 네이티브 플러그인은 cap sync + AAB 재빌드가 필요해 Capgo OTA로는 적용 불가.
-        // navigator.share를 직접 호출하면 user activation을 잃지 않고 시스템 공유 시트가 뜬다.
-        if (typeof navigator.share === 'function') {
+        // [DIAG 1.4.72] 단말 화면에 어느 분기로 빠지는지 표시 — 진단 후 제거
+        const diag = (msg) => setErrorMsg(`[diag] ${msg}`);
+        const platform = Capacitor.getPlatform();
+        const hasNavShare = typeof navigator.share === 'function';
+        diag(`platform=${platform} nav.share=${hasNavShare}`);
+
+        if (hasNavShare) {
             try {
                 await navigator.share({ title, text: message });
+                diag(`nav.share OK`);
                 return;
             } catch (e) {
-                if (e?.name === 'AbortError') return;
-                console.warn('[Referral] navigator.share failed:', e?.name, e?.message);
+                if (e?.name === 'AbortError') { diag(`nav.share aborted`); return; }
+                diag(`nav.share FAIL ${e?.name}:${e?.message}`);
             }
         }
 
-        // Fallback — 데스크탑 등 Web Share 미지원 환경: 메시지 전체를 클립보드로 복사
+        // Fallback — 클립보드
         try {
             await navigator.clipboard.writeText(message);
+            diag(`clipboard fallback OK (nav.share=${hasNavShare})`);
             setCopiedFlash(true);
             setTimeout(() => setCopiedFlash(false), 1500);
         } catch (e) {
-            console.error('[Referral] clipboard also failed:', e);
+            diag(`clipboard FAIL ${e?.name}:${e?.message}`);
         }
     };
 
