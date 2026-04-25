@@ -7,17 +7,15 @@ import { authFetch } from '../utils/authFetch';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
-const APP_STORE_URL = 'https://apps.apple.com/app/id6761342764';
 const WEB_URL = 'https://multi-translator-seven.vercel.app/';
 
 // 공유 시 첨부할 앱 설치 링크 — A의 플랫폼 + (웹의 경우) 브라우저 UA 기준
+// iOS 앱 미출시 상태이므로 iOS 사용자는 Web URL (웹앱 사용 가능)
 function getShareUrl() {
     if (Capacitor.getPlatform() === 'android') return PLAY_STORE_URL;
-    if (Capacitor.getPlatform() === 'ios') return APP_STORE_URL;
-    // 웹: User-Agent 기반 라우팅 (Android 모바일 → Play Store, iOS Safari → App Store, 그 외 → Web URL)
+    if (Capacitor.getPlatform() === 'ios') return WEB_URL;
     const ua = navigator.userAgent || '';
     if (/Android/i.test(ua)) return PLAY_STORE_URL;
-    if (/iPhone|iPad|iPod/i.test(ua)) return APP_STORE_URL;
     return WEB_URL;
 }
 
