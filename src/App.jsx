@@ -2695,9 +2695,7 @@ function App() {
                 {getT(sourceLang, 'nav.stats')}
               </button>
 
-              <div className="sidebar-divider" />
-
-              {/* 추가 학습 (Trial 전용 + 네이티브) */}
+              {/* 추가 학습 (Trial 전용 + 네이티브) — 보일 때만 위/아래 divider 노출 */}
               {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -2750,8 +2748,6 @@ function App() {
                   )}
                 </div>
               )}
-
-              <div className="sidebar-divider" />
 
               {/* 구독 플랜 섹션 */}
               <div style={{ padding: '8px 12px 4px' }}>
@@ -2820,7 +2816,7 @@ function App() {
                 )}
               </div>
 
-
+              <div className="sidebar-divider" />
 
               {/* 설정 */}
               <button className={`sidebar-nav-item sidebar-nav-util ${viewMode === 'settings' ? 'active' : ''}`}
