@@ -525,7 +525,8 @@
     "settings": "Paramètres",
     "studyMore": "Étude sup.",
     "subscriptionTitle": "Abonnement",
-    "listening": "03.Écoute"
+    "listening": "03.Écoute",
+    "bonusTitle": "Bonus"
   },
   "stats": {
     "weekRate": "Taux hebdo",
@@ -1044,5 +1045,9 @@
     "th": "Thaï",
     "tr": "Turc",
     "uk": "Ukrainien"
+  },
+  "bonus": {
+    "label": "Bonus",
+    "noInterstitialAd": "Pas de pub interstitielle"
   }
 }

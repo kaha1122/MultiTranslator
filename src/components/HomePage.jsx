@@ -260,7 +260,6 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
-                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
                 </div>
 
                 {/* 발음 연습 */}
@@ -274,7 +273,6 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
-                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
                 </div>
 
                 {/* 듣기 조회 */}
@@ -288,7 +286,6 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
-                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
                 </div>
             </div>
 

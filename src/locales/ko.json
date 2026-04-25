@@ -22,18 +22,18 @@
     "reminderOn": "매일 리마인더가 설정되었습니다.",
     "reminderOnAt": "⏰ 매일 {time}에 알림을 보냅니다.",
     "subEvent": {
-        "renewalTitle": "구독 갱신 완료",
-        "renewalBody": "구독이 갱신되었습니다. 계속 이용해 주셔서 감사합니다.",
-        "expirationTitle": "구독 만료",
-        "expirationBody": "구독이 만료되었습니다. 계속 학습하시려면 갱신이 필요합니다.",
-        "billingIssueTitle": "결제 문제 발생",
-        "billingIssueBody": "결제에 실패했습니다. 재결제가 필요합니다.",
-        "cancellationTitle": "자동 갱신 해제",
-        "cancellationBody": "만료일까지는 계속 이용하실 수 있습니다.",
-        "btnConfirm": "확인",
-        "btnLater": "나중에",
-        "btnRenew": "갱신하기",
-        "btnRetry": "재결제"
+      "renewalTitle": "구독 갱신 완료",
+      "renewalBody": "구독이 갱신되었습니다. 계속 이용해 주셔서 감사합니다.",
+      "expirationTitle": "구독 만료",
+      "expirationBody": "구독이 만료되었습니다. 계속 학습하시려면 갱신이 필요합니다.",
+      "billingIssueTitle": "결제 문제 발생",
+      "billingIssueBody": "결제에 실패했습니다. 재결제가 필요합니다.",
+      "cancellationTitle": "자동 갱신 해제",
+      "cancellationBody": "만료일까지는 계속 이용하실 수 있습니다.",
+      "btnConfirm": "확인",
+      "btnLater": "나중에",
+      "btnRenew": "갱신하기",
+      "btnRetry": "재결제"
     },
     "reminderOff": "매일 리마인더가 해제되었습니다.",
     "scheduleFailed": "설정 실패. 권한을 확인해 주세요.",
@@ -535,7 +535,8 @@
     "settings": "설정",
     "studyMore": "추가 학습",
     "subscriptionTitle": "구독 플랜",
-    "listening": "03.듣기연습"
+    "listening": "03.듣기연습",
+    "bonusTitle": "보너스"
   },
   "stats": {
     "weekRate": "주간 달성률",
@@ -1094,5 +1095,9 @@
     "th": "태국어",
     "tr": "터키어",
     "uk": "우크라이나어"
+  },
+  "bonus": {
+    "label": "보너스",
+    "noInterstitialAd": "전면광고 제거"
   }
 }

@@ -525,7 +525,8 @@
     "settings": "Einstellungen",
     "studyMore": "Mehr lernen",
     "subscriptionTitle": "Abonnement",
-    "listening": "03.Hörübung"
+    "listening": "03.Hörübung",
+    "bonusTitle": "Bonus"
   },
   "stats": {
     "weekRate": "Wochenquote",
@@ -1044,5 +1045,9 @@
     "th": "Thailändisch",
     "tr": "Türkisch",
     "uk": "Ukrainisch"
+  },
+  "bonus": {
+    "label": "Bonus",
+    "noInterstitialAd": "Keine Interstitial-Werbung"
   }
 }

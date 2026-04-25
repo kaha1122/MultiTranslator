@@ -525,7 +525,8 @@
     "settings": "Configurações",
     "studyMore": "Mais estudo",
     "subscriptionTitle": "Assinatura",
-    "listening": "03.Compreensão auditiva"
+    "listening": "03.Compreensão auditiva",
+    "bonusTitle": "Bônus"
   },
   "stats": {
     "weekRate": "Taxa Semanal",
@@ -1044,5 +1045,9 @@
     "th": "Tailandês",
     "tr": "Turco",
     "uk": "Ucraniano"
+  },
+  "bonus": {
+    "label": "Bônus",
+    "noInterstitialAd": "Sem anúncios intersticiais"
   }
 }

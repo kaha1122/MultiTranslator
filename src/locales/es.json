@@ -525,7 +525,8 @@
     "settings": "Configuración",
     "studyMore": "Más estudio",
     "subscriptionTitle": "Suscripción",
-    "listening": "03.Escucha"
+    "listening": "03.Escucha",
+    "bonusTitle": "Bono"
   },
   "stats": {
     "weekRate": "Tasa semanal",
@@ -1084,5 +1085,9 @@
     "th": "Tailandés",
     "tr": "Turco",
     "uk": "Ucraniano"
+  },
+  "bonus": {
+    "label": "Bono",
+    "noInterstitialAd": "Sin anuncios intersticiales"
   }
 }

@@ -525,7 +525,8 @@
     "settings": "Cài đặt",
     "studyMore": "Học thêm",
     "subscriptionTitle": "Gói đăng ký",
-    "listening": "03.Nghe"
+    "listening": "03.Nghe",
+    "bonusTitle": "Tiền thưởng"
   },
   "stats": {
     "weekRate": "Tỷ lệ tuần",
@@ -1084,5 +1085,9 @@
     "th": "Tiếng Thái",
     "tr": "Tiếng Thổ Nhĩ Kỳ",
     "uk": "Tiếng Ukraina"
+  },
+  "bonus": {
+    "label": "Tiền thưởng",
+    "noInterstitialAd": "Không có quảng cáo chuyển tiếp"
   }
 }

@@ -526,7 +526,8 @@
     "settings": "設定",
     "studyMore": "追加学習",
     "subscriptionTitle": "プラン",
-    "listening": "03.リスニング"
+    "listening": "03.リスニング",
+    "bonusTitle": "ボーナス"
   },
   "stats": {
     "weekRate": "週間達成率",
@@ -1085,5 +1086,9 @@
     "th": "タイ語",
     "tr": "トルコ語",
     "uk": "ウクライナ語"
+  },
+  "bonus": {
+    "label": "ボーナス",
+    "noInterstitialAd": "全画面広告なし"
   }
 }

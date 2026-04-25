@@ -22,18 +22,18 @@
     "reminderOn": "Daily reminder scheduled.",
     "reminderOnAt": "⏰ Daily reminder set for {time}.",
     "subEvent": {
-        "renewalTitle": "Subscription Renewed",
-        "renewalBody": "Your subscription has been renewed. Thank you for your continued support.",
-        "expirationTitle": "Subscription Expired",
-        "expirationBody": "Your subscription has expired. Renew to keep learning.",
-        "billingIssueTitle": "Payment Issue",
-        "billingIssueBody": "Payment failed. Please try again.",
-        "cancellationTitle": "Auto-renew Cancelled",
-        "cancellationBody": "You can keep using until the expiration date.",
-        "btnConfirm": "OK",
-        "btnLater": "Later",
-        "btnRenew": "Renew",
-        "btnRetry": "Try again"
+      "renewalTitle": "Subscription Renewed",
+      "renewalBody": "Your subscription has been renewed. Thank you for your continued support.",
+      "expirationTitle": "Subscription Expired",
+      "expirationBody": "Your subscription has expired. Renew to keep learning.",
+      "billingIssueTitle": "Payment Issue",
+      "billingIssueBody": "Payment failed. Please try again.",
+      "cancellationTitle": "Auto-renew Cancelled",
+      "cancellationBody": "You can keep using until the expiration date.",
+      "btnConfirm": "OK",
+      "btnLater": "Later",
+      "btnRenew": "Renew",
+      "btnRetry": "Try again"
     },
     "reminderOff": "Daily reminder turned off.",
     "scheduleFailed": "Failed to schedule. Check permissions.",
@@ -535,7 +535,8 @@
     "settings": "Settings",
     "studyMore": "Study More",
     "subscriptionTitle": "Subscribe",
-    "listening": "03.Listening"
+    "listening": "03.Listening",
+    "bonusTitle": "Bonus"
   },
   "stats": {
     "weekRate": "Weekly Rate",
@@ -1094,5 +1095,9 @@
     "th": "Thai",
     "tr": "Turkish",
     "uk": "Ukrainian"
+  },
+  "bonus": {
+    "label": "Bonus",
+    "noInterstitialAd": "No interstitial ad"
   }
 }

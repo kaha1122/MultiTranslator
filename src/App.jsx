@@ -2795,21 +2795,26 @@ function App() {
                   </div>
                 </button>
 
-                {/* 보너스 포인트 — Pro/Premium 동일 크기, 활성 시만 노출 */}
+              </div>
+
+              {/* 보너스 섹션 — 구독 섹션과 동일한 회색톤 헤더, 활성 시만 카드 표시 */}
+              <div style={{ padding: '8px 12px 4px' }}>
+                <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                  {getT(sourceLang, 'nav.bonusTitle') || 'Bonus'}
+                </p>
                 {hasBonusActive && (
                   <div style={{
                     width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
-                    borderRadius: '12px', background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
-                    border: '1px solid #d8b4fe', textAlign: 'left',
+                    borderRadius: '12px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                    border: '1px solid #93c5fd', textAlign: 'left',
                   }}>
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#7c3aed' }}>🎁 보너스 {bonusPoints}pt</span>
-                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7c3aed', background: '#e9d5ff', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                        광고 면제
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1d4ed8' }}>
+                        🎁 {getT(sourceLang, 'bonus.label') || 'Bonus'} {bonusPoints}pt
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#9333ea' }}>
-                      한도 무시 · 인터스티셜 차단
+                    <div style={{ fontSize: '0.72rem', color: '#2563eb' }}>
+                      {getT(sourceLang, 'bonus.noInterstitialAd') || 'No interstitial ad'}
                     </div>
                   </div>
                 )}
@@ -2882,7 +2887,7 @@ function App() {
           {/* 광고까지 남은 점수 (보너스 + 인터스티셜 통합) — Trial 일 때만 표시 */}
           {tier === 'trial' && (
             <span style={{
-              color: '#dc2626', fontWeight: 700, fontSize: '0.95rem',
+              color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
               marginLeft: '24px', minWidth: '20px', textAlign: 'center', userSelect: 'none',
             }}>
               {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}

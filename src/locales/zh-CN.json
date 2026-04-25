@@ -526,7 +526,8 @@
     "settings": "设置",
     "studyMore": "额外学习",
     "subscriptionTitle": "订阅计划",
-    "listening": "03.听力练习"
+    "listening": "03.听力练习",
+    "bonusTitle": "奖励"
   },
   "stats": {
     "weekRate": "周达成率",
@@ -1045,5 +1046,9 @@
     "th": "泰语",
     "tr": "土耳其语",
     "uk": "乌克兰语"
+  },
+  "bonus": {
+    "label": "奖励",
+    "noInterstitialAd": "无插屏广告"
   }
 }
