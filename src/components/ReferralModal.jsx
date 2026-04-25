@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Copy, Share2 } from 'lucide-react';
-import { Capacitor } from '@capacitor/core';
 import { useT } from '../utils/i18n';
 import { authFetch } from '../utils/authFetch';
 
@@ -9,14 +8,13 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
 const WEB_URL = 'https://multi-translator-seven.vercel.app/';
 
-// 공유 시 첨부할 앱 설치 링크 — A의 플랫폼 + (웹의 경우) 브라우저 UA 기준
-// iOS 앱 미출시 상태이므로 iOS 사용자는 Web URL (웹앱 사용 가능)
-function getShareUrl() {
-    if (Capacitor.getPlatform() === 'android') return PLAY_STORE_URL;
-    if (Capacitor.getPlatform() === 'ios') return WEB_URL;
-    const ua = navigator.userAgent || '';
-    if (/Android/i.test(ua)) return PLAY_STORE_URL;
-    return WEB_URL;
+// 공유 URL은 "받는 친구의 단말" 기준으로 결정. 발신자가 친구 단말을 알고 직접 버튼을 고름.
+// (예전엔 발신자 플랫폼으로 분기했으나, Android 발신자 → iPhone 수신자 시 Play Store 링크가
+//  iPhone에서 죽은 링크가 되는 문제가 있어 사용자 명시 선택 방식으로 변경. 2026-04-26)
+// target: 'android' = 받는 친구가 Android(갤럭시 등) → Play Store
+//         'iosweb'  = 받는 친구가 iPhone 또는 PC/웹 사용자 → Web URL (iOS 앱 출시 후 App Store URL로 교체)
+function getShareUrl(target) {
+    return target === 'android' ? PLAY_STORE_URL : WEB_URL;
 }
 
 export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) {
@@ -91,10 +89,11 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
         } catch {}
     };
 
-    const handleShare = async () => {
+    // target: 'android' | 'iosweb' — 받는 친구의 단말 기준
+    const handleShare = async (target) => {
         const message = (t('bonus.referral.shareMessage') || 'Code: {code}\n{url}')
             .replace('{code}', myCode)
-            .replace('{url}', getShareUrl());
+            .replace('{url}', getShareUrl(target));
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
 
         // Android System WebView는 navigator.share 미노출(2026-04-26 단말 검증).
@@ -222,34 +221,61 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
                             }}>
                                 {loadingCode ? '...' : (myCode || '—')}
                             </div>
+                            {/* 코드 복사 — 코드 6자리만 클립보드 (단순 사용) */}
+                            <button
+                                onClick={handleCopy}
+                                disabled={!myCode}
+                                style={{
+                                    width: '100%', padding: '10px', borderRadius: '8px',
+                                    background: 'white', border: '1px solid #93c5fd',
+                                    color: '#1d4ed8', fontWeight: 600, fontSize: '0.85rem',
+                                    cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                    justifyContent: 'center', gap: '4px',
+                                    marginBottom: '8px',
+                                }}
+                            >
+                                <Copy size={14} />
+                                {copiedFlash ? t('bonus.referral.copied') : t('bonus.referral.copy')}
+                            </button>
+
+                            {/* 받는 친구의 단말에 맞는 URL 분기 안내 */}
+                            <div style={{
+                                fontSize: '0.7rem', color: '#475569', textAlign: 'center',
+                                marginBottom: '6px', fontWeight: 500,
+                            }}>
+                                💡 {t('bonus.referral.sharePickHint')}
+                            </div>
+
                             <div style={{ display: 'flex', gap: '8px' }}>
+                                {/* 왼쪽: 받는 친구가 iPhone 또는 PC/웹 사용자 → Web URL */}
                                 <button
-                                    onClick={handleCopy}
+                                    onClick={() => handleShare('iosweb')}
                                     disabled={!myCode}
                                     style={{
-                                        flex: 1, padding: '10px', borderRadius: '8px',
-                                        background: 'white', border: '1px solid #93c5fd',
-                                        color: '#1d4ed8', fontWeight: 600, fontSize: '0.85rem',
-                                        cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                        justifyContent: 'center', gap: '4px',
-                                    }}
-                                >
-                                    <Copy size={14} />
-                                    {copiedFlash ? t('bonus.referral.copied') : t('bonus.referral.copy')}
-                                </button>
-                                <button
-                                    onClick={handleShare}
-                                    disabled={!myCode}
-                                    style={{
-                                        flex: 1, padding: '10px', borderRadius: '8px',
+                                        flex: 1, padding: '10px 8px', borderRadius: '8px',
                                         background: '#2563eb', border: 'none',
-                                        color: 'white', fontWeight: 600, fontSize: '0.85rem',
+                                        color: 'white', fontWeight: 600, fontSize: '0.82rem',
                                         cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                        justifyContent: 'center', gap: '4px',
+                                        justifyContent: 'center', gap: '4px', lineHeight: 1.2,
                                     }}
                                 >
-                                    <Share2 size={14} />
-                                    {t('bonus.referral.share')}
+                                    <Share2 size={13} />
+                                    {t('bonus.referral.shareIosWeb')}
+                                </button>
+                                {/* 오른쪽: 받는 친구가 Android(갤럭시 등) → Play Store URL */}
+                                <button
+                                    onClick={() => handleShare('android')}
+                                    disabled={!myCode}
+                                    style={{
+                                        flex: 1, padding: '10px 8px', borderRadius: '8px',
+                                        background: '#2563eb', border: 'none',
+                                        color: 'white', fontWeight: 600, fontSize: '0.82rem',
+                                        cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                        justifyContent: 'center', gap: '4px', lineHeight: 1.2,
+                                    }}
+                                >
+                                    <Share2 size={13} />
+                                    {t('bonus.referral.shareAndroid')}
                                 </button>
                             </div>
                             {shareHintVisible && (
