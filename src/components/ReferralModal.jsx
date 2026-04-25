@@ -1,6 +1,19 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Copy, Share2 } from 'lucide-react';
+import { X, Copy } from 'lucide-react';
+
+// Apple 로고 (iPhone 브랜드 마크) — lucide-react는 trademark로 미제공, 인라인 SVG
+const AppleIcon = ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z"/>
+    </svg>
+);
+// Android 로봇 마크
+const AndroidIcon = ({ size = 14 }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+        <path d="M17.523 15.34c-.553 0-1-.447-1-1s.447-1 1-1 1 .447 1 1-.447 1-1 1m-11.046 0c-.553 0-1-.447-1-1s.447-1 1-1 1 .447 1 1-.447 1-1 1m11.405-6.402l1.997-3.46a.413.413 0 0 0-.151-.564.412.412 0 0 0-.564.151l-2.022 3.503C15.595 7.85 13.85 7.4 12 7.4c-1.85 0-3.595.45-5.142 1.168L4.836 5.065a.412.412 0 0 0-.564-.151.413.413 0 0 0-.151.564l1.997 3.46C2.69 10.665.5 14.012.5 17.832h23c0-3.82-2.19-7.167-5.618-8.894"/>
+    </svg>
+);
 import { useT } from '../utils/i18n';
 import { authFetch } from '../utils/authFetch';
 
@@ -253,13 +266,13 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
                                     disabled={!myCode}
                                     style={{
                                         flex: 1, padding: '10px 8px', borderRadius: '8px',
-                                        background: '#2563eb', border: 'none',
-                                        color: 'white', fontWeight: 600, fontSize: '0.82rem',
+                                        background: '#1d1d1f', border: 'none',
+                                        color: 'white', fontWeight: 600, fontSize: '0.85rem',
                                         cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                        justifyContent: 'center', gap: '4px', lineHeight: 1.2,
+                                        justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    <Share2 size={13} />
+                                    <AppleIcon size={15} />
                                     {t('bonus.referral.shareIosWeb')}
                                 </button>
                                 {/* 오른쪽: 받는 친구가 Android(갤럭시 등) → Play Store URL */}
@@ -268,13 +281,13 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
                                     disabled={!myCode}
                                     style={{
                                         flex: 1, padding: '10px 8px', borderRadius: '8px',
-                                        background: '#2563eb', border: 'none',
-                                        color: 'white', fontWeight: 600, fontSize: '0.82rem',
+                                        background: '#3DDC84', border: 'none',
+                                        color: 'white', fontWeight: 600, fontSize: '0.85rem',
                                         cursor: 'pointer', display: 'flex', alignItems: 'center',
-                                        justifyContent: 'center', gap: '4px', lineHeight: 1.2,
+                                        justifyContent: 'center', gap: '6px', whiteSpace: 'nowrap',
                                     }}
                                 >
-                                    <Share2 size={13} />
+                                    <AndroidIcon size={15} />
                                     {t('bonus.referral.shareAndroid')}
                                 </button>
                             </div>
