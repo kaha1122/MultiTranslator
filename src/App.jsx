@@ -1301,16 +1301,17 @@ function App() {
     setShowAiConsent(true);
   }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
 
-  // 보너스 캠페인 출시 안내 — onboarding 완료 + lifecycleStage 있는 사용자에게 1회 표시
+  // 보너스 캠페인 출시 안내 — lifecycleStage 있는 사용자에게 1회 표시
+  // lifecycleStage non-null = Generate 1회 이상 = 온보딩 통과한 활성 유저
+  // (hasCompletedOnboarding 필드는 legacy 유저에게 false로 남아있을 수 있어 사용 X)
   useEffect(() => {
     if (!user?.uid || !profile) return;
-    if (profile.hasCompletedOnboarding !== true) return;
-    if (!profile.lifecycleStage) return; // null인 사용자 제외 (Generate 한 번도 안 한 신규)
+    if (!profile.lifecycleStage) return; // null/undefined인 사용자 제외 (Generate 한 번도 안 한 신규)
     if (profile.bonusCampaignSeenAt) return; // 이미 표시함
     // 다른 모달 충돌 방지 — 약간의 지연 후 노출
     const timer = setTimeout(() => setShowBonusCampaign(true), 1500);
     return () => clearTimeout(timer);
-  }, [user?.uid, profile?.hasCompletedOnboarding, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
+  }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
 
   // 캠페인 모달 dismiss — Firestore에 표시 완료 시각 기록
   const dismissBonusCampaign = useCallback(async () => {
