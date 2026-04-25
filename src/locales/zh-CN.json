@@ -1072,6 +1072,19 @@
       "needLoginDesc": "推荐功能在创建免费账号后可用。",
       "signupBtn": "创建免费账号",
       "cancel": "取消"
+    },
+    "reviewBtn": "🌟 评价 + 100pt",
+    "review": {
+      "title": "一句评价获得100pt",
+      "desc": "在Google Play留下评价后点击[完成]按钮,立即获得100奖励积分!",
+      "openStore": "在Google Play写评价",
+      "confirm": "完成 — 获得100pt",
+      "success": "🎉 您获得了100奖励积分!",
+      "alreadyClaimed": "已领取",
+      "skippedProTitle": "Pro用户已拥有所有权益",
+      "skippedProDesc": "订阅期间不需要奖励积分。请在免费版本下重试。",
+      "needLogin": "请先注册账号",
+      "cancel": "取消"
     }
   }
 }

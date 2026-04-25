@@ -1121,6 +1121,19 @@
       "needLoginDesc": "Referral feature is available after creating a free account.",
       "signupBtn": "Create free account",
       "cancel": "Cancel"
+    },
+    "reviewBtn": "🌟 Review + 100pt",
+    "review": {
+      "title": "Get 100pt for a quick review",
+      "desc": "Leave a review on Google Play and tap [Done] — 100 bonus points instantly!",
+      "openStore": "Write a review on Google Play",
+      "confirm": "Done — Get 100pt",
+      "success": "🎉 You got 100 bonus points!",
+      "alreadyClaimed": "Already claimed",
+      "skippedProTitle": "Pro users already have all benefits",
+      "skippedProDesc": "Bonus points aren't needed while subscribed. Try again after the free tier.",
+      "needLogin": "Please sign up first",
+      "cancel": "Cancel"
     }
   }
 }

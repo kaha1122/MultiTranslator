@@ -1071,6 +1071,19 @@
       "needLoginDesc": "La fonction de parrainage est disponible après la création d'un compte gratuit.",
       "signupBtn": "Créer un compte gratuit",
       "cancel": "Annuler"
+    },
+    "reviewBtn": "🌟 Avis + 100pt",
+    "review": {
+      "title": "100pt pour un avis rapide",
+      "desc": "Laissez un avis sur Google Play puis appuyez sur [Terminé] — 100 points bonus instantanément !",
+      "openStore": "Écrire un avis sur Google Play",
+      "confirm": "Terminé — Recevoir 100pt",
+      "success": "🎉 Vous avez reçu 100 points bonus !",
+      "alreadyClaimed": "Déjà récupéré",
+      "skippedProTitle": "Les utilisateurs Pro ont déjà tous les avantages",
+      "skippedProDesc": "Les points bonus ne sont pas nécessaires pendant l'abonnement. Réessayez en plan gratuit.",
+      "needLogin": "Veuillez créer un compte d'abord",
+      "cancel": "Annuler"
     }
   }
 }

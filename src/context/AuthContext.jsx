@@ -575,6 +575,7 @@ export const AuthProvider = ({ children }) => {
             incrementTrialCard, incrementSavedCard, incrementPronCount,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
             bonusPoints, hasBonusActive, consumeBonusPoints,
+            reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
             upgradeAnonymous,

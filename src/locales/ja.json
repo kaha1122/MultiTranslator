@@ -1112,6 +1112,19 @@
       "needLoginDesc": "紹介機能は無料アカウント登録後にご利用いただけます。",
       "signupBtn": "無料アカウント作成",
       "cancel": "キャンセル"
+    },
+    "reviewBtn": "🌟 レビュー + 100pt",
+    "review": {
+      "title": "レビュー一言で100pt獲得",
+      "desc": "Google Playにレビューを投稿してから [完了] ボタンを押してください。100ボーナスポイント即時付与！",
+      "openStore": "Google Playでレビューを書く",
+      "confirm": "完了 — 100pt獲得",
+      "success": "🎉 100ボーナスポイントを獲得しました！",
+      "alreadyClaimed": "獲得済み",
+      "skippedProTitle": "Proユーザーはすでに全特典をお持ちです",
+      "skippedProDesc": "購読中はボーナスポイント不要です。無料プランでお試しください。",
+      "needLogin": "アカウント登録が必要です",
+      "cancel": "キャンセル"
     }
   }
 }

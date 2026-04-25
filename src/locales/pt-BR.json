@@ -1071,6 +1071,19 @@
       "needLoginDesc": "O recurso de indicação está disponível após criar uma conta gratuita.",
       "signupBtn": "Criar conta gratuita",
       "cancel": "Cancelar"
+    },
+    "reviewBtn": "🌟 Avaliação + 100pt",
+    "review": {
+      "title": "100pt por uma avaliação rápida",
+      "desc": "Deixe uma avaliação na Google Play e toque em [Concluído] — 100 pontos bônus na hora!",
+      "openStore": "Escrever avaliação na Google Play",
+      "confirm": "Concluído — Receber 100pt",
+      "success": "🎉 Você recebeu 100 pontos bônus!",
+      "alreadyClaimed": "Já resgatado",
+      "skippedProTitle": "Usuários Pro já têm todos os benefícios",
+      "skippedProDesc": "Pontos bônus não são necessários durante a assinatura. Tente novamente no plano gratuito.",
+      "needLogin": "Por favor, registre-se primeiro",
+      "cancel": "Cancelar"
     }
   }
 }

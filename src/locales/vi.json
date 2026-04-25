@@ -1111,6 +1111,19 @@
       "needLoginDesc": "Tính năng giới thiệu khả dụng sau khi tạo tài khoản miễn phí.",
       "signupBtn": "Tạo tài khoản miễn phí",
       "cancel": "Hủy"
+    },
+    "reviewBtn": "🌟 Đánh giá + 100pt",
+    "review": {
+      "title": "Nhận 100pt cho đánh giá ngắn",
+      "desc": "Để lại đánh giá trên Google Play rồi nhấn [Hoàn tất] — 100 điểm thưởng ngay lập tức!",
+      "openStore": "Viết đánh giá trên Google Play",
+      "confirm": "Hoàn tất — Nhận 100pt",
+      "success": "🎉 Bạn đã nhận 100 điểm thưởng!",
+      "alreadyClaimed": "Đã nhận",
+      "skippedProTitle": "Người dùng Pro đã có mọi đặc quyền",
+      "skippedProDesc": "Không cần điểm thưởng khi đang đăng ký. Hãy thử lại ở gói miễn phí.",
+      "needLogin": "Vui lòng đăng ký trước",
+      "cancel": "Hủy"
     }
   }
 }

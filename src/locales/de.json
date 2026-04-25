@@ -1071,6 +1071,19 @@
       "needLoginDesc": "Die Empfehlungsfunktion ist nach der Erstellung eines kostenlosen Kontos verfügbar.",
       "signupBtn": "Kostenloses Konto erstellen",
       "cancel": "Abbrechen"
+    },
+    "reviewBtn": "🌟 Bewertung + 100pt",
+    "review": {
+      "title": "100pt für eine kurze Bewertung",
+      "desc": "Hinterlasse eine Bewertung im Google Play und tippe auf [Fertig] — 100 Bonuspunkte sofort!",
+      "openStore": "Bewertung im Google Play schreiben",
+      "confirm": "Fertig — 100pt erhalten",
+      "success": "🎉 Du hast 100 Bonuspunkte erhalten!",
+      "alreadyClaimed": "Bereits eingelöst",
+      "skippedProTitle": "Pro-Nutzer haben bereits alle Vorteile",
+      "skippedProDesc": "Bonuspunkte werden während des Abonnements nicht benötigt. Versuche es im kostenlosen Tarif erneut.",
+      "needLogin": "Bitte registriere dich zuerst",
+      "cancel": "Abbrechen"
     }
   }
 }

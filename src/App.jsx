@@ -4,6 +4,7 @@ import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2,
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
+import ReviewBonusModal from './components/ReviewBonusModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -108,6 +109,7 @@ function App() {
     incrementTrialCard, incrementSavedCard,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
+    reviewBonusClaimed,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
 
@@ -303,6 +305,7 @@ function App() {
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
@@ -2505,6 +2508,17 @@ function App() {
         }}
       />
 
+      {/* 리뷰 보상 모달 */}
+      <ReviewBonusModal
+        open={showReviewBonusModal}
+        onClose={() => setShowReviewBonusModal(false)}
+        sourceLang={sourceLang}
+        alreadyClaimed={reviewBonusClaimed}
+        onSuccess={() => {
+          setTimeout(() => setShowReviewBonusModal(false), 2000);
+        }}
+      />
+
       {/* 익명 사용자 → 가입 안내 모달 */}
       {showAnonGateModal && (
         <div style={{
@@ -2887,6 +2901,30 @@ function App() {
                   }}>
                   {getT(sourceLang, 'bonus.referralBtn') || '🤝 Refer a friend + 100pt'}
                 </button>
+
+                {/* 리뷰 보상 버튼 — iOS는 정책상 비노출 (Apple 5.6.1) */}
+                {Capacitor.getPlatform() !== 'ios' && (
+                  <button
+                    onClick={() => {
+                      setSidebarOpen(false);
+                      if (user?.isAnonymous) {
+                        setShowAnonGateModal(true);
+                      } else {
+                        setShowReviewBonusModal(true);
+                      }
+                    }}
+                    style={{
+                      width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
+                      borderRadius: '12px', background: 'white',
+                      border: '1.5px dashed #93c5fd', cursor: 'pointer', textAlign: 'left',
+                      color: '#1d4ed8', fontSize: '0.82rem', fontWeight: 700,
+                      opacity: reviewBonusClaimed ? 0.5 : 1,
+                    }}>
+                    {reviewBonusClaimed
+                      ? `✓ ${getT(sourceLang, 'bonus.review.alreadyClaimed') || 'Already claimed'}`
+                      : (getT(sourceLang, 'bonus.reviewBtn') || '🌟 Review + 100pt')}
+                  </button>
+                )}
               </div>
 
               <div className="sidebar-divider" />

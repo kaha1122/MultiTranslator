@@ -1111,6 +1111,19 @@
       "needLoginDesc": "La función de referidos está disponible después de crear una cuenta gratuita.",
       "signupBtn": "Crear cuenta gratis",
       "cancel": "Cancelar"
+    },
+    "reviewBtn": "🌟 Reseña + 100pt",
+    "review": {
+      "title": "100pt por una reseña rápida",
+      "desc": "Deja una reseña en Google Play y toca [Listo] — ¡100 puntos bonus al instante!",
+      "openStore": "Escribir reseña en Google Play",
+      "confirm": "Listo — Recibir 100pt",
+      "success": "🎉 ¡Recibiste 100 puntos bonus!",
+      "alreadyClaimed": "Ya canjeado",
+      "skippedProTitle": "Los usuarios Pro ya tienen todos los beneficios",
+      "skippedProDesc": "No se necesitan puntos bonus durante la suscripción. Inténtalo de nuevo en el plan gratuito.",
+      "needLogin": "Por favor regístrate primero",
+      "cancel": "Cancelar"
     }
   }
 }
