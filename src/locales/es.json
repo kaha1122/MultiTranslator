@@ -1088,6 +1088,29 @@
   },
   "bonus": {
     "label": "Bono",
-    "noInterstitialAd": "Sin anuncios intersticiales"
+    "noInterstitialAd": "Sin anuncios intersticiales",
+    "referralBtn": "🤝 Referir un amigo + 100pt",
+    "referral": {
+      "title": "Ingresa el código → Recibe 100pt",
+      "desc": "Ingresa el código de un amigo y ambos recibirán 100 puntos bonus.",
+      "codeLabel": "Código de referido de tu amigo",
+      "submit": "Aplicar",
+      "invalid": "Código no válido",
+      "self": "No puedes referirte a ti mismo",
+      "alreadyRedeemed": "Ya has canjeado una referencia",
+      "referrerLimitReached": "El referente alcanzó su límite",
+      "needLogin": "Por favor regístrate primero",
+      "myCode": "Tu código de referido",
+      "copy": "Copiar",
+      "copied": "¡Copiado!",
+      "share": "Compartir con un amigo",
+      "success": "🎉 ¡Recibiste 100 puntos bonus!",
+      "shareMessage": "¡Usemos PronunFit juntos! Ingresa este código y ambos recibimos 100 puntos bonus!\n\n{code}\n\nObtén la app: {url}",
+      "shareTitle": "Referido PronunFit",
+      "needLoginTitle": "Registro requerido",
+      "needLoginDesc": "La función de referidos está disponible después de crear una cuenta gratuita.",
+      "signupBtn": "Crear cuenta gratis",
+      "cancel": "Cancelar"
+    }
   }
 }

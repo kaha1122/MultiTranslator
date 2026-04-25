@@ -1048,6 +1048,29 @@
   },
   "bonus": {
     "label": "Bonus",
-    "noInterstitialAd": "Pas de pub interstitielle"
+    "noInterstitialAd": "Pas de pub interstitielle",
+    "referralBtn": "🤝 Parrainer un ami + 100pt",
+    "referral": {
+      "title": "Entrez le code → Recevez 100pt",
+      "desc": "Entrez le code d'un ami et vous recevrez tous les deux 100 points bonus.",
+      "codeLabel": "Code de parrainage de votre ami",
+      "submit": "Appliquer",
+      "invalid": "Code invalide",
+      "self": "Vous ne pouvez pas vous parrainer",
+      "alreadyRedeemed": "Vous avez déjà utilisé un parrainage",
+      "referrerLimitReached": "Le parrain a atteint sa limite",
+      "needLogin": "Veuillez créer un compte d'abord",
+      "myCode": "Votre code de parrainage",
+      "copy": "Copier",
+      "copied": "Copié !",
+      "share": "Partager avec un ami",
+      "success": "🎉 Vous avez reçu 100 points bonus !",
+      "shareMessage": "Utilisons PronunFit ensemble ! Entrez ce code et nous recevons tous les deux 100 points bonus !\n\n{code}\n\nTélécharger l'app : {url}",
+      "shareTitle": "Parrainage PronunFit",
+      "needLoginTitle": "Inscription requise",
+      "needLoginDesc": "La fonction de parrainage est disponible après la création d'un compte gratuit.",
+      "signupBtn": "Créer un compte gratuit",
+      "cancel": "Annuler"
+    }
   }
 }

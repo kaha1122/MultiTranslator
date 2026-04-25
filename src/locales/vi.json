@@ -1088,6 +1088,29 @@
   },
   "bonus": {
     "label": "Tiền thưởng",
-    "noInterstitialAd": "Không có quảng cáo chuyển tiếp"
+    "noInterstitialAd": "Không có quảng cáo chuyển tiếp",
+    "referralBtn": "🤝 Giới thiệu bạn + 100pt",
+    "referral": {
+      "title": "Nhập mã giới thiệu → Nhận 100pt",
+      "desc": "Nhập mã của bạn bè và cả hai nhận 100 điểm thưởng.",
+      "codeLabel": "Mã giới thiệu từ bạn của bạn",
+      "submit": "Áp dụng",
+      "invalid": "Mã không hợp lệ",
+      "self": "Bạn không thể tự giới thiệu",
+      "alreadyRedeemed": "Bạn đã sử dụng giới thiệu",
+      "referrerLimitReached": "Người giới thiệu đã đạt giới hạn",
+      "needLogin": "Vui lòng đăng ký trước",
+      "myCode": "Mã giới thiệu của bạn",
+      "copy": "Sao chép",
+      "copied": "Đã sao chép!",
+      "share": "Chia sẻ với bạn",
+      "success": "🎉 Bạn đã nhận 100 điểm thưởng!",
+      "shareMessage": "Hãy sử dụng PronunFit cùng nhau! Nhập mã này và cả hai nhận 100 điểm thưởng!\n\n{code}\n\nTải ứng dụng: {url}",
+      "shareTitle": "Giới thiệu PronunFit",
+      "needLoginTitle": "Cần đăng ký",
+      "needLoginDesc": "Tính năng giới thiệu khả dụng sau khi tạo tài khoản miễn phí.",
+      "signupBtn": "Tạo tài khoản miễn phí",
+      "cancel": "Hủy"
+    }
   }
 }

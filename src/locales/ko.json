@@ -1098,6 +1098,29 @@
   },
   "bonus": {
     "label": "보너스",
-    "noInterstitialAd": "전면광고 제거"
+    "noInterstitialAd": "전면광고 제거",
+    "referralBtn": "🤝 친구 추천 + 100pt",
+    "referral": {
+      "title": "친구 추천 코드 입력 → 100pt 받기",
+      "desc": "친구 코드를 입력하면 둘 다 100 보너스 포인트를 받아요.",
+      "codeLabel": "친구가 알려준 추천 코드",
+      "submit": "확인",
+      "invalid": "유효하지 않은 코드입니다",
+      "self": "자기 자신은 추천할 수 없어요",
+      "alreadyRedeemed": "이미 추천받으셨어요",
+      "referrerLimitReached": "추천인의 한도가 가득 찼어요",
+      "needLogin": "무료 계정 가입 후 이용해주세요",
+      "myCode": "내 추천 코드",
+      "copy": "복사",
+      "copied": "복사되었어요!",
+      "share": "친구에게 공유",
+      "success": "🎉 100 보너스 포인트 받았어요!",
+      "shareMessage": "PronunFit 같이 써요! 이 추천 코드를 입력하면 우리 둘 다 100 보너스 포인트를 받아요!\n\n{code}\n\n앱 받기: {url}",
+      "shareTitle": "PronunFit 친구 추천",
+      "needLoginTitle": "가입 후 이용 가능",
+      "needLoginDesc": "친구 추천 기능은 무료 계정 가입 후 이용할 수 있어요.",
+      "signupBtn": "무료 계정 만들기",
+      "cancel": "취소"
+    }
   }
 }

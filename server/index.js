@@ -24,6 +24,7 @@ app.use(require('./routes/listening'));
 app.use(require('./routes/ocr'));
 app.use(require('./routes/translate'));
 app.use(require('./routes/webhook'));
+app.use(require('./routes/referral'));
 
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 app.get('/ping', (req, res) => {

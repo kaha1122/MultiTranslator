@@ -1089,6 +1089,29 @@
   },
   "bonus": {
     "label": "ボーナス",
-    "noInterstitialAd": "全画面広告なし"
+    "noInterstitialAd": "全画面広告なし",
+    "referralBtn": "🤝 友達紹介 + 100pt",
+    "referral": {
+      "title": "コード入力 → 100pt獲得",
+      "desc": "友達のコードを入力すると、二人とも100ボーナスポイントを獲得します。",
+      "codeLabel": "友達からの紹介コード",
+      "submit": "適用",
+      "invalid": "無効なコードです",
+      "self": "自分自身を紹介することはできません",
+      "alreadyRedeemed": "すでに紹介を利用済みです",
+      "referrerLimitReached": "紹介者の上限に達しました",
+      "needLogin": "アカウント登録が必要です",
+      "myCode": "あなたの紹介コード",
+      "copy": "コピー",
+      "copied": "コピーしました！",
+      "share": "友達と共有",
+      "success": "🎉 100ボーナスポイントを獲得しました！",
+      "shareMessage": "PronunFitを一緒に使いませんか！このコードを入力すれば二人とも100ボーナスポイント獲得！\n\n{code}\n\nアプリ取得: {url}",
+      "shareTitle": "PronunFit 紹介",
+      "needLoginTitle": "登録が必要",
+      "needLoginDesc": "紹介機能は無料アカウント登録後にご利用いただけます。",
+      "signupBtn": "無料アカウント作成",
+      "cancel": "キャンセル"
+    }
   }
 }

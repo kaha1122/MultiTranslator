@@ -1048,6 +1048,29 @@
   },
   "bonus": {
     "label": "Bônus",
-    "noInterstitialAd": "Sem anúncios intersticiais"
+    "noInterstitialAd": "Sem anúncios intersticiais",
+    "referralBtn": "🤝 Indicar amigo + 100pt",
+    "referral": {
+      "title": "Insira o código → Receba 100pt",
+      "desc": "Insira o código de um amigo e ambos receberão 100 pontos bônus.",
+      "codeLabel": "Código de indicação do seu amigo",
+      "submit": "Aplicar",
+      "invalid": "Código inválido",
+      "self": "Você não pode indicar a si mesmo",
+      "alreadyRedeemed": "Você já resgatou uma indicação",
+      "referrerLimitReached": "O indicador atingiu o limite",
+      "needLogin": "Por favor, registre-se primeiro",
+      "myCode": "Seu código de indicação",
+      "copy": "Copiar",
+      "copied": "Copiado!",
+      "share": "Compartilhar com um amigo",
+      "success": "🎉 Você recebeu 100 pontos bônus!",
+      "shareMessage": "Vamos usar o PronunFit juntos! Insira este código e ambos recebemos 100 pontos bônus!\n\n{code}\n\nBaixe o app: {url}",
+      "shareTitle": "Indicação PronunFit",
+      "needLoginTitle": "Cadastro necessário",
+      "needLoginDesc": "O recurso de indicação está disponível após criar uma conta gratuita.",
+      "signupBtn": "Criar conta gratuita",
+      "cancel": "Cancelar"
+    }
   }
 }

@@ -3,6 +3,7 @@ import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2,
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
+import ReferralModal from './components/ReferralModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -301,6 +302,8 @@ function App() {
     () => !window.Capacitor?.isNativePlatform?.() && !isBot() && localStorage.getItem('webAppEntered') !== '1'
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
+  const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
   const [showExtraLangs, setShowExtraLangs] = useState(false);
@@ -2491,6 +2494,57 @@ function App() {
         />
       )}
 
+      {/* 친구 추천 모달 */}
+      <ReferralModal
+        open={showReferralModal}
+        onClose={() => setShowReferralModal(false)}
+        sourceLang={sourceLang}
+        onSuccess={() => {
+          // 성공 후 잠시 후 닫기 (사용자가 메시지 볼 시간 확보)
+          setTimeout(() => setShowReferralModal(false), 2000);
+        }}
+      />
+
+      {/* 익명 사용자 → 가입 안내 모달 */}
+      {showAnonGateModal && (
+        <div style={{
+          position: 'fixed', inset: 0, zIndex: 9999,
+          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          alignItems: 'center', justifyContent: 'center', padding: '16px',
+        }} onClick={() => setShowAnonGateModal(false)}>
+          <div onClick={e => e.stopPropagation()} style={{
+            background: 'white', borderRadius: '16px', padding: '24px',
+            maxWidth: '380px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+          }}>
+            <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 700, color: '#1d4ed8' }}>
+              {getT(sourceLang, 'bonus.referral.needLoginTitle') || 'Sign-up required'}
+            </h3>
+            <p style={{ margin: '0 0 16px', fontSize: '0.88rem', color: '#475569', lineHeight: 1.5 }}>
+              {getT(sourceLang, 'bonus.referral.needLoginDesc') || 'Referral feature is available after creating a free account.'}
+            </p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => setShowAnonGateModal(false)} style={{
+                flex: 1, padding: '10px', borderRadius: '8px',
+                background: 'white', border: '1px solid #e2e8f0',
+                color: '#64748b', fontWeight: 600, cursor: 'pointer',
+              }}>
+                {getT(sourceLang, 'bonus.referral.cancel') || 'Cancel'}
+              </button>
+              <button onClick={() => {
+                setShowAnonGateModal(false);
+                setShowAccountUpgrade(true);
+              }} style={{
+                flex: 1, padding: '10px', borderRadius: '8px',
+                background: '#2563eb', border: 'none',
+                color: 'white', fontWeight: 700, cursor: 'pointer',
+              }}>
+                {getT(sourceLang, 'bonus.referral.signupBtn') || 'Create free account'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* 기존 계정 로그인 모달 (이메일/구글 모두 지원) */}
       {showLoginModal && (
         <div style={{
@@ -2814,6 +2868,25 @@ function App() {
                     </div>
                   </div>
                 )}
+
+                {/* 친구 추천 버튼 — 익명은 가입 가드, 등록자는 모달 */}
+                <button
+                  onClick={() => {
+                    setSidebarOpen(false);
+                    if (user?.isAnonymous) {
+                      setShowAnonGateModal(true);
+                    } else {
+                      setShowReferralModal(true);
+                    }
+                  }}
+                  style={{
+                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
+                    borderRadius: '12px', background: 'white',
+                    border: '1.5px dashed #93c5fd', cursor: 'pointer', textAlign: 'left',
+                    color: '#1d4ed8', fontSize: '0.82rem', fontWeight: 700,
+                  }}>
+                  {getT(sourceLang, 'bonus.referralBtn') || '🤝 Refer a friend + 100pt'}
+                </button>
               </div>
 
               <div className="sidebar-divider" />

@@ -24,6 +24,7 @@
     "@capacitor/ios": "^8.3.0",
     "@capacitor/local-notifications": "^8.0.2",
     "@capacitor/push-notifications": "^8.0.3",
+    "@capacitor/share": "^8.0.1",
     "@capgo/capacitor-updater": "^8.43.11",
     "@paypal/react-paypal-js": "^9.1.0",
     "@revenuecat/purchases-capacitor": "^12.2.4",
