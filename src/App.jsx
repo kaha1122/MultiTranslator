@@ -575,13 +575,14 @@ function App() {
   const addAdPoints = async (points, options = {}) => {
     if (tier !== 'trial') return;
 
-    // 보너스 활성 시: 점수 차감만, 인터스티셜 누적 안 함
+    // 보너스 활성 시: 가능한 만큼 우선 차감, 부족분만 인터스티셜 누적으로 fall-through
     if (hasBonusActive) {
-      await consumeBonusPoints(points);
-      return;
+      const consumed = await consumeBonusPoints(points);
+      points -= consumed;
+      if (points <= 0) return;
     }
 
-    // bonusOnly 모드 (예: 발음 평가) — 보너스 없으면 패스 (일반 trial 인터스티셜 빈도 ↑ 방지)
+    // bonusOnly 모드 (예: 발음 평가) — 남은 점수가 있어도 인터스티셜 누적 X
     if (options.bonusOnly) return;
 
     // 점수는 항상 누적 (웹·광고미준비 환경에서도 헤더 카운터 표시 위해)
@@ -2752,30 +2753,6 @@ function App() {
 
               <div className="sidebar-divider" />
 
-              {/* 보너스 포인트 카드 — bonusPoints > 0 일 때만 표시 */}
-              {hasBonusActive && (
-                <div style={{
-                  padding: '12px 14px', margin: '4px 8px',
-                  borderRadius: '14px',
-                  background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
-                  border: '1px solid #d8b4fe',
-                  display: 'flex', alignItems: 'center', gap: '12px',
-                }}>
-                  <div style={{ fontSize: '1.6rem' }}>🎁</div>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: '0.7rem', color: '#7c3aed', fontWeight: 700, letterSpacing: '0.03em' }}>
-                      보너스 포인트
-                    </div>
-                    <div style={{ fontSize: '1.3rem', color: '#6b21a8', fontWeight: 800, lineHeight: 1 }}>
-                      {bonusPoints}<span style={{ fontSize: '0.75rem', marginLeft: '2px' }}>pt</span>
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: '#9333ea', marginTop: '2px' }}>
-                      광고 면제 중 ✓
-                    </div>
-                  </div>
-                </div>
-              )}
-
               {/* 구독 플랜 섹션 */}
               <div style={{ padding: '8px 12px 4px' }}>
                 <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
@@ -2817,6 +2794,25 @@ function App() {
                     {getT(sourceLang, 'subscription.premiumDesc') || '카드 · 발음 무제한'}
                   </div>
                 </button>
+
+                {/* 보너스 포인트 — Pro/Premium 동일 크기, 활성 시만 노출 */}
+                {hasBonusActive && (
+                  <div style={{
+                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
+                    borderRadius: '12px', background: 'linear-gradient(135deg, #faf5ff, #f3e8ff)',
+                    border: '1px solid #d8b4fe', textAlign: 'left',
+                  }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#7c3aed' }}>🎁 보너스 {bonusPoints}pt</span>
+                      <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7c3aed', background: '#e9d5ff', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                        광고 면제
+                      </span>
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#9333ea' }}>
+                      한도 무시 · 인터스티셜 차단
+                    </div>
+                  </div>
+                )}
               </div>
 
 
@@ -2883,13 +2879,13 @@ function App() {
             <Menu size={26} strokeWidth={2.5} />
           </button>
 
-          {/* 인터스티셜 광고까지 남은 점수 — Trial + 보너스 0 일 때만 표시 */}
-          {tier === 'trial' && !hasBonusActive && (
+          {/* 광고까지 남은 점수 (보너스 + 인터스티셜 통합) — Trial 일 때만 표시 */}
+          {tier === 'trial' && (
             <span style={{
               color: '#dc2626', fontWeight: 700, fontSize: '0.95rem',
               marginLeft: '24px', minWidth: '20px', textAlign: 'center', userSelect: 'none',
             }}>
-              {Math.max(0, AD_POINT_THRESHOLD - adPointsState)}
+              {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
             </span>
           )}
 
@@ -3095,8 +3091,6 @@ function App() {
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
-            hasBonusActive={hasBonusActive}
-            bonusPoints={bonusPoints}
           />
         </div>
 

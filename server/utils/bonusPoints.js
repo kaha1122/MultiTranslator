@@ -14,6 +14,8 @@ const VALID_SOURCES = new Set([
 
 /**
  * 보너스 포인트 부여
+ * Pro/Premium 사용자는 자동 skip — 어차피 광고/한도 영향 없고, 구독 끊고 점수 사용 유도 방지
+ * (단 admin/admin_test/admin_manual 소스는 강제 부여 — 테스트/수동 보정용)
  * @param {object} params
  * @param {string} params.uid - 부여 대상 사용자 uid
  * @param {number} params.amount - 점수 (양수)
@@ -27,8 +29,19 @@ async function grantBonusPoints({ uid, amount, source, meta = {} }) {
 
     const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
-    const eventRef = userRef.collection('bonusEvents').doc();
 
+    // Pro/Premium 사용자 캠페인 부여 차단 (admin 수동 부여는 통과)
+    const isAdminGrant = source === 'admin_manual' || source === 'admin_test';
+    if (!isAdminGrant) {
+        const userSnap = await userRef.get();
+        const userTier = userSnap.data()?.tier || 'trial';
+        if (userTier === 'pro' || userTier === 'premium') {
+            console.log(`[Bonus] SKIP ${uid} — tier=${userTier} (source=${source})`);
+            return { success: false, skipped: true, reason: 'tier_pro_or_premium', tier: userTier };
+        }
+    }
+
+    const eventRef = userRef.collection('bonusEvents').doc();
     const batch = db.batch();
     batch.update(userRef, {
         bonusPoints: admin.firestore.FieldValue.increment(amount),

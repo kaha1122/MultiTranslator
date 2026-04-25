@@ -300,21 +300,24 @@ export const AuthProvider = ({ children }) => {
     const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
-    // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지. 부족하면 false 반환 (호출자가 fallback)
+    // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
+    // 가능한 만큼 차감하고 실제 차감량을 number로 반환 (부족하면 잔여만큼만)
     const consumeBonusPoints = async (amount) => {
-        if (!user?.uid || amount <= 0) return false;
-        if (bonusPoints < amount) return false;
+        if (!user?.uid || amount <= 0) return 0;
         try {
+            let consumed = 0;
             await runTransaction(db, async (tx) => {
                 const ref = doc(db, 'users', user.uid);
                 const snap = await tx.get(ref);
                 const current = snap.data()?.bonusPoints || 0;
-                if (current < amount) throw new Error('insufficient');
-                tx.update(ref, { bonusPoints: increment(-amount) });
+                consumed = Math.min(current, amount);
+                if (consumed > 0) {
+                    tx.update(ref, { bonusPoints: increment(-consumed) });
+                }
             });
-            return true;
+            return consumed;
         } catch (e) {
-            return false;
+            return 0;
         }
     };
 
