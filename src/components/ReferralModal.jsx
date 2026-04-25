@@ -96,32 +96,27 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
             .replace('{url}', getShareUrl());
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
 
-        // 네이티브: Capacitor Share API (1.4.66~1.4.68에서 정상 작동 검증된 경로)
-        if (Capacitor.isNativePlatform()) {
-            try {
-                const { Share } = await import('@capacitor/share');
-                await Share.share({ title, text: message, dialogTitle: title });
-                return;
-            } catch (e) {
-                if (e?.message?.includes('canceled') || e?.message?.includes('cancel')) return;
-                console.warn('[Referral] Capacitor Share failed:', e?.message);
-            }
-        }
-        // 웹: Web Share API (모바일 브라우저)
+        // Web Share API — Capacitor Android WebView(Chromium) 및 iOS WKWebView 모두 지원
+        // @capacitor/share 네이티브 플러그인은 cap sync + AAB 재빌드가 필요해 Capgo OTA로는 적용 불가.
+        // navigator.share를 직접 호출하면 user activation을 잃지 않고 시스템 공유 시트가 뜬다.
         if (typeof navigator.share === 'function') {
             try {
                 await navigator.share({ title, text: message });
                 return;
             } catch (e) {
-                if (e.name === 'AbortError') return;
+                if (e?.name === 'AbortError') return;
+                console.warn('[Referral] navigator.share failed:', e?.name, e?.message);
             }
         }
-        // Fallback — 메시지 전체를 클립보드 복사 (데스크탑 등)
+
+        // Fallback — 데스크탑 등 Web Share 미지원 환경: 메시지 전체를 클립보드로 복사
         try {
             await navigator.clipboard.writeText(message);
             setCopiedFlash(true);
             setTimeout(() => setCopiedFlash(false), 1500);
-        } catch {}
+        } catch (e) {
+            console.error('[Referral] clipboard also failed:', e);
+        }
     };
 
     return (
