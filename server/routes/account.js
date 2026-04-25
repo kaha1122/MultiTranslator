@@ -219,7 +219,7 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                 const counterKeys = [
                     'trialCardCount', 'savedCardCount', 'trialPronCount',
                     'translationGenerateCount', 'sceneGenerateCount',
-                    'vocabGenerateCount', 'totalGenerateCount',
+                    'vocabGenerateCount', 'listenGenerateCount', 'totalGenerateCount',
                 ];
                 for (const key of counterKeys) {
                     if ((anonData[key] || 0) > 0) {

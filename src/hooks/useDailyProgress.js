@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../firebase/config';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 
 // 로컬 타임존 기준 YYYY-MM-DD — toISOString()은 UTC 라 자정 경계에서 어긋남
 const toLocalDateStr = (d) => {
@@ -205,5 +205,23 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         }
     }, [user]);
 
-    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen };
+    // 분석 전용 일일 Generate 카운터 — UI 미표시, Firestore atomic increment (state/ref 불필요)
+    // kind: 'translation' | 'scene' | 'vocab' (Listening은 기존 listenCount로 추적)
+    const incrementDailyGenerate = useCallback(async (kind) => {
+        if (!user?.uid) return;
+        if (kind !== 'translation' && kind !== 'scene' && kind !== 'vocab') return;
+        const today = getToday();
+        const field = `${kind}GenCount`;
+        try {
+            await setDoc(
+                doc(db, 'users', user.uid, 'dailyProgress', today),
+                { [field]: increment(1), updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        } catch (e) {
+            console.error(`[useDailyProgress] ${field} 저장 실패:`, e);
+        }
+    }, [user]);
+
+    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate };
 };

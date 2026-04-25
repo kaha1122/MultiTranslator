@@ -490,6 +490,17 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementVocabGenerate failed:", e); }
     };
 
+    // Listening 생성 카운터
+    const incrementListenGenerate = async () => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                listenGenerateCount: increment(1),
+                totalGenerateCount: increment(1),
+            });
+        } catch (e) { console.error("incrementListenGenerate failed:", e); }
+    };
+
     // Admin 전용: BYOK 키 저장
     const saveByokKeys = async (geminiKey, azureKey, azureRegion) => {
         if (!user) return;
@@ -516,7 +527,7 @@ export const AuthProvider = ({ children }) => {
             setDailyTrialCardReached, setDailyTrialPronReached,
             isProPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementPronCount,
-            incrementSceneGenerate, incrementVocabGenerate,
+            incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,
             upgradeAnonymous,

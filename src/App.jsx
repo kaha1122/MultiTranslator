@@ -105,7 +105,7 @@ function App() {
     isTrialSavedCardLimitReached,
     setDailyTrialCardReached, setDailyTrialPronReached,
     incrementTrialCard, incrementSavedCard,
-    incrementSceneGenerate, incrementVocabGenerate,
+    incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
   } = useAuth();
 
@@ -444,7 +444,7 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate } = useDailyProgress(user, dailyGoal);
 
   // 플랫폼 CSS 클래스 (React 렌더 시점 = Capacitor 브릿지 확실히 준비됨)
   React.useEffect(() => {
@@ -1843,6 +1843,7 @@ function App() {
       setPronunciations(newProns);
       setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
+      incrementDailyGenerate('translation'); // 일일 분석용
 
     } catch (error) {
       console.error("번역 실패:", error);
@@ -3202,7 +3203,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementVocabGenerate(); addAdPoints(1); }}
+            onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('vocab');
@@ -3225,7 +3226,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementVocabGenerate(); incrementDailyListen(); addAdPoints(1); }}
+            onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
@@ -3266,7 +3267,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementSceneGenerate(); addAdPoints(1); }}
+            onGenerate={() => { incrementSceneGenerate(); incrementDailyGenerate('scene'); addAdPoints(1); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('scene');
