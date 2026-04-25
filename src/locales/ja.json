@@ -1113,9 +1113,9 @@
       "signupBtn": "無料アカウント作成",
       "cancel": "キャンセル"
     },
-    "reviewBtn": "🌟 レビュー + 100pt",
+    "reviewBtn": "🌟 Google Play レビュー + 100pt",
     "review": {
-      "title": "レビュー一言で100pt獲得",
+      "title": "Google Playレビューで100pt獲得",
       "desc": "Google Playにレビューを投稿してから [完了] ボタンを押してください。100ボーナスポイント即時付与！",
       "openStore": "Google Playでレビューを書く",
       "confirm": "完了 — 100pt獲得",
@@ -1124,7 +1124,17 @@
       "skippedProTitle": "Proユーザーはすでに全特典をお持ちです",
       "skippedProDesc": "購読中はボーナスポイント不要です。無料プランでお試しください。",
       "needLogin": "アカウント登録が必要です",
-      "cancel": "キャンセル"
+      "cancel": "キャンセル",
+      "openStoreFirst": "まずPlay Storeでレビューを書いてください"
+    },
+    "campaign": {
+      "title": "🎁 ボーナスポイント開始イベント",
+      "desc": "友達紹介やGoogle Playレビューで100ボーナスポイント！ボーナス保有中は全画面広告なし + 日次上限解除！",
+      "feature1": "🤝 友達紹介 — 二人とも100pt",
+      "feature2": "🌟 Google Playレビュー — 100pt",
+      "feature3": "🎯 ボーナス活性: 広告なし + 上限なし",
+      "cta": "今すぐ始める",
+      "later": "後で"
     }
   }
 }

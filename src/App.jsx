@@ -5,6 +5,7 @@ import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditC
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
+import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
 import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
@@ -23,7 +24,7 @@ import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer,
 import { useAuthState } from 'react-firebase-hooks/auth';
 import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, GoogleAuthProvider as FirebaseGoogleAuthProvider, FacebookAuthProvider as FirebaseFacebookAuthProvider, getAdditionalUserInfo, sendEmailVerification, updateEmail, updatePassword, reauthenticateWithCredential, EmailAuthProvider } from 'firebase/auth';
 import { googleProvider, facebookProvider } from './firebase/config';
-import { setDoc, getDoc, doc } from 'firebase/firestore';
+import { setDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
@@ -307,6 +308,7 @@ function App() {
   const [showReferralModal, setShowReferralModal] = useState(false);
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
+  const [showBonusCampaign, setShowBonusCampaign] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
   const [showExtraLangs, setShowExtraLangs] = useState(false);
@@ -1298,6 +1300,28 @@ function App() {
     if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
     setShowAiConsent(true);
   }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
+
+  // 보너스 캠페인 출시 안내 — onboarding 완료 + lifecycleStage 있는 사용자에게 1회 표시
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    if (profile.hasCompletedOnboarding !== true) return;
+    if (!profile.lifecycleStage) return; // null인 사용자 제외 (Generate 한 번도 안 한 신규)
+    if (profile.bonusCampaignSeenAt) return; // 이미 표시함
+    // 다른 모달 충돌 방지 — 약간의 지연 후 노출
+    const timer = setTimeout(() => setShowBonusCampaign(true), 1500);
+    return () => clearTimeout(timer);
+  }, [user?.uid, profile?.hasCompletedOnboarding, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
+
+  // 캠페인 모달 dismiss — Firestore에 표시 완료 시각 기록
+  const dismissBonusCampaign = useCallback(async () => {
+    setShowBonusCampaign(false);
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        bonusCampaignSeenAt: serverTimestamp(),
+      });
+    } catch (e) { console.error('[BonusCampaign] dismiss save failed:', e); }
+  }, [user?.uid]);
 
   const handleAiConsentAccept = () => {
     localStorage.setItem('aiConsentAccepted', '1');
@@ -2517,6 +2541,17 @@ function App() {
         onSuccess={() => {
           setTimeout(() => setShowReviewBonusModal(false), 2000);
         }}
+      />
+
+      {/* 보너스 캠페인 출시 안내 모달 — 1회만 표시 */}
+      <BonusCampaignAnnounceModal
+        open={showBonusCampaign}
+        onClose={dismissBonusCampaign}
+        onCta={() => {
+          dismissBonusCampaign();
+          setSidebarOpen(true); // 사이드바 자동 오픈 → 보너스 섹션 노출
+        }}
+        sourceLang={sourceLang}
       />
 
       {/* 익명 사용자 → 가입 안내 모달 */}

@@ -1072,9 +1072,9 @@
       "signupBtn": "Créer un compte gratuit",
       "cancel": "Annuler"
     },
-    "reviewBtn": "🌟 Avis + 100pt",
+    "reviewBtn": "🌟 Avis Google Play + 100pt",
     "review": {
-      "title": "100pt pour un avis rapide",
+      "title": "100pt pour un avis Google Play",
       "desc": "Laissez un avis sur Google Play puis appuyez sur [Terminé] — 100 points bonus instantanément !",
       "openStore": "Écrire un avis sur Google Play",
       "confirm": "Terminé — Recevoir 100pt",
@@ -1083,7 +1083,17 @@
       "skippedProTitle": "Les utilisateurs Pro ont déjà tous les avantages",
       "skippedProDesc": "Les points bonus ne sont pas nécessaires pendant l'abonnement. Réessayez en plan gratuit.",
       "needLogin": "Veuillez créer un compte d'abord",
-      "cancel": "Annuler"
+      "cancel": "Annuler",
+      "openStoreFirst": "Écrivez d'abord un avis sur Play Store"
+    },
+    "campaign": {
+      "title": "🎁 Lancement des Points Bonus",
+      "desc": "Parrainez un ami ou laissez un avis Google Play pour gagner 100 points bonus. Avec bonus actif : pas de pub + limite quotidienne levée !",
+      "feature1": "🤝 Parrainer ami — 100pt chacun",
+      "feature2": "🌟 Avis Google Play — 100pt",
+      "feature3": "🎯 Bonus actif : pas de pub + sans limite",
+      "cta": "Commencer",
+      "later": "Plus tard"
     }
   }
 }

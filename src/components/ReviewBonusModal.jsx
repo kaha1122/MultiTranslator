@@ -13,12 +13,14 @@ export default function ReviewBonusModal({ open, onClose, sourceLang, alreadyCla
     const [errorMsg, setErrorMsg] = useState('');
     const [successMsg, setSuccessMsg] = useState('');
     const [skippedPro, setSkippedPro] = useState(false);
+    const [hasOpenedStore, setHasOpenedStore] = useState(false); // Play Store 열기 클릭 여부 — 작성완료 전제조건
 
     if (!open) return null;
 
     const handleOpenStore = () => {
         // Web/Android — Play Store 리뷰 섹션 직접 열기
         window.open(PLAY_REVIEWS_URL, '_blank');
+        setHasOpenedStore(true); // 작성완료 버튼 활성화 전제조건
     };
 
     const handleConfirm = async () => {
@@ -110,19 +112,28 @@ export default function ReviewBonusModal({ open, onClose, sourceLang, alreadyCla
                                     {t('bonus.review.openStore')}
                                 </button>
 
-                                {/* Step 2: 작성 완료 */}
+                                {/* Step 2: 작성 완료 — Play Store 먼저 열어야 활성화 */}
                                 <button
                                     onClick={handleConfirm}
-                                    disabled={submitting}
+                                    disabled={submitting || !hasOpenedStore}
                                     style={{
                                         width: '100%', padding: '14px', borderRadius: '10px',
-                                        background: submitting ? '#94a3b8' : '#2563eb',
+                                        background: (submitting || !hasOpenedStore) ? '#cbd5e1' : '#2563eb',
                                         border: 'none', color: 'white', fontSize: '0.95rem',
-                                        fontWeight: 700, cursor: submitting ? 'not-allowed' : 'pointer',
+                                        fontWeight: 700,
+                                        cursor: (submitting || !hasOpenedStore) ? 'not-allowed' : 'pointer',
                                     }}
                                 >
                                     {t('bonus.review.confirm')}
                                 </button>
+                                {!hasOpenedStore && (
+                                    <div style={{
+                                        marginTop: '6px', fontSize: '0.72rem', color: '#94a3b8',
+                                        textAlign: 'center',
+                                    }}>
+                                        {t('bonus.review.openStoreFirst') || '먼저 Play Store에서 후기를 작성해주세요'}
+                                    </div>
+                                )}
 
                                 {errorMsg && (
                                     <div style={{ marginTop: '10px', fontSize: '0.85rem', color: '#dc2626', textAlign: 'center' }}>

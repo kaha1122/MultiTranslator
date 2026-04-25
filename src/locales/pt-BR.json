@@ -1072,9 +1072,9 @@
       "signupBtn": "Criar conta gratuita",
       "cancel": "Cancelar"
     },
-    "reviewBtn": "🌟 Avaliação + 100pt",
+    "reviewBtn": "🌟 Avaliação no Google Play + 100pt",
     "review": {
-      "title": "100pt por uma avaliação rápida",
+      "title": "100pt por avaliação no Google Play",
       "desc": "Deixe uma avaliação na Google Play e toque em [Concluído] — 100 pontos bônus na hora!",
       "openStore": "Escrever avaliação na Google Play",
       "confirm": "Concluído — Receber 100pt",
@@ -1083,7 +1083,17 @@
       "skippedProTitle": "Usuários Pro já têm todos os benefícios",
       "skippedProDesc": "Pontos bônus não são necessários durante a assinatura. Tente novamente no plano gratuito.",
       "needLogin": "Por favor, registre-se primeiro",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "openStoreFirst": "Por favor, escreva uma avaliação na Play Store primeiro"
+    },
+    "campaign": {
+      "title": "🎁 Evento de Lançamento de Pontos Bônus",
+      "desc": "Indique um amigo ou deixe uma avaliação no Google Play para ganhar 100 pontos bônus. Com bônus ativo: sem anúncios intersticiais + limite diário removido!",
+      "feature1": "🤝 Indicar amigo — 100pt para ambos",
+      "feature2": "🌟 Avaliação no Google Play — 100pt",
+      "feature3": "🎯 Bônus ativo: sem anúncios + sem limite",
+      "cta": "Começar agora",
+      "later": "Mais tarde"
     }
   }
 }

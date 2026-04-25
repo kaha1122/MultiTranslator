@@ -1112,9 +1112,9 @@
       "signupBtn": "Tạo tài khoản miễn phí",
       "cancel": "Hủy"
     },
-    "reviewBtn": "🌟 Đánh giá + 100pt",
+    "reviewBtn": "🌟 Đánh giá Google Play + 100pt",
     "review": {
-      "title": "Nhận 100pt cho đánh giá ngắn",
+      "title": "Nhận 100pt cho đánh giá Google Play",
       "desc": "Để lại đánh giá trên Google Play rồi nhấn [Hoàn tất] — 100 điểm thưởng ngay lập tức!",
       "openStore": "Viết đánh giá trên Google Play",
       "confirm": "Hoàn tất — Nhận 100pt",
@@ -1123,7 +1123,17 @@
       "skippedProTitle": "Người dùng Pro đã có mọi đặc quyền",
       "skippedProDesc": "Không cần điểm thưởng khi đang đăng ký. Hãy thử lại ở gói miễn phí.",
       "needLogin": "Vui lòng đăng ký trước",
-      "cancel": "Hủy"
+      "cancel": "Hủy",
+      "openStoreFirst": "Vui lòng viết đánh giá trên Play Store trước"
+    },
+    "campaign": {
+      "title": "🎁 Sự kiện ra mắt Điểm Thưởng",
+      "desc": "Giới thiệu bạn bè hoặc để lại đánh giá Google Play để nhận 100 điểm thưởng. Khi có thưởng: không quảng cáo + bỏ giới hạn hàng ngày!",
+      "feature1": "🤝 Giới thiệu bạn — cả hai 100pt",
+      "feature2": "🌟 Đánh giá Google Play — 100pt",
+      "feature3": "🎯 Thưởng kích hoạt: không quảng cáo + không giới hạn",
+      "cta": "Bắt đầu ngay",
+      "later": "Để sau"
     }
   }
 }

@@ -1122,9 +1122,9 @@
       "signupBtn": "Create free account",
       "cancel": "Cancel"
     },
-    "reviewBtn": "🌟 Review + 100pt",
+    "reviewBtn": "🌟 Google Play review + 100pt",
     "review": {
-      "title": "Get 100pt for a quick review",
+      "title": "Get 100pt for a Google Play review",
       "desc": "Leave a review on Google Play and tap [Done] — 100 bonus points instantly!",
       "openStore": "Write a review on Google Play",
       "confirm": "Done — Get 100pt",
@@ -1133,7 +1133,17 @@
       "skippedProTitle": "Pro users already have all benefits",
       "skippedProDesc": "Bonus points aren't needed while subscribed. Try again after the free tier.",
       "needLogin": "Please sign up first",
-      "cancel": "Cancel"
+      "cancel": "Cancel",
+      "openStoreFirst": "Please write a review on Play Store first"
+    },
+    "campaign": {
+      "title": "🎁 Bonus Points Launch Event",
+      "desc": "Refer a friend or leave a Google Play review to earn 100 bonus points. With bonus active: no interstitial ads + daily limit lifted!",
+      "feature1": "🤝 Refer a friend — 100pt for both",
+      "feature2": "🌟 Google Play review — 100pt",
+      "feature3": "🎯 Bonus active: no ads + limit lifted",
+      "cta": "Start now",
+      "later": "Later"
     }
   }
 }

@@ -1112,9 +1112,9 @@
       "signupBtn": "Crear cuenta gratis",
       "cancel": "Cancelar"
     },
-    "reviewBtn": "🌟 Reseña + 100pt",
+    "reviewBtn": "🌟 Reseña en Google Play + 100pt",
     "review": {
-      "title": "100pt por una reseña rápida",
+      "title": "100pt por una reseña en Google Play",
       "desc": "Deja una reseña en Google Play y toca [Listo] — ¡100 puntos bonus al instante!",
       "openStore": "Escribir reseña en Google Play",
       "confirm": "Listo — Recibir 100pt",
@@ -1123,7 +1123,17 @@
       "skippedProTitle": "Los usuarios Pro ya tienen todos los beneficios",
       "skippedProDesc": "No se necesitan puntos bonus durante la suscripción. Inténtalo de nuevo en el plan gratuito.",
       "needLogin": "Por favor regístrate primero",
-      "cancel": "Cancelar"
+      "cancel": "Cancelar",
+      "openStoreFirst": "Primero escribe una reseña en Play Store"
+    },
+    "campaign": {
+      "title": "🎁 Lanzamiento de Puntos Bonus",
+      "desc": "Refiere a un amigo o deja una reseña en Google Play para ganar 100 puntos bonus. ¡Con bonus activo: sin anuncios + límite diario eliminado!",
+      "feature1": "🤝 Referir amigo — 100pt para ambos",
+      "feature2": "🌟 Reseña en Google Play — 100pt",
+      "feature3": "🎯 Bonus activo: sin anuncios + sin límite",
+      "cta": "Empezar ahora",
+      "later": "Más tarde"
     }
   }
 }

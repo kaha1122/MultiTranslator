@@ -1073,9 +1073,9 @@
       "signupBtn": "创建免费账号",
       "cancel": "取消"
     },
-    "reviewBtn": "🌟 评价 + 100pt",
+    "reviewBtn": "🌟 Google Play 评价 + 100pt",
     "review": {
-      "title": "一句评价获得100pt",
+      "title": "Google Play 评价获得100pt",
       "desc": "在Google Play留下评价后点击[完成]按钮,立即获得100奖励积分!",
       "openStore": "在Google Play写评价",
       "confirm": "完成 — 获得100pt",
@@ -1084,7 +1084,17 @@
       "skippedProTitle": "Pro用户已拥有所有权益",
       "skippedProDesc": "订阅期间不需要奖励积分。请在免费版本下重试。",
       "needLogin": "请先注册账号",
-      "cancel": "取消"
+      "cancel": "取消",
+      "openStoreFirst": "请先在 Play Store 写评价"
+    },
+    "campaign": {
+      "title": "🎁 奖励积分启动活动",
+      "desc": "推荐朋友或留下 Google Play 评价即可获得 100 奖励积分。奖励激活期间：无插屏广告 + 解除每日限制！",
+      "feature1": "🤝 推荐朋友 — 双方各100pt",
+      "feature2": "🌟 Google Play 评价 — 100pt",
+      "feature3": "🎯 奖励激活：无广告 + 无限制",
+      "cta": "立即开始",
+      "later": "稍后"
     }
   }
 }

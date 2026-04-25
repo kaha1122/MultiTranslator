@@ -1072,9 +1072,9 @@
       "signupBtn": "Kostenloses Konto erstellen",
       "cancel": "Abbrechen"
     },
-    "reviewBtn": "🌟 Bewertung + 100pt",
+    "reviewBtn": "🌟 Google Play Bewertung + 100pt",
     "review": {
-      "title": "100pt für eine kurze Bewertung",
+      "title": "100pt für eine Google Play Bewertung",
       "desc": "Hinterlasse eine Bewertung im Google Play und tippe auf [Fertig] — 100 Bonuspunkte sofort!",
       "openStore": "Bewertung im Google Play schreiben",
       "confirm": "Fertig — 100pt erhalten",
@@ -1083,7 +1083,17 @@
       "skippedProTitle": "Pro-Nutzer haben bereits alle Vorteile",
       "skippedProDesc": "Bonuspunkte werden während des Abonnements nicht benötigt. Versuche es im kostenlosen Tarif erneut.",
       "needLogin": "Bitte registriere dich zuerst",
-      "cancel": "Abbrechen"
+      "cancel": "Abbrechen",
+      "openStoreFirst": "Bitte zuerst im Play Store eine Bewertung schreiben"
+    },
+    "campaign": {
+      "title": "🎁 Bonuspunkte Launch-Event",
+      "desc": "Empfehle einen Freund oder hinterlasse eine Google Play Bewertung für 100 Bonuspunkte. Mit aktivem Bonus: keine Werbung + Tageslimit aufgehoben!",
+      "feature1": "🤝 Freund werben — 100pt für beide",
+      "feature2": "🌟 Google Play Bewertung — 100pt",
+      "feature3": "🎯 Bonus aktiv: keine Werbung + ohne Limit",
+      "cta": "Jetzt starten",
+      "later": "Später"
     }
   }
 }
