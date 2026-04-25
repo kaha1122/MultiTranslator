@@ -2941,7 +2941,12 @@ function App() {
                   </div>
                 )}
 
-                {/* 친구 추천 버튼 — 익명은 가입 가드, 등록자는 모달 */}
+                {/*
+                  친구 추천 버튼 — 2026-04-26 비노출.
+                  Android 발신자 → iPhone 수신자 시 Play Store 링크가 iPhone에서 죽은 링크가 되고,
+                  Web URL 폴백은 웹앱 광고 미구현이라 수익화 불가. iOS App Store 출시 + 웹 광고
+                  셋업 후 Smart Link 라우트 추가하면서 부활 예정. ReferralModal/i18n/서버
+                  라우트(server/routes/referral.js)는 그대로 보존.
                 <button
                   onClick={() => {
                     setSidebarOpen(false);
@@ -2959,6 +2964,7 @@ function App() {
                   }}>
                   {getT(sourceLang, 'bonus.referralBtn') || '🤝 Refer a friend + 100pt'}
                 </button>
+                */}
 
                 {/* 리뷰 보상 버튼 — iOS는 정책상 비노출 (Apple 5.6.1) */}
                 {Capacitor.getPlatform() !== 'ios' && (
