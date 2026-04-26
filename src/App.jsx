@@ -82,11 +82,11 @@ import { useUserCountry } from './hooks/useUserCountry';
 // 브라우저/기기 언어를 감지하여 지원 언어 코드로 변환
 const detectBrowserSourceLang = () => {
   try {
-    const browserLang = (navigator.language || navigator.userLanguage || 'ko').toLowerCase();
+    const browserLang = (navigator.language || navigator.userLanguage || 'en').toLowerCase();
     if (browserLang.startsWith('zh')) return 'zh-CN';
     const matched = SUPPORTED_LANGUAGES.find(l => browserLang.startsWith(l.code.toLowerCase()));
-    return matched?.code || 'ko';
-  } catch (e) { return 'ko'; }
+    return matched?.code || 'en';
+  } catch (e) { return 'en'; }
 };
 
 // source 언어에 따른 스마트 기본 target 설정
