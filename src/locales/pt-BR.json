@@ -1006,7 +1006,7 @@
     "alreadyInstalled": "Já está instalado.\nPor favor, verifique o ícone do aplicativo.",
     "iosGuideTitle": "Instalar PronunFit no iPhone",
     "iosGuideIntro": "No iPhone, use \"Adicionar à Tela de Início\" do Safari para instalar como um app.",
-    "iosStep1": "Toque no botão Compartilhar na parte inferior do Safari",
+    "iosStep1": "Toque no botão Compartilhar na parte inferior do navegador",
     "iosStep2": "Role e toque em \"Adicionar à Tela de Início\"",
     "iosStep3": "Toque em \"Adicionar\" no canto superior direito",
     "iosChromeNote": "Se você usa outro navegador (Chrome, etc.), abra esta página no Safari.",

@@ -1056,7 +1056,7 @@
     "alreadyInstalled": "Already installed.\nPlease check your app icon.",
     "iosGuideTitle": "Install PronunFit on iPhone",
     "iosGuideIntro": "On iPhone, use Safari's \"Add to Home Screen\" to install like an app.",
-    "iosStep1": "Tap the Share button at the bottom of Safari",
+    "iosStep1": "Tap the Share button at the bottom of your browser",
     "iosStep2": "Scroll down and tap \"Add to Home Screen\"",
     "iosStep3": "Tap \"Add\" in the top-right to finish!",
     "iosChromeNote": "If you're using another browser (Chrome, etc.), please reopen this page in Safari.",

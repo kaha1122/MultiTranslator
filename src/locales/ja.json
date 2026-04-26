@@ -1047,7 +1047,7 @@
     "alreadyInstalled": "すでにインストールされています。\nアイコンをご確認ください。",
     "iosGuideTitle": "iPhone に PronunFit をインストール",
     "iosGuideIntro": "iPhone では Safari の「ホーム画面に追加」でアプリのようにインストールできます。",
-    "iosStep1": "Safari 下部の共有ボタンをタップ",
+    "iosStep1": "ブラウザ下部の共有ボタンをタップ",
     "iosStep2": "メニューをスクロールして「ホーム画面に追加」を選択",
     "iosStep3": "右上の「追加」をタップして完了!",
     "iosChromeNote": "他のブラウザ(Chrome など)をお使いの場合、Safari でこのページを再度開いてください。",
