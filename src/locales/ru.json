@@ -1112,7 +1112,9 @@
   "bonus": {
     "label": "Бонус",
     "noInterstitialAd": "Без межстраничной рекламы",
-    "referralBtn": "🤝 Пригласить друга + 100pt",
+    "referralBtn": "🤝 Пригласить друга",
+    "referralSubtitle": "Друг тоже получит 100pt",
+    "reviewSubtitle": "Только один раз",
     "referral": {
       "title": "Введите код → Получите 100pt",
       "desc": "Введите код друга — вы оба получите 100 бонусных очков.",
@@ -1139,7 +1141,7 @@
       "signupBtn": "Создать бесплатный аккаунт",
       "cancel": "Отмена"
     },
-    "reviewBtn": "🌟 Отзыв в Google Play + 100pt",
+    "reviewBtn": "🌟 Отзыв в Google Play",
     "review": {
       "title": "100pt за отзыв в Google Play",
       "desc": "Оставьте отзыв в Google Play и нажмите [Готово] — 100 бонусных очков мгновенно!",

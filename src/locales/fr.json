@@ -1072,7 +1072,9 @@
   "bonus": {
     "label": "Bonus",
     "noInterstitialAd": "Pas de pub interstitielle",
-    "referralBtn": "🤝 Parrainer un ami + 100pt",
+    "referralBtn": "🤝 Parrainer un ami",
+    "referralSubtitle": "Votre ami reçoit aussi 100pt",
+    "reviewSubtitle": "Une seule fois",
     "referral": {
       "title": "Entrez le code → Recevez 100pt",
       "desc": "Entrez le code d'un ami et vous recevrez tous les deux 100 points bonus.",
@@ -1099,7 +1101,7 @@
       "signupBtn": "Créer un compte gratuit",
       "cancel": "Annuler"
     },
-    "reviewBtn": "🌟 Avis Google Play + 100pt",
+    "reviewBtn": "🌟 Avis Google Play",
     "review": {
       "title": "100pt pour un avis Google Play",
       "desc": "Laissez un avis sur Google Play puis appuyez sur [Terminé] — 100 points bonus instantanément !",

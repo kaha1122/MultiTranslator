@@ -1113,7 +1113,9 @@
   "bonus": {
     "label": "ボーナス",
     "noInterstitialAd": "全画面広告なし",
-    "referralBtn": "🤝 友達紹介 + 100pt",
+    "referralBtn": "🤝 友達紹介",
+    "referralSubtitle": "友達も100ptもらえる",
+    "reviewSubtitle": "一度のみ",
     "referral": {
       "title": "コード入力 → 100pt獲得",
       "desc": "友達のコードを入力すると、二人とも100ボーナスポイントを獲得します。",
@@ -1140,7 +1142,7 @@
       "signupBtn": "無料アカウント作成",
       "cancel": "キャンセル"
     },
-    "reviewBtn": "🌟 Google Play レビュー + 100pt",
+    "reviewBtn": "🌟 Google Play レビュー",
     "review": {
       "title": "Google Playレビューで100pt獲得",
       "desc": "Google Playにレビューを投稿してから [完了] ボタンを押してください。100ボーナスポイント即時付与！",

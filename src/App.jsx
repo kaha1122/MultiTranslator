@@ -310,6 +310,10 @@ function App() {
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
+  // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 + 친구추천 버튼으로 스크롤·하이라이트
+  const referralBtnRef = useRef(null);
+  const [focusReferralPending, setFocusReferralPending] = useState(false);
+  const [referralHighlight, setReferralHighlight] = useState(false);
   const [showEmailVerifyChange, setShowEmailVerifyChange] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
@@ -1382,6 +1386,44 @@ function App() {
     const timer = setTimeout(() => setShowBonusCampaign(true), 1500);
     return () => clearTimeout(timer);
   }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
+
+  // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 후 친구추천 버튼으로 스크롤·하이라이트.
+  // VocabTab/NotificationSettings 패턴 참조: requestAnimationFrame + retry + getBoundingClientRect로
+  // .sidebar 스크롤 컨테이너 직접 계산 (Android WebView에서 scrollIntoView 불안정).
+  useEffect(() => {
+    if (!sidebarOpen || !focusReferralPending) return;
+
+    const tryFocus = (attempt = 0) => {
+      const btn = referralBtnRef.current;
+      if (!btn) {
+        if (attempt < 5) setTimeout(() => tryFocus(attempt + 1), 100);
+        return;
+      }
+      const container = btn.closest('.sidebar');
+      if (!container) {
+        // fallback — 사이드바 컨테이너 못 찾으면 표준 scrollIntoView
+        btn.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        const btnRect = btn.getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+        if (btnRect.height === 0 && attempt < 5) {
+          setTimeout(() => tryFocus(attempt + 1), 100);
+          return;
+        }
+        const target = container.scrollTop
+          + (btnRect.top - containerRect.top)
+          - (containerRect.height / 2)
+          + (btnRect.height / 2);
+        container.scrollTo({ top: Math.max(0, target), behavior: 'smooth' });
+      }
+      // 하이라이트 펄스 — 2.5초 후 원복
+      setReferralHighlight(true);
+      setTimeout(() => setReferralHighlight(false), 2500);
+      setFocusReferralPending(false);
+    };
+
+    requestAnimationFrame(() => tryFocus(0));
+  }, [sidebarOpen, focusReferralPending]);
 
   // 캠페인 모달 dismiss — Firestore에 표시 완료 시각 기록
   const dismissBonusCampaign = useCallback(async () => {
@@ -2628,7 +2670,9 @@ function App() {
         onClose={dismissBonusCampaign}
         onCta={() => {
           dismissBonusCampaign();
-          setSidebarOpen(true); // 사이드바 자동 오픈 → 보너스 섹션 노출
+          setSidebarOpen(true);
+          // 사이드바 마운트 후 친구추천 버튼으로 스크롤 + 하이라이트 (useEffect가 처리)
+          setFocusReferralPending(true);
         }}
         sourceLang={sourceLang}
       />
@@ -3006,8 +3050,9 @@ function App() {
                   </div>
                 )}
 
-                {/* 친구 추천 버튼 — 익명은 가입 가드, 등록자는 모달 */}
+                {/* 친구 추천 — 핑크 그라데이션 + +100pt 뱃지 + 부제목 (Pro/Premium 카드 스타일 패턴) */}
                 <button
+                  ref={referralBtnRef}
                   onClick={() => {
                     setSidebarOpen(false);
                     if (user?.isAnonymous) {
@@ -3017,15 +3062,31 @@ function App() {
                     }
                   }}
                   style={{
-                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
-                    borderRadius: '12px', background: 'white',
-                    border: '1.5px dashed #93c5fd', cursor: 'pointer', textAlign: 'left',
-                    color: '#1d4ed8', fontSize: '0.82rem', fontWeight: 700,
+                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '6px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)',
+                    border: '1px solid #f9a8d4', cursor: 'pointer', textAlign: 'left',
+                    transition: 'transform 0.25s ease, box-shadow 0.25s ease',
+                    boxShadow: referralHighlight ? '0 0 0 3px rgba(99, 102, 241, 0.6), 0 6px 20px rgba(99, 102, 241, 0.4)' : 'none',
+                    transform: referralHighlight ? 'scale(1.03)' : 'scale(1)',
                   }}>
-                  {getT(sourceLang, 'bonus.referralBtn') || '🤝 Refer a friend + 100pt'}
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9d174d' }}>
+                      {getT(sourceLang, 'bonus.referralBtn') || '🤝 Refer a friend'}
+                    </span>
+                    <span style={{
+                      fontSize: '0.65rem', fontWeight: 700, color: '#9d174d',
+                      background: '#fbcfe8', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap',
+                    }}>
+                      +100pt
+                    </span>
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#be185d' }}>
+                    {getT(sourceLang, 'bonus.referralSubtitle') || 'Friend also gets 100pt'}
+                  </div>
                 </button>
 
-                {/* 리뷰 보상 버튼 — iOS는 정책상 비노출 (Apple 5.6.1) */}
+                {/* 리뷰 보상 — 오렌지 그라데이션 + +100pt 뱃지 (iOS는 Apple 5.6.1 정책상 비노출) */}
                 {Capacitor.getPlatform() !== 'ios' && (
                   <button
                     onClick={() => {
@@ -3038,14 +3099,29 @@ function App() {
                     }}
                     style={{
                       width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
-                      borderRadius: '12px', background: 'white',
-                      border: '1.5px dashed #93c5fd', cursor: 'pointer', textAlign: 'left',
-                      color: '#1d4ed8', fontSize: '0.82rem', fontWeight: 700,
+                      borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                      border: '1px solid #fdba74', cursor: 'pointer', textAlign: 'left',
                       opacity: reviewBonusClaimed ? 0.5 : 1,
                     }}>
-                    {reviewBonusClaimed
-                      ? `✓ ${getT(sourceLang, 'bonus.review.alreadyClaimed') || 'Already claimed'}`
-                      : (getT(sourceLang, 'bonus.reviewBtn') || '🌟 Review + 100pt')}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                      <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
+                        {getT(sourceLang, 'bonus.reviewBtn') || '🌟 Google Play review'}
+                      </span>
+                      {!reviewBonusClaimed && (
+                        <span style={{
+                          fontSize: '0.65rem', fontWeight: 700, color: '#9a3412',
+                          background: '#fed7aa', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap',
+                        }}>
+                          +100pt
+                        </span>
+                      )}
+                    </div>
+                    <div style={{ fontSize: '0.72rem', color: '#c2410c' }}>
+                      {reviewBonusClaimed
+                        ? `✓ ${getT(sourceLang, 'bonus.review.alreadyClaimed') || 'Already claimed'}`
+                        : (getT(sourceLang, 'bonus.reviewSubtitle') || 'One-time only')}
+                    </div>
                   </button>
                 )}
               </div>

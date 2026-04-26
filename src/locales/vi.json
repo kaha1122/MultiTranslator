@@ -1112,7 +1112,9 @@
   "bonus": {
     "label": "Tiền thưởng",
     "noInterstitialAd": "Không có quảng cáo chuyển tiếp",
-    "referralBtn": "🤝 Giới thiệu bạn + 100pt",
+    "referralBtn": "🤝 Giới thiệu bạn",
+    "referralSubtitle": "Bạn của bạn cũng nhận 100pt",
+    "reviewSubtitle": "Chỉ một lần",
     "referral": {
       "title": "Nhập mã giới thiệu → Nhận 100pt",
       "desc": "Nhập mã của bạn bè và cả hai nhận 100 điểm thưởng.",
@@ -1139,7 +1141,7 @@
       "signupBtn": "Tạo tài khoản miễn phí",
       "cancel": "Hủy"
     },
-    "reviewBtn": "🌟 Đánh giá Google Play + 100pt",
+    "reviewBtn": "🌟 Đánh giá Google Play",
     "review": {
       "title": "Nhận 100pt cho đánh giá Google Play",
       "desc": "Để lại đánh giá trên Google Play rồi nhấn [Hoàn tất] — 100 điểm thưởng ngay lập tức!",

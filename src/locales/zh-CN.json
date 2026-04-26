@@ -1073,7 +1073,9 @@
   "bonus": {
     "label": "奖励",
     "noInterstitialAd": "无插屏广告",
-    "referralBtn": "🤝 推荐朋友 + 100pt",
+    "referralBtn": "🤝 推荐朋友",
+    "referralSubtitle": "朋友也获得100pt",
+    "reviewSubtitle": "仅一次",
     "referral": {
       "title": "输入推荐码 → 获得100pt",
       "desc": "输入朋友的推荐码,你们都将获得100奖励积分。",
@@ -1100,7 +1102,7 @@
       "signupBtn": "创建免费账号",
       "cancel": "取消"
     },
-    "reviewBtn": "🌟 Google Play 评价 + 100pt",
+    "reviewBtn": "🌟 Google Play 评价",
     "review": {
       "title": "Google Play 评价获得100pt",
       "desc": "在Google Play留下评价后点击[完成]按钮,立即获得100奖励积分!",

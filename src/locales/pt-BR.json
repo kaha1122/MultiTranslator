@@ -1072,7 +1072,9 @@
   "bonus": {
     "label": "Bônus",
     "noInterstitialAd": "Sem anúncios intersticiais",
-    "referralBtn": "🤝 Indicar amigo + 100pt",
+    "referralBtn": "🤝 Indicar amigo",
+    "referralSubtitle": "Seu amigo também ganha 100pt",
+    "reviewSubtitle": "Apenas uma vez",
     "referral": {
       "title": "Insira o código → Receba 100pt",
       "desc": "Insira o código de um amigo e ambos receberão 100 pontos bônus.",
@@ -1099,7 +1101,7 @@
       "signupBtn": "Criar conta gratuita",
       "cancel": "Cancelar"
     },
-    "reviewBtn": "🌟 Avaliação no Google Play + 100pt",
+    "reviewBtn": "🌟 Avaliação no Google Play",
     "review": {
       "title": "100pt por avaliação no Google Play",
       "desc": "Deixe uma avaliação na Google Play e toque em [Concluído] — 100 pontos bônus na hora!",

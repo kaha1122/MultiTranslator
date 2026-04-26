@@ -1122,7 +1122,9 @@
   "bonus": {
     "label": "보너스",
     "noInterstitialAd": "전면광고 제거",
-    "referralBtn": "🤝 친구 추천 + 100pt",
+    "referralBtn": "🤝 친구 추천",
+    "referralSubtitle": "친구도 100pt 받아요",
+    "reviewSubtitle": "한 번만 가능",
     "referral": {
       "title": "친구 추천 코드 입력 → 100pt 받기",
       "desc": "친구 코드를 입력하면 둘 다 100 보너스 포인트를 받아요.",
@@ -1149,7 +1151,7 @@
       "signupBtn": "무료 계정 만들기",
       "cancel": "취소"
     },
-    "reviewBtn": "🌟 구글플레이 후기 + 100pt",
+    "reviewBtn": "🌟 구글플레이 후기",
     "review": {
       "title": "구글플레이 후기로 100pt 받기",
       "desc": "Google Play에 사용 후기를 남겨주신 후 [완료] 버튼을 눌러주세요. 100 보너스 포인트를 즉시 드립니다.",
