@@ -1,7 +1,7 @@
 {
     "short_name": "PronunFit",
-    "name": "PronunFit - 발음 연습 & 다국어 번역",
-    "description": "AI 기반 다국어 번역 및 발음 연습 앱. 언제 어디서든 언어 장벽을 허물어보세요!",
+    "name": "PronunFit",
+    "description": "AI Pronunciation Coach & Multilingual Translator",
     "icons": [
         {
             "src": "icon-64.png",
@@ -27,7 +27,7 @@
     "orientation": "portrait",
     "theme_color": "#00a884",
     "background_color": "#f8fafc",
-    "lang": "ko",
+    "lang": "en",
     "categories": [
         "education",
         "utilities"
