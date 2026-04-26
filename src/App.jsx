@@ -1128,28 +1128,46 @@ function App() {
   };
 
   // ── PWA 설치 이벤트 감지 ──────────────────────────────────────────────────
-  // 브라우저가 앱 설치가 가능하다고 판단하면 'beforeinstallprompt' 이벤트를 발생시킵니다.
-  // 우리는 이 이벤트를 가로채서 저장해두었다가, 사용자가 [설치] 버튼을 눌렀을 때 실행합니다.
+  // 'beforeinstallprompt' 이벤트는 engagement 조건을 이미 충족한 재방문 사용자에게는
+  // 페이지 로드 직후 즉시 발생할 수 있어 React 마운트 전에 놓치기 쉽다.
+  // index.html의 early listener가 window.__deferredInstallPrompt에 캡처해두면
+  // 여기서 회수하고, 마운트 후 발생하는 이벤트는 직접 listener로 잡는다.
   useEffect(() => {
+    // (a) HTML early listener가 잡아둔 이벤트 회수
+    if (window.__deferredInstallPrompt) {
+      setDeferredPrompt(window.__deferredInstallPrompt);
+      setShowInstallBanner(true);
+    }
+
     const handleBeforeInstall = (e) => {
-      e.preventDefault(); // 브라우저 기본 팝업은 막고
-      setDeferredPrompt(e); // 이벤트 객체를 보관
-      setShowInstallBanner(true); // 우리 배너를 표시
+      e.preventDefault();
+      setDeferredPrompt(e);
+      setShowInstallBanner(true);
+    };
+
+    // (b) HTML early listener가 마운트 직후에 캡처한 경우 알림
+    const handleEarlyReady = () => {
+      if (window.__deferredInstallPrompt) {
+        setDeferredPrompt(window.__deferredInstallPrompt);
+        setShowInstallBanner(true);
+      }
     };
 
     // 이미 설치된 경우에는 배너를 숨깁니다
     const handleAppInstalled = () => {
       setShowInstallBanner(false);
       setDeferredPrompt(null);
+      window.__deferredInstallPrompt = null;
       console.log('[PWA] 앱이 설치되었습니다!');
     };
 
     window.addEventListener('beforeinstallprompt', handleBeforeInstall);
+    window.addEventListener('__deferredPromptReady', handleEarlyReady);
     window.addEventListener('appinstalled', handleAppInstalled);
 
-    // 컴포넌트가 사라질 때 이벤트 리스너를 정리합니다 (메모리 누수 방지)
     return () => {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstall);
+      window.removeEventListener('__deferredPromptReady', handleEarlyReady);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
   }, []);
@@ -1170,12 +1188,15 @@ function App() {
     }
 
     // 2) Android Chrome 등 — beforeinstallprompt prompt 사용 가능
-    if (deferredPrompt) {
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
+    // state OR HTML early listener 캡처본 모두 체크 (race-safe)
+    const promptEvent = deferredPrompt || window.__deferredInstallPrompt;
+    if (promptEvent) {
+      promptEvent.prompt();
+      const { outcome } = await promptEvent.userChoice;
       console.log('[PWA] 사용자 선택:', outcome);
       if (outcome === 'accepted') {
         setDeferredPrompt(null);
+        window.__deferredInstallPrompt = null;
         setShowInstallBanner(false);
       }
       return;
@@ -2497,19 +2518,29 @@ function App() {
         } catch (e) { console.error(e); }
         setShowLanding(false);
       };
-      return <LandingPage
-        onGoogleLogin={handleGoogleLoginFromLanding}
-        onFacebookLogin={handleFacebookLoginFromLanding}
-        onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeFromLanding}
-        onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
-        onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
-        onInstall={handleInstallClick}
-        showInstall={showInstallBanner}
-        onSpeak={handleSpeak}
-        onPrivacy={() => setViewMode('privacy')}
-        onTerms={() => setViewMode('terms')}
-        onContact={() => setViewMode('contact')}
-      />;
+      return (
+        <>
+          <LandingPage
+            onGoogleLogin={handleGoogleLoginFromLanding}
+            onFacebookLogin={handleFacebookLoginFromLanding}
+            onStartFree={window.Capacitor?.isNativePlatform?.() ? undefined : handleStartFreeFromLanding}
+            onLogin={() => { setShowLanding(false); setAuthMode('login'); }}
+            onSignup={() => { setShowLanding(false); setAuthMode('signup'); }}
+            onInstall={handleInstallClick}
+            showInstall={showInstallBanner}
+            onSpeak={handleSpeak}
+            onPrivacy={() => setViewMode('privacy')}
+            onTerms={() => setViewMode('terms')}
+            onContact={() => setViewMode('contact')}
+          />
+          {/* LandingPage 분기에서도 iOS install 가이드 모달이 렌더되어야 동작 */}
+          <IOSInstallGuideModal
+            open={showIOSInstallGuide}
+            onClose={() => setShowIOSInstallGuide(false)}
+            sourceLang={sourceLang}
+          />
+        </>
+      );
     }
     return authMode === 'login' ? (
       <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
@@ -2520,19 +2551,29 @@ function App() {
 
   // [Web] 익명 유저 + 랜딩 미완료 → 랜딩페이지
   if (!isNativePlatform && user?.isAnonymous && showLanding) {
-    return <LandingPage
-      onGoogleLogin={handleGoogleLoginFromLanding}
-      onFacebookLogin={handleFacebookLoginFromLanding}
-      onStartFree={() => { localStorage.setItem('webAppEntered', '1'); setShowLanding(false); }}
-      onLogin={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
-      onSignup={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
-      onInstall={handleInstallClick}
-      showInstall={showInstallBanner}
-      onSpeak={handleSpeak}
-      onPrivacy={() => setViewMode('privacy')}
-      onTerms={() => setViewMode('terms')}
-      onContact={() => setViewMode('contact')}
-    />;
+    return (
+      <>
+        <LandingPage
+          onGoogleLogin={handleGoogleLoginFromLanding}
+          onFacebookLogin={handleFacebookLoginFromLanding}
+          onStartFree={() => { localStorage.setItem('webAppEntered', '1'); setShowLanding(false); }}
+          onLogin={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
+          onSignup={() => { setShowLanding(false); setShowAccountUpgrade(true); }}
+          onInstall={handleInstallClick}
+          showInstall={showInstallBanner}
+          onSpeak={handleSpeak}
+          onPrivacy={() => setViewMode('privacy')}
+          onTerms={() => setViewMode('terms')}
+          onContact={() => setViewMode('contact')}
+        />
+        {/* LandingPage 분기에서도 iOS install 가이드 모달이 렌더되어야 동작 */}
+        <IOSInstallGuideModal
+          open={showIOSInstallGuide}
+          onClose={() => setShowIOSInstallGuide(false)}
+          sourceLang={sourceLang}
+        />
+      </>
+    );
   }
 
   // 메인 앱 화면

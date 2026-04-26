@@ -12,6 +12,21 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="default" />
   <link rel="manifest" href="/manifest.json" />
+
+  <!-- React 마운트 전 beforeinstallprompt 캡처: engagement 조건을 이미 충족한
+       재방문 사용자는 페이지 로드 직후 즉시 이벤트가 발생하는데, React useEffect가
+       등록되기 전이라 놓치는 race condition 방지. App.jsx가 마운트 후 회수. -->
+  <script>
+    (function () {
+      window.__deferredInstallPrompt = null;
+      window.addEventListener('beforeinstallprompt', function (e) {
+        e.preventDefault();
+        window.__deferredInstallPrompt = e;
+        window.dispatchEvent(new Event('__deferredPromptReady'));
+      });
+    })();
+  </script>
+
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- PayPal CDN DNS/TCP/TLS warmup — UpgradeModal 오픈 시 SDK 로딩 지연 단축 -->
