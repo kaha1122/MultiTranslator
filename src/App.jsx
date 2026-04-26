@@ -4,7 +4,6 @@ import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2,
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
-import IOSInstallGuideModal from './components/IOSInstallGuideModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
 import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
 import EmailVerifyChangeModal from './components/EmailVerifyChangeModal';
@@ -308,7 +307,6 @@ function App() {
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
-  const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
@@ -1187,6 +1185,18 @@ function App() {
       return;
     }
 
+    // 1-b) 일반 브라우저 탭에서 보고 있어도 PWA 설치 여부 감지
+    // (manifest의 related_applications에 자기 자신을 webapp으로 등록한 덕에 가능)
+    try {
+      if (navigator.getInstalledRelatedApps) {
+        const installedRelated = await navigator.getInstalledRelatedApps();
+        if (installedRelated.length > 0) {
+          alert(getT(sourceLang, 'install.alreadyInstalled'));
+          return;
+        }
+      }
+    } catch {}
+
     // 2) Android Chrome 등 — beforeinstallprompt prompt 사용 가능
     // state OR HTML early listener 캡처본 모두 체크 (race-safe)
     const promptEvent = deferredPrompt || window.__deferredInstallPrompt;
@@ -1202,10 +1212,10 @@ function App() {
       return;
     }
 
-    // 3) iOS (Safari/Chrome 모두 WebKit 기반, beforeinstallprompt 없음) — 가이드 모달
+    // 3) iOS — LandingPage에서 Download 버튼 자체를 비노출하고 자동 슬라이드로
+    //    안내하므로 여기까지 도달할 일은 없음. 안전망으로 무동작 처리.
     const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
     if (/iPhone|iPad|iPod/i.test(ua)) {
-      setShowIOSInstallGuide(true);
       return;
     }
 
@@ -2533,12 +2543,6 @@ function App() {
             onTerms={() => setViewMode('terms')}
             onContact={() => setViewMode('contact')}
           />
-          {/* LandingPage 분기에서도 iOS install 가이드 모달이 렌더되어야 동작 */}
-          <IOSInstallGuideModal
-            open={showIOSInstallGuide}
-            onClose={() => setShowIOSInstallGuide(false)}
-            sourceLang={sourceLang}
-          />
         </>
       );
     }
@@ -2565,12 +2569,6 @@ function App() {
           onPrivacy={() => setViewMode('privacy')}
           onTerms={() => setViewMode('terms')}
           onContact={() => setViewMode('contact')}
-        />
-        {/* LandingPage 분기에서도 iOS install 가이드 모달이 렌더되어야 동작 */}
-        <IOSInstallGuideModal
-          open={showIOSInstallGuide}
-          onClose={() => setShowIOSInstallGuide(false)}
-          sourceLang={sourceLang}
         />
       </>
     );
@@ -2611,13 +2609,6 @@ function App() {
           // 성공 후 잠시 후 닫기 (사용자가 메시지 볼 시간 확보)
           setTimeout(() => setShowReferralModal(false), 2000);
         }}
-      />
-
-      {/* iOS PWA 설치 가이드 모달 (Safari → 공유 → 홈 화면에 추가) */}
-      <IOSInstallGuideModal
-        open={showIOSInstallGuide}
-        onClose={() => setShowIOSInstallGuide(false)}
-        sourceLang={sourceLang}
       />
 
       {/* 리뷰 보상 모달 */}

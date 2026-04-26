@@ -31,5 +31,13 @@
     "categories": [
         "education",
         "utilities"
+    ],
+    "prefer_related_applications": false,
+    "related_applications": [
+        {
+            "platform": "webapp",
+            "url": "https://www.pronunfit.com/manifest.json",
+            "id": "https://www.pronunfit.com/"
+        }
     ]
 }

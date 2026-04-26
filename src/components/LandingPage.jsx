@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { locales, useT } from '../utils/i18n';
+import IOSInstallSlideshow from './IOSInstallSlideshow';
 import './LandingPage.css';
 
 // 브라우저 언어 → 로케일 코드 매핑
@@ -38,9 +39,17 @@ const CARDS = [
 
 const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
+// iPhone/iPad/Mac 등 Apple 플랫폼 웹 사용자에겐 Download 버튼 비노출.
+// (Capacitor 네이티브 앱은 어차피 Apple이지만 isNative 분기에서 별도 처리됨)
+const isAppleWeb = !isNative && /iPhone|iPad|iPod|Mac/i.test(navigator.userAgent || '');
+
+// iPhone(+iPad)만 슬라이드 가이드 자동 표시 — Mac은 데스크탑 PWA 경로가 다르므로 제외
+const isIOSWeb = !isNative && /iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+
 const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, onTerms, onContact }) => {
   const bottomRef = useRef(null);
   const [showInstallPopup, setShowInstallPopup] = useState(false);
+  const [showIOSSlideshow, setShowIOSSlideshow] = useState(false);
 
   const langCode = detectLang();
   const t = useT(langCode);
@@ -58,6 +67,20 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
     return () => obs.disconnect();
   }, []);
 
+  // iPhone 사용자에게 진입 1.5초 후 자동으로 설치 가이드 슬라이드 표시.
+  // 이미 standalone PWA로 실행 중이거나, 한 번 본 사용자에겐 띄우지 않음.
+  useEffect(() => {
+    if (!isIOSWeb) return;
+    const isStandalone = window.navigator.standalone === true ||
+      (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches);
+    if (isStandalone) return;
+    try {
+      if (localStorage.getItem('iosInstallSlideshowSeen')) return;
+    } catch {}
+    const timer = setTimeout(() => setShowIOSSlideshow(true), 1500);
+    return () => clearTimeout(timer);
+  }, []);
+
   if (!c) return null;
 
   const handleCta = isNative ? onLogin : onStartFree;
@@ -72,7 +95,7 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
       {/* Nav */}
       <nav className="lp-nav" style={{ justifyContent: 'center', gap: '16px' }}>
         <div className="lp-logo">PronunFit</div>
-        {!isNative && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
+        {!isNative && !isAppleWeb && <button className="lp-install-btn" onClick={onInstall}>📲 Download</button>}
         {onLogin && (
           <button onClick={onLogin} style={{
             padding: '8px 18px', borderRadius: '20px',
@@ -214,8 +237,15 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
       {/* Login Modal */}
       <div ref={bottomRef} style={{ height: 1 }} />
 
-      {/* Install Popup */}
-      {!isNative && showInstallPopup && (
+      {/* iOS 설치 가이드 자동 슬라이드 — iPhone 전용 */}
+      <IOSInstallSlideshow
+        open={showIOSSlideshow}
+        onClose={() => setShowIOSSlideshow(false)}
+        sourceLang={langCode}
+      />
+
+      {/* Install Popup (Apple 플랫폼 제외 — iPhone은 위 슬라이드쇼로 대체) */}
+      {!isNative && !isAppleWeb && showInstallPopup && (
         <div className="lp-install-popup" style={{ position: 'fixed' }}>
           <button className="lp-popup-close" onClick={() => setShowInstallPopup(false)}>✕</button>
           <p className="lp-popup-msg">{c.installPopup?.split('\n').map((line, i) => (
