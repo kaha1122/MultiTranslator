@@ -103,8 +103,8 @@ export default function IOSInstallSlideshow({ open, onClose, sourceLang }) {
                                 exit={{ opacity: 0 }}
                                 transition={{ duration: 0.4 }}
                                 style={{
-                                    maxWidth: '100%', maxHeight: '100%',
-                                    objectFit: 'contain',
+                                    width: '100%', height: '100%',
+                                    objectFit: 'cover', objectPosition: 'center',
                                     display: 'block',
                                     borderRadius: '12px',
                                 }}
