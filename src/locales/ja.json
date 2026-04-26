@@ -1044,7 +1044,16 @@
     "ios": "ホーム画面に追加するには:\n下部の共有ボタン(□↑) → \"ホーム画面に追加\"を選択してください。",
     "android": "アプリとしてインストールするには:\nChrome のアドレスバー右の ⋮ メニュー → \"アプリをインストール\" または \"ホーム画面に追加\"。",
     "desktop": "アプリとしてインストールするには:\nブラウザのアドレスバー右のインストールアイコン(⊕)をクリックするか、\nメニュー → \"PronunFit をインストール\"。",
-    "alreadyInstalled": "すでにインストールされています。\nアイコンをご確認ください。"
+    "alreadyInstalled": "すでにインストールされています。\nアイコンをご確認ください。",
+    "iosGuideTitle": "iPhone に PronunFit をインストール",
+    "iosGuideIntro": "iPhone では Safari の「ホーム画面に追加」でアプリのようにインストールできます。",
+    "iosStep1": "Safari 下部の共有ボタンをタップ",
+    "iosStep2": "メニューをスクロールして「ホーム画面に追加」を選択",
+    "iosStep3": "右上の「追加」をタップして完了!",
+    "iosChromeNote": "他のブラウザ(Chrome など)をお使いの場合、Safari でこのページを再度開いてください。",
+    "iosDontShowAgain": "今後表示しない",
+    "iosGotIt": "OK",
+    "androidMenuHint": "Chrome 右上の ⋮ メニューから「アプリをインストール」を選択してください。"
   },
   "listening": {
     "essay": "エッセイ",

@@ -1003,7 +1003,16 @@
     "ios": "Para adicionar à tela inicial:\nToque no botão compartilhar (□↑) → selecione \"Adicionar à tela inicial\".",
     "android": "Para instalar como app:\nToque em ⋮ no Chrome → \"Instalar app\" ou \"Adicionar à tela inicial\".",
     "desktop": "Para instalar como app:\nClique no ícone de instalação (⊕) na barra de endereços,\nou menu → \"Instalar PronunFit\".",
-    "alreadyInstalled": "Já está instalado.\nPor favor, verifique o ícone do aplicativo."
+    "alreadyInstalled": "Já está instalado.\nPor favor, verifique o ícone do aplicativo.",
+    "iosGuideTitle": "Instalar PronunFit no iPhone",
+    "iosGuideIntro": "No iPhone, use \"Adicionar à Tela de Início\" do Safari para instalar como um app.",
+    "iosStep1": "Toque no botão Compartilhar na parte inferior do Safari",
+    "iosStep2": "Role e toque em \"Adicionar à Tela de Início\"",
+    "iosStep3": "Toque em \"Adicionar\" no canto superior direito",
+    "iosChromeNote": "Se você usa outro navegador (Chrome, etc.), abra esta página no Safari.",
+    "iosDontShowAgain": "Não mostrar novamente",
+    "iosGotIt": "Entendi",
+    "androidMenuHint": "Abra o menu do Chrome (⋮) no canto superior direito e selecione \"Instalar app\"."
   },
   "listening": {
     "essay": "Ensaio",

@@ -4,6 +4,7 @@ import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2,
 import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
+import IOSInstallGuideModal from './components/IOSInstallGuideModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
 import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
 import EmailVerifyChangeModal from './components/EmailVerifyChangeModal';
@@ -307,6 +308,7 @@ function App() {
   );
   const [showAccountUpgrade, setShowAccountUpgrade] = useState(false);
   const [showReferralModal, setShowReferralModal] = useState(false);
+  const [showIOSInstallGuide, setShowIOSInstallGuide] = useState(false);
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
@@ -1153,17 +1155,41 @@ function App() {
   }, []);
 
   // [설치] 버튼을 눌렀을 때 실행
+  // deferredPrompt 유무로 "이미 설치"를 단정하면 안 됨 — iOS Safari/Chrome은 영구 null,
+  // Android Chrome도 prompt 발생 전·Play Store 앱 설치됨 등 여러 사유로 null 가능.
+  // 실제 설치 여부는 standalone 실행 모드로만 판정.
   const handleInstallClick = async () => {
+    // 1) 진짜 설치 여부 (standalone 모드로 실행 중)
+    const isStandalone =
+      (typeof window !== 'undefined' && window.matchMedia &&
+       window.matchMedia('(display-mode: standalone)').matches) ||
+      window.navigator?.standalone === true;
+    if (isStandalone) {
+      alert(getT(sourceLang, 'install.alreadyInstalled'));
+      return;
+    }
+
+    // 2) Android Chrome 등 — beforeinstallprompt prompt 사용 가능
     if (deferredPrompt) {
       deferredPrompt.prompt();
       const { outcome } = await deferredPrompt.userChoice;
       console.log('[PWA] 사용자 선택:', outcome);
-      setDeferredPrompt(null);
-      setShowInstallBanner(false);
+      if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+        setShowInstallBanner(false);
+      }
       return;
     }
-    // deferredPrompt 없을 때: 이미 설치된 것으로 안내
-    alert(getT(sourceLang, 'install.alreadyInstalled'));
+
+    // 3) iOS (Safari/Chrome 모두 WebKit 기반, beforeinstallprompt 없음) — 가이드 모달
+    const ua = (typeof navigator !== 'undefined' && navigator.userAgent) || '';
+    if (/iPhone|iPad|iPod/i.test(ua)) {
+      setShowIOSInstallGuide(true);
+      return;
+    }
+
+    // 4) Android Chrome 인데 prompt 부재 — Chrome 메뉴 안내
+    alert(getT(sourceLang, 'install.androidMenuHint'));
   };
 
 
@@ -2544,6 +2570,13 @@ function App() {
           // 성공 후 잠시 후 닫기 (사용자가 메시지 볼 시간 확보)
           setTimeout(() => setShowReferralModal(false), 2000);
         }}
+      />
+
+      {/* iOS PWA 설치 가이드 모달 (Safari → 공유 → 홈 화면에 추가) */}
+      <IOSInstallGuideModal
+        open={showIOSInstallGuide}
+        onClose={() => setShowIOSInstallGuide(false)}
+        sourceLang={sourceLang}
       />
 
       {/* 리뷰 보상 모달 */}

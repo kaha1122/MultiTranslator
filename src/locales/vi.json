@@ -1043,7 +1043,16 @@
     "ios": "Thêm vào màn hình chính:\nNhấn nút chia sẻ (□↑) → chọn \"Thêm vào màn hình chính\".",
     "android": "Cài đặt như ứng dụng:\nNhấn ⋮ trên thanh địa chỉ Chrome → \"Cài đặt ứng dụng\" hoặc \"Thêm vào màn hình chính\".",
     "desktop": "Cài đặt như ứng dụng:\nNhấp vào biểu tượng cài đặt (⊕) trên thanh địa chỉ,\nhoặc menu → \"Cài đặt PronunFit\".",
-    "alreadyInstalled": "Đã được cài đặt.\nVui lòng kiểm tra biểu tượng ứng dụng."
+    "alreadyInstalled": "Đã được cài đặt.\nVui lòng kiểm tra biểu tượng ứng dụng.",
+    "iosGuideTitle": "Cài đặt PronunFit trên iPhone",
+    "iosGuideIntro": "Trên iPhone, dùng \"Thêm vào Màn hình chính\" của Safari để cài như một ứng dụng.",
+    "iosStep1": "Nhấn nút Chia sẻ ở cuối Safari",
+    "iosStep2": "Cuộn xuống và chọn \"Thêm vào Màn hình chính\"",
+    "iosStep3": "Nhấn \"Thêm\" ở góc trên bên phải để hoàn tất",
+    "iosChromeNote": "Nếu bạn dùng trình duyệt khác (Chrome, v.v.), hãy mở lại trang này trong Safari.",
+    "iosDontShowAgain": "Không hiển thị lại",
+    "iosGotIt": "Đã hiểu",
+    "androidMenuHint": "Mở menu Chrome (⋮) ở góc trên bên phải và chọn \"Cài đặt ứng dụng\"."
   },
   "listening": {
     "essay": "Bài luận",

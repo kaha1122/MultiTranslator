@@ -1053,7 +1053,16 @@
     "ios": "홈 화면에 추가하려면:\n하단 공유 버튼(□↑) → \"홈 화면에 추가\"를 선택하세요.",
     "android": "앱으로 설치하려면:\nChrome 주소창 우측 ⋮ 메뉴 → \"앱 설치\" 또는 \"홈 화면에 추가\"를 선택하세요.",
     "desktop": "앱으로 설치하려면:\n브라우저 주소창 우측 설치 아이콘(⊕)을 클릭하거나,\n메뉴 → \"PronunFit 설치\"를 선택하세요.",
-    "alreadyInstalled": "이미 설치가 되었습니다.\n아이콘을 확인하십시오."
+    "alreadyInstalled": "이미 설치가 되었습니다.\n아이콘을 확인하십시오.",
+    "iosGuideTitle": "iPhone에 PronunFit 설치하기",
+    "iosGuideIntro": "iPhone에서는 Safari의 \"홈 화면에 추가\" 기능으로 앱처럼 설치할 수 있어요.",
+    "iosStep1": "Safari 하단의 공유 버튼을 누르세요",
+    "iosStep2": "메뉴를 내려서 \"홈 화면에 추가\"를 선택하세요",
+    "iosStep3": "오른쪽 위의 \"추가\"를 눌러 완료!",
+    "iosChromeNote": "다른 브라우저(Chrome 등) 사용 중이면 Safari로 이 페이지를 다시 열어주세요.",
+    "iosDontShowAgain": "다시 보지 않기",
+    "iosGotIt": "확인",
+    "androidMenuHint": "Chrome 우상단 ⋮ 메뉴에서 \"앱 설치\"를 선택해주세요."
   },
   "listening": {
     "essay": "에세이",

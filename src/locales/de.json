@@ -1003,7 +1003,16 @@
     "ios": "Zum Startbildschirm hinzufügen:\nTippe auf die Teilen-Schaltfläche (□↑) → wähle \"Zum Home-Bildschirm\".",
     "android": "Als App installieren:\nTippe auf ⋮ in der Chrome-Adressleiste → \"App installieren\" oder \"Zum Startbildschirm hinzufügen\".",
     "desktop": "Als App installieren:\nKlicke auf das Installations-Symbol (⊕) in der Adressleiste,\noder Menü → \"PronunFit installieren\".",
-    "alreadyInstalled": "Bereits installiert.\nBitte überprüfen Sie das App-Symbol."
+    "alreadyInstalled": "Bereits installiert.\nBitte überprüfen Sie das App-Symbol.",
+    "iosGuideTitle": "PronunFit auf iPhone installieren",
+    "iosGuideIntro": "Auf dem iPhone kannst du mit Safaris \"Zum Home-Bildschirm\" wie eine App installieren.",
+    "iosStep1": "Tippe auf die Teilen-Schaltfläche unten in Safari",
+    "iosStep2": "Scrolle und tippe auf \"Zum Home-Bildschirm\"",
+    "iosStep3": "Tippe oben rechts auf \"Hinzufügen\"",
+    "iosChromeNote": "Wenn du einen anderen Browser (Chrome usw.) nutzt, öffne diese Seite bitte in Safari.",
+    "iosDontShowAgain": "Nicht mehr anzeigen",
+    "iosGotIt": "Verstanden",
+    "androidMenuHint": "Öffne das Chrome-Menü (⋮) oben rechts und wähle \"App installieren\"."
   },
   "listening": {
     "essay": "Aufsatz",

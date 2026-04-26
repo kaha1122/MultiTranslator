@@ -1004,7 +1004,16 @@
     "ios": "添加到主屏幕：\n点击底部分享按钮(□↑) → 选择\"添加到主屏幕\"。",
     "android": "安装为应用：\n点击 Chrome 地址栏右侧 ⋮ 菜单 → \"安装应用\" 或 \"添加到主屏幕\"。",
     "desktop": "安装为应用：\n点击浏览器地址栏右侧安装图标(⊕)，\n或菜单 → \"安装 PronunFit\"。",
-    "alreadyInstalled": "已安装完成。\n请检查应用图标。"
+    "alreadyInstalled": "已安装完成。\n请检查应用图标。",
+    "iosGuideTitle": "在 iPhone 上安装 PronunFit",
+    "iosGuideIntro": "在 iPhone 上，使用 Safari 的\"添加到主屏幕\"即可像安装应用一样使用。",
+    "iosStep1": "点击 Safari 底部的分享按钮",
+    "iosStep2": "向下滚动，选择\"添加到主屏幕\"",
+    "iosStep3": "点击右上角的\"添加\"完成",
+    "iosChromeNote": "如果您使用其他浏览器（如 Chrome），请用 Safari 重新打开此页面。",
+    "iosDontShowAgain": "不再显示",
+    "iosGotIt": "好的",
+    "androidMenuHint": "请打开右上角 Chrome 菜单（⋮），选择\"安装应用\"。"
   },
   "listening": {
     "essay": "文章",
