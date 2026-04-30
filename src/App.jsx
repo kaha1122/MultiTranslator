@@ -113,6 +113,7 @@ function App() {
     bonusPoints, hasBonusActive, consumeBonusPoints,
     reviewBonusClaimed,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
+    ensureAnonymousUser,
   } = useAuth();
 
   // 사용자 국가 (언어별 국기 표시 변형용 — phoneCountry > navigator.language > geoCountry)
@@ -2045,7 +2046,9 @@ function App() {
 
   // Firebase Firestore에 실제 데이터를 저장하는 공통 함수
   const saveToFirebase = async (langCode) => {
-    if (!user) { // userAuthState에서 가져온 user 객체 사용
+    // Strategy A: 부팅 시점 백그라운드 사인인이 보통 끝나 있지만, race 케이스 대비
+    const u = user || await ensureAnonymousUser();
+    if (!u) {
       alert("Login required to use library.");
       return { status: "error" };
     }
@@ -2061,7 +2064,7 @@ function App() {
       // 2. 중복 데이터 검사 쿼리
       const q = query(
         collection(db, "savedCards"),
-        where("userId", "==", user.uid),
+        where("userId", "==", u.uid),
         where("langCode", "==", langCode),
         where("sourceText", "==", inputText)
       );
@@ -2076,8 +2079,8 @@ function App() {
 
       // 2. 중복이 없을 경우 새로 저장
       const cardData = {
-        userId: user.uid,
-        userEmail: user.email,
+        userId: u.uid,
+        userEmail: u.email,
         language: getLangName(langCode),
         langCode: langCode,
         sourceText: inputText,
@@ -2098,7 +2101,7 @@ function App() {
         createdAt: serverTimestamp()
       };
 
-      const serialNumber = await assignNextCardSerial(user.uid);
+      const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
       addAdPoints(2);
@@ -2129,7 +2132,8 @@ function App() {
 
   // 5. Video 탭 문장을 Library에 저장하는 함수 (다국어 지원)
   const saveVideoCard = async (sentenceText, videoTitle, langCode, pronunciationScore = null) => {
-    if (!user) { alert(getT(sourceLang, 'video.loginRequired')); return; }
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'video.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
       setShowTrialLimitModal(true);
@@ -2137,10 +2141,10 @@ function App() {
     }
     const langInfo = getLangInfo(langCode);
     try {
-      const serialNumber = await assignNextCardSerial(user.uid);
+      const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
-        userId: user.uid,
-        userEmail: user.email,
+        userId: u.uid,
+        userEmail: u.email,
         sourceText: sentenceText,
         translatedText: sentenceText,
         langCode,
@@ -2171,7 +2175,8 @@ function App() {
 
   // 6. Scene 카드를 Library에 저장하는 함수
   const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '' }) => {
-    if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
       setShowTrialLimitModal(true);
@@ -2181,7 +2186,7 @@ function App() {
     try {
       const dupQ = query(
         collection(db, "savedCards"),
-        where("userId", "==", user.uid),
+        where("userId", "==", u.uid),
         where("translatedText", "==", sentence),
         where("sourceType", "==", "scene")
       );
@@ -2192,10 +2197,10 @@ function App() {
 
     const langInfo = getLangInfo(langCode);
     try {
-      const serialNumber = await assignNextCardSerial(user.uid);
+      const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
-        userId: user.uid,
-        userEmail: user.email,
+        userId: u.uid,
+        userEmail: u.email,
         sourceText: sceneHint || scene || '',
         translatedText: sentence,
         langCode,
@@ -2232,7 +2237,8 @@ function App() {
 
   // 7. Vocab 카드를 Library에 저장하는 함수
   const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
-    if (!user) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     if (isTrialSavedCardLimitReached) {
       setTrialCardCurrentCount(savedCardCount);
       setShowTrialLimitModal(true);
@@ -2242,7 +2248,7 @@ function App() {
     try {
       const dupQ = query(
         collection(db, "savedCards"),
-        where("userId", "==", user.uid),
+        where("userId", "==", u.uid),
         where("translatedText", "==", word),
         where("sourceType", "==", sourceType)
       );
@@ -2253,10 +2259,10 @@ function App() {
 
     const langInfo = getLangInfo(langCode);
     try {
-      const serialNumber = await assignNextCardSerial(user.uid);
+      const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), {
-        userId: user.uid,
-        userEmail: user.email,
+        userId: u.uid,
+        userEmail: u.email,
         sourceText: meaning,          // 뜻 (모국어)
         translatedText: word,         // 단어 (학습 언어)
         langCode,
@@ -2557,8 +2563,16 @@ function App() {
 
   // ── 진입 분기 ────────────────────────────────────────────────────────────────
 
-  // [폴백] signInAnonymously 실패 또는 명시적 로그아웃 후 user가 null → 랜딩 또는 로그인 화면
+  // [Strategy A 적용] 자동 익명 사인인이 백그라운드로 전환되어
+  // 네이티브 부팅 직후 user가 잠시 null인 케이스가 정상 흐름에 추가됨.
+  //   - 명시적 로그아웃 → Login (기존 유지)
+  //   - 웹 첫 방문(showLanding) → LandingPage (기존 유지)
+  //   - 웹 그 외 user=null → Login (기존 폴백 유지)
+  //   - 네이티브 + 백그라운드 사인인 진행 중 → home으로 fall through (NEW)
   if (!user) {
+    const isNativeBootingUser = window.Capacitor?.isNativePlatform?.()
+      && localStorage.getItem('didExplicitLogout') !== '1';
+
     if (showLanding) {
       const handleStartFreeFromLanding = async () => {
         localStorage.removeItem('didExplicitLogout');
@@ -2588,11 +2602,16 @@ function App() {
         </>
       );
     }
-    return authMode === 'login' ? (
-      <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
-    ) : (
-      <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
-    );
+
+    // 네이티브 + 비-로그아웃: 백그라운드 사인인이 곧 user를 채워줌 → home 렌더 허용
+    // (early return 안 함 → 본 렌더 분기로 진입. user 없는 동안 useEffect 16곳은 자연 skip)
+    if (!isNativeBootingUser) {
+      return authMode === 'login' ? (
+        <Login onSwitchToSignup={() => setAuthMode('signup')} sourceLang={sourceLang} />
+      ) : (
+        <Signup onSwitchToLogin={() => setAuthMode('login')} sourceLang={sourceLang} />
+      );
+    }
   }
 
   // [Web] 익명 유저 + 랜딩 미완료 → 랜딩페이지
@@ -2848,7 +2867,7 @@ function App() {
                   <p className="sidebar-username" style={{ fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {profile?.displayName || user?.displayName || 'User'}
                   </p>
-                  <p className="sidebar-user-email" style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.email || (user.isAnonymous ? user.uid : '')}</p>
+                  <p className="sidebar-user-email" style={{ fontSize: '0.68rem', color: '#94a3b8', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email || (user?.isAnonymous ? user.uid : '')}</p>
                   <p className="sidebar-user-tier">{{
                     trial: 'Free Trial',
                     admin: 'Admin',
@@ -3694,7 +3713,7 @@ function App() {
                     {profile?.displayName || user?.displayName || 'Google User'}
                     <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
                   </p>
-                  <p className="user-email-secondary">{user.email}</p>
+                  <p className="user-email-secondary">{user?.email}</p>
                   <p className="user-status" style={{ textDecoration: 'underline' }}>{{
                     trial: 'Free Trial',
                     admin: 'Admin',
