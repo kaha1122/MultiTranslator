@@ -18,7 +18,7 @@ const router = express.Router();
 const { admin, adminDb } = require('../config/firebase');
 const { requireCronAuth } = require('../middleware/auth');
 const { sendReengagementPush } = require('../utils/sendPush');
-const { effectiveCountry, getLocalHour, countriesAtLocalHour10 } = require('../utils/countryTimezone');
+const { effectiveCountry, getLocalHour, countriesAtLocalHour10, TZ_BY_COUNTRY } = require('../utils/countryTimezone');
 
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
@@ -492,9 +492,13 @@ router.post('/api/cron/user-lang-stats', requireCronAuth, async (req, res) => {
     let withBoth = 0;
     let withNeither = 0;
     let withFcmTokens = 0;
+    let geoCountryMapped = 0;     // TZ_BY_COUNTRY 매핑 있음 → cron 정상 처리
+    let geoCountryUnmapped = 0;   // 값은 있지만 TZ 매핑 없음 → cron 갭 (갭 1)
+    let geoCountryMissing = 0;    // 필드 자체 없음 → processNoGeoCountry로 처리됨
     const sourceLangDist = {};
     const deviceLangDist = {};
     const effectiveLangDist = {}; // pickLangForUser 결과 분포
+    const unmappedGeoCountryDist = {}; // 매핑 없는 국가 코드 분포
 
     // pickLang 로직 (sendPush.js와 동일하게 inline)
     const SUPPORTED = ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR'];
@@ -545,6 +549,17 @@ router.post('/api/cron/user-lang-stats', requireCronAuth, async (req, res) => {
                 // pickLangForUser 시뮬레이션 — sourceLang 우선, 없으면 deviceLang
                 const effLang = pickLang(sl || dl);
                 effectiveLangDist[effLang] = (effectiveLangDist[effLang] || 0) + 1;
+
+                // geoCountry 커버리지 분석
+                const geo = (d.geoCountry && String(d.geoCountry).trim()) || '';
+                if (!geo) {
+                    geoCountryMissing += 1;
+                } else if (TZ_BY_COUNTRY[geo]) {
+                    geoCountryMapped += 1;
+                } else {
+                    geoCountryUnmapped += 1;
+                    unmappedGeoCountryDist[geo] = (unmappedGeoCountryDist[geo] || 0) + 1;
+                }
             }
 
             cursor = snap.docs[snap.docs.length - 1];
@@ -565,6 +580,13 @@ router.post('/api/cron/user-lang-stats', requireCronAuth, async (req, res) => {
             sourceLangDist,
             deviceLangDist,
             effectiveLangDist,
+            geoCountryCoverage: {
+                mapped: geoCountryMapped,
+                unmapped: geoCountryUnmapped,
+                missing: geoCountryMissing,
+                unmappedPct: totalUsers ? +(geoCountryUnmapped / totalUsers * 100).toFixed(1) : 0,
+            },
+            unmappedGeoCountryDist,
         });
     } catch (e) {
         console.error('[UserLangStats] failed:', e);
