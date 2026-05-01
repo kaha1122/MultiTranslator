@@ -230,21 +230,24 @@ function App() {
     if (!Capacitor.isNativePlatform?.()) return;
     if (!user?.uid || !profile) return;
 
+    // ⚠ dynamic import 사용 금지 — 과거 hang 사례(memory/changes-0419-session3.md) 재발 방지.
+    //   @capacitor/app, firebase/firestore, ./firebase/config는 모두 파일 상단에 이미 static import됨.
+    //   여기서 또 await import(...) 하면 plugin 호출 hang 가능성 → 함수 영영 pending → updateDoc 미실행.
     (async () => {
       try {
-        const { App: CapApp } = await import('@capacitor/app');
-        const info = await CapApp.getInfo();
+        const info = await CapacitorApp.getInfo();
         const version = info?.version;
         const platform = Capacitor.getPlatform(); // 'android' | 'ios'
-        if (!version) return;
+        if (!version) {
+          console.warn('[Version] CapacitorApp.getInfo returned no version');
+          return;
+        }
 
         // 이미 동일 버전+플랫폼이 기록돼 있으면 skip (불필요 Firestore write 방지)
         if (profile.currentNativeVersion === version &&
             profile.currentNativePlatform === platform &&
             profile.firstNativeVersion) return;
 
-        const { doc, updateDoc, serverTimestamp } = await import('firebase/firestore');
-        const { db } = await import('./firebase/config');
         const updateData = {
           currentNativeVersion: version,
           currentNativePlatform: platform,
@@ -261,7 +264,11 @@ function App() {
         console.warn('[Version] tracking failed:', e?.message);
       }
     })();
-  }, [user?.uid, profile?.currentNativeVersion, profile?.currentNativePlatform, profile?.firstNativeVersion]);
+    // !!profile 필수 — Strategy A 적용 후 user는 set, profile은 잠시 후 set이 됨.
+    // 만약 profile.X 4개만 dep에 두면, profile이 null→object 전환 시 (모든 .X가 undefined→undefined)
+    // 변화 감지 안 되어 effect가 재실행 안 됨 → 버전 필드 영영 미기록 + supportsFeature false →
+    // 푸시 모달 안 뜸 + 신규 기능 발견 안 됨. !!profile은 이 전환을 명시적으로 잡아줌.
+  }, [user?.uid, !!profile, profile?.currentNativeVersion, profile?.currentNativePlatform, profile?.firstNativeVersion]);
 
   // Tier 변경 감지 — PushOptIn 모달 (trial→paid) + SubscriptionEvent 팝업 (paid→trial)
   useEffect(() => {
@@ -2313,8 +2320,26 @@ function App() {
   const ttsCacheRef = useRef(new Map());
   const TTS_CACHE_MAX = 30; // 최대 캐시 항목 수
 
+  // 빠른 연속 클릭 race 방지 — 같은 패턴이 ListeningTab에 이미 적용됨
+  // (memory/changes-0416.md "Listening TTS race 근본해결: AbortController+세대토큰+탭이탈정지")
+  // 콜드 스타트/네트워크 지연 시 사용자가 무반응 보고 다시 누르면 두 음성이 시차 두고 동시 재생되던 문제 해결.
+  const ttsAbortRef = useRef(null); // 진행 중인 fetch 중단용
+  const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
+  const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
+
   const handleSpeak = async (text, langCode, emotion) => {
     if (!text) return;
+
+    // ⭐ 이전 요청/재생 즉시 중단 — "돌림노래" 방지
+    if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
+    if (ttsAudioRef.current) {
+      try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
+      ttsAudioRef.current = null;
+    }
+    try { window.speechSynthesis?.cancel(); } catch {}
+
+    const myGen = ++ttsGenRef.current;
+    const isStale = () => myGen !== ttsGenRef.current;
     const cacheKey = `${langCode}:${emotion || ''}:${text}`;
 
     // 캐시 히트 — 서버 호출 없이 즉시 재생
@@ -2322,12 +2347,17 @@ function App() {
       const cachedUrl = ttsCacheRef.current.get(cacheKey);
       try {
         const audio = new Audio(cachedUrl);
-        audio.onerror = () => handleSpeakFallback(text, langCode);
+        ttsAudioRef.current = audio;
+        audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+        audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
         const p = audio.play();
-        if (p) p.catch(() => document.addEventListener('click', () => audio.play(), { once: true }));
+        if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
+
+    const ac = new AbortController();
+    ttsAbortRef.current = ac;
 
     const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
     try {
@@ -2341,12 +2371,13 @@ function App() {
           byokAzureKey: byokAzureKey || undefined,
           byokAzureRegion: byokAzureRegion || undefined,
         }),
+        signal: ac.signal,
       });
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
 
-      // 캐시에 저장 (LRU: 오래된 항목 제거)
+      // 캐시에 저장 (LRU: 오래된 항목 제거) — stale이어도 캐시는 저장(다음 호출에서 재사용)
       if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
         const oldestKey = ttsCacheRef.current.keys().next().value;
         const oldUrl = ttsCacheRef.current.get(oldestKey);
@@ -2355,21 +2386,30 @@ function App() {
       }
       ttsCacheRef.current.set(cacheKey, url);
 
+      // ⭐ 응답 도착 시점에 stale이면 재생 skip (사용자가 그동안 다른 버튼 눌렀음)
+      if (isStale()) return;
+
       const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
       // 캐시된 URL은 revokeObjectURL 안 함 (재사용 위해)
       audio.onerror = (err) => {
         console.warn('[TTS] Audio play error:', err);
-        handleSpeakFallback(text, langCode);
+        if (!isStale()) handleSpeakFallback(text, langCode);
       };
       const playPromise = audio.play();
       if (playPromise) {
         playPromise.catch(() => {
-          document.addEventListener('click', () => audio.play(), { once: true });
+          document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true });
         });
       }
     } catch (e) {
+      if (e?.name === 'AbortError') return; // 의도적 중단 — 무시
+      if (isStale()) return;
       console.warn('[TTS] Azure failed:', e.message);
       handleSpeakFallback(text, langCode);
+    } finally {
+      if (ttsAbortRef.current === ac) ttsAbortRef.current = null;
     }
   };
 

@@ -24,17 +24,46 @@ if (Capacitor.getPlatform() === 'ios') {
   // — 수동 모드: 포그라운드에서 다운로드 → 다음 앱 실행 시 자동 적용
   CapacitorUpdater.notifyAppReady();
 
-  CapacitorUpdater.getLatest().then(latest => {
-    if (latest?.url) {
-      console.log('[Capgo] Android: 새 번들 감지, 다운로드 시작', latest.version);
-      CapacitorUpdater.download({ url: latest.url, version: latest.version })
-        .then(bundle => {
-          console.log('[Capgo] Android: 다운로드 완료, 다음 실행 시 적용', bundle.version);
-          CapacitorUpdater.set({ id: bundle.id });
-        })
-        .catch(err => console.warn('[Capgo] Android: 다운로드 실패', err));
+  // ⭐ 다운그레이드 방지: latest <= current 면 OTA skip
+  //   - capacitor.config.json default channel='production'이라 신규 device는 production에 할당됨
+  //   - 만약 production 채널이 빌트인 번들보다 구버전이면 다운그레이드 + 무한 reload 발생 (set 호출이 reload 트리거)
+  //   - staging APK 테스트 / 신규 AAB 출시 직후 등 빌트인이 OTA보다 새로운 케이스 보호
+  const cmpVer = (a, b) => {
+    const pa = String(a).split('.').map(n => parseInt(n) || 0);
+    const pb = String(b).split('.').map(n => parseInt(n) || 0);
+    for (let i = 0; i < Math.max(pa.length, pb.length); i++) {
+      if ((pa[i] || 0) > (pb[i] || 0)) return 1;
+      if ((pa[i] || 0) < (pb[i] || 0)) return -1;
     }
-  }).catch(err => console.warn('[Capgo] Android: 최신 버전 확인 실패', err));
+    return 0;
+  };
+
+  (async () => {
+    try {
+      const latest = await CapacitorUpdater.getLatest();
+      if (!latest?.url) return;
+
+      // 현재 번들 버전 확인 — 'builtin'이면 package.json 버전(__APP_VERSION__)으로 폴백
+      let currentVersion = __APP_VERSION__;
+      try {
+        const info = await CapacitorUpdater.current();
+        const v = info?.bundle?.version;
+        if (v && v !== 'builtin') currentVersion = v;
+      } catch {}
+
+      if (cmpVer(latest.version, currentVersion) <= 0) {
+        console.log(`[Capgo] Android: OTA skip — current ${currentVersion} >= latest ${latest.version}`);
+        return;
+      }
+
+      console.log('[Capgo] Android: 새 번들 감지, 다운로드 시작', latest.version);
+      const bundle = await CapacitorUpdater.download({ url: latest.url, version: latest.version });
+      console.log('[Capgo] Android: 다운로드 완료, 다음 실행 시 적용', bundle.version);
+      CapacitorUpdater.set({ id: bundle.id });
+    } catch (err) {
+      console.warn('[Capgo] Android: OTA 실패', err);
+    }
+  })();
 } else {
   // Web: Capacitor 네이티브 플러그인 미동작 — notifyAppReady만 호출
   CapacitorUpdater.notifyAppReady();

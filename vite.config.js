@@ -1,5 +1,8 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
+import { readFileSync } from 'fs'
+
+const pkgJson = JSON.parse(readFileSync('./package.json', 'utf-8'))
 
 // https://vite.dev/config/
 // [참고] vite-plugin-mkcert는 Vercel 빌드 서버에 mkcert 바이너리가 없어서 빌드 실패를 유발합니다.
@@ -10,5 +13,7 @@ export default defineConfig({
   define: {
     // CAPGO_CHANNEL 환경변수가 없으면 'production' 기본값
     __CAPGO_CHANNEL__: JSON.stringify(process.env.CAPGO_CHANNEL || 'production'),
+    // 빌트인 번들 버전 (Capgo current()가 'builtin' 반환할 때 비교 기준)
+    __APP_VERSION__: JSON.stringify(pkgJson.version),
   },
 })
