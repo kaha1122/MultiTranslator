@@ -17,6 +17,13 @@ function pickLang(deviceLang) {
     return 'en';
 }
 
+// 푸시 발송용 언어 선택 — 사용자가 앱에서 선택한 UI 언어(sourceLang) 우선
+// deviceLang은 첫 가입 시 navigator.language에서 한 번만 저장되어 갱신되지 않으므로
+// 한국 사용자가 영어 브라우저로 가입하면 deviceLang='en'으로 굳어짐 → sourceLang이 진짜 선호
+function pickLangForUser(userData) {
+    return pickLang(userData?.sourceLang || userData?.deviceLang);
+}
+
 // 알림 템플릿 — 서버 측 10개 언어 번역
 // 클라이언트의 src/locales와 분리 관리 (서버는 필요한 key만)
 const PUSH_MESSAGES = {
@@ -102,6 +109,14 @@ function renderMessage(type, deviceLang) {
     return tpl[lang] || tpl['en'];
 }
 
+// userData 기반 메시지 렌더 — sourceLang 우선
+function renderMessageForUser(type, userData) {
+    const tpl = PUSH_MESSAGES[type];
+    if (!tpl) return null;
+    const lang = pickLangForUser(userData);
+    return tpl[lang] || tpl['en'];
+}
+
 /**
  * 특정 유저에게 구독 이벤트 푸시 전송
  * @param {string} uid — Firestore users 문서 ID
@@ -124,7 +139,7 @@ async function sendSubscriptionPush(uid, type, dataExtras = {}) {
         const tokens = Array.isArray(data.fcmTokens) ? data.fcmTokens.filter(Boolean) : [];
         if (tokens.length === 0) return { ok: false, reason: 'no-tokens' };
 
-        const msg = renderMessage(type, data.deviceLang);
+        const msg = renderMessageForUser(type, data);
         if (!msg) return { ok: false, reason: 'unknown-type' };
 
         const response = await admin.messaging().sendEachForMulticast({
@@ -186,13 +201,19 @@ async function sendReengagementPush(uid, { doc, type, window, dryRun = false } =
         const tokens = Array.isArray(data.fcmTokens) ? data.fcmTokens.filter(Boolean) : [];
         if (tokens.length === 0) return { ok: false, reason: 'no-tokens' };
 
-        const msg = renderMessage(type, data.deviceLang);
+        const msg = renderMessageForUser(type, data);
         if (!msg) return { ok: false, reason: 'unknown-type' };
 
         if (dryRun) {
             return {
                 ok: true, dryRun: true, sent: 0, failed: 0,
-                preview: { title: msg.title, body: msg.body, lang: pickLang(data.deviceLang), tokens: tokens.length },
+                preview: {
+                    title: msg.title, body: msg.body,
+                    lang: pickLangForUser(data),
+                    sourceLang: data.sourceLang || null,
+                    deviceLang: data.deviceLang || null,
+                    tokens: tokens.length,
+                },
             };
         }
 
