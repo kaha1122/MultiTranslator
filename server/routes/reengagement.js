@@ -477,4 +477,99 @@ router.post('/api/cron/backfill-last-active', requireCronAuth, async (req, res) 
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// 진단 엔드포인트 — sourceLang / deviceLang / fcmTokens 분포 (1회성)
+//
+// re-engagement push 발송 대상 분석 + sourceLang fix 효과 측정용
+// 'pickLangForUser'가 채택할 lang 분포까지 시뮬레이션
+router.post('/api/cron/user-lang-stats', requireCronAuth, async (req, res) => {
+    const batchSize = 500;
+    const maxBatches = 50;
+
+    let totalUsers = 0;
+    let withSourceLang = 0;
+    let withDeviceLang = 0;
+    let withBoth = 0;
+    let withNeither = 0;
+    let withFcmTokens = 0;
+    const sourceLangDist = {};
+    const deviceLangDist = {};
+    const effectiveLangDist = {}; // pickLangForUser 결과 분포
+
+    // pickLang 로직 (sendPush.js와 동일하게 inline)
+    const SUPPORTED = ['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR'];
+    const pickLang = (l) => {
+        if (!l) return 'en';
+        if (SUPPORTED.includes(l)) return l;
+        if (l.startsWith('zh')) return 'zh-CN';
+        if (l.startsWith('pt')) return 'pt-BR';
+        const short = l.split('-')[0];
+        if (SUPPORTED.includes(short)) return short;
+        return 'en';
+    };
+
+    let cursor = null;
+    let batches = 0;
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                totalUsers += 1;
+                const d = doc.data();
+                const sl = d.sourceLang;
+                const dl = d.deviceLang;
+                const hasSL = !!sl;
+                const hasDL = !!dl;
+                const hasFcm = Array.isArray(d.fcmTokens) && d.fcmTokens.length > 0;
+
+                if (hasSL) {
+                    withSourceLang += 1;
+                    sourceLangDist[sl] = (sourceLangDist[sl] || 0) + 1;
+                }
+                if (hasDL) {
+                    withDeviceLang += 1;
+                    deviceLangDist[dl] = (deviceLangDist[dl] || 0) + 1;
+                }
+                if (hasSL && hasDL) withBoth += 1;
+                if (!hasSL && !hasDL) withNeither += 1;
+                if (hasFcm) withFcmTokens += 1;
+
+                // pickLangForUser 시뮬레이션 — sourceLang 우선, 없으면 deviceLang
+                const effLang = pickLang(sl || dl);
+                effectiveLangDist[effLang] = (effectiveLangDist[effLang] || 0) + 1;
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        return res.json({
+            totalUsers,
+            withSourceLang,
+            withSourceLangPct: totalUsers ? +(withSourceLang / totalUsers * 100).toFixed(1) : 0,
+            withDeviceLang,
+            withDeviceLangPct: totalUsers ? +(withDeviceLang / totalUsers * 100).toFixed(1) : 0,
+            withBoth,
+            withNeither,
+            withFcmTokens,
+            withFcmTokensPct: totalUsers ? +(withFcmTokens / totalUsers * 100).toFixed(1) : 0,
+            sourceLangDist,
+            deviceLangDist,
+            effectiveLangDist,
+        });
+    } catch (e) {
+        console.error('[UserLangStats] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
