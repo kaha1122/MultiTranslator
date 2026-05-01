@@ -375,4 +375,106 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// Backfill — lastActiveAt 필드를 모든 기존 유저에게 일괄 설정 (1회성)
+//
+// 배경: lastActiveAt 필드는 2026-05-01 신설(commit cb60370)이라 기존 유저는 이 필드가 없음.
+// Firestore where('lastActiveAt', '>=', X) 쿼리는 필드 없는 doc을 자동 제외 →
+// re-engagement cron이 기존 유저를 영영 못 잡는 갭 발생.
+//
+// 해결: 모든 유저에게 lastActiveAt = '오늘 UTC 자정' 으로 일괄 설정.
+//   → 다음 KST 10시 cron에서 D1 윈도우 [오늘 UTC 자정, 내일 UTC 자정) 안에 들어감
+//   → starter D1 / engaged D2 부터 자연스럽게 drip 시작
+//   → 5-6일에 걸쳐 stage별 3회 발송 후 자동 종료 (이미 reengagementSentAt 멱등)
+//
+// 정책:
+//   - 이미 lastActiveAt 있는 유저: skip (오늘 deploy 후 활동한 유저 → 실데이터 보존)
+//   - 그 외 모든 유저에게 set (fcmTokens 유무 등 cron 자체의 shouldSkipUser가 따로 필터)
+//
+// 사용:
+//   curl -X POST "$RENDER_URL/api/cron/backfill-last-active?dryRun=1"  # 미리보기
+//   curl -X POST "$RENDER_URL/api/cron/backfill-last-active"           # 실행
+//   maxBatches로 안전 캡 조정 가능 (기본 50, 25000명까지 한 번에 처리)
+router.post('/api/cron/backfill-last-active', requireCronAuth, async (req, res) => {
+    const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
+    const batchSize = Math.min(parseInt(req.query.batchSize || '500', 10), 500);
+    const maxBatches = parseInt(req.query.maxBatches || '50', 10);
+
+    // 오늘 UTC 자정 — D1 윈도우 [오늘 UTC 자정, 내일 UTC 자정) 안에 들어가도록
+    const now = new Date();
+    const target = new Date(now);
+    target.setUTCHours(0, 0, 0, 0);
+    const targetTimestamp = Timestamp.fromDate(target);
+
+    let totalScanned = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+    let cursor = null;
+    let batches = 0;
+    const sampleUpdated = []; // 처음 5개 uid만 응답에 노출 (디버그용)
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            const writeBatch = !dryRun ? adminDb.batch() : null;
+            let batchUpdated = 0;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const data = doc.data();
+                if (data.lastActiveAt) {
+                    totalSkipped += 1;
+                    continue;
+                }
+                if (!dryRun) {
+                    writeBatch.update(doc.ref, { lastActiveAt: targetTimestamp });
+                }
+                if (sampleUpdated.length < 5) sampleUpdated.push(doc.id);
+                totalUpdated += 1;
+                batchUpdated += 1;
+            }
+
+            if (!dryRun && batchUpdated > 0) {
+                await writeBatch.commit();
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+
+            if (snap.size < batchSize) break; // 마지막 배치
+        }
+
+        const complete = batches < maxBatches;
+
+        console.log(`[Backfill] ${dryRun ? 'DRY' : 'LIVE'} target=${target.toISOString()} batches=${batches} scanned=${totalScanned} updated=${totalUpdated} skipped=${totalSkipped} complete=${complete}`);
+
+        return res.json({
+            mode: dryRun ? 'dryRun' : 'live',
+            target: target.toISOString(),
+            batches,
+            totalScanned,
+            totalUpdated,
+            totalSkipped,
+            complete,
+            sampleUpdated,
+            note: complete
+                ? '전체 컬렉션 처리 완료'
+                : `maxBatches(${maxBatches}) 도달. 다시 호출하면 이어서 처리 가능 (이미 set된 유저는 자동 skip되므로 idempotent)`,
+        });
+    } catch (e) {
+        console.error('[Backfill] failed:', e);
+        return res.status(500).json({
+            error: e.message,
+            partial: { batches, totalScanned, totalUpdated, totalSkipped },
+        });
+    }
+});
+
 module.exports = router;
