@@ -136,6 +136,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                 const updates = {
                     activeDayCount: increment(1),
                     lastActiveDay: today,
+                    lastActiveAt: serverTimestamp(),
                 };
                 const stage = data.lifecycleStage;
                 if (newCount >= 2 && stage !== 'engaged' && stage !== 'subscriber') {

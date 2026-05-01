@@ -68,6 +68,31 @@ const PUSH_MESSAGES = {
         'ru':    { title: 'ℹ️ Автопродление отключено', body: 'Использование до даты окончания подписки.' },
         'pt-BR': { title: 'ℹ️ Renovação automática desativada', body: 'Você pode usar até a data de expiração.' },
     },
+    // Re-engagement Push — 미접속 D1/D3/D5(starter/null) 또는 D2/D4/D6(engaged/subscriber)
+    reengagement_starter: {
+        'ko':    { title: 'PronunFit과 함께 오늘의 학습 진행해 보실까요?', body: '어학 공부는 매일매일 꾸준히 학습을 이어가는게 중요하니까요' },
+        'en':    { title: "Ready for today's learning with PronunFit?", body: 'Daily practice is the key to mastering a language.' },
+        'ja':    { title: 'PronunFitで今日の学習を始めてみませんか？', body: '語学学習は毎日コツコツ続けることが大切です' },
+        'zh-CN': { title: '今天和 PronunFit 一起学习吧？', body: '语言学习贵在每天坚持' },
+        'vi':    { title: 'Cùng PronunFit học bài hôm nay nhé?', body: 'Học ngoại ngữ quan trọng là duy trì đều đặn mỗi ngày' },
+        'es':    { title: '¿Empezamos el aprendizaje de hoy con PronunFit?', body: 'Aprender un idioma es practicar un poco cada día.' },
+        'fr':    { title: "On commence l'apprentissage du jour avec PronunFit ?", body: "Apprendre une langue, c'est pratiquer un peu chaque jour." },
+        'de':    { title: 'Lust, heute mit PronunFit zu lernen?', body: 'Beim Sprachenlernen kommt es auf tägliche Übung an.' },
+        'ru':    { title: 'Готовы продолжить обучение с PronunFit сегодня?', body: 'В изучении языка важна ежедневная практика.' },
+        'pt-BR': { title: 'Vamos começar o estudo de hoje com o PronunFit?', body: 'Aprender um idioma é praticar todos os dias.' },
+    },
+    reengagement_engaged: {
+        'ko':    { title: 'PronunFit과 함께 오늘도 학습을 계속 이어가 볼까요?', body: '매일 카드 10장 학습하는 습관을 만들어 보아요' },
+        'en':    { title: "Let's keep learning with PronunFit today!", body: 'Build the habit of studying 10 cards every day.' },
+        'ja':    { title: 'PronunFitで今日も学習を続けましょう！', body: '毎日10枚のカードを学習する習慣を作りましょう' },
+        'zh-CN': { title: '今天也和 PronunFit 一起继续学习吧！', body: '养成每天学习10张卡片的好习惯' },
+        'vi':    { title: 'Cùng PronunFit tiếp tục học hôm nay nhé!', body: 'Tạo thói quen học 10 thẻ mỗi ngày nào' },
+        'es':    { title: '¡Sigamos aprendiendo hoy con PronunFit!', body: 'Crea el hábito de estudiar 10 tarjetas al día.' },
+        'fr':    { title: "Continuons l'apprentissage aujourd'hui avec PronunFit !", body: "Prenez l'habitude d'étudier 10 cartes par jour." },
+        'de':    { title: 'Lass uns heute mit PronunFit weiterlernen!', body: 'Mach es zur Gewohnheit, täglich 10 Karten zu lernen.' },
+        'ru':    { title: 'Продолжим учиться сегодня с PronunFit!', body: 'Возьмите за привычку учить 10 карточек каждый день.' },
+        'pt-BR': { title: 'Vamos continuar aprendendo hoje com o PronunFit!', body: 'Crie o hábito de estudar 10 cartões por dia.' },
+    },
 };
 
 function renderMessage(type, deviceLang) {
@@ -136,4 +161,73 @@ async function sendSubscriptionPush(uid, type, dataExtras = {}) {
     }
 }
 
-module.exports = { sendSubscriptionPush };
+/**
+ * Re-engagement push 전송 (D1/D3/D5/D2/D4/D6 미접속 유저)
+ * @param {string} uid
+ * @param {{ doc?: object, type: 'reengagement_starter'|'reengagement_engaged', window: 'D1'|'D2'|'D3'|'D4'|'D5'|'D6', dryRun?: boolean }} opts
+ *   - doc: 이미 읽어둔 user data (cron이 batch loop에서 재사용해 read 절감). 없으면 내부에서 fetch
+ *   - dryRun: true면 메시지 렌더만 하고 실제 발송 안 함
+ */
+async function sendReengagementPush(uid, { doc, type, window, dryRun = false } = {}) {
+    if (!admin?.messaging || !adminDb) return { ok: false, reason: 'admin-not-init' };
+    try {
+        let data = doc;
+        if (!data) {
+            const snap = await adminDb.collection('users').doc(uid).get();
+            if (!snap.exists) return { ok: false, reason: 'user-not-found' };
+            data = snap.data();
+        }
+
+        // 사용자 opt-out 존중 (re-engagement 전용 플래그)
+        if (data.reengagementOptOut === true) {
+            return { ok: false, reason: 'opted-out' };
+        }
+
+        const tokens = Array.isArray(data.fcmTokens) ? data.fcmTokens.filter(Boolean) : [];
+        if (tokens.length === 0) return { ok: false, reason: 'no-tokens' };
+
+        const msg = renderMessage(type, data.deviceLang);
+        if (!msg) return { ok: false, reason: 'unknown-type' };
+
+        if (dryRun) {
+            return {
+                ok: true, dryRun: true, sent: 0, failed: 0,
+                preview: { title: msg.title, body: msg.body, lang: pickLang(data.deviceLang), tokens: tokens.length },
+            };
+        }
+
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: { title: msg.title, body: msg.body },
+            data: { type, window, screen: 'home' },
+            android: { priority: 'high' },
+            apns: { payload: { aps: { sound: 'default' } } },
+        });
+
+        // 실패 토큰 정리
+        const staleTokens = [];
+        response.responses.forEach((r, i) => {
+            if (!r.success) {
+                const code = r.error?.code || '';
+                if (code === 'messaging/registration-token-not-registered' ||
+                    code === 'messaging/invalid-registration-token' ||
+                    code === 'messaging/invalid-argument') {
+                    staleTokens.push(tokens[i]);
+                }
+            }
+        });
+        if (staleTokens.length > 0) {
+            const remaining = tokens.filter(t => !staleTokens.includes(t));
+            await adminDb.collection('users').doc(uid).update({ fcmTokens: remaining });
+            console.log(`[Reengagement] ${uid} — cleaned ${staleTokens.length} stale tokens`);
+        }
+
+        console.log(`[Reengagement] ${uid} ← ${type}/${window}: sent=${response.successCount}, failed=${response.failureCount}`);
+        return { ok: true, sent: response.successCount, failed: response.failureCount };
+    } catch (e) {
+        console.warn('[Reengagement] sendReengagementPush failed:', e.message);
+        return { ok: false, reason: e.message };
+    }
+}
+
+module.exports = { sendSubscriptionPush, sendReengagementPush };

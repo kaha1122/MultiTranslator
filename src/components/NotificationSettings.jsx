@@ -6,6 +6,8 @@ import { loadReminderPrefs, saveReminderPrefs } from '../utils/localNotification
 import {
     loadSubscriptionAlertPref,
     setSubscriptionAlertPref,
+    loadReengagementAlertPref,
+    setReengagementAlertPref,
 } from '../utils/pushNotifications';
 import { useFeatureSeen, supportsFeature } from '../utils/featureSeen';
 
@@ -22,6 +24,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
 
     const [reminder, setReminder] = useState(() => loadReminderPrefs());
     const [subAlert, setSubAlert] = useState(() => loadSubscriptionAlertPref());
+    const [reengagement, setReengagement] = useState(() => loadReengagementAlertPref());
     const [prePrompt, setPrePrompt] = useState(null); // 'local' | 'push' | null
     const [status, setStatus] = useState('');
     const [needsSystemSettings, setNeedsSystemSettings] = useState(false);
@@ -257,6 +260,23 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
         showStatus(t('notifications.subAlertOff') || 'Subscription alerts turned off.');
     };
 
+    // Re-engagement 알림 토글 — FCM 토큰 등록은 별도 진입로(구독알림/리마인더)로 이미 처리됨
+    // 이 토글은 Firestore의 reengagementOptOut 플래그만 갱신 (서버 cron이 발송 시 검사)
+    const handleReengagementToggle = async (next) => {
+        markSeen();
+        if (!isNative) {
+            showStatus(t('notifications.webOnly') || 'Notifications require the mobile app.', { isError: true });
+            return;
+        }
+        setReengagement(next);
+        await setReengagementAlertPref(uid, next);
+        showStatus(
+            next
+                ? (t('notifications.reengagementOn') || '복귀 알림이 켜졌습니다.')
+                : (t('notifications.reengagementOff') || '복귀 알림이 꺼졌습니다.')
+        );
+    };
+
     // 구독 알림은 FCM 토큰이 실제 Firestore에 들어가야 서버가 푸시를 보낼 수 있음.
     // 로컬 리마인더와 달리 "로컬 state만 true"로 두면 silent failure 가능 →
     // register() 후 'registration' 이벤트를 최대 PUSH_TOKEN_TIMEOUT_MS 대기하고
@@ -460,6 +480,30 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
                             checked={subAlert && isNative && Array.isArray(profile?.fcmTokens) && profile.fcmTokens.length > 0}
                             disabled={!isNative}
                             onChange={(e) => handleSubAlertToggle(e.target.checked)}
+                            style={{ width: 18, height: 18, cursor: isNative ? 'pointer' : 'not-allowed' }}
+                        />
+                    </label>
+                </div>
+
+                {/* 복귀 알림 (Re-engagement) — 미접속 D1/D3/D5 (또는 D2/D4/D6 engaged) 자동 push */}
+                <div style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    background: '#f8fafc', borderRadius: '12px', padding: '10px 14px',
+                }}>
+                    <div style={{ flex: 1 }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.9rem', color: '#1e293b' }}>
+                            {t('notifications.reengagement') || 'Bring-back Reminders'}
+                        </div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: 2 }}>
+                            {t('notifications.reengagementDesc') || 'A friendly nudge if you have been away for a few days.'}
+                        </div>
+                    </div>
+                    <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input
+                            type="checkbox"
+                            checked={reengagement && isNative}
+                            disabled={!isNative}
+                            onChange={(e) => handleReengagementToggle(e.target.checked)}
                             style={{ width: 18, height: 18, cursor: isNative ? 'pointer' : 'not-allowed' }}
                         />
                     </label>

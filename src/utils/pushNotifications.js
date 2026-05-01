@@ -5,6 +5,7 @@ import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore'
 import { db } from '../firebase/config';
 
 const STORAGE_KEY_SUB_ALERT = 'pronunfit.pushAlert.subscription';
+const STORAGE_KEY_REENGAGEMENT = 'pronunfit.pushAlert.reengagement';
 const STORAGE_KEY_REGISTERED_TOKEN = 'pronunfit.pushAlert.registeredToken';
 
 // 구독 알림 ON/OFF 사용자 프리퍼런스 (기본 true)
@@ -33,6 +34,35 @@ export async function setSubscriptionAlertPref(uid, enabled) {
         });
     } catch (e) {
         console.warn('[Push] alert pref save failed:', e.message);
+    }
+}
+
+// Re-engagement 알림 ON/OFF (기본 true = 옵트인 / 발송 대상)
+// Firestore에는 reengagementOptOut 필드(서버 cron이 검사)
+export function loadReengagementAlertPref() {
+    try {
+        const v = localStorage.getItem(STORAGE_KEY_REENGAGEMENT);
+        return v === null ? true : v === 'true';
+    } catch {
+        return true;
+    }
+}
+
+export function saveReengagementAlertPref(enabled) {
+    try {
+        localStorage.setItem(STORAGE_KEY_REENGAGEMENT, enabled ? 'true' : 'false');
+    } catch {}
+}
+
+export async function setReengagementAlertPref(uid, enabled) {
+    saveReengagementAlertPref(enabled);
+    if (!uid) return;
+    try {
+        await updateDoc(doc(db, 'users', uid), {
+            reengagementOptOut: !enabled,
+        });
+    } catch (e) {
+        console.warn('[Push] reengagement pref save failed:', e.message);
     }
 }
 

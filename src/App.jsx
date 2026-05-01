@@ -196,6 +196,10 @@ function App() {
           if (['renewal', 'expiration', 'billingIssue', 'cancellation'].includes(pushType)) {
             tryShowSubscriptionEvent(pushType);
           }
+          // Re-engagement 푸시 → 홈 탭으로 이동
+          if (typeof pushType === 'string' && pushType.startsWith('reengagement_')) {
+            setViewMode('home');
+          }
         });
         removers.push(hAction);
 
