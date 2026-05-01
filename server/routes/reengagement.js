@@ -191,8 +191,11 @@ async function processNoGeoCountry(windowName, now, opts) {
     for (const doc of snap.docs) {
         const data = doc.data();
 
-        // geoCountry 있으면 해당 국가 슬롯에서 처리되므로 여기선 skip (중복 방지)
-        if (data.geoCountry && String(data.geoCountry).trim()) continue;
+        // geoCountry가 TZ_BY_COUNTRY에 매핑된 경우만 다른 슬롯(processWindow)에서 처리됨.
+        // 매핑 안 된 geoCountry(예: 신규 ISO 코드, 매핑 누락)나 필드 자체 없는 유저는 여기서 처리.
+        // 안전망 — TZ_BY_COUNTRY에 없는 국가도 deviceLang fallback으로 자동 catch.
+        const geo = data.geoCountry && String(data.geoCountry).trim();
+        if (geo && TZ_BY_COUNTRY[geo]) continue; // mapped면 처리됨
 
         candidates += 1;
 
