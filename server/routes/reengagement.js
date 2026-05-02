@@ -648,4 +648,146 @@ router.post('/api/cron/recent-reengagement-logs', requireCronAuth, async (req, r
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// 특정 국가 engaged 유저의 lastActiveAt을 특정 날짜로 일괄 set (특수 운영용)
+//
+// 용도: KR cron이 이미 지난 시점에서 다른 국가(예: VN, IN)의 cron 시간 직전에
+//       engaged 유저들을 D2 윈도우로 강제 진입시켜 즉시 발송 트리거
+//
+// 매개변수:
+//   country: ISO 코드 (geoCountry 또는 deviceLang→해당 국가 fallback 매칭)
+//   targetDate: YYYY-MM-DD (UTC 자정으로 해석). 기본 = 어제 UTC 자정
+//   dryRun: 1이면 미리보기만
+//   stages: 'engaged,subscriber' (콤마 구분, 기본값)
+//
+// 안전장치:
+//   - reengagementSentAt.d2At 이미 있는 유저 skip (idempotency)
+//   - admin / D0 / no-fcmTokens 제외 (cron의 shouldSkipUser 로직과 일관성)
+//   - 백필만 — 발송은 안 함. 다음 cron(국가별 local 10시)이 자연스럽게 발송
+router.post('/api/cron/backfill-engaged', requireCronAuth, async (req, res) => {
+    const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
+    const country = (req.query.country || '').toUpperCase().trim();
+    const targetDateStr = req.query.targetDate || '';
+    const stagesParam = (req.query.stages || 'engaged,subscriber')
+        .split(',').map(s => s.trim()).filter(Boolean);
+
+    if (!country) {
+        return res.status(400).json({ error: 'country query param required (ISO code, e.g. VN)' });
+    }
+    if (!TZ_BY_COUNTRY[country]) {
+        return res.status(400).json({ error: `country ${country} not in TZ_BY_COUNTRY` });
+    }
+
+    // targetDate 파싱 — YYYY-MM-DD → UTC 자정
+    let target;
+    if (targetDateStr) {
+        const m = targetDateStr.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+        if (!m) return res.status(400).json({ error: 'targetDate must be YYYY-MM-DD' });
+        target = new Date(Date.UTC(parseInt(m[1]), parseInt(m[2]) - 1, parseInt(m[3]), 0, 0, 0));
+    } else {
+        // 기본 = 어제 UTC 자정
+        const now = new Date();
+        target = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1, 0, 0, 0));
+    }
+    const targetTimestamp = Timestamp.fromDate(target);
+
+    const batchSize = 500;
+    const maxBatches = 50;
+
+    let totalScanned = 0;
+    let totalUpdated = 0;
+    let totalSkipped = 0;
+    let cursor = null;
+    let batches = 0;
+    const skipReasons = {};
+    const sampleUpdated = [];
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            const writeBatch = !dryRun ? adminDb.batch() : null;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const data = doc.data();
+
+                // 국가 매칭 — geoCountry 직접 매치 또는 deviceLang→대표국가 fallback
+                const geo = (data.geoCountry || '').toUpperCase().trim();
+                const matchedCountry = (geo === country) || (effectiveCountry(data) === country && !geo);
+                if (!matchedCountry) {
+                    skipReasons['country-mismatch'] = (skipReasons['country-mismatch'] || 0) + 1;
+                    continue;
+                }
+
+                // 스테이지 필터
+                const stage = data.lifecycleStage || null;
+                if (!stagesParam.includes(stage)) {
+                    skipReasons['stage-mismatch'] = (skipReasons['stage-mismatch'] || 0) + 1;
+                    continue;
+                }
+
+                // 공통 제외 정책 (발송 가능성 있는 유저만 대상)
+                const skip = shouldSkipUser(data);
+                if (skip) {
+                    skipReasons[skip] = (skipReasons[skip] || 0) + 1;
+                    continue;
+                }
+
+                // idempotency — 이미 d2At 있으면 skip (이전 발송됨)
+                if (data.reengagementSentAt?.d2At) {
+                    skipReasons['already-sent-d2'] = (skipReasons['already-sent-d2'] || 0) + 1;
+                    continue;
+                }
+
+                if (!dryRun) {
+                    writeBatch.update(doc.ref, { lastActiveAt: targetTimestamp });
+                }
+                if (sampleUpdated.length < 5) sampleUpdated.push(doc.id);
+                totalUpdated += 1;
+            }
+
+            if (!dryRun && totalUpdated > 0) {
+                await writeBatch.commit();
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        const complete = batches < maxBatches;
+        console.log(`[BackfillEngaged] ${dryRun ? 'DRY' : 'LIVE'} country=${country} target=${target.toISOString()} updated=${totalUpdated} skipped(byReason)=${JSON.stringify(skipReasons)}`);
+
+        return res.json({
+            mode: dryRun ? 'dryRun' : 'live',
+            country,
+            stagesTargeted: stagesParam,
+            target: target.toISOString(),
+            batches,
+            totalScanned,
+            totalUpdated,
+            totalSkipped,
+            skipReasons,
+            complete,
+            sampleUpdated,
+            note: complete
+                ? `${dryRun ? '[DryRun] ' : ''}${country} ${stagesParam.join('/')} 유저 ${totalUpdated}명 대상. 다음 ${country} cron 실행 시 D2 윈도우 매칭됨.`
+                : `maxBatches(${maxBatches}) 도달. 다시 호출하면 이어서 처리 (idempotent)`,
+        });
+    } catch (e) {
+        console.error('[BackfillEngaged] failed:', e);
+        return res.status(500).json({
+            error: e.message,
+            partial: { batches, totalScanned, totalUpdated, totalSkipped },
+        });
+    }
+});
+
 module.exports = router;
