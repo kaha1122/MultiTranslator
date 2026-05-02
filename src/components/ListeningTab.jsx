@@ -6,6 +6,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
+import CategorySlider from './CategorySlider';
+import TopicPickerModal from './TopicPickerModal';
 import { authFetch } from '../utils/authFetch';
 import { playStarSound } from '../utils/soundEffects';
 import { getLangName } from '../config/languages';
@@ -109,7 +111,7 @@ export default function ListeningTab({
     useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
-    const [showCategorySheet, setShowCategorySheet] = useState(false);
+    const [pickerCatId, setPickerCatId] = useState(null);
     const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
 
     const [passage, setPassage] = useState(null);
@@ -425,11 +427,10 @@ export default function ListeningTab({
         if (onNavigateToLibrary) onNavigateToLibrary(cardId);
     };
 
-    // ── Topic selection from bottom sheet ─────────────────────────
+    // ── Topic selection from picker modal ─────────────────────────
     const handleTopicSelect = (catId, subId, topicId) => {
         setCustomInput('');
         setSelectedTopic({ catId, subId, topicId });
-        setShowCategorySheet(false);
     };
 
     // ── Render ───────────────────────────────────────────────────
@@ -487,20 +488,29 @@ export default function ListeningTab({
                 </span>
             </div>
 
-            {/* Category & Topic Selector */}
-            <div className="listening-selector-row">
+            {/* Category Slider + 선택 칩 (VocabTab과 통일) */}
+            <CategorySlider
+                sourceLang={sourceLang}
+                selectedCatId={selectedTopic?.catId || null}
+                onCategoryClick={(catId) => setPickerCatId(catId)}
+            />
+
+            {selectedTopic && (
                 <button
-                    className={`listening-select-btn ${selectedTopic ? 'selected' : ''}`}
-                    onClick={() => setShowCategorySheet(true)}
+                    type="button"
+                    className="vocab-selected-chip"
+                    onClick={() => setPickerCatId(selectedTopic.catId)}
+                    aria-label="change topic"
                 >
-                    <span>
-                        {selectedTopic
-                            ? `${t(`vocabCat.${selectedTopic.catId}`)} › ${t(`vocabTopic.${selectedTopic.topicId}`)}`
-                            : t('listening.selectTopic')}
+                    <span className="vocab-selected-chip__cat">
+                        {t(`vocabCat.${selectedTopic.catId}`)}
                     </span>
-                    <ChevronDown size={14} />
+                    <span className="vocab-selected-chip__sep">›</span>
+                    <span className="vocab-selected-chip__topic">
+                        {t(`vocabTopic.${selectedTopic.topicId}`)}
+                    </span>
                 </button>
-            </div>
+            )}
 
             {/* Custom Input — 사용자 직접 주제 입력 */}
             <input
@@ -659,43 +669,17 @@ export default function ListeningTab({
                 </div>
             )}
 
-            {/* Category Bottom Sheet */}
-            {showCategorySheet && (
-                <>
-                    <div className="listening-bs-overlay" onClick={() => setShowCategorySheet(false)} />
-                    <div className="listening-bs-sheet">
-                        <div className="listening-bs-handle" />
-                        <div className="listening-bs-title">{t('listening.selectTopic')}</div>
-                        <div className="listening-bs-scroll">
-                            {VOCAB_CATEGORIES.map(cat => (
-                                <div key={cat.id}>
-                                    <div className="listening-bs-cat-header">
-                                        <span className="listening-bs-cat-icon">{cat.icon}</span>
-                                        {t(`vocabCat.${cat.id}`)}
-                                    </div>
-                                    {cat.subs.map(sub => (
-                                        <div key={sub.id}>
-                                            <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', padding: '6px 0 2px 26px' }}>
-                                                {t(`vocabSub.${sub.id}`)}
-                                            </div>
-                                            <div className="listening-bs-topics">
-                                                {sub.topics.map(topic => (
-                                                    <button
-                                                        key={topic.id}
-                                                        className={`listening-bs-topic-pill ${selectedTopic?.topicId === topic.id ? 'active' : ''}`}
-                                                        onClick={() => handleTopicSelect(cat.id, sub.id, topic.id)}
-                                                    >
-                                                        {t(`vocabTopic.${topic.id}`)}
-                                                    </button>
-                                                ))}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-                </>
+            {/* Topic Picker Modal (VocabTab과 동일) */}
+            {pickerCatId && (
+                <TopicPickerModal
+                    catId={pickerCatId}
+                    sourceLang={sourceLang}
+                    selectedTopic={selectedTopic}
+                    onTopicSelect={(catId, subId, topicId) => {
+                        handleTopicSelect(catId, subId, topicId);
+                    }}
+                    onClose={() => setPickerCatId(null)}
+                />
             )}
         </div>
     );

@@ -4271,9 +4271,10 @@ function App() {
                 onClick={() => setViewMode(tab)}
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
+                title={label}
               >
                 <span className="tab-nav__icon" aria-hidden="true">{s.icon}</span>
-                <span className="tab-nav__label">{label}</span>
+                <span className="tab-nav__dot" aria-hidden="true" />
               </button>
             );
           })}
