@@ -597,4 +597,55 @@ router.post('/api/cron/user-lang-stats', requireCronAuth, async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// 최근 reengagementLogs 조회 (운영 진단용)
+// 매시간 cron 실행 결과 요약을 한눈에 보기 — 어느 국가에 몇 명이 발송됐는지
+router.post('/api/cron/recent-reengagement-logs', requireCronAuth, async (req, res) => {
+    const limit = Math.min(parseInt(req.query.limit || '48', 10), 200);
+
+    try {
+        const snap = await adminDb.collection('reengagementLogs')
+            .orderBy('ranAt', 'desc')
+            .limit(limit)
+            .get();
+
+        const logs = [];
+        for (const doc of snap.docs) {
+            const d = doc.data();
+            logs.push({
+                id: doc.id,
+                ranAt: d.ranAt?.toDate?.()?.toISOString() || null,
+                targetCountries: d.targetCountries || [],
+                totals: d.totals || {},
+                skipAggregate: d.skipAggregate || {},
+            });
+        }
+
+        // 집계 — 최근 N개 합산
+        const aggregate = {
+            totalRuns: logs.length,
+            totalCandidates: 0,
+            totalSent: 0,
+            totalFailed: 0,
+            countriesHit: new Set(),
+            skipReasons: {},
+        };
+        for (const l of logs) {
+            aggregate.totalCandidates += l.totals.candidates || 0;
+            aggregate.totalSent += l.totals.sent || 0;
+            aggregate.totalFailed += l.totals.failed || 0;
+            (l.targetCountries || []).forEach(c => aggregate.countriesHit.add(c));
+            for (const [k, v] of Object.entries(l.skipAggregate || {})) {
+                aggregate.skipReasons[k] = (aggregate.skipReasons[k] || 0) + v;
+            }
+        }
+        aggregate.countriesHit = Array.from(aggregate.countriesHit).sort();
+
+        return res.json({ aggregate, logs });
+    } catch (e) {
+        console.error('[RecentLogs] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
