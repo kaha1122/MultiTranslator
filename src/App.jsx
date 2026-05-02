@@ -1499,8 +1499,8 @@ function App() {
   }, [profile?.totalGenerateCount]);
 
   // Profile 자가치유(self-heal): 익명→실계정 전환 과정의 race condition 등으로
-  // profile에 sourceLang/targetLangs/tier가 누락된 기존 사용자를 발견 즉시 복원.
-  // 현재 기기의 localStorage/navigator.language 기반 폴백 값을 Firestore에 저장.
+  // profile에 sourceLang/targetLangs/tier/deviceLang/platform이 누락된 기존 사용자를 발견 즉시 복원.
+  // 현재 기기의 localStorage/navigator.language/Capacitor 상태 기반 폴백 값을 Firestore에 저장.
   useEffect(() => {
     if (!user || !profile || user.isAnonymous) return;
     const missing = {};
@@ -1511,12 +1511,68 @@ function App() {
     }
     if (!profile.defaultLevel) missing.defaultLevel = userLevel || 'basic';
     if (!profile.tier) missing.tier = 'trial';
+    // 디바이스/언어 — 마이그레이션 직후 익명 doc에 있던 값이 target에 미반영된 케이스 대비
+    if (!profile.deviceLang) {
+      missing.deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+    }
+    if (!profile.platform) {
+      missing.platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+    }
     if (Object.keys(missing).length > 0) {
       console.log('[ProfileHeal] restoring missing fields:', Object.keys(missing));
       updateUserProfile(missing).catch(() => {});
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user?.uid, profile?.sourceLang, profile?.tier]);
+  }, [user?.uid, profile?.sourceLang, profile?.tier, profile?.deviceLang, profile?.platform]);
+
+  // [신규] 비동기 self-heal — geoCountry, fcmTokens
+  // anonymous→linked 마이그레이션 또는 과거 데이터 누락으로 비어있는 케이스 자동 복원.
+  // 가드: user 변경 시 리셋, 세션당 각 항목 1회만 시도 (재시도 storm 방지).
+  const asyncHealRef = useRef({ uid: null, geo: false, fcm: false });
+  useEffect(() => {
+    if (!user || !profile || user.isAnonymous) return;
+    if (asyncHealRef.current.uid !== user.uid) {
+      asyncHealRef.current = { uid: user.uid, geo: false, fcm: false };
+    }
+
+    // 지오 정보: IP 기반 1회 채움
+    if (!profile.geoCountry && !asyncHealRef.current.geo) {
+      asyncHealRef.current.geo = true;
+      import('./utils/detectCountry').then(({ detectGeoInfo }) => detectGeoInfo())
+        .then(info => {
+          if (info?.country) {
+            console.log('[ProfileHeal] restoring geo:', info.country);
+            const updates = {
+              geoCountry: info.country,
+              geoCity: info.city || '',
+              geoRegion: info.region || '',
+            };
+            if (!profile.phoneCountry) updates.phoneCountry = info.country;
+            updateUserProfile(updates).catch(() => {});
+          }
+        }).catch(() => {});
+    }
+
+    // FCM 토큰: 네이티브 + 권한 granted + 토큰 배열 비어있을 때 register() 재호출
+    // 'registration' 이벤트는 App.jsx 전역 리스너가 saveFcmTokenToFirestore로 처리
+    const hasTokens = Array.isArray(profile.fcmTokens) && profile.fcmTokens.length > 0;
+    if (Capacitor.isNativePlatform?.() && !hasTokens && !asyncHealRef.current.fcm) {
+      asyncHealRef.current.fcm = true;
+      (async () => {
+        try {
+          const { PushNotifications } = await import('@capacitor/push-notifications');
+          const perm = await PushNotifications.checkPermissions();
+          if (perm.receive === 'granted') {
+            console.log('[ProfileHeal] FCM tokens empty — re-registering');
+            await PushNotifications.register();
+          }
+        } catch (e) {
+          console.warn('[ProfileHeal] FCM re-register failed:', e.message);
+        }
+      })();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid, profile?.geoCountry, profile?.fcmTokens?.length]);
 
   // 설정 언어 변경 → Firestore 자동 동기화 (debounce 500ms).
   // 설정 메뉴에서 sourceLang/targetLangs 변경 시 auto-sync가 localStorage만 저장하던
@@ -3249,27 +3305,31 @@ function App() {
 
       <header className="app-header">
         <div className="app-header-row">
-          <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
-            <Menu size={26} strokeWidth={2.5} />
-          </button>
+          {/* 좌측 그룹 (flex:1): 햄버거 + 보너스 숫자 — 보너스는 햄버거~로고 사이 공간의 중앙 */}
+          <div style={{ flex: 1, display: 'flex', alignItems: 'center', minWidth: 0 }}>
+            <button className="hamburger-btn" onClick={() => setSidebarOpen(true)} aria-label="Menu">
+              <Menu size={26} strokeWidth={2.5} />
+            </button>
+            {tier === 'trial' && (
+              <span style={{
+                flex: 1,
+                color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
+                textAlign: 'center', userSelect: 'none',
+              }}>
+                {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
+              </span>
+            )}
+          </div>
 
-          {/* 광고까지 남은 점수 (보너스 + 인터스티셜 통합) — Trial 일 때만 표시 */}
-          {tier === 'trial' && (
-            <span style={{
-              color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
-              marginLeft: '24px', minWidth: '20px', textAlign: 'center', userSelect: 'none',
-            }}>
-              {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
-            </span>
-          )}
-
-          <h1 className="main-logo-3d">
+          {/* 로고: 좌/우 컨테이너가 동일한 flex:1 이므로 자연스럽게 정중앙 */}
+          <h1 className="main-logo-3d" style={{ flex: '0 0 auto' }}>
             {"PronunFit".split("").map((char, index) => (
               <span key={index} className="logo-char">{char}</span>
             ))}
           </h1>
 
-          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+          {/* 우측 그룹 (flex:1): 홈 버튼 등 — 좌측과 대칭으로 동일 너비 */}
+          <div style={{ flex: 1, display: 'flex', gap: '4px', alignItems: 'center', justifyContent: 'flex-end' }}>
 
             {viewMode === 'library' && libraryBackTo && (
               <button className="header-dict-btn" onClick={() => { setViewMode(libraryBackTo); setLibraryBackTo(null); }}>

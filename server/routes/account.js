@@ -205,18 +205,24 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
 
         // 3. users/{anonUid} 문서 → targetUid에 병합
         // 신규 계정: 익명의 모든 필드를 복사
-        // 기존 계정(재설치 재로그인): 카운터만 합산, 나머지는 기존 값 유지
+        // 기존 계정(재설치 재로그인): 카운터 합산 + 디바이스/세션/푸시 필드 병합
         const anonDoc = await anonRef.get();
+        let mergedFieldKeys = [];
+        let anonSnapshotForArchive = null;
+        let isExistingAccountForArchive = false;
         if (anonDoc.exists) {
             const anonData = anonDoc.data();
+            anonSnapshotForArchive = anonData;
             const targetDoc = await adminDb.collection('users').doc(targetUid).get();
             const targetData = targetDoc.exists ? targetDoc.data() : {};
             const isExistingAccount = targetDoc.exists && targetData.createdAt;
+            isExistingAccountForArchive = !!isExistingAccount;
 
             const mergeFields = {};
 
             if (isExistingAccount) {
-                // ── 기존 계정: 카운터만 합산 (tier, 구독, 설정 등 보호) ──
+                // ── 기존 계정 분기 ──
+                // (a) 카운터: 합산
                 const counterKeys = [
                     'trialCardCount', 'savedCardCount', 'trialPronCount',
                     'translationGenerateCount', 'sceneGenerateCount',
@@ -226,6 +232,76 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                 for (const key of counterKeys) {
                     if ((anonData[key] || 0) > 0) {
                         mergeFields[key] = admin.firestore.FieldValue.increment(anonData[key] || 0);
+                    }
+                }
+
+                // (b) FCM 토큰: arrayUnion 합집합 — 익명 기기에서 등록된 토큰을 보존
+                if (Array.isArray(anonData.fcmTokens) && anonData.fcmTokens.length > 0) {
+                    mergeFields.fcmTokens = admin.firestore.FieldValue.arrayUnion(...anonData.fcmTokens);
+                }
+                // FCM 메타: anon이 더 최근이면 채택
+                if (anonData.fcmTokenUpdatedAt) {
+                    const aMs = anonData.fcmTokenUpdatedAt?.toMillis?.() || 0;
+                    const tMs = targetData.fcmTokenUpdatedAt?.toMillis?.() || 0;
+                    if (aMs > tMs) mergeFields.fcmTokenUpdatedAt = anonData.fcmTokenUpdatedAt;
+                }
+
+                // (c) lastActiveAt: 더 최근 timestamp 우선
+                if (anonData.lastActiveAt) {
+                    const aMs = anonData.lastActiveAt?.toMillis?.() || 0;
+                    const tMs = targetData.lastActiveAt?.toMillis?.() || 0;
+                    if (aMs > tMs) mergeFields.lastActiveAt = anonData.lastActiveAt;
+                }
+
+                // (d) dailyProgress: 날짜 키별 max(count) 머지
+                if (anonData.dailyProgress && typeof anonData.dailyProgress === 'object') {
+                    const merged = { ...(targetData.dailyProgress || {}) };
+                    let changed = false;
+                    for (const [date, val] of Object.entries(anonData.dailyProgress)) {
+                        const tv = merged[date];
+                        const aCount = val?.count || 0;
+                        const tCount = tv?.count || 0;
+                        if (!tv || aCount > tCount) {
+                            merged[date] = val;
+                            changed = true;
+                        }
+                    }
+                    if (changed) mergeFields.dailyProgress = merged;
+                }
+
+                // (e) reengagementSentAt: dN 키별 더 최근 timestamp 머지
+                if (anonData.reengagementSentAt && typeof anonData.reengagementSentAt === 'object') {
+                    const merged = { ...(targetData.reengagementSentAt || {}) };
+                    let changed = false;
+                    for (const [k, v] of Object.entries(anonData.reengagementSentAt)) {
+                        const tv = merged[k];
+                        const aMs = v?.toMillis?.() || 0;
+                        const tMs = tv?.toMillis?.() || 0;
+                        if (aMs > tMs) {
+                            merged[k] = v;
+                            changed = true;
+                        }
+                    }
+                    if (changed) mergeFields.reengagementSentAt = merged;
+                }
+
+                // (f) "target에 없을 때만 anon 값으로 채움" 필드들
+                //     디바이스/세션/지오/유저 선호 — target의 명시적 값이 있으면 그대로 유지
+                const fillIfMissingKeys = [
+                    'sourceLang', 'targetLang', 'targetLangs',
+                    'geoCountry', 'geoCity', 'geoRegion', 'phoneCountry',
+                    'platform', 'deviceLang',
+                    'currentNativePlatform', 'firstNativePlatform',
+                    'lifecycleStage',
+                    'reengagementOptOut', 'subscriptionAlertOptOut',
+                    'featuresSeen',
+                    'defaultLevel', 'userLevel',
+                    'hasCompletedOnboarding',
+                ];
+                for (const key of fillIfMissingKeys) {
+                    if (anonData[key] !== undefined && anonData[key] !== null
+                        && (targetData[key] === undefined || targetData[key] === null)) {
+                        mergeFields[key] = anonData[key];
                     }
                 }
             } else {
@@ -241,6 +317,33 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
             if (Object.keys(mergeFields).length > 0) {
                 mergeFields.updatedAt = admin.firestore.FieldValue.serverTimestamp();
                 await adminDb.collection('users').doc(targetUid).set(mergeFields, { merge: true });
+                mergedFieldKeys = Object.keys(mergeFields);
+            }
+        }
+
+        // 3.5 anon doc 삭제 직전 감사 스냅샷 — 사고 복구 + 회귀 진단용
+        // 키: targetUid 우선(신규 UID 기반 검색), 30일 후 expiresAt TTL로 자동 삭제
+        // (Firestore Console에서 migrationArchive 컬렉션의 expiresAt 필드에 TTL 정책 활성화 필요)
+        if (anonSnapshotForArchive) {
+            try {
+                const archiveId = `${targetUid}_${anonymousUid}_${Date.now()}`;
+                const expiresAt = admin.firestore.Timestamp.fromMillis(
+                    Date.now() + 30 * 24 * 60 * 60 * 1000
+                );
+                await adminDb.collection('migrationArchive').doc(archiveId).set({
+                    targetUid,
+                    anonymousUid,
+                    isExistingAccount: isExistingAccountForArchive,
+                    anonSnapshot: anonSnapshotForArchive,
+                    mergedFieldKeys,
+                    savedCardsCount: migrated.savedCards,
+                    subcollectionCounts: migrated.subcollections,
+                    archivedAt: admin.firestore.FieldValue.serverTimestamp(),
+                    expiresAt,
+                });
+            } catch (archiveErr) {
+                // 아카이브 실패는 마이그레이션 자체를 막지 않음 (best-effort)
+                console.warn(`[Migrate] archive failed: ${archiveErr.message}`);
             }
         }
 
