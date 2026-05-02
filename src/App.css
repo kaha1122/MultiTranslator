@@ -89,9 +89,10 @@ html.admob-active.platform-native::after {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
-/* 광고 있을 때: admob-bottom으로 대체 (배너가 safe-area 포함) */
+/* 광고 있을 때: admob-bottom으로 대체 (배너가 safe-area 포함)
+ * max(--admob-bottom, 100px): SizeChanged 이벤트 지연 또는 info.height 미스리포트 대비 floor */
 .admob-active .app-container {
-  padding-bottom: calc(56px + var(--admob-bottom, 0px));
+  padding-bottom: calc(56px + max(var(--admob-bottom, 0px), 100px) + 4px);
 }
 
 .app-container::-webkit-scrollbar {
@@ -1396,8 +1397,11 @@ html.admob-active.platform-native::after {
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
   padding: 6px 4px;
 }
+/* 광고 있을 때: 배너 위에 4px gap 두고 배치
+ * max(--admob-bottom, 100px) — SizeChanged 이벤트 지연 또는 info.height 미스리포트 대비 floor.
+ * 이전: bottom: var(--admob-bottom, 0px) → ADAPTIVE 배너 ~110px일 때 nav가 광고 안에 위치해 가려짐. */
 .admob-active .tab-nav {
-  bottom: var(--admob-bottom, 0px);
+  bottom: calc(max(var(--admob-bottom, 0px), 100px) + 4px);
 }
 
 .tab-nav__btn {

@@ -75,7 +75,10 @@ export async function showInterstitialAd() {
     }
 }
 
-const DEFAULT_BANNER_HEIGHT = 60;
+// 폴백 높이 — SizeChanged 이벤트 도착 전 또는 info.height 미수신 시 사용.
+// ADAPTIVE_BANNER는 화면에 따라 50~110px 가변이므로 보수적으로 100 (이전 60 → nav 가림 사례).
+// CSS에선 max(--admob-bottom, 100px)로 한번 더 floor 보장.
+const DEFAULT_BANNER_HEIGHT = 100;
 
 // AdMob 플러그인을 모듈 변수에 캐싱 — async 함수에서 return하면
 // JS가 thenable 감지를 위해 AdMob.then()을 호출 → 네이티브 브릿지 에러 발생
