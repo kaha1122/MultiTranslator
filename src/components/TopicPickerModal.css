@@ -1,0 +1,234 @@
+/* ── Backdrop / Sheet ────────────────────────────────────────── */
+.topic-picker-backdrop {
+    position: fixed;
+    inset: 0;
+    z-index: 1000;
+    background: rgba(15, 23, 42, 0.55);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+    display: flex;
+    align-items: flex-end;
+    justify-content: center;
+    animation: tpm-fade-in 180ms ease;
+    padding: env(safe-area-inset-top, 0) 0 env(safe-area-inset-bottom, 0);
+}
+
+@keyframes tpm-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+}
+
+.topic-picker-sheet {
+    width: 100%;
+    max-width: 520px;
+    max-height: min(86vh, 760px);
+    background: linear-gradient(180deg, #fafbfc 0%, #f1f3f7 100%);
+    border-radius: 22px 22px 0 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+    box-shadow:
+        0 -8px 32px rgba(15, 23, 42, 0.22),
+        0 -2px 8px rgba(15, 23, 42, 0.12);
+    animation: tpm-slide-up 240ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes tpm-slide-up {
+    from { transform: translateY(20%); opacity: 0; }
+    to   { transform: translateY(0);    opacity: 1; }
+}
+
+@media (min-width: 720px) {
+    .topic-picker-backdrop { align-items: center; }
+    .topic-picker-sheet { border-radius: 22px; max-height: 80vh; }
+}
+
+/* ── Header ──────────────────────────────────────────────────── */
+.topic-picker-header {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(15, 23, 42, 0.06);
+    background: #ffffff;
+}
+
+.topic-picker-thumb {
+    flex-shrink: 0;
+    width: 56px;
+    height: 56px;
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow:
+        0 0 0 2px var(--cat-theme, #94a3b8),
+        0 4px 12px rgba(15, 23, 42, 0.18);
+}
+.topic-picker-thumb img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+}
+
+.topic-picker-title-wrap {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.topic-picker-icon {
+    font-size: 20px;
+    line-height: 1;
+    flex-shrink: 0;
+}
+.topic-picker-title {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+    color: #0f172a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.topic-picker-close {
+    flex-shrink: 0;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(15, 23, 42, 0.06);
+    color: #475569;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: background 120ms ease, transform 80ms ease;
+}
+.topic-picker-close:hover { background: rgba(15, 23, 42, 0.12); }
+.topic-picker-close:active { transform: scale(0.94); }
+
+/* ── Body ────────────────────────────────────────────────────── */
+.topic-picker-body {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 16px 24px;
+    -webkit-overflow-scrolling: touch;
+}
+.topic-picker-section + .topic-picker-section { margin-top: 18px; }
+
+.topic-picker-sub-label {
+    margin: 0 0 10px;
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    color: #64748b;
+    padding-left: 4px;
+}
+
+.topic-picker-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+/* ── 3D Topic Pill ───────────────────────────────────────────── */
+.topic-pill-3d {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 12px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    font-family: inherit;
+    letter-spacing: -0.01em;
+    color: #1f2937;
+    background: linear-gradient(180deg, #ffffff 0%, #eff1f6 100%);
+    border: 1px solid rgba(15, 23, 42, 0.06);
+    border-radius: 14px;
+    cursor: pointer;
+    transition: transform 80ms ease, box-shadow 80ms ease, color 100ms ease;
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.95) inset,
+        0 -1px 0 rgba(15, 23, 42, 0.04) inset,
+        0 4px 0 rgba(199, 205, 216, 1),
+        0 6px 14px rgba(15, 23, 42, 0.14);
+    transform: translateY(0);
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+    word-break: keep-all;
+}
+
+.topic-pill-3d:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.95) inset,
+        0 -1px 0 rgba(15, 23, 42, 0.04) inset,
+        0 5px 0 rgba(199, 205, 216, 1),
+        0 8px 18px rgba(15, 23, 42, 0.18);
+}
+
+.topic-pill-3d:active {
+    transform: translateY(3px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.6) inset,
+        0 1px 4px rgba(15, 23, 42, 0.2);
+}
+
+.topic-pill-3d.is-selected {
+    color: #ffffff;
+    background: linear-gradient(180deg, var(--cat-theme, #64748b) 0%, var(--cat-theme-dark, #475569) 100%);
+    border-color: var(--cat-theme-dark, #475569);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+        0 4px 0 var(--cat-theme-dark, #475569),
+        0 6px 14px rgba(15, 23, 42, 0.22);
+}
+
+.topic-pill-3d.is-selected:hover {
+    transform: translateY(-1px);
+    box-shadow:
+        0 1px 0 rgba(255, 255, 255, 0.35) inset,
+        0 -1px 0 rgba(0, 0, 0, 0.2) inset,
+        0 5px 0 var(--cat-theme-dark, #475569),
+        0 8px 18px rgba(15, 23, 42, 0.28);
+}
+
+/* ── Dark Theme ──────────────────────────────────────────────── */
+@media (prefers-color-scheme: dark) {
+    .topic-picker-sheet {
+        background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+    }
+    .topic-picker-header {
+        background: #1e293b;
+        border-bottom-color: rgba(148, 163, 184, 0.12);
+    }
+    .topic-picker-title { color: #f1f5f9; }
+    .topic-picker-sub-label { color: #94a3b8; }
+    .topic-picker-close { background: rgba(148, 163, 184, 0.18); color: #cbd5e1; }
+    .topic-picker-close:hover { background: rgba(148, 163, 184, 0.28); }
+
+    .topic-pill-3d {
+        color: #e2e8f0;
+        background: linear-gradient(180deg, #334155 0%, #1e293b 100%);
+        border-color: rgba(148, 163, 184, 0.18);
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.06) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 4px 0 #0f172a,
+            0 6px 14px rgba(0, 0, 0, 0.35);
+    }
+    .topic-pill-3d:hover {
+        box-shadow:
+            0 1px 0 rgba(255, 255, 255, 0.06) inset,
+            0 -1px 0 rgba(0, 0, 0, 0.4) inset,
+            0 5px 0 #0f172a,
+            0 8px 18px rgba(0, 0, 0, 0.45);
+    }
+}

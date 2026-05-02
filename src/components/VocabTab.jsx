@@ -1,10 +1,12 @@
 import { useState, useEffect, useRef } from 'react';
-import { ChevronRight, Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle } from 'lucide-react';
+import { Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
+import CategorySlider from './CategorySlider';
+import TopicPickerModal from './TopicPickerModal';
 import { playStarSound, playSuccessSound, playAlertSound } from '../utils/soundEffects';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
@@ -273,7 +275,7 @@ export default function VocabTab({
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
     const [level, setLevel] = useState(userLevel || 'basic');
     useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
-    const [openCat, setOpenCat] = useState(initialTopic.catId);
+    const [pickerCatId, setPickerCatId] = useState(null);
     const [selectedTopic, setSelectedTopic] = useState(initialTopic);
     const [customInput, setCustomInput] = useState('');
     const [words, setWords] = useState([]);
@@ -472,67 +474,29 @@ export default function VocabTab({
                 ))}
             </div>
 
-            {/* Category Accordion */}
-            {VOCAB_CATEGORIES.map(cat => {
-                const isOpen = openCat === cat.id;
-                const catTheme = {
-                    daily: '#10b981',    // emerald
-                    travel: '#3b82f6',   // blue
-                    business: '#f59e0b', // amber
-                    education: '#8b5cf6',// violet
-                    social: '#ec4899',   // pink
-                    tech: '#06b6d4',     // cyan
-                    culture: '#f97316',  // orange
-                }[cat.id] || '#94a3b8';
-                return (
-                    <div
-                        key={cat.id}
-                        className={`vocab-category ${isOpen ? 'vocab-category--open' : ''}`}
-                        style={isOpen ? { '--cat-theme': catTheme } : undefined}
-                    >
-                        <button
-                            className="vocab-cat-header"
-                            onClick={() => setOpenCat(isOpen ? null : cat.id)}
-                        >
-                            <span className="vocab-cat-icon">{cat.icon}</span>
-                            <span className="vocab-cat-label">{t(`vocabCat.${cat.id}`)}</span>
-                            <ChevronRight size={16} className={`vocab-cat-chevron ${isOpen ? 'open' : ''}`} />
-                        </button>
+            {/* ── Category Slider + 선택 칩 ──────────────────────── */}
+            <CategorySlider
+                sourceLang={sourceLang}
+                selectedCatId={selectedTopic?.catId || null}
+                onCategoryClick={(catId) => setPickerCatId(catId)}
+            />
 
-                        {isOpen && (
-                            <div style={{ padding: '4px 0 8px' }}>
-                                {cat.subs.map(sub => (
-                                    <div key={sub.id} className="vocab-sub">
-                                        <div className="vocab-sub-label">{t(`vocabSub.${sub.id}`)}</div>
-                                        <div className="vocab-topics">
-                                            {sub.topics.map(topic => {
-                                                const isActive = selectedTopic?.topicId === topic.id &&
-                                                    selectedTopic?.catId === cat.id;
-                                                return (
-                                                    <button
-                                                        key={topic.id}
-                                                        className={`vocab-topic-pill ${isActive ? 'active' : ''}`}
-                                                        onClick={() => {
-                                                            setCustomInput('');
-                                                            setSelectedTopic({
-                                                                catId: cat.id,
-                                                                subId: sub.id,
-                                                                topicId: topic.id,
-                                                            });
-                                                        }}
-                                                    >
-                                                        {t(`vocabTopic.${topic.id}`)}
-                                                    </button>
-                                                );
-                                            })}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                        )}
-                    </div>
-                );
-            })}
+            {selectedTopic && (
+                <button
+                    type="button"
+                    className="vocab-selected-chip"
+                    onClick={() => setPickerCatId(selectedTopic.catId)}
+                    aria-label={t('vocab.changeTopic') || 'change topic'}
+                >
+                    <span className="vocab-selected-chip__cat">
+                        {t(`vocabCat.${selectedTopic.catId}`)}
+                    </span>
+                    <span className="vocab-selected-chip__sep">›</span>
+                    <span className="vocab-selected-chip__topic">
+                        {t(`vocabTopic.${selectedTopic.topicId}`)}
+                    </span>
+                </button>
+            )}
 
             {/* Custom Input */}
             <input
@@ -606,6 +570,20 @@ export default function VocabTab({
                     <div className="vocab-empty-icon">📖</div>
                     {t('vocab.selectTopic')}
                 </div>
+            )}
+
+            {/* Topic Picker Modal — opens when slider/chip is clicked */}
+            {pickerCatId && (
+                <TopicPickerModal
+                    catId={pickerCatId}
+                    sourceLang={sourceLang}
+                    selectedTopic={selectedTopic}
+                    onTopicSelect={(catId, subId, topicId) => {
+                        setCustomInput('');
+                        setSelectedTopic({ catId, subId, topicId });
+                    }}
+                    onClose={() => setPickerCatId(null)}
+                />
             )}
         </div>
     );
