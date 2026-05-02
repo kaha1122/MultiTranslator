@@ -98,6 +98,7 @@
     flex-shrink: 0;
     width: 36px;
     height: 36px;
+    padding: 0;                       /* 글로벌 button { padding: .6em 1.2em } 무력화 */
     border: none;
     border-radius: 50%;
     background: rgba(15, 23, 42, 0.06);
@@ -106,8 +107,15 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    transition: background 120ms ease, transform 80ms ease;
+    transition: background 120ms ease, transform 80ms ease, color 120ms ease;
 }
+.topic-picker-close > svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2.25;
+}
+.topic-picker-close:hover { color: #0f172a; }
 .topic-picker-close:hover { background: rgba(15, 23, 42, 0.12); }
 .topic-picker-close:active { transform: scale(0.94); }
 
