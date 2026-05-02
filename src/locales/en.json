@@ -701,10 +701,10 @@
     "scene1Desc": "Tap a category (airport, restaurant, etc.) at the top or use ✏️ Custom to create your own scene. Then tap 🟢 Generate Question / 🟣 Generate Answer to get AI sentences.",
     "scene2Title": "Practice pronunciation & save with ☆",
     "scene2Desc": "Tap the 🎙️ mic button at the bottom of a card to get your pronunciation score. Tap ☆ to save to your library. Saved cards can be reviewed later in ⭐ Library.",
-    "vocab1Title": "Pick a topic from categories",
-    "vocab1Desc": "Open one of 7 categories, choose a subcategory → topic. Tap ✨ Generate Words and AI will create 5 words matching the topic.",
-    "vocab2Title": "Listen, practice & save word cards",
-    "vocab2Desc": "Tap 🔊 on a word card to hear native pronunciation, then 🎙️ to get your score. Save to your library with ☆ for later review.",
+    "vocab1Title": "Swipe through cards to pick a category",
+    "vocab1Desc": "Swipe to find one of 7 cinematic category cards. Tap a card to open the topic modal, pick a topic, then tap ✨ Generate Words — AI will create 5 words for you.",
+    "vocab2Title": "Listen 🔊, score 🎙️, save ☆",
+    "vocab2Desc": "On each word card, tap 🔊 to hear native pronunciation, 🎙️ to get your score, and ☆ to save it to your library for review anytime.",
     "translation1Title": "Translate + AI learning tips in one go",
     "translation1Desc": "Type a word or sentence and tap 🟢 Translate. Tap 💡 Learning Tips below the card to see AI-generated grammar explanations, examples, and nuance comparisons.",
     "translation2Title": "Get pronunciation score & save with ☆",
@@ -720,7 +720,11 @@
     "settings1Title": "Set your learning languages",
     "settings1Desc": "Set your Source Language (native) and Target Language (up to 3 languages to learn). For example, if learning English: Source=Korean, Target=English.",
     "settings2Title": "Target score & daily study goal",
-    "settings2Desc": "Use the Target Score Goals slider to set goals per language. Set a daily card goal too — you can track progress in real-time on the progress bar."
+    "settings2Desc": "Use the Target Score Goals slider to set goals per language. Set a daily card goal too — you can track progress in real-time on the progress bar.",
+    "listening1Title": "Swipe through cards to pick a listening topic",
+    "listening1Desc": "Swipe to find one of 7 cinematic category cards. Tap a card to open the topic modal, pick a topic, choose Essay or Dialogue, then tap ✨ Generate Passage — AI will create a listening passage for you.",
+    "listening2Title": "▶ Play + practice key words",
+    "listening2Desc": "Tap ▶ to listen to the passage, then practice the 5 key words below — tap 🎙️ to score your pronunciation. Save with ☆ to add to your library."
   },
   "landing": {
     "login": "Log In",

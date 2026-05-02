@@ -8,6 +8,7 @@ const TAB_ICONS = {
   home: ['📖', '⭐'],
   scene: ['📍', '🎙️'],
   vocab: ['📖', '🔊'],
+  listening: ['🎧', '🎙️'],
   translation: ['🔤', '🎯'],
   library: ['🗂️', '🎯'],
   video: ['🎬', '📝'],
@@ -17,7 +18,8 @@ const TAB_ICONS = {
 export const TAB_TUTORIALS = {
   home: [1, 2],
   scene: [1],
-  vocab: [1],
+  vocab: [1, 2],
+  listening: [1, 2],
   translation: [1],
   library: [1],
   video: [1],

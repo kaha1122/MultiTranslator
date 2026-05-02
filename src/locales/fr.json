@@ -691,10 +691,10 @@
     "scene1Desc": "Appuyez sur une catégorie en haut (aéroport, restaurant...) ou utilisez ✏️ Personnaliser pour créer votre scène. Puis appuyez sur 🟢 Générer question / 🟣 Générer réponse pour obtenir des phrases IA.",
     "scene2Title": "Pratiquez la prononciation et sauvegardez avec ☆",
     "scene2Desc": "Appuyez sur le bouton 🎙️ micro en bas de la carte pour obtenir votre score. Appuyez sur ☆ pour sauvegarder dans votre bibliothèque. Les cartes sauvegardées sont révisables dans ⭐ Bibliothèque.",
-    "vocab1Title": "Choisissez un sujet dans les catégories",
-    "vocab1Desc": "Ouvrez l'une des 7 catégories, choisissez une sous-catégorie → sujet. Appuyez sur ✨ Générer des mots et l'IA créera 5 mots correspondants.",
-    "vocab2Title": "Écoutez, pratiquez et sauvegardez les cartes",
-    "vocab2Desc": "Appuyez sur 🔊 d'une carte pour écouter la prononciation native, puis sur 🎙️ pour obtenir votre score. Sauvegardez avec ☆ pour réviser plus tard.",
+    "vocab1Title": "Faites glisser les cartes pour choisir une catégorie",
+    "vocab1Desc": "Faites glisser pour trouver l'une des 7 cartes cinématographiques de catégorie. Touchez une carte pour ouvrir la fenêtre de sujets, choisissez un sujet, puis touchez ✨ Générer mots — l'IA créera 5 mots pour vous.",
+    "vocab2Title": "Écoutez 🔊, notez 🎙️, enregistrez ☆",
+    "vocab2Desc": "Sur chaque carte de mot, touchez 🔊 pour entendre la prononciation native, 🎙️ pour obtenir votre note, et ☆ pour l'enregistrer dans votre carnet et la réviser à tout moment.",
     "translation1Title": "Traduction + astuces IA en un clic",
     "translation1Desc": "Tapez un mot ou une phrase et appuyez sur 🟢 Traduire. Appuyez sur 💡 Astuces d'apprentissage sous la carte pour voir les explications grammaticales, exemples et nuances générés par l'IA.",
     "translation2Title": "Obtenez votre score et sauvegardez avec ☆",
@@ -710,7 +710,11 @@
     "settings1Title": "Configurez vos langues d'apprentissage",
     "settings1Desc": "Définissez votre Source Language (langue maternelle) et Target Language (jusqu'à 3 langues à apprendre). Par exemple pour l'anglais : Source=Français, Target=English.",
     "settings2Title": "Score cible et objectif quotidien",
-    "settings2Desc": "Utilisez le curseur Target Score Goals pour définir un objectif par langue. Définissez aussi un objectif quotidien de cartes pour suivre vos progrès en temps réel."
+    "settings2Desc": "Utilisez le curseur Target Score Goals pour définir un objectif par langue. Définissez aussi un objectif quotidien de cartes pour suivre vos progrès en temps réel.",
+    "listening1Title": "Faites glisser les cartes pour choisir un sujet d'écoute",
+    "listening1Desc": "Faites glisser pour trouver l'une des 7 cartes cinématographiques. Touchez une carte pour ouvrir la fenêtre de sujets, choisissez un sujet, choisissez Essai ou Dialogue, puis touchez ✨ Générer texte — l'IA créera un texte d'écoute pour vous.",
+    "listening2Title": "▶ Lire + pratiquer les mots clés",
+    "listening2Desc": "Touchez ▶ pour écouter le texte, puis pratiquez les 5 mots clés en dessous — touchez 🎙️ pour noter votre prononciation. Enregistrez avec ☆ pour ajouter à votre carnet."
   },
   "landing": {
     "login": "Se connecter",

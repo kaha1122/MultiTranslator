@@ -691,10 +691,10 @@
     "scene1Desc": "Tippe oben auf eine Kategorie (Flughafen, Restaurant usw.) oder nutze ✏️ Eigene Eingabe. Tippe dann auf 🟢 Frage generieren / 🟣 Antwort generieren, um KI-Sätze zu erhalten.",
     "scene2Title": "Aussprache üben und mit ☆ speichern",
     "scene2Desc": "Tippe auf den 🎙️ Mikrofon-Button unter der Karte für deinen Aussprachescore. Tippe ☆ zum Speichern in der Bibliothek. Gespeicherte Karten kannst du in ⭐ Bibliothek wiederholen.",
-    "vocab1Title": "Wähle ein Thema aus den Kategorien",
-    "vocab1Desc": "Öffne eine der 7 Kategorien, wähle Unterkategorie → Thema. Tippe auf ✨ Wörter generieren und die KI erstellt 5 passende Wörter.",
-    "vocab2Title": "Höre zu, übe Aussprache & speichere",
-    "vocab2Desc": "Tippe 🔊 auf einer Wortkarte für die Muttersprachler-Aussprache, dann 🎙️ für deinen Score. Speichere mit ☆ in der Bibliothek zum späteren Wiederholen.",
+    "vocab1Title": "Wische durch die Karten, um eine Kategorie zu wählen",
+    "vocab1Desc": "Wische, um eine der 7 Kino-Kategoriekarten zu finden. Tippe eine Karte an, um das Themen-Modal zu öffnen, wähle ein Thema und tippe dann auf ✨ Wörter erzeugen — die KI erstellt 5 Wörter für dich.",
+    "vocab2Title": "🔊 Hören, 🎙️ bewerten, ☆ speichern",
+    "vocab2Desc": "Tippe auf jeder Wortkarte 🔊 für die native Aussprache, 🎙️ für deine Bewertung, und ☆, um sie für späteres Wiederholen in deinem Wörterbuch zu speichern.",
     "translation1Title": "Übersetzen + KI-Lerntipps auf einmal",
     "translation1Desc": "Gib ein Wort oder einen Satz ein und tippe auf 🟢 Übersetzen. Tippe auf 💡 Lerntipps unter der Karte für KI-generierte Grammatikerklärungen, Beispiele und Nuancen.",
     "translation2Title": "Aussprachescore erhalten & mit ☆ speichern",
@@ -710,7 +710,11 @@
     "settings1Title": "Lernsprachen einstellen",
     "settings1Desc": "Stelle deine Source Language (Muttersprache) und Target Language (bis zu 3 Lernsprachen) ein. Zum Beispiel für Englisch: Source=Deutsch, Target=English.",
     "settings2Title": "Zielscore & tägliches Lernziel",
-    "settings2Desc": "Nutze den Target Score Goals-Schieberegler für sprachspezifische Zielscores. Setze auch ein tägliches Kartenziel — du kannst den Fortschritt in Echtzeit verfolgen."
+    "settings2Desc": "Nutze den Target Score Goals-Schieberegler für sprachspezifische Zielscores. Setze auch ein tägliches Kartenziel — du kannst den Fortschritt in Echtzeit verfolgen.",
+    "listening1Title": "Wische durch die Karten, um ein Hörthema zu wählen",
+    "listening1Desc": "Wische, um eine der 7 Kino-Kategoriekarten zu finden. Tippe eine Karte an, um das Themen-Modal zu öffnen, wähle ein Thema, wähle Essay oder Dialog und tippe dann auf ✨ Text erzeugen — die KI erstellt einen Hörtext für dich.",
+    "listening2Title": "▶ Abspielen + Schlüsselwörter üben",
+    "listening2Desc": "Tippe auf ▶, um den Text zu hören, und übe dann die 5 Schlüsselwörter darunter — tippe 🎙️ für deine Aussprachebewertung. Mit ☆ speicherst du sie in deinem Wörterbuch."
   },
   "landing": {
     "login": "Anmelden",

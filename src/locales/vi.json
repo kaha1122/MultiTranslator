@@ -691,10 +691,10 @@
     "scene1Desc": "Nhấn vào danh mục ở trên (sân bay, nhà hàng...) hoặc dùng ✏️ Tùy chỉnh để tạo cảnh riêng. Sau đó nhấn 🟢 Tạo câu hỏi / 🟣 Tạo câu trả lời để nhận câu AI.",
     "scene2Title": "Luyện phát âm và lưu bằng ☆",
     "scene2Desc": "Nhấn nút 🎙️ mic ở dưới thẻ để nhận điểm phát âm. Nhấn ☆ để lưu vào thư viện. Thẻ đã lưu có thể ôn tập trong ⭐ Thư viện.",
-    "vocab1Title": "Chọn chủ đề từ danh mục",
-    "vocab1Desc": "Mở 1 trong 7 danh mục quan tâm, chọn phân loại → chủ đề. Nhấn ✨ Tạo từ vựng và AI sẽ tạo 5 từ phù hợp với chủ đề.",
-    "vocab2Title": "Nghe, luyện phát âm & lưu thẻ từ",
-    "vocab2Desc": "Nhấn 🔊 trên thẻ từ để nghe phát âm bản ngữ, sau đó nhấn 🎙️ để nhận điểm. Lưu vào thư viện bằng ☆ để ôn tập sau.",
+    "vocab1Title": "Vuốt qua các thẻ để chọn chủ đề",
+    "vocab1Desc": "Vuốt để tìm một trong 7 thẻ chủ đề điện ảnh. Chạm vào thẻ để mở cửa sổ chủ đề, chọn một chủ đề rồi chạm ✨ Tạo từ — AI sẽ tạo 5 từ cho bạn.",
+    "vocab2Title": "Nghe 🔊, chấm điểm 🎙️, lưu ☆",
+    "vocab2Desc": "Trên mỗi thẻ từ, chạm 🔊 để nghe phát âm chuẩn, 🎙️ để được chấm điểm, và ☆ để lưu vào sổ từ của bạn để ôn lại bất cứ lúc nào.",
     "translation1Title": "Dịch + mẹo học AI cùng lúc",
     "translation1Desc": "Nhập từ hoặc câu rồi nhấn 🟢 Dịch. Nhấn 💡 Mẹo học tập ở dưới thẻ để xem giải thích ngữ pháp, ví dụ và so sánh sắc thái do AI tạo.",
     "translation2Title": "Nhận điểm phát âm & lưu bằng ☆",
@@ -710,7 +710,11 @@
     "settings1Title": "Cài đặt ngôn ngữ học",
     "settings1Desc": "Đặt Source Language (tiếng mẹ đẻ) và Target Language (ngôn ngữ học, tối đa 3). Ví dụ học tiếng Anh: Source=Tiếng Việt, Target=English.",
     "settings2Title": "Điểm mục tiêu & mục tiêu học hàng ngày",
-    "settings2Desc": "Dùng thanh trượt Target Score Goals để đặt mục tiêu điểm cho từng ngôn ngữ. Đặt mục tiêu thẻ hàng ngày để theo dõi tiến độ trên thanh tiến trình."
+    "settings2Desc": "Dùng thanh trượt Target Score Goals để đặt mục tiêu điểm cho từng ngôn ngữ. Đặt mục tiêu thẻ hàng ngày để theo dõi tiến độ trên thanh tiến trình.",
+    "listening1Title": "Vuốt qua các thẻ để chọn chủ đề nghe",
+    "listening1Desc": "Vuốt để tìm một trong 7 thẻ chủ đề điện ảnh. Chạm vào thẻ để mở cửa sổ chủ đề, chọn một chủ đề, chọn Bài luận hoặc Đối thoại, rồi chạm ✨ Tạo văn bản — AI sẽ tạo văn bản nghe cho bạn.",
+    "listening2Title": "▶ Phát + luyện từ khóa",
+    "listening2Desc": "Chạm ▶ để nghe văn bản, sau đó luyện 5 từ khóa bên dưới — chạm 🎙️ để được chấm điểm phát âm. Lưu bằng ☆ để thêm vào sổ từ của bạn."
   },
   "landing": {
     "login": "Đăng nhập",

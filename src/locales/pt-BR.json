@@ -691,10 +691,10 @@
     "scene1Desc": "Toque em uma categoria (aeroporto, restaurante, etc.) no topo ou use ✏️ Personalizado para criar sua própria cena. Depois toque em 🟢 Gerar Pergunta / 🟣 Gerar Resposta para obter frases da IA.",
     "scene2Title": "Pratique pronúncia e salve com ☆",
     "scene2Desc": "Toque no botão 🎙️ do microfone na parte inferior de um cartão para obter sua pontuação de pronúncia. Toque em ☆ para salvar na biblioteca. Cartões salvos podem ser revisados depois em ⭐ Biblioteca.",
-    "vocab1Title": "Escolha um tema das categorias",
-    "vocab1Desc": "Abra uma das 7 categorias, escolha uma subcategoria → tema. Toque em ✨ Gerar Palavras e a IA criará 5 palavras correspondentes ao tema.",
-    "vocab2Title": "Ouça, pratique e salve cartões de palavras",
-    "vocab2Desc": "Toque em 🔊 em um cartão de palavra para ouvir a pronúncia nativa, depois 🎙️ para obter sua pontuação. Salve na biblioteca com ☆ para revisão posterior.",
+    "vocab1Title": "Deslize entre os cartões para escolher uma categoria",
+    "vocab1Desc": "Deslize para encontrar um dos 7 cartões cinematográficos de categoria. Toque um cartão para abrir o modal de tópicos, escolha um tópico e toque ✨ Gerar palavras — a IA criará 5 palavras para você.",
+    "vocab2Title": "Ouça 🔊, pontue 🎙️, salve ☆",
+    "vocab2Desc": "Em cada cartão de palavra, toque 🔊 para ouvir a pronúncia nativa, 🎙️ para obter sua pontuação e ☆ para salvá-lo no seu caderno e revisar quando quiser.",
     "translation1Title": "Traduza + dicas de aprendizado da IA de uma só vez",
     "translation1Desc": "Digite uma palavra ou frase e toque em 🟢 Traduzir. Toque em 💡 Dicas de Aprendizado abaixo do cartão para ver explicações gramaticais, exemplos e comparações de nuances geradas pela IA.",
     "translation2Title": "Receba pontuação de pronúncia e salve com ☆",
@@ -710,7 +710,11 @@
     "settings1Title": "Defina seus idiomas de aprendizado",
     "settings1Desc": "Defina seu Idioma de Origem (nativo) e Idioma de Destino (até 3 idiomas para aprender). Por exemplo, se estiver aprendendo inglês: Origem=Coreano, Destino=Inglês.",
     "settings2Title": "Pontuação alvo e meta diária de estudo",
-    "settings2Desc": "Use o controle de Metas de Pontuação para definir metas por idioma. Defina também uma meta diária de cartões — você pode acompanhar o progresso em tempo real na barra de progresso."
+    "settings2Desc": "Use o controle de Metas de Pontuação para definir metas por idioma. Defina também uma meta diária de cartões — você pode acompanhar o progresso em tempo real na barra de progresso.",
+    "listening1Title": "Deslize entre os cartões para escolher um tópico de áudio",
+    "listening1Desc": "Deslize para encontrar um dos 7 cartões cinematográficos. Toque um cartão para abrir o modal de tópicos, escolha um tópico, escolha Ensaio ou Diálogo e toque ✨ Gerar texto — a IA criará um texto de áudio para você.",
+    "listening2Title": "▶ Reproduzir + praticar palavras-chave",
+    "listening2Desc": "Toque ▶ para ouvir o texto, depois pratique as 5 palavras-chave abaixo — toque 🎙️ para pontuar sua pronúncia. Salve com ☆ para adicionar ao seu caderno."
   },
   "landing": {
     "login": "Entrar",

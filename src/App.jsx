@@ -962,11 +962,18 @@ function App() {
   const [tutorialTab, setTutorialTab] = useState(null);
   const [tutorialStep, setTutorialStep] = useState(0);
 
+  // 튜토리얼 콘텐츠 버전 — 컨텐츠 변경 시 키 suffix를 올리면 기존 사용자도 1회 재노출
+  // (vocab: 슬라이더+모달+생성 흐름으로 문구 변경 → v2)
+  const TUTORIAL_VERSION = { vocab: 'v2' };
+  const tutorialKey = (tab) => {
+    const v = TUTORIAL_VERSION[tab];
+    return v ? `pronunfit_tutorial_${tab}_${v}` : `pronunfit_tutorial_${tab}`;
+  };
+
   // viewMode 변경 시 첫 방문이면 튜토리얼 표시
   React.useEffect(() => {
     if (!TAB_TUTORIALS[viewMode]) return;
-    const key = `pronunfit_tutorial_${viewMode}`;
-    if (!localStorage.getItem(key)) {
+    if (!localStorage.getItem(tutorialKey(viewMode))) {
       const timer = setTimeout(() => {
         setTutorialTab(viewMode);
         setTutorialStep(0);
@@ -980,14 +987,14 @@ function App() {
     if (tutorialStep < total - 1) {
       setTutorialStep(tutorialStep + 1);
     } else {
-      localStorage.setItem(`pronunfit_tutorial_${tutorialTab}`, 'seen');
+      localStorage.setItem(tutorialKey(tutorialTab), 'seen');
       setTutorialTab(null);
       setTutorialStep(0);
     }
   };
 
   const handleTutorialSkip = () => {
-    localStorage.setItem(`pronunfit_tutorial_${tutorialTab}`, 'seen');
+    localStorage.setItem(tutorialKey(tutorialTab), 'seen');
     setTutorialTab(null);
     setTutorialStep(0);
   };

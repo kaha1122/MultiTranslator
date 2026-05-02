@@ -691,10 +691,10 @@
     "scene1Desc": "Toca una categoría arriba (aeropuerto, restaurante, etc.) o usa ✏️ Personalizar para crear tu escena. Luego toca 🟢 Generar pregunta / 🟣 Generar respuesta para obtener frases con IA.",
     "scene2Title": "Practica pronunciación y guarda con ☆",
     "scene2Desc": "Toca el botón 🎙️ micrófono en la parte inferior de la tarjeta para obtener tu puntuación. Toca ☆ para guardar en tu biblioteca. Las tarjetas guardadas se pueden repasar en ⭐ Biblioteca.",
-    "vocab1Title": "Elige un tema de las categorías",
-    "vocab1Desc": "Abre una de las 7 categorías, elige subcategoría → tema. Toca ✨ Generar palabras y la IA creará 5 palabras relacionadas.",
-    "vocab2Title": "Escucha, practica y guarda las tarjetas",
-    "vocab2Desc": "Toca 🔊 en una tarjeta de vocabulario para escuchar la pronunciación nativa, luego 🎙️ para obtener tu puntuación. Guarda con ☆ para repasar después.",
+    "vocab1Title": "Desliza entre las tarjetas para elegir una categoría",
+    "vocab1Desc": "Desliza para encontrar una de las 7 tarjetas cinematográficas de categoría. Toca una para abrir el modal de temas, elige un tema y luego toca ✨ Generar palabras — la IA creará 5 palabras para ti.",
+    "vocab2Title": "Escucha 🔊, puntúa 🎙️, guarda ☆",
+    "vocab2Desc": "En cada tarjeta de palabra, toca 🔊 para oír la pronunciación nativa, 🎙️ para obtener tu puntuación y ☆ para guardarla en tu biblioteca y repasarla cuando quieras.",
     "translation1Title": "Traducción + consejos IA de una vez",
     "translation1Desc": "Escribe una palabra o frase y toca 🟢 Traducir. Toca 💡 Consejos de aprendizaje debajo de la tarjeta para ver explicaciones gramaticales, ejemplos y matices generados por IA.",
     "translation2Title": "Obtén tu puntuación y guarda con ☆",
@@ -710,7 +710,11 @@
     "settings1Title": "Configura tus idiomas de aprendizaje",
     "settings1Desc": "Configura tu Source Language (idioma nativo) y Target Language (hasta 3 idiomas). Por ejemplo para inglés: Source=Español, Target=English.",
     "settings2Title": "Puntuación objetivo y meta diaria",
-    "settings2Desc": "Usa el control deslizante Target Score Goals para establecer metas por idioma. Establece también una meta diaria de tarjetas para seguir tu progreso en tiempo real."
+    "settings2Desc": "Usa el control deslizante Target Score Goals para establecer metas por idioma. Establece también una meta diaria de tarjetas para seguir tu progreso en tiempo real.",
+    "listening1Title": "Desliza entre las tarjetas para elegir un tema de escucha",
+    "listening1Desc": "Desliza para encontrar una de las 7 tarjetas cinematográficas. Toca una para abrir el modal de temas, elige un tema, elige Ensayo o Diálogo y luego toca ✨ Generar texto — la IA creará un texto de escucha para ti.",
+    "listening2Title": "▶ Reproduce + practica palabras clave",
+    "listening2Desc": "Toca ▶ para escuchar el texto, luego practica las 5 palabras clave abajo — toca 🎙️ para puntuar tu pronunciación. Guarda con ☆ para añadir a tu biblioteca."
   },
   "landing": {
     "login": "Iniciar sesión",
