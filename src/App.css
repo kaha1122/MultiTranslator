@@ -80,8 +80,8 @@ html.admob-active.platform-native::after {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  /* 기본: safe-area 적용 (광고 없는 Pro/Premium + iOS safe-area) */
-  padding: 0 0 calc(40px + env(safe-area-inset-bottom, 0px)) 0;
+  /* 기본: safe-area 적용 — tab-nav 64px + iOS safe-area */
+  padding: 0 0 calc(64px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
@@ -91,7 +91,7 @@ html.admob-active.platform-native::after {
 }
 /* 광고 있을 때: admob-bottom으로 대체 (배너가 safe-area 포함) */
 .admob-active .app-container {
-  padding-bottom: calc(40px + var(--admob-bottom, 0px));
+  padding-bottom: calc(64px + var(--admob-bottom, 0px));
 }
 
 .app-container::-webkit-scrollbar {
@@ -1381,45 +1381,77 @@ html.admob-active.platform-native::after {
   }
 }
 
-/* ── 탭 위치 도트 인디케이터 ─────────────────────────────────────── */
-.tab-dots {
+/* ── 하단 탭 바로가기 nav (도트 인디케이터 대체) ─────────────────── */
+.tab-nav {
   position: fixed;
-  /* 기본(광고 없음): safe-area 위에 배치 */
   bottom: env(safe-area-inset-bottom, 0px);
   left: 50%;
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: 36px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 8px;
   z-index: 900;
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
+  padding: 6px 0 4px;
 }
-/* 광고 있을 때: 배너 위에 배치 */
-.admob-active .tab-dots {
+.admob-active .tab-nav {
   bottom: var(--admob-bottom, 0px);
 }
 
-.tab-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
+.tab-nav__btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 4px 2px;
+  background: transparent;
   border: none;
-  background: #cbd5e1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #94a3b8;
   cursor: pointer;
-  padding: 0;
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  flex-shrink: 0;
+  -webkit-tap-highlight-color: transparent;
+  transition: color 120ms ease, transform 80ms ease;
+  font-family: inherit;
+}
+.tab-nav__btn:active {
+  transform: scale(0.94);
 }
 
-.tab-dot.active {
-  width: 22px;
-  border-radius: 4px;
-  background: var(--primary-color);
-  box-shadow: 0 2px 6px rgba(0, 168, 132, 0.4);
+.tab-nav__icon {
+  font-size: 22px;
+  line-height: 1;
+  filter: grayscale(0.35);
+  opacity: 0.78;
+  transition: filter 120ms ease, opacity 120ms ease, transform 120ms ease;
+}
+
+.tab-nav__label {
+  font-size: clamp(8px, 2.2vw, 10.5px);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  line-height: 1.15;
+}
+
+.tab-nav__btn.is-active {
+  color: var(--tab-color, #00a884);
+}
+.tab-nav__btn.is-active .tab-nav__icon {
+  filter: none;
+  opacity: 1;
+  transform: translateY(-1px);
+}
+
+@media (prefers-color-scheme: dark) {
+  .tab-nav {
+    background: #0f172a;
+    border-top-color: rgba(148, 163, 184, 0.18);
+  }
+  .tab-nav__btn { color: #64748b; }
 }

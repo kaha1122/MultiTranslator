@@ -992,30 +992,20 @@ function App() {
     setTutorialStep(0);
   };
 
-  // 스와이프로 탭 이동 — 메인 탭 순서
+  // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
   const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
-  const swipeStartX = React.useRef(null);
-  const swipeStartY = React.useRef(null);
-
-  const handleTouchStart = useCallback((e) => {
-    swipeStartX.current = e.touches[0].clientX;
-    swipeStartY.current = e.touches[0].clientY;
-  }, []);
-
-  const handleTouchEnd = useCallback((e) => {
-    if (swipeStartX.current === null) return;
-    const dx = e.changedTouches[0].clientX - swipeStartX.current;
-    const dy = e.changedTouches[0].clientY - swipeStartY.current;
-    swipeStartX.current = null;
-    swipeStartY.current = null;
-    // 수평 이동이 수직보다 크고 60px 이상일 때만 탭 전환
-    if (Math.abs(dx) < 60 || Math.abs(dx) < Math.abs(dy)) return;
-    if (sidebarOpen) return; // 드로어 열린 상태에서는 무시
-    const cur = TAB_ORDER.indexOf(viewMode);
-    if (cur === -1) return;
-    if (dx < 0 && cur < TAB_ORDER.length - 1) setViewMode(TAB_ORDER[cur + 1]); // 왼쪽 스와이프 → 다음
-    if (dx > 0 && cur > 0) setViewMode(TAB_ORDER[cur - 1]);                     // 오른쪽 스와이프 → 이전
-  }, [viewMode, sidebarOpen]);
+  const TAB_STYLE = {
+    home: { icon: '🏠', color: '#00a884' },
+    vocab: { icon: '📖', color: '#059669' },
+    scene: { icon: '🎭', color: '#6366f1' },
+    listening: { icon: '🎧', color: '#7c3aed' },
+    translation: { icon: '🔤', color: '#d97706' },
+    video: { icon: '🎬', color: '#e11d48' },
+    library: { icon: '⭐', color: '#0891b2' },
+    stats: { icon: '📊', color: '#6366f1' },
+  };
+  // nav.* 라벨에서 "00." / "01." 등 번호 prefix 제거 (nav 버튼은 좁아서 prefix 생략)
+  const stripNavPrefix = (s) => (s ? String(s).replace(/^\d{1,2}\.\s*/, '') : s);
 
   // 사용자가 입력한 번역할 텍스트
   const [inputText, setInputText] = useState(() => {
@@ -2737,10 +2727,7 @@ function App() {
 
   // 메인 앱 화면
   return (
-    <div className="app-container"
-      onTouchStart={handleTouchStart}
-      onTouchEnd={handleTouchEnd}
-    >
+    <div className="app-container">
       {nativeUpdatePopup}
       {/* Vercel 분석 도구 */}
       <Analytics />
@@ -3358,16 +3345,6 @@ function App() {
 
         <AnimatePresence mode="wait">
           {(() => {
-            const TAB_STYLE = {
-              home: { icon: '🏠', color: '#00a884' },
-              vocab: { icon: '📖', color: '#059669' },
-              scene: { icon: '🎭', color: '#6366f1' },
-              listening: { icon: '🎧', color: '#7c3aed' },
-              translation: { icon: '🔤', color: '#d97706' },
-              video: { icon: '🎬', color: '#e11d48' },
-              library: { icon: '⭐', color: '#0891b2' },
-              stats: { icon: '📊', color: '#6366f1' },
-            };
             const s = TAB_STYLE[viewMode];
             if (!s) return null;
             return (
@@ -4278,18 +4255,29 @@ function App() {
         />
       )}
 
-      {/* 탭 위치 표시 도트 인디케이터 */}
+      {/* 하단 탭 바로가기 nav (도트 인디케이터 대체) */}
       {TAB_ORDER.includes(viewMode) && (
-        <div className="tab-dots">
-          {TAB_ORDER.map((tab) => (
-            <button
-              key={tab}
-              className={`tab-dot ${viewMode === tab ? 'active' : ''}`}
-              onClick={() => setViewMode(tab)}
-              aria-label={tab}
-            />
-          ))}
-        </div>
+        <nav className="tab-nav" aria-label="primary">
+          {TAB_ORDER.map((tab) => {
+            const s = TAB_STYLE[tab];
+            const active = viewMode === tab;
+            const label = stripNavPrefix(getT(sourceLang, `nav.${tab}`)) || tab;
+            return (
+              <button
+                key={tab}
+                type="button"
+                className={`tab-nav__btn ${active ? 'is-active' : ''}`}
+                style={{ '--tab-color': s.color }}
+                onClick={() => setViewMode(tab)}
+                aria-current={active ? 'page' : undefined}
+                aria-label={label}
+              >
+                <span className="tab-nav__icon" aria-hidden="true">{s.icon}</span>
+                <span className="tab-nav__label">{label}</span>
+              </button>
+            );
+          })}
+        </nav>
       )}
 
       {/* Trial 한도 도달 모달 */}
