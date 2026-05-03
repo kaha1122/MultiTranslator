@@ -59,6 +59,15 @@ export default function ChatBubble({
 
     useEffect(() => { /* placeholder for future telemetry */ }, [isDone]);
 
+    // 자기 차례가 아직 오지 않은 메시지(played=false + shouldAutoplay=false)는 전체 숨김.
+    // 빈 말풍선 / 'user_auto 힌트 라벨' / 페르소나 이름 등이 미리 보이는 것을 방지.
+    // 예외:
+    //   - isLoading=true: AI placeholder 스피너는 보여야 함 (자유 발화 후 응답 대기 표시)
+    //   - user_free: 사용자가 즉시 말한 발화라 마운트 시 played=true 또는 sttRaw 표시 필요
+    if (!shouldAutoplay && !message.played && !message.isLoading && message.role !== 'user_free') {
+        return null;
+    }
+
     if (message.role === 'narration') {
         return (
             <div className="ftc-msg ftc-msg-narration">

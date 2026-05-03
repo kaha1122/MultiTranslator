@@ -38,17 +38,25 @@
     right: 8px;
     width: 32px;
     height: 32px;
+    padding: 0;                       /* 글로벌 button padding 무력화 */
     border-radius: 50%;
     background: rgba(0, 0, 0, 0.06);
     border: none;
     cursor: pointer;
-    display: flex;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     color: #555;
     z-index: 1;
 }
+.mcm-close > svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2.25;
+}
 .mcm-close:hover { background: rgba(0, 0, 0, 0.12); }
+.mcm-close:active { transform: scale(0.94); }
 
 .mcm-fallback { padding: 24px 12px; text-align: center; }
 .mcm-fallback p { margin: 6px 0; }

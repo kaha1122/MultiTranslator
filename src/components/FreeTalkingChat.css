@@ -81,18 +81,28 @@
     text-overflow: ellipsis;
 }
 .ftc-close-btn {
-    background: none;
-    border: none;
+    flex-shrink: 0;
     width: 36px;
     height: 36px;
-    display: flex;
+    padding: 0;                       /* 글로벌 button { padding: .6em 1.2em } 무력화 — TopicPickerModal 패턴 차용 */
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.06);
+    color: #475569;
+    display: inline-flex;
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    color: #555;
-    border-radius: 50%;
+    transition: background 120ms ease, transform 80ms ease, color 120ms ease;
 }
-.ftc-close-btn:hover { background: rgba(0, 0, 0, 0.06); }
+.ftc-close-btn > svg {
+    width: 20px;
+    height: 20px;
+    stroke: currentColor;
+    stroke-width: 2.25;
+}
+.ftc-close-btn:hover { color: #0f172a; background: rgba(0, 0, 0, 0.12); }
+.ftc-close-btn:active { transform: scale(0.94); }
 
 /* ── Messages 영역 ───────────────────────────── */
 .ftc-messages {
@@ -155,6 +165,7 @@
     border: none;
     width: 26px;
     height: 26px;
+    padding: 0;                       /* 글로벌 button padding 무력화 */
     border-radius: 50%;
     display: inline-flex;
     align-items: center;
