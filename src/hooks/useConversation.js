@@ -44,6 +44,18 @@ const SERVER_URL = getServerUrl();
 const TURN_LIMITS = { trial: 8, pro: 25, premium: 300 };
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30분
 
+// voiceSwap 결정 — 세션 시작 시 50% 확률로 swap.
+// false (default): User=female, AI=male
+// true  (swap)  : User=male,   AI=female
+function pickVoices() {
+    const swap = Math.random() < 0.5;
+    return {
+        userSpeaker: swap ? 'male' : 'female',
+        aiSpeaker:   swap ? 'female' : 'male',
+        swap,
+    };
+}
+
 export function useConversation({ tier = 'trial' } = {}) {
     const [sessionId, setSessionId] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -90,6 +102,9 @@ export function useConversation({ tier = 'trial' } = {}) {
         }
     }, []);
 
+    // 세션 시작 시 결정되는 voice swap (랜덤). ref로 보존되어 자유 발화 흐름에서도 일관 적용.
+    const voicesRef = useRef({ userSpeaker: 'female', aiSpeaker: 'male', swap: false });
+
     const startSession = useCallback(async (setupArgs) => {
         setIsStarting(true);
         setStartError(null);
@@ -98,6 +113,8 @@ export function useConversation({ tier = 'trial' } = {}) {
         setFreeTurnCount(0);
         setSessionEnded(false);
         setEndedReason(null);
+        // voice 선택 — 세션마다 랜덤 (User=female/AI=male  또는  User=male/AI=female)
+        voicesRef.current = pickVoices();
         try {
             const res = await authFetch(`${SERVER_URL}/api/converse-start`, {
                 method: 'POST',
@@ -121,11 +138,13 @@ export function useConversation({ tier = 'trial' } = {}) {
             setSessionId(`s-${Date.now()}`);
 
             // 3개 메시지 골격을 즉시 마운트 (text는 빈 채로 — TTS reveal로 채워짐)
+            // played: false → ChatBubble이 fullText pre-flash 차단 (자기 차례에 reveal 시작)
             const introMsg = {
                 id: newId(),
                 role: 'narration',
                 text: '',
                 fullText: data.intro?.text || '',
+                played: false,
             };
             const userAutoMsg = {
                 id: newId(),
@@ -138,6 +157,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                 learning_tip: data.firstUserTurn?.learning_tip,
                 selected_emotion: data.firstUserTurn?.selected_emotion,
                 interaction_type: data.firstUserTurn?.interaction_type,
+                played: false,
             };
             const aiMsg = {
                 id: newId(),
@@ -150,16 +170,19 @@ export function useConversation({ tier = 'trial' } = {}) {
                 learning_tip: data.firstAiReply?.learning_tip,
                 selected_emotion: data.firstAiReply?.selected_emotion,
                 interaction_type: data.firstAiReply?.interaction_type,
+                played: false,
             };
             setMessages([introMsg, userAutoMsg, aiMsg]);
 
             // TTS 3개 병렬 fetch — 도착하는 대로 메시지에 audio/words 주입
             // 재생 순서는 FreeTalkingChat 컴포넌트가 ttsGen 토큰으로 직렬화 제어
+            const { userSpeaker, aiSpeaker } = voicesRef.current;
             (async () => {
+                // narration은 sourceLang(모국어)로 — User voice를 따라가서 일관성 유지
                 const introTTS = await fetchTTS({
                     text: data.intro.text,
                     langCode: setupArgs.sourceLang,
-                    speaker: 'female',
+                    speaker: userSpeaker,
                 });
                 if (introTTS) {
                     setMessages(prev => prev.map(m => m.id === introMsg.id
@@ -172,7 +195,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     text: data.firstUserTurn.sentence,
                     langCode: setupArgs.targetLang,
                     emotion: data.firstUserTurn.selected_emotion,
-                    speaker: 'female',
+                    speaker: userSpeaker,
                 });
                 if (userTTS) {
                     setMessages(prev => prev.map(m => m.id === userAutoMsg.id
@@ -185,7 +208,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     text: data.firstAiReply.sentence,
                     langCode: setupArgs.targetLang,
                     emotion: data.firstAiReply.selected_emotion,
-                    speaker: 'male',
+                    speaker: aiSpeaker,
                 });
                 if (aiTTS) {
                     setMessages(prev => prev.map(m => m.id === aiMsg.id
@@ -255,6 +278,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         resetIdleTimer();
 
         // 1) user_free 즉시 표시 — intentText 미정 상태에서는 sttRaw 그대로 보여줌
+        // user_free는 사용자가 "이미 말한" 발화라 played=true (TTS reveal 대상 아님 — 텍스트만)
         const userMsgId = newId();
         const userMsg = {
             id: userMsgId,
@@ -264,6 +288,7 @@ export function useConversation({ tier = 'trial' } = {}) {
             sttRaw: rawSttText,
             edited: false,
             ttsReady: false,
+            played: true,
         };
         const aiMsgId = newId();
         const aiPlaceholder = {
@@ -273,6 +298,7 @@ export function useConversation({ tier = 'trial' } = {}) {
             fullText: '',
             ttsReady: false,
             isLoading: true,
+            played: false,
         };
         setMessages(prev => [...prev, userMsg, aiPlaceholder]);
 
@@ -340,12 +366,12 @@ export function useConversation({ tier = 'trial' } = {}) {
                 return m;
             }));
 
-            // 4) ai 메시지 TTS fetch
+            // 4) ai 메시지 TTS fetch — 세션 voiceSwap 일관 적용
             const aiTTS = await fetchTTS({
                 text: data.aiReply?.sentence || '',
                 langCode: setupNow.targetLang,
                 emotion: data.aiReply?.selected_emotion,
-                speaker: 'male',
+                speaker: voicesRef.current.aiSpeaker,
             });
             if (aiTTS) {
                 setMessages(prev => prev.map(m => m.id === aiMsgId
@@ -374,6 +400,14 @@ export function useConversation({ tier = 'trial' } = {}) {
             setIsReplying(false);
         }
     }, [fetchTTS, sessionEnded, freeTurnCount, resetIdleTimer]);
+
+    /**
+     * ChatBubble의 onPlaybackDone에서 호출 — 메시지를 played=true 로 마킹.
+     * 이로써 자동재생 차례가 끝난 메시지는 fullText 상시 표시 (스크롤로 다시 보일 때 깜빡임 없음).
+     */
+    const markMessagePlayed = useCallback((messageId) => {
+        setMessages(prev => prev.map(m => m.id === messageId ? { ...m, played: true } : m));
+    }, []);
 
     /**
      * 마지막 user_free 메시지의 텍스트를 사용자가 직접 수정하고, 직후 AI 응답을 재생성한다.
@@ -436,5 +470,6 @@ export function useConversation({ tier = 'trial' } = {}) {
         sessionEnded, endedReason,
         startSession, endSession, resetSession,
         submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
+        markMessagePlayed,
     };
 }

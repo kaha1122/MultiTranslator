@@ -12,7 +12,7 @@
     "cap:android": "npm run build && npx cap sync android && npx cap open android",
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "cap:sync:ios": "npm run build && npx cap sync ios",
-    "check-secrets": "grep -roE \"AIza[0-9A-Za-z_-]{35}\" dist/ | sort -u"
+    "check-secrets": "node scripts/check-secrets.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",

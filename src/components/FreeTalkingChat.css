@@ -25,9 +25,10 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
-    /* iOS safe area 대응 */
-    padding-top: env(safe-area-inset-top, 0);
-    padding-bottom: env(safe-area-inset-bottom, 0);
+    /* iOS safe area + Android status bar 영역 둘 다 대응 */
+    /* env() 가 0 인 안드로이드 브라우저에서도 status bar 영역 확보 */
+    padding-top: max(env(safe-area-inset-top, 0px), 28px);
+    padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
 }
 
 /* ── Header ───────────────────────────────────── */

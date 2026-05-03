@@ -38,7 +38,8 @@ export default function FreeTalkingChat({
         freeTurnCount, turnLimit,
         sessionEnded, endedReason,
         startSession, endSession, resetSession,
-        submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
+        submitFreeUtterance, removeLastUserFreePair,
+        markMessagePlayed,
     } = useConversation({ tier });
 
     const [playbackIdx, setPlaybackIdx] = useState(-1);
@@ -107,6 +108,10 @@ export default function FreeTalkingChat({
     }, [messages.length, playbackIdx]);
 
     const handleBubbleDone = (idx) => () => {
+        // 재생 끝난 메시지 played=true 로 마킹 (스크롤 시 깜빡임 방지)
+        const m = messages[idx];
+        if (m) markMessagePlayed(m.id);
+
         // Sprint 1 흐름: 시작 3 메시지 직렬 재생
         if (!playbackQueueDone && idx < 3) {
             if (idx + 1 < 3) {
@@ -141,9 +146,6 @@ export default function FreeTalkingChat({
         if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
     }
 
-    const handleEdit = (newText) => {
-        editLastUserFree(newText);
-    };
     const handleRerecord = () => {
         removeLastUserFreePair();
     };
@@ -227,8 +229,7 @@ export default function FreeTalkingChat({
                             shouldAutoplay={idx === playbackIdx}
                             onPlaybackDone={handleBubbleDone(idx)}
                             onCardOpen={handleCardOpen}
-                            onReplay={() => { /* 개별 재생: 단순 재호출 — Sprint 2 보강 가능 */ }}
-                            onEditUserFree={handleEdit}
+                            onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
                             onRerecordUserFree={handleRerecord}
                             onListenUserFree={handleListen}
                             isLastUserFree={idx === lastUserFreeIdx}

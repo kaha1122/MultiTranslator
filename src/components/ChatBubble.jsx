@@ -1,5 +1,5 @@
-import { Volume2, MessageCircle, Edit2, Mic, Check, X as XIcon, RotateCcw } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { Volume2, MessageCircle, Mic, RotateCcw } from 'lucide-react';
+import { useEffect } from 'react';
 import { useTTSSyncedReveal } from '../hooks/useTTSSyncedReveal';
 
 /**
@@ -8,12 +8,14 @@ import { useTTSSyncedReveal } from '../hooks/useTTSSyncedReveal';
  * role:
  *   - 'narration'  : 중앙 정렬 회색 안내 (sourceLang)
  *   - 'user_auto'  : 우측 정렬, "💡 이렇게 시작해볼 수 있어요" 회색 라벨, 클릭 시 onCardOpen
- *   - 'user_free'  : 우측 정렬, sttRaw가 다르면 회색으로 표시. 마지막 user_free만 액션바 노출.
+ *   - 'user_free'  : 우측 정렬, sttRaw가 다르면 회색으로 표시. 마지막 user_free에 [다시 말하기/듣기].
  *   - 'ai'         : 좌측 정렬, 페르소나 아바타+이름, 클릭 시 onCardOpen
  *
- * autoplay 제어:
- *   - shouldAutoplay=true 일 때만 audio 재생 시작 (직렬 재생 흐름은 부모가 결정)
- *   - 부모는 onPlaybackDone 콜백으로 다음 메시지 차례를 알 수 있음
+ * displayText 규칙 (TTS pre-flash 방지):
+ *   - shouldAutoplay=true → revealedText 사용 (단어 단위 reveal)
+ *   - shouldAutoplay=false + audio 미재생 (played=false) + audio 보유 → '' (재생 차례 대기)
+ *   - shouldAutoplay=false + 재생 완료 (played=true) → fullText 그대로
+ *   - audio 없음 (TTS 실패 등) → fullText 즉시 표시 (graceful)
  */
 export default function ChatBubble({
     message,
@@ -22,15 +24,11 @@ export default function ChatBubble({
     onPlaybackDone,
     onCardOpen,
     onReplay,
-    onEditUserFree,
     onRerecordUserFree,
     onListenUserFree,
     isLastUserFree,
     t,
 }) {
-    const [editing, setEditing] = useState(false);
-    const [editValue, setEditValue] = useState(message.fullText || message.text || '');
-
     const { revealedText, isPlaying, isDone } = useTTSSyncedReveal({
         fullText: message.fullText || message.text || '',
         audioBase64: shouldAutoplay ? message.audio : null,
@@ -41,9 +39,22 @@ export default function ChatBubble({
         generation: message.id + (shouldAutoplay ? '-play' : '-idle'),
     });
 
-    const displayText = (shouldAutoplay
-        ? (revealedText || (isDone ? message.fullText : ''))
-        : (message.text || message.fullText || ''));
+    // shouldAutoplay 일 때는 revealedText (재생 끝나면 fullText)
+    // shouldAutoplay 아닐 때:
+    //   - 이미 재생 끝난 메시지(played=true) → fullText 표시
+    //   - 아직 재생 안 한 메시지(played=false)이고 audio 보유 중 → '' (차례 대기)
+    //   - audio 자체가 없으면(TTS 실패 등) → fullText fallback
+    const fullText = message.fullText || message.text || '';
+    let displayText;
+    if (shouldAutoplay) {
+        displayText = revealedText || (isDone ? fullText : '');
+    } else if (message.played) {
+        displayText = fullText;
+    } else if (message.audio) {
+        displayText = '';  // 재생 차례 대기 — 사전 flash 방지
+    } else {
+        displayText = fullText;
+    }
 
     useEffect(() => { /* placeholder for future telemetry */ }, [isDone]);
 
@@ -53,7 +64,7 @@ export default function ChatBubble({
                 <div className="ftc-narration-bubble">
                     {displayText || ' '}
                 </div>
-                {message.audio && !shouldAutoplay && isDone && (
+                {message.audio && !shouldAutoplay && message.played && (
                     <button className="ftc-replay-btn" onClick={() => onReplay?.(message.id)} title={t?.('freeTalk.replay') || 'Replay'}>
                         <Volume2 size={14} />
                     </button>
@@ -82,75 +93,23 @@ export default function ChatBubble({
                     </div>
                 )}
 
-                {editing ? (
-                    <div className="ftc-edit-row">
-                        <input
-                            type="text"
-                            className="ftc-edit-input"
-                            value={editValue}
-                            onChange={(e) => setEditValue(e.target.value)}
-                            onKeyDown={(e) => {
-                                if (e.key === 'Enter' && editValue.trim()) {
-                                    setEditing(false);
-                                    onEditUserFree?.(editValue.trim());
-                                } else if (e.key === 'Escape') {
-                                    setEditing(false);
-                                    setEditValue(message.fullText || message.text || '');
-                                }
-                            }}
-                            autoFocus
-                        />
-                        <button
-                            className="ftc-edit-confirm"
-                            onClick={() => {
-                                if (!editValue.trim()) return;
-                                setEditing(false);
-                                onEditUserFree?.(editValue.trim());
-                            }}
-                            title={t?.('freeTalk.confirmEdit') || '확정'}
-                        >
-                            <Check size={14} />
-                        </button>
-                        <button
-                            className="ftc-edit-cancel"
-                            onClick={() => {
-                                setEditing(false);
-                                setEditValue(message.fullText || message.text || '');
-                            }}
-                            title={t?.('freeTalk.cancelEdit') || '취소'}
-                        >
-                            <XIcon size={14} />
-                        </button>
-                    </div>
-                ) : (
-                    <button
-                        type="button"
-                        className={`ftc-bubble ${isUser ? 'ftc-bubble-user' : 'ftc-bubble-ai'} ${message.isLoading ? 'ftc-bubble-loading' : ''}`}
-                        onClick={() => !message.isLoading && onCardOpen?.(message)}
-                        title={t?.('freeTalk.tapForCard') || '카드 열기'}
-                        disabled={!!message.isLoading}
-                    >
-                        <span className="ftc-bubble-text">
-                            {message.isLoading
-                                ? <RotateCcw className="spin" size={14} />
-                                : (displayText || ' ')}
-                        </span>
-                    </button>
-                )}
+                <button
+                    type="button"
+                    className={`ftc-bubble ${isUser ? 'ftc-bubble-user' : 'ftc-bubble-ai'} ${message.isLoading ? 'ftc-bubble-loading' : ''}`}
+                    onClick={() => !message.isLoading && onCardOpen?.(message)}
+                    title={t?.('freeTalk.tapForCard') || '카드 열기'}
+                    disabled={!!message.isLoading}
+                >
+                    <span className="ftc-bubble-text">
+                        {message.isLoading
+                            ? <RotateCcw className="spin" size={14} />
+                            : (displayText || ' ')}
+                    </span>
+                </button>
 
-                {/* user_free 액션 바 — 마지막 user_free 만 노출 */}
-                {message.role === 'user_free' && isLastUserFree && !editing && !message.isLoading && (
+                {/* user_free 액션 바 — 마지막 user_free 만 노출 (수정 버튼은 제거, 다시말하기/듣기만) */}
+                {message.role === 'user_free' && isLastUserFree && !message.isLoading && (
                     <div className="ftc-user-actions">
-                        <button
-                            className="ftc-user-action-btn"
-                            onClick={() => {
-                                setEditValue(message.fullText || message.text || '');
-                                setEditing(true);
-                            }}
-                            title={t?.('freeTalk.edit') || '수정'}
-                        >
-                            <Edit2 size={13} /> {t?.('freeTalk.edit') || '수정'}
-                        </button>
                         <button
                             className="ftc-user-action-btn"
                             onClick={() => onRerecordUserFree?.()}
@@ -168,7 +127,7 @@ export default function ChatBubble({
                     </div>
                 )}
 
-                {message.role === 'user_free' && message.sttRaw && message.sttRaw !== message.fullText && !editing && (
+                {message.role === 'user_free' && message.sttRaw && message.sttRaw !== message.fullText && (
                     <div className="ftc-stt-raw">
                         🎙️ {t?.('freeTalk.heardAs') || '들린 결과'}: <em>"{message.sttRaw}"</em>
                     </div>
