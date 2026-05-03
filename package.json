@@ -1,7 +1,7 @@
 {
   "name": "translator",
   "private": true,
-  "version": "1.4.87",
+  "version": "1.4.88",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -37,6 +37,7 @@
     "firebase": "^12.9.0",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.574.0",
+    "puppeteer": "^24.42.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "react-firebase-hooks": "^5.1.1",
