@@ -939,4 +939,80 @@ router.post('/api/cron/stage-by-country', requireCronAuth, async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// 단일 유저 doc 진단 — fcmTokens 등록/재등록 미작동 원인 분석용
+router.post('/api/cron/user-info', requireCronAuth, async (req, res) => {
+    const uid = req.query.uid;
+    if (!uid) return res.status(400).json({ error: 'uid query param required' });
+
+    try {
+        const snap = await adminDb.collection('users').doc(uid).get();
+        if (!snap.exists) return res.status(404).json({ error: 'user-not-found', uid });
+        const d = snap.data();
+
+        const toIso = (ts) => ts?.toDate?.()?.toISOString() || null;
+
+        // ProfileHeal FCM 재등록 4가지 조건 평가 (서버에서 알 수 있는 것만)
+        const isNative = !!d.currentNativePlatform; // android/ios 있으면 네이티브
+        const fcmEmpty = !Array.isArray(d.fcmTokens) || d.fcmTokens.length === 0;
+        const heal = {
+            cond1_isNativePlatform: isNative,
+            cond2_fcmTokensEmpty: fcmEmpty,
+            cond3_sameSessionGuard: 'unknown (device memory)',
+            cond4_permissionGranted: 'unknown (device runtime)',
+            note: 'cond4 (permission granted)가 가장 자주 실패함 — 유저가 알림 권한 거부했거나 한 번도 요청 안 됐으면 register() 안 호출됨',
+        };
+
+        return res.json({
+            uid,
+            // 핵심
+            tier: d.tier || null,
+            isAnonymous: !!d.isAnonymous,
+            lifecycleStage: d.lifecycleStage || null,
+            activeDayCount: d.activeDayCount || 0,
+            email: d.email || null,
+            displayName: d.displayName || null,
+
+            // 언어/지역
+            sourceLang: d.sourceLang || null,
+            deviceLang: d.deviceLang || null,
+            geoCountry: d.geoCountry || null,
+            geoCity: d.geoCity || null,
+            phoneCountry: d.phoneCountry || null,
+
+            // 플랫폼
+            currentNativePlatform: d.currentNativePlatform || null,
+            currentNativeVersion: d.currentNativeVersion || null,
+            firstNativePlatform: d.firstNativePlatform || null,
+            firstNativeVersion: d.firstNativeVersion || null,
+
+            // FCM 관련
+            fcmTokens: Array.isArray(d.fcmTokens) ? d.fcmTokens.map(t => t?.slice(0, 16) + '...') : [],
+            fcmTokensCount: Array.isArray(d.fcmTokens) ? d.fcmTokens.length : 0,
+            fcmTokenUpdatedAt: toIso(d.fcmTokenUpdatedAt),
+            subscriptionAlertOptOut: d.subscriptionAlertOptOut || false,
+            reengagementOptOut: d.reengagementOptOut || false,
+            subscriptionAlertPromptShown: d.subscriptionAlertPromptShown || false,
+
+            // 활동 추적
+            createdAt: toIso(d.createdAt),
+            updatedAt: toIso(d.updatedAt),
+            lastActiveAt: toIso(d.lastActiveAt),
+            lastActiveDay: d.lastActiveDay || null,
+            hasCompletedOnboarding: !!d.hasCompletedOnboarding,
+
+            // 발송 이력
+            reengagementSentAt: d.reengagementSentAt
+                ? Object.fromEntries(Object.entries(d.reengagementSentAt).map(([k, v]) => [k, toIso(v)]))
+                : null,
+
+            // ProfileHeal FCM 재등록 진단
+            profileHealFcmDiagnostic: heal,
+        });
+    } catch (e) {
+        console.error('[UserInfo] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
