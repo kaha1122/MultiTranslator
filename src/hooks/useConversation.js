@@ -177,18 +177,24 @@ export function useConversation({ tier = 'trial' } = {}) {
             // TTS 3개 병렬 fetch — 도착하는 대로 메시지에 audio/words 주입
             // 재생 순서는 FreeTalkingChat 컴포넌트가 ttsGen 토큰으로 직렬화 제어
             const { userSpeaker, aiSpeaker } = voicesRef.current;
+            // TTS 실패 시 메시지에 ttsReady=true + played=true 마킹 → fullText fallback 노출
+            // (ChatBubble은 played=true 면 fullText 상시 표시. 재생 큐도 audio 없어도 통과)
+            const applyTTS = (msgId, ttsResult) => {
+                setMessages(prev => prev.map(m => {
+                    if (m.id !== msgId) return m;
+                    if (ttsResult) {
+                        return { ...m, audio: ttsResult.audio, mimeType: ttsResult.mimeType, words: ttsResult.words, ttsReady: true };
+                    }
+                    return { ...m, ttsReady: true, played: true, ttsFailed: true };
+                }));
+            };
             (async () => {
-                // narration은 sourceLang(모국어)로 — User voice를 따라가서 일관성 유지
                 const introTTS = await fetchTTS({
                     text: data.intro.text,
                     langCode: setupArgs.sourceLang,
                     speaker: userSpeaker,
                 });
-                if (introTTS) {
-                    setMessages(prev => prev.map(m => m.id === introMsg.id
-                        ? { ...m, audio: introTTS.audio, mimeType: introTTS.mimeType, words: introTTS.words, ttsReady: true }
-                        : m));
-                }
+                applyTTS(introMsg.id, introTTS);
             })();
             (async () => {
                 const userTTS = await fetchTTS({
@@ -197,11 +203,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     emotion: data.firstUserTurn.selected_emotion,
                     speaker: userSpeaker,
                 });
-                if (userTTS) {
-                    setMessages(prev => prev.map(m => m.id === userAutoMsg.id
-                        ? { ...m, audio: userTTS.audio, mimeType: userTTS.mimeType, words: userTTS.words, ttsReady: true }
-                        : m));
-                }
+                applyTTS(userAutoMsg.id, userTTS);
             })();
             (async () => {
                 const aiTTS = await fetchTTS({
@@ -210,11 +212,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     emotion: data.firstAiReply.selected_emotion,
                     speaker: aiSpeaker,
                 });
-                if (aiTTS) {
-                    setMessages(prev => prev.map(m => m.id === aiMsg.id
-                        ? { ...m, audio: aiTTS.audio, mimeType: aiTTS.mimeType, words: aiTTS.words, ttsReady: true }
-                        : m));
-                }
+                applyTTS(aiMsg.id, aiTTS);
             })();
         } catch (e) {
             console.error('[useConversation] start failed:', e?.message || e);
@@ -373,16 +371,14 @@ export function useConversation({ tier = 'trial' } = {}) {
                 emotion: data.aiReply?.selected_emotion,
                 speaker: voicesRef.current.aiSpeaker,
             });
-            if (aiTTS) {
-                setMessages(prev => prev.map(m => m.id === aiMsgId
-                    ? { ...m, audio: aiTTS.audio, mimeType: aiTTS.mimeType, words: aiTTS.words, ttsReady: true }
-                    : m));
-            } else {
-                // TTS 실패해도 텍스트는 보여줌
-                setMessages(prev => prev.map(m => m.id === aiMsgId
-                    ? { ...m, ttsReady: true }
-                    : m));
-            }
+            setMessages(prev => prev.map(m => {
+                if (m.id !== aiMsgId) return m;
+                if (aiTTS) {
+                    return { ...m, audio: aiTTS.audio, mimeType: aiTTS.mimeType, words: aiTTS.words, ttsReady: true };
+                }
+                // TTS 실패: played=true 강제 마킹 → fullText fallback 즉시 노출
+                return { ...m, ttsReady: true, played: true, ttsFailed: true };
+            }));
 
             // 한도 도달 체크 (AI 응답 도착 후)
             if (newCount >= limit) {

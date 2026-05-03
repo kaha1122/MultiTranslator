@@ -39,21 +39,22 @@ export default function ChatBubble({
         generation: message.id + (shouldAutoplay ? '-play' : '-idle'),
     });
 
-    // shouldAutoplay 일 때는 revealedText (재생 끝나면 fullText)
-    // shouldAutoplay 아닐 때:
-    //   - 이미 재생 끝난 메시지(played=true) → fullText 표시
-    //   - 아직 재생 안 한 메시지(played=false)이고 audio 보유 중 → '' (차례 대기)
-    //   - audio 자체가 없으면(TTS 실패 등) → fullText fallback
+    // displayText 규칙 (TTS pre-flash 방지):
+    //   - shouldAutoplay=true → revealedText (재생 끝나면 fullText)
+    //   - shouldAutoplay=false + played=true (재생 완료) → fullText
+    //   - shouldAutoplay=false + played=false → ''
+    //
+    // played=false 상태에서 audio 도착 여부 무관하게 무조건 빈칸 — 사전 flash 완전 차단.
+    // TTS 영구 실패로 audio가 영영 안 오는 케이스는 부모(useConversation)가 message.played=true로
+    // 강제 마킹해 fullText fallback이 노출되도록 한다.
     const fullText = message.fullText || message.text || '';
     let displayText;
     if (shouldAutoplay) {
         displayText = revealedText || (isDone ? fullText : '');
     } else if (message.played) {
         displayText = fullText;
-    } else if (message.audio) {
-        displayText = '';  // 재생 차례 대기 — 사전 flash 방지
     } else {
-        displayText = fullText;
+        displayText = '';
     }
 
     useEffect(() => { /* placeholder for future telemetry */ }, [isDone]);

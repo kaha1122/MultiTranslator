@@ -86,19 +86,21 @@ export default function FreeTalkingChat({
         if (allReady) setPlaybackIdx(0);
     }, [open, messages, playbackIdx, playbackQueueDone]);
 
-    // 자유 발화 후 새 ai 메시지가 ttsReady가 되면 자동 재생
+    // 자유 발화 후 새 ai 메시지가 ttsReady가 되면 1회만 자동 재생.
+    // played 가드는 markMessagePlayed(handleBubbleDone)가 set → 재진입 차단.
+    // playbackIdx 가드는 현재 다른 메시지 재생 중일 때 끼어들기 방지.
     useEffect(() => {
         if (!playbackQueueDone) return;
         if (sessionEnded) return;
-        // 마지막 메시지가 ai 이고 ttsReady 면 한 번 재생 트리거
+        if (playbackIdx >= 0) return;
         const last = messages[messages.length - 1];
         if (!last) return;
         if (last.role !== 'ai') return;
         if (!last.ttsReady) return;
-        if (last.autoplayed) return;
-        // 마킹 후 재생 인덱스 = 마지막
+        if (last.played) return;       // 한 번 재생 끝난 메시지 — 무한루프 차단
+        if (!last.audio) return;       // 오디오 미도착(TTS 실패는 played=true 마킹되므로 위 가드에서 차단됨)
         setPlaybackIdx(messages.length - 1);
-    }, [messages, playbackQueueDone, sessionEnded]);
+    }, [messages, playbackQueueDone, sessionEnded, playbackIdx]);
 
     // 자동 스크롤
     useEffect(() => {

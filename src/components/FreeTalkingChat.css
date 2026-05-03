@@ -25,9 +25,10 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
-    /* iOS safe area + Android status bar 영역 둘 다 대응 */
-    /* env() 가 0 인 안드로이드 브라우저에서도 status bar 영역 확보 */
-    padding-top: max(env(safe-area-inset-top, 0px), 28px);
+    /* iOS safe area + Android status bar 영역 둘 다 대응.
+       일반 모바일 Chrome 브라우저(PWA 아님)에서는 env() = 0 이므로 보장값 48px 적용.
+       48px = Android status bar 24~30dp + iOS notch 44px 모두 커버하는 안전값. */
+    padding-top: max(env(safe-area-inset-top, 0px), 48px);
     padding-bottom: max(env(safe-area-inset-bottom, 0px), 0px);
 }
 
