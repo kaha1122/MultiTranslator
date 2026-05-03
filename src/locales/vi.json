@@ -3,13 +3,13 @@
     "confirm": "Xác nhận",
     "cancel": "Hủy",
     "continue": "Tiếp tục",
+    "close": "Đóng",
     "newBadge": "MỚI"
   },
   "pushOptIn": {
-    "title": "Đồng ý nhận thông báo cần thiết về đăng ký, thanh toán? (không có tiếp thị)",
-    "body": "Chúng tôi chỉ thông báo về gia hạn, sự cố thanh toán và hết hạn — không có thông báo tiếp thị.",
-    "allow": "Cho phép",
-    "later": "Để sau"
+    "title": "Nhận thông báo học tập?",
+    "body": "Chúng tôi sẽ gửi nhắc nhở học tập hàng ngày và thông báo gia hạn/thanh toán. Không có quảng cáo.",
+    "allow": "Cho phép"
   },
   "notifications": {
     "sectionTitle": "Thông báo",

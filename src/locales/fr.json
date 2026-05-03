@@ -3,13 +3,13 @@
     "confirm": "Confirmer",
     "cancel": "Annuler",
     "continue": "Continuer",
+    "close": "Fermer",
     "newBadge": "NOUVEAU"
   },
   "pushOptIn": {
-    "title": "Autoriser les notifications essentielles (abonnement, paiement) ? (sans marketing)",
-    "body": "Nous vous notifierons uniquement des renouvellements, problèmes de paiement et expirations — aucun marketing.",
-    "allow": "Autoriser",
-    "later": "Plus tard"
+    "title": "Recevoir les rappels d'apprentissage ?",
+    "body": "Nous enverrons des rappels d'étude quotidiens et des notifications d'abonnement/paiement. Sans publicité.",
+    "allow": "Autoriser"
   },
   "notifications": {
     "sectionTitle": "Notifications",

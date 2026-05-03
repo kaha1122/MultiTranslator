@@ -3,13 +3,13 @@
     "confirm": "确认",
     "cancel": "取消",
     "continue": "继续",
+    "close": "关闭",
     "newBadge": "新"
   },
   "pushOptIn": {
-    "title": "是否同意接收订阅、付款等必要信息通知？（不含营销）",
-    "body": "我们仅在续订、付款问题和到期时通知您，不发送营销消息。",
-    "allow": "允许",
-    "later": "稍后"
+    "title": "接收学习通知吗？",
+    "body": "我们会发送每日学习提醒和订阅续订/付款通知，没有广告。",
+    "allow": "允许"
   },
   "notifications": {
     "sectionTitle": "通知",

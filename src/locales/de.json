@@ -3,13 +3,13 @@
     "confirm": "Bestätigen",
     "cancel": "Abbrechen",
     "continue": "Weiter",
+    "close": "Schließen",
     "newBadge": "NEU"
   },
   "pushOptIn": {
-    "title": "Wichtige Benachrichtigungen zu Abo & Zahlung erlauben? (keine Werbung)",
-    "body": "Wir benachrichtigen Sie nur über Verlängerungen, Zahlungsprobleme und Ablauf — keine Werbung.",
-    "allow": "Erlauben",
-    "later": "Später"
+    "title": "Lern-Erinnerungen erhalten?",
+    "body": "Wir senden tägliche Lern-Erinnerungen und Benachrichtigungen zu Abo/Zahlung. Keine Werbung.",
+    "allow": "Erlauben"
   },
   "notifications": {
     "sectionTitle": "Benachrichtigungen",

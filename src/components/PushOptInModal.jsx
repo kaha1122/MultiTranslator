@@ -3,15 +3,22 @@ import { Capacitor } from '@capacitor/core';
 import { getT } from '../utils/i18n';
 import { setSubscriptionAlertPref } from '../utils/pushNotifications';
 
-// 구독 성공 직후 띄우는 opt-in 모달 (D)
-// 인라인 플러그인 호출 패턴 (v1.4.37) — 래퍼 hang 회피
+// Push opt-in 모달 — 학습 알림 + 구독 알림 통합 동의 (A1 카피)
+// 2026-05-03 변경:
+//   - "Later" 버튼 제거 → "Allow" 단독 + 우상단 X 닫기 아이콘 (Apple 심사용 escape hatch)
+//   - onClose에 결과 인자 전달: 'registered' / 'denied' / 'dismissed'
+//   - 영구 플래그 subscriptionAlertPromptShown는 더 이상 set 안 함
+//     (재표시 가능 — App.jsx의 shouldShowSubscriptionPrompt가 fcmTokenUpdatedAt + lastShownAt 기반 판정)
 export default function PushOptInModal({ sourceLang, uid, onClose }) {
     const t = (key) => getT(sourceLang, key);
     const isNative = Capacitor.isNativePlatform?.() === true;
     const [busy, setBusy] = useState(false);
 
+    // 결과 인자와 함께 onClose 호출
+    const finish = (result) => onClose?.({ result });
+
     const handleAccept = async () => {
-        if (!isNative) { onClose?.(); return; }
+        if (!isNative) { finish('registered'); return; }
         setBusy(true);
         try {
             const mod = await import('@capacitor/push-notifications');
@@ -22,27 +29,28 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
                 if (perm.receive !== 'denied') {
                     const result = await plugin.requestPermissions();
                     if (result.receive !== 'granted') {
-                        setBusy(false); onClose?.(); return;
+                        setBusy(false); finish('denied'); return;
                     }
                 } else {
-                    setBusy(false); onClose?.(); return;
+                    // 시스템 차원에서 거부 상태 — register() 무의미. 사용자가 시스템 설정에서 켜야 함.
+                    setBusy(false); finish('denied'); return;
                 }
             }
 
             // 리스너는 App.jsx mount에서 이미 등록됨 — register()만 호출
+            // 'registration' 이벤트가 fire되면 saveFcmTokenToFirestore가 fcmTokens + fcmTokenUpdatedAt set
             await plugin.register();
             if (uid) await setSubscriptionAlertPref(uid, true);
+            setBusy(false);
+            finish('registered');
         } catch (e) {
             console.warn('[PushOptIn] handleAccept failed:', e?.message);
+            setBusy(false);
+            finish('dismissed');
         }
-        setBusy(false);
-        onClose?.();
     };
 
-    const handleLater = () => {
-        try { localStorage.setItem('pronunfit.pushOptIn.snoozedAt', String(Date.now())); } catch {}
-        onClose?.();
-    };
+    const handleClose = () => finish('dismissed');
 
     return (
         <div style={{
@@ -51,33 +59,51 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
             zIndex: 10001, padding: '20px',
         }}>
             <div style={{
+                position: 'relative',
                 background: 'white', borderRadius: '20px', padding: '28px 24px',
                 maxWidth: '360px', width: '100%', textAlign: 'center',
                 boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
             }}>
+                {/* X 닫기 아이콘 — escape hatch (시각적 우선순위 낮춤) */}
+                <button
+                    onClick={handleClose}
+                    disabled={busy}
+                    aria-label={t('common.close') || 'Close'}
+                    style={{
+                        position: 'absolute',
+                        top: 10, right: 12,
+                        background: 'none', border: 'none',
+                        color: '#94a3b8',
+                        fontSize: '1.5rem',
+                        lineHeight: 1,
+                        cursor: busy ? 'wait' : 'pointer',
+                        padding: 6,
+                    }}
+                >
+                    ×
+                </button>
+
                 <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🔔</div>
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
-                    {t('pushOptIn.title') || 'Stay informed about your subscription'}
+                    {t('pushOptIn.title') || 'Get learning reminders?'}
                 </h2>
                 <p style={{ fontSize: '0.88rem', color: '#64748b', margin: '0 0 20px', lineHeight: 1.5 }}>
-                    {t('pushOptIn.body') || "We'll only notify you about renewals, payment issues, and expirations — no marketing."}
+                    {t('pushOptIn.body') || "We'll send daily learning reminders and subscription/payment updates. No ads."}
                 </p>
-                <div style={{ display: 'flex', gap: '8px' }}>
-                    <button onClick={handleLater} disabled={busy} style={{
-                        flex: 1, padding: '13px', borderRadius: '12px',
-                        border: '1px solid #e2e8f0', background: 'white',
-                        fontWeight: 600, fontSize: '0.92rem', cursor: busy ? 'wait' : 'pointer',
-                    }}>
-                        {t('pushOptIn.later') || 'Later'}
-                    </button>
-                    <button onClick={handleAccept} disabled={busy} style={{
-                        flex: 1, padding: '13px', borderRadius: '12px',
+                <button
+                    onClick={handleAccept}
+                    disabled={busy}
+                    style={{
+                        width: '100%',
+                        padding: '13px',
+                        borderRadius: '12px',
                         border: 'none', background: '#7B2D8E', color: 'white',
-                        fontWeight: 700, fontSize: '0.92rem', cursor: busy ? 'wait' : 'pointer',
-                    }}>
-                        {busy ? '...' : (t('pushOptIn.allow') || 'Allow')}
-                    </button>
-                </div>
+                        fontWeight: 700, fontSize: '0.95rem',
+                        cursor: busy ? 'wait' : 'pointer',
+                    }}
+                >
+                    {busy ? '...' : (t('pushOptIn.allow') || 'Allow')}
+                </button>
             </div>
         </div>
     );

@@ -19,7 +19,7 @@ import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 A
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
 import { PhoneAuthProvider } from 'firebase/auth';
-import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer, where } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, query, getDocs, getDocsFromServer, where, increment } from 'firebase/firestore';
 // ↑ [버그 수정] where 추가: saveToFirebase 함수에서 중복 데이터 검사에 `where`를 사용하는데
 //   import 목록에서 빠져있어서 "where is not defined" 런타임 에러가 발생, 카드 저장이 안 됐습니다.
 import { useAuthState } from 'react-firebase-hooks/auth';
@@ -1338,18 +1338,25 @@ function App() {
       }
     }
   };
-  // 구독 알림 필수 안내 모달 — OnboardingModal 이후, AI 동의 전에 등장
-  // (Native + 온보딩완료 + fcmTokens 없음 + 아직 안 보여준 유저 대상, 1회 영구 표시)
+  // 학습 알림 + 구독 알림 통합 동의 모달 — A1 카피 (2026-05-03 변경)
+  // 신규/dismissed 유저 모두 대상. 7일 스누즈 + 최대 3회 dismiss cap.
+  // 영구 플래그 subscriptionAlertPromptShown 사용 안 함 → fcmTokenUpdatedAt 기반 판정
+  // (한 번이라도 등록 성공하면 fcmTokens listener가 fcmTokenUpdatedAt set → 다음에 안 뜸)
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
   const shouldShowSubscriptionPrompt = (p) => {
     if (!Capacitor.isNativePlatform?.()) return false;
     if (!p) return false;
-    if (p.subscriptionAlertPromptShown === true) return false;
     if (Array.isArray(p.fcmTokens) && p.fcmTokens.length > 0) return false;
+    if (p.fcmTokenUpdatedAt) return false; // 한 번이라도 등록 성공한 유저는 영영 안 띄움
     if (p.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return false;
     // 버전 가드 — 네이티브 플러그인 없는 구버전 유저에겐 프롬프트 안 띄움 (깨진 UI 방지)
     if (!supportsFeature('notifications', p)) return false;
+    // 누적 dismiss cap (spam 방지)
+    if ((p.pushOptInDismissCount || 0) >= 3) return false;
+    // 7일 스누즈 — 새 시스템에서 표시된 적 있으면 7일 대기
+    const last = p.pushOptInLastShownAt?.toDate?.()?.getTime() || 0;
+    if (last > 0 && Date.now() - last < 7 * 24 * 60 * 60 * 1000) return false;
     return true;
   };
 
@@ -1358,7 +1365,7 @@ function App() {
     if (shouldShowSubscriptionPrompt(profile)) {
       setShowSubscriptionPrompt(true);
     }
-  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.fcmTokens, profile?.fcmTokenUpdatedAt, profile?.pushOptInLastShownAt, profile?.pushOptInDismissCount]);
 
   useEffect(() => {
     if (!user || !profile) return;
@@ -1374,7 +1381,7 @@ function App() {
     // 온보딩이 안 끝났으면 온보딩 먼저 → 온보딩 완료 후 이 effect가 재평가됨
     if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
     setShowAiConsent(true);
-  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.subscriptionAlertPromptShown, profile?.fcmTokens]);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.fcmTokens, profile?.fcmTokenUpdatedAt, profile?.pushOptInLastShownAt, profile?.pushOptInDismissCount]);
 
   // 보너스 캠페인 출시 안내 — lifecycleStage 있는 사용자에게 1회 표시
   // 옵션 D: 이번 세션 시작 시 lifecycleStage 이미 있었어야 노출 (mid-session 전이 시 노출 X)
@@ -4836,24 +4843,33 @@ function App() {
         </div>
       )}
 
-      {/* 구독 성공 직후 push opt-in 모달 (D) */}
+      {/* 결제 성공 직후 push opt-in 모달 — becamePaid 트리거 (1.4.x~) */}
       {showPushOptIn && !showSubscriptionPrompt && (
         <PushOptInModal
           sourceLang={sourceLang}
           uid={user?.uid}
-          onClose={() => setShowPushOptIn(false)}
+          onClose={(arg) => {
+            setShowPushOptIn(false);
+            const result = arg?.result || 'dismissed';
+            const update = { pushOptInLastShownAt: serverTimestamp() };
+            if (result !== 'registered') update.pushOptInDismissCount = increment(1);
+            updateUserProfile(update).catch(() => {});
+          }}
         />
       )}
 
-      {/* 신규/기존 유저 첫 실행 시 구독 알림 필수 안내 — OnboardingModal 이후, AI 동의 이전 */}
+      {/* 신규/dismissed 유저 첫/재 실행 시 학습+구독 알림 동의 (A1, 2026-05-03) */}
+      {/* 'registered': fcmTokenUpdatedAt set → 다음에 안 뜸 / 'denied'·'dismissed': 7일 스누즈 + dismissCount cap */}
       {showSubscriptionPrompt && !showOnboarding && (
         <PushOptInModal
           sourceLang={sourceLang}
           uid={user?.uid}
-          onClose={() => {
+          onClose={(arg) => {
             setShowSubscriptionPrompt(false);
-            // 영구 플래그 저장 → 재표시 방지 (허용/나중에 선택 무관, 1회 영구)
-            updateUserProfile({ subscriptionAlertPromptShown: true }).catch(() => {});
+            const result = arg?.result || 'dismissed';
+            const update = { pushOptInLastShownAt: serverTimestamp() };
+            if (result !== 'registered') update.pushOptInDismissCount = increment(1);
+            updateUserProfile(update).catch(() => {});
           }}
         />
       )}

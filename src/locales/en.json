@@ -3,13 +3,13 @@
     "confirm": "OK",
     "cancel": "Cancel",
     "continue": "Continue",
+    "close": "Close",
     "newBadge": "NEW"
   },
   "pushOptIn": {
-    "title": "Allow essential notifications for subscription & payment? (no marketing)",
-    "body": "We'll only notify you about renewals, payment issues, and expirations — no marketing.",
-    "allow": "Allow",
-    "later": "Later"
+    "title": "Get learning reminders?",
+    "body": "We'll send daily learning reminders and subscription/payment updates. No ads.",
+    "allow": "Allow"
   },
   "notifications": {
     "sectionTitle": "Notifications",

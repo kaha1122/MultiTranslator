@@ -3,13 +3,13 @@
     "confirm": "Confirmar",
     "cancel": "Cancelar",
     "continue": "Continuar",
+    "close": "Cerrar",
     "newBadge": "NUEVO"
   },
   "pushOptIn": {
-    "title": "¿Permitir avisos esenciales de suscripción y pago? (sin marketing)",
-    "body": "Solo te avisaremos de renovaciones, problemas de pago y vencimientos — sin marketing.",
-    "allow": "Permitir",
-    "later": "Más tarde"
+    "title": "¿Recibir recordatorios de estudio?",
+    "body": "Te enviaremos recordatorios diarios de estudio y avisos de renovación/pago. Sin anuncios.",
+    "allow": "Permitir"
   },
   "notifications": {
     "sectionTitle": "Notificaciones",
