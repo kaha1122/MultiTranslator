@@ -300,10 +300,9 @@ export function useConversation({ tier = 'trial' } = {}) {
         };
         setMessages(prev => [...prev, userMsg, aiPlaceholder]);
 
-        // 한도 체크 — submit 자체는 허용하지만 다음 자유 발화 차단을 위해 카운트 +1
-        const newCount = freeTurnCount + 1;
-        setFreeTurnCount(newCount);
-        const limit = TURN_LIMITS[tierRef.current] || TURN_LIMITS.trial;
+        // 카운트 +1 (functional updater — stale closure race 방지)
+        // limit 도달 차단은 별도 useEffect 에서 freeTurnCount 변화를 보고 처리.
+        setFreeTurnCount(prev => prev + 1);
 
         setIsReplying(true);
         setReplyError(null);
@@ -380,11 +379,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                 return { ...m, ttsReady: true, played: true, ttsFailed: true };
             }));
 
-            // 한도 도달 체크 (AI 응답 도착 후)
-            if (newCount >= limit) {
-                setSessionEnded(true);
-                setEndedReason('limit');
-            }
+            // 한도 도달은 freeTurnCount 변화를 보는 별도 useEffect 에서 처리
         } catch (e) {
             console.error('[useConversation] reply failed:', e?.message || e);
             setReplyError(e?.message || 'Reply failed');
@@ -395,7 +390,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         } finally {
             setIsReplying(false);
         }
-    }, [fetchTTS, sessionEnded, freeTurnCount, resetIdleTimer]);
+    }, [fetchTTS, sessionEnded, resetIdleTimer]);
 
     /**
      * ChatBubble의 onPlaybackDone에서 호출 — 메시지를 played=true 로 마킹.
@@ -457,6 +452,17 @@ export function useConversation({ tier = 'trial' } = {}) {
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [sessionId, sessionEnded, freeTurnCount]);
+
+    // 자유 발화 카운트가 tier 한도에 도달하면 세션 종료
+    useEffect(() => {
+        if (!sessionId) return;
+        if (sessionEnded) return;
+        const limit = TURN_LIMITS[tierRef.current] || TURN_LIMITS.trial;
+        if (freeTurnCount >= limit) {
+            setSessionEnded(true);
+            setEndedReason('limit');
+        }
+    }, [freeTurnCount, sessionId, sessionEnded]);
 
     return {
         sessionId, messages, setup, scenarioMeta,
