@@ -243,3 +243,5 @@ ${avoidBlock}
 });
 
 module.exports = router;
+// 외부 재사용용 export (Free Talking — server/utils/conversationPrompt.js에서 import)
+module.exports.STYLE_DESC = STYLE_DESC;

@@ -60,7 +60,8 @@ const SCENES = {
 
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
-function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
+// Free Talking 모드의 카드 팝업(MessageCardModal)에서도 동일 컴포넌트 재사용 — named export.
+export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
     // 일본어(ja)는 한자 원문 대신 히라가나(pronunciation)를 Azure 발음평가 기준으로 사용.
     // 한자는 Azure가 음소 분석을 대부분 포기해 phoneme 배열이 빈 값이 됨.
     // 중국어(zh-CN)는 pronunciation에 pinyin이 오지만 Azure는 한자 기반 평가가 더 정확 → 원문 유지.
@@ -226,7 +227,7 @@ function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReache
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved }) => {
+const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
     // 랜덤 초기 장소 선택 (custom 제외)
     const pickRandomScene = (cat = 'locations') => {
         const list = SCENES[cat].filter(s => s.id !== 'custom');
@@ -606,7 +607,38 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                         </button>
                     ))}
                 </div>
-                <div className="scene-request-btns">
+                {/* Free Talking 메인 CTA — Sprint 1 신규 */}
+                <div className="scene-freetalk-row">
+                    <button
+                        className="scene-freetalk-btn"
+                        onClick={() => {
+                            if (!canRequest) return;
+                            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
+                            const sceneText = isCustomSelected
+                                ? customInput.trim()
+                                : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
+                            const sceneI18nLabel = isCustomSelected
+                                ? customInput.trim()
+                                : t(`${sceneI18nPrefix}.${selectedScene.id}`);
+                            onFreeTalkStart?.({
+                                scene: sceneText,
+                                sceneId,
+                                category,
+                                targetLang: selectedLang,
+                                sourceLang,
+                                difficulty,
+                                speechStyle,
+                                sceneI18nLabel,
+                            });
+                        }}
+                        disabled={!canRequest}
+                    >
+                        💬 {t('freeTalk.startCta') || 'Free Talking 시작'}
+                    </button>
+                </div>
+
+                {/* Legacy Generate 버튼 — Sprint 1에서 hidden, 코드는 보존 (미래 재노출 가능) */}
+                <div className="scene-request-btns" style={{ display: 'none' }}>
                     <button
                         className="scene-request-btn"
                         onClick={handleRequest}

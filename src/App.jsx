@@ -43,7 +43,8 @@ import ConfirmModal from './components/ConfirmModal';
 import VideoReader from './components/VideoReader';
 import VocabTab from './components/VocabTab';
 import ListeningTab from './components/ListeningTab';
-import ScenePractice from './components/ScenePractice';
+import ScenePractice, { ScenePracticeCard } from './components/ScenePractice';
+import FreeTalkingChat from './components/FreeTalkingChat';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
@@ -358,6 +359,10 @@ function App() {
 
   // [신규] 인앱 브라우저 안내 팝업
   // showInAppWarning 삭제됨 (인앱 브라우저 경고 제거)
+
+  // Free Talking (Sprint 1) — 카카오톡 스타일 풀스크린 채팅 모달
+  const [freeTalkOpen, setFreeTalkOpen] = useState(false);
+  const [freeTalkSetup, setFreeTalkSetup] = useState(null);
 
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
@@ -2311,6 +2316,72 @@ function App() {
     }
   };
 
+  // 6.5. Free Talking 메시지를 Library에 저장 (sourceType='conversation_message') — saveSceneCard 패턴 차용
+  const saveConversationMessage = async ({ message, langCode, sourceLang: srcLang, scene, category = 'locations', difficulty = 'basic', speechStyle, scenarioMeta, pronunciationScore = null }) => {
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return;
+    }
+    const sentence = message?.fullText || message?.text || '';
+    if (!sentence) return null;
+    try {
+      const dupQ = query(
+        collection(db, "savedCards"),
+        where("userId", "==", u.uid),
+        where("translatedText", "==", sentence),
+        where("sourceType", "==", "conversation_message")
+      );
+      const dupSnap = await getDocs(dupQ);
+      const active = dupSnap.docs.find(d => !d.data().isDeleted);
+      if (active) return null;
+    } catch (e) { console.error("ConversationMessage duplicate check failed:", e); }
+
+    const langInfo = getLangInfo(langCode);
+    try {
+      const serialNumber = await assignNextCardSerial(u.uid);
+      const docRef = await addDoc(collection(db, "savedCards"), {
+        userId: u.uid,
+        userEmail: u.email,
+        sourceText: message?.scene_hint || scenarioMeta?.scene_summary_en || scene || '',
+        translatedText: sentence,
+        langCode,
+        language: langInfo?.name || langCode,
+        inputLang: langCode,
+        inputType: 'C',  // C = Conversation
+        sourceLang: srcLang || sourceLang,
+        sourceType: 'conversation_message',
+        conversationRole: message?.role || 'ai',  // 'user_auto' | 'user_free' | 'ai'
+        difficulty,
+        speechStyle: speechStyle || '',
+        scene,
+        category,
+        responderRole: scenarioMeta?.responder_role || '',
+        learningTip: message?.learning_tip ? [{ type: 'tip', content: message.learning_tip }] : [],
+        pronunciation: message?.pronunciation || '',
+        pronunciationScore,
+        selectedEmotion: message?.selected_emotion || '',
+        interactionType: message?.interaction_type || '',
+        serialNumber,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+      incrementDailySave();
+      addAdPoints(2);
+      const goal = languageGoals[langCode] || 80;
+      if (pronunciationScore != null && pronunciationScore >= goal) {
+        const wasNew = await incrementAchievement(`library-${docRef.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
+      return docRef.id;
+    } catch (error) {
+      console.error("ConversationMessage 카드 저장 오류:", error);
+      return null;
+    }
+  };
+
   // 7. Vocab 카드를 Library에 저장하는 함수
   const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     const u = user || await ensureAnonymousUser();
@@ -3750,6 +3821,10 @@ function App() {
               setLibraryBackTo('scene');
               setViewMode('library');
             }}
+            onFreeTalkStart={(args) => {
+              setFreeTalkSetup(args);
+              setFreeTalkOpen(true);
+            }}
           />
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
@@ -4294,6 +4369,23 @@ function App() {
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
         />
       )}
+
+      {/* Free Talking — 카카오톡 스타일 풀스크린 모달 (Sprint 1+2) */}
+      <FreeTalkingChat
+        open={freeTalkOpen}
+        setupArgs={freeTalkSetup}
+        sourceLang={sourceLang}
+        tier={tier}
+        ScenePracticeCardComp={ScenePracticeCard}
+        onSaveConversationMessage={saveConversationMessage}
+        onSpeak={handleSpeak}
+        onTrialLimitReached={() => setShowTrialLimitModal(true)}
+        onPronSuccess={onPronSuccess}
+        onBookmarkPrompt={handleBookmarkPrompt}
+        languageGoals={languageGoals}
+        onClose={() => { setFreeTalkOpen(false); setFreeTalkSetup(null); }}
+      />
+
 
       {/* BYOK API 키 설정 마법사 */}
       {showApiKeyWizard && (

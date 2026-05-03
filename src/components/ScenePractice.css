@@ -1,3 +1,33 @@
+/* ── Free Talking 진입 버튼 (Sprint 1 신규) ───────────────────── */
+.scene-freetalk-row {
+    display: flex;
+    justify-content: center;
+    margin-top: 4px;
+}
+.scene-freetalk-btn {
+    width: 100%;
+    max-width: 420px;
+    height: 52px;
+    border-radius: 26px;
+    border: none;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a855f7 100%);
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 3px 10px rgba(99, 102, 241, 0.35);
+    transition: filter 0.12s, transform 0.06s;
+    letter-spacing: 0.2px;
+}
+.scene-freetalk-btn:hover:not(:disabled) { filter: brightness(1.06); }
+.scene-freetalk-btn:active:not(:disabled) { transform: translateY(1px); }
+.scene-freetalk-btn:disabled {
+    background: #cbcbcb;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+
 /* ── ScenePractice ───────────────────────────────────────────────── */
 .scene-root {
     display: flex;

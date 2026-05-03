@@ -1,0 +1,367 @@
+/* Free Talking — 카카오톡 스타일 풀스크린 모달 */
+
+.ftc-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9000;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: stretch;
+    justify-content: center;
+    animation: ftc-overlay-in 180ms ease-out;
+}
+@keyframes ftc-overlay-in {
+    from { background: rgba(0, 0, 0, 0); }
+    to   { background: rgba(0, 0, 0, 0.5); }
+}
+
+.ftc-window {
+    width: 100%;
+    max-width: 480px;
+    height: 100%;
+    max-height: 100vh;
+    background: #b2c7d9;  /* 카카오톡 채팅방 배경 톤 */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
+    /* iOS safe area 대응 */
+    padding-top: env(safe-area-inset-top, 0);
+    padding-bottom: env(safe-area-inset-bottom, 0);
+}
+
+/* ── Header ───────────────────────────────────── */
+.ftc-header {
+    flex: 0 0 auto;
+    height: 56px;
+    background: #f7f7f7;
+    border-bottom: 1px solid #e0e0e0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+}
+.ftc-header-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    min-width: 0;
+}
+.ftc-header-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: #ffe812;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    flex: 0 0 auto;
+}
+.ftc-header-text {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+.ftc-header-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1a1a1a;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ftc-header-subtitle {
+    font-size: 11px;
+    color: #888;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+.ftc-close-btn {
+    background: none;
+    border: none;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+    border-radius: 50%;
+}
+.ftc-close-btn:hover { background: rgba(0, 0, 0, 0.06); }
+
+/* ── Messages 영역 ───────────────────────────── */
+.ftc-messages {
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 14px 12px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    scrollbar-width: thin;
+}
+.ftc-messages::-webkit-scrollbar { width: 6px; }
+.ftc-messages::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
+
+/* loading / error */
+.ftc-loading,
+.ftc-error {
+    align-self: center;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.85);
+    border-radius: 14px;
+    font-size: 13px;
+    color: #555;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.ftc-error { color: #c62828; }
+.spin { animation: spin 1s linear infinite; }
+@keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+
+/* ── 메시지 정렬 ──────────────────────────────── */
+.ftc-msg {
+    display: flex;
+    align-items: flex-end;
+    gap: 6px;
+}
+.ftc-msg-narration {
+    justify-content: center;
+    align-items: center;
+}
+.ftc-msg-left { justify-content: flex-start; }
+.ftc-msg-right { justify-content: flex-end; }
+.ftc-msg-right .ftc-msg-body { align-items: flex-end; }
+
+.ftc-narration-bubble {
+    max-width: 90%;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.5;
+    text-align: center;
+    word-break: keep-all;
+    white-space: pre-wrap;
+}
+.ftc-replay-btn {
+    background: rgba(255, 255, 255, 0.85);
+    border: none;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #555;
+    margin-left: 6px;
+}
+
+.ftc-avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #888;
+    flex: 0 0 auto;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.06);
+}
+.ftc-msg-body {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    max-width: 78%;
+    min-width: 0;
+}
+.ftc-persona-name {
+    font-size: 11px;
+    color: #444;
+    margin-left: 4px;
+}
+.ftc-user-auto-hint {
+    font-size: 11px;
+    color: #666;
+    margin-right: 4px;
+    align-self: flex-end;
+}
+
+/* ── 말풍선 ──────────────────────────────────── */
+.ftc-bubble {
+    text-align: left;
+    border: none;
+    cursor: pointer;
+    padding: 9px 12px;
+    border-radius: 14px;
+    font-size: 14px;
+    line-height: 1.45;
+    word-break: break-word;
+    white-space: pre-wrap;
+    transition: filter 0.12s;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+.ftc-bubble:hover { filter: brightness(0.97); }
+.ftc-bubble:active { filter: brightness(0.92); }
+
+.ftc-bubble-ai {
+    background: #ffffff;
+    color: #1a1a1a;
+    border-top-left-radius: 4px;
+}
+.ftc-bubble-user {
+    background: #ffeb33;  /* 카카오톡 노랑 */
+    color: #1a1a1a;
+    border-top-right-radius: 4px;
+}
+.ftc-bubble-text { display: inline; }
+
+.ftc-stt-raw {
+    font-size: 11px;
+    color: #888;
+    margin-right: 4px;
+    align-self: flex-end;
+    font-style: italic;
+}
+
+/* user_free 액션 바 (수정/다시말하기/듣기) */
+.ftc-user-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin-top: 4px;
+    align-self: flex-end;
+}
+.ftc-user-action-btn {
+    background: rgba(255, 255, 255, 0.85);
+    border: 1px solid rgba(0, 0, 0, 0.08);
+    color: #444;
+    border-radius: 12px;
+    padding: 4px 9px;
+    font-size: 11px;
+    font-weight: 500;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+}
+.ftc-user-action-btn:hover { filter: brightness(0.97); }
+.ftc-user-action-btn:active { transform: translateY(1px); }
+
+/* 편집 인라인 input */
+.ftc-edit-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: #fff;
+    border-radius: 14px;
+    padding: 4px 6px 4px 10px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+    border-top-right-radius: 4px;
+}
+.ftc-edit-input {
+    border: none;
+    outline: none;
+    font-size: 14px;
+    flex: 1 1 auto;
+    min-width: 120px;
+    background: transparent;
+}
+.ftc-edit-confirm,
+.ftc-edit-cancel {
+    width: 26px;
+    height: 26px;
+    border: none;
+    border-radius: 50%;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+.ftc-edit-confirm { background: #ffeb33; color: #1a1a1a; }
+.ftc-edit-cancel { background: rgba(0, 0, 0, 0.06); color: #555; }
+
+.ftc-bubble-loading {
+    background: rgba(255, 255, 255, 0.6) !important;
+    color: #888 !important;
+    cursor: wait !important;
+    min-width: 50px;
+}
+.ftc-bubble-loading .spin { animation: spin 1s linear infinite; }
+
+.ftc-reply-error {
+    font-size: 11px;
+    color: #c62828;
+    background: rgba(255, 200, 200, 0.5);
+    padding: 4px 8px;
+    border-radius: 8px;
+    margin-top: 4px;
+    align-self: flex-end;
+}
+
+/* 시작 버튼 (말풍선 클릭 흐름과 무관) */
+.ftc-system-msg {
+    align-self: center;
+    padding: 8px 14px;
+    background: rgba(0, 0, 0, 0.45);
+    color: #fff;
+    border-radius: 14px;
+    font-size: 12px;
+    margin-top: 4px;
+}
+
+/* ── Footer 입력 영역 ────────────────────────── */
+.ftc-footer {
+    flex: 0 0 auto;
+    padding: 10px 14px 14px;
+    background: #f7f7f7;
+    border-top: 1px solid #e0e0e0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: center;
+}
+.ftc-mic-btn {
+    width: 100%;
+    max-width: 360px;
+    height: 48px;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    color: #fff;
+    border: none;
+    font-size: 15px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.35);
+    transition: filter 0.12s, transform 0.06s;
+}
+.ftc-mic-btn:hover:not(:disabled) { filter: brightness(1.05); }
+.ftc-mic-btn:active:not(:disabled) { transform: translateY(1px); }
+.ftc-mic-btn:disabled {
+    background: #d8d8d8;
+    color: #888;
+    cursor: not-allowed;
+    box-shadow: none;
+}
+.ftc-footer-hint {
+    font-size: 11px;
+    color: #888;
+    text-align: center;
+}
+
+/* 작은 화면 */
+@media (max-width: 380px) {
+    .ftc-bubble { font-size: 13.5px; }
+    .ftc-narration-bubble { font-size: 12px; }
+    .ftc-mic-btn { font-size: 14px; }
+}
