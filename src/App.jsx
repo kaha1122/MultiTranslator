@@ -805,7 +805,10 @@ function App() {
           ? configData.latestIOSVersion
           : (configData.latestAndroidVersion || configData.latestNativeVersion);
         if (latestVersion && info.version && isVersionOlder(info.version, latestVersion)) {
-          setShowNativeUpdate(true);
+          // 지역 배포 지연으로 스토어에서 못 받고 돌아온 사용자가 같은 세션에서 무한 반복 노출되는 문제 차단
+          let dismissed = false;
+          try { dismissed = sessionStorage.getItem('nativeUpdateDismissed') === '1'; } catch (e) {}
+          if (!dismissed) setShowNativeUpdate(true);
         }
       } catch (e) {
         console.log('[UpdateCheck] config fetch failed:', e);
@@ -2537,6 +2540,8 @@ function App() {
               ? 'https://apps.apple.com/app/pronunfit/id6761342764'
               : 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
             window.open(storeUrl, '_system');
+            try { sessionStorage.setItem('nativeUpdateDismissed', '1'); } catch (e) {}
+            setShowNativeUpdate(false);
           }}
           style={{
             width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
