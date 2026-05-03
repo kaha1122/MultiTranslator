@@ -790,4 +790,140 @@ router.post('/api/cron/backfill-engaged', requireCronAuth, async (req, res) => {
     }
 });
 
+// ─────────────────────────────────────────────────────────────────────────
+// 최근 N시간 안에 D2 발송된 유저 리스트 (운영 진단용)
+// "누가 받았는지" 확인. uid + geoCountry + deviceLang + sourceLang + lifecycleStage + tier + fcm수
+router.post('/api/cron/recently-sent-d2', requireCronAuth, async (req, res) => {
+    const hoursAgo = parseInt(req.query.hours || '3', 10);
+    const since = new Date(Date.now() - hoursAgo * 3600 * 1000);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+
+    let totalScanned = 0;
+    const recent = [];
+    let cursor = null;
+    let batches = 0;
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const d = doc.data();
+                const d2At = d.reengagementSentAt?.d2At;
+                if (d2At?.toMillis && d2At.toMillis() >= since.getTime()) {
+                    recent.push({
+                        uid: doc.id,
+                        geoCountry: d.geoCountry || null,
+                        deviceLang: d.deviceLang || null,
+                        sourceLang: d.sourceLang || null,
+                        lifecycleStage: d.lifecycleStage || null,
+                        tier: d.tier || null,
+                        isAnonymous: !!d.isAnonymous,
+                        activeDayCount: d.activeDayCount || 0,
+                        fcmTokensCount: Array.isArray(d.fcmTokens) ? d.fcmTokens.length : 0,
+                        createdAt: d.createdAt?.toDate?.()?.toISOString() || null,
+                        lastActiveAt: d.lastActiveAt?.toDate?.()?.toISOString() || null,
+                        d2At: d2At.toDate().toISOString(),
+                        d1At: d.reengagementSentAt?.d1At?.toDate?.()?.toISOString() || null,
+                    });
+                }
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        return res.json({
+            sinceISO: since.toISOString(),
+            hoursAgo,
+            totalScanned,
+            recentSentCount: recent.length,
+            users: recent,
+        });
+    } catch (e) {
+        console.error('[RecentlySent] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 특정 국가 lifecycleStage 분포 (왜 발송 적은지 진단용)
+// 예: ?countries=KR,JP,KP — fcmTokens 보유 여부 + lifecycleStage 교차 분석
+router.post('/api/cron/stage-by-country', requireCronAuth, async (req, res) => {
+    const countries = (req.query.countries || 'KR,JP,KP').split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+
+    let totalScanned = 0;
+    let cursor = null;
+    let batches = 0;
+
+    // { country: { stage: { withFcm, withoutFcm, total } } }
+    const result = {};
+    for (const c of countries) result[c] = {};
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const d = doc.data();
+                const geo = (d.geoCountry || '').toUpperCase().trim();
+                if (!countries.includes(geo)) continue;
+
+                const stage = d.lifecycleStage || 'null';
+                const hasFcm = Array.isArray(d.fcmTokens) && d.fcmTokens.length > 0;
+
+                if (!result[geo][stage]) {
+                    result[geo][stage] = { withFcm: 0, withoutFcm: 0, total: 0 };
+                }
+                result[geo][stage].total += 1;
+                if (hasFcm) result[geo][stage].withFcm += 1;
+                else result[geo][stage].withoutFcm += 1;
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        // 합계 계산
+        const summary = {};
+        for (const c of countries) {
+            const stages = result[c];
+            const totalUsers = Object.values(stages).reduce((s, v) => s + v.total, 0);
+            const totalFcm = Object.values(stages).reduce((s, v) => s + v.withFcm, 0);
+            summary[c] = { totalUsers, totalFcm };
+        }
+
+        return res.json({
+            countries,
+            totalScanned,
+            byCountryAndStage: result,
+            summary,
+        });
+    } catch (e) {
+        console.error('[StageByCountry] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
