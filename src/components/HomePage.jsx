@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { MapPin, BookOpen, Languages, Video, Library, Headphones } from 'lucide-react';
+import { BookOpen, Languages, Video, Library, Headphones, MessagesSquare } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
@@ -27,7 +27,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
         },
         {
             id: 'scene',
-            icon: <MapPin size={24} />,
+            icon: <MessagesSquare size={24} />,
             emoji: '💬',
             color: '#6366f1',
             bgColor: '#eef2ff',

@@ -1425,12 +1425,15 @@ html.admob-active.platform-native::after {
   transform: scale(0.88);
 }
 
+/* 2026-05-04: emoji → lucide-react 컴포넌트로 변경.
+ * 비활성: 회색 stroke (#94a3b8) — 눈에 띄지 않음
+ * 활성:   var(--tab-color) 컬러 + scale 1.15 + 하단 dot 표시 */
 .tab-nav__icon {
-  font-size: 18px;
-  line-height: 1;
-  filter: grayscale(0.45);
-  opacity: 0.7;
-  transition: filter 140ms ease, opacity 140ms ease, transform 140ms ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: #94a3b8;
+  transition: color 140ms ease, transform 140ms ease;
 }
 
 .tab-nav__dot {
@@ -1442,8 +1445,7 @@ html.admob-active.platform-native::after {
 }
 
 .tab-nav__btn.is-active .tab-nav__icon {
-  filter: none;
-  opacity: 1;
+  color: var(--tab-color, #00a884);
   transform: scale(1.15);
 }
 .tab-nav__btn.is-active .tab-nav__dot {

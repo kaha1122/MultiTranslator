@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessagesSquare } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
@@ -1004,17 +1004,19 @@ function App() {
 
   // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
   const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
+  // 2026-05-04: emoji → lucide-react 컴포넌트로 통일 (사이드바와 일관성 + CSS color 토글 가능)
+  // scene 아이콘 🎭(우는 인상) → MessagesSquare (Free Talking 컨셉)
   const TAB_STYLE = {
-    home: { icon: '🏠', color: '#00a884' },
-    vocab: { icon: '📖', color: '#059669' },
-    scene: { icon: '🎭', color: '#6366f1' },
-    listening: { icon: '🎧', color: '#7c3aed' },
-    translation: { icon: '🔤', color: '#d97706' },
-    video: { icon: '🎬', color: '#e11d48' },
-    library: { icon: '⭐', color: '#0891b2' },
-    stats: { icon: '📊', color: '#6366f1' },
+    home:        { Icon: Home,           color: '#00a884' },
+    vocab:       { Icon: BookOpen,       color: '#059669' },
+    scene:       { Icon: MessagesSquare, color: '#6366f1' },
+    listening:   { Icon: Headphones,     color: '#7c3aed' },
+    translation: { Icon: Languages,      color: '#d97706' },
+    video:       { Icon: Youtube,        color: '#e11d48' },
+    library:     { Icon: Sparkles,       color: '#0891b2' },
+    stats:       { Icon: BarChart3,      color: '#6366f1' },
   };
-  // nav.* 라벨에서 "00." / "01." 등 번호 prefix 제거 (nav 버튼은 좁아서 prefix 생략)
+  // nav.* 라벨에서 "00." / "01." 등 번호 prefix 제거 (legacy — 5/4 i18n 정리 후 no-op이지만 안전망)
   const stripNavPrefix = (s) => (s ? String(s).replace(/^\d{1,2}\.\s*/, '') : s);
 
   // 사용자가 입력한 번역할 텍스트
@@ -3362,26 +3364,7 @@ function App() {
           </div>
         </div>
 
-        <AnimatePresence mode="wait">
-          {(() => {
-            const s = TAB_STYLE[viewMode];
-            if (!s) return null;
-            return (
-              <motion.div
-                key={viewMode}
-                className="tab-title-bar"
-                style={{ borderLeftColor: s.color, background: `linear-gradient(90deg, ${s.color}18 0%, ${s.color}05 100%)` }}
-                initial={{ opacity: 0, x: 10 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -10 }}
-                transition={{ duration: 0.2 }}
-              >
-                <span className="tab-title-icon">{s.icon}</span>
-                <span className="tab-title-text">{getT(sourceLang, `nav.${viewMode}`)}</span>
-              </motion.div>
-            );
-          })()}
-        </AnimatePresence>
+        {/* 2026-05-04: 탭 상단 고정바(tab-title-bar) 제거 — 하단 탭 활성 색상으로 현재 위치 시각화 대체 */}
 
         {/* 미니 일일 진도 바 + 주간 캘린더 (홈에서는 숨김 — 홈에서 더 크게 표시) */}
         {user && viewMode !== 'home' && (() => {
@@ -4281,6 +4264,7 @@ function App() {
             const s = TAB_STYLE[tab];
             const active = viewMode === tab;
             const label = stripNavPrefix(getT(sourceLang, `nav.${tab}`)) || tab;
+            const TabIcon = s.Icon;
             return (
               <button
                 key={tab}
@@ -4292,7 +4276,7 @@ function App() {
                 aria-label={label}
                 title={label}
               >
-                <span className="tab-nav__icon" aria-hidden="true">{s.icon}</span>
+                <span className="tab-nav__icon" aria-hidden="true"><TabIcon size={20} strokeWidth={2} /></span>
                 <span className="tab-nav__dot" aria-hidden="true" />
               </button>
             );
