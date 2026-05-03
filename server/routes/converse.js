@@ -239,33 +239,82 @@ const azureLangMap = {
     'uk': 'uk-UA',
 };
 
-function recognizeOnceFromWav(wavPath, azureLocale, azureKey, azureRegion) {
+/**
+ * 긴 발화(2~3문장, 중간 호흡) 안정 인식을 위한 Continuous Recognition.
+ *
+ * recognizeOnceAsync 는 첫 phrase 종료(=일정 침묵 감지) 시점에 즉시 종료해
+ * 학습자가 호흡/생각하는 사이에 뒷문장이 잘림. Continuous는 audio 파일이 끝날 때까지
+ * 모든 phrase를 recognized 이벤트로 캡처하고, sessionStopped 시점에 모아서 반환.
+ *
+ * EndSilenceTimeoutMs 도 1500ms 로 상향 — 단어 사이 짧은 pause가 phrase 분할로
+ * 이어지는 빈도를 줄여 자연스러운 transcript 생성.
+ */
+function recognizeFromWav(wavPath, azureLocale, azureKey, azureRegion) {
     return new Promise((resolve, reject) => {
+        let recognizer;
+        let timeoutHandle;
+        let settled = false;
+        const transcripts = [];
+
+        const safeClose = () => {
+            if (timeoutHandle) { clearTimeout(timeoutHandle); timeoutHandle = null; }
+            try { recognizer && recognizer.stopContinuousRecognitionAsync(() => { try { recognizer.close(); } catch { /* noop */ } }); }
+            catch { try { recognizer && recognizer.close(); } catch { /* noop */ } }
+        };
+        const finish = (err, payload) => {
+            if (settled) return;
+            settled = true;
+            safeClose();
+            if (err) reject(err);
+            else resolve(payload);
+        };
+
         try {
             const audioConfig = sdk.AudioConfig.fromWavFileInput(fs.readFileSync(wavPath));
             const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
             speechConfig.speechRecognitionLanguage = azureLocale;
-            const recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
-            recognizer.recognizeOnceAsync(result => {
-                try {
-                    const reasonName = sdk.ResultReason[result.reason] ?? `unknown(${result.reason})`;
-                    if (result.reason === sdk.ResultReason.RecognizedSpeech) {
-                        recognizer.close();
-                        resolve({ transcript: result.text || '', durationMs: Math.round((result.duration || 0) / 10000) });
-                    } else if (result.reason === sdk.ResultReason.NoMatch) {
-                        recognizer.close();
-                        resolve({ transcript: '', durationMs: 0, reason: 'NoMatch' });
-                    } else {
-                        recognizer.close();
-                        reject(new Error(`STT non-recognized: ${reasonName}`));
-                    }
-                } catch (e) {
-                    recognizer.close();
-                    reject(e);
+            // 긴 발화 안정성을 위한 silence timeout 조정
+            //   - EndSilence: phrase 종료 판단 침묵 길이 (default 500ms → 1500ms)
+            //   - InitialSilence: 시작 전 침묵 허용 (default 5000ms 유지)
+            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '1500');
+            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, '5000');
+
+            recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
+
+            recognizer.recognized = (_s, e) => {
+                if (e?.result?.reason === sdk.ResultReason.RecognizedSpeech) {
+                    const text = e.result.text || '';
+                    if (text) transcripts.push(text);
                 }
-            }, err => { recognizer.close(); reject(err); });
+            };
+            recognizer.canceled = (_s, e) => {
+                const errCode = e?.errorCode;
+                const errDetails = e?.errorDetails || '';
+                // EndOfStream 은 정상 종료 (audio 파일 끝). NoError 도 정상.
+                if (errCode && errCode !== sdk.CancellationErrorCode.NoError) {
+                    console.warn(`[Azure STT canceled] code=${errCode} details=${errDetails}`);
+                }
+                // canceled 이후 sessionStopped 이 자연스럽게 와서 finish 처리
+            };
+            recognizer.sessionStopped = (_s, _e) => {
+                finish(null, {
+                    transcript: transcripts.join(' ').trim(),
+                    durationMs: 0,
+                });
+            };
+
+            // 안전장치: 60초 후에도 sessionStopped 안 오면 강제 종료
+            timeoutHandle = setTimeout(() => {
+                console.warn('[Azure STT] timeout 60s — forcing finish');
+                finish(null, { transcript: transcripts.join(' ').trim(), durationMs: 0, reason: 'Timeout' });
+            }, 60000);
+
+            recognizer.startContinuousRecognitionAsync(
+                () => { /* started */ },
+                (err) => finish(new Error(`STT start failed: ${err}`)),
+            );
         } catch (e) {
-            reject(e);
+            finish(e);
         }
     });
 }
@@ -302,7 +351,7 @@ router.post('/api/converse-stt', optionalAuth, upload.single('audio'), async (re
                 .on('error', reject);
         });
 
-        const result = await recognizeOnceFromWav(wavPath, azureLocale, azureKey, azureRegion);
+        const result = await recognizeFromWav(wavPath, azureLocale, azureKey, azureRegion);
         res.json({ transcript: result.transcript || '', durationMs: result.durationMs || 0 });
     } catch (e) {
         console.error('[ConverseSTT] Error:', e?.message || e);
