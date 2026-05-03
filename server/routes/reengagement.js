@@ -132,20 +132,28 @@ async function processWindow(windowName, country, now, opts) {
             dryRun: opts.dryRun,
         });
 
-        if (result.ok) {
-            if (!opts.dryRun) {
-                // idempotency — 발송 성공 시에만 sentAt 기록
-                const field = FIELD_BY_WINDOW[windowName];
-                try {
-                    await doc.ref.update({
-                        [`reengagementSentAt.${field}`]: FieldValue.serverTimestamp(),
-                    });
-                } catch (e) {
-                    console.warn(`[Reengagement] sentAt update failed for ${doc.id}:`, e.message);
-                }
+        // sent 판정 분기:
+        //  - dryRun: result.ok면 "would-send" 카운트 (시뮬레이션)
+        //  - live: result.sent > 0이어야 실제 도달로 인정 (FCM 응답상 1+개 성공)
+        //  - live + result.sent === 0: 모든 토큰 invalid → 'fcm-all-invalid' skip (d2At 마킹 안 함)
+        if (opts.dryRun && result.ok) {
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent > 0) {
+            const field = FIELD_BY_WINDOW[windowName];
+            try {
+                await doc.ref.update({
+                    [`reengagementSentAt.${field}`]: FieldValue.serverTimestamp(),
+                });
+            } catch (e) {
+                console.warn(`[Reengagement] sentAt update failed for ${doc.id}:`, e.message);
             }
             sent += 1;
             sentUids.push(doc.id);
+        } else if (result.ok && result.sent === 0) {
+            // FCM 호출은 OK였지만 모든 토큰이 invalid (cleanup으로 fcmTokens 비워짐)
+            // d2At 마킹 안 함 — 다음 cron에서 no-tokens skip으로 자연 정리됨
+            skipReasons['fcm-all-invalid'] = (skipReasons['fcm-all-invalid'] || 0) + 1;
         } else {
             failedSend += 1;
             skipReasons[result.reason || 'send-failed'] = (skipReasons[result.reason || 'send-failed'] || 0) + 1;
@@ -235,17 +243,21 @@ async function processNoGeoCountry(windowName, now, opts) {
             dryRun: opts.dryRun,
         });
 
-        if (result.ok) {
-            if (!opts.dryRun) {
-                const field = FIELD_BY_WINDOW[windowName];
-                try {
-                    await doc.ref.update({
-                        [`reengagementSentAt.${field}`]: FieldValue.serverTimestamp(),
-                    });
-                } catch {}
-            }
+        // sent 판정 — processWindow와 동일 정책 (dryRun / 실도달 / fcm-all-invalid 분리)
+        if (opts.dryRun && result.ok) {
             sent += 1;
             sentUids.push(doc.id);
+        } else if (result.ok && result.sent > 0) {
+            const field = FIELD_BY_WINDOW[windowName];
+            try {
+                await doc.ref.update({
+                    [`reengagementSentAt.${field}`]: FieldValue.serverTimestamp(),
+                });
+            } catch {}
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent === 0) {
+            skipReasons['fcm-all-invalid'] = (skipReasons['fcm-all-invalid'] || 0) + 1;
         } else {
             failedSend += 1;
             skipReasons[result.reason || 'send-failed'] = (skipReasons[result.reason || 'send-failed'] || 0) + 1;
@@ -289,7 +301,8 @@ async function processOnlyUid(uid, opts) {
         dryRun: opts.dryRun,
     });
 
-    if (result.ok && !opts.dryRun && !opts.forceWindow) {
+    // 실 도달(result.sent > 0)일 때만 idempotency 마킹. forceWindow면 우회 (기존 동작 유지)
+    if (result.ok && result.sent > 0 && !opts.dryRun && !opts.forceWindow) {
         const field = FIELD_BY_WINDOW[window];
         await userSnap.ref.update({
             [`reengagementSentAt.${field}`]: FieldValue.serverTimestamp(),
