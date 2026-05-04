@@ -1132,6 +1132,119 @@ router.post('/api/cron/post-push-activity', requireCronAuth, async (req, res) =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// Lapsed 유저 도달 채널 inventory — email/phone/displayName 보유율
+// "푸시 안 통하는 유저들에게 다른 채널로 닿을 수 있는가" 분석
+router.post('/api/cron/lapsed-reach-inventory', requireCronAuth, async (req, res) => {
+    const country = (req.query.country || 'VN').toUpperCase();
+    const lapsedDays = parseInt(req.query.lapsedDays || '3', 10); // updatedAt > N일 전 = lapsed
+    const lapsedThreshold = new Date(Date.now() - lapsedDays * 24 * 3600 * 1000);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+    let cursor = null;
+    let batches = 0;
+
+    let totalCountry = 0;
+    let lapsed = 0;
+    let withEmail = 0;
+    let withPhone = 0;
+    let withDisplayName = 0;
+    let withFcmTokens = 0;
+    let allChannels = 0;          // email + phone 둘 다
+    let onlyFcm = 0;              // fcm만 (email/phone 없음)
+    let unreachable = 0;          // 어떤 채널도 없음
+
+    const lifecycleDist = {};
+    const sampleEmail = [];
+    const samplePhone = [];
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                const d = doc.data();
+                if ((d.geoCountry || '').toUpperCase() !== country) continue;
+                totalCountry += 1;
+
+                const updMs = d.updatedAt?.toMillis?.() || 0;
+                if (updMs >= lapsedThreshold.getTime()) continue; // 활성 — skip
+
+                lapsed += 1;
+                const stage = d.lifecycleStage || 'null';
+                lifecycleDist[stage] = (lifecycleDist[stage] || 0) + 1;
+
+                const hasEmail = !!d.email;
+                const hasPhone = !!d.phoneNumber;
+                const hasName = !!d.displayName;
+                const hasFcm = Array.isArray(d.fcmTokens) && d.fcmTokens.length > 0;
+
+                if (hasEmail) withEmail += 1;
+                if (hasPhone) withPhone += 1;
+                if (hasName) withDisplayName += 1;
+                if (hasFcm) withFcmTokens += 1;
+                if (hasEmail && hasPhone) allChannels += 1;
+                if (hasFcm && !hasEmail && !hasPhone) onlyFcm += 1;
+                if (!hasFcm && !hasEmail && !hasPhone) unreachable += 1;
+
+                if (hasEmail && sampleEmail.length < 5) {
+                    sampleEmail.push({
+                        uid: doc.id,
+                        email: d.email,
+                        displayName: d.displayName,
+                        sourceLang: d.sourceLang,
+                        stage,
+                        updatedAt: d.updatedAt?.toDate?.()?.toISOString(),
+                    });
+                }
+                if (hasPhone && samplePhone.length < 5) {
+                    samplePhone.push({
+                        uid: doc.id,
+                        phoneNumber: d.phoneNumber?.replace(/(\d{3})\d+(\d{2})/, '$1***$2'),
+                        phoneCountry: d.phoneCountry,
+                        stage,
+                        updatedAt: d.updatedAt?.toDate?.()?.toISOString(),
+                    });
+                }
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        const pct = (n) => lapsed ? +(n / lapsed * 100).toFixed(1) : 0;
+
+        return res.json({
+            country, lapsedDays, lapsedThresholdISO: lapsedThreshold.toISOString(),
+            totalCountry, lapsed,
+            lapsedRate: totalCountry ? +(lapsed / totalCountry * 100).toFixed(1) : 0,
+            channels: {
+                withEmail,        emailPct:  pct(withEmail),
+                withPhone,        phonePct:  pct(withPhone),
+                withDisplayName,  namePct:   pct(withDisplayName),
+                withFcmTokens,    fcmPct:    pct(withFcmTokens),
+                allChannels,      allPct:    pct(allChannels),
+                onlyFcm,          onlyFcmPct: pct(onlyFcm),
+                unreachable,      unreachablePct: pct(unreachable),
+            },
+            lifecycleDist,
+            sampleEmail,
+            samplePhone,
+        });
+    } catch (e) {
+        console.error('[LapsedReachInventory] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // 단일 유저 doc 진단 — fcmTokens 등록/재등록 미작동 원인 분석용
 router.post('/api/cron/user-info', requireCronAuth, async (req, res) => {
     const uid = req.query.uid;
