@@ -109,18 +109,19 @@
     align-items: center;
     gap: 3px;
     padding: 8px 4px;
-    border: 1.5px solid #e2e8f0;
+    border: 1.5px solid #f5d6b8;
     border-radius: 12px;
-    background: linear-gradient(160deg, #ffffff 0%, #f8fafc 100%);
+    /* Promo4 바탕색 톤 — 옅은 살구/베이지 그라데이션 (직접입력은 .scene-item-custom 으로 별도) */
+    background: linear-gradient(160deg, #fff0e0 0%, #ffe1c5 100%);
     cursor: pointer;
     transition: all 0.2s;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05), 0 1px 2px rgba(0, 0, 0, 0.03);
 }
 
 .scene-item:hover {
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.09);
+    box-shadow: 0 4px 10px rgba(245, 158, 80, 0.18);
     transform: translateY(-1px);
-    border-color: #cbd5e1;
+    border-color: #ecb886;
 }
 
 .scene-item:active {
