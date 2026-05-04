@@ -29,7 +29,7 @@ const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigem
 const PRIVACY_URL = 'https://pronunfit.com/privacy';
 
 // 이미지 URL — Vercel public 폴더에 호스팅 (사용자가 public/email-assets/free-talk-vn.png 에 업로드)
-const SCREENSHOT_URL = 'https://pronunfit.com/email-assets/free-talk-vn.png';
+const SCREENSHOT_URL = 'https://pronunfit.com/email-assets/free-talk-vn.jpg';
 
 // 수신거부 토큰 — HMAC SHA256 (UNSUBSCRIBE_SECRET 미설정 시 plain uid 사용)
 function makeUnsubToken(uid) {
