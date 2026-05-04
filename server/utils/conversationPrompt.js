@@ -20,6 +20,38 @@ const { LANG_NAMES, getDifficultyDesc } = require('../config/langGuide');
 const { STYLE_DESC } = require('../routes/scene');
 
 /**
+ * Language Compliance 블록 — 모든 sourceLang 출력 필드가 정확히 sourceLangName 으로
+ * 출력되도록 강제. 영어 prompt 본문 압력에 LLM 이 영어 fallback 하던 문제 차단.
+ *
+ * @param {string} sourceLangName  — LANG_NAMES 매핑된 학습자 모국어 이름 (예: 'Korean')
+ * @param {string[]} fields        — sourceLang 출력 필드 목록 (예: ['translation', 'why_useful'])
+ * @returns {string} prompt 블록
+ */
+function languageComplianceBlock(sourceLangName, fields) {
+    const fieldList = fields.map(f => `  - "${f}"`).join('\n');
+    return `### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
+This rule is MANDATORY. The following fields MUST be written in ${sourceLangName}:
+${fieldList}
+
+Supported sourceLangName values and their required output language:
+  - "Korean"                 → output in Korean
+  - "English"                → output in English
+  - "Japanese"               → output in Japanese
+  - "Chinese (Simplified)"   → output in Chinese (Simplified)
+  - "Vietnamese"             → output in Vietnamese
+  - "French"                 → output in French
+  - "German"                 → output in German
+  - "Spanish"                → output in Spanish
+  - "Russian"                → output in Russian
+  - "Portuguese (Brazilian)" → output in Portuguese (Brazilian)
+
+The current sourceLangName is "${sourceLangName}". Every listed field MUST be in
+"${sourceLangName}" — never default to English unless sourceLangName IS "English".
+Violating this rule (e.g. writing translation in English when sourceLang is
+Vietnamese) makes the output unusable.`;
+}
+
+/**
  * @param {object} args
  * @param {string} args.scene             — i18n scene 키 또는 customInput (예: 'hotel', 'airport')
  * @param {string} args.category          — 'locations' | 'situations'
@@ -97,6 +129,10 @@ ${styleDesc}
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no tone marks inline. Violations make the output unusable.
 6. **Intro language**: write intro.text ONLY in ${sourceLangName}. 1~2 sentences. Set the scene; do NOT spoil the chosen emotion or the User's exact words.
 7. **No emoji** in intro/sentence fields.
+
+---
+
+${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translation', 'firstUserTurn.scene_hint', 'firstUserTurn.learning_tip', 'firstAiReply.translation', 'firstAiReply.scene_hint', 'firstAiReply.learning_tip'])}
 
 ---
 
@@ -280,6 +316,10 @@ ${styleDesc}
 
 ---
 
+${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.translation', 'aiReply.scene_hint', 'aiReply.learning_tip'])}
+
+---
+
 ### [Return ONLY valid JSON — no markdown code fence]
 {
   "intentText": "The learner's most likely intended sentence in ${targetLangName} (== RAW_STT if no correction needed).",
@@ -382,20 +422,14 @@ Match extraction priority to this level:
 
 ---
 
-### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
-This rule is MANDATORY. Output language by field:
-  - "phrase"          → ${targetLangName} ONLY
-  - "translation"     → ${sourceLangName} ONLY
-  - "why_useful"      → ${sourceLangName} ONLY  (NOT English unless sourceLang IS English)
+${languageComplianceBlock(sourceLangName, ['translation', 'why_useful'])}
+
+Field-by-field language summary (combined):
+  - "phrase"          → ${targetLangName} (target)
+  - "translation"     → ${sourceLangName} (source)
+  - "why_useful"      → ${sourceLangName} (source)
   - "source_role"     → literal English token 'learner' or 'partner'
-  - "pronunciation"   → follows the lang-specific rules above
-
-If sourceLangName is "Korean", every why_useful and translation MUST be Korean.
-If sourceLangName is "Japanese", every why_useful and translation MUST be Japanese.
-This applies to ALL ${sourceLangName} listed for the learner — never default to English.
-
-Violating this rule (e.g., writing why_useful in English when sourceLang is Korean)
-makes the output unusable.
+  - "pronunciation"   → follows lang-specific rules above
 
 ---
 
