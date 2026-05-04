@@ -18,6 +18,7 @@ const router = express.Router();
 const { admin, adminDb } = require('../config/firebase');
 const { requireCronAuth } = require('../middleware/auth');
 const { sendReengagementPush } = require('../utils/sendPush');
+const { sendFreeTalkEmail, verifyUnsubToken } = require('../utils/sendEmail');
 const { effectiveCountry, getLocalHour, countriesAtLocalHour10, TZ_BY_COUNTRY } = require('../utils/countryTimezone');
 
 const Timestamp = admin.firestore.Timestamp;
@@ -1317,6 +1318,208 @@ router.post('/api/cron/user-info', requireCronAuth, async (req, res) => {
     } catch (e) {
         console.error('[UserInfo] failed:', e);
         return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Free Talk 캠페인 이메일 발송 (VN lapsed 유저, 1회성)
+//
+// 정책:
+//   - geoCountry === 'VN' AND email 보유 AND updatedAt < N일 전 (lapsed)
+//   - emailOptOut !== true AND tier !== 'admin' AND createdAt > 24h
+//   - freeTalkEmailSentAt 없는 유저만 (idempotency)
+//
+// 모드:
+//   ?dryRun=1 — 발송 없이 후보 미리보기
+//   ?onlyEmail=foo@bar.com — 단일 테스트
+//   ?lapsedDays=3 — 비활성 기준일 (기본 3일)
+//   ?limit=N — 최대 발송 수 (기본 200)
+router.post('/api/cron/send-free-talk-email', requireCronAuth, async (req, res) => {
+    const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
+    const onlyEmail = (req.query.onlyEmail || '').trim().toLowerCase() || null;
+    const lapsedDays = parseInt(req.query.lapsedDays || '3', 10);
+    const limit = Math.min(parseInt(req.query.limit || '200', 10), 1000);
+    const country = (req.query.country || 'VN').toUpperCase();
+
+    const lapsedThreshold = new Date(Date.now() - lapsedDays * 24 * 3600 * 1000);
+    const baseUrl = `${req.protocol}://${req.get('host')}`;
+
+    const batchSize = 500;
+    const maxBatches = 10;
+    let cursor = null;
+    let batches = 0;
+
+    let totalScanned = 0;
+    let totalCandidates = 0;
+    let totalSent = 0;
+    let totalSkipped = 0;
+    const skipReasons = {};
+    const sentSamples = [];
+    const errors = [];
+
+    try {
+        outer: while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const d = doc.data();
+
+                // 국가 필터
+                if ((d.geoCountry || '').toUpperCase() !== country) continue;
+                // 이메일 보유 필터
+                const email = (d.email || '').trim();
+                if (!email) {
+                    skipReasons['no-email'] = (skipReasons['no-email'] || 0) + 1;
+                    continue;
+                }
+                // onlyEmail 필터 (테스트 모드)
+                if (onlyEmail && email.toLowerCase() !== onlyEmail) {
+                    skipReasons['not-only-email'] = (skipReasons['not-only-email'] || 0) + 1;
+                    continue;
+                }
+                // lapsed 필터
+                const updMs = d.updatedAt?.toMillis?.() || 0;
+                if (!onlyEmail && updMs >= lapsedThreshold.getTime()) {
+                    skipReasons['not-lapsed'] = (skipReasons['not-lapsed'] || 0) + 1;
+                    continue;
+                }
+                // 제외 조건
+                if (d.emailOptOut === true) {
+                    skipReasons['opted-out'] = (skipReasons['opted-out'] || 0) + 1;
+                    continue;
+                }
+                if (d.tier === 'admin') {
+                    skipReasons['admin'] = (skipReasons['admin'] || 0) + 1;
+                    continue;
+                }
+                if (!onlyEmail && d.createdAt?.toMillis && (Date.now() - d.createdAt.toMillis() < 24 * 3600 * 1000)) {
+                    skipReasons['d0-new'] = (skipReasons['d0-new'] || 0) + 1;
+                    continue;
+                }
+                // idempotency
+                if (!onlyEmail && d.freeTalkEmailSentAt) {
+                    skipReasons['already-sent'] = (skipReasons['already-sent'] || 0) + 1;
+                    continue;
+                }
+
+                totalCandidates += 1;
+                if (totalCandidates > limit) {
+                    skipReasons['over-limit'] = (skipReasons['over-limit'] || 0) + 1;
+                    continue;
+                }
+
+                const result = await sendFreeTalkEmail({
+                    to: email,
+                    name: d.displayName || null,
+                    uid: doc.id,
+                    baseUrl,
+                    dryRun,
+                });
+
+                if (result.ok) {
+                    if (!dryRun) {
+                        try {
+                            await doc.ref.update({
+                                freeTalkEmailSentAt: FieldValue.serverTimestamp(),
+                                freeTalkEmailMessageId: result.id || null,
+                            });
+                        } catch (e) {
+                            console.warn(`[FreeTalkEmail] markSent failed for ${doc.id}:`, e.message);
+                        }
+                    }
+                    totalSent += 1;
+                    if (sentSamples.length < 5) {
+                        sentSamples.push({ uid: doc.id, email, name: d.displayName, messageId: result.id, dryRun: !!result.dryRun });
+                    }
+                } else {
+                    totalSkipped += 1;
+                    skipReasons[result.reason || 'send-failed'] = (skipReasons[result.reason || 'send-failed'] || 0) + 1;
+                    if (errors.length < 5) errors.push({ uid: doc.id, email, reason: result.reason });
+                }
+
+                // onlyEmail 매칭 시 1건만 처리하고 종료
+                if (onlyEmail) break outer;
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        return res.json({
+            mode: dryRun ? 'dryRun' : 'live',
+            country, lapsedDays, lapsedThresholdISO: lapsedThreshold.toISOString(),
+            limit, onlyEmail,
+            totalScanned, totalCandidates, totalSent, totalSkipped,
+            skipReasons, sentSamples, errors,
+        });
+    } catch (e) {
+        console.error('[FreeTalkEmail] cron failed:', e);
+        return res.status(500).json({ error: e.message, partial: { totalScanned, totalCandidates, totalSent } });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// 이메일 수신거부 (Unsubscribe) — GET 호출로 emailOptOut: true 마킹
+// HMAC 토큰 검증 (UNSUBSCRIBE_SECRET 설정 시). 결과는 베트남어 사과 페이지 표시
+router.get('/api/unsubscribe-email', async (req, res) => {
+    const uid = (req.query.uid || '').trim();
+    const token = (req.query.t || '').trim();
+
+    if (!uid) {
+        return res.status(400).type('html').send('<h1>Invalid request</h1><p>Missing uid.</p>');
+    }
+    if (!verifyUnsubToken(uid, token)) {
+        return res.status(401).type('html').send('<h1>Invalid token</h1><p>Liên kết hủy đăng ký không hợp lệ.</p>');
+    }
+
+    try {
+        const ref = adminDb.collection('users').doc(uid);
+        const snap = await ref.get();
+        if (!snap.exists) {
+            return res.status(404).type('html').send('<h1>Not found</h1><p>Tài khoản không tồn tại.</p>');
+        }
+        await ref.update({
+            emailOptOut: true,
+            emailOptOutAt: FieldValue.serverTimestamp(),
+        });
+        console.log(`[Unsubscribe] ${uid} opted out from emails`);
+        return res.type('html').send(`<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Đã hủy đăng ký - PronunFit</title>
+<style>
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #f8fafc; color: #1e293b; margin: 0; padding: 40px 20px; min-height: 100vh; box-sizing: border-box; display: flex; align-items: center; justify-content: center; }
+  .card { background: #ffffff; border-radius: 16px; padding: 40px 32px; max-width: 480px; width: 100%; text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+  h1 { color: #7B2D8E; margin: 0 0 12px; font-size: 1.4rem; }
+  p { color: #475569; line-height: 1.6; margin: 0 0 8px; font-size: 0.95rem; }
+  .icon { font-size: 3rem; margin-bottom: 16px; }
+  .subtitle { color: #94a3b8; font-size: 0.85rem; margin-top: 24px; }
+  a { color: #7B2D8E; text-decoration: none; }
+</style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon">✅</div>
+    <h1>Đã hủy đăng ký thành công</h1>
+    <p>Chúng tôi sẽ không gửi email cho bạn nữa.</p>
+    <p>Cảm ơn bạn đã từng đồng hành cùng PronunFit. Nếu đổi ý, bạn có thể quay lại bất cứ lúc nào.</p>
+    <p class="subtitle">— Đội ngũ PronunFit<br><a href="https://pronunfit.com">pronunfit.com</a></p>
+  </div>
+</body>
+</html>`);
+    } catch (e) {
+        console.error('[Unsubscribe] failed:', e);
+        return res.status(500).type('html').send('<h1>Error</h1><p>Something went wrong. Please try again later.</p>');
     }
 });
 
