@@ -106,7 +106,7 @@ function App() {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
     proPronCount, PRO_PRON_LIMIT,
-    TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT,
+    TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
     isTrialSavedCardLimitReached,
     setDailyTrialCardReached, setDailyTrialPronReached,
     incrementTrialCard, incrementSavedCard,
@@ -478,10 +478,9 @@ function App() {
   // Daily progress hook
   const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
 
-  // Trial 일일 Free Talking 세션 한도 (2회)
+  // Trial 일일 Free Talking 세션 한도 — AuthContext 의 TRIAL_FREETALK_DAILY_LIMIT (2회) 사용
   // Pro/Premium 은 무제한 (세션당 자유 발화 25/300턴 한도만 useConversation 내부 적용)
-  const TRIAL_FREETALK_DAILY_LIMIT = 2;
-  const isTrialFreeTalkLimitReached = tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT;
+  const isTrialFreeTalkLimitReached = tier === 'trial' && todayFreeTalkCount >= (TRIAL_FREETALK_DAILY_LIMIT || 2);
 
   // 플랫폼 CSS 클래스 (React 렌더 시점 = Capacitor 브릿지 확실히 준비됨)
   React.useEffect(() => {
@@ -4444,6 +4443,7 @@ function App() {
           sourceLang={sourceLang}
           cardCount={todayCount}
           pronCount={todayPronCount}
+          freeTalkCount={todayFreeTalkCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
         />

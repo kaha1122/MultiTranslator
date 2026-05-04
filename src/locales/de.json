@@ -161,7 +161,7 @@
   },
   "trial": {
     "limitTitle": "Tägliches Testlimit erreicht!",
-    "limitDesc": "Sie haben das Tageslimit von 10 Karten oder 20 Aussprachetests erreicht.",
+    "limitDesc": "Sie haben das Tageslimit erreicht: 10 Karten, 20 Aussprachetests oder 2 Free-Talking-Sitzungen.",
     "seeYouTomorrow": "Bis morgen!",
     "seeSidebarReward": "Mehr lernen? Nutzen Sie die +5 Karten / +10 Aussprachen Buttons in der Seitenleiste",
     "upgradeBtn": "Plan upgraden"

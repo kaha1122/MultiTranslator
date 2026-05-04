@@ -298,9 +298,10 @@ export const AuthProvider = ({ children }) => {
     const rawTier = profile?.tier || 'trial';
     const tier = rawTier === 'byok_free' ? 'admin' : rawTier;
 
-    const TRIAL_DAILY_CARD_LIMIT = 10;   // Free Trial: 하루 카드 10개
-    const TRIAL_DAILY_PRON_LIMIT = 20;   // Free Trial: 하루 발음 20회
-    const PRO_PRON_LIMIT = 1500;         // Pro: 월 1500회
+    const TRIAL_DAILY_CARD_LIMIT = 10;        // Free Trial: 하루 카드 10개
+    const TRIAL_DAILY_PRON_LIMIT = 20;        // Free Trial: 하루 발음 20회
+    const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회
+    const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
 
     // 하위호환: 기존 필드 유지 (분석용)
     const trialCardCount = profile?.trialCardCount || 0;
@@ -591,7 +592,7 @@ export const AuthProvider = ({ children }) => {
             tier,
             trialCardCount, savedCardCount, trialPronCount,
             proPronCount, PRO_PRON_LIMIT,
-            TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT,
+            TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
             isTrialSavedCardLimitReached, isTrialPronLimitReached,
             setDailyTrialCardReached, setDailyTrialPronReached,
             isProPronLimitReached,

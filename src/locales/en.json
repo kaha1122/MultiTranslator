@@ -159,7 +159,7 @@
   },
   "trial": {
     "limitTitle": "Daily Trial Limit Reached!",
-    "limitDesc": "You've reached the daily limit of 10 cards or 20 pronunciation tests.",
+    "limitDesc": "You've reached the daily limit: 10 cards, 20 pronunciation tests, or 2 Free-Talking sessions.",
     "seeYouTomorrow": "See you tomorrow!",
     "seeSidebarReward": "Want to keep learning? Use the +5 cards / +10 pronunciations buttons in the sidebar",
     "upgradeBtn": "Upgrade Your Plan"

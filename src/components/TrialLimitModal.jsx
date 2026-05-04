@@ -2,9 +2,9 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
-const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade }) => {
+const TrialLimitModal = ({ sourceLang, cardCount, pronCount, freeTalkCount = 0, onClose, onUpgrade }) => {
     const t = useT(sourceLang);
-    const { TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT } = useAuth();
+    const { TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT } = useAuth();
     // 네이티브 앱(Android/iOS)에서는 사이드바의 보상형 광고 버튼 안내, 웹에서는 기존 메시지
     const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
     const messageKey = isNative ? 'trial.seeSidebarReward' : 'trial.seeYouTomorrow';
@@ -54,12 +54,15 @@ const TrialLimitModal = ({ sourceLang, cardCount, pronCount, onClose, onUpgrade 
                         {t(messageKey)}
                     </p>
                     {/* 사용량 표시 */}
-                    <div style={{ display: 'flex', justifyContent: 'center', gap: '12px', marginTop: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🃏 {cardCount}/{TRIAL_DAILY_CARD_LIMIT} /day
                         </span>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🎤 {pronCount ?? 0}/{TRIAL_DAILY_PRON_LIMIT} /day
+                        </span>
+                        <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
+                            💬 {freeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT} /day
                         </span>
                     </div>
                 </div>
