@@ -45,6 +45,7 @@ import VocabTab from './components/VocabTab';
 import ListeningTab from './components/ListeningTab';
 import ScenePractice, { ScenePracticeCard } from './components/ScenePractice';
 import FreeTalkingChat from './components/FreeTalkingChat';
+import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
@@ -363,6 +364,8 @@ function App() {
   // Free Talking (Sprint 1) — 카카오톡 스타일 풀스크린 채팅 모달
   const [freeTalkOpen, setFreeTalkOpen] = useState(false);
   const [freeTalkSetup, setFreeTalkSetup] = useState(null);
+  // Free Talking 신기능 안내 (Sprint 3-3) — 기존 사용자 한정 1회
+  const [freeTalkAnnounceOpen, setFreeTalkAnnounceOpen] = useState(false);
 
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
@@ -1486,6 +1489,33 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
 
+  // Free Talking 신기능 안내 — 이미 온보딩 통과한 기존 사용자에게만 1회 표시
+  // 조건: deviceOnboardingDone='1' (기존 유저) AND announce_seen 미존재 AND 온보딩 모달 미진행
+  useEffect(() => {
+    if (!user) return;
+    if (showOnboarding) return;
+    if (typeof window === 'undefined') return;
+    try {
+      const onboarded = localStorage.getItem('deviceOnboardingDone') === '1';
+      const seen = localStorage.getItem('pronunfit_freetalk_announce_seen') === '1';
+      if (onboarded && !seen) {
+        // 다른 모달과 충돌 방지를 위해 약간 지연 후 표시
+        const t = setTimeout(() => setFreeTalkAnnounceOpen(true), 800);
+        return () => clearTimeout(t);
+      }
+    } catch (e) { /* noop */ }
+  }, [user?.uid, showOnboarding]);
+
+  const handleFreeTalkAnnounceLater = () => {
+    try { localStorage.setItem('pronunfit_freetalk_announce_seen', '1'); } catch (e) { /* noop */ }
+    setFreeTalkAnnounceOpen(false);
+  };
+  const handleFreeTalkAnnounceStart = () => {
+    try { localStorage.setItem('pronunfit_freetalk_announce_seen', '1'); } catch (e) { /* noop */ }
+    setFreeTalkAnnounceOpen(false);
+    setViewMode('scene');  // Scene 탭으로 자동 이동 (사용자가 즉시 시도 가능)
+  };
+
   const handleOnboardingComplete = (src, tgts, lvl) => {
     setSourceLang(src);
     setTargetLangs(tgts);
@@ -1496,6 +1526,8 @@ function App() {
     localStorage.setItem('sourceLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
+    // 신규 사용자: TabTutorial 의 Scene step 으로 Free-Talking 안내 받음 → announce 모달 skip
+    localStorage.setItem('pronunfit_freetalk_announce_seen', '1');
     setShowOnboarding(false);
     setViewMode('home');
     updateUserProfile({
@@ -4448,6 +4480,14 @@ function App() {
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
         />
       )}
+
+      {/* Free Talking 신기능 안내 — 기존 사용자 한정 1회 (Sprint 3-3) */}
+      <FreeTalkingAnnounceModal
+        open={freeTalkAnnounceOpen}
+        onLater={handleFreeTalkAnnounceLater}
+        onStart={handleFreeTalkAnnounceStart}
+        t={(key) => getT(sourceLang, key)}
+      />
 
       {/* Free Talking — 카카오톡 스타일 풀스크린 모달 (Sprint 1+2+3) */}
       <FreeTalkingChat

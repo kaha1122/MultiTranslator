@@ -15,9 +15,10 @@ const TAB_ICONS = {
 };
 
 // 탭별 팁 개수 (TAB_TUTORIALS 대체용)
+// scene: [1, 2] — Free-Talking 도입으로 2 step (장소 선택 / 자유 발화 + 카드 만들기)
 export const TAB_TUTORIALS = {
   home: [1, 2],
-  scene: [1],
+  scene: [1, 2],
   vocab: [1, 2],
   listening: [1, 2],
   translation: [1],
