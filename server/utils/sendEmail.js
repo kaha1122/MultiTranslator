@@ -4,8 +4,15 @@
 // 보안:
 //   - RESEND_API_KEY는 서버 env 변수 (Render에서만)
 //   - UNSUBSCRIBE_SECRET (선택) — HMAC 서명용. 미설정 시 token 검증 우회
+//
+// 이미지 처리:
+//   - 2026-05-04 변경: 외부 URL → inline attachment (cid:) 방식
+//     · Gmail/Outlook 의 외부 이미지 기본 차단 우회
+//     · 메일당 +303KB (106명 × = ~32MB 무료 한도 안에 듬)
 
 const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
 
 let resendClient = null;
 function getResend() {
@@ -28,8 +35,22 @@ const REPLY_TO = 'systemadmin@pronunfit.com';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
 const PRIVACY_URL = 'https://pronunfit.com/privacy';
 
-// 이미지 URL — Vercel public 폴더에 호스팅 (사용자가 public/email-assets/free-talk-vn.png 에 업로드)
-const SCREENSHOT_URL = 'https://pronunfit.com/email-assets/free-talk-vn.jpg';
+// 이미지 inline embed — public/email-assets/free-talk-vn.jpg 를 cid:reference로 첨부
+// HTML에서 <img src="cid:free-talk-screenshot"> 로 참조
+const SCREENSHOT_CID = 'free-talk-screenshot';
+const SCREENSHOT_FILE_PATH = path.resolve(__dirname, '..', '..', 'public', 'email-assets', 'free-talk-vn.jpg');
+let cachedImageBuffer = null;
+function getScreenshotBuffer() {
+    if (cachedImageBuffer) return cachedImageBuffer;
+    try {
+        cachedImageBuffer = fs.readFileSync(SCREENSHOT_FILE_PATH);
+        console.log(`[Email] Loaded screenshot ${cachedImageBuffer.length} bytes from ${SCREENSHOT_FILE_PATH}`);
+        return cachedImageBuffer;
+    } catch (e) {
+        console.warn('[Email] Failed to load screenshot:', e.message);
+        return null;
+    }
+}
 
 // 수신거부 토큰 — HMAC SHA256 (UNSUBSCRIBE_SECRET 미설정 시 plain uid 사용)
 function makeUnsubToken(uid) {
@@ -83,9 +104,9 @@ function renderFreeTalkEmailVI({ name, unsubLink }) {
         </p>
       </td></tr>
 
-      <!-- Hero Image -->
+      <!-- Hero Image — inline cid attachment (Gmail external image 차단 우회) -->
       <tr><td style="padding:8px 28px;text-align:center;">
-        <img src="${SCREENSHOT_URL}" alt="Free Talk demo screenshot" width="280"
+        <img src="cid:${SCREENSHOT_CID}" alt="Free Talk demo screenshot" width="280"
              style="max-width:280px;width:100%;height:auto;border-radius:12px;border:1px solid #e2e8f0;display:block;margin:0 auto;">
       </td></tr>
 
@@ -247,6 +268,15 @@ async function sendFreeTalkEmail({ to, name, uid, baseUrl, dryRun = false }) {
         };
     }
 
+    // 이미지 inline 첨부 (cid:free-talk-screenshot)
+    const imgBuffer = getScreenshotBuffer();
+    const attachments = imgBuffer ? [{
+        filename: 'free-talk-vn.jpg',
+        content: imgBuffer,
+        contentType: 'image/jpeg',
+        contentId: SCREENSHOT_CID, // HTML 의 <img src="cid:..."> 와 일치
+    }] : [];
+
     try {
         const result = await resend.emails.send({
             from: FROM_FULL,
@@ -260,6 +290,7 @@ async function sendFreeTalkEmail({ to, name, uid, baseUrl, dryRun = false }) {
                 'List-Unsubscribe': `<${unsubLink}>`,
                 'List-Unsubscribe-Post': 'List-Unsubscribe=One-Click',
             },
+            attachments,
             tags: [{ name: 'campaign', value: 'free-talk-vn-2026-05-04' }],
         });
         if (result.error) return { ok: false, reason: result.error.message || 'resend-error', detail: result.error };
