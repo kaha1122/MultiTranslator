@@ -255,6 +255,15 @@ export function useConversation({ tier = 'trial' } = {}) {
     }, []);
 
     /**
+     * 사용자가 SummaryModal을 [Skip]/[Save]/[X] 로 닫을 때 호출.
+     * summary state 를 null 로 reset 해 useEffect 자동재오픈 루프를 차단.
+     */
+    const clearSummary = useCallback(() => {
+        setSummary(null);
+        setSummaryError(null);
+    }, []);
+
+    /**
      * 세션 종료 후 1회 호출 — 핵심 표현 3~5개 추출.
      * narration / user_auto / user_free / ai 모두 포함하여 전송.
      * (narration은 sourceLang이라 학습 가치 낮지만 컨텍스트 제공용)
@@ -526,5 +535,6 @@ export function useConversation({ tier = 'trial' } = {}) {
         submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
         markMessagePlayed,
         requestSummary,
+        clearSummary,
     };
 }

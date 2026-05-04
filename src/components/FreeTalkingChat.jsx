@@ -43,11 +43,13 @@ export default function FreeTalkingChat({
         startSession, endSession, resetSession,
         submitFreeUtterance, removeLastUserFreePair,
         markMessagePlayed,
-        requestSummary,
+        requestSummary, clearSummary,
     } = useConversation({ tier });
 
     const [summaryModalOpen, setSummaryModalOpen] = useState(false);
-    const summaryRequestedRef = useRef(false);
+    // 자동 open useEffect 가드 — 새 summary 객체일 때만 1회 trigger.
+    // (모달 닫은 후 summary state 가 그대로면 useEffect 재실행으로 무한 reopen 되던 버그 차단)
+    const lastSummaryRef = useRef(null);
     // 첫 진입 안내 — localStorage 'pronunfit_freetalk_guide_seen' 미존재 시 모달 진입 직후 1회 표시
     const [showFirstGuide, setShowFirstGuide] = useState(false);
 
@@ -85,7 +87,7 @@ export default function FreeTalkingChat({
             setCardOpenMessage(null);
             setCardSavedIds({});
             setSummaryModalOpen(false);
-            summaryRequestedRef.current = false;
+            lastSummaryRef.current = null;
             resetSession();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -155,14 +157,19 @@ export default function FreeTalkingChat({
         await requestSummary();
     };
 
-    // summary 도착하면 모달 자동 open (사용자가 [💎] 명시 클릭한 결과이므로 즉시 표시)
+    // summary 도착하면 모달 자동 open — 새 summary 객체일 때만 1회 trigger.
+    // (lastSummaryRef 비교로 동일 summary 에서 reopen 차단)
     useEffect(() => {
-        if (summary && !summaryModalOpen) setSummaryModalOpen(true);
-    }, [summary, summaryModalOpen]);
+        if (summary && summary !== lastSummaryRef.current) {
+            lastSummaryRef.current = summary;
+            setSummaryModalOpen(true);
+        }
+    }, [summary]);
 
     const handleSummarySaveSelected = async (selectedPhrases) => {
         if (!onSaveConversationSummary) {
             setSummaryModalOpen(false);
+            clearSummary();
             return;
         }
         try {
@@ -180,10 +187,12 @@ export default function FreeTalkingChat({
             console.error('[FreeTalkingChat] summary save failed:', e?.message);
         }
         setSummaryModalOpen(false);
+        clearSummary();
     };
 
     const handleSummarySkip = () => {
         setSummaryModalOpen(false);
+        clearSummary();
     };
 
     const handleTalkBtn = async () => {
