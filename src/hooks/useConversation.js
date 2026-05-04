@@ -68,6 +68,9 @@ export function useConversation({ tier = 'trial' } = {}) {
     const [endedReason, setEndedReason] = useState(null);  // 'limit' | 'user' | 'idle'
     const [isReplying, setIsReplying] = useState(false);
     const [replyError, setReplyError] = useState(null);
+    const [summary, setSummary] = useState(null);              // {keyPhrases: [...]}
+    const [isSummarizing, setIsSummarizing] = useState(false);
+    const [summaryError, setSummaryError] = useState(null);
     const idGenRef = useRef(0);
     const idleTimerRef = useRef(null);
     const messagesRef = useRef([]);
@@ -242,11 +245,59 @@ export function useConversation({ tier = 'trial' } = {}) {
         setStartError(null);
         setReplyError(null);
         setIsReplying(false);
+        setSummary(null);
+        setIsSummarizing(false);
+        setSummaryError(null);
         if (idleTimerRef.current) {
             clearTimeout(idleTimerRef.current);
             idleTimerRef.current = null;
         }
     }, []);
+
+    /**
+     * 세션 종료 후 1회 호출 — 핵심 표현 3~5개 추출.
+     * narration / user_auto / user_free / ai 모두 포함하여 전송.
+     * (narration은 sourceLang이라 학습 가치 낮지만 컨텍스트 제공용)
+     */
+    const requestSummary = useCallback(async () => {
+        if (isSummarizing) return;
+        const setupNow = setupRef.current;
+        const scenarioNow = scenarioMetaRef.current;
+        const all = messagesRef.current;
+        if (!setupNow) return;
+        const turnsForApi = all
+            .filter(m => m.role !== 'narration')
+            .filter(m => (m.fullText || m.text || '').trim().length > 0)
+            .map(m => ({ role: m.role === 'ai' ? 'ai' : 'user', text: m.fullText || m.text || '' }));
+        if (turnsForApi.length === 0) return;
+
+        setIsSummarizing(true);
+        setSummaryError(null);
+        try {
+            const res = await authFetch(`${SERVER_URL}/api/converse-summarize`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    history: turnsForApi,
+                    scenarioMeta: scenarioNow,
+                    targetLang: setupNow.targetLang,
+                    sourceLang: setupNow.sourceLang,
+                    difficulty: setupNow.difficulty,
+                }),
+            });
+            if (!res.ok) {
+                const errBody = await res.json().catch(() => ({}));
+                throw new Error(errBody.error || `Server ${res.status}`);
+            }
+            const data = await res.json();
+            setSummary(data);
+        } catch (e) {
+            console.error('[useConversation] summarize failed:', e?.message || e);
+            setSummaryError(e?.message || 'Summarize failed');
+        } finally {
+            setIsSummarizing(false);
+        }
+    }, [isSummarizing]);
 
     // 30분 무활동 자동 종료
     const resetIdleTimer = useCallback(() => {
@@ -470,8 +521,10 @@ export function useConversation({ tier = 'trial' } = {}) {
         isReplying, replyError,
         freeTurnCount, turnLimit,
         sessionEnded, endedReason,
+        summary, isSummarizing, summaryError,
         startSession, endSession, resetSession,
         submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
         markMessagePlayed,
+        requestSummary,
     };
 }

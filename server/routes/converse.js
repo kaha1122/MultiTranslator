@@ -5,7 +5,7 @@ const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
 const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const { optionalAuth } = require('../middleware/auth');
-const { buildStartPrompt, buildReplyPrompt } = require('../utils/conversationPrompt');
+const { buildStartPrompt, buildReplyPrompt, buildSummarizePrompt } = require('../utils/conversationPrompt');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 const { geminiUrl } = require('../config/gemini');
 
@@ -421,6 +421,73 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     } catch (e) {
         console.error('[ConverseReply] Error:', e.response?.data || e.message);
         res.status(500).json({ error: 'Failed to generate reply' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// POST /api/converse-summarize
+//   세션 종료 시 1회 호출. 전체 history에서 핵심 표현 3~5개 추출.
+//   응답: { keyPhrases: [{phrase, translation, why_useful, source_role, pronunciation}] }
+// ─────────────────────────────────────────────────────────────────────────
+router.post('/api/converse-summarize', optionalAuth, async (req, res) => {
+    const {
+        history, scenarioMeta,
+        targetLang, sourceLang, difficulty,
+        byokGeminiKey,
+    } = req.body || {};
+    if (!Array.isArray(history) || history.length === 0) {
+        return res.status(400).json({ error: 'Missing or empty history' });
+    }
+    if (!targetLang || !sourceLang) {
+        return res.status(400).json({ error: 'Missing targetLang or sourceLang' });
+    }
+    const geminiKey = byokGeminiKey || GEMINI_API_KEY;
+    if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    const prompt = buildSummarizePrompt({
+        history, scenarioMeta: scenarioMeta || {},
+        targetLang, sourceLang, difficulty,
+    });
+
+    try {
+        const response = await axios.post(
+            geminiUrl(geminiKey),
+            {
+                contents: [{ parts: [{ text: prompt }] }],
+                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95 },
+            },
+            { timeout: 30000 }
+        );
+        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+        let parsed;
+        try { parsed = JSON.parse(jsonStr); }
+        catch (parseErr) {
+            console.error('[ConverseSummarize] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
+            return res.status(502).json({ error: 'AI returned invalid JSON' });
+        }
+
+        // 후처리: 각 phrase에 stripAnnotations 적용
+        if (Array.isArray(parsed?.keyPhrases)) {
+            parsed.keyPhrases = parsed.keyPhrases
+                .filter(p => p && typeof p.phrase === 'string' && p.phrase.trim().length > 0)
+                .map(p => ({
+                    phrase: stripAnnotations(p.phrase, targetLang),
+                    translation: p.translation || '',
+                    why_useful: p.why_useful || '',
+                    source_role: p.source_role === 'partner' ? 'partner' : 'learner',
+                    pronunciation: p.pronunciation || '',
+                }));
+        }
+
+        if (!Array.isArray(parsed?.keyPhrases) || parsed.keyPhrases.length === 0) {
+            return res.status(502).json({ error: 'No key phrases extracted' });
+        }
+
+        res.json(parsed);
+    } catch (e) {
+        console.error('[ConverseSummarize] Error:', e.response?.data || e.message);
+        res.status(500).json({ error: 'Failed to summarize' });
     }
 });
 

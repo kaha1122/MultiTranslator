@@ -7,8 +7,8 @@
     "newBadge": "NEW"
   },
   "freeTalk": {
-    "startCta": "Free Talking 시작",
-    "title": "Free Talking",
+    "startCta": "Free-Talking",
+    "title": "Free-Talking",
     "aiName": "대화 상대",
     "preparing": "대화를 준비하고 있어요...",
     "startError": "대화를 시작하지 못했습니다.",
@@ -30,7 +30,17 @@
     "listen": "듣기",
     "confirmEdit": "확정",
     "cancelEdit": "취소",
-    "replyError": "응답 생성에 실패했어요"
+    "replyError": "응답 생성에 실패했어요",
+    "makeCard": "카드 만들기",
+    "summaryTitle": "이번 대화의 핵심 표현",
+    "summarizing": "표현을 정리하고 있어요...",
+    "summaryError": "핵심 표현을 가져오지 못했습니다",
+    "summaryEmpty": "저장할만한 표현을 찾지 못했어요",
+    "summarySkip": "건너뛰기",
+    "summarySaveN": "선택 저장",
+    "summarySaveZero": "선택 저장",
+    "fromLearner": "내 발화",
+    "fromPartner": "상대 발화"
   },
   "pushOptIn": {
     "title": "학습 알림을 받아보시겠어요?",

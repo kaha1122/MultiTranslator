@@ -2382,6 +2382,72 @@ function App() {
     }
   };
 
+  // 6.6. Free Talking 세션 종료 후 핵심 표현 일괄 저장 (saveConversationMessage 패턴 차용)
+  // selectedPhrases: [{phrase, translation, why_useful, source_role, pronunciation}]
+  // sourceType='conversation_summary' 로 분리 (개별 메시지 저장과 구분)
+  const saveConversationSummaryPhrases = async ({ selectedPhrases, langCode, sourceLang: srcLang, scene, category = 'locations', difficulty = 'basic', speechStyle, scenarioMeta }) => {
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return { saved: 0, skipped: 0 }; }
+    if (isTrialSavedCardLimitReached) {
+      setTrialCardCurrentCount(savedCardCount);
+      setShowTrialLimitModal(true);
+      return { saved: 0, skipped: selectedPhrases.length };
+    }
+    const langInfo = getLangInfo(langCode);
+    let saved = 0, skipped = 0;
+    for (const p of selectedPhrases) {
+      const phrase = (p?.phrase || '').trim();
+      if (!phrase) { skipped += 1; continue; }
+      try {
+        // 중복 체크 (sourceType='conversation_summary' + 동일 phrase)
+        const dupQ = query(
+          collection(db, "savedCards"),
+          where("userId", "==", u.uid),
+          where("translatedText", "==", phrase),
+          where("sourceType", "==", "conversation_summary")
+        );
+        const dupSnap = await getDocs(dupQ);
+        const active = dupSnap.docs.find(d => !d.data().isDeleted);
+        if (active) { skipped += 1; continue; }
+
+        const serialNumber = await assignNextCardSerial(u.uid);
+        await addDoc(collection(db, "savedCards"), {
+          userId: u.uid,
+          userEmail: u.email,
+          sourceText: p.why_useful || scenarioMeta?.scene_summary_en || scene || '',
+          translatedText: phrase,
+          langCode,
+          language: langInfo?.name || langCode,
+          inputLang: langCode,
+          inputType: 'C',
+          sourceLang: srcLang || sourceLang,
+          sourceType: 'conversation_summary',
+          conversationRole: p.source_role === 'partner' ? 'ai' : 'user_free',
+          difficulty,
+          speechStyle: speechStyle || '',
+          scene,
+          category,
+          responderRole: scenarioMeta?.responder_role || '',
+          learningTip: p.why_useful ? [{ type: 'tip', content: p.why_useful }] : [],
+          pronunciation: p.pronunciation || '',
+          pronunciationScore: null,
+          selectedEmotion: '',
+          interactionType: '',
+          serialNumber,
+          createdAt: serverTimestamp(),
+        });
+        saved += 1;
+        incrementSavedCard();
+        incrementDailySave();
+        addAdPoints(2);
+      } catch (e) {
+        console.error("ConversationSummary 카드 저장 오류:", e);
+        skipped += 1;
+      }
+    }
+    return { saved, skipped };
+  };
+
   // 7. Vocab 카드를 Library에 저장하는 함수
   const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     const u = user || await ensureAnonymousUser();
@@ -4370,7 +4436,7 @@ function App() {
         />
       )}
 
-      {/* Free Talking — 카카오톡 스타일 풀스크린 모달 (Sprint 1+2) */}
+      {/* Free Talking — 카카오톡 스타일 풀스크린 모달 (Sprint 1+2+3) */}
       <FreeTalkingChat
         open={freeTalkOpen}
         setupArgs={freeTalkSetup}
@@ -4378,6 +4444,7 @@ function App() {
         tier={tier}
         ScenePracticeCardComp={ScenePracticeCard}
         onSaveConversationMessage={saveConversationMessage}
+        onSaveConversationSummary={saveConversationSummaryPhrases}
         onSpeak={handleSpeak}
         onTrialLimitReached={() => setShowTrialLimitModal(true)}
         onPronSuccess={onPronSuccess}

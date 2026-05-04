@@ -80,6 +80,40 @@
     overflow: hidden;
     text-overflow: ellipsis;
 }
+.ftc-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+.ftc-summary-btn {
+    flex-shrink: 0;
+    height: 32px;
+    padding: 0 10px;                  /* 글로벌 button padding 명시 무력화 + 자체 정의 */
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    border-radius: 16px;
+    background: rgba(99, 102, 241, 0.08);
+    color: #4f46e5;
+    font-size: 12px;
+    font-weight: 600;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    cursor: pointer;
+    transition: background 120ms ease, transform 80ms ease;
+}
+.ftc-summary-btn:hover:not(:disabled) { background: rgba(99, 102, 241, 0.16); }
+.ftc-summary-btn:active:not(:disabled) { transform: translateY(1px); }
+.ftc-summary-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+.ftc-summary-btn .spin { animation: spin 1s linear infinite; }
+@media (max-width: 380px) {
+    .ftc-summary-btn span { display: none; }
+    .ftc-summary-btn { width: 32px; padding: 0; justify-content: center; }
+}
+
 .ftc-close-btn {
     flex-shrink: 0;
     width: 36px;

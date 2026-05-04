@@ -7,8 +7,8 @@
     "newBadge": "NEW"
   },
   "freeTalk": {
-    "startCta": "Start Free Talking",
-    "title": "Free Talking",
+    "startCta": "Free-Talking",
+    "title": "Free-Talking",
     "aiName": "Partner",
     "preparing": "Preparing your conversation...",
     "startError": "Failed to start the conversation.",
@@ -30,7 +30,17 @@
     "listen": "Listen",
     "confirmEdit": "Save",
     "cancelEdit": "Cancel",
-    "replyError": "Failed to generate reply"
+    "replyError": "Failed to generate reply",
+    "makeCard": "Make Cards",
+    "summaryTitle": "Key expressions from this chat",
+    "summarizing": "Picking out key expressions...",
+    "summaryError": "Couldn't extract key expressions",
+    "summaryEmpty": "No expressions worth saving were found",
+    "summarySkip": "Skip",
+    "summarySaveN": "Save selected",
+    "summarySaveZero": "Save selected",
+    "fromLearner": "You",
+    "fromPartner": "Partner"
   },
   "pushOptIn": {
     "title": "Get learning reminders?",

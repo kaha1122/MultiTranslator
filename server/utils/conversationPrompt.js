@@ -273,4 +273,86 @@ ${styleDesc}
 }`;
 }
 
-module.exports = { buildStartPrompt, buildReplyPrompt };
+/**
+ * Free Talking 세션 종료 시 핵심 표현 3~5개를 추출하는 prompt 빌더.
+ *
+ * 입력: 세션 전체 history (user_auto / user_free / ai 메시지들), 시나리오 메타.
+ * 출력: 학습자가 Library에 저장할 가치가 있는 표현 3~5개.
+ *   - 너무 generic한 인사/동의/감사 표현은 제외
+ *   - 전문 용어 / 자주 쓰는 패턴 / 어려운 문법 / 상황 특화 표현 우선
+ *   - 사용자(user_auto / user_free)와 상대(ai) 양쪽에서 모두 추출 가능
+ */
+function buildSummarizePrompt({
+    history = [],
+    scenarioMeta = {},
+    targetLang,
+    sourceLang,
+    difficulty,
+}) {
+    const targetLangName = LANG_NAMES[targetLang] || 'English';
+    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+    const responderRole = scenarioMeta.responder_role || 'the other person';
+    const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+    const diffDesc = getDifficultyDesc(difficulty, targetLang);
+
+    const historyBlock = history.length > 0
+        ? history.map(h => {
+            const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
+            return `${speaker}: ${h.text || ''}`;
+        }).join('\n')
+        : '(empty conversation)';
+
+    return `### [Role]
+You are a Language Learning Curator. After a learner finished a Free Talking
+practice session, your job is to extract 3~5 key expressions worth saving to
+the learner's Library — phrases that gave concrete learning value in this
+specific scene.
+
+---
+
+### [Conversation Context]
+Scene: ${sceneSummary}
+Responder role: ${responderRole}
+Target language: ${targetLangName}
+Learner's level: ${difficulty || 'basic'} — ${diffDesc}
+
+Full conversation (oldest → newest):
+${historyBlock}
+
+---
+
+### [Selection Rules]
+1. Pick **3 to 5 phrases**, in ${targetLangName}, from the conversation above.
+2. Each phrase MUST be either:
+   - A complete sentence said by either speaker, OR
+   - A useful chunk (4+ words) embedded in a longer sentence.
+3. Prefer phrases that meet ANY of these criteria:
+   - Scene-specific vocabulary (e.g., 'open a savings account', 'window seat')
+   - Common functional patterns (e.g., 'Could you tell me where...?', 'I'd like to ___')
+   - Polite/formal register useful for the same situation type
+   - Idiomatic expressions or phrasal verbs
+4. AVOID:
+   - Generic single-word fillers ('yes', 'okay', 'thanks', 'hello', 'goodbye')
+   - Trivial greetings without scene context
+   - Phrases the learner is unlikely to reuse outside this exact dialogue
+5. **Distribute** between LEARNER (what the user said or could say) and PARTNER (what the responder said) — at least 1 from each side if possible.
+6. Preserve the EXACT wording from the conversation. Do NOT rephrase, translate, or "improve" the original phrase.
+7. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese in the phrase field. Plain script only.
+
+---
+
+### [Return ONLY valid JSON — no markdown code fence]
+{
+  "keyPhrases": [
+    {
+      "phrase": "The exact phrase or sentence in ${targetLangName} as it appeared in the conversation.",
+      "translation": "Natural translation in ${sourceLangName}.",
+      "why_useful": "In ${sourceLangName}, 1 short line: why this phrase is worth remembering for ${sceneSummary}.",
+      "source_role": "Either 'learner' (LEARNER spoke it) or 'partner' (PARTNER spoke it).",
+      "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: stress accents (´). For all others: empty string ''."
+    }
+  ]
+}`;
+}
+
+module.exports = { buildStartPrompt, buildReplyPrompt, buildSummarizePrompt };

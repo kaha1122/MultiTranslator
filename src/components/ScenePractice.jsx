@@ -633,7 +633,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                         }}
                         disabled={!canRequest}
                     >
-                        💬 {t('freeTalk.startCta') || 'Free Talking 시작'}
+                        💬 Free-Talking
                     </button>
                 </div>
 
