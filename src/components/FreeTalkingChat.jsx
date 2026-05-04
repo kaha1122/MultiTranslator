@@ -6,6 +6,7 @@ import ConversationSummaryModal from './ConversationSummaryModal';
 import { useConversation } from '../hooks/useConversation';
 import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
+import { playStarSound } from '../utils/soundEffects';
 import './FreeTalkingChat.css';
 
 /**
@@ -194,6 +195,10 @@ export default function FreeTalkingChat({
                 alert(`저장 실패: 선택한 ${selectedPhrases.length}개 모두 저장되지 않았어요.\n원인: ${reason}\n\n브라우저 콘솔(F12)에서 [SaveSummary] 로그를 확인해주세요.`);
                 return;  // 모달 유지 → 사용자가 다시 시도 / 닫기 선택
             }
+            // 1개 이상 저장 시 별표 사운드 1회
+            if (saved > 0) {
+                try { playStarSound(); } catch (e) { /* sound is best-effort */ }
+            }
             if (skipped > 0 && saved > 0) {
                 console.warn(`[FreeTalkingChat] partial save: ${saved} saved, ${skipped} skipped (${errors.join(', ')})`);
             }
@@ -247,7 +252,7 @@ export default function FreeTalkingChat({
         if (cardSavedIds[cardOpenMessage.id]) return;
         if (!onSaveConversationMessage) { setCardSavedIds(p => ({ ...p, [cardOpenMessage.id]: true })); return; }
         try {
-            await onSaveConversationMessage({
+            const cardId = await onSaveConversationMessage({
                 message: cardOpenMessage,
                 langCode: setupArgs?.targetLang,
                 sourceLang,
@@ -258,6 +263,10 @@ export default function FreeTalkingChat({
                 scenarioMeta,
                 pronunciationScore,
             });
+            // 저장 성공 시 별표 사운드 (cardId truthy 또는 undefined — 중복은 null 반환이므로 not null)
+            if (cardId !== null) {
+                try { playStarSound(); } catch (e) { /* sound is best-effort */ }
+            }
             setCardSavedIds(p => ({ ...p, [cardOpenMessage.id]: true }));
         } catch (e) {
             console.error('[FreeTalkingChat] save failed:', e?.message);

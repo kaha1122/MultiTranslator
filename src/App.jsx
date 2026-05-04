@@ -593,7 +593,10 @@ function App() {
   }, [user?.uid]);
 
   // 액션별 점수 누적 → 임계치 도달 시 전면광고 (Trial 전용, 플랫폼 공통)
-  //   카드 저장 2점 / Generate(Vocab·Listening·Scene/Translation) 1점 / 발음 1점(보너스 활성 시만 차감)
+  //   카드 저장 2점 / Generate(Vocab·Listening·Scene/Translation) 1점 / 발음 1점
+  //   2026-05-04 변경: 발음도 인터스티셜 카운터에 누적 (이전엔 bonusOnly:true 였음)
+  //     이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조
+  //     보너스 활성 사용자는 보너스 점수에서 우선 차감 (cascade), 부족분만 인터스티셜 누적
   //   localStorage 영속 누적 → 앱/탭 닫아도 유지 (Web/Android/iOS 동일)
   //   추가: React state로도 동기화 → 헤더에 "광고까지 N점" 카운터 실시간 표시
   const AD_POINT_THRESHOLD = 15;
@@ -661,11 +664,13 @@ function App() {
     try { localStorage.removeItem('interstitialSaveCount'); } catch {}
   }, []);
 
-  // 발음 평가 성공 통합 핸들러 — 일일 카운터 증가 + 보너스 활성 시만 1pt 차감
-  // (각 탭에 onPronSuccess prop으로 주입, bonusOnly로 일반 trial 인터스티셜 영향 X)
+  // 발음 평가 성공 통합 핸들러 — 일일 카운터 증가 + 인터스티셜 점수 +1
+  // 2026-05-04 변경: bonusOnly:true 제거 → 발음도 일반 trial 인터스티셜 카운터에 누적.
+  //   이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조 차단.
+  //   addAdPoints 내부 cascade: 보너스 활성 시 보너스 점수 우선 차감 → 부족분 인터스티셜 누적.
   const onPronSuccess = useCallback(() => {
     incrementDailyPron();
-    addAdPoints(1, { bonusOnly: true });
+    addAdPoints(1);
   }, [incrementDailyPron, hasBonusActive]); // addAdPoints는 클로저로 hasBonusActive 캡처
 
   // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
@@ -2438,9 +2443,24 @@ function App() {
     const langInfo = getLangInfo(langCode);
     let saved = 0, skipped = 0;
     const errors = [];
+    // Trial 일일 한도 동기 추적 — React state 는 batch 라 closure stale.
+    // savedCardCount(진입 시점) 기준으로 runningSaved 변수로 직접 카운트.
+    const trialLimit = TRIAL_DAILY_CARD_LIMIT || 10;
+    let runningSaved = savedCardCount;
+    let trialLimitHitDuringLoop = false;
     for (const p of selectedPhrases) {
       const phrase = (p?.phrase || '').trim();
       if (!phrase) { console.warn('[SaveSummary] empty phrase, skipping'); skipped += 1; continue; }
+
+      // 한도 도중 체크 (Trial 만)
+      if (tier === 'trial' && runningSaved >= trialLimit) {
+        console.warn('[SaveSummary] trial limit hit during loop at runningSaved=', runningSaved);
+        trialLimitHitDuringLoop = true;
+        skipped += 1;
+        errors.push('trial-limit-during-loop');
+        continue;
+      }
+
       console.log('[SaveSummary] processing:', phrase);
 
       // 중복 체크 (분리된 try — query 실패 시 swallow 하지 않고 저장은 시도)
@@ -2494,6 +2514,7 @@ function App() {
         });
         console.log('[SaveSummary] saved OK:', phrase, 'docId:', docRef.id);
         saved += 1;
+        runningSaved += 1;  // 한도 동기 추적
         incrementSavedCard();
         incrementDailySave();
         addAdPoints(2);
@@ -2504,6 +2525,11 @@ function App() {
       }
     }
     console.log('[SaveSummary] final:', { saved, skipped, errors });
+    // 루프 도중 한도에 걸린 경우 Trial 모달 표시 (사용자 인지 + 업그레이드 유도)
+    if (trialLimitHitDuringLoop) {
+      setTrialCardCurrentCount(runningSaved);
+      setShowTrialLimitModal(true);
+    }
     return { saved, skipped, errors };
   };
 
