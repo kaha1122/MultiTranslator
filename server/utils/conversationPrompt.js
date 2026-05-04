@@ -306,7 +306,7 @@ function buildSummarizePrompt({
 You are a Language Learning Curator. After a learner finished a Free Talking
 practice session, your job is to extract 3~5 key expressions worth saving to
 the learner's Library — phrases that gave concrete learning value in this
-specific scene.
+specific scene, calibrated to the learner's level.
 
 ---
 
@@ -314,10 +314,26 @@ specific scene.
 Scene: ${sceneSummary}
 Responder role: ${responderRole}
 Target language: ${targetLangName}
-Learner's level: ${difficulty || 'basic'} — ${diffDesc}
 
 Full conversation (oldest → newest):
 ${historyBlock}
+
+---
+
+### [Level-aware Extraction Priority]
+The learner's level is **${difficulty || 'basic'}**.
+${diffDesc}
+
+Match extraction priority to this level:
+- **basic**: Prefer single words and 2~3-word phrases / common collocations.
+  AVOID idiomatic expressions and complex multi-clause sentences. Pick phrases
+  the learner can reuse in everyday simple exchanges.
+- **intermediate**: Prefer common collocations, practical phrasal verbs, polite
+  fixed expressions (e.g., "Could you...?", "I'd like to ___", "Would it be
+  possible to...?"). Avoid rare idioms and textbook-only phrases.
+- **advanced**: Prefer nuanced idioms, register-shifting phrases (formal/informal
+  pairs), domain-specific terminology, and culturally rich expressions. Single
+  common words rarely qualify.
 
 ---
 
@@ -326,18 +342,47 @@ ${historyBlock}
 2. Each phrase MUST be either:
    - A complete sentence said by either speaker, OR
    - A useful chunk (4+ words) embedded in a longer sentence.
-3. Prefer phrases that meet ANY of these criteria:
+3. Prefer phrases that meet ANY of these criteria (and match the level priority above):
    - Scene-specific vocabulary (e.g., 'open a savings account', 'window seat')
    - Common functional patterns (e.g., 'Could you tell me where...?', 'I'd like to ___')
    - Polite/formal register useful for the same situation type
-   - Idiomatic expressions or phrasal verbs
+   - Idiomatic expressions or phrasal verbs (intermediate+/advanced only)
 4. AVOID:
    - Generic single-word fillers ('yes', 'okay', 'thanks', 'hello', 'goodbye')
    - Trivial greetings without scene context
    - Phrases the learner is unlikely to reuse outside this exact dialogue
+   - For basic learners: any idiom or 3+ clause sentence
 5. **Distribute** between LEARNER (what the user said or could say) and PARTNER (what the responder said) — at least 1 from each side if possible.
 6. Preserve the EXACT wording from the conversation. Do NOT rephrase, translate, or "improve" the original phrase.
-7. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese in the phrase field. Plain script only.
+
+---
+
+### [Phrase field cleanliness — CRITICAL]
+The "phrase" field MUST contain ONLY the pure word/phrase in ${targetLangName}.
+NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical
+readings, or any annotation in the "phrase" field. Pronunciation goes ONLY in
+the "pronunciation" field.
+
+  Bad examples (rejected):
+    "咖啡 (kāfēi)"           ← pinyin annotation in phrase
+    "食べる（たべる）"       ← furigana annotation
+    "おんがく (音楽)"        ← reverse-direction annotation
+    "커피 (coffee)"          ← cross-language gloss
+    "I'd like (저는) to..."  ← native-language gloss in target phrase
+
+  Good examples:
+    "咖啡"                   ← pure Chinese
+    "食べる"                 ← kanji form (standard written)
+    "音楽"                   ← kanji form, NOT "おんがく"
+    "커피"                   ← pure Korean
+    "I'd like to ___"        ← pure English
+
+For Japanese: the "phrase" field MUST use the standard written form (kanji where
+natural, e.g. "音楽" not "おんがく"). Hiragana reading goes ONLY in "pronunciation".
+
+For Russian "pronunciation": rewrite the phrase with acute accent (´) on the
+stressed vowel of each multi-syllable word (use standard Russian dictionary
+accuracy; ё / single-syllable words need no accent).
 
 ---
 
@@ -345,11 +390,11 @@ ${historyBlock}
 {
   "keyPhrases": [
     {
-      "phrase": "The exact phrase or sentence in ${targetLangName} as it appeared in the conversation.",
+      "phrase": "The exact phrase or sentence in ${targetLangName} as it appeared in the conversation — PURE form, no annotations.",
       "translation": "Natural translation in ${sourceLangName}.",
-      "why_useful": "In ${sourceLangName}, 1 short line: why this phrase is worth remembering for ${sceneSummary}.",
+      "why_useful": "In ${sourceLangName}, 1 short line: why this phrase is worth remembering for ${sceneSummary}, calibrated to ${difficulty || 'basic'} level.",
       "source_role": "Either 'learner' (LEARNER spoke it) or 'partner' (PARTNER spoke it).",
-      "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: stress accents (´). For all others: empty string ''."
+      "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading of the kanji-form phrase. For ru: stress-accent form. For all others: empty string ''."
     }
   ]
 }`;
