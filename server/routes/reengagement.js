@@ -940,6 +940,93 @@ router.post('/api/cron/stage-by-country', requireCronAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// 최근 N시간 안에 dXAt 발송된 유저 + native 버전 분포 (운영 진단용)
+// "발송된 142명 누구인지 + 어떤 OS 버전 분포인지" 분석
+router.post('/api/cron/recently-sent-window', requireCronAuth, async (req, res) => {
+    const window = (req.query.window || 'd2').toLowerCase().replace('d', '');
+    const fieldName = `d${window}At`; // d1At..d6At
+    if (!['d1At','d2At','d3At','d4At','d5At','d6At'].includes(fieldName)) {
+        return res.status(400).json({ error: 'invalid window (use D1..D6)' });
+    }
+    const hoursAgo = parseInt(req.query.hours || '6', 10);
+    const since = new Date(Date.now() - hoursAgo * 3600 * 1000);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+
+    let totalScanned = 0;
+    const recent = [];
+    let cursor = null;
+    let batches = 0;
+
+    // 분포 카운터
+    const platformDist = {};
+    const versionDist = {};
+    const countryDist = {};
+    const langDist = {};
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                totalScanned += 1;
+                const d = doc.data();
+                const dAt = d.reengagementSentAt?.[fieldName];
+                if (dAt?.toMillis && dAt.toMillis() >= since.getTime()) {
+                    const platform = d.currentNativePlatform || 'unknown';
+                    const version = d.currentNativeVersion || 'unknown';
+                    const country = d.geoCountry || 'unknown';
+                    const lang = d.sourceLang || d.deviceLang || 'unknown';
+
+                    platformDist[platform] = (platformDist[platform] || 0) + 1;
+                    versionDist[version] = (versionDist[version] || 0) + 1;
+                    countryDist[country] = (countryDist[country] || 0) + 1;
+                    langDist[lang] = (langDist[lang] || 0) + 1;
+
+                    if (recent.length < 20) {
+                        recent.push({
+                            uid: doc.id,
+                            country, lang, platform, version,
+                            stage: d.lifecycleStage || null,
+                            isAnonymous: !!d.isAnonymous,
+                            fcmTokensCount: Array.isArray(d.fcmTokens) ? d.fcmTokens.length : 0,
+                            sentAt: dAt.toDate().toISOString(),
+                        });
+                    }
+                }
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        return res.json({
+            window: fieldName,
+            sinceISO: since.toISOString(),
+            hoursAgo,
+            totalScanned,
+            recentSentCount: Object.values(versionDist).reduce((a, b) => a + b, 0),
+            platformDist,
+            versionDist,
+            countryDist,
+            langDist,
+            sampleUsers: recent,
+        });
+    } catch (e) {
+        console.error('[RecentlySentWindow] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // 단일 유저 doc 진단 — fcmTokens 등록/재등록 미작동 원인 분석용
 router.post('/api/cron/user-info', requireCronAuth, async (req, res) => {
     const uid = req.query.uid;
