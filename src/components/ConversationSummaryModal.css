@@ -9,6 +9,10 @@
     align-items: center;
     justify-content: center;
     padding: 16px;
+    /* AdMob 네이티브 배너 영역 침범 방지 — Trial 사용자 모바일에서 Save/Skip 버튼이
+       webview 위 native overlay 광고에 가려지던 사고 차단. Pro/Premium/Web 에서는
+       --admob-bottom = 0px 이라 영향 없음. */
+    padding-bottom: max(16px, calc(16px + var(--admob-bottom, 0px)));
     animation: csm-overlay-in 160ms ease-out;
 }
 @keyframes csm-overlay-in {

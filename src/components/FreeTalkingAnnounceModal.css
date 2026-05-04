@@ -9,6 +9,8 @@
     align-items: center;
     justify-content: center;
     padding: 20px;
+    /* AdMob 네이티브 배너 영역 침범 방지 ([지금 시작하기] 버튼 가림 방지) */
+    padding-bottom: max(20px, calc(20px + var(--admob-bottom, 0px)));
     animation: ftam-fade 200ms ease-out;
 }
 @keyframes ftam-fade {
