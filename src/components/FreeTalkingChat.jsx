@@ -173,7 +173,7 @@ export default function FreeTalkingChat({
             return;
         }
         try {
-            await onSaveConversationSummary({
+            const result = await onSaveConversationSummary({
                 selectedPhrases,
                 langCode: setupArgs?.targetLang,
                 sourceLang,
@@ -183,8 +183,24 @@ export default function FreeTalkingChat({
                 speechStyle: setupArgs?.speechStyle,
                 scenarioMeta,
             });
+            // 결과 검증 — saved=0 이면 사용자에게 알림 (모달 닫지 않고 retry 가능)
+            const saved = result?.saved ?? 0;
+            const skipped = result?.skipped ?? 0;
+            const errors = result?.errors ?? [];
+            console.log('[FreeTalkingChat] save result:', { saved, skipped, errors });
+            if (saved === 0 && selectedPhrases.length > 0) {
+                // 0개 저장된 경우 — alert + 모달 유지 (사용자 인지)
+                const reason = errors.length > 0 ? errors.join(', ') : '알 수 없는 이유';
+                alert(`저장 실패: 선택한 ${selectedPhrases.length}개 모두 저장되지 않았어요.\n원인: ${reason}\n\n브라우저 콘솔(F12)에서 [SaveSummary] 로그를 확인해주세요.`);
+                return;  // 모달 유지 → 사용자가 다시 시도 / 닫기 선택
+            }
+            if (skipped > 0 && saved > 0) {
+                console.warn(`[FreeTalkingChat] partial save: ${saved} saved, ${skipped} skipped (${errors.join(', ')})`);
+            }
         } catch (e) {
-            console.error('[FreeTalkingChat] summary save failed:', e?.message);
+            console.error('[FreeTalkingChat] summary save failed:', e?.message, e);
+            alert(`저장 중 오류가 발생했어요: ${e?.message || '알 수 없는 오류'}`);
+            return;  // 모달 유지
         }
         setSummaryModalOpen(false);
         clearSummary();

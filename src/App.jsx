@@ -2422,20 +2422,30 @@ function App() {
   // selectedPhrases: [{phrase, translation, why_useful, source_role, pronunciation}]
   // sourceType='conversation_summary' 로 분리 (개별 메시지 저장과 구분)
   const saveConversationSummaryPhrases = async ({ selectedPhrases, langCode, sourceLang: srcLang, scene, category = 'locations', difficulty = 'basic', speechStyle, scenarioMeta }) => {
+    console.log('[SaveSummary] start:', { count: selectedPhrases?.length, phrases: selectedPhrases?.map(p => p?.phrase) });
     const u = user || await ensureAnonymousUser();
-    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return { saved: 0, skipped: 0 }; }
+    if (!u) {
+      console.error('[SaveSummary] no user — aborting');
+      alert(getT(sourceLang, 'scene.loginRequired'));
+      return { saved: 0, skipped: 0, errors: ['no-user'] };
+    }
     if (isTrialSavedCardLimitReached) {
+      console.warn('[SaveSummary] trial card limit reached — showing modal');
       setTrialCardCurrentCount(savedCardCount);
       setShowTrialLimitModal(true);
-      return { saved: 0, skipped: selectedPhrases.length };
+      return { saved: 0, skipped: selectedPhrases.length, errors: ['trial-limit'] };
     }
     const langInfo = getLangInfo(langCode);
     let saved = 0, skipped = 0;
+    const errors = [];
     for (const p of selectedPhrases) {
       const phrase = (p?.phrase || '').trim();
-      if (!phrase) { skipped += 1; continue; }
+      if (!phrase) { console.warn('[SaveSummary] empty phrase, skipping'); skipped += 1; continue; }
+      console.log('[SaveSummary] processing:', phrase);
+
+      // 중복 체크 (분리된 try — query 실패 시 swallow 하지 않고 저장은 시도)
+      let isDuplicate = false;
       try {
-        // 중복 체크 (sourceType='conversation_summary' + 동일 phrase)
         const dupQ = query(
           collection(db, "savedCards"),
           where("userId", "==", u.uid),
@@ -2444,10 +2454,20 @@ function App() {
         );
         const dupSnap = await getDocs(dupQ);
         const active = dupSnap.docs.find(d => !d.data().isDeleted);
-        if (active) { skipped += 1; continue; }
+        if (active) {
+          console.log('[SaveSummary] duplicate found, skipping:', phrase, 'existingId:', active.id);
+          isDuplicate = true;
+        }
+      } catch (dupErr) {
+        // dup 체크 실패는 swallow — 저장은 시도 (Firestore index 미등록 시에도 진행)
+        console.warn('[SaveSummary] dup check failed (continuing to save anyway):', dupErr?.message);
+      }
+      if (isDuplicate) { skipped += 1; errors.push(`dup:${phrase.slice(0, 30)}`); continue; }
 
+      // 실제 저장
+      try {
         const serialNumber = await assignNextCardSerial(u.uid);
-        await addDoc(collection(db, "savedCards"), {
+        const docRef = await addDoc(collection(db, "savedCards"), {
           userId: u.uid,
           userEmail: u.email,
           sourceText: p.why_useful || scenarioMeta?.scene_summary_en || scene || '',
@@ -2472,16 +2492,19 @@ function App() {
           serialNumber,
           createdAt: serverTimestamp(),
         });
+        console.log('[SaveSummary] saved OK:', phrase, 'docId:', docRef.id);
         saved += 1;
         incrementSavedCard();
         incrementDailySave();
         addAdPoints(2);
       } catch (e) {
-        console.error("ConversationSummary 카드 저장 오류:", e);
+        console.error('[SaveSummary] save FAILED for phrase:', phrase, 'error:', e?.code, e?.message, e);
         skipped += 1;
+        errors.push(`save:${e?.code || e?.message || 'unknown'}`);
       }
     }
-    return { saved, skipped };
+    console.log('[SaveSummary] final:', { saved, skipped, errors });
+    return { saved, skipped, errors };
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
