@@ -1027,6 +1027,111 @@ router.post('/api/cron/recently-sent-window', requireCronAuth, async (req, res) 
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// 발송 후 활동 진단 — "0/142 return" 가설 검증용
+// d{N}At 시점 이후 유저가 lastActiveAt(의미있는 행동) 또는 updatedAt(앱 오픈)을 갱신했는지
+router.post('/api/cron/post-push-activity', requireCronAuth, async (req, res) => {
+    const window = (req.query.window || 'd3').toLowerCase().replace('d', '');
+    const fieldName = `d${window}At`;
+    if (!['d1At','d2At','d3At','d4At','d5At','d6At'].includes(fieldName)) {
+        return res.status(400).json({ error: 'invalid window' });
+    }
+    const hoursAgo = parseInt(req.query.hours || '12', 10);
+    const since = new Date(Date.now() - hoursAgo * 3600 * 1000);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+    let cursor = null;
+    let batches = 0;
+
+    let totalSent = 0;
+    let returnedActive = 0;     // lastActiveAt > sentAt (의미있는 행동)
+    let openedPassive = 0;      // updatedAt > sentAt but lastActiveAt <= sentAt (그냥 앱 열기만)
+    let noResponse = 0;         // updatedAt 도 <= sentAt (전혀 안 들어옴)
+
+    const byCountry = {};       // country -> { sent, returnedActive, openedPassive, noResponse }
+    const sampleReturned = [];
+    const sampleNoResponse = [];
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                const d = doc.data();
+                const sentAt = d.reengagementSentAt?.[fieldName];
+                if (!sentAt?.toMillis || sentAt.toMillis() < since.getTime()) continue;
+
+                totalSent += 1;
+                const sentMs = sentAt.toMillis();
+                const lastActiveMs = d.lastActiveAt?.toMillis?.() || 0;
+                const updatedMs = d.updatedAt?.toMillis?.() || 0;
+                const country = d.geoCountry || 'unknown';
+
+                if (!byCountry[country]) byCountry[country] = { sent: 0, returnedActive: 0, openedPassive: 0, noResponse: 0 };
+                byCountry[country].sent += 1;
+
+                let category;
+                if (lastActiveMs > sentMs) {
+                    returnedActive += 1; byCountry[country].returnedActive += 1; category = 'returnedActive';
+                } else if (updatedMs > sentMs) {
+                    openedPassive += 1; byCountry[country].openedPassive += 1; category = 'openedPassive';
+                } else {
+                    noResponse += 1; byCountry[country].noResponse += 1; category = 'noResponse';
+                }
+
+                const sampleEntry = {
+                    uid: doc.id,
+                    country, lang: d.sourceLang || d.deviceLang,
+                    platform: d.currentNativePlatform, version: d.currentNativeVersion,
+                    sentAt: sentAt.toDate().toISOString(),
+                    lastActiveAt: d.lastActiveAt?.toDate?.()?.toISOString() || null,
+                    updatedAt: d.updatedAt?.toDate?.()?.toISOString() || null,
+                    fcmTokensCount: Array.isArray(d.fcmTokens) ? d.fcmTokens.length : 0,
+                };
+                if (category === 'returnedActive' && sampleReturned.length < 5) sampleReturned.push(sampleEntry);
+                if (category === 'noResponse' && sampleNoResponse.length < 5) sampleNoResponse.push(sampleEntry);
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        // Firebase 프로젝트 ID — server admin SDK가 어느 project인지 (클라이언트와 일치 검증용)
+        const serverProjectId = admin.apps[0]?.options?.projectId
+            || admin.apps[0]?.options?.credential?.projectId
+            || 'unknown';
+
+        return res.json({
+            window: fieldName,
+            sinceISO: since.toISOString(),
+            hoursAgo,
+            firebaseProjectId: serverProjectId,
+            totalSent,
+            categories: {
+                returnedActive,             // 푸시 후 의미있는 행동
+                openedPassive,              // 푸시 후 앱 열기만 (passive)
+                noResponse,                 // 전혀 반응 없음
+            },
+            returnedActivePct: totalSent ? +(returnedActive / totalSent * 100).toFixed(1) : 0,
+            anyOpenPct: totalSent ? +((returnedActive + openedPassive) / totalSent * 100).toFixed(1) : 0,
+            byCountry,
+            sampleReturned,
+            sampleNoResponse,
+        });
+    } catch (e) {
+        console.error('[PostPushActivity] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // 단일 유저 doc 진단 — fcmTokens 등록/재등록 미작동 원인 분석용
 router.post('/api/cron/user-info', requireCronAuth, async (req, res) => {
     const uid = req.query.uid;
