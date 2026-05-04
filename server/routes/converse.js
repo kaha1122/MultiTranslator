@@ -390,7 +390,10 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
             geminiUrl(geminiKey),
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.1, topK: 40, topP: 0.95 },
+                // 1.1 → 0.95 로 낮춤 — 다양성보다 instruction following (no-redundant-ask
+                // + attribute classification 룰 준수) 우선. 동일 시나리오에서 같은 질문이
+                // 반복되던 문제 완화.
+                generationConfig: { temperature: 0.95, topK: 40, topP: 0.95 },
             },
             { timeout: 30000 }
         );

@@ -216,22 +216,47 @@ Use the Conversation Context above. Recovery rules:
 ### [Phase 1: Response Situation Design — produces aiReply]
 Reply as ${responderRole} would, naturally CONTINUING the conversation above.
 
-**aiReply must:**
-- Directly answer intentText (NOT RAW_STT)
-- **Build on what was just said AND on prior turns** — treat earlier turns as committed facts
-- **NEVER re-ask for information the learner already provided** in earlier turns.
-  Examples of FORBIDDEN re-asks (when info already exists in context):
-    - Asking "what kind of account" after learner already said "savings account"
-    - Asking "your name?" after learner already gave their name
-    - Asking "what would you like?" generically when prior turns already established the goal
-- **Move the interaction FORWARD to the NEXT logical step** in this scene.
-  E.g., after account type + name are established, advance to: deposit amount,
-  ID verification, signature, expected delivery date, contact info, etc.
-- **Choose a Response Action Type** (exactly one of): Inquiry, Request, Observation, Opinion, Problem, Complaint, Social, Greeting.
-- **Select a Response Emotion** that naturally complements the learner's tone (e.g., User Hesitant → AI Reassuring; User Frustrated → AI Apologetic).
-- **Be Specific & Informative**: not "Sure!" or "Yes" — give a response with USEFUL INFO (a follow-up question, a confirmation with detail, an instruction, empathy).
-- **Stay in character** as ${responderRole}.
-- **Keep it short**: 1~2 sentences. This is real-time conversation practice, not a monologue.
+**MANDATORY pre-step: Attribute classification**
+Before drafting aiReply, mentally tag every prior turn (yours and the learner's)
+with the ATTRIBUTE/DIMENSION it covered. Examples of attributes:
+  - identity (name, ID, account number)
+  - preference type (style, color, pattern, material, brand)
+  - constraints (price/budget, size, quantity, time/duration)
+  - logistics (location, delivery, payment method, contact)
+  - status (problem report, request type, urgency)
+
+Then list:
+  ① ALREADY-COVERED attributes (info the learner has provided OR you have asked at all)
+  ② NOT-YET-COVERED attributes that are natural for this scene
+  ③ The next logical step toward closing the scene (payment, confirmation, hand-off)
+
+**aiReply HARD RULES (follow strictly — no exceptions):**
+
+1. **NO REDUNDANT ASKING about a covered attribute**.
+   Example violation: AI asked "what style?" → learner answered ANYTHING about
+   price/size (e.g. "small and cheap one") → AI must NOT ask about style again,
+   even with different wording ("style or color?", "any specific style?", etc.).
+   Once learner has answered an attribute OR you've asked it once and they
+   responded — that attribute is **closed**.
+
+2. **Acknowledge the learner's latest answer** in your reply (one short clause)
+   if their answer addressed any attribute, then move on.
+   Example: User says "small and cheap one" → "Got it, something compact and
+   affordable. Would red work, or do you prefer a neutral color?"
+
+3. **Pick ONE different attribute from list ② OR advance to ③**.
+   If list ② is empty (everything is covered), advance to step ③:
+   payment → confirmation → thank-you / next-action close.
+
+4. **NEVER ask about price+size+style in a single reply** — that's the AI
+   dumping the workload back on the learner. Pick one attribute, drive the
+   conversation forward in small steps.
+
+5. Choose a Response Action Type (exactly one of): Inquiry, Request, Observation, Opinion, Problem, Complaint, Social, Greeting.
+6. Select a Response Emotion that complements the learner's tone.
+7. Be Specific & Informative: not "Sure!" or "Yes" — give a response with USEFUL INFO.
+8. Stay in character as ${responderRole}.
+9. Keep it short: 1~2 sentences. This is real-time conversation practice, not a monologue.
 
 ---
 
@@ -354,6 +379,23 @@ Match extraction priority to this level:
    - For basic learners: any idiom or 3+ clause sentence
 5. **Distribute** between LEARNER (what the user said or could say) and PARTNER (what the responder said) — at least 1 from each side if possible.
 6. Preserve the EXACT wording from the conversation. Do NOT rephrase, translate, or "improve" the original phrase.
+
+---
+
+### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
+This rule is MANDATORY. Output language by field:
+  - "phrase"          → ${targetLangName} ONLY
+  - "translation"     → ${sourceLangName} ONLY
+  - "why_useful"      → ${sourceLangName} ONLY  (NOT English unless sourceLang IS English)
+  - "source_role"     → literal English token 'learner' or 'partner'
+  - "pronunciation"   → follows the lang-specific rules above
+
+If sourceLangName is "Korean", every why_useful and translation MUST be Korean.
+If sourceLangName is "Japanese", every why_useful and translation MUST be Japanese.
+This applies to ALL ${sourceLangName} listed for the learner — never default to English.
+
+Violating this rule (e.g., writing why_useful in English when sourceLang is Korean)
+makes the output unusable.
 
 ---
 
