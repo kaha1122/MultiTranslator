@@ -149,7 +149,8 @@ ${styleDesc}
  *
  * 추가:
  *   - Phase 0: Intent Recovery (신규)
- *   - history (최근 6턴) 컨텍스트
+ *   - history (최근 12턴) 컨텍스트
+ *   - Phase 1: "Established facts 재질문 금지" + "다음 단계로 advance" 강제
  */
 function buildReplyPrompt({
     rawSttText,
@@ -165,8 +166,8 @@ function buildReplyPrompt({
     const diffDesc = getDifficultyDesc(difficulty, targetLang);
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    // history → 텍스트 블록
-    const recent = history.slice(-6);
+    // history → 텍스트 블록 (최근 12턴까지 보존 — 컨텍스트 일관성용)
+    const recent = history.slice(-12);
     const historyBlock = recent.length > 0
         ? recent.map(h => {
             const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
@@ -178,22 +179,30 @@ function buildReplyPrompt({
     const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
 
     return `### [Role]
-You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence and (B) generate a natural reply.
+You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence and (B) generate a natural reply that ADVANCES the conversation.
 
 ---
 
-### [Phase 0: Intent Recovery — produces intentText]
-The STT (speech recognition) result for the learner's latest utterance is:
-  RAW_STT: "${rawSttText}"
-
-Conversation so far (most recent ${recent.length} turns):
-${historyBlock}
-
+### [Conversation Context — read carefully and use in BOTH Phase 0 and Phase 1]
 Scene: ${sceneSummary}
 Responder role: ${responderRole}
 Target language: ${targetLangName}
 
-Recovery rules:
+Conversation so far (oldest → newest, last ${recent.length} turn(s)):
+${historyBlock}
+
+Current learner utterance (raw STT, may have mishears):
+  RAW_STT: "${rawSttText}"
+
+**Established facts** — Before generating any field, mentally extract what the
+learner has ALREADY stated/chosen in the turns above (e.g., account type chosen,
+name given, dates set, preferences expressed, items requested). These facts MUST
+NOT be re-asked in aiReply.
+
+---
+
+### [Phase 0: Intent Recovery — produces intentText]
+Use the Conversation Context above. Recovery rules:
 1. If RAW_STT is grammatically reasonable AND fits the conversation context, return it AS-IS as intentText.
 2. If RAW_STT contains likely STT mishears (homophones, dropped words, wrong tense) given the context, correct ONLY those minimal misrecognitions to produce a fluent ${targetLangName} sentence the learner most likely intended. Examples:
    - "I boat a new car" → "I bought a new car" (homophone bought↔boat)
@@ -205,7 +214,19 @@ Recovery rules:
 ---
 
 ### [Phase 1: Response Situation Design — produces aiReply]
-Reply as ${responderRole} would, naturally answering intentText (NOT RAW_STT).
+Reply as ${responderRole} would, naturally CONTINUING the conversation above.
+
+**aiReply must:**
+- Directly answer intentText (NOT RAW_STT)
+- **Build on what was just said AND on prior turns** — treat earlier turns as committed facts
+- **NEVER re-ask for information the learner already provided** in earlier turns.
+  Examples of FORBIDDEN re-asks (when info already exists in context):
+    - Asking "what kind of account" after learner already said "savings account"
+    - Asking "your name?" after learner already gave their name
+    - Asking "what would you like?" generically when prior turns already established the goal
+- **Move the interaction FORWARD to the NEXT logical step** in this scene.
+  E.g., after account type + name are established, advance to: deposit amount,
+  ID verification, signature, expected delivery date, contact info, etc.
 - **Choose a Response Action Type** (exactly one of): Inquiry, Request, Observation, Opinion, Problem, Complaint, Social, Greeting.
 - **Select a Response Emotion** that naturally complements the learner's tone (e.g., User Hesitant → AI Reassuring; User Frustrated → AI Apologetic).
 - **Be Specific & Informative**: not "Sure!" or "Yes" — give a response with USEFUL INFO (a follow-up question, a confirmation with detail, an instruction, empathy).
