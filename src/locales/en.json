@@ -55,7 +55,12 @@
     "fromPartner": "Partner",
     "micDenied": "Microphone permission required",
     "openSettings": "Open Settings",
-    "micError": "Recording had a problem"
+    "micError": "Recording had a problem",
+    "guideTitle": "How to use Free-Talking",
+    "guideStep1": "First, listen to the scene intro and the sample dialogue, then try repeating",
+    "guideStep2": "Press [Talk] to chat freely with the AI",
+    "guideStep3": "During the chat, tap [💎 Make Cards] to save key expressions",
+    "guideDismiss": "Start"
   },
   "pushOptIn": {
     "title": "Get learning reminders?",
