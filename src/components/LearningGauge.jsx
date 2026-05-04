@@ -101,10 +101,14 @@ const LearningGauge = ({ user, sourceLang, isActive }) => {
     }, [period]);
 
     // 필터된 카드
+    // dialogue 탭: scene 카드 + Free Talking 에서 저장된 conversation_message / conversation_summary 카드도 합류
+    // vocab 탭: 기존 동작 유지 (vocab sourceType 만)
     const filtered = useMemo(() => {
-        const sourceType = tab === 'dialogue' ? 'scene' : 'vocab';
+        const matchesTab = (st) => tab === 'dialogue'
+            ? (st === 'scene' || st === 'conversation_message' || st === 'conversation_summary')
+            : (st === 'vocab');
         return cards.filter(c => {
-            if (c.sourceType !== sourceType) return false;
+            if (!matchesTab(c.sourceType)) return false;
             const d = c.difficulty === 'high' ? 'advanced' : (c.difficulty || 'basic');
             if (d !== difficulty) return false;
             if (!c.createdAt) return false;

@@ -30,18 +30,21 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
     const [todayListenCount, setTodayListenCount] = useState(0);
+    const [todayFreeTalkCount, setTodayFreeTalkCount] = useState(0);  // Free Talking 세션 시작 횟수 (Trial 한도 2회)
     const [weeklyData, setWeeklyData] = useState([]);
     const achievedKeysRef = useRef(new Set());
     const todayCountRef = useRef(0);
     const todaySaveCountRef = useRef(0);
     const todayPronCountRef = useRef(0);
     const todayListenCountRef = useRef(0);
+    const todayFreeTalkCountRef = useRef(0);
     const lastMarkedActiveDayRef = useRef(null); // 그날 activeDayCount 증가 처리 완료한 YYYY-MM-DD
 
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
     useEffect(() => { todaySaveCountRef.current = todaySaveCount; }, [todaySaveCount]);
     useEffect(() => { todayPronCountRef.current = todayPronCount; }, [todayPronCount]);
     useEffect(() => { todayListenCountRef.current = todayListenCount; }, [todayListenCount]);
+    useEffect(() => { todayFreeTalkCountRef.current = todayFreeTalkCount; }, [todayFreeTalkCount]);
 
     useEffect(() => {
         const uid = user?.uid;
@@ -50,12 +53,14 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             setTodaySaveCount(0);
             setTodayPronCount(0);
             setTodayListenCount(0);
+            setTodayFreeTalkCount(0);
             setWeeklyData([]);
             achievedKeysRef.current = new Set();
             todayCountRef.current = 0;
             todaySaveCountRef.current = 0;
             todayPronCountRef.current = 0;
             todayListenCountRef.current = 0;
+            todayFreeTalkCountRef.current = 0;
             lastMarkedActiveDayRef.current = null;
             return;
         }
@@ -74,24 +79,29 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                     const saveCnt = data.saveCount || 0;
                     const pronCnt = data.pronCount || 0;
                     const listenCnt = data.listenCount || 0;
+                    const freeTalkCnt = data.freeTalkCount || 0;
                     setTodayCount(cnt);
                     setTodaySaveCount(saveCnt);
                     setTodayPronCount(pronCnt);
                     setTodayListenCount(listenCnt);
+                    setTodayFreeTalkCount(freeTalkCnt);
                     todayCountRef.current = cnt;
                     todaySaveCountRef.current = saveCnt;
                     todayPronCountRef.current = pronCnt;
                     todayListenCountRef.current = listenCnt;
+                    todayFreeTalkCountRef.current = freeTalkCnt;
                     achievedKeysRef.current = new Set(data.achievedKeys || []);
                 } else {
                     setTodayCount(0);
                     setTodaySaveCount(0);
                     setTodayPronCount(0);
                     setTodayListenCount(0);
+                    setTodayFreeTalkCount(0);
                     todayCountRef.current = 0;
                     todaySaveCountRef.current = 0;
                     todayPronCountRef.current = 0;
                     todayListenCountRef.current = 0;
+                    todayFreeTalkCountRef.current = 0;
                     achievedKeysRef.current = new Set();
                 }
 
@@ -246,6 +256,25 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         }
     }, [user]);
 
+    // Free Talking 세션 시작 — Trial 일일 한도 2회 체크용 (state + Firestore)
+    const incrementDailyFreeTalk = useCallback(async () => {
+        if (!user?.uid) return;
+        markActiveDayIfFirst();
+        const today = getToday();
+        const next = todayFreeTalkCountRef.current + 1;
+        todayFreeTalkCountRef.current = next;
+        setTodayFreeTalkCount(next);
+        try {
+            await setDoc(
+                doc(db, 'users', user.uid, 'dailyProgress', today),
+                { freeTalkCount: next, updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        } catch (e) {
+            console.error('[useDailyProgress] freeTalkCount 저장 실패:', e);
+        }
+    }, [user]);
+
     // 분석 전용 일일 Generate 카운터 — UI 미표시, Firestore atomic increment (state/ref 불필요)
     // kind: 'translation' | 'scene' | 'vocab' (Listening은 기존 listenCount로 추적)
     const incrementDailyGenerate = useCallback(async (kind) => {
@@ -265,5 +294,5 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         }
     }, [user]);
 
-    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate };
+    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk };
 };

@@ -476,7 +476,12 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
+
+  // Trial 일일 Free Talking 세션 한도 (2회)
+  // Pro/Premium 은 무제한 (세션당 자유 발화 25/300턴 한도만 useConversation 내부 적용)
+  const TRIAL_FREETALK_DAILY_LIMIT = 2;
+  const isTrialFreeTalkLimitReached = tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT;
 
   // 플랫폼 CSS 클래스 (React 렌더 시점 = Capacitor 브릿지 확실히 준비됨)
   React.useEffect(() => {
@@ -3888,6 +3893,14 @@ function App() {
               setViewMode('library');
             }}
             onFreeTalkStart={(args) => {
+              if (isTrialFreeTalkLimitReached) {
+                setShowTrialLimitModal(true);
+                return;
+              }
+              // C1: 세션 시작 시 ad-points +1 (전체 2회 한도 → 1번만 카운트)
+              addAdPoints(1);
+              // B: 일일 한도 카운터 증가 (Firestore + state 동기)
+              incrementDailyFreeTalk();
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}

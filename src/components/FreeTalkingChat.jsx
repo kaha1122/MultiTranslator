@@ -48,6 +48,8 @@ export default function FreeTalkingChat({
 
     const [summaryModalOpen, setSummaryModalOpen] = useState(false);
     const summaryRequestedRef = useRef(false);
+    // 첫 진입 안내 — localStorage 'pronunfit_freetalk_guide_seen' 미존재 시 모달 진입 직후 1회 표시
+    const [showFirstGuide, setShowFirstGuide] = useState(false);
 
     const [playbackIdx, setPlaybackIdx] = useState(-1);
     const [playbackQueueDone, setPlaybackQueueDone] = useState(false);
@@ -66,11 +68,15 @@ export default function FreeTalkingChat({
         sourceLang,
     });
 
-    // 모달 open 시 1회 startSession 호출
+    // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정
     useEffect(() => {
         if (open && setupArgs && !startedRef.current) {
             startedRef.current = true;
             startSession(setupArgs);
+            try {
+                const seen = localStorage.getItem('pronunfit_freetalk_guide_seen');
+                if (!seen) setShowFirstGuide(true);
+            } catch (e) { /* noop */ }
         }
         if (!open && startedRef.current) {
             startedRef.current = false;
@@ -273,6 +279,28 @@ export default function FreeTalkingChat({
                 </header>
 
                 <div className="ftc-messages">
+                    {showFirstGuide && (
+                        <div className="ftc-first-guide">
+                            <div className="ftc-first-guide-title">
+                                ✨ {t('freeTalk.guideTitle') || 'Free-Talking 사용법'}
+                            </div>
+                            <ol className="ftc-first-guide-list">
+                                <li>👂 {t('freeTalk.guideStep1') || '먼저 상황 설명과 예시 대화를 듣고 따라 해보세요'}</li>
+                                <li>🎤 {t('freeTalk.guideStep2') || '[말하기] 버튼을 눌러 자유롭게 대화하세요'}</li>
+                                <li>💎 {t('freeTalk.guideStep3') || '대화 중 [카드 만들기]로 핵심 표현을 저장하세요'}</li>
+                            </ol>
+                            <button
+                                type="button"
+                                className="ftc-first-guide-btn"
+                                onClick={() => {
+                                    try { localStorage.setItem('pronunfit_freetalk_guide_seen', '1'); } catch (e) { /* noop */ }
+                                    setShowFirstGuide(false);
+                                }}
+                            >
+                                {t('freeTalk.guideDismiss') || '시작하기'}
+                            </button>
+                        </div>
+                    )}
                     {isStarting && (
                         <div className="ftc-loading">
                             <RotateCcw className="spin" size={18} /> {t('freeTalk.preparing') || '대화를 준비하고 있어요...'}

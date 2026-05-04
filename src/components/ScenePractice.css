@@ -28,6 +28,27 @@
     box-shadow: none;
 }
 
+/* NEW 배지 — 처음 보는 사용자에게 빨간 점 + pulse */
+.scene-freetalk-btn.has-new-badge {
+    position: relative;
+}
+.scene-freetalk-btn.has-new-badge::after {
+    content: '';
+    position: absolute;
+    top: 8px;
+    right: 16px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: #ef4444;
+    box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(239, 68, 68, 0.35);
+    animation: scene-freetalk-pulse 1.6s ease-in-out infinite;
+}
+@keyframes scene-freetalk-pulse {
+    0%, 100% { box-shadow: 0 0 0 2px #fff, 0 0 0 4px rgba(239, 68, 68, 0.35); }
+    50%      { box-shadow: 0 0 0 2px #fff, 0 0 0 8px rgba(239, 68, 68, 0.10); }
+}
+
 /* ── ScenePractice ───────────────────────────────────────────────── */
 .scene-root {
     display: flex;

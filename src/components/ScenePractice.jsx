@@ -610,9 +610,13 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 {/* Free Talking 메인 CTA — Sprint 1 신규 */}
                 <div className="scene-freetalk-row">
                     <button
-                        className="scene-freetalk-btn"
+                        className={`scene-freetalk-btn ${
+                            typeof window !== 'undefined' && !localStorage.getItem('pronunfit_freetalk_seen')
+                                ? 'has-new-badge' : ''
+                        }`}
                         onClick={() => {
                             if (!canRequest) return;
+                            try { localStorage.setItem('pronunfit_freetalk_seen', '1'); } catch (e) { /* noop */ }
                             const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
                             const sceneText = isCustomSelected
                                 ? customInput.trim()
