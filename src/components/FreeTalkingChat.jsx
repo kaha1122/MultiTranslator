@@ -190,10 +190,22 @@ export default function FreeTalkingChat({
             const errors = result?.errors ?? [];
             console.log('[FreeTalkingChat] save result:', { saved, skipped, errors });
             if (saved === 0 && selectedPhrases.length > 0) {
-                // 0개 저장된 경우 — alert + 모달 유지 (사용자 인지)
-                const reason = errors.length > 0 ? errors.join(', ') : '알 수 없는 이유';
-                alert(`저장 실패: 선택한 ${selectedPhrases.length}개 모두 저장되지 않았어요.\n원인: ${reason}\n\n브라우저 콘솔(F12)에서 [SaveSummary] 로그를 확인해주세요.`);
-                return;  // 모달 유지 → 사용자가 다시 시도 / 닫기 선택
+                // Trial 일일 카드 한도 도달인 경우 — App.jsx 가 이미 setShowTrialLimitModal(true)
+                // 호출함 → SummaryModal 만 닫고 TrialLimitModal 이 사용자에게 안내.
+                const isTrialLimit = errors.includes('trial-limit-during-loop')
+                    || errors.includes('trial-limit');
+                if (isTrialLimit) {
+                    console.log('[FreeTalkingChat] trial limit reached during save — TrialLimitModal will show');
+                    setSummaryModalOpen(false);
+                    clearSummary();
+                    return;
+                }
+                // 그 외 에러 — 디버그는 console 만, 사용자에게는 짧은 메시지 + 모달 유지
+                console.error('[FreeTalkingChat] save failed (0 saved):', {
+                    selected: selectedPhrases.length, errors,
+                });
+                alert(t('freeTalk.saveError') || 'Save failed. Please try again later.');
+                return;
             }
             // 1개 이상 저장 시 별표 사운드 1회
             if (saved > 0) {

@@ -56,6 +56,7 @@
     "micDenied": "Cần quyền truy cập micro",
     "openSettings": "Mở Cài đặt",
     "micError": "Có vấn đề khi ghi âm",
+    "saveError": "Lưu thất bại. Vui lòng thử lại sau.",
     "guideTitle": "Cách dùng Free-Talking",
     "guideStep1": "Hãy nghe phần giới thiệu và hội thoại mẫu rồi lặp lại",
     "guideStep2": "Nhấn nút [Nói] để trò chuyện tự do",

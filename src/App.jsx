@@ -2444,17 +2444,20 @@ function App() {
     let saved = 0, skipped = 0;
     const errors = [];
     // Trial 일일 한도 동기 추적 — React state 는 batch 라 closure stale.
-    // savedCardCount(진입 시점) 기준으로 runningSaved 변수로 직접 카운트.
+    // 🚨 BUGFIX 2026-05-04: savedCardCount(평생 누적) → todaySaveCount(오늘 저장 수) 로 교정.
+    //   savedCardCount 는 incrementSavedCard 가 +1 만 하고 리셋 없는 평생 카운터. 일일 한도(10)
+    //   와 비교하면 평생 누적 10 넘은 사용자는 영구 차단되는 버그였음. todaySaveCount 는
+    //   useDailyProgress 가 자정 리셋 관리하는 일일 카운터로 정확.
     const trialLimit = TRIAL_DAILY_CARD_LIMIT || 10;
-    let runningSaved = savedCardCount;
+    let runningTodaySaved = todaySaveCount;
     let trialLimitHitDuringLoop = false;
     for (const p of selectedPhrases) {
       const phrase = (p?.phrase || '').trim();
       if (!phrase) { console.warn('[SaveSummary] empty phrase, skipping'); skipped += 1; continue; }
 
-      // 한도 도중 체크 (Trial 만)
-      if (tier === 'trial' && runningSaved >= trialLimit) {
-        console.warn('[SaveSummary] trial limit hit during loop at runningSaved=', runningSaved);
+      // 한도 도중 체크 (Trial 만, 일일 todaySaveCount 기준)
+      if (tier === 'trial' && runningTodaySaved >= trialLimit) {
+        console.warn('[SaveSummary] trial daily card limit hit during loop at runningTodaySaved=', runningTodaySaved);
         trialLimitHitDuringLoop = true;
         skipped += 1;
         errors.push('trial-limit-during-loop');
@@ -2514,7 +2517,7 @@ function App() {
         });
         console.log('[SaveSummary] saved OK:', phrase, 'docId:', docRef.id);
         saved += 1;
-        runningSaved += 1;  // 한도 동기 추적
+        runningTodaySaved += 1;  // 일일 한도 동기 추적
         incrementSavedCard();
         incrementDailySave();
         addAdPoints(2);

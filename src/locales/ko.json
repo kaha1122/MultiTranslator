@@ -56,6 +56,7 @@
     "micDenied": "마이크 권한이 필요해요",
     "openSettings": "설정 열기",
     "micError": "녹음에 문제가 있었어요",
+    "saveError": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
     "guideTitle": "Free-Talking 사용법",
     "guideStep1": "먼저 상황 설명과 예시 대화를 듣고 따라 해보세요",
     "guideStep2": "[말하기] 버튼을 눌러 자유롭게 대화하세요",

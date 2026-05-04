@@ -56,6 +56,7 @@
     "micDenied": "需要麦克风权限",
     "openSettings": "打开设置",
     "micError": "录音出现问题",
+    "saveError": "保存失败,请稍后再试。",
     "guideTitle": "Free-Talking 使用方法",
     "guideStep1": "先听情境说明和示例对话并模仿",
     "guideStep2": "按[说话]按钮自由对话",

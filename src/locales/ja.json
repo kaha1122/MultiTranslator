@@ -56,6 +56,7 @@
     "micDenied": "マイクの権限が必要です",
     "openSettings": "設定を開く",
     "micError": "録音に問題が発生しました",
+    "saveError": "保存に失敗しました。しばらくしてからもう一度お試しください。",
     "guideTitle": "Free-Talkingの使い方",
     "guideStep1": "まず状況説明とサンプル会話を聞いて真似してみましょう",
     "guideStep2": "[話す]ボタンを押して自由に会話しましょう",

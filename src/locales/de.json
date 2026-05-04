@@ -56,6 +56,7 @@
     "micDenied": "Mikrofonberechtigung erforderlich",
     "openSettings": "Einstellungen öffnen",
     "micError": "Aufnahmeproblem",
+    "saveError": "Speichern fehlgeschlagen. Bitte später erneut versuchen.",
     "guideTitle": "So nutzen Sie Free-Talking",
     "guideStep1": "Hören Sie zunächst die Situation und das Beispielgespräch",
     "guideStep2": "Drücken Sie [Sprechen] für freie Konversation",

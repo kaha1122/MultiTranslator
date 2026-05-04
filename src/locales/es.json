@@ -56,6 +56,7 @@
     "micDenied": "Se requiere permiso de micrófono",
     "openSettings": "Abrir Ajustes",
     "micError": "Problema de grabación",
+    "saveError": "Error al guardar. Inténtalo de nuevo más tarde.",
     "guideTitle": "Cómo usar Free-Talking",
     "guideStep1": "Primero escucha la situación y el diálogo de ejemplo",
     "guideStep2": "Pulsa [Hablar] para conversar libremente",

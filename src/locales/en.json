@@ -56,6 +56,7 @@
     "micDenied": "Microphone permission required",
     "openSettings": "Open Settings",
     "micError": "Recording had a problem",
+    "saveError": "Save failed. Please try again later.",
     "guideTitle": "How to use Free-Talking",
     "guideStep1": "First, listen to the scene intro and the sample dialogue, then try repeating",
     "guideStep2": "Press [Talk] to chat freely with the AI",
