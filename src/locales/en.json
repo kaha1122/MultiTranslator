@@ -40,7 +40,10 @@
     "summarySaveN": "Save selected",
     "summarySaveZero": "Save selected",
     "fromLearner": "You",
-    "fromPartner": "Partner"
+    "fromPartner": "Partner",
+    "micDenied": "Microphone permission required",
+    "openSettings": "Open Settings",
+    "micError": "Recording had a problem"
   },
   "pushOptIn": {
     "title": "Get learning reminders?",

@@ -348,6 +348,24 @@ export default function FreeTalkingChat({
                                     : (t('freeTalk.tapToTalk') || '말하기')}
                         </span>
                     </button>
+                    {/* iOS/Android 마이크 권한 거부 시 — Settings 진입 안내 */}
+                    {recorder.micDenied && (
+                        <div className="ftc-mic-denied">
+                            <span>{t('freeTalk.micDenied') || '마이크 권한이 필요해요'}</span>
+                            <button
+                                type="button"
+                                className="ftc-mic-settings-btn"
+                                onClick={() => recorder.openAppSettings?.()}
+                            >
+                                {t('freeTalk.openSettings') || '설정 열기'}
+                            </button>
+                        </div>
+                    )}
+                    {recorder.lastError && !recorder.micDenied && !recorder.isRecording && !recorder.isProcessing && (
+                        <div className="ftc-mic-error">
+                            <span>⚠️ {t('freeTalk.micError') || '녹음에 문제가 있었어요'}</span>
+                        </div>
+                    )}
                     <div className="ftc-footer-hint">
                         {sessionEnded
                             ? (t('freeTalk.sessionEnded') || '세션이 종료되었어요')

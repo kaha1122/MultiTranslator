@@ -40,7 +40,10 @@
     "summarySaveN": "선택 저장",
     "summarySaveZero": "선택 저장",
     "fromLearner": "내 발화",
-    "fromPartner": "상대 발화"
+    "fromPartner": "상대 발화",
+    "micDenied": "마이크 권한이 필요해요",
+    "openSettings": "설정 열기",
+    "micError": "녹음에 문제가 있었어요"
   },
   "pushOptIn": {
     "title": "학습 알림을 받아보시겠어요?",
