@@ -310,6 +310,8 @@ export const AuthProvider = ({ children }) => {
     // Pro 발음 평가 월별 횟수
     const proPronCount = profile?.proPronCount || 0;
     const proPronResetMonth = profile?.proPronResetMonth || '';
+    // Free Talking 평생 누적 세션 시작 횟수 (분석용 — 사용자별 generate 빈도 측정)
+    const totalFreeTalkCount = profile?.totalFreeTalkCount || 0;
 
     // 보너스 포인트 — 캠페인 보상 (리뷰/추천/스트릭). 활성 시: 일일 한도 해제 + 인터스티셜 면제, 배너는 유지
     const bonusPoints = profile?.bonusPoints || 0;
@@ -523,6 +525,18 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementSavedCard failed:", e); }
     };
 
+    // Free Talking 평생 누적 세션 카운터 (분석용 — tier 무관, 모든 사용자 측정)
+    // 일일 카운트는 useDailyProgress 의 freeTalkCount 가 별도로 관리 (자정 리셋, Trial 한도용)
+    const incrementTotalFreeTalk = async () => {
+        if (!user) return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), {
+                totalFreeTalkCount: increment(1),
+                totalGenerateCount: increment(1),  // 기존 generate 누적 통계와 합류
+            });
+        } catch (e) { console.error("incrementTotalFreeTalk failed:", e); }
+    };
+
     // 발음 평가 카운터
     const incrementPronCount = async () => {
         if (!user) return;
@@ -590,13 +604,13 @@ export const AuthProvider = ({ children }) => {
         <AuthContext.Provider value={{
             user, profile, loading, updateUserProfile,
             tier,
-            trialCardCount, savedCardCount, trialPronCount,
+            trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
             proPronCount, PRO_PRON_LIMIT,
             TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
             isTrialSavedCardLimitReached, isTrialPronLimitReached,
             setDailyTrialCardReached, setDailyTrialPronReached,
             isProPronLimitReached,
-            incrementTrialCard, incrementSavedCard, incrementPronCount,
+            incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
             bonusPoints, hasBonusActive, consumeBonusPoints,
             reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,

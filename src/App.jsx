@@ -110,7 +110,7 @@ function App() {
     TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
     isTrialSavedCardLimitReached,
     setDailyTrialCardReached, setDailyTrialPronReached,
-    incrementTrialCard, incrementSavedCard,
+    incrementTrialCard, incrementSavedCard, incrementTotalFreeTalk,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
     reviewBonusClaimed,
@@ -3982,8 +3982,10 @@ function App() {
               }
               // C1: 세션 시작 시 ad-points +1 (전체 2회 한도 → 1번만 카운트)
               addAdPoints(1);
-              // B: 일일 한도 카운터 증가 (Firestore + state 동기)
+              // B: 일일 한도 카운터 증가 (Firestore dailyProgress + state 동기, 자정 리셋)
               incrementDailyFreeTalk();
+              // 분석용 평생 누적 카운터 (users/{uid}.totalFreeTalkCount + totalGenerateCount)
+              incrementTotalFreeTalk();
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
