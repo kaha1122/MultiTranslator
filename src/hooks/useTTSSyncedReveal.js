@@ -31,8 +31,13 @@ export function useTTSSyncedReveal({ fullText, audioBase64, words, mimeType, aut
             rafRef.current = null;
         }
         if (audioRef.current) {
-            try { audioRef.current.pause(); } catch (e) { /* noop */ }
-            audioRef.current.src = '';
+            try {
+                audioRef.current.pause();
+                // src='' 는 일부 브라우저에서 'error' event 트리거 → 콘솔 노이즈.
+                // removeAttribute + load 로 깔끔히 정리. 실패하면 ref null 만으로도 GC 처리.
+                audioRef.current.removeAttribute('src');
+                audioRef.current.load();
+            } catch (e) { /* noop */ }
             audioRef.current = null;
         }
         setIsPlaying(false);
@@ -118,6 +123,9 @@ export function useTTSSyncedReveal({ fullText, audioBase64, words, mimeType, aut
         });
         audio.addEventListener('error', (e) => {
             if (myGen !== genRef.current) return;
+            // 의도적 stop (src 비우기) 시에도 error event 가 트리거됨 — 그 경우는 무시
+            const hasSrc = !!(audio.currentSrc || audio.getAttribute('src'));
+            if (!hasSrc) return;  // 정리 과정의 부산물 — 무시
             console.warn('[useTTSSyncedReveal] audio error', e);
             setRevealedText(fullText || '');
             setIsPlaying(false);
