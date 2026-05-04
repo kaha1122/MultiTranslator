@@ -12,7 +12,8 @@
     "cap:android": "npm run build && npx cap sync android && npx cap open android",
     "cap:ios": "npm run build && npx cap sync ios && npx cap open ios",
     "cap:sync:ios": "npm run build && npx cap sync ios",
-    "check-secrets": "node scripts/check-secrets.mjs"
+    "check-secrets": "node scripts/check-secrets.mjs",
+    "check-i18n": "node scripts/check-i18n.mjs"
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
