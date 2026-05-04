@@ -12,14 +12,15 @@
 
 .upgrade-modal {
     background: white;
-    border-radius: 24px;
-    padding: 20px 18px 16px;
+    border-radius: 20px;
+    padding: 14px 14px 12px;
     width: 100%;
     max-width: 420px;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
     position: relative;
     max-height: 92vh;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch;  /* 모바일 스크롤 부드럽게 */
 }
 
 .upgrade-close-btn {
@@ -38,25 +39,28 @@
 
 .upgrade-header {
     text-align: center;
-    margin-bottom: 12px;
+    margin-bottom: 8px;
 }
 
 .upgrade-header-emoji {
-    font-size: 1.8rem;
-    margin-bottom: 4px;
+    font-size: 1.3rem;
+    margin-bottom: 1px;
+    line-height: 1.1;
 }
 
 .upgrade-header h2 {
-    margin: 0 0 4px;
-    font-size: 1.15rem;
+    margin: 0 0 2px;
+    font-size: 1.02rem;
     font-weight: 800;
     color: #1e293b;
+    line-height: 1.25;
 }
 
 .upgrade-header p {
     margin: 0;
     color: #64748b;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
+    line-height: 1.3;
 }
 
 .upgrade-error {
@@ -72,8 +76,13 @@
 /* ── Tier Group ── */
 .upgrade-tier-group {
     background: #fafafa;
-    border-radius: 14px;
-    padding: 10px 12px;
+    border-radius: 12px;
+    padding: 8px 10px 9px;
+}
+
+/* 두 tier-group 사이 간격 압축 */
+.upgrade-tier-group + .upgrade-tier-group {
+    margin-top: 8px;
 }
 
 .upgrade-tier-label {
@@ -82,8 +91,9 @@
     flex-wrap: wrap;
     gap: 5px;
     font-weight: 800;
-    font-size: 0.92rem;
-    margin-bottom: 8px;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+    line-height: 1.2;
 }
 
 /* tier 이름 옆 '(자동갱신)' 라벨 — 언어별 길이 차 대응 */
@@ -98,17 +108,17 @@
 .upgrade-plans-row {
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 6px;
 }
 
 .upgrade-plans-row .upgrade-plan-card {
     border: 2px solid;
-    border-radius: 12px;
-    padding: 10px 14px;
+    border-radius: 10px;
+    padding: 7px 12px;
     position: relative;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
 }
 
 .upgrade-plan-badge {
@@ -125,12 +135,13 @@
 }
 
 .upgrade-plan-duration {
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     font-weight: 700;
     color: #475569;
-    min-width: 52px;
+    min-width: 48px;
     text-align: center;
     flex-shrink: 0;
+    line-height: 1.2;
 }
 
 .upgrade-plan-onetag {
@@ -159,9 +170,10 @@
 }
 
 .upgrade-plan-amount {
-    font-size: 1.05rem;
+    font-size: 0.98rem;
     font-weight: 800;
     white-space: nowrap;
+    line-height: 1.15;
 }
 
 .upgrade-plan-discount-line {
@@ -186,31 +198,33 @@
 /* ── Shared Features ── */
 .upgrade-plan-features {
     list-style: none;
-    margin: 8px 0 0;
+    margin: 6px 0 0;
     padding: 0;
     display: flex;
     flex-direction: column;
-    gap: 3px;
+    gap: 2px;
 }
 
 .upgrade-plan-features li {
     display: flex;
     align-items: center;
     gap: 6px;
-    font-size: 0.78rem;
+    font-size: 0.74rem;
     color: #475569;
+    line-height: 1.3;
 }
 
 /* ── Buttons ── */
 .upgrade-plan-btn {
-    padding: 7px 16px;
+    padding: 6px 14px;
     border: none;
-    border-radius: 9px;
+    border-radius: 8px;
     font-weight: 700;
-    font-size: 0.78rem;
+    font-size: 0.76rem;
     white-space: nowrap;
     flex-shrink: 0;
     transition: opacity 0.2s;
+    line-height: 1.2;
 }
 
 .upgrade-plan-btn:not(:disabled):hover {
@@ -219,16 +233,17 @@
 
 .upgrade-manage-btn {
     width: 100%;
-    margin-top: 14px;
-    padding: 11px;
+    margin-top: 8px;
+    padding: 8px;
     background: none;
     border: 1.5px solid #e2e8f0;
-    border-radius: 10px;
+    border-radius: 9px;
     color: #64748b;
-    font-size: 0.85rem;
+    font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s;
+    line-height: 1.2;
 }
 
 .upgrade-manage-btn:hover {
@@ -238,26 +253,28 @@
 
 .upgrade-cancel-notice {
     text-align: center;
-    margin-top: 14px;
-    padding: 10px 14px;
+    margin-top: 10px;
+    padding: 7px 12px;
     background: #fef3c7;
     border: 1px solid #fde68a;
-    border-radius: 10px;
+    border-radius: 9px;
     color: #92400e;
-    font-size: 0.82rem;
+    font-size: 0.76rem;
     font-weight: 600;
+    line-height: 1.3;
 }
 
 .upgrade-footer-note {
     text-align: center;
-    margin: 10px 0 0;
-    font-size: 0.72rem;
+    margin: 8px 0 0;
+    font-size: 0.68rem;
     color: #94a3b8;
+    line-height: 1.3;
 }
 .upgrade-legal-links {
     text-align: center;
-    margin: 6px 0 0;
-    font-size: 0.72rem;
+    margin: 4px 0 0;
+    font-size: 0.68rem;
     display: flex;
     justify-content: center;
     gap: 8px;
