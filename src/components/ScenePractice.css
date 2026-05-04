@@ -109,43 +109,51 @@
     align-items: center;
     gap: 3px;
     padding: 8px 4px;
-    border: 1px solid #ecb886;
+    border: 1px solid #6ee7b7;
     border-radius: 12px;
-    /* Promo4 살구/베이지 — 4-stop 그라데이션 + 좌상단 radial highlight 로 깊이감 */
+    /* 미선택 = 민트 톤 — 4-stop 그라데이션 + 좌상단 radial highlight */
     background:
         radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.55), transparent 58%),
-        linear-gradient(160deg, #fff5e6 0%, #ffe2c2 35%, #ffd0a0 70%, #f5b97e 100%);
+        linear-gradient(160deg, #ecfdf5 0%, #d1fae5 35%, #a7f3d0 70%, #6ee7b7 100%);
     cursor: pointer;
     transition: all 0.18s ease;
-    /* 볼륨감: 위쪽 inset highlight + 아래쪽 inset 어두움 + 외부 dual shadow */
+    /* 볼륨감: 위 inset highlight + 아래 inset 어두움 + 외부 dual shadow (민트 톤) */
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.85),
-        inset 0 -1px 0 rgba(160, 90, 30, 0.10),
-        0 4px 10px rgba(245, 158, 80, 0.22),
-        0 2px 4px rgba(245, 158, 80, 0.12);
+        inset 0 -1px 0 rgba(15, 95, 65, 0.10),
+        0 4px 10px rgba(16, 185, 129, 0.22),
+        0 2px 4px rgba(16, 185, 129, 0.12);
 }
 
 .scene-item:hover {
     transform: translateY(-2px);
-    border-color: #e29555;
+    border-color: #34d399;
     box-shadow:
         inset 0 1px 0 rgba(255, 255, 255, 0.92),
-        inset 0 -1px 0 rgba(160, 90, 30, 0.12),
-        0 8px 16px rgba(245, 158, 80, 0.30),
-        0 3px 6px rgba(245, 158, 80, 0.16);
+        inset 0 -1px 0 rgba(15, 95, 65, 0.12),
+        0 8px 16px rgba(16, 185, 129, 0.30),
+        0 3px 6px rgba(16, 185, 129, 0.16);
 }
 
 .scene-item:active {
     transform: scale(0.96) translateY(0);
     box-shadow:
-        inset 0 2px 4px rgba(160, 90, 30, 0.22),
-        0 1px 2px rgba(245, 158, 80, 0.10);
+        inset 0 2px 4px rgba(15, 95, 65, 0.22),
+        0 1px 2px rgba(16, 185, 129, 0.10);
 }
 
 .scene-item.selected {
-    border-color: var(--primary-color, #00a884);
-    background: linear-gradient(160deg, #f0fdf9 0%, #dcfce7 100%);
-    box-shadow: 0 0 0 2px rgba(0, 168, 132, 0.15), 0 4px 10px rgba(0, 168, 132, 0.1);
+    /* 선택됨 = 살구/베이지 톤 — 미선택의 민트와 톤 swap */
+    border-color: #ecb886;
+    background:
+        radial-gradient(circle at 30% 22%, rgba(255, 255, 255, 0.55), transparent 58%),
+        linear-gradient(160deg, #fff5e6 0%, #ffe2c2 35%, #ffd0a0 70%, #f5b97e 100%);
+    box-shadow:
+        inset 0 1px 0 rgba(255, 255, 255, 0.88),
+        inset 0 -1px 0 rgba(160, 90, 30, 0.12),
+        0 0 0 2px rgba(245, 158, 80, 0.30),     /* selected ring 강조 */
+        0 6px 14px rgba(245, 158, 80, 0.28),
+        0 2px 5px rgba(245, 158, 80, 0.14);
 }
 
 .scene-icon {
