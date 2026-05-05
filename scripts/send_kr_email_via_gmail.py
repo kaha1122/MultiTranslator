@@ -52,6 +52,14 @@ from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from email.utils import formataddr
 
+# Windows cp949 console에서도 한글/이모지 print 가능하도록 stdout/stderr UTF-8 강제
+# (Python 3.7+ 의 io.TextIOWrapper.reconfigure 사용)
+try:
+    sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+except (AttributeError, Exception):
+    pass
+
 import firebase_admin
 from firebase_admin import credentials, firestore
 
@@ -75,7 +83,7 @@ SCREENSHOT_PATH = os.path.join(
     "public", "email-assets", "free-talk-ko.jpg"
 )
 SCREENSHOT_CID = "free-talk-screenshot"
-SUBJECT = "🎙️ Free Talk: AI와 진짜 대화하기 — PronunFit 신기능"
+SUBJECT = "🎙️ Free-Talking: AI와 진짜 대화하기 — PronunFit 신기능"
 
 
 # ─── HTML 템플릿 (server/utils/sendEmail.js 의 renderFreeTalkEmailKO 와 동일) ─
@@ -100,10 +108,10 @@ def render_html_korean(name: str, unsub_link: str) -> str:
 
       <tr><td style="padding:8px 28px 16px 28px;">
         <h1 style="margin:16px 0 8px 0;font-size:1.5rem;line-height:1.3;color:#1e293b;font-weight:800;text-align:center;">
-          🎙️ Free Talk가 출시됐어요!
+          🎙️ Free-Talking기능이 출시됐어요!
         </h1>
         <p style="margin:0;color:#64748b;font-size:0.95rem;text-align:center;line-height:1.5;">
-          신기능 — AI와 자유롭게 대화하면서 발음 연습
+          신기능 — AI와 실시간 Free Talking하면서 실전대화 연습
         </p>
       </td></tr>
 
@@ -201,7 +209,7 @@ def render_text_korean(name: str, unsub_link: str) -> str:
     greeting = f"안녕하세요 {name}님!" if name else "안녕하세요!"
     return f"""{greeting}
 
-🎙️ Free Talk가 출시됐어요!
+🎙️ Free-Talking기능이 출시됐어요!
 
 PronunFit 기억하시나요? 한 번쯤 시도해보실 만한 Free-Talking 기능이 출시됐습니다.
 

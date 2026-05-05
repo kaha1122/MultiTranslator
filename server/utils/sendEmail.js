@@ -271,10 +271,10 @@ function renderFreeTalkEmailKO({ name, unsubLink }) {
 
       <tr><td style="padding:8px 28px 16px 28px;">
         <h1 style="margin:16px 0 8px 0;font-size:1.5rem;line-height:1.3;color:#1e293b;font-weight:800;text-align:center;">
-          🎙️ Free Talk가 출시됐어요!
+          🎙️ Free-Talking기능이 출시됐어요!
         </h1>
         <p style="margin:0;color:#64748b;font-size:0.95rem;text-align:center;line-height:1.5;">
-          신기능 — AI와 자유롭게 대화하면서 발음 연습
+          신기능 — AI와 실시간 Free Talking하면서 실전대화 연습
         </p>
       </td></tr>
 
@@ -372,7 +372,7 @@ function renderFreeTalkEmailKoText({ name, unsubLink }) {
     const greeting = name ? `안녕하세요 ${name}님!` : '안녕하세요!';
     return `${greeting}
 
-🎙️ Free Talk가 출시됐어요!
+🎙️ Free-Talking기능이 출시됐어요!
 
 PronunFit 기억하시나요? 한 번쯤 시도해보실 만한 Free-Talking 기능이 출시됐습니다.
 
@@ -416,7 +416,7 @@ PronunFit 계정 가입자에게 발송된 서비스 알림 메일입니다.
 // 언어별 카피 매핑
 const SUBJECT_BY_LANG = {
     vi: '🎙️ Free Talk: trò chuyện thật với AI ngay trong PronunFit',
-    ko: '🎙️ Free Talk: AI와 진짜 대화하기 — PronunFit 신기능',
+    ko: '🎙️ Free-Talking: AI와 진짜 대화하기 — PronunFit 신기능',
 };
 const CAMPAIGN_TAG_BY_LANG = {
     vi: 'free-talk-vn-2026-05-04',
