@@ -155,16 +155,11 @@ export const AuthProvider = ({ children }) => {
                             setUser(null);
                             setProfile(null);
                             setLoading(false);
-                            // 안전장치: 5초 후에도 웹 SDK 동기화 안 되면 익명 로그인으로 폴백 (백그라운드)
-                            setTimeout(() => {
-                                if (auth.currentUser) return; // 웹 SDK 동기화 완료됨 — 추가 작업 불필요
-                                if (anonSignInInProgress) return;
-                                anonSignInInProgress = true;
-                                console.warn('[AuthContext] 네이티브 sync 타임아웃 → signInAnonymously 폴백');
-                                signInAnonymously(auth)
-                                    .catch(e => console.error('Native sync timeout fallback failed:', e))
-                                    .finally(() => { anonSignInInProgress = false; });
-                            }, 5000);
+                            // ⚠️ Phase 1-A (2026-05-05): 5초 익명 폴백 제거.
+                            //   네이티브 세션이 살아있는데 웹 SDK 동기화가 늦으면 새 익명 UID를 만들어
+                            //   기존 실계정을 덮어버리던 데이터-파괴적 경로였음 (Play Store 업그레이드 후 재현).
+                            //   웹 SDK는 IndexedDB가 복원되면 onAuthStateChanged가 재발화하여 자연 회복.
+                            //   사용자가 즉시 인증 필요한 동작을 하면 ensureAnonymousUser가 lazy 처리.
                             return;
                         }
                     } catch (e) {
@@ -201,9 +196,12 @@ export const AuthProvider = ({ children }) => {
                 // IndexedDB 복원 + 사인인은 비동기 백그라운드
                 (async () => {
                     try {
+                        // Phase 1-B (2026-05-05): 5s → 20s.
+                        //   업그레이드 직후 첫 부팅에서 IndexedDB 인덱스 재구축이 5초 초과하는 케이스 흡수.
+                        //   UI는 위에서 이미 setLoading(false)로 해제됨 — 사용자 체감 영향 없음.
                         await Promise.race([
                             auth.authStateReady(),
-                            new Promise((_, reject) => setTimeout(() => reject(new Error('authStateReady timeout')), 5000))
+                            new Promise((_, reject) => setTimeout(() => reject(new Error('authStateReady timeout')), 20000))
                         ]);
                         if (auth.currentUser) return; // 복원된 유저 있음 — onAuthStateChanged가 다시 발화함
                         await signInAnonymously(auth);
