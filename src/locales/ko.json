@@ -862,6 +862,9 @@
     "watchAd": "광고 시청 후 카드 5개 추가",
     "watchForProns": "+10 발음",
     "watchAdPron": "광고 시청 후 발음 10회 추가",
+    "watchForBonus": "🎁 +10 포인트",
+    "watchAdBonus": "광고 시청 후 보너스 포인트 +10",
+    "pointsHint": "모든 생성 1점 / 발음 1점 / Free-Talking 10점 차감",
     "loading": "광고 로딩 중..."
   },
   "renewal": {

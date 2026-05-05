@@ -684,35 +684,28 @@ function App() {
     addAdPoints(1);
   }, [incrementDailyPron, hasBonusActive]); // addAdPoints는 클로저로 hasBonusActive 캡처
 
-  // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
-  const getBonusForToday = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(`rewardBonus_${getToday()}`) || '{}');
-      return { cards: stored.cards || 0, prons: stored.prons || 0 };
-    } catch { return { cards: 0, prons: 0 }; }
-  };
-  const [rewardBonus, setRewardBonus] = useState(getBonusForToday);
+  // ── 보상형 광고 보너스 (Trial 전용, 통합 1버튼 → bonusPoints +10) ──────────────
+  // 2026-05-04 리팩터: rewardBonus_{date} 폐기 → bonusPoints 단일 시스템.
+  // 광고 시청 → bonusPoints += 10 (Firestore, 영구). hasBonusActive 시 일일 한도
+  // 자동 우회 + 인터스티셜 면제 + Free Talking 추가 사용 모두 통합.
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
 
-  const handleRewardedAd = async (type) => {
+  const handleRewardedAd = async () => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
+    if (!user) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-      const adId = type === 'cards' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      const adId = AD_UNITS.rewardedCards;  // 통합 1버튼 — 기존 광고 단위 재사용
 
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
-          const amount = reward?.amount ?? (type === 'cards' ? 5 : 10);
-          const today = getToday();
-          const prev = getBonusForToday();
-          const next = { ...prev };
-          if (type === 'cards') next.cards += amount;
-          else next.prons += amount;
-          localStorage.setItem(`rewardBonus_${today}`, JSON.stringify(next));
-          setRewardBonus(next);
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
+          // 광고 끝까지 시청 → bonusPoints += 10 (Firestore 영구 적립)
+          try {
+            await updateDoc(doc(db, 'users', user.uid), { bonusPoints: increment(10) });
+          } catch (e) { console.error('[RewardedAd] bonusPoints 적립 실패:', e); }
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
@@ -736,16 +729,17 @@ function App() {
     }
   };
 
-  // Trial 일간 제한 동기화 (보너스 반영)
+  // Trial 일간 제한 동기화 — TRIAL_DAILY_LIMIT 그대로. hasBonusActive 시 자동 우회는
+  // AuthContext 의 isTrialSavedCardLimitReached/PronLimitReached 가 이미 처리.
   useEffect(() => {
     if (tier === 'trial') {
-      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards);
-      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons);
+      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT);
+      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
     } else {
       setDailyTrialCardReached(false);
       setDailyTrialPronReached(false);
     }
-  }, [tier, todayCount, todaySaveCount, todayPronCount, rewardBonus, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
+  }, [tier, todayCount, todaySaveCount, todayPronCount, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -2237,7 +2231,7 @@ function App() {
       const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      addAdPoints(2);
+      addAdPoints(1);
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -2295,7 +2289,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2355,7 +2349,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2421,7 +2415,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2531,7 +2525,7 @@ function App() {
         runningTodaySaved += 1;  // 일일 한도 동기 추적
         incrementSavedCard();
         incrementDailySave();
-        addAdPoints(2);
+        addAdPoints(1);
       } catch (e) {
         console.error('[SaveSummary] save FAILED for phrase:', phrase, 'error:', e?.code, e?.message, e);
         skipped += 1;
@@ -2597,7 +2591,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -3293,49 +3287,28 @@ function App() {
                 {getT(sourceLang, 'nav.stats')}
               </button>
 
-              {/* 추가 학습 (Trial 전용 + 네이티브) — 보일 때만 위/아래 divider 노출 */}
+              {/* 추가 학습 (Trial 전용 + 네이티브) — 통합 1버튼: 광고 시청 → bonusPoints +10 */}
               {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
-                  {/* 카드 +5 */}
                   <button
-                    onClick={() => handleRewardedAd('cards')}
-                    disabled={rewardAdLoading}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                      border: '1px solid #bbf7d0', cursor: 'pointer', textAlign: 'left',
-                    }}>
-                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.watchForCards') || '+5 카드'}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.watchAd') || '광고 시청 후 카드 5개 추가'}
-                      </div>
-                    </div>
-                  </button>
-                  {/* 발음 +10 */}
-                  <button
-                    onClick={() => handleRewardedAd('prons')}
+                    onClick={handleRewardedAd}
                     disabled={rewardAdLoading}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                      border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
+                      background: 'linear-gradient(135deg, #fefce8, #fef3c7)',
+                      border: '1px solid #fde68a', cursor: 'pointer', textAlign: 'left',
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                        {getT(sourceLang, 'reward.watchForProns') || '+10 발음'}
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#92400e' }}>
+                        {getT(sourceLang, 'reward.watchForBonus') || '🎁 +10 포인트'}
                       </div>
-                      <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
-                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가'}
+                      <div style={{ fontSize: '0.72rem', color: '#d97706' }}>
+                        {getT(sourceLang, 'reward.watchAdBonus') || '광고 시청 후 보너스 포인트 +10'}
                       </div>
                     </div>
                   </button>
@@ -3344,6 +3317,10 @@ function App() {
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
                   )}
+                  {/* 점수 정책 안내 hint — 사용자에게 포인트 사용처 명시 */}
+                  <p style={{ fontSize: '0.68rem', color: '#94a3b8', textAlign: 'center', margin: '6px 0 0', lineHeight: 1.4 }}>
+                    {getT(sourceLang, 'reward.pointsHint') || '모든 생성 1점 / 발음 1점 / Free-Talking 10점 차감'}
+                  </p>
                 </div>
               )}
 
@@ -3560,7 +3537,7 @@ function App() {
                 color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
                 textAlign: 'center', userSelect: 'none',
               }}>
-                {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
+                {adPointsState + bonusPoints}
               </span>
             )}
           </div>
@@ -3611,7 +3588,7 @@ function App() {
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons : (isProTier ? PRO_PRON_LIMIT : 999);
+          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
           const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
           return (
@@ -3621,7 +3598,7 @@ function App() {
                 {/* 카드 게이지 — trial: 저장 제한(10/일), 유료: 목표 달성 */}
                 {(() => {
                   const isTrial = tier === 'trial';
-                  const limit = TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards;
+                  const limit = TRIAL_DAILY_CARD_LIMIT;
                   const goal = dailyGoal;
                   const count = isTrial ? todaySaveCount : todayCount;
                   const isFull = isTrial ? count >= limit : count >= goal;
@@ -3734,8 +3711,8 @@ function App() {
             todayPronCount={todayPronCount}
             todayListenCount={todayListenCount}
             dailyGoal={dailyGoal}
-            dailyCardLimit={TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}
-            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}
+            dailyCardLimit={TRIAL_DAILY_CARD_LIMIT}
+            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT}
             dailyListenLimit={10}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
@@ -3991,8 +3968,9 @@ function App() {
                 setShowTrialLimitModal(true);
                 return;
               }
-              // C1: 세션 시작 시 ad-points +1 (전체 2회 한도 → 1번만 카운트)
-              addAdPoints(1);
+              // FT 시작 = Generate 행위 (큰 점수). 8 발화 가치 ≈ 10점.
+              // 다른 활동(카드/Generate/발음 +1)보다 큰 점수 → 광고 트리거 빈도 ↑ → 비용 상쇄.
+              addAdPoints(10);
               // B: 일일 한도 카운터 증가 (Firestore dailyProgress + state 동기, 자정 리셋)
               incrementDailyFreeTalk();
               // 분석용 평생 누적 카운터 (users/{uid}.totalFreeTalkCount + totalGenerateCount)
@@ -4318,8 +4296,8 @@ function App() {
                   {/* 일일 사용량 (Trial) */}
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todaySaveCount}/{TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}/day<br />
-                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}/day
+                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todaySaveCount}/{TRIAL_DAILY_CARD_LIMIT}/day<br />
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
                     </span>
                   )}
                 </div>

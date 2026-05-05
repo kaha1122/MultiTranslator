@@ -849,6 +849,9 @@
     "card5Recommend4": "自分のスケジュールで主体的に学ぶ学習者"
   },
   "reward": {
+    "watchForBonus": "🎁 +10 ポイント",
+    "watchAdBonus": "広告視聴後ボーナスポイント +10",
+    "pointsHint": "生成 1pt / 発音 1pt / Free-Talking 10pt 消費",
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
     "watchForProns": "+10 発音",
