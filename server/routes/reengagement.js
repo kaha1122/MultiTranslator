@@ -1133,6 +1133,103 @@ router.post('/api/cron/post-push-activity', requireCronAuth, async (req, res) =>
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// sourceLang 별 email 보유 유저 분포 — 캠페인 대상 시장 파악
+// ?lapsedDays=3 (default) — 비활성 기준
+// ?excludeLangs=ko,vi (default) — 제외할 언어 (이미 발송한 시장)
+router.post('/api/cron/email-by-lang', requireCronAuth, async (req, res) => {
+    const lapsedDays = parseInt(req.query.lapsedDays || '3', 10);
+    const excludeLangs = (req.query.excludeLangs || 'ko,vi')
+        .split(',').map(s => s.trim().toLowerCase()).filter(Boolean);
+    const lapsedThreshold = new Date(Date.now() - lapsedDays * 24 * 3600 * 1000);
+
+    const batchSize = 500;
+    const maxBatches = 10;
+    let cursor = null;
+    let batches = 0;
+
+    // { lang: { total, withEmail, lapsedWithEmail, alreadySent, sample[] } }
+    const langStats = {};
+
+    try {
+        while (batches < maxBatches) {
+            let q = adminDb.collection('users')
+                .orderBy(admin.firestore.FieldPath.documentId())
+                .limit(batchSize);
+            if (cursor) q = q.startAfter(cursor);
+
+            const snap = await q.get();
+            if (snap.empty) break;
+
+            for (const doc of snap.docs) {
+                const d = doc.data();
+                const lang = (d.sourceLang || 'unknown').toLowerCase();
+
+                if (!langStats[lang]) {
+                    langStats[lang] = { total: 0, withEmail: 0, lapsedWithEmail: 0, alreadySent: 0, sample: [] };
+                }
+                langStats[lang].total += 1;
+
+                const email = (d.email || '').trim();
+                if (!email) continue;
+                if (d.emailOptOut === true) continue;
+                if (d.tier === 'admin') continue;
+
+                langStats[lang].withEmail += 1;
+
+                const updMs = d.updatedAt?.toMillis?.() || 0;
+                if (updMs >= lapsedThreshold.getTime()) continue;
+                langStats[lang].lapsedWithEmail += 1;
+
+                if (d.freeTalkEmailSentAt) {
+                    langStats[lang].alreadySent += 1;
+                }
+
+                if (langStats[lang].sample.length < 3) {
+                    langStats[lang].sample.push({
+                        uid: doc.id,
+                        email,
+                        name: d.displayName || null,
+                        country: d.geoCountry || null,
+                        sentAt: d.freeTalkEmailSentAt?.toDate?.()?.toISOString() || null,
+                    });
+                }
+            }
+
+            cursor = snap.docs[snap.docs.length - 1];
+            batches += 1;
+            if (snap.size < batchSize) break;
+        }
+
+        // 정렬: lapsedWithEmail - alreadySent (= 미발송 캠페인 가능 모수) 내림차순
+        const sortedLangs = Object.entries(langStats)
+            .map(([lang, s]) => ({
+                lang,
+                ...s,
+                campaignableNow: Math.max(0, s.lapsedWithEmail - s.alreadySent),
+                excluded: excludeLangs.includes(lang),
+            }))
+            .sort((a, b) => b.campaignableNow - a.campaignableNow);
+
+        const summary = {
+            totalLangs: sortedLangs.length,
+            excludedLangs: excludeLangs,
+            totalCampaignableExcluded: sortedLangs
+                .filter(l => !l.excluded)
+                .reduce((sum, l) => sum + l.campaignableNow, 0),
+        };
+
+        return res.json({
+            lapsedDays, lapsedThresholdISO: lapsedThreshold.toISOString(),
+            summary,
+            byLang: sortedLangs,
+        });
+    } catch (e) {
+        console.error('[EmailByLang] failed:', e);
+        return res.status(500).json({ error: e.message });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // Lapsed 유저 도달 채널 inventory — email/phone/displayName 보유율
 // "푸시 안 통하는 유저들에게 다른 채널로 닿을 수 있는가" 분석
 router.post('/api/cron/lapsed-reach-inventory', requireCronAuth, async (req, res) => {
