@@ -288,13 +288,13 @@ function renderFreeTalkEmailKO({ name, unsubLink }) {
           ${greeting}
         </p>
         <p style="margin:0;font-size:0.95rem;color:#475569;line-height:1.6;">
-          PronunFit 기억하시나요? 좋은 소식이 있어 알려드립니다. 한 번쯤 시도해보실 만한 신기능 <strong>Free Talk</strong>가 출시됐습니다.
+          PronunFit 기억하시나요? 좋은 소식이 있어 알려드립니다. 한 번쯤 시도해보실 만한 <strong>Free-Talking 기능</strong>이 출시됐습니다.
         </p>
       </td></tr>
 
       <tr><td style="padding:16px 28px 8px 28px;">
         <h2 style="margin:0 0 12px 0;font-size:1.1rem;color:#1e293b;font-weight:700;">
-          🌟 Free Talk가 뭔가요?
+          🌟 Free-Talking 기능이 뭔가요?
         </h2>
         <p style="margin:0 0 12px 0;font-size:0.92rem;color:#475569;line-height:1.6;">
           정해진 Q&amp;A 형식과 달리, Free Talk는 진짜 대화처럼:
@@ -374,9 +374,9 @@ function renderFreeTalkEmailKoText({ name, unsubLink }) {
 
 🎙️ Free Talk가 출시됐어요!
 
-PronunFit 기억하시나요? 한 번쯤 시도해보실 만한 신기능 Free Talk가 출시됐습니다.
+PronunFit 기억하시나요? 한 번쯤 시도해보실 만한 Free-Talking 기능이 출시됐습니다.
 
-🌟 Free Talk가 뭔가요?
+🌟 Free-Talking 기능이 뭔가요?
 
 ✨ AI와 자연스럽게 대화 — 외국인 친구와 이야기하듯
 🎯 실제 상황 시나리오 — 카페·호텔·공항·기차 안...

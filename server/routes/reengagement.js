@@ -1438,7 +1438,8 @@ router.post('/api/cron/send-free-talk-email', requireCronAuth, async (req, res) 
                         }
                     }
                     totalSent += 1;
-                    if (sentSamples.length < 5) {
+                    // dryRun: 전체 리스트 반환 / live: 처음 5명만 (응답 크기 제한)
+                    if (dryRun || sentSamples.length < 5) {
                         sentSamples.push({ uid: doc.id, email, name: d.displayName, messageId: result.id, dryRun: !!result.dryRun });
                     }
                 } else {
