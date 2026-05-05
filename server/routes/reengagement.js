@@ -1415,11 +1415,14 @@ router.post('/api/cron/send-free-talk-email', requireCronAuth, async (req, res) 
                     continue;
                 }
 
+                // country → lang 자동 매핑 (?lang= 으로 명시 override 가능)
+                const lang = (req.query.lang || (country === 'KR' ? 'ko' : 'vi')).toLowerCase();
                 const result = await sendFreeTalkEmail({
                     to: email,
                     name: d.displayName || null,
                     uid: doc.id,
                     baseUrl,
+                    lang,
                     dryRun,
                 });
 
