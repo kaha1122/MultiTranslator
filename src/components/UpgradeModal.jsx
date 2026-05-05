@@ -42,7 +42,7 @@ const RC_PACKAGE_META = {
         bgColor: '#f5f3ff',
         borderColorBest: '#c7d2fe',
         bgColorBest: '#eef2ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3', 'upgrade.noAds'],
     },
     premium: {
         tier: 'premium',
@@ -53,7 +53,7 @@ const RC_PACKAGE_META = {
         bgColor: '#fffbeb',
         borderColorBest: '#fcd34d',
         bgColorBest: '#fef9c3',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
     },
 };
 
@@ -135,7 +135,7 @@ const PLAN_CONFIGS_KRW = [
         color: '#4338ca',
         borderColor: '#e0e7ff',
         bgColor: '#f5f3ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3', 'upgrade.noAds'],
     },
     {
         id: 'pro_3',
@@ -150,7 +150,7 @@ const PLAN_CONFIGS_KRW = [
         color: '#4338ca',
         borderColor: '#c7d2fe',
         bgColor: '#eef2ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3', 'upgrade.noAds'],
     },
     {
         id: 'premium_1',
@@ -163,7 +163,7 @@ const PLAN_CONFIGS_KRW = [
         color: '#b45309',
         borderColor: '#fde68a',
         bgColor: '#fffbeb',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
     },
     {
         id: 'premium_3',
@@ -178,7 +178,7 @@ const PLAN_CONFIGS_KRW = [
         color: '#b45309',
         borderColor: '#fcd34d',
         bgColor: '#fef9c3',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
     },
 ];
 
@@ -195,7 +195,7 @@ const PLAN_CONFIGS_USD = [
         color: '#4338ca',
         borderColor: '#e0e7ff',
         bgColor: '#f5f3ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3', 'upgrade.noAds'],
     },
     {
         id: 'pro_3_usd',
@@ -211,7 +211,7 @@ const PLAN_CONFIGS_USD = [
         color: '#4338ca',
         borderColor: '#c7d2fe',
         bgColor: '#eef2ff',
-        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature3', 'upgrade.noAds'],
+        featureKeys: ['upgrade.proFeature1', 'upgrade.proFeature2', 'upgrade.proFeature3', 'upgrade.noAds'],
     },
     {
         id: 'premium_1_usd',
@@ -225,7 +225,7 @@ const PLAN_CONFIGS_USD = [
         color: '#b45309',
         borderColor: '#fde68a',
         bgColor: '#fffbeb',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
     },
     {
         id: 'premium_3_usd',
@@ -241,7 +241,7 @@ const PLAN_CONFIGS_USD = [
         color: '#b45309',
         borderColor: '#fcd34d',
         bgColor: '#fef9c3',
-        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
+        featureKeys: ['upgrade.premiumFeature1', 'upgrade.premiumFeature2', 'upgrade.premiumFeature3', 'upgrade.premiumFeature4', 'upgrade.noAds'],
     },
 ];
 
