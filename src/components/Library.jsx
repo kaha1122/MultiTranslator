@@ -17,7 +17,7 @@ function getThisWeekMonday() {
     return mon;
 }
 
-const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 10, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack, progressPopupOpen, onTrialLimitReached, onPronSuccess }) => {
+const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0, dailyGoal = 3, onTargetAchieved, onCardDeleted, focusCardId, onFocusCardHandled, libraryBackTo, onBack, progressPopupOpen, onTrialLimitReached, onPronSuccess }) => {
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 

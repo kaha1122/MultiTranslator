@@ -25,7 +25,7 @@ const getWeekDates = () => {
     });
 };
 
-export const useDailyProgress = (user, dailyGoal = 10) => {
+export const useDailyProgress = (user, dailyGoal = 3) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
@@ -179,17 +179,32 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
                 : d
         ));
 
+        // 2026-05-05: dailyProgress.goalAchievedToday Y/N 플래그 + users.totalGoalAchievedDays 누적
+        // - 트랜잭션으로 race-safe (멀티 디바이스/탭 동시 발음 통과 시 중복 +1 방지)
+        // - 한 번 goalAchievedToday=true 마킹된 날은 false로 안 됨 (idempotent)
+        // - totalGoalAchievedDays는 false→true 전이 시 정확히 1번만 +1
+        const progressRef = doc(db, 'users', user.uid, 'dailyProgress', today);
+        const userRef = doc(db, 'users', user.uid);
         try {
-            await setDoc(
-                doc(db, 'users', user.uid, 'dailyProgress', today),
-                {
+            await runTransaction(db, async (tx) => {
+                const progressSnap = await tx.get(progressRef);
+                const wasAlreadyAchieved = progressSnap.exists() && progressSnap.data()?.goalAchievedToday === true;
+                const isNowAchieved = newCount >= dailyGoal;
+
+                tx.set(progressRef, {
                     achievedKeys: Array.from(achievedKeysRef.current),
                     count: newCount,
                     dailyGoal,
+                    goalAchievedToday: isNowAchieved || wasAlreadyAchieved,
                     updatedAt: serverTimestamp(),
-                },
-                { merge: true }
-            );
+                }, { merge: true });
+
+                if (!wasAlreadyAchieved && isNowAchieved) {
+                    tx.update(userRef, {
+                        totalGoalAchievedDays: increment(1),
+                    });
+                }
+            });
         } catch (e) {
             console.error('[useDailyProgress] Firestore 저장 실패:', e);
         }

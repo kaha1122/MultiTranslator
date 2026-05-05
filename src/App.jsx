@@ -472,10 +472,21 @@ function App() {
     }
   });
 
-  // 하루 학습 목표 카드 수 (기본 10장)
+  // 하루 학습 목표 카드 수 (기본 3장 — 2026-05-05 retention 정책 변경: 10장 → 3장)
+  // 1회성 강제 마이그레이션: 기존 유저의 localStorage 값(10장 default 또는 본인 설정값)도
+  // 새 default(3장)로 reset. dailyGoalMigrated_v3 플래그로 1회만 실행 — 이후 사용자가
+  // 슬라이더로 변경한 값은 그대로 보존됨.
   const [dailyGoal, setDailyGoal] = useState(() => {
-    try { return parseInt(localStorage.getItem('dailyGoal') || '10', 10); }
-    catch (e) { return 10; }
+    try {
+      const MIGRATION_KEY = 'dailyGoalMigrated_v3_2026_05_05';
+      if (!localStorage.getItem(MIGRATION_KEY)) {
+        localStorage.setItem('dailyGoal', '3');
+        localStorage.setItem(MIGRATION_KEY, '1');
+        return 3;
+      }
+      return parseInt(localStorage.getItem('dailyGoal') || '3', 10);
+    }
+    catch (e) { return 3; }
   });
 
   // Daily progress hook
@@ -4211,25 +4222,25 @@ function App() {
               <p className="target-limit-msg" style={{ marginBottom: '0.4rem' }}>
                 {getT(sourceLang, 'daily.settingsDesc')}
               </p>
-              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px', opacity: tier === 'trial' ? 0.6 : 1 }}>
+              {/* 2026-05-05: Trial 강제(TRIAL_DAILY_CARD_LIMIT 표시) 제거 — 모든 tier 자유 설정.
+                   default 10 → 3 (retention 정책 변경). Trial 한도(10장 카드 저장)는 별개 메커니즘. */}
+              <div className="goal-slider-row" style={{ display: 'flex', alignItems: 'center', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px' }}>
                 <span style={{ width: '42px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem' }}>{getT(sourceLang, 'daily.settingsLabel')}</span>
                 <input
                   type="range"
                   min="1"
                   max="100"
-                  value={tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}
+                  value={dailyGoal === '' ? 3 : dailyGoal}
                   className="custom-slider"
-                  disabled={tier === 'trial'}
                   onChange={(e) => setDailyGoal(parseInt(e.target.value))}
-                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}%, #e2e8f0 ${tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? 10 : dailyGoal)}%)` }}
+                  style={{ flex: 1, margin: '0 10px', '--slider-color': '#6366f1', background: `linear-gradient(to right, #6366f1 ${dailyGoal === '' ? 3 : dailyGoal}%, #e2e8f0 ${dailyGoal === '' ? 3 : dailyGoal}%)` }}
                 />
                 <input
                   type="number"
                   min="1"
                   max="100"
-                  value={tier === 'trial' ? TRIAL_DAILY_CARD_LIMIT : (dailyGoal === '' ? '' : dailyGoal)}
+                  value={dailyGoal === '' ? '' : dailyGoal}
                   className="slider-value-input"
-                  disabled={tier === 'trial'}
                   onChange={(e) => {
                     const raw = e.target.value;
                     if (raw === '') {
@@ -4240,7 +4251,7 @@ function App() {
                     }
                   }}
                   onBlur={() => {
-                    if (dailyGoal === '' || dailyGoal === undefined) setDailyGoal(10);
+                    if (dailyGoal === '' || dailyGoal === undefined) setDailyGoal(3);
                   }}
                   style={{ '--slider-color': '#6366f1', color: '#6366f1' }}
                 />
