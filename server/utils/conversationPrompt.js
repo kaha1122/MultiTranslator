@@ -75,6 +75,48 @@ The 3 messages play out automatically before the learner speaks. Together they s
 
 ---
 
+### [Phase 0: Scene Coherence — MANDATORY FIRST STEP, BEFORE any other phase]
+Before drafting any field, internally plan ONE specific micro-situation that ties
+intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment. Fill in
+your private mental scratchpad:
+
+  ① WHERE: a specific spot in "${scene}" (not generic).
+       Bad : "at the airport"
+       Good: "at the airline check-in counter, just walked up"
+
+  ② WHO is the responder: a specific person the learner can speak to RIGHT NOW.
+       This person becomes the responder_role. Examples:
+       "the check-in agent at the counter", "a barista behind the bar",
+       "a tourist guide standing near the temple gate"
+
+  ③ WHY the learner needs to speak: a specific information gap or request.
+       Bad : "ask something"
+       Good: "doesn't know which gate her flight leaves from"
+
+  ④ INFO ASYMMETRY: one specific fact or help that the responder can give
+       and the learner doesn't have.
+
+Then ALL three fields MUST reflect this exact plan:
+  - intro.text         → describes ① and the situation that creates ③.
+                          May implicitly or explicitly hint at ②.
+                          MUST NOT contradict the dialogue (e.g. don't write
+                          "a sign explains everything" if the learner is about
+                          to ask the responder for that info).
+  - firstUserTurn      → the learner's first words to ② asking about ③.
+                          MUST be answerable by ④, not by something visible
+                          in intro (e.g. signs, screens already mentioned).
+  - firstAiReply       → ② replies with ④ in a way that solves ③.
+
+Coherence checklist (mentally verify before output):
+  [ ] Does intro location match where firstUserTurn would naturally happen?
+  [ ] Does firstUserTurn ask about something NOT already given in intro?
+  [ ] Does firstAiReply come from the SAME person implied in intro?
+  [ ] Would a real bystander reading all 3 messages feel one continuous moment?
+
+If any check fails, redesign before writing JSON.
+
+---
+
 ### [Phase 1A: User Initiation Design] — applies to firstUserTurn
 The learner's level is **${difficulty || 'basic'}**. Design the initiation complexity accordingly:
 - **Basic**: Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.
@@ -127,7 +169,16 @@ ${styleDesc}
 3. **Variety**: Avoid generic textbook phrases. Reflect 2026 native everyday speech.
 4. **Grammar & Length**: Strictly follow the Difficulty Guidelines for both turns.
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no tone marks inline. Violations make the output unusable.
-6. **Intro language**: write intro.text ONLY in ${sourceLangName}. 1~2 sentences. Set the scene; do NOT spoil the chosen emotion or the User's exact words.
+6. **Intro consistency — CRITICAL**: intro.text MUST set up the EXACT micro-situation
+   from Phase 0, so firstUserTurn arises naturally. Specifically:
+   - Mention WHERE the learner is (specific) and WHY they need to speak (information gap).
+   - Imply or mention WHO they will talk to (the responder), if natural for this scene.
+   - DO NOT introduce facts that would make firstUserTurn redundant (e.g. "a sign
+     shows the gate number" when learner is about to ask for the gate).
+   - DO NOT describe unrelated background that distracts from the upcoming dialogue
+     (e.g. "tourists are taking photos nearby" when the dialogue is about directions).
+   - intro.text in ${sourceLangName} ONLY. 1~2 sentences. Don't reveal the chosen
+     emotion or the User's exact words.
 7. **No emoji** in intro/sentence fields.
 
 ---
