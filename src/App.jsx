@@ -2254,6 +2254,18 @@ function App() {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
       setSavedCardIds(prev => ({ ...prev, [langCode]: result.id }));
       incrementDailySave();
+
+      // 🔧 BUGFIX 2026-05-07: 발음 점수가 목표 달성하면 daily achievement 카운터 +1.
+      //   다른 탭(Vocab/Scene/Listening/Video/Library)들은 모두 같은 패턴이 있는데
+      //   Translation Tab만 누락되어 있어 "오늘 3장 중 X장 달성" 카운터가 안 늘어나던 결함 수정.
+      //   key는 docRef.id 기반(`library-${id}`)으로 다른 save 함수들과 통일.
+      const score = practiceResults[langCode]?.pronunciationScore;
+      const goal = languageGoals[langCode] || 80;
+      if (score != null && score >= goal && result.id) {
+        const wasNew = await incrementAchievement(`library-${result.id}`);
+        if (wasNew) setShowProgressPopup(true);
+      }
+
       // Library로 이동하여 저장된 카드 포커스
       if (result.id) {
         setFocusCardId(result.id);
