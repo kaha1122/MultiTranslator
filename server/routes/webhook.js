@@ -43,7 +43,16 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
             return res.status(400).json({ error: 'Missing event type or app_user_id' });
         }
 
-        console.log(`[Webhook] ${eventType} for ${appUserId}`);
+        // ⚠ Sandbox 이벤트 차단 — TestFlight / Apple 리뷰어 / 베타 테스터의 sandbox 결제가
+        //   production Firestore에 tier=pro로 부정 승격되던 결함 (2026-05-06 사고).
+        //   environment: "SANDBOX" | "PRODUCTION" — RevenueCat이 webhook payload에 명시.
+        const environment = event?.event?.environment;
+        if (environment === 'SANDBOX') {
+            console.log(`[Webhook] SKIP sandbox ${eventType} for ${appUserId}`);
+            return res.status(200).json({ skipped: 'sandbox', eventType });
+        }
+
+        console.log(`[Webhook] ${eventType} for ${appUserId} (env: ${environment || 'unknown'})`);
 
         // entitlement에서 tier 결정
         const entitlements = event?.event?.entitlement_ids || [];
