@@ -1,7 +1,10 @@
 import { useCallback, useRef, useState } from 'react';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 import { authFetch, getAuthHeaders } from '../utils/authFetch';
+
+// Android/iOS 네이티브 오디오 세션 제어 — useAudioRecorder와 동일 인스턴스
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 const getServerUrl = () => {
     try {
@@ -53,7 +56,9 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
         setLastError(null);
         try {
             const form = new FormData();
-            form.append('audio', blob, `free-talk-${Date.now()}.webm`);
+            // 파일 확장자를 실제 mimeType에 맞게 지정 (iOS는 mp4/m4a, 그 외는 webm)
+            const ext = (blob.type || '').includes('mp4') ? 'm4a' : 'webm';
+            form.append('audio', blob, `free-talk-${Date.now()}.${ext}`);
             form.append('langCode', langCode || 'en');
 
             // authFetch + FormData: Content-Type을 비워 두어야 boundary가 자동 설정됨
@@ -90,8 +95,8 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
         setLastError(null);
         setMicDenied(false);
         try {
+            // ===== 1) 권한 확보 (네이티브) =====
             if (Capacitor.isNativePlatform()) {
-                isNativeRef.current = true;
                 try {
                     const has = await VoiceRecorder.hasAudioRecordingPermission();
                     if (!has.value) {
@@ -102,20 +107,41 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
                             return;
                         }
                     }
-                } catch (e) { /* noop, fallback to startRecording */ }
-                await VoiceRecorder.startRecording();
-                setIsRecording(true);
-                return;
+                } catch (e) { /* noop, getUserMedia가 권한 재시도 */ }
+
+                // ===== 2) iOS AVAudioSession 재활성화 =====
+                // iOS WKWebView는 AppDelegate의 초기 세션이 불완전 상태라
+                // getUserMedia가 실제 오디오 데이터를 받지 못함. useAudioRecorder와 동일 패턴.
+                if (Capacitor.getPlatform() === 'ios') {
+                    try {
+                        await BluetoothAudio.activateAudioSession();
+                    } catch (e) {
+                        console.warn('[useFreeTalkRecorder] activateAudioSession failed:', e?.message);
+                    }
+                }
             }
 
-            // 웹: MediaRecorder
-            isNativeRef.current = false;
+            // ===== 3) MediaRecorder + getUserMedia (모든 환경 통합) =====
+            // 이전: 네이티브에서 VoiceRecorder.startRecording() 사용했으나
+            // iOS Capacitor 8 SPM 모드에서 capacitor-voice-recorder@7.0.6의
+            // startRecording이 silent fail하는 케이스 발견 → useAudioRecorder와
+            // 동일하게 MediaRecorder 통합. iOS WKWebView도 MediaRecorder 정상 지원.
+            isNativeRef.current = false; // stop 시 MediaRecorder 경로로 처리
+
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            const mr = new MediaRecorder(stream);
+
+            // iOS Safari/WKWebView는 mp4 우선, 그 외는 webm
+            const mimeType = MediaRecorder.isTypeSupported('audio/webm')
+                ? 'audio/webm'
+                : MediaRecorder.isTypeSupported('audio/mp4')
+                    ? 'audio/mp4'
+                    : '';
+
+            const mr = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
             audioChunksRef.current = [];
             mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data); };
             mr.onstop = async () => {
-                try { stream.getTracks().forEach(t => t.stop()); } catch (e) { /* noop */ }
+                try { stream.getTracks().forEach(t => t.stop()); } catch (_) { /* noop */ }
                 const blob = new Blob(audioChunksRef.current, { type: mr.mimeType || 'audio/webm' });
                 await sendToSTT(blob);
             };
