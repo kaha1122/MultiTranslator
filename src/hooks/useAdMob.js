@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
 
-const IS_TESTING = true; // ⚠️ TestFlight 광고 검증용. App Store 제출 전 반드시 false로 변경.
+const IS_TESTING = false; // App Store production. 검증 시 true로 일시 변경 후 반드시 복원.
 
 // Android 프로덕션 Ad Unit IDs
 const AD_UNITS_ANDROID = {
