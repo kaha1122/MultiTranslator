@@ -3,7 +3,7 @@ import { useEffect, useRef } from 'react';
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
 
-const IS_TESTING = false; // TODO: 실 광고 전환 시 false로 변경
+const IS_TESTING = true; // ⚠️ TestFlight 광고 검증용. App Store 제출 전 반드시 false로 변경.
 
 // Android 프로덕션 Ad Unit IDs
 const AD_UNITS_ANDROID = {
@@ -174,6 +174,9 @@ export const useAdMob = (tier) => {
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
                     console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
+                    // no-fill 시 예약된 100px 공간 회수 — 빈 영역이 콘텐츠 아래 표시되는 결함 방지
+                    // (iOS 출시 전 AdMob no-fill / 인터넷 끊김 / 광고 차단기 사용 시 발생)
+                    setOffset(false);
                 }));
 
                 console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerBottom, 'isTesting:', IS_TESTING);
