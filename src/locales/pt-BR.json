@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "Ativar lembretes de prática?",
     "prePromptReminderDesc": "Enviaremos um único lembrete por dia no horário escolhido.",
     "prePromptPushTitle": "Ativar alertas de assinatura?",
-    "prePromptPushDesc": "Só enviaremos avisos sobre renovações e problemas de pagamento."
+    "prePromptPushDesc": "Só enviaremos avisos sobre renovações e problemas de pagamento.",
+    "permissionDeniedPersistent": "A permissão de notificação foi negada anteriormente. A caixa de diálogo do sistema não aparece mais — habilite manualmente nas configurações do telefone.",
+    "openSettingsBtn": "Como abrir as configurações do sistema",
+    "openSettingsManual": "Configurações do telefone → Aplicativos → PronunFit → Notificações → Permitir"
   },
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",
   "errors": {
@@ -589,7 +592,8 @@
     "studyMore": "Mais estudo",
     "subscriptionTitle": "Assinatura",
     "listening": "Compreensão auditiva",
-    "bonusTitle": "Bônus"
+    "bonusTitle": "Bônus",
+    "dictBtn": "Dicionário"
   },
   "stats": {
     "weekRate": "Taxa Semanal",
@@ -805,7 +809,47 @@
     "accountDelDesc": "Se você deseja excluir sua conta do PronunFit, envie um e-mail para <b>support@pronunfit.com</b> com seu endereço de e-mail registrado. Excluiremos com segurança as informações da sua conta e todos os dados de aprendizado em até 7 dias.",
     "startFree": "Começar grátis",
     "loginBtn": "Entrar",
-    "loginWithAccount": "Entrar na minha conta"
+    "loginWithAccount": "Entrar na minha conta",
+    "card1Title": "Uma revolução no\naprendizado autônomo de idiomas",
+    "card1Highlight": "Revolução",
+    "card1Subtitle": "Quanto tempo levará para dominar um idioma\nestudando apenas frases prontas?",
+    "card1RecommendTitle": "Perfeito para alunos que querem:",
+    "card1Recommend1": "Progresso mais rápido do que apps tradicionais",
+    "card1Recommend2": "Aprendizado multilíngue em um só lugar",
+    "card1Recommend3": "Coaching de pronúncia preciso e baseado em dados",
+    "card1Recommend4": "Um cronograma no seu ritmo para estudo independente",
+    "card2Title": "Currículo ilimitado\ngerado por IA",
+    "card2Highlight": "Currículo ilimitado",
+    "card2Subtitle": "70 categorias e 22 cenários da vida real,\natualizados constantemente para o seu nível",
+    "card2RecommendTitle": "Perfeito para alunos que querem:",
+    "card2Recommend1": "Progresso mais rápido do que apps tradicionais",
+    "card2Recommend2": "Aprendizado multilíngue em um só lugar",
+    "card2Recommend3": "Coaching de pronúncia preciso e baseado em dados",
+    "card2Recommend4": "Um cronograma no seu ritmo para estudo independente",
+    "card3Title": "Aprenda um, ganhe três:\nEficiência multilíngue impressionante",
+    "card3Highlight": "Eficiência multilíngue",
+    "card3Subtitle": "O único app com suporte a 3 idiomas simultaneamente.\nAprendizado cruzado triplica sua velocidade",
+    "card3RecommendTitle": "Perfeito para alunos que querem:",
+    "card3Recommend1": "Progresso mais rápido do que apps tradicionais",
+    "card3Recommend2": "Aprendizado multilíngue em um só lugar",
+    "card3Recommend3": "Coaching de pronúncia preciso e baseado em dados",
+    "card3Recommend4": "Um cronograma no seu ritmo para estudo independente",
+    "card4Title": "Sem firulas, só habilidade:\nCusto-benefício imbatível",
+    "card4Highlight": "Custo-benefício imbatível",
+    "card4Subtitle": "Focado em resultados reais, não em gráficos chamativos.\nTodos os 6 recursos a um preço imbatível",
+    "card4RecommendTitle": "Perfeito para alunos que querem:",
+    "card4Recommend1": "Progresso mais rápido do que apps tradicionais",
+    "card4Recommend2": "Aprendizado multilíngue em um só lugar",
+    "card4Recommend3": "Coaching de pronúncia preciso e baseado em dados",
+    "card4Recommend4": "Um cronograma no seu ritmo para estudo independente",
+    "card5Title": "Pronúncia perfeita\naté cada fonema",
+    "card5Highlight": "Pronúncia perfeita",
+    "card5Subtitle": "Não é apenas uma comparação simples. A IA analisa sua voz\nsílaba por sílaba com feedback detalhado",
+    "card5RecommendTitle": "Perfeito para alunos que querem:",
+    "card5Recommend1": "Progresso mais rápido do que apps tradicionais",
+    "card5Recommend2": "Aprendizado multilíngue em um só lugar",
+    "card5Recommend3": "Coaching de pronúncia preciso e baseado em dados",
+    "card5Recommend4": "Um cronograma no seu ritmo para estudo independente"
   },
   "reward": {
     "watchForCards": "+5 cartões",
@@ -1191,5 +1235,11 @@
       "cta": "Começar agora",
       "later": "Mais tarde"
     }
+  },
+  "update": {
+    "title": "Atualização do app necessária",
+    "desc": "Há uma nova versão com melhorias e correções. Atualize para continuar.",
+    "btn": "Atualizar na Play Store",
+    "later": "Mais tarde"
   }
 }

@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "开启练习提醒？",
     "prePromptReminderDesc": "我们将在您选择的时间每天发送一次提醒。",
     "prePromptPushTitle": "开启订阅通知？",
-    "prePromptPushDesc": "我们仅会通知您订阅续订和付款问题。"
+    "prePromptPushDesc": "我们仅会通知您订阅续订和付款问题。",
+    "permissionDeniedPersistent": "之前已拒绝通知权限，系统对话框不再显示。请在手机设置中手动开启。",
+    "openSettingsBtn": "查看如何打开系统设置",
+    "openSettingsManual": "手机设置 → 应用 → PronunFit → 通知 → 允许"
   },
   "splashTagline": "免费多语言发音学习单词本",
   "errors": {
@@ -806,7 +809,47 @@
     "accountDelDesc": "如需注销您的PronunFit账号，请使用注册邮箱发送邮件至<b>support@pronunfit.com</b>。我们将在收到请求后7天内安全删除您的账号信息及所有学习数据。",
     "startFree": "免费开始",
     "loginBtn": "登录",
-    "loginWithAccount": "登录我的账户"
+    "loginWithAccount": "登录我的账户",
+    "card1Title": "由你亲手设计的\n语言学习革命",
+    "card1Highlight": "革命",
+    "card1Subtitle": "只学习现成的句子，\n何时才能真正掌握一门语言？",
+    "card1RecommendTitle": "适合这些学习者：",
+    "card1Recommend1": "比传统应用更快的进步",
+    "card1Recommend2": "在一处学习多种语言",
+    "card1Recommend3": "基于数据的精准发音指导",
+    "card1Recommend4": "自定进度，自主学习",
+    "card2Title": "AI 实时生成的\n无限课程",
+    "card2Highlight": "无限课程",
+    "card2Subtitle": "70 个类别和 22 种真实场景，\n根据你的水平不断更新",
+    "card2RecommendTitle": "适合这些学习者：",
+    "card2Recommend1": "比传统应用更快的进步",
+    "card2Recommend2": "在一处学习多种语言",
+    "card2Recommend3": "基于数据的精准发音指导",
+    "card2Recommend4": "自定进度，自主学习",
+    "card3Title": "一次学习，三倍收获：\n惊艳的多语言学习效率",
+    "card3Highlight": "多语言效率",
+    "card3Subtitle": "业内唯一支持 3 种语言同时学习的应用。\n跨语言交叉学习，速度提升 3 倍",
+    "card3RecommendTitle": "适合这些学习者：",
+    "card3Recommend1": "比传统应用更快的进步",
+    "card3Recommend2": "在一处学习多种语言",
+    "card3Recommend3": "基于数据的精准发音指导",
+    "card3Recommend4": "自定进度，自主学习",
+    "card4Title": "没有花哨，只有实力：\n超值性价比",
+    "card4Highlight": "超值性价比",
+    "card4Subtitle": "专注真实的学习效果而非花哨界面，\n6 大功能以无可匹敌的价格提供",
+    "card4RecommendTitle": "适合这些学习者：",
+    "card4Recommend1": "比传统应用更快的进步",
+    "card4Recommend2": "在一处学习多种语言",
+    "card4Recommend3": "基于数据的精准发音指导",
+    "card4Recommend4": "自定进度，自主学习",
+    "card5Title": "细分到每个音素\n打造完美发音",
+    "card5Highlight": "完美发音",
+    "card5Subtitle": "不仅是简单对比。AI 逐音节分析你的发音，\n提供详细反馈",
+    "card5RecommendTitle": "适合这些学习者：",
+    "card5Recommend1": "比传统应用更快的进步",
+    "card5Recommend2": "在一处学习多种语言",
+    "card5Recommend3": "基于数据的精准发音指导",
+    "card5Recommend4": "自定进度，自主学习"
   },
   "reward": {
     "watchForCards": "+5 张卡片",
@@ -1192,5 +1235,11 @@
       "cta": "立即开始",
       "later": "稍后"
     }
+  },
+  "update": {
+    "title": "需要更新应用",
+    "desc": "有包含改进与错误修复的新版本。请更新后继续使用。",
+    "btn": "在 Play 商店更新",
+    "later": "稍后"
   }
 }

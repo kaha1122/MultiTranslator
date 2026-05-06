@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "¿Activar recordatorios de práctica?",
     "prePromptReminderDesc": "Te enviaremos un solo recordatorio al día a la hora que elijas.",
     "prePromptPushTitle": "¿Activar alertas de suscripción?",
-    "prePromptPushDesc": "Solo te notificaremos sobre renovaciones y problemas de pago."
+    "prePromptPushDesc": "Solo te notificaremos sobre renovaciones y problemas de pago.",
+    "permissionDeniedPersistent": "El permiso de notificación fue denegado anteriormente. El diálogo del sistema ya no aparece — habilítalo manualmente en los ajustes del teléfono.",
+    "openSettingsBtn": "Cómo abrir los ajustes del sistema",
+    "openSettingsManual": "Ajustes del teléfono → Aplicaciones → PronunFit → Notificaciones → Permitir"
   },
   "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",
   "errors": {
@@ -589,7 +592,8 @@
     "studyMore": "Más estudio",
     "subscriptionTitle": "Suscripción",
     "listening": "Escucha",
-    "bonusTitle": "Bono"
+    "bonusTitle": "Bono",
+    "dictBtn": "Diccionario"
   },
   "stats": {
     "weekRate": "Tasa semanal",
@@ -1231,5 +1235,11 @@
       "cta": "Empezar ahora",
       "later": "Más tarde"
     }
+  },
+  "update": {
+    "title": "Actualización requerida",
+    "desc": "Hay una nueva versión con mejoras y correcciones. Por favor, actualiza para continuar.",
+    "btn": "Actualizar en Play Store",
+    "later": "Más tarde"
   }
 }

@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "Bật nhắc nhở luyện tập?",
     "prePromptReminderDesc": "Chúng tôi sẽ gửi một nhắc nhở mỗi ngày vào giờ bạn chọn.",
     "prePromptPushTitle": "Bật thông báo gói đăng ký?",
-    "prePromptPushDesc": "Chúng tôi chỉ thông báo về việc gia hạn và vấn đề thanh toán."
+    "prePromptPushDesc": "Chúng tôi chỉ thông báo về việc gia hạn và vấn đề thanh toán.",
+    "permissionDeniedPersistent": "Quyền thông báo trước đây đã bị từ chối, nên hộp thoại hệ thống không còn xuất hiện. Vui lòng bật thủ công trong Cài đặt điện thoại.",
+    "openSettingsBtn": "Cách mở Cài đặt hệ thống",
+    "openSettingsManual": "Cài đặt điện thoại → Ứng dụng → PronunFit → Thông báo → Cho phép"
   },
   "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",
   "errors": {
@@ -589,7 +592,8 @@
     "studyMore": "Học thêm",
     "subscriptionTitle": "Gói đăng ký",
     "listening": "Nghe",
-    "bonusTitle": "Tiền thưởng"
+    "bonusTitle": "Tiền thưởng",
+    "dictBtn": "Từ điển"
   },
   "stats": {
     "weekRate": "Tỷ lệ tuần",
@@ -1231,5 +1235,11 @@
       "cta": "Bắt đầu ngay",
       "later": "Để sau"
     }
+  },
+  "update": {
+    "title": "Cần cập nhật ứng dụng",
+    "desc": "Đã có phiên bản mới với cải tiến và sửa lỗi. Vui lòng cập nhật để tiếp tục.",
+    "btn": "Cập nhật trên Play Store",
+    "later": "Để sau"
   }
 }

@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "練習リマインダーをオンにしますか？",
     "prePromptReminderDesc": "選択した時刻に1日1回だけお知らせします。",
     "prePromptPushTitle": "サブスク通知を受け取りますか？",
-    "prePromptPushDesc": "サブスクの更新と支払いの問題のみお知らせします。"
+    "prePromptPushDesc": "サブスクの更新と支払いの問題のみお知らせします。",
+    "permissionDeniedPersistent": "以前に通知の権限を拒否されたため、システムダイアログは表示されません。スマホの設定から直接許可してください。",
+    "openSettingsBtn": "システム設定の開き方を見る",
+    "openSettingsManual": "スマホ設定 → アプリ → PronunFit → 通知 → 許可に変更してください。"
   },
   "splashTagline": "無料の多言語発音学習単語帳",
   "errors": {
@@ -1232,5 +1235,11 @@
       "cta": "今すぐ始める",
       "later": "後で"
     }
+  },
+  "update": {
+    "title": "アプリのアップデートが必要です",
+    "desc": "改善とバグ修正を含む新バージョンがあります。アップデートしてからご利用ください。",
+    "btn": "Play Store でアップデート",
+    "later": "後で"
   }
 }

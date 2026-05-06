@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "Activer les rappels de pratique ?",
     "prePromptReminderDesc": "Nous enverrons un seul rappel par jour à l'heure choisie.",
     "prePromptPushTitle": "Activer les alertes d'abonnement ?",
-    "prePromptPushDesc": "Nous vous informerons uniquement des renouvellements et des problèmes de paiement."
+    "prePromptPushDesc": "Nous vous informerons uniquement des renouvellements et des problèmes de paiement.",
+    "permissionDeniedPersistent": "L'autorisation de notification a été refusée précédemment. La boîte de dialogue système ne s'affiche plus — activez-la manuellement dans les réglages du téléphone.",
+    "openSettingsBtn": "Comment ouvrir les réglages système",
+    "openSettingsManual": "Réglages → Applications → PronunFit → Notifications → Autoriser"
   },
   "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",
   "errors": {
@@ -589,7 +592,8 @@
     "studyMore": "Étude sup.",
     "subscriptionTitle": "Abonnement",
     "listening": "Écoute",
-    "bonusTitle": "Bonus"
+    "bonusTitle": "Bonus",
+    "dictBtn": "Dictionnaire"
   },
   "stats": {
     "weekRate": "Taux hebdo",
@@ -805,7 +809,47 @@
     "accountDelDesc": "Si vous souhaitez supprimer votre compte PronunFit, veuillez nous envoyer un e-mail à <b>support@pronunfit.com</b> en indiquant votre adresse e-mail d'inscription. Nous supprimerons en toute sécurité les informations de votre compte et toutes les données d'apprentissage dans les 7 jours.",
     "startFree": "Démarrer gratuitement",
     "loginBtn": "Connexion",
-    "loginWithAccount": "Me connecter à mon compte"
+    "loginWithAccount": "Me connecter à mon compte",
+    "card1Title": "Une révolution dans\nl'apprentissage autonome des langues",
+    "card1Highlight": "Révolution",
+    "card1Subtitle": "Combien de temps faudra-t-il pour maîtriser une langue\nen n'étudiant que des phrases scriptées ?",
+    "card1RecommendTitle": "Idéal pour les apprenants qui veulent :",
+    "card1Recommend1": "Une progression plus rapide que les apps traditionnelles",
+    "card1Recommend2": "Apprendre plusieurs langues en un seul endroit",
+    "card1Recommend3": "Un coaching de prononciation précis basé sur les données",
+    "card1Recommend4": "Un programme à leur rythme pour étudier en autonomie",
+    "card2Title": "Programme illimité\ngénéré par l'IA",
+    "card2Highlight": "Programme illimité",
+    "card2Subtitle": "70 catégories et 22 scénarios réels,\nconstamment mis à jour selon votre niveau",
+    "card2RecommendTitle": "Idéal pour les apprenants qui veulent :",
+    "card2Recommend1": "Une progression plus rapide que les apps traditionnelles",
+    "card2Recommend2": "Apprendre plusieurs langues en un seul endroit",
+    "card2Recommend3": "Un coaching de prononciation précis basé sur les données",
+    "card2Recommend4": "Un programme à leur rythme pour étudier en autonomie",
+    "card3Title": "Apprenez une langue, gagnez-en trois :\nUne efficacité multilingue exceptionnelle",
+    "card3Highlight": "Efficacité multilingue",
+    "card3Subtitle": "La seule app prenant en charge 3 langues en même temps.\nL'apprentissage croisé triple votre vitesse",
+    "card3RecommendTitle": "Idéal pour les apprenants qui veulent :",
+    "card3Recommend1": "Une progression plus rapide que les apps traditionnelles",
+    "card3Recommend2": "Apprendre plusieurs langues en un seul endroit",
+    "card3Recommend3": "Un coaching de prononciation précis basé sur les données",
+    "card3Recommend4": "Un programme à leur rythme pour étudier en autonomie",
+    "card4Title": "Sans superflu, que des compétences :\nUn rapport qualité-prix imbattable",
+    "card4Highlight": "Rapport qualité-prix imbattable",
+    "card4Subtitle": "Concentré sur les résultats réels, sans graphismes tape-à-l'œil.\nLes 6 fonctionnalités à un prix imbattable",
+    "card4RecommendTitle": "Idéal pour les apprenants qui veulent :",
+    "card4Recommend1": "Une progression plus rapide que les apps traditionnelles",
+    "card4Recommend2": "Apprendre plusieurs langues en un seul endroit",
+    "card4Recommend3": "Un coaching de prononciation précis basé sur les données",
+    "card4Recommend4": "Un programme à leur rythme pour étudier en autonomie",
+    "card5Title": "Une prononciation parfaite\njusqu'au moindre phonème",
+    "card5Highlight": "Prononciation parfaite",
+    "card5Subtitle": "Pas une simple comparaison. L'IA analyse votre voix\nsyllabe par syllabe avec un feedback détaillé",
+    "card5RecommendTitle": "Idéal pour les apprenants qui veulent :",
+    "card5Recommend1": "Une progression plus rapide que les apps traditionnelles",
+    "card5Recommend2": "Apprendre plusieurs langues en un seul endroit",
+    "card5Recommend3": "Un coaching de prononciation précis basé sur les données",
+    "card5Recommend4": "Un programme à leur rythme pour étudier en autonomie"
   },
   "reward": {
     "watchForCards": "+5 cartes",
@@ -1191,5 +1235,11 @@
       "cta": "Commencer",
       "later": "Plus tard"
     }
+  },
+  "update": {
+    "title": "Mise à jour requise",
+    "desc": "Une nouvelle version avec des améliorations et corrections est disponible. Veuillez mettre à jour pour continuer.",
+    "btn": "Mettre à jour sur le Play Store",
+    "later": "Plus tard"
   }
 }

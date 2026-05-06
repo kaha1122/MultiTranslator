@@ -106,7 +106,10 @@
     "prePromptReminderTitle": "Übungs-Erinnerungen aktivieren?",
     "prePromptReminderDesc": "Wir senden einmal täglich zu deiner gewählten Zeit eine Erinnerung.",
     "prePromptPushTitle": "Abo-Benachrichtigungen aktivieren?",
-    "prePromptPushDesc": "Wir informieren dich nur über Abo-Verlängerungen und Zahlungsprobleme."
+    "prePromptPushDesc": "Wir informieren dich nur über Abo-Verlängerungen und Zahlungsprobleme.",
+    "permissionDeniedPersistent": "Die Benachrichtigungsberechtigung wurde zuvor abgelehnt. Der Systemdialog erscheint nicht mehr — bitte in den Telefoneinstellungen manuell aktivieren.",
+    "openSettingsBtn": "Systemeinstellungen öffnen",
+    "openSettingsManual": "Telefoneinstellungen → Apps → PronunFit → Benachrichtigungen → Erlauben"
   },
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",
   "errors": {
@@ -589,7 +592,8 @@
     "studyMore": "Mehr lernen",
     "subscriptionTitle": "Abonnement",
     "listening": "Hörübung",
-    "bonusTitle": "Bonus"
+    "bonusTitle": "Bonus",
+    "dictBtn": "Wörterbuch"
   },
   "stats": {
     "weekRate": "Wochenquote",
@@ -805,7 +809,47 @@
     "accountDelDesc": "Wenn Sie Ihr PronunFit-Konto löschen möchten, senden Sie bitte eine E-Mail mit Ihrer registrierten E-Mail-Adresse an <b>support@pronunfit.com</b>. Wir werden Ihre Kontoinformationen und alle Lerndaten innerhalb von 7 Tagen sicher löschen.",
     "startFree": "Kostenlos starten",
     "loginBtn": "Anmelden",
-    "loginWithAccount": "Mit meinem Konto anmelden"
+    "loginWithAccount": "Mit meinem Konto anmelden",
+    "card1Title": "Eine Revolution im\nselbstgesteuerten Sprachenlernen",
+    "card1Highlight": "Revolution",
+    "card1Subtitle": "Wie lange dauert es, eine Sprache zu meistern,\nwenn man nur vorgegebene Sätze lernt?",
+    "card1RecommendTitle": "Perfekt für Lernende, die wollen:",
+    "card1Recommend1": "Schneller vorankommen als mit traditionellen Apps",
+    "card1Recommend2": "Mehrsprachiges Lernen an einem Ort",
+    "card1Recommend3": "Datengestütztes, präzises Aussprache-Coaching",
+    "card1Recommend4": "Selbstbestimmten Lernplan für unabhängiges Studium",
+    "card2Title": "KI-generierter\nunbegrenzter Lehrplan",
+    "card2Highlight": "Unbegrenzter Lehrplan",
+    "card2Subtitle": "70 Kategorien und 22 reale Szenarien,\nstetig auf Ihr Niveau abgestimmt",
+    "card2RecommendTitle": "Perfekt für Lernende, die wollen:",
+    "card2Recommend1": "Schneller vorankommen als mit traditionellen Apps",
+    "card2Recommend2": "Mehrsprachiges Lernen an einem Ort",
+    "card2Recommend3": "Datengestütztes, präzises Aussprache-Coaching",
+    "card2Recommend4": "Selbstbestimmten Lernplan für unabhängiges Studium",
+    "card3Title": "Eines lernen, drei gewinnen:\nÜberlegene mehrsprachige Effizienz",
+    "card3Highlight": "Mehrsprachige Effizienz",
+    "card3Subtitle": "Die einzige App, die 3 Sprachen gleichzeitig unterstützt.\nSprachenübergreifendes Lernen verdreifacht Ihr Tempo",
+    "card3RecommendTitle": "Perfekt für Lernende, die wollen:",
+    "card3Recommend1": "Schneller vorankommen als mit traditionellen Apps",
+    "card3Recommend2": "Mehrsprachiges Lernen an einem Ort",
+    "card3Recommend3": "Datengestütztes, präzises Aussprache-Coaching",
+    "card3Recommend4": "Selbstbestimmten Lernplan für unabhängiges Studium",
+    "card4Title": "Kein Schnickschnack, nur Können:\nÜberragender Wert",
+    "card4Highlight": "Überragender Wert",
+    "card4Subtitle": "Konzentriert auf echten Lernerfolg, statt auffälliger Grafik.\nAlle 6 Funktionen zu einem unschlagbaren Preis",
+    "card4RecommendTitle": "Perfekt für Lernende, die wollen:",
+    "card4Recommend1": "Schneller vorankommen als mit traditionellen Apps",
+    "card4Recommend2": "Mehrsprachiges Lernen an einem Ort",
+    "card4Recommend3": "Datengestütztes, präzises Aussprache-Coaching",
+    "card4Recommend4": "Selbstbestimmten Lernplan für unabhängiges Studium",
+    "card5Title": "Perfekte Aussprache\nbis ins kleinste Phonem",
+    "card5Highlight": "Perfekte Aussprache",
+    "card5Subtitle": "Nicht nur ein einfacher Vergleich. KI analysiert Ihre Stimme\nsilbenweise mit detailliertem Feedback",
+    "card5RecommendTitle": "Perfekt für Lernende, die wollen:",
+    "card5Recommend1": "Schneller vorankommen als mit traditionellen Apps",
+    "card5Recommend2": "Mehrsprachiges Lernen an einem Ort",
+    "card5Recommend3": "Datengestütztes, präzises Aussprache-Coaching",
+    "card5Recommend4": "Selbstbestimmten Lernplan für unabhängiges Studium"
   },
   "reward": {
     "watchForCards": "+5 Karten",
@@ -1191,5 +1235,11 @@
       "cta": "Jetzt starten",
       "later": "Später"
     }
+  },
+  "update": {
+    "title": "App-Update erforderlich",
+    "desc": "Eine neue Version mit Verbesserungen und Fehlerbehebungen ist verfügbar. Bitte aktualisieren, um fortzufahren.",
+    "btn": "Im Play Store aktualisieren",
+    "later": "Später"
   }
 }
