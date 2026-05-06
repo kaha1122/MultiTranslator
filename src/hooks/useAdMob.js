@@ -113,21 +113,27 @@ function setOffset(height) {
 export const useAdMob = (tier) => {
     const bannerShowing = useRef(false);
     const isPaid = tier === 'pro' || tier === 'premium';
+    // ⚠ 콜드스타트 미동기화 가드: tier가 null/undefined면 profile 미로드 상태로 간주.
+    //   profile이 null일 때 AuthContext가 'trial' 폴백을 주면 Pro 유저에게 ATT 프롬프트 +
+    //   배너 깜빡임이 발생함. App.jsx에서 `useAdMob(profile ? tier : null)` 로 호출.
+    const isReady = tier != null;
 
     // Pro/Premium 전환 시 배너 제거
     useEffect(() => {
         if (!isNativePlatform()) return;
+        if (!isReady) return;
         if (isPaid && bannerShowing.current) {
             if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
             bannerShowing.current = false;
             console.log('[AdMob] Banner removed (paid tier)');
         }
-    }, [isPaid]);
+    }, [isPaid, isReady]);
 
     // Trial 시 배너 표시
     useEffect(() => {
         if (!isNativePlatform() || isPaid || bannerShowing.current) return;
+        if (!isReady) return; // profile 미로드 상태에서는 ATT/AdMob 초기화 보류
 
         let listenerHandles = [];
 
@@ -196,5 +202,5 @@ export const useAdMob = (tier) => {
             setOffset(false);
             bannerShowing.current = false;
         };
-    }, [isPaid]);
+    }, [isPaid, isReady]);
 };

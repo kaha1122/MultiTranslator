@@ -115,15 +115,26 @@ fi
 echo ""
 
 # 7. 서버 API로 Firestore 업데이트
-echo "☁️  Firestore 업데이트 중... (latestNativeVersionIOS → $VERSION_NAME)"
-HTTP_CODE=$(curl -s -o /tmp/config_response_ios.txt -w "%{http_code}" \
-  -X POST "${SERVER_URL}/api/config/app" \
-  -H "Content-Type: application/json" \
-  -H "Authorization: Bearer ${BUILD_SECRET}" \
-  -d "{\"latestNativeVersionIOS\": \"${VERSION_NAME}\"}")
+# ⚠️ 권장: 빌드 직후 자동 갱신은 비활성화하고, App Store 실제 출시 확정 후 수동 갱신.
+#   이유: 빌드 vs 공개 시점 괴리로 사용자에게 "없는 버전" 업데이트 팝업 방지
+#   (memory: feedback_manual_native_version_update.md)
+# 그래도 자동 갱신을 원할 경우 아래 echo 주석 제거.
+echo "☁️  Firestore 업데이트 SKIP (수동 갱신 권장 — App Store 출시 확정 후)"
+echo "   수동 갱신 시: curl -X POST ${SERVER_URL}/api/config/app \\"
+echo "                 -H 'Authorization: Bearer \${BUILD_SECRET}' \\"
+echo "                 -d '{\"latestIOSVersion\": \"${VERSION_NAME}\"}'"
+HTTP_CODE="000"
+# 자동 갱신을 원하면 아래 주석을 해제:
+# HTTP_CODE=$(curl -s -o /tmp/config_response_ios.txt -w "%{http_code}" \
+#   -X POST "${SERVER_URL}/api/config/app" \
+#   -H "Content-Type: application/json" \
+#   -H "Authorization: Bearer ${BUILD_SECRET}" \
+#   -d "{\"latestIOSVersion\": \"${VERSION_NAME}\"}")
 
 if [ "$HTTP_CODE" = "200" ]; then
   echo "✅ Firestore 업데이트 완료"
+elif [ "$HTTP_CODE" = "000" ]; then
+  : # 의도적으로 SKIP
 else
   echo "⚠️  Firestore 업데이트 실패 (HTTP $HTTP_CODE)"
   cat /tmp/config_response_ios.txt 2>/dev/null

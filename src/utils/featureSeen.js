@@ -14,9 +14,9 @@ import { db } from '../firebase/config';
 const LS_PREFIX = 'pronunfit.featureSeen.';
 
 // 플랫폼별 기능 최소 지원 버전 — 새 기능 추가 시 여기에 등록
-// iOS는 심사 통과 + 실제 출시된 후에만 버전 기록 (지금은 TBD)
+// iOS 1.3.0: Push Notifications 네이티브 통합 빌드 (APNs token forwarding + entitlements + SPM 등록)
 export const FEATURE_LAUNCH_VERSIONS = {
-    notifications: { android: '1.2.7', ios: null },
+    notifications: { android: '1.2.7', ios: '1.3.0' },
 };
 
 // semver 스타일 버전 비교 ("1.2.10" > "1.2.9" 정확히 판정)

@@ -146,16 +146,20 @@ router.post('/api/config/app', async (req, res) => {
     }
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
-    const { latestNativeVersion } = req.body;
-    if (!latestNativeVersion) return res.status(400).json({ error: 'latestNativeVersion required' });
+    // 플랫폼별 버전 분리 (iOS / Android 독립 운영) + 레거시 latestNativeVersion 호환
+    const { latestIOSVersion, latestAndroidVersion, latestNativeVersion } = req.body;
+    if (!latestIOSVersion && !latestAndroidVersion && !latestNativeVersion) {
+        return res.status(400).json({ error: 'latestIOSVersion, latestAndroidVersion, or latestNativeVersion required' });
+    }
 
     try {
-        await adminDb.collection('config').doc('app').set(
-            { latestNativeVersion, updatedAt: admin.firestore.FieldValue.serverTimestamp() },
-            { merge: true }
-        );
-        console.log(`[Config] latestNativeVersion updated to ${latestNativeVersion}`);
-        res.json({ success: true, latestNativeVersion });
+        const updateData = { updatedAt: admin.firestore.FieldValue.serverTimestamp() };
+        if (latestIOSVersion) updateData.latestIOSVersion = latestIOSVersion;
+        if (latestAndroidVersion) updateData.latestAndroidVersion = latestAndroidVersion;
+        if (latestNativeVersion) updateData.latestNativeVersion = latestNativeVersion; // 레거시
+        await adminDb.collection('config').doc('app').set(updateData, { merge: true });
+        console.log('[Config] updated:', JSON.stringify(updateData));
+        res.json({ success: true, ...updateData });
     } catch (err) {
         console.error('[Config] update error:', err.message);
         res.status(500).json({ error: err.message });

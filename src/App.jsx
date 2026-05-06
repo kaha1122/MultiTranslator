@@ -505,7 +505,9 @@ function App() {
   }, []);
 
   // AdMob 배너 광고 (네이티브 전용, Pro/Premium 제외)
-  useAdMob(tier);
+  // profile 미로드 시 tier=null 전달 → useAdMob 내부 isReady 가드로 ATT/배너 보류.
+  // (profile?.tier가 'trial' 폴백이라 Pro 유저 콜드스타트 시 ATT 깜빡임 발생하던 것 차단)
+  useAdMob(profile ? tier : null);
 
   // ATT(광고 추적) 승인 상태를 Firestore에 저장 (iOS, 1회)
   React.useEffect(() => {
