@@ -809,9 +809,6 @@
     "loginWithAccount": "登录我的账户"
   },
   "reward": {
-    "watchForBonus": "🎁 +10 积分",
-    "watchAdBonus": "观看广告后奖励积分 +10",
-    "pointsHint": "生成 1分 / 发音 1分 / Free-Talking 消耗 10分",
     "watchForCards": "+5 张卡片",
     "watchAd": "看广告获得5张卡片",
     "watchForProns": "+10 次发音",

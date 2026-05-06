@@ -808,9 +808,6 @@
     "loginWithAccount": "Me connecter à mon compte"
   },
   "reward": {
-    "watchForBonus": "🎁 +10 points",
-    "watchAdBonus": "Regarder une pub → +10 points bonus",
-    "pointsHint": "Génération 1pt / Prononciation 1pt / Free-Talking utilise 10pt",
     "watchForCards": "+5 cartes",
     "watchAd": "Regardez une pub pour 5 cartes",
     "watchForProns": "+10 prononc.",
