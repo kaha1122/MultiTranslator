@@ -91,11 +91,11 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   };
 
   const handleLevelConfirm = () => {
-    setStep('done');
+    setStep('aiConsent');
   };
 
-  const handleDone = () => {
-    onComplete(source, targets, level);
+  const handleAiConsentAccept = () => {
+    onComplete(source, targets, level, true); // 4번째 인자 = aiConsented
   };
 
   const handleNextFromSource = () => {
@@ -121,8 +121,8 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
       >
         {/* 단계 인디케이터 */}
         <div className="onb-steps">
-          {[0, 1, 2, 3].map(i => {
-            const stepIdx = step === 'level' ? 3 : step === 'done' ? 4 : (typeof step === 'number' ? step : 3);
+          {[0, 1, 2, 3, 4].map(i => {
+            const stepIdx = step === 'aiConsent' ? 4 : step === 'level' ? 3 : (typeof step === 'number' ? step : 3);
             return <span key={i} className={`onb-step-dot ${stepIdx >= i ? 'active' : ''}`} />;
           })}
         </div>
@@ -158,18 +158,32 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
                   {t('onboarding.next')} →
                 </button>
               </>
-            ) : step === 'done' ? (
+            ) : step === 'aiConsent' ? (
               <>
-                <div style={{ fontSize: '2.2rem', marginBottom: '12px' }}>✅</div>
-                <h2 className="onb-title">{t('onboarding.doneTitle')}</h2>
-                <p style={{
-                  color: '#64748b', fontSize: '0.85rem', margin: '8px 0 24px',
-                  lineHeight: 1.6,
+                <div style={{
+                  width: '48px', height: '48px', borderRadius: '50%', background: '#eff6ff',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  margin: '0 auto 14px', fontSize: '24px',
                 }}>
-                  {t('onboarding.doneDesc')}
+                  🤖
+                </div>
+                <h2 className="onb-title">{t('aiConsent.title')}</h2>
+                <p style={{
+                  margin: '0 0 14px', fontSize: '0.85rem', color: '#64748b',
+                  lineHeight: 1.6, textAlign: 'left',
+                }}>
+                  {t('aiConsent.body')}
                 </p>
-                <button className="onb-next-btn" onClick={handleDone}>
-                  {t('onboarding.doneBtn')}
+                <a
+                  href="https://pronunfit.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  style={{ fontSize: '0.78rem', color: '#6366f1', display: 'block', marginBottom: '16px' }}
+                >
+                  {t('aiConsent.privacyLink')}
+                </a>
+                <button className="onb-next-btn" onClick={handleAiConsentAccept}>
+                  {t('aiConsent.accept')}
                 </button>
               </>
             ) : (
