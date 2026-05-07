@@ -3622,10 +3622,13 @@ function App() {
                   const textColor = isTrial
                     ? (isFull ? '#ef4444' : '#059669')
                     : (isFull ? '#059669' : '#818cf8');
-                  const icon = isTrial ? '🗣️' : '🎯';
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>{icon}</span>
+                      <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
+                        {isTrial
+                          ? <MessageCircle size={12} color="#f59e0b" strokeWidth={2.5} />
+                          : <span style={{ fontSize: '0.65rem' }}>🎯</span>}
+                      </span>
                       <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
                         <div style={{
                           height: '100%', borderRadius: '99px',
