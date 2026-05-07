@@ -189,12 +189,13 @@ export const useAdMob = (tier) => {
                     setOffset(false);
                 }));
 
-                // 🚨 NPE 가드: showBanner 직전에 기존 AdView를 명시적으로 정리.
-                // 두 번째 진입이 'updateExistingAdView' 경로로 들어가면서 destroy된 mAdView에
-                // loadAd()를 호출하는 결함(BannerExecutor.java:230) 회피.
-                try { await _adMob.removeBanner(); } catch {}
-
-                if (cancelled) return;
+                // NPE(BannerExecutor.java:230) 방어는 위쪽 모듈 락(_bannerShowing,
+                // _bannerSetupInFlight)으로 충분 — 동시 setup 두 번 진입을 막으면
+                // updateExistingAdView 경로 자체로 들어가지 않음.
+                //
+                // 과거 시도(showBanner 직전 removeBanner 강제 호출)는 첫 mount에서
+                // banner가 없는 상태에서 await가 영영 resolve 안 되는 결함을 유발해서 제거.
+                // (1.4.103/1.4.104 staging에서 광고만 새로고침되고 메인 앱 멈춤 사고 원인)
 
                 console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerBottom, 'isTesting:', IS_TESTING);
 
