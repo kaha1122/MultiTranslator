@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, MapPin, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
+import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessagesSquare } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
@@ -127,6 +127,9 @@ function App() {
   // 구독 성공 직후 push opt-in 모달 제어 (D)
   const [showPushOptIn, setShowPushOptIn] = useState(false);
   const prevTierRef = useRef(null);
+  // 이번 세션에서 PushOptIn 모달이 한 번이라도 닫혔는지 — 같은 세션 내 재발화 차단
+  // (Firestore serverTimestamp pending 시 toDate()=null로 7일 스누즈 검사 통과해버리는 race 방지)
+  const pushPromptDismissedRef = useRef(false);
 
   // 구독 이벤트 팝업 (renewal/expiration/billingIssue/cancellation)
   const [subscriptionEvent, setSubscriptionEvent] = useState(null);
@@ -508,7 +511,11 @@ function App() {
   // AdMob 배너 광고 (네이티브 전용, Pro/Premium 제외)
   // profile 미로드 시 tier=null 전달 → useAdMob 내부 isReady 가드로 ATT/배너 보류.
   // (profile?.tier가 'trial' 폴백이라 Pro 유저 콜드스타트 시 ATT 깜빡임 발생하던 것 차단)
-  useAdMob(profile ? tier : null);
+  // ATT 시스템 다이얼로그가 온보딩 도중 끼어드는 것을 막기 위해 AI Consent 완료 전에는 보류.
+  // 이 게이트로 ATT는 항상 "온보딩 → AI Consent" 다음에 발화.
+  const aiConsentReady = !!profile?.aiConsentAt
+    || (typeof window !== 'undefined' && window.localStorage?.getItem('aiConsentAccepted') === '1');
+  useAdMob(profile && aiConsentReady ? tier : null);
 
   // ATT(광고 추적) 승인 상태를 Firestore에 저장 (iOS, 1회)
   React.useEffect(() => {
@@ -1038,16 +1045,16 @@ function App() {
   // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
   const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
   // 2026-05-04: emoji → lucide-react 컴포넌트로 통일 (사이드바와 일관성 + CSS color 토글 가능)
-  // scene 아이콘 🎭(우는 인상) → MessagesSquare (Free Talking 컨셉)
+  // 2026-05-08: scene 아이콘 → MessageCircle + amber #f59e0b (Free Talking NEW 강조, 사이드바와 동일)
   const TAB_STYLE = {
-    home:        { Icon: Home,           color: '#00a884' },
-    vocab:       { Icon: BookOpen,       color: '#059669' },
-    scene:       { Icon: MessagesSquare, color: '#6366f1' },
-    listening:   { Icon: Headphones,     color: '#7c3aed' },
-    translation: { Icon: Languages,      color: '#d97706' },
-    video:       { Icon: Youtube,        color: '#e11d48' },
-    library:     { Icon: Sparkles,       color: '#0891b2' },
-    stats:       { Icon: BarChart3,      color: '#6366f1' },
+    home:        { Icon: Home,          color: '#00a884' },
+    vocab:       { Icon: BookOpen,      color: '#059669' },
+    scene:       { Icon: MessageCircle, color: '#f59e0b' },
+    listening:   { Icon: Headphones,    color: '#7c3aed' },
+    translation: { Icon: Languages,     color: '#d97706' },
+    video:       { Icon: Youtube,       color: '#e11d48' },
+    library:     { Icon: Sparkles,      color: '#0891b2' },
+    stats:       { Icon: BarChart3,     color: '#6366f1' },
   };
   // nav.* 라벨에서 "00." / "01." 등 번호 prefix 제거 (legacy — 5/4 i18n 정리 후 no-op이지만 안전망)
   const stripNavPrefix = (s) => (s ? String(s).replace(/^\d{1,2}\.\s*/, '') : s);
@@ -1382,9 +1389,13 @@ function App() {
   const shouldShowSubscriptionPrompt = (p) => {
     if (!Capacitor.isNativePlatform?.()) return false;
     if (!p) return false;
+    // 같은 세션 내 한 번 닫혔으면 재발화 금지 (serverTimestamp pending race 차단)
+    if (pushPromptDismissedRef.current) return false;
     if (Array.isArray(p.fcmTokens) && p.fcmTokens.length > 0) return false;
     if (p.fcmTokenUpdatedAt) return false; // 한 번이라도 등록 성공한 유저는 영영 안 띄움
     if (p.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return false;
+    // AI Consent 먼저 → AI Consent 완료 전에는 푸시 모달 보류
+    if (!p.aiConsentAt && localStorage.getItem('aiConsentAccepted') !== '1') return false;
     // 버전 가드 — 네이티브 플러그인 없는 구버전 유저에겐 프롬프트 안 띄움 (깨진 UI 방지)
     if (!supportsFeature('notifications', p)) return false;
     // 누적 dismiss cap (spam 방지)
@@ -1395,17 +1406,9 @@ function App() {
     return true;
   };
 
+  // AI Consent — 온보딩 완료 직후 즉시 발화 (PushOptIn보다 먼저)
   useEffect(() => {
     if (!user || !profile) return;
-    if (shouldShowSubscriptionPrompt(profile)) {
-      setShowSubscriptionPrompt(true);
-    }
-  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.fcmTokens, profile?.fcmTokenUpdatedAt, profile?.pushOptInLastShownAt, profile?.pushOptInDismissCount]);
-
-  useEffect(() => {
-    if (!user || !profile) return;
-    // 구독 알림 모달이 먼저 떠야 하면 AI 동의는 대기
-    if (shouldShowSubscriptionPrompt(profile)) return;
     // Firestore에 이미 동의 기록이 있으면 스킵 + localStorage 동기화
     if (profile.aiConsentAt) {
       localStorage.setItem('aiConsentAccepted', '1');
@@ -1416,6 +1419,15 @@ function App() {
     // 온보딩이 안 끝났으면 온보딩 먼저 → 온보딩 완료 후 이 effect가 재평가됨
     if (profile.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return;
     setShowAiConsent(true);
+  }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt]);
+
+  // PushOptIn 구독 알림 — AI Consent 완료 후 발화
+  // 의존성에 aiConsentAt을 포함하여 동의 직후 자동 재평가됨
+  useEffect(() => {
+    if (!user || !profile) return;
+    if (shouldShowSubscriptionPrompt(profile)) {
+      setShowSubscriptionPrompt(true);
+    }
   }, [user?.uid, !!profile, profile?.hasCompletedOnboarding, profile?.aiConsentAt, profile?.fcmTokens, profile?.fcmTokenUpdatedAt, profile?.pushOptInLastShownAt, profile?.pushOptInDismissCount]);
 
   // 보너스 캠페인 출시 안내 — lifecycleStage 있는 사용자에게 1회 표시
@@ -1537,7 +1549,7 @@ function App() {
     setViewMode('scene');  // Scene 탭으로 자동 이동 (사용자가 즉시 시도 가능)
   };
 
-  const handleOnboardingComplete = (src, tgts, lvl) => {
+  const handleOnboardingComplete = (src, tgts, lvl, aiConsented) => {
     setSourceLang(src);
     setTargetLangs(tgts);
     if (lvl) {
@@ -1549,6 +1561,10 @@ function App() {
     localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
     // 신규 사용자: TabTutorial 의 Scene step 으로 Free-Talking 안내 받음 → announce 모달 skip
     localStorage.setItem('pronunfit_freetalk_announce_seen', '1');
+    // AI Consent를 온보딩 마지막 step에 통합 — 별도 모달 안 뜨도록 즉시 캐시
+    if (aiConsented) {
+      localStorage.setItem('aiConsentAccepted', '1');
+    }
     setShowOnboarding(false);
     setViewMode('home');
     updateUserProfile({
@@ -1557,6 +1573,7 @@ function App() {
       targetLang: tgts[0] || null,
       targetLangs: tgts,
       defaultLevel: lvl || 'basic',
+      ...(aiConsented ? { aiConsentAt: new Date() } : {}),
     }).catch(() => { });
   };
 
@@ -3225,7 +3242,7 @@ function App() {
 
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
                 onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><MapPin size={16} /></span>
+                <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
                 {getT(sourceLang, 'nav.scene')}
               </button>
 
@@ -5080,6 +5097,7 @@ function App() {
           sourceLang={sourceLang}
           uid={user?.uid}
           onClose={(arg) => {
+            pushPromptDismissedRef.current = true;
             setShowPushOptIn(false);
             const result = arg?.result || 'dismissed';
             const update = { pushOptInLastShownAt: serverTimestamp() };
@@ -5091,11 +5109,13 @@ function App() {
 
       {/* 신규/dismissed 유저 첫/재 실행 시 학습+구독 알림 동의 (A1, 2026-05-03) */}
       {/* 'registered': fcmTokenUpdatedAt set → 다음에 안 뜸 / 'denied'·'dismissed': 7일 스누즈 + dismissCount cap */}
-      {showSubscriptionPrompt && !showOnboarding && (
+      {/* showAiConsent와 동시에 뜨지 않도록 명시 가드 (AI Consent 먼저) */}
+      {showSubscriptionPrompt && !showOnboarding && !showAiConsent && (
         <PushOptInModal
           sourceLang={sourceLang}
           uid={user?.uid}
           onClose={(arg) => {
+            pushPromptDismissedRef.current = true;
             setShowSubscriptionPrompt(false);
             const result = arg?.result || 'dismissed';
             const update = { pushOptInLastShownAt: serverTimestamp() };
