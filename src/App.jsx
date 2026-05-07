@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle, MessageCircleMore } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
@@ -3626,7 +3626,7 @@ function App() {
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
                         {isTrial
-                          ? <MessageCircle size={12} color="#f59e0b" strokeWidth={2.5} />
+                          ? <MessageCircleMore size={12} color="#f59e0b" strokeWidth={2.5} />
                           : <span style={{ fontSize: '0.65rem' }}>🎯</span>}
                       </span>
                       <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
