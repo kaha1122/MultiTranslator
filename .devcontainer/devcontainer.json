@@ -1,0 +1,4 @@
+{
+  "name": "MultiTranslator",
+  "postCreateCommand": "if [ -n \"$CAPGO_TOKEN\" ]; then npx --yes @capgo/cli login \"$CAPGO_TOKEN\" && echo '✅ Capgo CLI auto-logged in'; else echo '⚠️  CAPGO_TOKEN secret not set — capgo 명령 사용 시 수동 login 필요'; fi"
+}
