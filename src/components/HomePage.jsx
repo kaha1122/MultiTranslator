@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Languages, Video, Library, Headphones, MessagesSquare } from 'lucide-react';
+import { BookOpen, Languages, Video, Library, Headphones, MessageCircle } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
@@ -27,11 +27,11 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
         },
         {
             id: 'scene',
-            icon: <MessagesSquare size={24} />,
+            icon: <MessageCircle size={24} />,
             emoji: '💬',
-            color: '#6366f1',
-            bgColor: '#eef2ff',
-            borderColor: '#c7d2fe',
+            color: '#f59e0b',         // 사이드바/탭바와 동일 amber
+            bgColor: '#fef3c7',        // amber 100 (translation #fffbeb 보다 진하게 — 시각 구분)
+            borderColor: '#fcd34d',    // amber 300
             titleKey: 'home.sceneTitle',
             descKey: 'home.sceneDesc',
             subDescKey: 'home.sceneSubDesc',
