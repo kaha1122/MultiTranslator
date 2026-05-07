@@ -196,20 +196,19 @@
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
-		F1D2E3B02DB2000000000001 /* Patch Capacitor Config for iOS */ = {
+		F1D2E3B02DB2000000000001 /* Capgo OTA Active (no patch) */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 			);
 			inputPaths = (
-				"$(SRCROOT)/App/capacitor.config.json",
 			);
-			name = "Patch Capacitor Config for iOS";
+			name = "Capgo OTA Active (no patch)";
 			outputPaths = (
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/bash;
-			shellScript = "# Patch capacitor.config.json for iOS\n# - Disable Capgo autoUpdate (iOS uses native IPA, not OTA)\n# - Set backgroundColor\nCAP_CONFIG=\"${SRCROOT}/App/capacitor.config.json\"\nif [ -f \"$CAP_CONFIG\" ]; then\n  /usr/bin/python3 -c \"\nimport json\nwith open('${SRCROOT}/App/capacitor.config.json', 'r') as f:\n    cfg = json.load(f)\nif 'plugins' not in cfg:\n    cfg['plugins'] = {}\ncfg['plugins']['CapacitorUpdater'] = {'autoUpdate': False}\ncfg['backgroundColor'] = '#f8fafc'\nwith open('${SRCROOT}/App/capacitor.config.json', 'w') as f:\n    json.dump(cfg, f, indent='\\t')\n    f.write('\\n')\nprint('iOS capacitor.config.json patched: autoUpdate=false, backgroundColor=#f8fafc')\n\"\nelse\n  echo \"WARNING: capacitor.config.json not found at $CAP_CONFIG\"\nfi\n";
+			shellScript = "echo '[Build Phase] iOS Capgo OTA active — autoUpdate=true (no patch applied)'\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

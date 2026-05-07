@@ -1,10 +1,16 @@
 #!/bin/bash
 # Xcode Cloud: 클론 직후 실행되는 스크립트
-# 환경변수는 App Store Connect → Xcode Cloud → 워크플로 관리 → Environment Variables에서 설정
+#
+# 환경변수 처리: 모든 VITE_* 환경변수는 git에 commit된 .env.production 에서 자동 로드.
+#   (이전에는 이 스크립트가 .env 파일을 expand로 만들었으나, .env.production이 cover하므로 제거.)
+#   Xcode Cloud Workflow에 등록된 환경변수는 Vite의 process.env 우선순위로 자동 적용됨.
+#
+# Capgo OTA: autoUpdate=true (capacitor.config.json) — iOS에도 활성화됨.
+#   (이전 patch 로직은 build-ios.sh / project.pbxproj Run Script와 함께 제거됨.)
 
 set -e
 
-echo "=== [1/6] Node.js 설치 ==="
+echo "=== [1/3] Node.js 설치 ==="
 # brew install은 느리므로 이미 설치되어 있으면 스킵
 if ! command -v node &> /dev/null; then
   brew install node
@@ -12,43 +18,12 @@ else
   echo "Node.js already installed: $(node -v)"
 fi
 
-echo "=== [2/6] .env 파일 생성 ==="
+echo "=== [2/3] npm ci (clean install) ==="
 cd "$CI_PRIMARY_REPOSITORY_PATH"
-cat > .env << EOF
-VITE_API_URL=${VITE_API_URL}
-VITE_TOSS_CLIENT_KEY=${VITE_TOSS_CLIENT_KEY}
-VITE_FIREBASE_API_KEY=${VITE_FIREBASE_API_KEY}
-VITE_FIREBASE_AUTH_DOMAIN=${VITE_FIREBASE_AUTH_DOMAIN}
-VITE_FIREBASE_PROJECT_ID=${VITE_FIREBASE_PROJECT_ID}
-VITE_FIREBASE_STORAGE_BUCKET=${VITE_FIREBASE_STORAGE_BUCKET}
-VITE_FIREBASE_MESSAGING_SENDER_ID=${VITE_FIREBASE_MESSAGING_SENDER_ID}
-VITE_FIREBASE_APP_ID=${VITE_FIREBASE_APP_ID}
-VITE_FIREBASE_MEASUREMENT_ID=${VITE_FIREBASE_MEASUREMENT_ID}
-VITE_REVENUECAT_ANDROID_KEY=${VITE_REVENUECAT_ANDROID_KEY}
-VITE_REVENUECAT_IOS_KEY=${VITE_REVENUECAT_IOS_KEY}
-EOF
-
-echo "=== [3/6] npm ci (clean install) ==="
 npm ci --prefer-offline
 
-echo "=== [4/6] npm run build ==="
+echo "=== [3/3] npm run build + cap sync ios ==="
 NODE_OPTIONS="--max-old-space-size=4096" npm run build
-
-echo "=== [5/6] cap sync ios ==="
 npx cap sync ios
-
-echo "=== [6/6] iOS Capgo autoUpdate 비활성화 ==="
-IOS_CAP_CONFIG="$CI_PRIMARY_REPOSITORY_PATH/ios/App/App/capacitor.config.json"
-if [ -f "$IOS_CAP_CONFIG" ]; then
-  node -e "
-    const fs = require('fs');
-    const cfg = JSON.parse(fs.readFileSync('$IOS_CAP_CONFIG', 'utf8'));
-    if (!cfg.plugins) cfg.plugins = {};
-    cfg.plugins.CapacitorUpdater = { autoUpdate: false };
-    cfg.backgroundColor = '#f8fafc';
-    fs.writeFileSync('$IOS_CAP_CONFIG', JSON.stringify(cfg, null, '\t') + '\n');
-    console.log('iOS capacitor.config.json: autoUpdate -> false, backgroundColor -> #f8fafc');
-  "
-fi
 
 echo "=== Build ready ==="
