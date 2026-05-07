@@ -6,7 +6,7 @@
 
 - **앱명**: PronunFit (`com.arigems.pronunfit`)
 - **목적**: 발음 평가 + 다국어 번역 + 학습 콘텐츠 (UI 10언어 / 학습 38언어)
-- **배포 채널**: 웹 ([Vercel](https://multi-translator-seven.vercel.app)) · Android (Play Store) · iOS (App Store) · Capgo OTA (Android만)
+- **배포 채널**: 웹 ([Vercel](https://multi-translator-seven.vercel.app)) · Android (Play Store) · iOS (App Store) · Capgo OTA (Android + iOS)
 - **상태**: **Production 실서비스 중** — 잘못된 변경은 즉시 실유저 피해
 
 ## 기술 스택
@@ -74,9 +74,9 @@ npm run cap:ios          # Xcode 열기
 - 사전 점검: `git diff <prev>..HEAD -- ios/`
 
 ### Capgo OTA
-- **Android만** (iOS Capgo OTA는 무한 reload 이슈로 2026-04-03부터 비활성화 — 빌드 스크립트 patch로 enforce)
+- **Android + iOS** (iOS는 2026-05-07 재활성화 — `autoUpdate=true`, ci_post_clone 정리됨; 과거 무한 reload 이슈는 해결된 것으로 판단)
 - 채널: `production` / `staging`
-- 네이티브 변경(Java/Gradle/Plugin 추가)은 OTA 불가 → AAB 재빌드 필수
+- 네이티브 변경(Java/Swift/Gradle/Plugin 추가)은 OTA 불가 → AAB / IPA 재빌드 필수
 
 ### 네이티브 버전 자동 업데이트 금지
 - Firestore `config/app.latestNativeVersion`은 AAB 빌드 시 자동 업데이트하지 않음
@@ -118,7 +118,6 @@ npm run cap:ios          # Xcode 열기
 - **다음 AAB 빌드 시**: Direct Boot 가드 / FB SDK 17.0.2 고정 / `@capacitor/share` cap sync + ReferralModal native 분기 / Android Firebase Auth `browserLocalPersistence` 강제 (Phase 1-C, 우선순위 높음)
   - 트리거: AAB 빌드 / `versionCode` bump / `MainApplication.java` / `android/app/build.gradle` / `src/firebase/config.js` 편집
 - **iOS 심사 통과 후**: Push Notifications Xcode 통합 (Capability 추가 + AppDelegate.swift 핸들러) + Meta 대시보드 iPhone Store ID(`6761342764`) 등록
-- **iOS Capgo OTA 비활성화 유지**: `capacitor.config.json`의 `CapacitorUpdater.autoUpdate`를 빌드 스크립트가 false로 patch함 — 변경 시 무한 reload 회귀 위험
 
 ## 사용자 정보
 
