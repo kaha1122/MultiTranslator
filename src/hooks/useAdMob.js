@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect } from 'react';
 
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
@@ -85,6 +85,12 @@ const DEFAULT_BANNER_HEIGHT = 100;
 let _adMob = null;
 let _admobInitialized = false;
 
+// 모듈 레벨 배너 상태 — StrictMode/hot reload/effect 재실행으로 setup이 동시에
+// 두 번 진입하면 BannerExecutor.updateExistingAdView()에서 destroy된 AdView에
+// loadAd() 호출 → NPE (BannerExecutor.java:230). 모듈 레벨에서 단일 직렬화.
+let _bannerShowing = false;
+let _bannerSetupInFlight = false;
+
 async function loadAdMob() {
     if (_adMob) return;
     if (!isNativePlatform()) return;
@@ -111,7 +117,6 @@ function setOffset(height) {
 }
 
 export const useAdMob = (tier) => {
-    const bannerShowing = useRef(false);
     const isPaid = tier === 'pro' || tier === 'premium';
     // ⚠ 콜드스타트 미동기화 가드: tier가 null/undefined면 profile 미로드 상태로 간주.
     //   profile이 null일 때 AuthContext가 'trial' 폴백을 주면 Pro 유저에게 ATT 프롬프트 +
@@ -122,25 +127,28 @@ export const useAdMob = (tier) => {
     useEffect(() => {
         if (!isNativePlatform()) return;
         if (!isReady) return;
-        if (isPaid && bannerShowing.current) {
+        if (isPaid && _bannerShowing) {
             if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
-            bannerShowing.current = false;
+            _bannerShowing = false;
             console.log('[AdMob] Banner removed (paid tier)');
         }
     }, [isPaid, isReady]);
 
     // Trial 시 배너 표시
     useEffect(() => {
-        if (!isNativePlatform() || isPaid || bannerShowing.current) return;
+        if (!isNativePlatform() || isPaid) return;
         if (!isReady) return; // profile 미로드 상태에서는 ATT/AdMob 초기화 보류
+        if (_bannerShowing || _bannerSetupInFlight) return; // 동시 setup 진입 차단
 
         let listenerHandles = [];
+        let cancelled = false;
 
         const setup = async () => {
+            _bannerSetupInFlight = true;
             try {
                 await loadAdMob();
-                if (!_adMob) return;
+                if (!_adMob || cancelled) return;
 
                 if (!_admobInitialized) {
                     // iOS: ATT 프롬프트를 AdMob 초기화 전에 표시 (Apple 필수)
@@ -161,6 +169,8 @@ export const useAdMob = (tier) => {
                     _admobInitialized = true;
                 }
 
+                if (cancelled) return;
+
                 const { BannerAdSize, BannerAdPosition, BannerAdPluginEvents } = await import('@capacitor-community/admob');
 
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => {
@@ -179,6 +189,13 @@ export const useAdMob = (tier) => {
                     setOffset(false);
                 }));
 
+                // 🚨 NPE 가드: showBanner 직전에 기존 AdView를 명시적으로 정리.
+                // 두 번째 진입이 'updateExistingAdView' 경로로 들어가면서 destroy된 mAdView에
+                // loadAd()를 호출하는 결함(BannerExecutor.java:230) 회피.
+                try { await _adMob.removeBanner(); } catch {}
+
+                if (cancelled) return;
+
                 console.log('[AdMob] showBanner 시도, adId:', AD_UNITS.bannerBottom, 'isTesting:', IS_TESTING);
 
                 await _adMob.showBanner({
@@ -189,21 +206,24 @@ export const useAdMob = (tier) => {
                     isTesting: IS_TESTING,
                 });
 
-                bannerShowing.current = true;
+                _bannerShowing = true;
                 console.log('[AdMob] showBanner 호출 완료');
 
             } catch (e) {
                 console.error('[AdMob] 초기화/배너 실패:', e?.message, JSON.stringify(e));
+            } finally {
+                _bannerSetupInFlight = false;
             }
         };
 
         setup();
 
         return () => {
+            cancelled = true;
             listenerHandles.forEach(h => h?.remove?.());
             if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
-            bannerShowing.current = false;
+            _bannerShowing = false;
         };
     }, [isPaid, isReady]);
 };

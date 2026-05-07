@@ -27,6 +27,16 @@ const ALLOWLIST = [
 ];
 
 const PATTERN = /AIza[0-9A-Za-z_-]{35}/g;
+// dev 전용 호스트가 production 번들에 inline되는 사고 차단.
+// (.env.local 사고 2026-05-04 / VITE_API_URL 누락으로 localhost inline 사고 2026-05-07)
+// JS 번들(.js)에서만 검사 — index.html이나 source map 등 다른 파일은 영향 없음.
+//
+// 정밀화: minified 번들에는 코드의 `|| 'http://localhost:5000'` 폴백이 dead code로 남는다.
+// 실제 사고는 "VITE_API_URL이 누락되어 production URL이 번들에 아예 없는" 경우.
+// → onrender.com 같은 production 호스트가 함께 있으면 localhost는 dead code로 간주 PASS.
+// → production 호스트가 없으면 환경변수 누락 사고 → FAIL.
+const DEV_HOST_PATTERN = /https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/g;
+const PROD_HOST_PATTERN = /https:\/\/[a-z0-9-]+\.onrender\.com/;
 const DIST_DIR = 'dist';
 // 검사 제외 확장자 (이미지/폰트 등 — 텍스트가 아니라 false positive 가능성도 매우 낮음)
 const SKIP_EXT = new Set(['.png', '.jpg', '.jpeg', '.gif', '.webp', '.ico', '.woff', '.woff2', '.ttf', '.otf', '.eot', '.mp4', '.webm', '.mp3', '.wav', '.pdf']);
@@ -61,7 +71,9 @@ if (!existsSync(DIST_DIR)) {
 }
 
 const found = new Map();  // key → first file where it appeared
+const devHostHits = new Map();  // host → first .js file where it appeared
 let scannedFiles = 0;
+let hasProdHost = false;
 
 for (const file of walk(DIST_DIR)) {
     let content;
@@ -69,9 +81,20 @@ for (const file of walk(DIST_DIR)) {
     catch { continue; }
     scannedFiles += 1;
     const matches = content.match(PATTERN);
-    if (!matches) continue;
-    for (const m of matches) {
-        if (!found.has(m)) found.set(m, file);
+    if (matches) {
+        for (const m of matches) {
+            if (!found.has(m)) found.set(m, file);
+        }
+    }
+    // dev/prod host 검사는 JS 번들에 한정 — 다른 파일은 영향 없음
+    if (file.endsWith('.js')) {
+        const hostMatches = content.match(DEV_HOST_PATTERN);
+        if (hostMatches) {
+            for (const h of hostMatches) {
+                if (!devHostHits.has(h)) devHostHits.set(h, file);
+            }
+        }
+        if (!hasProdHost && PROD_HOST_PATTERN.test(content)) hasProdHost = true;
     }
 }
 
@@ -93,9 +116,27 @@ if (unknownKeys.length > 0) {
     process.exit(1);
 }
 
+// Production host가 번들에 함께 있으면 localhost는 코드 폴백의 dead code — 실제 호출 경로 아님.
+// Production host가 없으면 환경변수 누락 사고 → fail.
+if (devHostHits.size > 0 && !hasProdHost) {
+    console.error(`❌ check-secrets FAILED — production host 누락 + dev host inlined in JS bundle:`);
+    for (const [host, file] of devHostHits) {
+        console.error(`   ${host}`);
+        console.error(`     in: ${relative(process.cwd(), file)}`);
+    }
+    console.error('');
+    console.error('원인: VITE_API_URL이 빌드 환경에 정의되지 않아 코드의 폴백(`|| http://localhost:5000`)이 활성화됨.');
+    console.error('해결: .env.production 파일에 VITE_API_URL=https://...onrender.com 명시 (commit 가능, 비밀 아님).');
+    console.error('      이 사고가 production OTA로 나가면 모든 유저가 localhost API 호출 → 앱 동작 불가.');
+    process.exit(1);
+}
+
 console.log(`✅ check-secrets PASSED — ${knownKeys.length} known key(s), 0 unknown (${scannedFiles} files scanned)`);
 for (const k of knownKeys) {
     const masked = `${k.slice(0, 10)}...${k.slice(-4)}`;
     console.log(`   - ${masked}   ${allowReason.get(k)}`);
+}
+if (hasProdHost && devHostHits.size > 0) {
+    console.log(`   - prod host inlined (onrender.com) → localhost는 코드 폴백 dead code로 통과`);
 }
 process.exit(0);
