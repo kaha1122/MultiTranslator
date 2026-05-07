@@ -221,7 +221,8 @@
     "extraLangs": "Outros idiomas",
     "noTarget": "Selecione um idioma de destino acima primeiro.",
     "saveReturn": "Salvar Configurações e Voltar",
-    "defaultLevel": "Nível de aprendizado padrão"
+    "defaultLevel": "Nível de aprendizado padrão",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "Não foi possível detectar o idioma de entrada; mostrando apenas as traduções de destino. Verifique se há erros de digitação.",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 cartões",
     "watchAd": "Assistir anúncio por 5 cartões extra",
     "watchForProns": "+10 pronúncia",
-    "watchAdPron": "Assistir anúncio por 10 pronúncias extra",
-    "loading": "Carregando anúncio..."
+    "watchAdPron": "Assista a um anúncio por 10 pronúncias extras (salvas)",
+    "loading": "Carregando anúncio...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "Assista a um anúncio por 2 sessões extras de Free Talking (salvas)"
   },
   "renewal": {
     "title": "Assinatura Expirando em Breve",

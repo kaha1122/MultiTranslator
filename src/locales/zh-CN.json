@@ -221,7 +221,8 @@
     "extraLangs": "其他语言",
     "noTarget": "请先在上方选择学习语言。",
     "saveReturn": "保存设置并返回",
-    "defaultLevel": "默认学习难度"
+    "defaultLevel": "默认学习难度",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "无法检测输入语言，仅显示目标翻译。请检查是否有拼写错误。",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 张卡片",
     "watchAd": "看广告获得5张卡片",
     "watchForProns": "+10 次发音",
-    "watchAdPron": "看广告获得10次发音",
-    "loading": "广告加载中..."
+    "watchAdPron": "观看广告获得 10 次发音机会（永久保存）",
+    "loading": "广告加载中...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "观看广告获得 2 次 Free Talking（永久保存）"
   },
   "renewal": {
     "title": "订阅即将到期",

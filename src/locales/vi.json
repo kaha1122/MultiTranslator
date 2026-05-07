@@ -221,7 +221,8 @@
     "extraLangs": "Ngôn ngữ khác",
     "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
     "saveReturn": "Lưu cài đặt & Quay lại",
-    "defaultLevel": "Cấp độ học mặc định"
+    "defaultLevel": "Cấp độ học mặc định",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "Không thể phát hiện ngôn ngữ đầu vào; chỉ hiển thị bản dịch mục tiêu. Vui lòng kiểm tra lỗi chính tả.",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 thẻ",
     "watchAd": "Xem quảng cáo để thêm 5 thẻ",
     "watchForProns": "+10 phát âm",
-    "watchAdPron": "Xem quảng cáo để thêm 10 lần phát âm",
-    "loading": "Đang tải quảng cáo..."
+    "watchAdPron": "Xem quảng cáo để có thêm 10 lượt phát âm (lưu vĩnh viễn)",
+    "loading": "Đang tải quảng cáo...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "Xem quảng cáo để có thêm 2 lượt Free Talking (lưu vĩnh viễn)"
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",

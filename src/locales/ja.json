@@ -221,7 +221,8 @@
     "extraLangs": "その他の言語",
     "noTarget": "まず上で学習言語を選択してください。",
     "saveReturn": "設定を保存して戻る",
-    "defaultLevel": "デフォルト学習レベル"
+    "defaultLevel": "デフォルト学習レベル",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "入力言語を検出できませんでした。基本翻訳のみ表示します。入力ミスがないかご確認ください。",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
     "watchForProns": "+10 発音",
-    "watchAdPron": "広告を見て発音10回追加",
-    "loading": "広告読み込み中..."
+    "watchAdPron": "広告視聴で発音 10回追加（永続保管）",
+    "loading": "広告読み込み中...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "広告視聴で Free Talking 2回追加（永続保管）"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",

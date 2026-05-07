@@ -6,7 +6,7 @@ import { getToday } from '../hooks/useDailyProgress';
 import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, dailyGoal, dailyCardLimit = 10, dailyPronLimit = 20, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
+const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
@@ -87,7 +87,6 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
 
     const gaugePercent = Math.min((todayCount / dailyGoal) * 100, 100);
     const isComplete = todayCount >= dailyGoal;
-    const cardPercent = Math.min((todaySaveCount / dailyCardLimit) * 100, 100);
     const pronPercent = Math.min((todayPronCount / dailyPronLimit) * 100, 100);
     const listenPercent = Math.min((todayListenCount / dailyListenLimit) * 100, 100);
 

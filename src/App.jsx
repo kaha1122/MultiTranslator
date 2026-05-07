@@ -107,12 +107,13 @@ function App() {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
     proPronCount, PRO_PRON_LIMIT,
-    TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-    isTrialSavedCardLimitReached,
-    setDailyTrialCardReached, setDailyTrialPronReached,
+    TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
+    isTrialPronLimitReached, isTrialFreeTalkLimitReached,
+    setDailyTrialPronReached, setDailyTrialFreeTalkReached,
     incrementTrialCard, incrementSavedCard, incrementTotalFreeTalk,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
+    freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
     reviewBonusClaimed,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
     ensureAnonymousUser,
@@ -370,7 +371,7 @@ function App() {
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
-  const [trialCardCurrentCount, setTrialCardCurrentCount] = useState(0);
+  // 2026-05-07 v1.5.0: 카드 한도 폐기 — trialCardCurrentCount state 제거됨 (사용처 없음).
 
   // 업그레이드 모달 — false | 'pro' | 'premium' | true (전체 표시)
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
@@ -494,7 +495,7 @@ function App() {
 
   // Trial 일일 Free Talking 세션 한도 — AuthContext 의 TRIAL_FREETALK_DAILY_LIMIT (2회) 사용
   // Pro/Premium 은 무제한 (세션당 자유 발화 25/300턴 한도만 useConversation 내부 적용)
-  const isTrialFreeTalkLimitReached = tier === 'trial' && todayFreeTalkCount >= (TRIAL_FREETALK_DAILY_LIMIT || 2);
+  // isTrialFreeTalkLimitReached / isTrialPronLimitReached 는 AuthContext 에서 주입 (hasBonusActive + credits 통합 판정).
 
   // 플랫폼 CSS 클래스 (React 렌더 시점 = Capacitor 브릿지 확실히 준비됨)
   React.useEffect(() => {
@@ -681,40 +682,41 @@ function App() {
   // 2026-05-04 변경: bonusOnly:true 제거 → 발음도 일반 trial 인터스티셜 카운터에 누적.
   //   이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조 차단.
   //   addAdPoints 내부 cascade: 보너스 활성 시 보너스 점수 우선 차감 → 부족분 인터스티셜 누적.
-  const onPronSuccess = useCallback(() => {
-    incrementDailyPron();
+  // 발음 평가 성공 핸들러 — daily 한도 미사용 분 우선 차감, 초과분은 pronCredits(영구) 소비.
+  // addAdPoints(1)은 점수 시스템(15점)에 별도 차감 — Daily 한도와는 독립된 게이트.
+  const onPronSuccess = useCallback(async () => {
+    if (tier === 'trial' && todayPronCount >= TRIAL_DAILY_PRON_LIMIT && pronCredits > 0) {
+      // daily 20회 초과 → 광고 적립 credits 소비
+      await consumePronCredits(1);
+    } else {
+      incrementDailyPron();
+    }
     addAdPoints(1);
-  }, [incrementDailyPron, hasBonusActive]); // addAdPoints는 클로저로 hasBonusActive 캡처
+  }, [incrementDailyPron, hasBonusActive, tier, todayPronCount, TRIAL_DAILY_PRON_LIMIT, pronCredits, consumePronCredits]);
 
-  // ── 보상형 광고 보너스 (Trial 전용, 하루 단위 localStorage) ──────────────
-  const getBonusForToday = () => {
-    try {
-      const stored = JSON.parse(localStorage.getItem(`rewardBonus_${getToday()}`) || '{}');
-      return { cards: stored.cards || 0, prons: stored.prons || 0 };
-    } catch { return { cards: 0, prons: 0 }; }
-  };
-  const [rewardBonus, setRewardBonus] = useState(getBonusForToday);
+  // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
+  // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
+  //   freeTalks 광고 → freeTalkCredits +2 (영구), prons 광고 → pronCredits +10 (영구).
+  //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
 
   const handleRewardedAd = async (type) => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
+    if (!user) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-      const adId = type === 'cards' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      const adId = type === 'freeTalks' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
 
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, (reward) => {
-          const amount = reward?.amount ?? (type === 'cards' ? 5 : 10);
-          const today = getToday();
-          const prev = getBonusForToday();
-          const next = { ...prev };
-          if (type === 'cards') next.cards += amount;
-          else next.prons += amount;
-          localStorage.setItem(`rewardBonus_${today}`, JSON.stringify(next));
-          setRewardBonus(next);
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
+          const amount = type === 'freeTalks' ? 2 : 10;
+          const field = type === 'freeTalks' ? 'freeTalkCredits' : 'pronCredits';
+          try {
+            await updateDoc(doc(db, 'users', user.uid), { [field]: increment(amount) });
+          } catch (e) { console.error(`[RewardedAd] ${field} 적립 실패:`, e); }
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
@@ -738,16 +740,17 @@ function App() {
     }
   };
 
-  // Trial 일간 제한 동기화 (보너스 반영)
+  // Trial 일간 제한 동기화 — daily 한도(점수와 무관) + credits 보유 여부는 AuthContext 가 통합 판정.
+  // 2026-05-07 v1.5.0: 카드 한도 폐기. 발음/FT 만 동기화.
   useEffect(() => {
     if (tier === 'trial') {
-      setDailyTrialCardReached(todaySaveCount >= TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards);
-      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons);
+      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
+      setDailyTrialFreeTalkReached(todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT);
     } else {
-      setDailyTrialCardReached(false);
       setDailyTrialPronReached(false);
+      setDailyTrialFreeTalkReached(false);
     }
-  }, [tier, todayCount, todaySaveCount, todayPronCount, rewardBonus, TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, setDailyTrialCardReached, setDailyTrialPronReached]);
+  }, [tier, todayPronCount, todayFreeTalkCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -2189,12 +2192,7 @@ function App() {
     }
 
     try {
-      // 1. Trial 카드 저장 한도 체크 (누적 저장 횟수 기준 — 삭제해도 카운트 감소 없음)
-      if (isTrialSavedCardLimitReached) {
-        setTrialCardCurrentCount(savedCardCount);
-        setShowTrialLimitModal(true);
-        return { status: "trial_limit" };
-      }
+      // 2026-05-07 v1.5.0: 카드 daily 한도 폐기 — 점수 차감(addAdPoints)이 단일 게이트.
 
       // 2. 중복 데이터 검사 쿼리
       const q = query(
@@ -2239,7 +2237,7 @@ function App() {
       const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      addAdPoints(2);
+      addAdPoints(1);
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -2281,11 +2279,6 @@ function App() {
   const saveVideoCard = async (sentenceText, videoTitle, langCode, pronunciationScore = null) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'video.loginRequired')); return; }
-    if (isTrialSavedCardLimitReached) {
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return;
-    }
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -2309,7 +2302,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2324,11 +2317,6 @@ function App() {
   const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
-    if (isTrialSavedCardLimitReached) {
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return;
-    }
     // 중복 체크: 같은 문장이 이미 저장되어 있으면 기존 ID 반환
     try {
       const dupQ = query(
@@ -2369,7 +2357,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2386,11 +2374,6 @@ function App() {
   const saveConversationMessage = async ({ message, langCode, sourceLang: srcLang, scene, category = 'locations', difficulty = 'basic', speechStyle, scenarioMeta, pronunciationScore = null }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
-    if (isTrialSavedCardLimitReached) {
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return;
-    }
     const sentence = message?.fullText || message?.text || '';
     if (!sentence) return null;
     try {
@@ -2435,7 +2418,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2459,35 +2442,15 @@ function App() {
       alert(getT(sourceLang, 'scene.loginRequired'));
       return { saved: 0, skipped: 0, errors: ['no-user'] };
     }
-    if (isTrialSavedCardLimitReached) {
-      console.warn('[SaveSummary] trial card limit reached — showing modal');
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return { saved: 0, skipped: selectedPhrases.length, errors: ['trial-limit'] };
-    }
+    // 2026-05-07 v1.5.0: 카드 daily 한도 폐기 — 점수 차감(addAdPoints)이 단일 게이트.
     const langInfo = getLangInfo(langCode);
     let saved = 0, skipped = 0;
     const errors = [];
-    // Trial 일일 한도 동기 추적 — React state 는 batch 라 closure stale.
-    // 🚨 BUGFIX 2026-05-04: savedCardCount(평생 누적) → todaySaveCount(오늘 저장 수) 로 교정.
-    //   savedCardCount 는 incrementSavedCard 가 +1 만 하고 리셋 없는 평생 카운터. 일일 한도(10)
-    //   와 비교하면 평생 누적 10 넘은 사용자는 영구 차단되는 버그였음. todaySaveCount 는
-    //   useDailyProgress 가 자정 리셋 관리하는 일일 카운터로 정확.
-    const trialLimit = TRIAL_DAILY_CARD_LIMIT || 10;
-    let runningTodaySaved = todaySaveCount;
-    let trialLimitHitDuringLoop = false;
+    // 2026-05-07 v1.5.0: 카드 daily 한도 폐기 — 점수 시스템(addAdPoints) 단일 게이트.
+    //   루프 도중 한도 체크 제거. addAdPoints(1) 가 0점 도달 시 광고 트리거로 자연 차단.
     for (const p of selectedPhrases) {
       const phrase = (p?.phrase || '').trim();
       if (!phrase) { console.warn('[SaveSummary] empty phrase, skipping'); skipped += 1; continue; }
-
-      // 한도 도중 체크 (Trial 만, 일일 todaySaveCount 기준)
-      if (tier === 'trial' && runningTodaySaved >= trialLimit) {
-        console.warn('[SaveSummary] trial daily card limit hit during loop at runningTodaySaved=', runningTodaySaved);
-        trialLimitHitDuringLoop = true;
-        skipped += 1;
-        errors.push('trial-limit-during-loop');
-        continue;
-      }
 
       console.log('[SaveSummary] processing:', phrase);
 
@@ -2542,10 +2505,9 @@ function App() {
         });
         console.log('[SaveSummary] saved OK:', phrase, 'docId:', docRef.id);
         saved += 1;
-        runningTodaySaved += 1;  // 일일 한도 동기 추적
         incrementSavedCard();
         incrementDailySave();
-        addAdPoints(2);
+        addAdPoints(1);
       } catch (e) {
         console.error('[SaveSummary] save FAILED for phrase:', phrase, 'error:', e?.code, e?.message, e);
         skipped += 1;
@@ -2553,11 +2515,6 @@ function App() {
       }
     }
     console.log('[SaveSummary] final:', { saved, skipped, errors });
-    // 루프 도중 한도에 걸린 경우 Trial 모달 표시 (사용자 인지 + 업그레이드 유도)
-    if (trialLimitHitDuringLoop) {
-      setTrialCardCurrentCount(runningSaved);
-      setShowTrialLimitModal(true);
-    }
     return { saved, skipped, errors };
   };
 
@@ -2565,11 +2522,6 @@ function App() {
   const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
-    if (isTrialSavedCardLimitReached) {
-      setTrialCardCurrentCount(savedCardCount);
-      setShowTrialLimitModal(true);
-      return;
-    }
     // 중복 체크: 같은 단어가 이미 저장되어 있으면 기존 ID 반환
     try {
       const dupQ = query(
@@ -2611,7 +2563,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(2);
+      addAdPoints(1);
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -3313,9 +3265,9 @@ function App() {
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
-                  {/* 카드 +5 */}
+                  {/* Free Talking +2 (영구 적립) — 2026-05-07 v1.5.0 */}
                   <button
-                    onClick={() => handleRewardedAd('cards')}
+                    onClick={() => handleRewardedAd('freeTalks')}
                     disabled={rewardAdLoading}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
@@ -3326,10 +3278,10 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.watchForCards') || '+5 카드'}
+                        {getT(sourceLang, 'reward.watchForFreeTalk') || '+2 Free Talking'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.watchAd') || '광고 시청 후 카드 5개 추가'}
+                        {getT(sourceLang, 'reward.watchAdFreeTalk') || '광고 시청 후 Free Talking 2회 추가 (영구 보관)'}
                       </div>
                     </div>
                   </button>
@@ -3349,7 +3301,7 @@ function App() {
                         {getT(sourceLang, 'reward.watchForProns') || '+10 발음'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
-                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가'}
+                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가 (영구 보관)'}
                       </div>
                     </div>
                   </button>
@@ -3625,21 +3577,21 @@ function App() {
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons : (isProTier ? PRO_PRON_LIMIT : 999);
+          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + pronCredits : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
           const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
           return (
             <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
               {/* 좌측: 게이지 바 2개 세로 배치 */}
               <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: showPronGauge ? '4px' : '0', flex: '0 0 auto', width: '38%' }}>
-                {/* 카드 게이지 — trial: 저장 제한(10/일), 유료: 목표 달성 */}
+                {/* 2026-05-07 v1.5.0: 카드 게이지 → Free Talking 게이지 (Trial). 유료/Admin: 학습 목표 게이지 그대로. */}
                 {(() => {
                   const isTrial = tier === 'trial';
-                  const limit = TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards;
+                  const ftLimit = TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits;
                   const goal = dailyGoal;
-                  const count = isTrial ? todaySaveCount : todayCount;
-                  const isFull = isTrial ? count >= limit : count >= goal;
-                  const ratio = isTrial ? Math.min((count / limit) * 100, 100) : Math.min((count / goal) * 100, 100);
+                  const count = isTrial ? todayFreeTalkCount : todayCount;
+                  const isFull = isTrial ? count >= ftLimit : count >= goal;
+                  const ratio = isTrial ? Math.min((count / ftLimit) * 100, 100) : Math.min((count / goal) * 100, 100);
                   const barColor = isTrial
                     ? (isFull
                       ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
@@ -3653,7 +3605,7 @@ function App() {
                   const textColor = isTrial
                     ? (isFull ? '#ef4444' : '#059669')
                     : (isFull ? '#059669' : '#818cf8');
-                  const icon = isTrial ? '💾' : '🎯';
+                  const icon = isTrial ? '🗣️' : '🎯';
                   return (
                     <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
                       <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>{icon}</span>
@@ -3667,7 +3619,7 @@ function App() {
                         }} />
                       </div>
                       <span style={{ fontSize: '0.6rem', fontWeight: '700', color: textColor, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        {count}/{isTrial ? limit : goal}
+                        {count}/{isTrial ? ftLimit : goal}
                       </span>
                     </div>
                   );
@@ -3747,9 +3699,10 @@ function App() {
             todaySaveCount={todaySaveCount}
             todayPronCount={todayPronCount}
             todayListenCount={todayListenCount}
+            todayFreeTalkCount={todayFreeTalkCount}
             dailyGoal={dailyGoal}
-            dailyCardLimit={TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}
-            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}
+            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + pronCredits}
+            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}
             dailyListenLimit={10}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
@@ -4000,16 +3953,20 @@ function App() {
               setLibraryBackTo('scene');
               setViewMode('library');
             }}
-            onFreeTalkStart={(args) => {
+            onFreeTalkStart={async (args) => {
               if (isTrialFreeTalkLimitReached) {
                 setShowTrialLimitModal(true);
                 return;
               }
-              // C1: 세션 시작 시 ad-points +1 (전체 2회 한도 → 1번만 카운트)
+              // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
+              if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
+                await consumeFreeTalkCredits(1);
+              } else {
+                incrementDailyFreeTalk();
+              }
+              // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
               addAdPoints(1);
-              // B: 일일 한도 카운터 증가 (Firestore dailyProgress + state 동기, 자정 리셋)
-              incrementDailyFreeTalk();
-              // 분석용 평생 누적 카운터 (users/{uid}.totalFreeTalkCount + totalGenerateCount)
+              // 분석용 평생 누적 카운터
               incrementTotalFreeTalk();
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
@@ -4329,11 +4286,11 @@ function App() {
                       🎤 {getT(sourceLang, 'settings.usagePron')}: {proPronCount}/{PRO_PRON_LIMIT}
                     </span>
                   )}
-                  {/* 일일 사용량 (Trial) */}
+                  {/* 일일 사용량 (Trial) — 2026-05-07 v1.5.0: 카드 한도 폐기, FT/발음만 표시 */}
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🃏 {getT(sourceLang, 'settings.usageCards')}: {todaySaveCount}/{TRIAL_DAILY_CARD_LIMIT + rewardBonus.cards}/day<br />
-                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + rewardBonus.prons}/day
+                      🗣️ {getT(sourceLang, 'settings.usageFreeTalk') || 'Free Talking'}: {todayFreeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}/day<br />
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + pronCredits}/day
                     </span>
                   )}
                 </div>
@@ -4552,7 +4509,6 @@ function App() {
       {showTrialLimitModal && (
         <TrialLimitModal
           sourceLang={sourceLang}
-          cardCount={todayCount}
           pronCount={todayPronCount}
           freeTalkCount={todayFreeTalkCount}
           onClose={() => setShowTrialLimitModal(false)}

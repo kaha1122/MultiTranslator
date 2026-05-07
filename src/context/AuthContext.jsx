@@ -296,9 +296,10 @@ export const AuthProvider = ({ children }) => {
     const rawTier = profile?.tier || 'trial';
     const tier = rawTier === 'byok_free' ? 'admin' : rawTier;
 
-    const TRIAL_DAILY_CARD_LIMIT = 10;        // Free Trial: 하루 카드 10개
-    const TRIAL_DAILY_PRON_LIMIT = 20;        // Free Trial: 하루 발음 20회
-    const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회
+    // 2026-05-07 v1.5.0: 카드 daily 한도 제거 — 점수 시스템(15점)이 단일 게이트.
+    //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
+    const TRIAL_DAILY_PRON_LIMIT = 20;        // Free Trial: 하루 발음 20회 (+ pronCredits 영구)
+    const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
     const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
 
     // 하위호환: 기존 필드 유지 (분석용)
@@ -315,13 +316,20 @@ export const AuthProvider = ({ children }) => {
     const bonusPoints = profile?.bonusPoints || 0;
     const hasBonusActive = bonusPoints > 0;
 
-    // ⚠ Trial 제한은 이제 일간 — todayCount/todayPronCount는 App.jsx에서 주입
-    const [dailyTrialCardReached, setDailyTrialCardReached] = useState(false);
-    const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
+    // 2026-05-07 v1.5.0 신규: 보상광고 영구 적립 자산 (Firestore — 사용할 때까지 보관)
+    //   freeTalkCredits: 광고 1회 시청 → +2 (Free Talking 추가 세션, 영구)
+    //   pronCredits:     광고 1회 시청 → +10 (발음 평가 추가 횟수, 영구)
+    //   기존 rewardBonus_{date} localStorage 시스템 폐기 (당일 리셋이라 미사용분 손실)
+    const freeTalkCredits = profile?.freeTalkCredits || 0;
+    const pronCredits = profile?.pronCredits || 0;
 
-    // 보너스 활성 시 일일 한도 우회
-    const isTrialSavedCardLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialCardReached;
-    const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached;
+    // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount는 App.jsx에서 주입
+    const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
+    const [dailyTrialFreeTalkReached, setDailyTrialFreeTalkReached] = useState(false);
+
+    // 보너스 활성 시 일일 한도 우회. 광고 credits 보유 시도 우회 (광고로 한도 확장 효과).
+    const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached && pronCredits === 0;
+    const isTrialFreeTalkLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialFreeTalkReached && freeTalkCredits === 0;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
     // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
@@ -337,6 +345,46 @@ export const AuthProvider = ({ children }) => {
                 consumed = Math.min(current, amount);
                 if (consumed > 0) {
                     tx.update(ref, { bonusPoints: increment(-consumed) });
+                }
+            });
+            return consumed;
+        } catch (e) {
+            return 0;
+        }
+    };
+
+    // freeTalkCredits 차감 — 광고로 적립한 영구 FT 추가권 1회 소비
+    const consumeFreeTalkCredits = async (amount) => {
+        if (!user?.uid || amount <= 0) return 0;
+        try {
+            let consumed = 0;
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const current = snap.data()?.freeTalkCredits || 0;
+                consumed = Math.min(current, amount);
+                if (consumed > 0) {
+                    tx.update(ref, { freeTalkCredits: increment(-consumed) });
+                }
+            });
+            return consumed;
+        } catch (e) {
+            return 0;
+        }
+    };
+
+    // pronCredits 차감 — 광고로 적립한 영구 발음 추가권 1회 소비
+    const consumePronCredits = async (amount) => {
+        if (!user?.uid || amount <= 0) return 0;
+        try {
+            let consumed = 0;
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const current = snap.data()?.pronCredits || 0;
+                consumed = Math.min(current, amount);
+                if (consumed > 0) {
+                    tx.update(ref, { pronCredits: increment(-consumed) });
                 }
             });
             return consumed;
@@ -604,13 +652,14 @@ export const AuthProvider = ({ children }) => {
             tier,
             trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
             proPronCount, PRO_PRON_LIMIT,
-            TRIAL_DAILY_CARD_LIMIT, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-            isTrialSavedCardLimitReached, isTrialPronLimitReached,
-            setDailyTrialCardReached, setDailyTrialPronReached,
+            TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
+            isTrialPronLimitReached, isTrialFreeTalkLimitReached,
+            setDailyTrialPronReached, setDailyTrialFreeTalkReached,
             isProPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
             bonusPoints, hasBonusActive, consumeBonusPoints,
+            freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
             reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,

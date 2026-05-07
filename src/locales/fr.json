@@ -221,7 +221,8 @@
     "extraLangs": "Autres langues",
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
     "saveReturn": "Enregistrer & Retour",
-    "defaultLevel": "Niveau par défaut"
+    "defaultLevel": "Niveau par défaut",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "Impossible de détecter la langue saisie ; affichage des traductions cibles uniquement. Veuillez vérifier les fautes de frappe.",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 cartes",
     "watchAd": "Regardez une pub pour 5 cartes",
     "watchForProns": "+10 prononc.",
-    "watchAdPron": "Regardez une pub pour 10 prononciations",
-    "loading": "Chargement..."
+    "watchAdPron": "Regardez une pub pour 10 prononciations supplémentaires (conservées)",
+    "loading": "Chargement...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "Regardez une pub pour 2 sessions Free Talking en plus (conservées)"
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",

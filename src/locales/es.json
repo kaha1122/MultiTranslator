@@ -221,7 +221,8 @@
     "extraLangs": "Otros idiomas",
     "noTarget": "Por favor, selecciona primero un idioma objetivo arriba.",
     "saveReturn": "Guardar ajustes y volver",
-    "defaultLevel": "Nivel de aprendizaje predeterminado"
+    "defaultLevel": "Nivel de aprendizaje predeterminado",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "No se pudo detectar el idioma de entrada; se muestran solo las traducciones de destino. Por favor, verifique si hay errores tipográficos.",
@@ -855,8 +856,10 @@
     "watchForCards": "+5 tarjetas",
     "watchAd": "Ver anuncio por 5 tarjetas extra",
     "watchForProns": "+10 pronunciac.",
-    "watchAdPron": "Ver anuncio por 10 pronunciaciones extra",
-    "loading": "Cargando anuncio..."
+    "watchAdPron": "Mira un anuncio para 10 pronunciaciones extra (guardadas)",
+    "loading": "Cargando anuncio...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "Mira un anuncio para 2 sesiones extra de Free Talking (guardadas)"
   },
   "renewal": {
     "title": "Suscripción por expirar",

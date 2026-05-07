@@ -221,7 +221,8 @@
     "extraLangs": "기타 언어",
     "noTarget": "먼저 위에서 학습 언어를 선택하세요.",
     "saveReturn": "설정 저장 & 돌아가기",
-    "defaultLevel": "기본 학습 난이도"
+    "defaultLevel": "기본 학습 난이도",
+    "usageFreeTalk": "Free Talking"
   },
   "translate": {
     "detectionFailed": "입력 언어를 감지하지 못해 기본 번역만 수행했습니다. 오타가 없는지 확인해 보세요.",
@@ -861,8 +862,10 @@
     "watchForCards": "+5 카드",
     "watchAd": "광고 시청 후 카드 5개 추가",
     "watchForProns": "+10 발음",
-    "watchAdPron": "광고 시청 후 발음 10회 추가",
-    "loading": "광고 로딩 중..."
+    "watchAdPron": "광고 시청 후 발음 10회 추가 (영구 보관)",
+    "loading": "광고 로딩 중...",
+    "watchForFreeTalk": "+2 Free Talking",
+    "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가 (영구 보관)"
   },
   "renewal": {
     "title": "구독 만료 예정",
