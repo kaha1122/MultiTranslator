@@ -462,7 +462,12 @@ export function useConversation({ tier = 'trial' } = {}) {
             }
             const data = await res.json();
 
-            // 3) user_free 메시지 업데이트 + ai 메시지 채우기
+            // 3) user_free 메시지 업데이트 + ai 메시지 데이터 채우기
+            //    isLoading 은 의도적으로 유지 — TTS 도착(또는 실패) 시점까지 스피너 계속 노출.
+            //    이유: 응답이 먼저 도착하고 TTS 가 1~2초 늦게 도착하는 구간에 ChatBubble L67 hide 분기
+            //         (!shouldAutoplay && !played && !isLoading) 가 적중해 풍선이 잠깐 사라졌다가
+            //         TTS 도착 후 재등장하는 깜빡임이 발생. isLoading 을 TTS 까지 유지하면
+            //         스피너 → reveal 직행으로 일관되게 동작.
             setMessages(prev => prev.map(m => {
                 if (m.id === userMsgId) {
                     return {
@@ -477,7 +482,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     const a = data.aiReply || {};
                     return {
                         ...m,
-                        isLoading: false,
+                        // isLoading 유지 (TTS 도착 시 풀림)
                         text: '',  // streaming reveal로 채워짐
                         fullText: a.sentence || '',
                         translation: a.translation || '',
@@ -501,10 +506,11 @@ export function useConversation({ tier = 'trial' } = {}) {
             setMessages(prev => prev.map(m => {
                 if (m.id !== aiMsgId) return m;
                 if (aiTTS) {
-                    return { ...m, audio: aiTTS.audio, mimeType: aiTTS.mimeType, words: aiTTS.words, ttsReady: true };
+                    // 성공: isLoading=false + ttsReady=true 동시 — reveal 트리거.
+                    return { ...m, isLoading: false, audio: aiTTS.audio, mimeType: aiTTS.mimeType, words: aiTTS.words, ttsReady: true };
                 }
-                // TTS 실패: played=true 강제 마킹 → fullText fallback 즉시 노출
-                return { ...m, ttsReady: true, played: true, ttsFailed: true };
+                // TTS 실패: isLoading=false + played=true 강제 마킹 → fullText fallback 즉시 노출
+                return { ...m, isLoading: false, ttsReady: true, played: true, ttsFailed: true };
             }));
 
             // 한도 도달은 freeTurnCount 변화를 보는 별도 useEffect 에서 처리

@@ -69,16 +69,13 @@ export default function ChatBubble({
     }
 
     if (message.role === 'narration') {
+        // 2026-05-08: 나레이션 스피커 replay 버튼 제거 — onReplay 콜백 미연결로 작동 안 했고
+        //   상황 안내 문장은 다시 들을 가치 낮음. UI 단순화.
         return (
             <div className="ftc-msg ftc-msg-narration">
                 <div className="ftc-narration-bubble">
                     {displayText || ' '}
                 </div>
-                {message.audio && !shouldAutoplay && message.played && (
-                    <button className="ftc-replay-btn" onClick={() => onReplay?.(message.id)} title={t?.('freeTalk.replay') || 'Replay'}>
-                        <Volume2 size={14} />
-                    </button>
-                )}
             </div>
         );
     }
