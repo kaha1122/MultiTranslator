@@ -634,14 +634,20 @@ function App() {
     setAdPointsState(value);
   }, []);
 
+  // 2026-05-08: adPoints 와 bonusPoints 분리 — 두 풀 독립 차감.
+  //   options.bonusCost 미지정 시 기본 = adsCost (= points 인자) 으로 호환성 유지.
+  //   액션별 권고치: Free Talking 10, Listening 5, Pronunciation 2, 그 외 1.
+  //   adsCost(=points) 는 항상 1로 유지해야 함 — 광고 본 직후 0 리셋 상태에서 큰 값 차감 시
+  //   즉시 음수→재광고 무한루프 위험. 보너스 풀만 액션 가치에 비례해 빠르게 소진하는 패턴.
   const addAdPoints = async (points, options = {}) => {
     if (tier !== 'trial') return;
+    const bonusCost = options.bonusCost ?? points;
 
-    // 보너스 활성 시: 가능한 만큼 우선 차감, 부족분만 인터스티셜 누적으로 fall-through
-    if (hasBonusActive) {
-      const consumed = await consumeBonusPoints(points);
-      points -= consumed;
-      if (points <= 0) return;
+    // 보너스 활성 시: bonusCost 만큼 차감 시도. 1점이라도 차감되면 광고 면제 (adPoints 누적 skip).
+    // 보너스 잔여가 bonusCost 보다 적어도 무료 — 다음 액션에서 0 도달 시 fall-through 로 정상 누적.
+    if (hasBonusActive && bonusCost > 0) {
+      const consumed = await consumeBonusPoints(bonusCost);
+      if (consumed > 0) return;
     }
 
     // bonusOnly 모드 (예: 발음 평가) — 남은 점수가 있어도 인터스티셜 누적 X
@@ -698,7 +704,8 @@ function App() {
     } else {
       incrementDailyPron();
     }
-    addAdPoints(1);
+    // adsCost=1, bonusCost=2 — Pron 은 Azure Speech 비용 발생 액션이라 보너스 풀에서 가중치 부여
+    addAdPoints(1, { bonusCost: 2 });
   }, [incrementDailyPron, hasBonusActive, tier, todayPronCount, TRIAL_DAILY_PRON_LIMIT, pronCredits, consumePronCredits]);
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
@@ -3926,7 +3933,7 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1); }}
+            onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1, { bonusCost: 5 }); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
@@ -3985,7 +3992,8 @@ function App() {
                 incrementDailyFreeTalk();
               }
               // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
-              addAdPoints(1);
+              // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
+              addAdPoints(1, { bonusCost: 10 });
               // 분석용 평생 누적 카운터
               incrementTotalFreeTalk();
               setFreeTalkSetup(args);
