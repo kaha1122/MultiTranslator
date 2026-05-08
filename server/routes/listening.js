@@ -8,8 +8,15 @@ const { stripAnnotations } = require('../utils/stripAnnotations');
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
+// Listening 의 angle 차원 — 같은 토픽 안에서도 서술 각도를 회전해 다양성 확보.
+// 응답의 angle 필드는 반드시 이 5종 중 하나여야 함 (서버에서 화이트리스트 검증).
+const LISTENING_ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultural-explanation', 'opinion'];
+
 router.post('/api/listening-passage', requireAuth, async (req, res) => {
-    const { topic, topicLabel, category, level, type, targetLang, sourceLang, byokGeminiKey, avoidTitles } = req.body;
+    const {
+        topic, topicLabel, category, level, type, targetLang, sourceLang,
+        byokGeminiKey, avoidTitles, passagesMeta,
+    } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
     }
@@ -38,9 +45,36 @@ router.post('/api/listening-passage', requireAuth, async (req, res) => {
   - Include nuanced expressions, proverbs, and culturally rich vocabulary.`,
     }[level] || 'intermediate level';
 
-    const avoidBlock = (avoidTitles && avoidTitles.length > 0)
-        ? `\nIMPORTANT — The learner has already read these passages. Generate a completely different passage:\n${avoidTitles.map((t, i) => `${i + 1}. "${t}"`).join('\n')}\n`
-        : '';
+    // Anti-Duplication 블록 — title 단독 회피로는 본문 유사도 못 잡아서 keywords + angle 차원 추가.
+    // 클라가 passagesMeta 를 함께 보내면 keywords cluster + angle rotation 까지 강제, 없으면 title-only fallback.
+    const recentTitles = Array.isArray(avoidTitles) ? avoidTitles.slice(-20) : [];
+    const olderTitleCount = Array.isArray(avoidTitles) ? Math.max(0, avoidTitles.length - recentTitles.length) : 0;
+    const recentMeta = Array.isArray(passagesMeta) ? passagesMeta.slice(-20) : [];
+    const usedAngles = new Set(recentMeta.slice(-5).map(m => m?.angle).filter(Boolean));
+    let avoidBlock = '';
+    if (recentMeta.length > 0) {
+        const lines = recentMeta.map((m, i) => {
+            const title = (m?.title || '').replace(/"/g, "'").slice(0, 80);
+            const keys = Array.isArray(m?.keywords) ? m.keywords.slice(0, 3).join(', ') : '';
+            const ang = m?.angle || '?';
+            return `  ${String(i + 1).padStart(2, ' ')}. "${title}"  keywords=[${keys}]  angle=${ang}`;
+        }).join('\n');
+        const usedAnglesArr = [...usedAngles];
+        avoidBlock = `
+=== ANTI-DUPLICATION (CRITICAL) ===
+The learner has read ${avoidTitles?.length || recentMeta.length} passage(s) on this topic.
+${olderTitleCount > 0 ? `(${olderTitleCount} older entries omitted; ${recentMeta.length} most recent shown.)\n` : ''}Recent passages:
+${lines}
+
+Rotation rules — ALL mandatory:
+1. New title MUST differ from all ${recentMeta.length} above (not a paraphrase, not a rearrangement).
+2. New passage MUST avoid using 2+ keywords from any single previous passage's keyword list above.
+3. Pick an **angle** from this list: ${JSON.stringify(LISTENING_ANGLES)}, but NOT in the most-recent-5 angle set ${JSON.stringify(usedAnglesArr)} unless every angle has been used (then pick the least-recent one).
+4. The new passage's keywords (3 items, see KEY WORDS RULES) should target a sub-domain of the topic that has minimal overlap with the previous passages' keyword clusters.
+`;
+    } else if (recentTitles.length > 0) {
+        avoidBlock = `\nIMPORTANT — The learner has already read these passages. Generate a completely different passage (different title AND different sub-topic angle):\n${recentTitles.map((t, i) => `${i + 1}. "${t}"`).join('\n')}\n`;
+    }
 
     const passageInstruction = contentType === 'dialogue'
         ? `Write a natural dialogue between 2 people (Speaker A and Speaker B) about this topic.
@@ -87,6 +121,21 @@ ${avoidBlock}
 12. **"example" field must also contain ONLY the pure sentence in ${targetLangName} — no pronunciation annotations.**
 13. For zh-CN: include pinyin in pronunciation/examplePronunciation. For ja: include hiragana. For ru: include stressed form with ´ marks. For others: empty string.
 
+=== PASSAGE META (NEW — required for cross-session deduplication) ===
+14. Output a "passageKeywords" field: exactly 3 SHORT English noun phrases (1-3 words each) that capture the
+    most distinctive sub-domain concepts of THIS specific passage. These are DIFFERENT from the user-facing
+    "words" list — they are a stable English fingerprint used to detect topic-cluster overlap across sessions.
+    Examples for an "airport" topic:
+       passage A → ["boarding pass", "security check", "duty-free"]
+       passage B → ["lost luggage", "claim form", "compensation"]
+       passage C → ["flight delay", "rebooking", "voucher"]
+    Each passage's 3 keywords should be specific enough that two passages on the same topic produce LISTS
+    that overlap in at most 1 entry. Pick the most distinctive 3 — not generic ones like "airport" / "travel".
+15. Output an "angle" field: EXACTLY one of ${JSON.stringify(LISTENING_ANGLES)}. This must match the actual
+    rhetorical mode of the passage you wrote. (If contentType is 'dialogue', angle is almost always 'dialogue';
+    for 'essay' contentType you may pick from the other 4 angles, choosing one that hasn't been used recently
+    per the rotation rules above.)
+
 Return ONLY valid JSON (no markdown):
 {
   "title": "<short title in ${targetLangName}>",
@@ -94,6 +143,8 @@ Return ONLY valid JSON (no markdown):
   "passage": "<full passage text in ${targetLangName}>",
   "passagePronunciation": "<full pronunciation of passage — or empty string>",
   "passageTranslation": "<full passage translated in ${sourceLangName}>",
+  "passageKeywords": ["<key1 in English, 1-3 words>", "<key2>", "<key3>"],
+  "angle": "<exactly one of ${JSON.stringify(LISTENING_ANGLES)}>",
   "words": [
     {
       "word": "<pure word/phrase>",
@@ -125,6 +176,18 @@ Return ONLY valid JSON (no markdown):
                 w.word = stripAnnotations(w.word, targetLang);
                 w.example = stripAnnotations(w.example, targetLang);
             });
+        }
+        // angle 화이트리스트 검증 + keywords 정규화 (LLM 가 임의 값 줄 가능성 차단)
+        if (!LISTENING_ANGLES.includes(parsed.angle)) {
+            parsed.angle = (contentType === 'dialogue') ? 'dialogue' : 'first-person narrative';
+        }
+        if (!Array.isArray(parsed.passageKeywords)) {
+            parsed.passageKeywords = [];
+        } else {
+            parsed.passageKeywords = parsed.passageKeywords
+                .filter(k => typeof k === 'string' && k.trim().length > 0)
+                .map(k => k.trim().slice(0, 40))
+                .slice(0, 3);
         }
         res.json(parsed);
     } catch (e) {

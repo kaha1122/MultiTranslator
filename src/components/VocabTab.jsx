@@ -378,7 +378,9 @@ export default function VocabTab({
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
         const persistedWords = await loadVocabHistory(historyKey);
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
-        const avoidForApi = allAvoid.slice(-200);
+        // Firestore 에는 전체 누적, 서버 prompt 에는 최근 30개만 전송 (LLM long-list 한계 + 토큰 절감).
+        // 서버 vocab.js 도 추가로 slice(-30) 하지만 클라 단계에서 1차 cap 으로 네트워크 비용 축소.
+        const avoidForApi = allAvoid.slice(-30);
 
         try {
             const res = await authFetch(`${getServerUrl()}/api/vocab-words`, {

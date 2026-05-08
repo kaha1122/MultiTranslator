@@ -311,26 +311,36 @@ export default function ListeningTab({
     useEffect(() => () => stopPassageAudio(), [stopPassageAudio]);
 
     // ── Firestore History ────────────────────────────────────────
+    // titles[] (기존) + passagesMeta[] (신규: title+keywords+angle) 병행 보관.
+    // 캐시 shape: historyCacheRef.current[key] = { titles, passagesMeta }
     const loadHistory = async (key) => {
-        if (!user) return [];
+        if (!user) return { titles: [], passagesMeta: [] };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/listeningHistory`, key));
-            const titles = snap.exists() ? (snap.data().titles || []) : [];
-            historyCacheRef.current = { ...historyCacheRef.current, [key]: titles };
-            return titles;
+            const data = snap.exists() ? snap.data() : {};
+            const cached = {
+                titles: Array.isArray(data.titles) ? data.titles : [],
+                passagesMeta: Array.isArray(data.passagesMeta) ? data.passagesMeta : [],
+            };
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: cached };
+            return cached;
         } catch {
-            return [];
+            return { titles: [], passagesMeta: [] };
         }
     };
 
-    const appendHistory = (key, newTitle) => {
-        const existing = historyCacheRef.current[key] || [];
-        const updated = [...existing, newTitle];
+    const appendHistory = (key, newTitle, newMeta) => {
+        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [] };
+        const updated = {
+            titles: [...existing.titles, newTitle],
+            passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
+        };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/listeningHistory`, key), {
-                titles: updated,
+                titles: updated.titles,
+                passagesMeta: updated.passagesMeta,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -352,8 +362,12 @@ export default function ListeningTab({
             ? customInput.trim()
             : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
         const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
-        const persistedTitles = await loadHistory(historyKey);
+        const { titles: persistedTitles, passagesMeta: persistedMeta } = await loadHistory(historyKey);
         const allAvoid = [...new Set([...persistedTitles, ...avoidTitlesRef.current])];
+        // 50→20: long negative list 의 LLM 준수율 저하 회피 + 토큰 절감.
+        // passagesMeta 도 동일하게 최근 20개만 전송 (서버에서 angle/keyword cluster rotation 강제).
+        const avoidTitlesForApi = allAvoid.slice(-20);
+        const passagesMetaForApi = (persistedMeta || []).slice(-20);
 
         try {
             const res = await authFetch(`${getServerUrl()}/api/listening-passage`, {
@@ -368,7 +382,8 @@ export default function ListeningTab({
                     targetLang: selectedLang,
                     sourceLang,
                     byokGeminiKey: byokGeminiKey || undefined,
-                    avoidTitles: allAvoid.slice(-50),
+                    avoidTitles: avoidTitlesForApi,
+                    passagesMeta: passagesMetaForApi,
                 }),
             });
 
@@ -390,7 +405,12 @@ export default function ListeningTab({
                 if (onGenerate) onGenerate();
                 if (data.title) {
                     avoidTitlesRef.current = [...avoidTitlesRef.current, data.title];
-                    appendHistory(historyKey, data.title);
+                    // 신규 응답에 passageKeywords + angle 이 포함된 경우만 meta 누적.
+                    // 누락(이전 빌드 호환)이면 title 만 append → 기존 passagesMeta 그대로 보존.
+                    const newMeta = (Array.isArray(data.passageKeywords) && data.angle)
+                        ? { title: data.title, keywords: data.passageKeywords, angle: data.angle, createdAt: Date.now() }
+                        : null;
+                    appendHistory(historyKey, data.title, newMeta);
                 }
             }
         } catch (e) {

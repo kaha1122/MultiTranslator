@@ -47,8 +47,31 @@ router.post('/api/vocab-words', requireAuth, async (req, res) => {
   - Example sentences: complex sentences with 2+ clauses, 8–20 ${unit}.`,
     }[level] || 'intermediate level';
 
-    const avoidBlock = (avoidWords && avoidWords.length > 0)
-        ? `\nIMPORTANT — The learner has already learned the following words. You MUST generate completely different words:\n${avoidWords.map((w, i) => `${i + 1}. "${w}"`).join('\n')}\n`
+    // Anti-Duplication 블록 — 단순 negative list 한계(LLM lost-in-the-middle, 형태소 변형으로 우회) 보완.
+    // self-check chain-of-thought 강제 + 어근/동의어/sub-cluster 차단 룰. 30개 cap (200개 박는 토큰 낭비 + 효과 저하).
+    const recent = Array.isArray(avoidWords) ? avoidWords.slice(-30) : [];
+    const olderCount = Array.isArray(avoidWords) ? Math.max(0, avoidWords.length - recent.length) : 0;
+    const avoidBlock = recent.length > 0
+        ? `
+=== ANTI-DUPLICATION (CRITICAL — read carefully) ===
+The learner has already learned ${avoidWords.length} word(s) under this exact (topic + level + lang) combo.
+${olderCount > 0 ? `(${olderCount} older words omitted; ${recent.length} most recent shown.)\n` : ''}Recent avoided words:
+${recent.map((w, i) => `${i + 1}. "${w}"`).join('\n')}
+
+You MUST avoid ALL of the following overlap types — not just exact string matches:
+
+1. **Same root / stem / family** — if "旅行" is in the list, you cannot use 旅遊, 旅人, 旅館, 旅程; if "run" is listed, you cannot use running, runner, runs.
+2. **Synonyms / near-synonyms** — if "美味しい" is listed, you cannot use 旨い, うまい, 美味, おいしそう; if "happy" is listed, you cannot use joyful, glad, cheerful.
+3. **Same semantic micro-cluster** — if 4+ items in this topic already cover one sub-domain (e.g. 7 clothing items in a "shopping" topic), generate from a DIFFERENT sub-domain (accessories / payment / sizing / services / brands etc.).
+
+**MANDATORY self-check before output**:
+For each candidate word W you draft (5 total), mentally verify:
+  (a) Does W share a stem/root with any avoided word?       → if YES, REGENERATE this slot.
+  (b) Is W a synonym or near-synonym of any avoided word?   → if YES, REGENERATE this slot.
+  (c) Does W belong to a sub-cluster that already has 4+ items in the avoided list? → if YES, pick another sub-cluster.
+
+Only after all 5 candidates pass (a)(b)(c) do you output the JSON. If you cannot find 5 valid candidates, prioritize sub-cluster diversity over exact synonym distance.
+`
         : '';
 
     const prompt = `You are a vocabulary teacher for language learners.

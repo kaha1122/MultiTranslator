@@ -59,12 +59,64 @@ Vietnamese) makes the output unusable.`;
  * @param {string} args.sourceLang        — 학습자 모국어 코드
  * @param {string} args.difficulty        — 'basic' | 'intermediate' | 'advanced'
  * @param {string} args.speechStyle       — 'casual' | 'formal'
+ * @param {Array}  args.avoidSituations   — 같은 (scene,difficulty,style,lang) 키로 이전 세션에서 누적된
+ *                                          상황 메타. shape: [{ summary, dimensions: {emotion, action_type,
+ *                                          responder_role, topic_focus}, createdAt? }]. 최근 30개까지 권고.
  */
-function buildStartPrompt({ scene, category, targetLang, sourceLang, difficulty, speechStyle }) {
+function buildStartPrompt({ scene, category, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
     const targetLangName = LANG_NAMES[targetLang] || 'English';
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
     const diffDesc = getDifficultyDesc(difficulty, targetLang);
     const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
+
+    // ── Anti-Duplication 블록 — 차원 회전(Dimension Rotation) + 구조화 JSON 방식 ──
+    // 단순 문장 나열 대신 차원별 set 으로 압축해 LLM 의 lost-in-the-middle 한계 우회.
+    // 같은 카테고리(scene+difficulty+style+lang) 키 안에서만 누적되므로 카테고리 간섭 없음.
+    let avoidBlock = '';
+    if (Array.isArray(avoidSituations) && avoidSituations.length > 0) {
+        const recent = avoidSituations.slice(-30);
+        const olderCount = avoidSituations.length - recent.length;
+        const dims = {
+            emotions: new Set(),
+            action_types: new Set(),
+            responder_roles: new Set(),
+            topic_focuses: new Set(),
+        };
+        const lines = recent.map((s, i) => {
+            const d = s.dimensions || {};
+            if (d.emotion)         dims.emotions.add(d.emotion);
+            if (d.action_type)     dims.action_types.add(d.action_type);
+            if (d.responder_role)  dims.responder_roles.add(d.responder_role);
+            if (d.topic_focus)     dims.topic_focuses.add(d.topic_focus);
+            const summary = (s.summary || '').replace(/"/g, "'").slice(0, 120);
+            return `  ${String(i + 1).padStart(2, ' ')}. "${summary}" — ${d.emotion || '?'}/${d.action_type || '?'}/${d.responder_role || '?'}`;
+        }).join('\n');
+        const dimSummary = JSON.stringify({
+            emotions: [...dims.emotions],
+            action_types: [...dims.action_types],
+            responder_roles: [...dims.responder_roles],
+            topic_focuses: [...dims.topic_focuses],
+        });
+        avoidBlock = `
+
+---
+
+### [Anti-Duplication via Dimension Rotation — MANDATORY]
+The learner has already played ${avoidSituations.length} Free-Talking session(s) for this exact scene+difficulty+style+lang combo.
+${olderCount > 0 ? `(${olderCount} older sessions omitted; ${recent.length} most recent shown.)\n` : ''}Recent situations (oldest → newest):
+${lines}
+
+Already-covered dimensions (DO NOT repeat the same combination):
+${dimSummary}
+
+Rotation rules — apply ALL:
+1. Pick an **emotion** for firstUserTurn that is NOT in covered.emotions if any unused emotion exists in the level-allowed set.
+2. Pick an **action_type** that is NOT in covered.action_types if any unused type exists.
+3. Pick a **responder_role** different from the most recent 3 in the list above.
+4. Pick a **topic_focus** (the specific sub-situation: "seat change", "lost luggage", "menu recommendation", etc.) that is NOT in covered.topic_focuses.
+5. If ALL of the above dimensions are exhausted in a single dimension, prioritize topic_focus novelty + responder_role rotation over emotion/action repeat.
+6. The resulting situation MUST feel meaningfully different from each of the recent ${recent.length} listed above — not a paraphrase.`;
+    }
 
     return `### [Role]
 You are a Language Learning Content Architect generating a SCRIPTED 3-MESSAGE conversation OPENER for a learner about to enter "${scene}".
@@ -160,6 +212,7 @@ ${styleDesc}
 - Category: ${category}
 - Target Language: ${targetLangName}
 - Learner's Native Language: ${sourceLangName}
+${avoidBlock}
 
 ---
 
@@ -215,6 +268,13 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
   "scenarioMeta": {
     "responder_role": "e.g., 'hotel receptionist', 'flight attendant', 'waiter', 'taxi driver', 'pharmacist'.",
     "scene_summary_en": "One-line English summary of the whole scene for downstream prompts."
+  },
+  "situationSummary": "ONE concise line in ${sourceLangName} (max ~25 chars / ~8 words) capturing THIS specific micro-situation. Used to dedupe future Free-Talking sessions for the same scene. Example (sourceLang=Korean): '공항 체크인에서 좌석 변경 요청'. Example (sourceLang=English): 'Asking to change seat at airport check-in'. Be specific — don't echo the scene name only.",
+  "dimensions": {
+    "emotion": "Same as firstUserTurn.selected_emotion (echo it here as a flat string for downstream dedup).",
+    "action_type": "Same as firstUserTurn.interaction_type (echo it here as a flat string).",
+    "responder_role": "Same as scenarioMeta.responder_role (echo it here as a flat string).",
+    "topic_focus": "Short English phrase (2~4 words) naming the sub-situation handled in this session. Examples: 'seat change', 'lost luggage', 'menu recommendation', 'late checkout'. This is the most important field for cross-session deduplication — make it specific and distinguishable from the previously-covered topic_focuses listed above."
   }
 }`;
 }

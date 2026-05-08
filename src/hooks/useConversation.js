@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { authFetch } from '../utils/authFetch';
+import { db } from '../firebase/config';
+import { useAuth } from '../context/AuthContext';
 
 const getServerUrl = () => {
     try {
@@ -56,7 +59,14 @@ function pickVoices() {
     };
 }
 
+// freeTalkHistory Firestore 문서 ID — Scene 의 makeHistoryKey 와 동일 스킴(같은 카테고리 70개 안에서만 누적,
+// difficulty / speechStyle / lang 분리). Scene 카드 동선은 hidden 처리됐고, sceneHistory 는 더 이상 새 데이터가
+// 쌓이지 않음 → freeTalkHistory 신규 컬렉션으로 분리해 의미 명확화.
+const makeFreeTalkHistoryKey = (sceneId, difficulty, style, lang) =>
+    `${sceneId}--${difficulty}--${style}--${lang}`;
+
 export function useConversation({ tier = 'trial' } = {}) {
+    const { user } = useAuth();
     const [sessionId, setSessionId] = useState(null);
     const [messages, setMessages] = useState([]);
     const [setup, setSetup] = useState(null);     // {scene, category, targetLang, sourceLang, difficulty, speechStyle, sceneI18nLabel}
@@ -77,6 +87,9 @@ export function useConversation({ tier = 'trial' } = {}) {
     const setupRef = useRef(null);
     const scenarioMetaRef = useRef(null);
     const tierRef = useRef(tier);
+    // freeTalkHistory Firestore 캐시 — key → situations[] 배열 (ScenePractice 의 historyCacheRef 패턴 차용).
+    // ref 라 렌더 트리거 없음. 같은 키 재진입 시 Firestore 재호출 회피.
+    const historyCacheRef = useRef({});
 
     useEffect(() => { tierRef.current = tier; }, [tier]);
     useEffect(() => { messagesRef.current = messages; }, [messages]);
@@ -108,6 +121,36 @@ export function useConversation({ tier = 'trial' } = {}) {
     // 세션 시작 시 결정되는 voice swap (랜덤). ref로 보존되어 자유 발화 흐름에서도 일관 적용.
     const voicesRef = useRef({ userSpeaker: 'female', aiSpeaker: 'male', swap: false });
 
+    // freeTalkHistory 로드 — 같은 (sceneId, difficulty, speechStyle, lang) 키에 누적된 situation 메타.
+    // 익명 유저(user 없음)는 Firestore 접근 불가 → 빈 배열 반환 (중복방지 효과 없지만 동작은 정상).
+    const loadAvoidSituations = useCallback(async (key) => {
+        if (!user) return [];
+        if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
+        try {
+            const snap = await getDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key));
+            const situations = snap.exists() ? (snap.data().situations || []) : [];
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: situations };
+            return situations;
+        } catch (e) {
+            console.warn('[useConversation] freeTalkHistory load failed:', e?.message);
+            return [];
+        }
+    }, [user]);
+
+    // 응답 직후 1회 호출 — situationSummary + dimensions 를 Firestore 에 누적 (merge 모드).
+    // 실패해도 세션 흐름에는 영향 없게 catch 만.
+    const appendFreeTalkHistory = useCallback((key, situation) => {
+        const existing = historyCacheRef.current[key] || [];
+        const updated = [...existing, situation];
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key), {
+                situations: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory append failed:', e?.message));
+        }
+    }, [user]);
+
     const startSession = useCallback(async (setupArgs) => {
         setIsStarting(true);
         setStartError(null);
@@ -118,6 +161,20 @@ export function useConversation({ tier = 'trial' } = {}) {
         setEndedReason(null);
         // voice 선택 — 세션마다 랜덤 (User=female/AI=male  또는  User=male/AI=female)
         voicesRef.current = pickVoices();
+
+        // freeTalkHistory 키 — sceneId 가 setupArgs 에 없으면 'unknown' 으로 fallback (custom scene 처리는
+        // ScenePractice 측에서 makeCustomSceneId 로 미리 생성해 setupArgs.sceneId 에 담아 보냄).
+        const sceneIdForKey = setupArgs.sceneId || 'unknown';
+        const historyKey = makeFreeTalkHistoryKey(
+            sceneIdForKey,
+            setupArgs.difficulty || 'basic',
+            setupArgs.speechStyle || 'formal',
+            setupArgs.targetLang || 'en',
+        );
+        // 누적 situations 로드 → 차원 회전용 메타로 prompt 에 inject.
+        // 최근 30개만 buildStartPrompt 가 사용하지만 전송은 전체 (서버에서 slice).
+        const persistedSituations = await loadAvoidSituations(historyKey);
+
         try {
             const res = await authFetch(`${SERVER_URL}/api/converse-start`, {
                 method: 'POST',
@@ -129,6 +186,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     sourceLang: setupArgs.sourceLang,
                     difficulty: setupArgs.difficulty,
                     speechStyle: setupArgs.speechStyle,
+                    avoidSituations: persistedSituations,
                 }),
             });
             if (!res.ok) {
@@ -139,6 +197,16 @@ export function useConversation({ tier = 'trial' } = {}) {
             setSetup(setupArgs);
             setScenarioMeta(data.scenarioMeta || null);
             setSessionId(`s-${Date.now()}`);
+
+            // freeTalkHistory append — situationSummary + dimensions 가 응답에 있으면 저장.
+            // 두 필드 중 하나라도 비어있으면 skip (이전 빌드 호환). serverTimestamp 는 setDoc 호출 시 attach.
+            if (data.situationSummary || data.dimensions) {
+                appendFreeTalkHistory(historyKey, {
+                    summary: data.situationSummary || '',
+                    dimensions: data.dimensions || {},
+                    createdAt: Date.now(),  // 클라이언트 epoch — Firestore 정렬엔 updatedAt 사용
+                });
+            }
 
             // 3개 메시지 골격을 즉시 마운트 (text는 빈 채로 — TTS reveal로 채워짐)
             // played: false → ChatBubble이 fullText pre-flash 차단 (자기 차례에 reveal 시작)
@@ -223,7 +291,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         } finally {
             setIsStarting(false);
         }
-    }, [fetchTTS]);
+    }, [fetchTTS, loadAvoidSituations, appendFreeTalkHistory]);
 
     const endSession = useCallback((reason = 'user') => {
         setSessionEnded(true);
