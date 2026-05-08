@@ -19,15 +19,17 @@ import { authFetch } from '../utils/authFetch';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
-const WEB_URL = 'https://pronunfit.com/';
+// 2026-05-08: iOS 앱 출시 → 기존 https://pronunfit.com/ 에서 App Store URL 로 교체.
+//   PC/웹 수신자가 클릭해도 App Store 페이지가 정상 표시되며 "iPhone 에서 열기" 안내 제공.
+const IOS_STORE_URL = 'https://apps.apple.com/us/app/pronunfit/id6761342764';
 
 // 공유 URL은 "받는 친구의 단말" 기준으로 결정. 발신자가 친구 단말을 알고 직접 버튼을 고름.
 // (예전엔 발신자 플랫폼으로 분기했으나, Android 발신자 → iPhone 수신자 시 Play Store 링크가
 //  iPhone에서 죽은 링크가 되는 문제가 있어 사용자 명시 선택 방식으로 변경. 2026-04-26)
 // target: 'android' = 받는 친구가 Android(갤럭시 등) → Play Store
-//         'iosweb'  = 받는 친구가 iPhone 또는 PC/웹 사용자 → Web URL (iOS 앱 출시 후 App Store URL로 교체)
+//         'iosweb'  = 받는 친구가 iPhone 또는 PC/웹 사용자 → App Store
 function getShareUrl(target) {
-    return target === 'android' ? PLAY_STORE_URL : WEB_URL;
+    return target === 'android' ? PLAY_STORE_URL : IOS_STORE_URL;
 }
 
 export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) {
