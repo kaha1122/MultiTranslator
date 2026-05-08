@@ -261,6 +261,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
 
     // ── RevenueCat Offering 상태 (네이티브 전용) ──
     const isNative = Capacitor.isNativePlatform();
+    const isIOS = Capacitor.getPlatform() === 'ios';
     const [rcProPlans, setRcProPlans] = useState([]);
     const [rcPremiumPlans, setRcPremiumPlans] = useState([]);
     const [rcLoading, setRcLoading] = useState(isNative); // 네이티브면 초기 로딩
@@ -793,12 +794,30 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                 <p className="upgrade-footer-note">
                     {t('upgrade.autoRenewNote')}
                 </p>
+                {/* Apple 심사(Guideline 3.1.2c) — 결제 직전 화면에 functional link 필수.
+                    iOS는 Apple 표준 EULA, 그 외는 자체 약관 페이지 사용. */}
                 <div className="upgrade-legal-links">
-                    <a href="/privacy" onClick={(e) => { e.preventDefault(); onClose(); window.location.hash = ''; setTimeout(() => { window.dispatchEvent(new CustomEvent('navigate', { detail: '/privacy' })); }, 100); }}>
+                    <a
+                        href="https://pronunfit.com/privacy"
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => { e.preventDefault(); window.open('https://pronunfit.com/privacy', '_blank'); }}
+                    >
                         {t('upgrade.privacyPolicy')}
                     </a>
                     <span>|</span>
-                    <a href="/terms" onClick={(e) => { e.preventDefault(); onClose(); window.location.hash = ''; setTimeout(() => { window.dispatchEvent(new CustomEvent('navigate', { detail: '/terms' })); }, 100); }}>
+                    <a
+                        href={isIOS ? 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/' : 'https://pronunfit.com/terms'}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => {
+                            e.preventDefault();
+                            const url = isIOS
+                                ? 'https://www.apple.com/legal/internet-services/itunes/dev/stdeula/'
+                                : 'https://pronunfit.com/terms';
+                            window.open(url, '_blank');
+                        }}
+                    >
                         {t('upgrade.termsOfUse')}
                     </a>
                 </div>
