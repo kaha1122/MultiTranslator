@@ -42,23 +42,28 @@ body.platform-native {
   background-color: var(--bg-primary);
   background-image: none;
 }
-/* iOS 광고 배너 아래 safe-area 영역 불투명 커버
- * AdMob 배너는 safeAreaLayoutGuide.bottom에 정렬되므로,
- * 그 아래 ~34px(홈 인디케이터)에 WebView 콘텐츠가 비침.
- * 이 pseudo-element로 해당 영역을 앱 배경색으로 덮음.
- * - admob-active + platform-native 조합으로만 활성화
- * - height: env(safe-area-inset-bottom) → Android/Web에서는 0px → 무영향
- * - pointer-events: none → 터치 이벤트 투과 */
-html.admob-active.platform-native::after {
+/* iOS 하단 safe-area(~34px 홈 인디케이터) 불투명 커버
+ * Trial(admob-active): AdMob 배너는 safeAreaLayoutGuide.bottom에 anchor되므로
+ *   그 아래 ~34px에 WebView 콘텐츠가 비침 → 앱 bg(var(--bg-primary))로 덮음.
+ * Pro/Premium(no admob): tab-nav가 safe-area 위에 떠 있어 그 아래 ~34px에
+ *   .app-container 콘텐츠가 비침(scroll 시 메뉴 항목 등 노출) → 흰색(#ffffff)
+ *   으로 덮어 tab-nav(흰색)와 시각적 연속.
+ * Android/Web: env(safe-area-inset-bottom)=0 → height 0 → 무영향.
+ * pointer-events: none → 터치 이벤트 투과. */
+html.platform-native::after {
   content: '';
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
   height: env(safe-area-inset-bottom, 0px);
-  background: var(--bg-primary);
+  background: #ffffff;
   z-index: 99999;
   pointer-events: none;
+}
+/* Trial은 광고 아래라 앱 bg와 연결 — Pro 흰색 default를 override */
+html.admob-active.platform-native::after {
+  background: var(--bg-primary);
 }
 
 /* Global Mobile App Layout
