@@ -100,8 +100,8 @@ html.admob-active.platform-native::after {
   background: var(--bg-primary);
   display: flex;
   flex-direction: column;
-  /* 기본: safe-area 적용 — tab-nav 56px + iOS safe-area */
-  padding: 0 0 calc(56px + env(safe-area-inset-bottom, 0px)) 0;
+  /* 기본: safe-area 적용 — tab-nav 39px + iOS safe-area */
+  padding: 0 0 calc(39px + env(safe-area-inset-bottom, 0px)) 0;
   position: relative;
   box-shadow: 0 0 100px rgba(0, 0, 0, 0.1);
   overflow-x: hidden;
@@ -113,7 +113,7 @@ html.admob-active.platform-native::after {
  * --admob-floor: Android는 100px(ADAPTIVE 미스리포트 보호), iOS는 0px(보고값 신뢰).
  *                JS 미설정 시 100px fallback (기존 Android 동작 보존). */
 .admob-active .app-container {
-  padding-bottom: calc(56px + max(var(--admob-bottom, 0px), var(--admob-floor, 100px)) + 4px);
+  padding-bottom: calc(39px + max(var(--admob-bottom, 0px), var(--admob-floor, 100px)) + 4px);
 }
 
 .app-container::-webkit-scrollbar {
@@ -1416,7 +1416,7 @@ html.admob-active.platform-native::after {
   background: #ffffff;
   border-top: 1px solid #e2e8f0;
   box-shadow: 0 -2px 8px rgba(0, 0, 0, 0.04);
-  padding: 6px 4px;
+  padding: 4px;
   /* Pro/Premium 업그레이드 시 광고 제거 → 하단 복귀 부드럽게 */
   transition: bottom 0.2s ease;
 }
@@ -1430,7 +1430,7 @@ html.admob-active.platform-native::after {
 .tab-nav__btn {
   flex: 1 1 0;
   min-width: 0;
-  height: 44px;
+  height: 31px;
   padding: 0;
   background: transparent;
   border: none;
