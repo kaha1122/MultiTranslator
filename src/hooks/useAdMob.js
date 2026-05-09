@@ -231,6 +231,18 @@ export const useAdMob = (tier) => {
                     isTesting: IS_TESTING,
                 });
 
+                // showBanner 진행 중 tier가 Pro로 바뀌어 cleanup이 cancelled=true를
+                // 세팅했을 수 있음 (가입 직후 즉시 IAP 구매 race — createdAt과
+                // tierUpdatedAt이 1~5초 차이 패턴). Pro removal effect는 이미 실행됐을
+                // 때 _bannerShowing=false라 스킵된 상태이므로 여기서 직접 회수하지
+                // 않으면 영구히 광고가 남음.
+                if (cancelled) {
+                    console.log('[AdMob] Banner rolled back — tier became Pro mid-setup');
+                    await _adMob.removeBanner?.().catch(() => {});
+                    setOffset(false);
+                    return;
+                }
+
                 _bannerShowing = true;
                 console.log('[AdMob] showBanner 호출 완료');
 
