@@ -42,6 +42,21 @@ body.platform-native {
   background-color: var(--bg-primary);
   background-image: none;
 }
+/* iOS auto-zoom 방지 ──────────────────────────────────────
+ * iOS Safari/WKWebView는 input focus 시 font-size < 16px이면 자동 viewport zoom in,
+ * 닫을 때 zoom 1.0 복귀 안 됨 → page > viewport 상태 + position: fixed 요소들이
+ * 시각적으로 어긋남 (tab-nav가 광고 밖, safe-area 흰색 cover 어긋남, "둥둥" 흔들림 등
+ * 일괄 회귀). Login modal email/password input(.input-group input = 0.9rem = 14.4px)
+ * focus 후 cancel 시 재현됨.
+ * 16px floor만 적용 → 디자인 영향 최소화 (~1.6px 증가). 셀렉터 specificity (0,0,1,2)
+ * > 기존 .input-group input (0,0,1,1) — !important 불필요.
+ * Android/Web은 platform-ios 클래스 없어 미적용. */
+html.platform-ios input,
+html.platform-ios textarea,
+html.platform-ios select {
+  font-size: max(16px, 1em);
+}
+
 /* iOS 하단 safe-area(~34px 홈 인디케이터) 불투명 커버
  * Trial(admob-active): AdMob 배너는 safeAreaLayoutGuide.bottom에 anchor되므로
  *   그 아래 ~34px에 WebView 콘텐츠가 비침 → 앱 bg(var(--bg-primary))로 덮음.
