@@ -8,16 +8,12 @@ import { AuthProvider } from './context/AuthContext'
 
 // Capgo OTA 플랫폼별 초기화
 if (Capacitor.getPlatform() === 'ios') {
-  // iOS: Capgo OTA 미사용 — builtin 번들 고정
-  // notifyAppReady() 호출하지 않음 (Capgo 자동업데이트 비활성화 효과)
-  // reset()은 이미 builtin이면 건너뜀 (무한 reload 방지)
-  CapacitorUpdater.current().then(info => {
-    const v = info?.bundle?.version;
-    if (v && v !== 'builtin') {
-      console.log('[Capgo] iOS: non-builtin 감지 → builtin으로 리셋', v);
-      CapacitorUpdater.reset({ toLastSuccessful: false }).catch(() => {});
-    }
-  }).catch(() => {});
+  // iOS: autoUpdate=true (capacitor.config.json) — 네이티브 플러그인이 자동 다운로드/적용.
+  // notifyAppReady()로 OTA 적용 후 정상 launch 신호 → Capgo가 롤백하지 않음.
+  // 과거 builtin 강제 reset 로직(503f3a0/17721a6)은 제거 — 2026-05-07 룰 변경
+  // (decision_ios_capgo_ota_reactivation.md). 무한 reload 회귀 시 즉시 보고할 것.
+  // 다운그레이드 방지는 Capgo dashboard 운영 디시플린(구버전 push 금지)에 의존.
+  CapacitorUpdater.notifyAppReady();
 } else if (Capacitor.getPlatform() === 'android') {
   // Android: 수동 Capgo OTA 운영 (autoUpdate: false)
   // — autoUpdate: true 시 appMovedToBackground → semaphoreWait 메인스레드 블로킹 → ANR 발생

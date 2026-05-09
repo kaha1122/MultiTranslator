@@ -861,29 +861,27 @@ function App() {
         console.log('[UpdateCheck] config fetch failed:', e);
       }
     }).catch(() => { });
-    // Capgo OTA — iOS는 아직 Capgo 채널/번들 미준비이므로 건너뜀
-    if (Capacitor.getPlatform() !== 'ios') {
-      // Capgo OTA 번들 버전 (builtin이 아닐 때만 표시)
-      CapacitorUpdater.current().then(info => {
-        const v = info?.bundle?.version;
-        if (v && v !== 'builtin') setBundleVersion(v);
-      }).catch(() => { });
-      // 이벤트 리스너
-      CapacitorUpdater.addListener('updateAvailable', (res) => {
-        setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
-      });
-      CapacitorUpdater.addListener('downloadComplete', (res) => {
-        setUpdateStatus(`✅ 완료 v${res.bundle.version} — 재시작 시 적용`);
-      });
-      CapacitorUpdater.addListener('downloadFailed', (res) => {
-        setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
-      });
-      CapacitorUpdater.addListener('noNeedUpdate', () => {
-        setUpdateStatus('');
-      });
-      // 채널 등록 (빌드 타임에 결정: staging or production)
-      CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => { });
-    }
+    // Capgo OTA 번들 정보 — iOS/Android 공통 (2026-05-07 iOS 재활성화 이후)
+    // 표시용으로만 조회. 실제 다운로드/적용은 main.jsx (iOS=autoUpdate, Android=manual).
+    CapacitorUpdater.current().then(info => {
+      const v = info?.bundle?.version;
+      if (v && v !== 'builtin') setBundleVersion(v);
+    }).catch(() => { });
+    // 이벤트 리스너 — 양 플랫폼 동일
+    CapacitorUpdater.addListener('updateAvailable', (res) => {
+      setUpdateStatus(`⬇️ 다운로드 중... v${res.bundle.version}`);
+    });
+    CapacitorUpdater.addListener('downloadComplete', (res) => {
+      setUpdateStatus(`✅ 완료 v${res.bundle.version} — 재시작 시 적용`);
+    });
+    CapacitorUpdater.addListener('downloadFailed', (res) => {
+      setUpdateStatus(`❌ 실패: ${JSON.stringify(res)}`);
+    });
+    CapacitorUpdater.addListener('noNeedUpdate', () => {
+      setUpdateStatus('');
+    });
+    // 채널 등록 (빌드 타임에 결정: staging or production)
+    CapacitorUpdater.setChannel({ channel: __CAPGO_CHANNEL__ }).catch(() => { });
   }, []);
 
   // ── 모바일 Back 키 → 종료 토스트 (두 번 누르면 종료) ──
