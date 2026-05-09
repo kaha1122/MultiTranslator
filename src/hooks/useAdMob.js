@@ -152,11 +152,24 @@ export const useAdMob = (tier) => {
     useEffect(() => {
         if (!isNativePlatform()) return;
         if (!isReady) return;
-        if (isPaid && _bannerShowing) {
-            if (_adMob) _adMob.removeBanner?.().catch(() => {});
-            setOffset(false);
-            _bannerShowing = false;
-            console.log('[AdMob] Banner removed (paid tier)');
+        if (isPaid) {
+            // _bannerShowing 가드 제거 — logout cleanup의 fire-and-forget removeBanner가
+            // race로 silent 실패했을 가능성 (native banner 잔류 + JS state는 false).
+            // 항상 시도 + 재시도로 native와 JS 상태 강제 동기화.
+            // _adMob 미로드 (Pro 콜드스타트) 시 if (_adMob) false → setOffset만 호출.
+            (async () => {
+                if (_adMob) {
+                    try {
+                        await _adMob.removeBanner();
+                    } catch {
+                        // 1차 실패 시 200ms 후 재시도 (native plugin race 안전망)
+                        setTimeout(() => _adMob?.removeBanner?.().catch(() => {}), 200);
+                    }
+                }
+                setOffset(false);
+                _bannerShowing = false;
+                console.log('[AdMob] Banner removed (paid tier)');
+            })();
         }
     }, [isPaid, isReady]);
 
@@ -264,9 +277,16 @@ export const useAdMob = (tier) => {
         return () => {
             cancelled = true;
             listenerHandles.forEach(h => h?.remove?.());
-            if (_adMob) _adMob.removeBanner?.().catch(() => {});
             setOffset(false);
             _bannerShowing = false;
+            // React cleanup은 await 불가 — fire-and-forget + 1차 실패 시 200ms 후 재시도.
+            // 1차 실패 시 native banner가 잔류하는 race가 있어, Pro 전환 후에도 banner가
+            // 보이는 문제(2026-05-09 사용자 보고 사례)의 안전망.
+            if (_adMob) {
+                _adMob.removeBanner?.().catch(() => {
+                    setTimeout(() => _adMob?.removeBanner?.().catch(() => {}), 200);
+                });
+            }
         };
     }, [isPaid, isReady]);
 };
