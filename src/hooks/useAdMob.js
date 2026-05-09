@@ -76,9 +76,26 @@ export async function showInterstitialAd() {
 }
 
 // 폴백 높이 — SizeChanged 이벤트 도착 전 또는 info.height 미수신 시 사용.
-// ADAPTIVE_BANNER는 화면에 따라 50~110px 가변이므로 보수적으로 100 (이전 60 → nav 가림 사례).
-// CSS에선 max(--admob-bottom, 100px)로 한번 더 floor 보장.
-const DEFAULT_BANNER_HEIGHT = 100;
+// Android ADAPTIVE_BANNER는 화면에 따라 50~110px 가변 → 보수적 100.
+// iOS는 standard 배너가 일반적 ~50px이고 ADAPTIVE도 iPhone 폭에선 비슷 → 50.
+const DEFAULT_BANNER_HEIGHT = isIOS() ? 50 : 100;
+
+// iOS safe-area-inset-bottom 값을 한 번 probe해서 캐싱.
+// AdMob 플러그인은 iOS에서 safeAreaLayoutGuide.bottom 위에 배너를 anchor하므로
+// info.height에는 safe-area(~34px)가 빠져있다. setOffset 시 이 값을 합산해야
+// CSS의 --admob-bottom이 "배너 top edge부터 WebView 하단까지의 실제 거리"가 됨.
+let _safeBottomCache = null;
+function probeSafeAreaBottom() {
+    if (_safeBottomCache != null) return _safeBottomCache;
+    if (typeof document === 'undefined' || !document.body) return 0;
+    const el = document.createElement('div');
+    el.style.cssText = 'position:fixed;visibility:hidden;left:0;bottom:0;'
+        + 'padding-bottom:env(safe-area-inset-bottom,0px)';
+    document.body.appendChild(el);
+    _safeBottomCache = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+    el.remove();
+    return _safeBottomCache;
+}
 
 // AdMob 플러그인을 모듈 변수에 캐싱 — async 함수에서 return하면
 // JS가 thenable 감지를 위해 AdMob.then()을 호출 → 네이티브 브릿지 에러 발생
@@ -107,11 +124,18 @@ async function loadAdMob() {
 function setOffset(height) {
     const r = document.documentElement;
     r.style.setProperty('--admob-top', '0px');
-    r.style.setProperty('--admob-bottom', height ? `${height}px` : '0px');
-    // 광고 유무에 따라 CSS 클래스 토글 — CSS에서 safe-area 분기에 사용
     if (height) {
+        // iOS는 배너가 safeAreaLayoutGuide 위에 anchor되므로 safe-area를 합산.
+        // Android는 그대로 (safe-area-inset-bottom = 0).
+        const total = isIOS() ? height + probeSafeAreaBottom() : height;
+        r.style.setProperty('--admob-bottom', `${total}px`);
+        // iOS는 보고 높이가 신뢰 가능 → Android-ADAPTIVE 보호용 100px floor 무력화.
+        // Android는 floor 유지 (SizeChanged 미스리포트 대비).
+        r.style.setProperty('--admob-floor', isIOS() ? '0px' : '100px');
         r.classList.add('admob-active');
     } else {
+        r.style.setProperty('--admob-bottom', '0px');
+        r.style.removeProperty('--admob-floor');
         r.classList.remove('admob-active');
     }
 }
