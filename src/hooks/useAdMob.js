@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { resetIOSViewport } from '../utils/resetIOSViewport';
 
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
@@ -245,6 +246,11 @@ export const useAdMob = (tier) => {
 
                 _bannerShowing = true;
                 console.log('[AdMob] showBanner 호출 완료');
+
+                // iOS WKWebView visual viewport zoom stuck 해결 — banner 표시
+                // 직후 viewport 정리. App.jsx [user] effect와 보완 관계 (auth 변경
+                // → 새 setup → showBanner → reset 의 race window 차단).
+                resetIOSViewport();
 
             } catch (e) {
                 console.error('[AdMob] 초기화/배너 실패:', e?.message, JSON.stringify(e));

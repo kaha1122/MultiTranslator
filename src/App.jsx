@@ -54,6 +54,7 @@ import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { resetIOSViewport } from './utils/resetIOSViewport';
 import { adsReady, showInterstitial } from './lib/adProvider';
 import AppGuide from './components/AppGuide';
 import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
@@ -507,6 +508,16 @@ function App() {
     document.documentElement.classList.add(cls, 'platform-native');
     document.body?.classList.add(cls, 'platform-native');
   }, []);
+
+  // iOS WKWebView visual viewport zoom stuck 해결
+  // — Apple/Google/Facebook OAuth dialog 또는 input focus가 dismiss될 때
+  //   WKWebView가 zoom 상태로 stuck되는 알려진 버그.
+  // — auth state(logout/login/anonymous 전환) 변경 시 viewport meta를 잠깐 lock해서
+  //   WKWebView가 visual viewport를 강제 재평가하게 만든다.
+  // — Android/Web은 유틸 내부 platform 체크로 즉시 return → 영향 0.
+  React.useEffect(() => {
+    resetIOSViewport();
+  }, [user]);
 
   // AdMob 배너 광고 (네이티브 전용, Pro/Premium 제외)
   // profile 미로드 시 tier=null 전달 → useAdMob 내부 isReady 가드로 ATT/배너 보류.
