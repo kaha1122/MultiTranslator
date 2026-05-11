@@ -1,0 +1,148 @@
+/* Streak 마일스톤 축하 모달 */
+.streak-celeb-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.7);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+    animation: streakCelebFadeIn 0.3s ease;
+}
+@keyframes streakCelebFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.streak-celeb-confetti {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    overflow: hidden;
+}
+.streak-celeb-piece {
+    position: absolute;
+    top: -10%;
+    font-size: 1.6rem;
+    animation-name: streakCelebFall;
+    animation-timing-function: linear;
+    animation-iteration-count: infinite;
+}
+@keyframes streakCelebFall {
+    0% {
+        transform: translateY(0) rotate(0deg);
+        opacity: 0;
+    }
+    10% { opacity: 1; }
+    100% {
+        transform: translateY(120vh) rotate(720deg);
+        opacity: 0.5;
+    }
+}
+
+.streak-celeb-card {
+    position: relative;
+    background: linear-gradient(160deg, #ffffff 0%, #fef3ff 100%);
+    border-radius: 24px;
+    padding: 32px 28px 24px;
+    width: min(90%, 360px);
+    text-align: center;
+    box-shadow: 0 24px 48px rgba(139, 92, 246, 0.35);
+    animation: streakCelebPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@keyframes streakCelebPop {
+    0% { transform: scale(0.7); opacity: 0; }
+    100% { transform: scale(1); opacity: 1; }
+}
+
+.streak-celeb-close {
+    position: absolute;
+    top: 10px;
+    right: 14px;
+    background: transparent;
+    border: none;
+    font-size: 1.5rem;
+    color: #94a3b8;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.streak-celeb-icon {
+    font-size: 3rem;
+    line-height: 1;
+    margin-bottom: 4px;
+    animation: streakCelebSpin 1.5s ease-in-out infinite;
+}
+@keyframes streakCelebSpin {
+    0%, 100% { transform: rotate(0deg) scale(1); }
+    50% { transform: rotate(15deg) scale(1.15); }
+}
+
+.streak-celeb-milestone {
+    font-size: 2.6rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    line-height: 1;
+    margin: 4px 0 12px;
+}
+
+.streak-celeb-title {
+    font-size: 1.25rem;
+    font-weight: 800;
+    color: #1e293b;
+    margin: 0 0 6px;
+}
+.streak-celeb-subtitle {
+    font-size: 0.85rem;
+    color: #64748b;
+    margin: 0 0 18px;
+    line-height: 1.4;
+}
+
+.streak-celeb-reward {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 4px;
+    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    border: 2px solid #fbbf24;
+    border-radius: 16px;
+    padding: 10px 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 4px 12px rgba(251, 191, 36, 0.3);
+    animation: streakCelebPulse 1.5s ease-in-out infinite;
+}
+@keyframes streakCelebPulse {
+    0%, 100% { transform: scale(1); }
+    50% { transform: scale(1.04); }
+}
+.streak-celeb-reward-icon { font-size: 1.4rem; }
+.streak-celeb-reward-amount {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #d97706;
+}
+.streak-celeb-reward-unit {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #d97706;
+}
+
+.streak-celeb-cta {
+    display: block;
+    width: 100%;
+    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: white;
+    border: none;
+    border-radius: 12px;
+    padding: 14px;
+    font-size: 1rem;
+    font-weight: 700;
+    cursor: pointer;
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.35);
+    transition: transform 0.15s;
+}
+.streak-celeb-cta:active { transform: scale(0.97); }

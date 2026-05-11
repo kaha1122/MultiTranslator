@@ -612,6 +612,21 @@
     "partial": "Partial",
     "noActivity": "No activity"
   },
+  "streak": {
+    "currentLabel": "Current Streak",
+    "longest": "Personal Best",
+    "monthRate": "This Month",
+    "totalDays": "Total Days",
+    "nextMilestone": "Next milestone",
+    "milestones": "Milestones",
+    "daysUnit": "d",
+    "daysLeftUnit": "d left",
+    "celebration": {
+      "title": "Streak Milestone!",
+      "subtitle": "Amazing! Keep your streak going for even bigger rewards.",
+      "cta": "Continue"
+    }
+  },
   "gauge": {
     "title": "Learning Gauge",
     "thisWeek": "This Week",

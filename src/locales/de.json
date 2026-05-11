@@ -606,6 +606,21 @@
     "partial": "Teilweise",
     "noActivity": "Keine Aktivität"
   },
+  "streak": {
+    "currentLabel": "Aktuelle Serie",
+    "longest": "Bestleistung",
+    "monthRate": "Diesen Monat",
+    "totalDays": "Gesamttage",
+    "nextMilestone": "Nächster Meilenstein",
+    "milestones": "Meilensteine",
+    "daysUnit": "T",
+    "daysLeftUnit": "T übrig",
+    "celebration": {
+      "title": "Meilenstein erreicht!",
+      "subtitle": "Großartig! Halte deine Serie für noch größere Belohnungen.",
+      "cta": "Weiter"
+    }
+  },
   "gauge": {
     "title": "Lernfortschritt",
     "thisWeek": "Diese Woche",

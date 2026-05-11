@@ -606,6 +606,21 @@
     "partial": "未达成",
     "noActivity": "无活动"
   },
+  "streak": {
+    "currentLabel": "当前连续",
+    "longest": "最长纪录",
+    "monthRate": "本月达成率",
+    "totalDays": "累计天数",
+    "nextMilestone": "下一奖励",
+    "milestones": "里程碑",
+    "daysUnit": "天",
+    "daysLeftUnit": "天后",
+    "celebration": {
+      "title": "里程碑达成!",
+      "subtitle": "太棒了!继续连续学习获得更大的奖励。",
+      "cta": "继续"
+    }
+  },
   "gauge": {
     "title": "学习进度",
     "thisWeek": "本周",

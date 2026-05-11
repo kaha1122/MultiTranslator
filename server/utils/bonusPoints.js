@@ -7,7 +7,9 @@ const VALID_SOURCES = new Set([
     'referralWelcome',     // B (피추천인) 환영 보너스
     'referralReferrer',    // A (추천인) 보상
     'streak7',
+    'streak14',
     'streak30',
+    'streak100',
     'admin_manual',        // 어드민 수동 부여
     'admin_test',          // 테스트
 ]);

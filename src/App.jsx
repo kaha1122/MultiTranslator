@@ -47,12 +47,14 @@ import ScenePractice, { ScenePracticeCard } from './components/ScenePractice';
 import FreeTalkingChat from './components/FreeTalkingChat';
 import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
+import StreakCelebrationModal from './components/StreakCelebrationModal';
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
+import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import { adsReady, showInterstitial } from './lib/adProvider';
@@ -496,6 +498,9 @@ function App() {
 
   // Daily progress hook
   const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
+
+  // Streak 시스템 — 마일스톤 7/14/30/100일 자동 보너스 (Phase 1)
+  const { streakCurrent, streakLongest, totalAchievedDays, earnedMilestones, nextMilestone, nextReward, daysToNext, celebration, dismissCelebration } = useStreak(user, weeklyData, dailyGoal);
 
   // Trial 일일 Free Talking 세션 한도 — AuthContext 의 TRIAL_FREETALK_DAILY_LIMIT (2회) 사용
   // Pro/Premium 은 무제한 (세션당 자유 발화 25/300턴 한도만 useConversation 내부 적용)
@@ -3688,34 +3693,57 @@ function App() {
                 )}
               </div>
 
-              {/* 우측: 주간 캘린더 */}
-              <div style={{ flex: 1, display: 'flex', justifyContent: 'space-between', gap: '2px' }}>
-                {weeklyData.map((d, i) => {
-                  const isToday = d.date === today;
-                  const isFuture = d.date > today;
-                  let icon = '○';
-                  if (d.achieved) icon = '✅';
-                  else if (!isFuture && d.date < today) icon = '🌙';
-                  return (
-                    <div key={d.date} style={{
-                      display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1,
-                      padding: '2px 0', borderRadius: '6px',
-                      background: isToday ? '#eef2ff' : 'transparent',
-                      border: isToday ? '1px solid #c7d2fe' : '1px solid transparent',
-                      opacity: isFuture ? 0.35 : 1,
-                    }}>
-                      <span style={{ fontSize: '0.5rem', fontWeight: 700, color: isToday ? '#6366f1' : '#94a3b8', lineHeight: 1 }}>
-                        {dayLabels[i] || ''}
-                      </span>
-                      <span style={{ fontSize: '0.65rem', lineHeight: 1, marginTop: '1px' }}>{icon}</span>
-                      {!isFuture && (
-                        <span style={{ fontSize: '0.5rem', fontWeight: 700, color: '#64748b', lineHeight: 1, marginTop: '1px' }}>
-                          {d.count || 0}
+              {/* 우측: Streak 헤드라인 + 주간 7-dot (축소) */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px', minWidth: 0 }}>
+                {/* Streak 헤드라인 — 💎 N일 + 다음 보상 카운트다운 (압축) */}
+                <div style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  gap: '4px', padding: '2px 6px',
+                  background: streakCurrent > 0
+                    ? 'linear-gradient(90deg, #eef2ff 0%, #fdf4ff 100%)'
+                    : 'transparent',
+                  borderRadius: '6px',
+                  border: streakCurrent > 0 ? '1px solid #c7d2fe' : '1px solid transparent',
+                }}>
+                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
+                    <span style={{ fontSize: '0.75rem', lineHeight: 1, filter: streakCurrent > 0 ? 'drop-shadow(0 0 2px rgba(139,92,246,0.5))' : 'grayscale(0.5)' }}>💎</span>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: streakCurrent > 0 ? '#7c3aed' : '#94a3b8', lineHeight: 1 }}>
+                      {streakCurrent}
+                    </span>
+                    <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#94a3b8', lineHeight: 1 }}>
+                      {getT(sourceLang, 'streak.daysUnit') || '일'}
+                    </span>
+                  </span>
+                  {nextMilestone && streakCurrent > 0 && (
+                    <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#a855f7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      🎁 {nextMilestone}{getT(sourceLang, 'streak.daysUnit') || '일'} · {daysToNext}{getT(sourceLang, 'streak.daysLeftUnit') || 'D'}
+                    </span>
+                  )}
+                </div>
+                {/* 주간 7-dot (축소) */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2px' }}>
+                  {weeklyData.map((d, i) => {
+                    const isToday = d.date === today;
+                    const isFuture = d.date > today;
+                    let icon = '○';
+                    if (d.achieved) icon = '✅';
+                    else if (!isFuture && d.date < today) icon = '🌙';
+                    return (
+                      <div key={d.date} style={{
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1,
+                        padding: '1px 0', borderRadius: '4px',
+                        background: isToday ? '#eef2ff' : 'transparent',
+                        border: isToday ? '1px solid #c7d2fe' : '1px solid transparent',
+                        opacity: isFuture ? 0.35 : 1,
+                      }}>
+                        <span style={{ fontSize: '0.45rem', fontWeight: 700, color: isToday ? '#6366f1' : '#94a3b8', lineHeight: 1 }}>
+                          {dayLabels[i] || ''}
                         </span>
-                      )}
-                    </div>
-                  );
-                })}
+                        <span style={{ fontSize: '0.6rem', lineHeight: 1, marginTop: '1px' }}>{icon}</span>
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             </div>
           );
@@ -4412,7 +4440,9 @@ function App() {
 
         {/* Stats 탭 (메인 탭) */}
         <div style={{ display: viewMode === 'stats' ? 'block' : 'none', width: '100%' }}>
-          <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} isActive={viewMode === 'stats'} />
+          <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} isActive={viewMode === 'stats'}
+            streakCurrent={streakCurrent} streakLongest={streakLongest} totalAchievedDays={totalAchievedDays}
+            nextMilestone={nextMilestone} nextReward={nextReward} daysToNext={daysToNext} earnedMilestones={earnedMilestones} />
         </div>
       </main>
 
@@ -4473,6 +4503,16 @@ function App() {
           weeklyData={weeklyData}
           onClose={() => setShowProgressPopup(false)}
           sourceLang={sourceLang}
+        />
+      )}
+
+      {/* Streak 마일스톤 달성 축하 모달 (7/14/30/100일) */}
+      {celebration && (
+        <StreakCelebrationModal
+          milestone={celebration.milestone}
+          reward={celebration.reward}
+          sourceLang={sourceLang}
+          onClose={dismissCelebration}
         />
       )}
 

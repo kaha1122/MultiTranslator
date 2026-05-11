@@ -612,6 +612,21 @@
     "partial": "미달성",
     "noActivity": "활동 없음"
   },
+  "streak": {
+    "currentLabel": "현재 연속 학습",
+    "longest": "최장 기록",
+    "monthRate": "이달 달성률",
+    "totalDays": "누적 달성일",
+    "nextMilestone": "다음 보상",
+    "milestones": "마일스톤",
+    "daysUnit": "일",
+    "daysLeftUnit": "일 남음",
+    "celebration": {
+      "title": "마일스톤 달성!",
+      "subtitle": "대단해요! 더 큰 보상을 위해 streak를 이어가세요.",
+      "cta": "계속하기"
+    }
+  },
   "gauge": {
     "title": "학습 게이지",
     "thisWeek": "이번 주",

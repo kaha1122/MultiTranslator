@@ -26,6 +26,7 @@ app.use(require('./routes/translate'));
 app.use(require('./routes/webhook'));
 app.use(require('./routes/referral'));
 app.use(require('./routes/reviewBonus'));
+app.use(require('./routes/streak'));
 app.use(require('./routes/reengagement'));
 app.use(require('./routes/converse'));
 

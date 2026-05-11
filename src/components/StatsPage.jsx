@@ -3,6 +3,7 @@ import { db } from '../firebase/config';
 import { collection, query, getDocsFromServer } from 'firebase/firestore';
 import { useT } from '../utils/i18n';
 import LearningGauge from './LearningGauge';
+import StreakHero from './StreakHero';
 import './StatsPage.css';
 
 // ── 유틸 ──
@@ -33,7 +34,7 @@ const getMonthDates = (year, month) => {
     return dates;
 };
 
-const StatsPage = ({ user, dailyGoal, sourceLang, isActive }) => {
+const StatsPage = ({ user, dailyGoal, sourceLang, isActive, streakCurrent = 0, streakLongest = 0, totalAchievedDays = 0, nextMilestone, nextReward, daysToNext = 0, earnedMilestones = [] }) => {
     const t = useT(sourceLang);
     const [allData, setAllData] = useState({}); // { 'YYYY-MM-DD': { count, dailyGoal, achieved } }
     const [isLoading, setIsLoading] = useState(true);
@@ -134,6 +135,19 @@ const StatsPage = ({ user, dailyGoal, sourceLang, isActive }) => {
 
     return (
         <div className="stats-page">
+            {/* Streak Hero — 최상단 */}
+            <StreakHero
+                sourceLang={sourceLang}
+                streakCurrent={streakCurrent}
+                streakLongest={streakLongest}
+                totalAchievedDays={totalAchievedDays}
+                monthRate={monthStats.achieveRate}
+                nextMilestone={nextMilestone}
+                nextReward={nextReward}
+                daysToNext={daysToNext}
+                earnedMilestones={earnedMilestones}
+            />
+
             {/* 요약 카드들 */}
             <div className="stats-summary">
                 <div className="stats-card">

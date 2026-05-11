@@ -606,6 +606,21 @@
     "partial": "Parcial",
     "noActivity": "Sin actividad"
   },
+  "streak": {
+    "currentLabel": "Racha actual",
+    "longest": "Mejor marca",
+    "monthRate": "Este mes",
+    "totalDays": "Días totales",
+    "nextMilestone": "Próximo hito",
+    "milestones": "Hitos",
+    "daysUnit": "d",
+    "daysLeftUnit": "d restantes",
+    "celebration": {
+      "title": "¡Hito alcanzado!",
+      "subtitle": "¡Increíble! Sigue tu racha para recompensas aún mayores.",
+      "cta": "Continuar"
+    }
+  },
   "gauge": {
     "title": "Progreso de aprendizaje",
     "thisWeek": "Esta semana",

@@ -606,6 +606,21 @@
     "partial": "未達成",
     "noActivity": "活動なし"
   },
+  "streak": {
+    "currentLabel": "現在の連続記録",
+    "longest": "最長記録",
+    "monthRate": "今月の達成率",
+    "totalDays": "累計達成日",
+    "nextMilestone": "次の報酬",
+    "milestones": "マイルストーン",
+    "daysUnit": "日",
+    "daysLeftUnit": "日後",
+    "celebration": {
+      "title": "マイルストーン達成!",
+      "subtitle": "素晴らしい!もっと大きな報酬のために連続記録を伸ばしましょう。",
+      "cta": "続ける"
+    }
+  },
   "gauge": {
     "title": "学習ゲージ",
     "thisWeek": "今週",

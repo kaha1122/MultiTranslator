@@ -606,6 +606,21 @@
     "partial": "Частично",
     "noActivity": "Нет активности"
   },
+  "streak": {
+    "currentLabel": "Текущая серия",
+    "longest": "Личный рекорд",
+    "monthRate": "В этом месяце",
+    "totalDays": "Всего дней",
+    "nextMilestone": "Следующая цель",
+    "milestones": "Этапы",
+    "daysUnit": "д",
+    "daysLeftUnit": "д осталось",
+    "celebration": {
+      "title": "Цель достигнута!",
+      "subtitle": "Отлично! Продолжайте серию для еще больших наград.",
+      "cta": "Продолжить"
+    }
+  },
   "gauge": {
     "title": "Шкала обучения",
     "thisWeek": "Эта неделя",

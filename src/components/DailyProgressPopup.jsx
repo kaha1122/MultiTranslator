@@ -37,6 +37,20 @@ const DailyProgressPopup = ({ todayCount, dailyGoal, weeklyData = [], onClose, s
 
                 {isComplete ? (
                     <div className="dpop-celebration">
+                        <div className="dpop-confetti">
+                            {Array.from({ length: 14 }, (_, i) => (
+                                <span
+                                    key={i}
+                                    className="dpop-confetti-piece"
+                                    style={{
+                                        left: `${(i * 7.5) % 100}%`,
+                                        animationDelay: `${(i * 0.05) % 0.7}s`,
+                                    }}
+                                >
+                                    {['🎉', '✨', '💎', '🎊', '⭐'][i % 5]}
+                                </span>
+                            ))}
+                        </div>
                         <div className="dpop-fireworks">🎉</div>
                         <h3 className="dpop-title complete">{t('daily.goalComplete')}</h3>
                     </div>
@@ -62,7 +76,7 @@ const DailyProgressPopup = ({ todayCount, dailyGoal, weeklyData = [], onClose, s
 
                 {/* Streak badge */}
                 {streak > 0 && (
-                    <div className="dpop-streak">🔥 {streak} {t('daily.streakSuffix')}</div>
+                    <div className="dpop-streak">💎 {streak} {t('daily.streakSuffix')}</div>
                 )}
 
                 {/* Weekly Calendar */}
