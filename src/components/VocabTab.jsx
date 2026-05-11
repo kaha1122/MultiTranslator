@@ -351,9 +351,17 @@ export default function VocabTab({
 
     const visibleLanguages = targetLangs;
 
+    // 기본 학습 언어(targetLangs[0])가 바뀌면 selectedLang도 새 default로 따라감.
+    // 탭이 display:none으로 상시 마운트돼 초깃값이 stale해지므로, 단순 includes 체크만으로는
+    // stale 값이 우연히 신규 배열에 포함된 경우 사용자가 의도한 default를 무시하게 됨.
+    const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
-        if (!visibleLanguages.includes(selectedLang) && visibleLanguages.length > 0) {
-            setSelectedLang(visibleLanguages[0]);
+        if (visibleLanguages.length === 0) return;
+        const newDefault = visibleLanguages[0];
+        const defaultChanged = prevDefaultLangRef.current !== newDefault;
+        if (defaultChanged) prevDefaultLangRef.current = newDefault;
+        if (defaultChanged || !visibleLanguages.includes(selectedLang)) {
+            setSelectedLang(newDefault);
         }
     }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
 

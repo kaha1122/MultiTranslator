@@ -238,11 +238,17 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
     const [selectedScene, setSelectedScene] = useState(() => pickRandomScene('locations'));
     const [customInput, setCustomInput] = useState('');
     const [selectedLang, setSelectedLang] = useState(targetLangs?.[0] || 'en');
-    // Scene 탭은 display:none으로 상시 마운트되어 초깃값이 stale해짐 → 온보딩 후 targetLangs 변경 시 동기화
+    // Scene 탭은 display:none으로 상시 마운트되어 초깃값이 stale해짐 → 온보딩 후 targetLangs 변경 시 동기화.
+    // 기본 학습 언어(targetLangs[0])가 바뀌면 selectedLang도 새 default로 따라감
+    // (단순 includes 체크만 하면 stale 초깃값이 신규 배열에 우연히 포함된 경우 사용자가 의도한 default를 무시하게 됨)
+    const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
         if (!Array.isArray(targetLangs) || targetLangs.length === 0) return;
-        if (!targetLangs.includes(selectedLang)) {
-            setSelectedLang(targetLangs[0]);
+        const newDefault = targetLangs[0];
+        const defaultChanged = prevDefaultLangRef.current !== newDefault;
+        if (defaultChanged) prevDefaultLangRef.current = newDefault;
+        if (defaultChanged || !targetLangs.includes(selectedLang)) {
+            setSelectedLang(newDefault);
             setGenerated(null);
             setIsSaved(false);
         }

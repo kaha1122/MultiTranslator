@@ -53,10 +53,17 @@ function VideoReader({
         if (targetLangs.length > 0) return targetLangs[0];
         return 'en';
     });
-    // targetLangs가 변경되면 현재 선택이 유효한지 확인
+    // 기본 학습 언어(targetLangs[0])가 바뀌면 targetLang도 새 default로 따라감.
+    // 탭이 display:none으로 상시 마운트돼 초깃값이 stale해지므로, 단순 includes 체크만으로는
+    // stale 값이 우연히 신규 배열에 포함된 경우 사용자가 의도한 default를 무시하게 됨.
+    const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
-        if (targetLangs.length > 0 && !targetLangs.includes(targetLang)) {
-            setTargetLang(targetLangs[0]);
+        if (targetLangs.length === 0) return;
+        const newDefault = targetLangs[0];
+        const defaultChanged = prevDefaultLangRef.current !== newDefault;
+        if (defaultChanged) prevDefaultLangRef.current = newDefault;
+        if (defaultChanged || !targetLangs.includes(targetLang)) {
+            setTargetLang(newDefault);
         }
     }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
 
