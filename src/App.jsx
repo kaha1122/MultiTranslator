@@ -1493,18 +1493,7 @@ function App() {
     return () => clearTimeout(timer);
   }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt, profile?.streakIntroDismissed]);
 
-  // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
-  useEffect(() => {
-    if (!user?.uid || !profile) return;
-    if (profile.streakIntroDismissed !== true) return;
-    if (!initialLifecycleStageRef.current) return;
-    // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
-    if (showOnboarding || showStreakIntro || showBonusCampaign) return;
-    const today = getToday();
-    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨
-    const timer = setTimeout(() => setShowStreakStatus(true), 1500);
-    return () => clearTimeout(timer);
-  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
+  // (일일 Streak 상태 안내 useEffect는 showOnboarding 선언 이후로 이동 — TDZ 방지)
 
   // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 후 친구추천 버튼으로 스크롤·하이라이트.
   // VocabTab/NotificationSettings 패턴 참조: requestAnimationFrame + retry + getBoundingClientRect로
@@ -1602,6 +1591,20 @@ function App() {
     setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
+
+  // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
+  // showOnboarding이 위에서 선언된 뒤로 위치해야 TDZ 회피
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    if (profile.streakIntroDismissed !== true) return;
+    if (!initialLifecycleStageRef.current) return;
+    // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
+    if (showOnboarding || showStreakIntro || showBonusCampaign) return;
+    const today = getToday();
+    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨
+    const timer = setTimeout(() => setShowStreakStatus(true), 1500);
+    return () => clearTimeout(timer);
+  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
 
   // Free Talking 신기능 안내 — 이미 온보딩 통과한 기존 사용자에게만 1회 표시
   // 조건: deviceOnboardingDone='1' (기존 유저) AND announce_seen 미존재 AND 온보딩 모달 미진행
