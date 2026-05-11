@@ -619,6 +619,19 @@
       "title": "Étape atteinte !",
       "subtitle": "Bravo ! Continuez votre série pour des récompenses encore plus grandes.",
       "cta": "Continuer"
+    },
+    "intro": {
+      "badge": "NOUVEAU",
+      "title": "Construisez votre série, gagnez de grandes récompenses",
+      "subtitle": "Atteignez votre objectif quotidien pour faire grandir votre série — débloquez des points bonus à chaque étape.",
+      "dailyGoalTitle": "Objectif quotidien",
+      "dailyGoal1": "Compléter 3 cartes par jour",
+      "dailyGoal2": "Atteindre votre score cible de prononciation",
+      "milestonesTitle": "Récompenses d'étape",
+      "milestoneHint": "Chaque étape est attribuée une seule fois. Exclu pour Pro/Premium.",
+      "dontShowAgain": "Ne plus afficher",
+      "later": "Plus tard",
+      "cta": "Voir dans les Stats"
     }
   },
   "gauge": {

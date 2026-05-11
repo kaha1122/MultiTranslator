@@ -619,6 +619,19 @@
       "title": "Đạt cột mốc!",
       "subtitle": "Tuyệt vời! Tiếp tục chuỗi để nhận phần thưởng lớn hơn.",
       "cta": "Tiếp tục"
+    },
+    "intro": {
+      "badge": "MỚI",
+      "title": "Học liên tục, nhận phần thưởng lớn",
+      "subtitle": "Hoàn thành mục tiêu mỗi ngày để xây dựng chuỗi học tập — nhận điểm thưởng tại mỗi cột mốc.",
+      "dailyGoalTitle": "Mục tiêu hàng ngày",
+      "dailyGoal1": "Học 3 thẻ trong một ngày",
+      "dailyGoal2": "Đạt điểm phát âm mục tiêu",
+      "milestonesTitle": "Phần thưởng cột mốc",
+      "milestoneHint": "Mỗi cột mốc chỉ nhận một lần. Pro/Premium tự động loại trừ.",
+      "dontShowAgain": "Không hiển thị lại",
+      "later": "Để sau",
+      "cta": "Xem trong Thống kê"
     }
   },
   "gauge": {

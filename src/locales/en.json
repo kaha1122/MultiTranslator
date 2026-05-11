@@ -625,6 +625,19 @@
       "title": "Streak Milestone!",
       "subtitle": "Amazing! Keep your streak going for even bigger rewards.",
       "cta": "Continue"
+    },
+    "intro": {
+      "badge": "NEW",
+      "title": "Build Your Streak, Earn Big Rewards",
+      "subtitle": "Practice every day. Hit your daily goal to grow your streak — unlock bonus points at every milestone.",
+      "dailyGoalTitle": "Daily Goal",
+      "dailyGoal1": "Complete 3 cards in a day",
+      "dailyGoal2": "Pass your pronunciation target score",
+      "milestonesTitle": "Milestone Rewards",
+      "milestoneHint": "Each milestone is awarded once. Rewards skip for Pro/Premium.",
+      "dontShowAgain": "Don't show this again",
+      "later": "Later",
+      "cta": "View in Stats"
     }
   },
   "gauge": {

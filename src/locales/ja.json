@@ -619,6 +619,19 @@
       "title": "マイルストーン達成!",
       "subtitle": "素晴らしい!もっと大きな報酬のために連続記録を伸ばしましょう。",
       "cta": "続ける"
+    },
+    "intro": {
+      "badge": "NEW",
+      "title": "連続学習でボーナスを獲得",
+      "subtitle": "毎日学習目標を達成すると連続記録が伸び、マイルストーンごとにボーナスポイントがもらえます。",
+      "dailyGoalTitle": "1日の目標",
+      "dailyGoal1": "カードを3枚学習する",
+      "dailyGoal2": "発音目標スコアを達成する",
+      "milestonesTitle": "マイルストーン報酬",
+      "milestoneHint": "各マイルストーンは1回のみ支給。Pro/Premiumは自動除外。",
+      "dontShowAgain": "今後表示しない",
+      "later": "後で",
+      "cta": "統計タブで見る"
     }
   },
   "gauge": {

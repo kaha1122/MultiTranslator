@@ -619,6 +619,19 @@
       "title": "Marco alcançado!",
       "subtitle": "Incrível! Continue sua sequência para recompensas ainda maiores.",
       "cta": "Continuar"
+    },
+    "intro": {
+      "badge": "NOVO",
+      "title": "Construa sua sequência, ganhe grandes recompensas",
+      "subtitle": "Atinja sua meta diária para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
+      "dailyGoalTitle": "Meta diária",
+      "dailyGoal1": "Completar 3 cards no dia",
+      "dailyGoal2": "Atingir sua pontuação alvo de pronúncia",
+      "milestonesTitle": "Recompensas de Marcos",
+      "milestoneHint": "Cada marco é concedido uma vez. Pro/Premium são excluídos automaticamente.",
+      "dontShowAgain": "Não mostrar novamente",
+      "later": "Mais tarde",
+      "cta": "Ver em Estatísticas"
     }
   },
   "gauge": {

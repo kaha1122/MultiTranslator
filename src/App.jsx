@@ -48,6 +48,7 @@ import FreeTalkingChat from './components/FreeTalkingChat';
 import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
+import StreakIntroModal from './components/StreakIntroModal';
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
@@ -331,6 +332,8 @@ function App() {
   const [showReviewBonusModal, setShowReviewBonusModal] = useState(false);
   const [showAnonGateModal, setShowAnonGateModal] = useState(false); // 익명 사용자 → 가입 안내
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
+  // Streak 출시 안내 — 온보딩 직후 다음 세션부터, "다시 보지 않음" 체크 시 영구 종료
+  const [showStreakIntro, setShowStreakIntro] = useState(false);
   // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 + 친구추천 버튼으로 스크롤·하이라이트
   const referralBtnRef = useRef(null);
   const [focusReferralPending, setFocusReferralPending] = useState(false);
@@ -1464,15 +1467,28 @@ function App() {
     }
   }, [!!profile]);
 
+  // Streak 출시 안내 — BonusCampaign과 동일한 "옵션 D" 게이트 + 영구 dismiss 미체크 시 매 세션 노출
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    if (!profile.lifecycleStage) return;
+    if (profile.streakIntroDismissed === true) return;
+    // 온보딩 세션엔 노출 안 함 (BonusCampaign과 동일)
+    if (!initialLifecycleStageRef.current) return;
+    const timer = setTimeout(() => setShowStreakIntro(true), 1200);
+    return () => clearTimeout(timer);
+  }, [user?.uid, profile?.lifecycleStage, profile?.streakIntroDismissed]);
+
   useEffect(() => {
     if (!user?.uid || !profile) return;
     if (!profile.lifecycleStage) return;
     if (profile.bonusCampaignSeenAt) return;
     // 옵션 D 게이트: 세션 시작 시점에 stage 없었으면 다음 세션 기다림
     if (!initialLifecycleStageRef.current) return;
+    // Streak intro가 아직 영구 dismiss 되지 않았으면 그쪽 먼저 — BonusCampaign은 streakIntroDismissed=true 이후 노출
+    if (profile.streakIntroDismissed !== true) return;
     const timer = setTimeout(() => setShowBonusCampaign(true), 1500);
     return () => clearTimeout(timer);
-  }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt]);
+  }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt, profile?.streakIntroDismissed]);
 
   // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 후 친구추천 버튼으로 스크롤·하이라이트.
   // VocabTab/NotificationSettings 패턴 참조: requestAnimationFrame + retry + getBoundingClientRect로
@@ -1521,6 +1537,23 @@ function App() {
         bonusCampaignSeenAt: serverTimestamp(),
       });
     } catch (e) { console.error('[BonusCampaign] dismiss save failed:', e); }
+  }, [user?.uid]);
+
+  // Streak intro 일시 닫기 — 이번 세션만 숨기고 Firestore는 기록 안 함 (다음 세션 재노출)
+  const closeStreakIntro = useCallback(() => {
+    setShowStreakIntro(false);
+  }, []);
+
+  // Streak intro 영구 종료 — Firestore streakIntroDismissed=true 기록
+  const permanentlyDismissStreakIntro = useCallback(async () => {
+    setShowStreakIntro(false);
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        streakIntroDismissed: true,
+        streakIntroDismissedAt: serverTimestamp(),
+      });
+    } catch (err) { console.error('[StreakIntro] dismiss save failed:', err); }
   }, [user?.uid]);
 
   const handleAiConsentAccept = () => {
@@ -3029,6 +3062,18 @@ function App() {
         onSuccess={() => {
           setTimeout(() => setShowReviewBonusModal(false), 2000);
         }}
+      />
+
+      {/* Streak 출시 안내 모달 — 친구초대/리뷰 캠페인보다 먼저 노출 */}
+      <StreakIntroModal
+        open={showStreakIntro}
+        onClose={closeStreakIntro}
+        onPermanentDismiss={permanentlyDismissStreakIntro}
+        onCta={() => {
+          closeStreakIntro();
+          setViewMode('stats');
+        }}
+        sourceLang={sourceLang}
       />
 
       {/* 보너스 캠페인 출시 안내 모달 — 1회만 표시 */}

@@ -619,6 +619,19 @@
       "title": "Meilenstein erreicht!",
       "subtitle": "Großartig! Halte deine Serie für noch größere Belohnungen.",
       "cta": "Weiter"
+    },
+    "intro": {
+      "badge": "NEU",
+      "title": "Baue deine Serie auf, verdiene große Belohnungen",
+      "subtitle": "Erreiche täglich dein Lernziel, um deine Serie zu verlängern — schalte Bonuspunkte bei jedem Meilenstein frei.",
+      "dailyGoalTitle": "Tägliches Ziel",
+      "dailyGoal1": "3 Karten pro Tag abschließen",
+      "dailyGoal2": "Aussprache-Zielwert erreichen",
+      "milestonesTitle": "Meilenstein-Belohnungen",
+      "milestoneHint": "Jeder Meilenstein wird einmalig vergeben. Pro/Premium automatisch ausgeschlossen.",
+      "dontShowAgain": "Nicht mehr anzeigen",
+      "later": "Später",
+      "cta": "In Statistik ansehen"
     }
   },
   "gauge": {

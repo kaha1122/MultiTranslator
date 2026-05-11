@@ -619,6 +619,19 @@
       "title": "里程碑达成!",
       "subtitle": "太棒了!继续连续学习获得更大的奖励。",
       "cta": "继续"
+    },
+    "intro": {
+      "badge": "NEW",
+      "title": "连续学习,赚取大奖励",
+      "subtitle": "每天达成学习目标即可累积连续天数,每个里程碑都能获得奖励积分。",
+      "dailyGoalTitle": "每日目标",
+      "dailyGoal1": "学习 3 张卡片",
+      "dailyGoal2": "达到发音目标分数",
+      "milestonesTitle": "里程碑奖励",
+      "milestoneHint": "每个里程碑仅发放一次。Pro/Premium 自动排除。",
+      "dontShowAgain": "不再显示",
+      "later": "稍后",
+      "cta": "前往统计查看"
     }
   },
   "gauge": {

@@ -619,6 +619,19 @@
       "title": "¡Hito alcanzado!",
       "subtitle": "¡Increíble! Sigue tu racha para recompensas aún mayores.",
       "cta": "Continuar"
+    },
+    "intro": {
+      "badge": "NUEVO",
+      "title": "Construye tu racha, gana grandes recompensas",
+      "subtitle": "Alcanza tu objetivo diario para hacer crecer tu racha — desbloquea puntos extra en cada hito.",
+      "dailyGoalTitle": "Objetivo diario",
+      "dailyGoal1": "Completar 3 tarjetas al día",
+      "dailyGoal2": "Alcanzar tu puntaje de pronunciación objetivo",
+      "milestonesTitle": "Recompensas de hitos",
+      "milestoneHint": "Cada hito se otorga una sola vez. Pro/Premium excluidos automáticamente.",
+      "dontShowAgain": "No mostrar de nuevo",
+      "later": "Más tarde",
+      "cta": "Ver en Estadísticas"
     }
   },
   "gauge": {
