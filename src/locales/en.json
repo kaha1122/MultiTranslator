@@ -626,13 +626,24 @@
       "subtitle": "Amazing! Keep your streak going for even bigger rewards.",
       "cta": "Continue"
     },
+    "status": {
+      "inProgress": "{n}-day streak in progress!",
+      "startTitle": "Start your Streak today",
+      "startMessage": "Pass your pronunciation target on 3 cards to start your streak.",
+      "nextHint": "Next reward in",
+      "cta": "Let's go!",
+      "startCta": "Get started"
+    },
     "intro": {
       "badge": "NEW",
       "title": "Build Your Streak, Earn Big Rewards",
       "subtitle": "Practice every day. Hit your daily goal to grow your streak — unlock bonus points at every milestone.",
       "dailyGoalTitle": "Daily Goal",
-      "dailyGoal1": "Complete 3 cards in a day",
-      "dailyGoal2": "Pass your pronunciation target score",
+      "dailyGoalHeadline": "Save 3 cards a day that passed your pronunciation target score",
+      "dailyGoalStepPron": "Pass pronunciation",
+      "dailyGoalStepSave": "Save card",
+      "dailyGoalStepResult": "1 card",
+      "dailyGoalSuccess": "Daily goal",
       "milestonesTitle": "Milestone Rewards",
       "milestoneHint": "Each milestone is awarded once. Rewards skip for Pro/Premium.",
       "dontShowAgain": "Don't show this again",

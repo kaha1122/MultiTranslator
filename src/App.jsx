@@ -49,6 +49,7 @@ import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
 import StreakIntroModal from './components/StreakIntroModal';
+import StreakStatusPopup from './components/StreakStatusPopup';
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
@@ -334,6 +335,8 @@ function App() {
   const [showBonusCampaign, setShowBonusCampaign] = useState(false);
   // Streak 출시 안내 — 온보딩 직후 다음 세션부터, "다시 보지 않음" 체크 시 영구 종료
   const [showStreakIntro, setShowStreakIntro] = useState(false);
+  // 일일 Streak 상태 안내 — Streak intro 영구 dismiss 이후, 매일 첫 접속 시 다른 팝업 다음에 마지막으로 표시
+  const [showStreakStatus, setShowStreakStatus] = useState(false);
   // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 + 친구추천 버튼으로 스크롤·하이라이트
   const referralBtnRef = useRef(null);
   const [focusReferralPending, setFocusReferralPending] = useState(false);
@@ -1490,6 +1493,19 @@ function App() {
     return () => clearTimeout(timer);
   }, [user?.uid, profile?.lifecycleStage, profile?.bonusCampaignSeenAt, profile?.streakIntroDismissed]);
 
+  // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    if (profile.streakIntroDismissed !== true) return;
+    if (!initialLifecycleStageRef.current) return;
+    // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
+    if (showOnboarding || showStreakIntro || showBonusCampaign) return;
+    const today = getToday();
+    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨
+    const timer = setTimeout(() => setShowStreakStatus(true), 1500);
+    return () => clearTimeout(timer);
+  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
+
   // BonusCampaign "지금 추천하기" → 사이드바 자동 오픈 후 친구추천 버튼으로 스크롤·하이라이트.
   // VocabTab/NotificationSettings 패턴 참조: requestAnimationFrame + retry + getBoundingClientRect로
   // .sidebar 스크롤 컨테이너 직접 계산 (Android WebView에서 scrollIntoView 불안정).
@@ -1554,6 +1570,17 @@ function App() {
         streakIntroDismissedAt: serverTimestamp(),
       });
     } catch (err) { console.error('[StreakIntro] dismiss save failed:', err); }
+  }, [user?.uid]);
+
+  // 일일 Streak 상태 팝업 닫기 — Firestore lastStreakStatusPopupAt에 오늘 날짜 기록
+  const dismissStreakStatus = useCallback(async () => {
+    setShowStreakStatus(false);
+    if (!user?.uid) return;
+    try {
+      await updateDoc(doc(db, 'users', user.uid), {
+        lastStreakStatusPopupAt: getToday(),
+      });
+    } catch (err) { console.error('[StreakStatus] dismiss save failed:', err); }
   }, [user?.uid]);
 
   const handleAiConsentAccept = () => {
@@ -3087,6 +3114,17 @@ function App() {
           setFocusReferralPending(true);
         }}
         sourceLang={sourceLang}
+      />
+
+      {/* 일일 Streak 상태 안내 — 모든 일일 팝업의 마지막에 표시 (하루 1회) */}
+      <StreakStatusPopup
+        open={showStreakStatus}
+        streakCurrent={streakCurrent}
+        nextMilestone={nextMilestone}
+        daysToNext={daysToNext}
+        nextReward={nextReward}
+        sourceLang={sourceLang}
+        onClose={dismissStreakStatus}
       />
 
       {/* 이메일 인증/변경 통합 모달 */}

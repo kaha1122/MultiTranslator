@@ -620,13 +620,24 @@
       "subtitle": "太棒了!继续连续学习获得更大的奖励。",
       "cta": "继续"
     },
+    "status": {
+      "inProgress": "Streak 已坚持 {n} 天!",
+      "startTitle": "今天开启你的 Streak",
+      "startMessage": "通过 3 张卡片的发音目标分数,开启你的 Streak。",
+      "nextHint": "下个奖励还需",
+      "cta": "今天也加油!",
+      "startCta": "开始"
+    },
     "intro": {
       "badge": "NEW",
       "title": "连续学习,赚取大奖励",
       "subtitle": "每天达成学习目标即可累积连续天数,每个里程碑都能获得奖励积分。",
       "dailyGoalTitle": "每日目标",
-      "dailyGoal1": "学习 3 张卡片",
-      "dailyGoal2": "达到发音目标分数",
+      "dailyGoalHeadline": "每天保存 3 张通过发音目标分数的卡片",
+      "dailyGoalStepPron": "通过发音",
+      "dailyGoalStepSave": "保存卡片",
+      "dailyGoalStepResult": "1 张卡片",
+      "dailyGoalSuccess": "每日目标达成",
       "milestonesTitle": "里程碑奖励",
       "milestoneHint": "每个里程碑仅发放一次。Pro/Premium 自动排除。",
       "dontShowAgain": "不再显示",

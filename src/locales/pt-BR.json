@@ -620,13 +620,24 @@
       "subtitle": "Incrível! Continue sua sequência para recompensas ainda maiores.",
       "cta": "Continuar"
     },
+    "status": {
+      "inProgress": "Streak de {n} dias em andamento!",
+      "startTitle": "Comece seu Streak hoje",
+      "startMessage": "Passe sua pontuação alvo de pronúncia em 3 cards para começar.",
+      "nextHint": "Próxima recompensa em",
+      "cta": "Vamos lá!",
+      "startCta": "Começar"
+    },
     "intro": {
       "badge": "NOVO",
       "title": "Construa sua sequência, ganhe grandes recompensas",
       "subtitle": "Atinja sua meta diária para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
       "dailyGoalTitle": "Meta diária",
-      "dailyGoal1": "Completar 3 cards no dia",
-      "dailyGoal2": "Atingir sua pontuação alvo de pronúncia",
+      "dailyGoalHeadline": "Salve 3 cards por dia que passaram na sua pontuação alvo de pronúncia",
+      "dailyGoalStepPron": "Pronúncia OK",
+      "dailyGoalStepSave": "Salvar card",
+      "dailyGoalStepResult": "1 card",
+      "dailyGoalSuccess": "Meta diária",
       "milestonesTitle": "Recompensas de Marcos",
       "milestoneHint": "Cada marco é concedido uma vez. Pro/Premium são excluídos automaticamente.",
       "dontShowAgain": "Não mostrar novamente",

@@ -620,13 +620,24 @@
       "subtitle": "¡Increíble! Sigue tu racha para recompensas aún mayores.",
       "cta": "Continuar"
     },
+    "status": {
+      "inProgress": "¡Streak de {n} días en curso!",
+      "startTitle": "Comienza tu Streak hoy",
+      "startMessage": "Pasa tu puntaje objetivo de pronunciación en 3 tarjetas para empezar.",
+      "nextHint": "Próxima recompensa en",
+      "cta": "¡Vamos!",
+      "startCta": "Empezar"
+    },
     "intro": {
       "badge": "NUEVO",
       "title": "Construye tu racha, gana grandes recompensas",
       "subtitle": "Alcanza tu objetivo diario para hacer crecer tu racha — desbloquea puntos extra en cada hito.",
       "dailyGoalTitle": "Objetivo diario",
-      "dailyGoal1": "Completar 3 tarjetas al día",
-      "dailyGoal2": "Alcanzar tu puntaje de pronunciación objetivo",
+      "dailyGoalHeadline": "Guarda 3 tarjetas al día que pasaron tu puntaje objetivo de pronunciación",
+      "dailyGoalStepPron": "Pronunciación OK",
+      "dailyGoalStepSave": "Guardar tarjeta",
+      "dailyGoalStepResult": "1 tarjeta",
+      "dailyGoalSuccess": "Objetivo diario",
       "milestonesTitle": "Recompensas de hitos",
       "milestoneHint": "Cada hito se otorga una sola vez. Pro/Premium excluidos automáticamente.",
       "dontShowAgain": "No mostrar de nuevo",

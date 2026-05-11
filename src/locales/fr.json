@@ -620,13 +620,24 @@
       "subtitle": "Bravo ! Continuez votre série pour des récompenses encore plus grandes.",
       "cta": "Continuer"
     },
+    "status": {
+      "inProgress": "Streak de {n} jours en cours !",
+      "startTitle": "Commencez votre Streak aujourd'hui",
+      "startMessage": "Atteignez votre score de prononciation cible sur 3 cartes pour démarrer.",
+      "nextHint": "Prochaine récompense dans",
+      "cta": "On y va !",
+      "startCta": "Commencer"
+    },
     "intro": {
       "badge": "NOUVEAU",
       "title": "Construisez votre série, gagnez de grandes récompenses",
       "subtitle": "Atteignez votre objectif quotidien pour faire grandir votre série — débloquez des points bonus à chaque étape.",
       "dailyGoalTitle": "Objectif quotidien",
-      "dailyGoal1": "Compléter 3 cartes par jour",
-      "dailyGoal2": "Atteindre votre score cible de prononciation",
+      "dailyGoalHeadline": "Enregistrez 3 cartes par jour ayant atteint votre score cible de prononciation",
+      "dailyGoalStepPron": "Prononciation OK",
+      "dailyGoalStepSave": "Enregistrer",
+      "dailyGoalStepResult": "1 carte",
+      "dailyGoalSuccess": "Objectif atteint",
       "milestonesTitle": "Récompenses d'étape",
       "milestoneHint": "Chaque étape est attribuée une seule fois. Exclu pour Pro/Premium.",
       "dontShowAgain": "Ne plus afficher",

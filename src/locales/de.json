@@ -620,13 +620,24 @@
       "subtitle": "Großartig! Halte deine Serie für noch größere Belohnungen.",
       "cta": "Weiter"
     },
+    "status": {
+      "inProgress": "{n}-Tage-Streak läuft!",
+      "startTitle": "Starte heute deinen Streak",
+      "startMessage": "Bestehe deinen Aussprache-Zielwert auf 3 Karten, um zu starten.",
+      "nextHint": "Nächste Belohnung in",
+      "cta": "Los geht's!",
+      "startCta": "Starten"
+    },
     "intro": {
       "badge": "NEU",
       "title": "Baue deine Serie auf, verdiene große Belohnungen",
       "subtitle": "Erreiche täglich dein Lernziel, um deine Serie zu verlängern — schalte Bonuspunkte bei jedem Meilenstein frei.",
       "dailyGoalTitle": "Tägliches Ziel",
-      "dailyGoal1": "3 Karten pro Tag abschließen",
-      "dailyGoal2": "Aussprache-Zielwert erreichen",
+      "dailyGoalHeadline": "Speichere täglich 3 Karten, die deinen Aussprache-Zielwert bestanden haben",
+      "dailyGoalStepPron": "Aussprache OK",
+      "dailyGoalStepSave": "Karte speichern",
+      "dailyGoalStepResult": "1 Karte",
+      "dailyGoalSuccess": "Tagesziel",
       "milestonesTitle": "Meilenstein-Belohnungen",
       "milestoneHint": "Jeder Meilenstein wird einmalig vergeben. Pro/Premium automatisch ausgeschlossen.",
       "dontShowAgain": "Nicht mehr anzeigen",

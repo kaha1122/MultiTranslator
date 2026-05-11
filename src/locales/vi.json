@@ -620,13 +620,24 @@
       "subtitle": "Tuyệt vời! Tiếp tục chuỗi để nhận phần thưởng lớn hơn.",
       "cta": "Tiếp tục"
     },
+    "status": {
+      "inProgress": "Streak {n} ngày đang tiếp tục!",
+      "startTitle": "Bắt đầu Streak hôm nay",
+      "startMessage": "Đạt điểm phát âm mục tiêu trên 3 thẻ để bắt đầu Streak.",
+      "nextHint": "Phần thưởng tiếp theo còn",
+      "cta": "Cố lên hôm nay!",
+      "startCta": "Bắt đầu"
+    },
     "intro": {
       "badge": "MỚI",
       "title": "Học liên tục, nhận phần thưởng lớn",
       "subtitle": "Hoàn thành mục tiêu mỗi ngày để xây dựng chuỗi học tập — nhận điểm thưởng tại mỗi cột mốc.",
       "dailyGoalTitle": "Mục tiêu hàng ngày",
-      "dailyGoal1": "Học 3 thẻ trong một ngày",
-      "dailyGoal2": "Đạt điểm phát âm mục tiêu",
+      "dailyGoalHeadline": "Lưu 3 thẻ mỗi ngày đã đạt điểm phát âm mục tiêu",
+      "dailyGoalStepPron": "Đạt phát âm",
+      "dailyGoalStepSave": "Lưu thẻ",
+      "dailyGoalStepResult": "1 thẻ",
+      "dailyGoalSuccess": "Mục tiêu đạt",
       "milestonesTitle": "Phần thưởng cột mốc",
       "milestoneHint": "Mỗi cột mốc chỉ nhận một lần. Pro/Premium tự động loại trừ.",
       "dontShowAgain": "Không hiển thị lại",

@@ -620,13 +620,24 @@
       "subtitle": "素晴らしい!もっと大きな報酬のために連続記録を伸ばしましょう。",
       "cta": "続ける"
     },
+    "status": {
+      "inProgress": "Streak {n}日 継続中!",
+      "startTitle": "今日からStreak開始",
+      "startMessage": "発音目標スコアを通過したカード3枚でStreakを始めましょう。",
+      "nextHint": "次の報酬まで",
+      "cta": "今日もファイト!",
+      "startCta": "始める"
+    },
     "intro": {
       "badge": "NEW",
       "title": "連続学習でボーナスを獲得",
       "subtitle": "毎日学習目標を達成すると連続記録が伸び、マイルストーンごとにボーナスポイントがもらえます。",
       "dailyGoalTitle": "1日の目標",
-      "dailyGoal1": "カードを3枚学習する",
-      "dailyGoal2": "発音目標スコアを達成する",
+      "dailyGoalHeadline": "発音目標スコアを通過したカードを1日3枚保存",
+      "dailyGoalStepPron": "発音通過",
+      "dailyGoalStepSave": "カード保存",
+      "dailyGoalStepResult": "カード1枚",
+      "dailyGoalSuccess": "1日の目標達成",
       "milestonesTitle": "マイルストーン報酬",
       "milestoneHint": "各マイルストーンは1回のみ支給。Pro/Premiumは自動除外。",
       "dontShowAgain": "今後表示しない",

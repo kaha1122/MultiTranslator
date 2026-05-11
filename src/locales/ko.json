@@ -613,8 +613,8 @@
     "noActivity": "활동 없음"
   },
   "streak": {
-    "currentLabel": "현재 연속 학습",
-    "longest": "최장 기록",
+    "currentLabel": "현재 Streak",
+    "longest": "최장 Streak",
     "monthRate": "이달 달성률",
     "totalDays": "누적 달성일",
     "nextMilestone": "다음 보상",
@@ -622,17 +622,28 @@
     "daysUnit": "일",
     "daysLeftUnit": "일 남음",
     "celebration": {
-      "title": "마일스톤 달성!",
-      "subtitle": "대단해요! 더 큰 보상을 위해 streak를 이어가세요.",
+      "title": "Streak 마일스톤 달성!",
+      "subtitle": "대단해요! 더 큰 보상을 위해 Streak를 이어가세요.",
       "cta": "계속하기"
+    },
+    "status": {
+      "inProgress": "Streak {n}일 진행 중!",
+      "startTitle": "오늘부터 Streak 시작",
+      "startMessage": "카드 3장 발음 목표 점수 통과로 Streak를 시작해보세요.",
+      "nextHint": "다음 보상까지",
+      "cta": "오늘도 화이팅!",
+      "startCta": "시작하기"
     },
     "intro": {
       "badge": "NEW",
-      "title": "연속 학습으로 보너스를 모으세요",
-      "subtitle": "매일 학습 목표를 달성하면 연속 학습 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
+      "title": "연속학습(Streak)으로 보너스를 모으세요",
+      "subtitle": "매일 학습 목표를 달성하면 Streak 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
       "dailyGoalTitle": "하루 목표",
-      "dailyGoal1": "카드 3장 학습하기",
-      "dailyGoal2": "발음 목표 점수 달성하기",
+      "dailyGoalHeadline": "발음 목표 점수를 통과한 카드를 하루 3장 저장하기",
+      "dailyGoalStepPron": "발음 통과",
+      "dailyGoalStepSave": "카드 저장",
+      "dailyGoalStepResult": "카드 1장",
+      "dailyGoalSuccess": "하루 목표 달성",
       "milestonesTitle": "마일스톤 보상",
       "milestoneHint": "각 마일스톤은 1회만 지급됩니다. Pro/Premium은 자동 제외돼요.",
       "dontShowAgain": "다시 보지 않음",
