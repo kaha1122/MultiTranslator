@@ -540,16 +540,24 @@ export default function ListeningTab({
                 </button>
             )}
 
-            {/* Custom Input — 사용자 직접 주제 입력 */}
-            <input
-                className="vocab-custom-input"
-                placeholder={t('scene.customPlaceholder')}
-                value={customInput}
-                onChange={e => {
-                    setCustomInput(e.target.value);
-                    if (e.target.value.trim()) setSelectedTopic(null);
-                }}
-            />
+            {/* Custom Input — Free Talking과 동일 UI (왼쪽 2줄 label + 오른쪽 2줄 textarea) */}
+            <div className="scene-custom-block">
+                <div className="scene-custom-label" role="presentation">
+                    <span className="scene-custom-label__line1">{t('scene.customLabelTop')}</span>
+                    <span className="scene-custom-label__line2">{t('scene.customLabelBottom')}</span>
+                </div>
+                <textarea
+                    className="scene-custom-input"
+                    rows={2}
+                    placeholder={t('scene.customPlaceholder')}
+                    value={customInput}
+                    onChange={evt => {
+                        const v = evt.target.value;
+                        setCustomInput(v);
+                        if (v.trim()) setSelectedTopic(null);
+                    }}
+                />
+            </div>
 
             {/* Generate Button */}
             <button
