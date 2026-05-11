@@ -219,10 +219,11 @@
 
 /* ── 직접입력 블록 — 가로 row: 왼쪽 2줄 label + 오른쪽 2줄 textarea ── */
 /* Free Talking 버튼(scene-freetalk-btn)과 동일한 max-width 420 / 중앙정렬로 양쪽 여유 확보 */
+/* margin-top 16px: Vocab/Listening의 selected chip ↔ block, 또는 위 요소와의 간격 (generate-row gap과 통일) */
 .scene-custom-block {
     width: 100%;
     max-width: 420px;
-    margin: 0 auto;
+    margin: 16px auto 0;
     display: flex;
     flex-direction: row;
     align-items: stretch;
