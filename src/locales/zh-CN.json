@@ -607,8 +607,8 @@
     "noActivity": "无活动"
   },
   "streak": {
-    "currentLabel": "当前连续",
-    "longest": "最长纪录",
+    "currentLabel": "当前 Streak",
+    "longest": "最长 Streak",
     "monthRate": "本月达成率",
     "totalDays": "累计天数",
     "nextMilestone": "下一奖励",
@@ -616,8 +616,8 @@
     "daysUnit": "天",
     "daysLeftUnit": "天后",
     "celebration": {
-      "title": "里程碑达成!",
-      "subtitle": "太棒了!继续连续学习获得更大的奖励。",
+      "title": "Streak 里程碑达成!",
+      "subtitle": "太棒了!继续 Streak 获得更大的奖励。",
       "cta": "继续"
     },
     "status": {
@@ -630,8 +630,8 @@
     },
     "intro": {
       "badge": "NEW",
-      "title": "连续学习,赚取大奖励",
-      "subtitle": "每天达成学习目标即可累积连续天数,每个里程碑都能获得奖励积分。",
+      "title": "连续学习(Streak),赚取大奖励",
+      "subtitle": "每天达成学习目标即可累积 Streak 天数,每个里程碑都能获得奖励积分。",
       "dailyGoalTitle": "每日目标",
       "dailyGoalHeadline": "每天保存 3 张通过发音目标分数的卡片",
       "dailyGoalStepPron": "通过发音",
