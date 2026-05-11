@@ -543,8 +543,8 @@ export default function ListeningTab({
             {/* Custom Input — Free Talking과 동일 UI (왼쪽 2줄 label + 오른쪽 2줄 textarea) */}
             <div className="scene-custom-block">
                 <div className="scene-custom-label" role="presentation">
-                    <span className="scene-custom-label__line1">{t('scene.customLabelTop')}</span>
-                    <span className="scene-custom-label__line2">{t('scene.customLabelBottom')}</span>
+                    <span className="scene-custom-label__icon" aria-hidden="true">✏️</span>
+                    <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
                     className="scene-custom-input"

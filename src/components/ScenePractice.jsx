@@ -585,8 +585,8 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 {isCustomSelected && (
                     <div className="scene-custom-block">
                         <div className="scene-custom-label" role="presentation">
-                            <span className="scene-custom-label__line1">{t('scene.customLabelTop')}</span>
-                            <span className="scene-custom-label__line2">{t('scene.customLabelBottom')}</span>
+                            <span className="scene-custom-label__icon" aria-hidden="true">✏️</span>
+                            <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                         </div>
                         <textarea
                             className="scene-custom-input"
