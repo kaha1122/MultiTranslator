@@ -246,6 +246,8 @@
     "saveToLibrary": "保存到库",
     "savedToLibrary": "已保存 ✅",
     "loginRequired": "请先登录。",
+    "customLabelTop": "自定义输入",
+    "customLabelBottom": "自由输入您想练习的内容",
     "customPlaceholder": "请输入您的场景或情境"
   },
   "vocab": {

@@ -581,17 +581,22 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
 
             {/* 언어 선택 + Request 버튼 — 탭 진입 시 항상 표시 */}
             <div className="scene-controls">
-                {/* 직접입력 선택 시 텍스트 입력 */}
+                {/* 직접입력 선택 시 — 2줄 label 버튼 + 2줄 textarea */}
                 {isCustomSelected && (
-                    <input
-                        className="scene-custom-input"
-                        type="text"
-                        placeholder={t('scene.customPlaceholder')}
-                        value={customInput}
-                        onChange={e => setCustomInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && canRequest && !loading) handleRequest(); }}
-                        autoFocus
-                    />
+                    <div className="scene-custom-block">
+                        <div className="scene-custom-label" role="presentation">
+                            <span className="scene-custom-label__line1">{t('scene.customLabelTop')}</span>
+                            <span className="scene-custom-label__line2">{t('scene.customLabelBottom')}</span>
+                        </div>
+                        <textarea
+                            className="scene-custom-input"
+                            rows={2}
+                            placeholder={t('scene.customPlaceholder')}
+                            value={customInput}
+                            onChange={evt => setCustomInput(evt.target.value)}
+                            autoFocus
+                        />
+                    </div>
                 )}
 
                 {!selectedScene && (

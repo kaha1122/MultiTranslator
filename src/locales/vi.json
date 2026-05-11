@@ -246,6 +246,8 @@
     "saveToLibrary": "Lưu vào thư viện",
     "savedToLibrary": "Đã lưu ✅",
     "loginRequired": "Vui lòng đăng nhập.",
+    "customLabelTop": "Nhập tùy chỉnh",
+    "customLabelBottom": "Nhập tự do nội dung bạn muốn luyện tập",
     "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn"
   },
   "vocab": {

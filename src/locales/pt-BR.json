@@ -246,6 +246,8 @@
     "saveToLibrary": "Salvar na Biblioteca",
     "savedToLibrary": "Salvo ✅",
     "loginRequired": "Faça login, por favor.",
+    "customLabelTop": "Entrada personalizada",
+    "customLabelBottom": "Digite livremente o que quer praticar",
     "customPlaceholder": "Digite seu próprio local ou situação"
   },
   "vocab": {

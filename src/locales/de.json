@@ -246,6 +246,8 @@
     "saveToLibrary": "In Bibliothek speichern",
     "savedToLibrary": "Gespeichert ✅",
     "loginRequired": "Bitte einloggen.",
+    "customLabelTop": "Eigene Eingabe",
+    "customLabelBottom": "Geben Sie frei ein, was Sie üben möchten",
     "customPlaceholder": "Eigenen Ort oder Situation eingeben"
   },
   "vocab": {

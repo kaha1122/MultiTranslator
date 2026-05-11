@@ -246,6 +246,8 @@
     "saveToLibrary": "Enregistrer dans la bibliothèque",
     "savedToLibrary": "Enregistré ✅",
     "loginRequired": "Veuillez vous connecter.",
+    "customLabelTop": "Saisie personnalisée",
+    "customLabelBottom": "Saisissez librement ce que vous voulez pratiquer",
     "customPlaceholder": "Entrez votre propre lieu ou situation"
   },
   "vocab": {

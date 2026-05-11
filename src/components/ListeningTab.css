@@ -192,17 +192,20 @@
 }
 
 /* ── Generate Button ───────────────────────────────────────────── */
+/* 가로 규격은 Free Talking(scene-freetalk-btn)과 통일 (width 100% / max 420 / h 52 / radius 26) */
 .listening-generate-btn {
   width: 100%;
-  padding: 14px;
+  max-width: 420px;
+  height: 52px;
+  padding: 0 16px;
   border: none;
-  border-radius: 14px;
+  border-radius: 26px;
   background: linear-gradient(135deg, #00a884, #00c49a);
   color: white;
   font-size: 0.92rem;
   font-weight: 800;
   cursor: pointer;
-  margin: 8px 0;
+  margin: 8px auto;
   display: flex;
   align-items: center;
   justify-content: center;

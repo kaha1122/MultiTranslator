@@ -246,6 +246,8 @@
     "saveToLibrary": "Сохранить в библиотеку",
     "savedToLibrary": "Сохранено ✅",
     "loginRequired": "Пожалуйста, войдите в аккаунт.",
+    "customLabelTop": "Свой вариант",
+    "customLabelBottom": "Свободно введите тему, которую хотите практиковать",
     "customPlaceholder": "Введите своё место или ситуацию"
   },
   "vocab": {
