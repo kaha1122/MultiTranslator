@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, getDocsFromServer } from 'firebase/firestore';
 import { useT } from '../utils/i18n';
-import LearningGauge from './LearningGauge';
 import StreakHero from './StreakHero';
 import './StatsPage.css';
 
@@ -220,9 +219,6 @@ const StatsPage = ({ user, dailyGoal, sourceLang, isActive, streakCurrent = 0, s
                 <span className="stats-legend-item">🌙 {t('stats.partial')}</span>
                 <span className="stats-legend-item">· {t('stats.noActivity')}</span>
             </div>
-
-            {/* 학습 게이지 */}
-            <LearningGauge user={user} sourceLang={sourceLang} isActive={isActive} />
         </div>
     );
 };

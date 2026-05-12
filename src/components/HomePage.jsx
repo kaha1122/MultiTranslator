@@ -3,14 +3,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Languages, Video, Library, Headphones, MessageCircle } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
-import { useWeeklyCardStats } from '../hooks/useWeeklyCardStats';
 import './HomePage.css';
 
 const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
-    const { stats, monthly, targets, monthlyTargets, loading: statsLoading } = useWeeklyCardStats(user, isActive);
     const [openFolder, setOpenFolder] = useState('vocab');
 
     const folders = [
@@ -288,56 +286,6 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 </div>
             </div>
 
-            {/* 섹션 5: 이번 주 학습 통계표 */}
-            <div className="home-section home-stats">
-                <div className="home-stats-header">
-                    <h3 className="home-section-title">{t('home.weeklyStats')}</h3>
-                    <button className="home-stats-link" onClick={() => onNavigate('stats')}>{t('home.viewStats')}</button>
-                </div>
-                {statsLoading ? (
-                    <div className="home-stats-loading">...</div>
-                ) : (
-                    <div className="home-stats-table-wrap">
-                        <table className="home-stats-table">
-                            <thead>
-                                <tr>
-                                    <th rowSpan={2}></th>
-                                    <th colSpan={3} className="home-stats-group-header">📖 {t('home.word')}</th>
-                                    <th colSpan={3} className="home-stats-group-header">🎭 {t('home.dialogue')}</th>
-                                </tr>
-                                <tr>
-                                    <th>{t('home.diffB')}</th>
-                                    <th>{t('home.diffI')}</th>
-                                    <th>{t('home.diffH')}</th>
-                                    <th>{t('home.diffB')}</th>
-                                    <th>{t('home.diffI')}</th>
-                                    <th>{t('home.diffH')}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <tr>
-                                    <td className="home-stats-row-label">{t('home.tWeek')}</td>
-                                    <td>{stats.vocab.basic}/{targets.vocab}</td>
-                                    <td>{stats.vocab.intermediate}/{targets.vocab}</td>
-                                    <td>{stats.vocab.advanced}/{targets.vocab}</td>
-                                    <td>{stats.scene.basic}/{targets.scene}</td>
-                                    <td>{stats.scene.intermediate}/{targets.scene}</td>
-                                    <td>{stats.scene.advanced}/{targets.scene}</td>
-                                </tr>
-                                <tr>
-                                    <td className="home-stats-row-label">{t('home.tMonth')}</td>
-                                    <td>{monthly.vocab.basic}/{monthlyTargets.vocab}</td>
-                                    <td>{monthly.vocab.intermediate}/{monthlyTargets.vocab}</td>
-                                    <td>{monthly.vocab.advanced}/{monthlyTargets.vocab}</td>
-                                    <td>{monthly.scene.basic}/{monthlyTargets.scene}</td>
-                                    <td>{monthly.scene.intermediate}/{monthlyTargets.scene}</td>
-                                    <td>{monthly.scene.advanced}/{monthlyTargets.scene}</td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                )}
-            </div>
         </div>
     );
 };
