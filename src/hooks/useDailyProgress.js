@@ -25,13 +25,18 @@ const getWeekDates = () => {
     });
 };
 
+// 첫 로그인 시 Firestore 7-doc round-trip이 끝나기 전 UI가 7-dot 자리를 잡도록
+// achieved:false placeholder를 미리 채워둠 — load 완료되면 setWeeklyData로 덮어씀.
+const makePlaceholderWeek = (goal) =>
+    getWeekDates().map(date => ({ date, count: 0, goal, achieved: false }));
+
 export const useDailyProgress = (user, dailyGoal = 3) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
     const [todayListenCount, setTodayListenCount] = useState(0);
     const [todayFreeTalkCount, setTodayFreeTalkCount] = useState(0);  // Free Talking 세션 시작 횟수 (Trial 한도 2회)
-    const [weeklyData, setWeeklyData] = useState([]);
+    const [weeklyData, setWeeklyData] = useState(() => makePlaceholderWeek(dailyGoal));
     const achievedKeysRef = useRef(new Set());
     const todayCountRef = useRef(0);
     const todaySaveCountRef = useRef(0);
@@ -54,7 +59,7 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
             setTodayPronCount(0);
             setTodayListenCount(0);
             setTodayFreeTalkCount(0);
-            setWeeklyData([]);
+            setWeeklyData(makePlaceholderWeek(dailyGoal));
             achievedKeysRef.current = new Set();
             todayCountRef.current = 0;
             todaySaveCountRef.current = 0;

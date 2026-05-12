@@ -207,7 +207,7 @@
   letter-spacing: 0.01em;
   cursor: pointer;
   margin: 14px auto 6px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
