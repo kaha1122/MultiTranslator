@@ -154,6 +154,8 @@
     "filterAll": "Tất cả",
     "filterLang": "Ngôn ngữ",
     "filterSource": "Nguồn",
+    "filterCategory": "Danh mục",
+    "filterAllCategories": "Tất cả danh mục",
     "filterDiff": "Cấp độ",
     "filterTargetMiss": "Chưa đạt",
     "filterStarred": "Quan trọng",

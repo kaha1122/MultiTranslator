@@ -5,7 +5,12 @@ import TranslationCard from './TranslationCard';
 import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getLangInfo } from '../config/languages';
+import VOCAB_CATEGORIES from '../data/vocabCategories';
 import './Library.css';
+
+// 7 vocab 카테고리 — vocab/listening 카드의 categoryId 필터링용
+const LIB_CATEGORY_IDS = VOCAB_CATEGORIES.map(c => c.id);
+const LIB_CATEGORY_ICONS = Object.fromEntries(VOCAB_CATEGORIES.map(c => [c.id, c.icon]));
 
 // ── 이번주 월요일 00:00 (현지시간) 계산 ──
 function getThisWeekMonday() {
@@ -30,6 +35,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     });
     const [filterTargetMissed, setFilterTargetMissed] = useState(() => localStorage.getItem('library_filterTargetMissed') === 'true');
     const [filterSource, setFilterSource] = useState(() => localStorage.getItem('library_filterSource') || 'all');
+    const [filterCategory, setFilterCategory] = useState(() => localStorage.getItem('library_filterCategory') || 'all');
     const [filterDifficulty, setFilterDifficulty] = useState(() => localStorage.getItem('library_filterDifficulty') || 'all');
     const [filterStarred, setFilterStarred] = useState(() => localStorage.getItem('library_filterStarred') === 'true');
     const [filterThisWeek, setFilterThisWeek] = useState(() => {
@@ -57,12 +63,13 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
         localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
         localStorage.setItem('library_filterSource', filterSource);
+        localStorage.setItem('library_filterCategory', filterCategory);
         localStorage.setItem('library_filterDifficulty', filterDifficulty);
         localStorage.setItem('library_filterStarred', filterStarred.toString());
         localStorage.setItem('library_filterThisWeek', filterThisWeek.toString());
         localStorage.setItem('library_dateFrom', dateFrom);
         localStorage.setItem('library_dateTo', dateTo);
-    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
+    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterCategory, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
 
     // ── Firebase 실시간 구독 ──
     // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 모든 savedCards를
@@ -177,6 +184,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         });
     }
 
+    // 카테고리 필터 — vocab/listening 카드만 통과 (categoryId 매칭). conversation/scene/translation/video 자동 제외
+    if (filterCategory !== 'all') {
+        filteredCards = filteredCards.filter(card => {
+            const src = card.sourceType || '';
+            if (src !== 'vocab' && src !== 'listening') return false;
+            return card.categoryId === filterCategory;
+        });
+    }
+
     if (filterDifficulty !== 'all') {
         filteredCards = filteredCards.filter(card => {
             const d = card.difficulty === 'high' ? 'advanced' : (card.difficulty || 'basic');
@@ -260,6 +276,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'advanced', label: t('scene.diffAdvanced') },
     ];
 
+    // 카테고리 목록 — 7 vocab 카테고리 + 전체 (vocab/listening 카드 카테고리 필터)
+    const CATEGORY_OPTIONS = [
+        { value: 'all', label: t('library.filterAllCategories') },
+        ...LIB_CATEGORY_IDS.map(id => ({
+            value: id,
+            label: `${LIB_CATEGORY_ICONS[id]} ${t(`vocabCat.${id}`)}`,
+        })),
+    ];
+
     // W/S 옵션
     const WS_OPTIONS = [
         { value: 'all', label: t('library.filterAll') },
@@ -275,6 +300,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         return t('library.typeSentence');
     };
     const getSourceLabel = () => SOURCE_OPTIONS.find(o => o.value === filterSource)?.label || t('library.filterAll');
+    const getCategoryLabel = () => CATEGORY_OPTIONS.find(o => o.value === filterCategory)?.label || t('library.filterAllCategories');
     const getDiffLabel = () => DIFF_OPTIONS.find(o => o.value === filterDifficulty)?.label || t('library.filterAll');
 
     if (isLoading) return <div className="loading-container">{t('library.loading')}</div>;
@@ -331,6 +357,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         onClick={() => setBottomSheet('source')}
                     >
                         {t('library.filterSource')} : {getSourceLabel()} <ChevronDown size={12} className="chevron" />
+                    </button>
+
+                    {/* 5-1) 카테고리 (vocab/listening 전용) */}
+                    <button
+                        className={`lib-dropdown-btn ${filterCategory !== 'all' ? 'active' : ''}`}
+                        onClick={() => setBottomSheet('category')}
+                    >
+                        {t('library.filterCategory')} : {getCategoryLabel()} <ChevronDown size={12} className="chevron" />
                     </button>
 
                     {/* 6) 난이도 */}
@@ -553,6 +587,23 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 onClick={() => { setFilterSource(opt.value); setBottomSheet(null); }}>
                                 <span>{opt.label}</span>
                                 {filterSource === opt.value && <span className="bs-check">✓</span>}
+                            </button>
+                        ))}
+                    </div>
+                </div>
+            )}
+
+            {/* ── 바텀시트: 카테고리 선택 ── */}
+            {bottomSheet === 'category' && (
+                <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
+                    <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
+                        <div className="lib-bs-handle" />
+                        <div className="lib-bs-title">{t('library.filterCategory')}</div>
+                        {CATEGORY_OPTIONS.map(opt => (
+                            <button key={opt.value} className={`lib-bs-option ${filterCategory === opt.value ? 'selected' : ''}`}
+                                onClick={() => { setFilterCategory(opt.value); setBottomSheet(null); }}>
+                                <span>{opt.label}</span>
+                                {filterCategory === opt.value && <span className="bs-check">✓</span>}
                             </button>
                         ))}
                     </div>

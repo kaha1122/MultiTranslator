@@ -154,6 +154,8 @@
     "filterAll": "전체",
     "filterLang": "언어",
     "filterSource": "소스",
+    "filterCategory": "카테고리",
+    "filterAllCategories": "전체 카테고리",
     "filterDiff": "난이도",
     "filterTargetMiss": "목표 미달",
     "filterStarred": "중요",

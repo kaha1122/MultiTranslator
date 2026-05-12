@@ -154,6 +154,8 @@
     "filterAll": "全部",
     "filterLang": "语言",
     "filterSource": "来源",
+    "filterCategory": "类别",
+    "filterAllCategories": "全部类别",
     "filterDiff": "难度",
     "filterTargetMiss": "未达标",
     "filterStarred": "重要",

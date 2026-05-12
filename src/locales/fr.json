@@ -154,6 +154,8 @@
     "filterAll": "Tout",
     "filterLang": "Langue",
     "filterSource": "Source",
+    "filterCategory": "Catégorie",
+    "filterAllCategories": "Toutes les catégories",
     "filterDiff": "Niveau",
     "filterTargetMiss": "Non atteint",
     "filterStarred": "Important",

@@ -154,6 +154,8 @@
     "filterAll": "全て",
     "filterLang": "言語",
     "filterSource": "ソース",
+    "filterCategory": "カテゴリー",
+    "filterAllCategories": "すべてのカテゴリー",
     "filterDiff": "難易度",
     "filterTargetMiss": "未達成",
     "filterStarred": "重要",

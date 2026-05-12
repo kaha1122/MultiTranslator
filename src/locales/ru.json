@@ -154,6 +154,8 @@
     "filterAll": "Все",
     "filterLang": "Язык",
     "filterSource": "Источник",
+    "filterCategory": "Категория",
+    "filterAllCategories": "Все категории",
     "filterDiff": "Уровень",
     "filterTargetMiss": "Не сдано",
     "filterStarred": "Отмеченное",

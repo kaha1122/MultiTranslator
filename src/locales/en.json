@@ -154,6 +154,8 @@
     "filterAll": "All",
     "filterLang": "Lang",
     "filterSource": "Source",
+    "filterCategory": "Category",
+    "filterAllCategories": "All Categories",
     "filterDiff": "Level",
     "filterTargetMiss": "Missed",
     "filterStarred": "Flagged",
