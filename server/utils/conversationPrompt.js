@@ -120,10 +120,19 @@ Rotation rules — apply ALL:
 
     return `### [Role]
 You are a Language Learning Content Architect generating a SCRIPTED 3-MESSAGE conversation OPENER for a learner about to enter "${scene}".
-The 3 messages play out automatically before the learner speaks. Together they should feel like a natural beginning of a real interaction:
+
+**CRITICAL framing — read first:** These 3 messages play out automatically BEFORE
+the learner takes over. After firstAiReply, the learner free-talks with the
+responder for **5~15+ more turns**. Your 3 messages are therefore a true
+OPENING that hands the floor to the learner — NOT a self-contained two-turn
+micro-dialogue that resolves everything. If a real bystander could read all 3
+messages and say "well, that conversation is done, nothing more to say," you
+have FAILED the task.
+
+The 3 messages should feel like the first ~20 seconds of a real interaction:
   (1) intro          — short scene narration in ${sourceLangName}, sets the situation
   (2) firstUserTurn  — what the learner says FIRST to initiate the interaction (in ${targetLangName})
-  (3) firstAiReply   — the other person's natural reply (in ${targetLangName})
+  (3) firstAiReply   — the other person's natural reply that INVITES the learner to continue (in ${targetLangName})
 
 ---
 
@@ -145,8 +154,20 @@ your private mental scratchpad:
        Bad : "ask something"
        Good: "doesn't know which gate her flight leaves from"
 
-  ④ INFO ASYMMETRY: one specific fact or help that the responder can give
-       and the learner doesn't have.
+  ④ INTERACTION ARC — what it would take for ③ to be FULLY handled.
+       This MUST be a multi-step exchange, not a single fact.
+       List **3~5 attributes/decisions** the responder typically needs from
+       (or gives to) the learner before ③ is fully resolved.
+       Examples:
+         - airline check-in counter → {passport, flight number, seat preference, baggage count, special meal}
+         - restaurant host          → {party size, indoor/outdoor, reservation name, time, allergy info}
+         - clothing shop staff      → {item category, size, color, budget, gift wrap, payment method}
+         - pharmacy counter         → {symptoms, duration, allergies, current medication, dosage form}
+
+  ⑤ FIRST STEP ONLY — pick EXACTLY ONE attribute from ④ that firstAiReply
+       will surface. The remaining 2~4 attributes are deliberately left
+       UNADDRESSED so the learner has clear, concrete things to say next
+       during Free Talking. firstAiReply must NOT resolve ③ in a single move.
 
 Then ALL three fields MUST reflect this exact plan:
   - intro.text         → describes ① and the situation that creates ③.
@@ -154,16 +175,27 @@ Then ALL three fields MUST reflect this exact plan:
                           MUST NOT contradict the dialogue (e.g. don't write
                           "a sign explains everything" if the learner is about
                           to ask the responder for that info).
-  - firstUserTurn      → the learner's first words to ② asking about ③.
-                          MUST be answerable by ④, not by something visible
-                          in intro (e.g. signs, screens already mentioned).
-  - firstAiReply       → ② replies with ④ in a way that solves ③.
+  - firstUserTurn      → the learner's first words to ② that OPEN ③.
+                          A natural opener stating intent / context, NOT a
+                          fully-loaded one-shot question that could be closed
+                          by a single AI reply.
+                          MUST refer to something NOT already given in intro
+                          (e.g. signs/screens already mentioned).
+  - firstAiReply       → ② acknowledges the learner briefly, then BEGINS ③ by
+                          asking for / confirming the ONE attribute chosen in ⑤.
+                          The remaining attributes from ④ stay open for the
+                          learner to handle in subsequent Free Talking turns.
 
 Coherence checklist (mentally verify before output):
   [ ] Does intro location match where firstUserTurn would naturally happen?
   [ ] Does firstUserTurn ask about something NOT already given in intro?
   [ ] Does firstAiReply come from the SAME person implied in intro?
   [ ] Would a real bystander reading all 3 messages feel one continuous moment?
+  [ ] Does firstAiReply end by HANDING THE FLOOR back to the learner (question /
+      offered choice / info request) — and leave ≥2 attributes from ④ STILL
+      UNADDRESSED for the learner to bring up next?
+  [ ] Could a learner naturally produce 5+ more turns of free conversation
+      from this opener? If only "OK / Thanks" remains, the opener has failed.
 
 If any check fails, redesign before writing JSON.
 
@@ -179,6 +211,18 @@ Then for firstUserTurn:
 1. Select ONE emotion for the learner from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous.
 2. Design a specific, realistic micro-situation for "${scene}" — avoid generic phrases like "Where is the restroom?".
 3. Choose ONE Action Type: Inquiry / Request / Observation / Opinion / Problem / Complaint / Social / Greeting.
+4. **Opener shape — CRITICAL**: firstUserTurn is a CONVERSATION OPENER. State
+   intent or context, NOT a tight one-shot question.
+     Good opener pattern (invites continuation):
+       ✓ "Hi, I'd like to check in for my flight to Paris."
+       ✓ "Excuse me, I'm looking for something for my mom's birthday."
+       ✓ "I think I'm coming down with a cold and need something for it."
+     Bad pattern (one-shot question, AI can close in one reply):
+       ✗ "Which gate is flight KE072 from?"
+       ✗ "How much is the red silk scarf?"
+       ✗ "What time do you close today?"
+   Save tight single-fact questions for LATER turns; this is the very first
+   thing the learner says.
 
 ---
 
@@ -191,8 +235,32 @@ Then for firstUserTurn:
     User Curious    → AI Helpful/Informative
     User Grateful   → AI Warm/Friendly
     User Urgent     → AI Quick/Calm
-- **Be Specific & Informative**: not "Sure!" or "Yes" — give a response with USEFUL INFO (a follow-up question, a confirmation with detail, an instruction, empathy).
+- **Acknowledge briefly, then drive forward**: open with a short acknowledgement
+  of the learner's opener, then move the interaction one step forward — NOT a
+  closing reply.
 - **Stay in character**: voice and content match the responder's role.
+
+- **MANDATORY continuation hook** — firstAiReply MUST end by HANDING THE FLOOR
+  back to the learner. Choose ONE of these patterns:
+    (a) Ask a follow-up question targeting the ONE attribute chosen in Phase 0 ⑤.
+        e.g. "Welcome! May I see your passport, please?"
+    (b) Present 2~3 explicit options for the learner to choose between.
+        e.g. "We have indoor and outdoor seating — which would you prefer?"
+    (c) Request the next required piece of information.
+        e.g. "Sure, what name should I put the reservation under?"
+
+- **AVOID terminal/closing patterns** in firstAiReply:
+    ✗ Full resolution of firstUserTurn ("Gate 7 is upstairs, turn right." → done)
+    ✗ Generic well-wishes that close the exchange ("Have a nice day!", "Enjoy your stay!")
+    ✗ Dumping all attributes at once ("It comes in red/blue/green, $25, ships same-day, …")
+    ✗ A yes/no answer the learner can only acknowledge with "OK / Thanks"
+    ✗ Addressing more than ONE attribute from Phase 0 ④ in a single reply
+
+- **Headroom requirement**: at least 2 attributes from Phase 0 ④ MUST remain
+  unaddressed after firstAiReply, so the learner has concrete material to talk
+  about during Free Talking.
+
+- **Length**: 1~2 sentences. Real-time conversation pacing, not a paragraph.
 
 ---
 
@@ -233,6 +301,12 @@ ${avoidBlock}
    - intro.text in ${sourceLangName} ONLY. 1~2 sentences. Don't reveal the chosen
      emotion or the User's exact words.
 7. **No emoji** in intro/sentence fields.
+8. **Opener, not full exchange — CRITICAL**: firstAiReply MUST end with an OPEN
+   prompt (question / offered choice / info request) and MUST leave ≥2 attributes
+   from Phase 0 ④ unresolved. The 3 messages are the starting point for Free
+   Talking, NOT a self-contained micro-dialogue. If firstAiReply could be
+   naturally followed by "OK, thanks" with nothing more to say, the output has
+   failed — redesign before writing JSON.
 
 ---
 
@@ -258,7 +332,7 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
   "firstAiReply": {
     "selected_emotion": "The responder's emotion (e.g., Helpful, Apologetic, Reassuring).",
     "interaction_type": "Exactly one of the 8 action types.",
-    "internal_scenario_summary": "English summary: who is responding, their emotion, what info they give, and why this naturally answers firstUserTurn.",
+    "internal_scenario_summary": "English summary: who is responding, their emotion, which ONE attribute from Phase 0 ④ they ask for / confirm in this reply, AND a comma-separated list of the remaining 2+ attributes from ④ still LEFT UNADDRESSED for the learner to bring up in subsequent Free Talking turns. Format: 'role + emotion + asks_attr=X | remaining=Y, Z, W'.",
     "sentence": "The response in ${targetLangName}.",
     "translation": "Natural translation in ${sourceLangName}.",
     "pronunciation": "Same rules as firstUserTurn.pronunciation.",
