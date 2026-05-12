@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle } from 'lucide-react';
+import { Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle, Pencil, BookOpen } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -511,7 +511,9 @@ export default function VocabTab({
             {/* Custom Input — Free Talking과 동일 UI (2줄 label + 2줄 textarea) */}
             <div className="scene-custom-block">
                 <div className="scene-custom-label" role="presentation">
-                    <span className="scene-custom-label__icon" aria-hidden="true">✏️</span>
+                    <span className="scene-custom-label__icon" aria-hidden="true">
+                        <Pencil size={11} strokeWidth={2.25} />
+                    </span>
                     <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
@@ -585,7 +587,7 @@ export default function VocabTab({
             {/* Empty State */}
             {!isLoading && words.length === 0 && (
                 <div className="vocab-empty">
-                    <div className="vocab-empty-icon">📖</div>
+                    <div className="vocab-empty-icon"><BookOpen size={28} strokeWidth={1.5} /></div>
                     {t('vocab.selectTopic')}
                 </div>
             )}

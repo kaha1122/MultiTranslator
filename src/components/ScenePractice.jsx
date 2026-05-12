@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2 } from 'lucide-react';
+import { Award, Mic, MicOff, Play, RotateCcw, Star, Volume2, Pencil } from 'lucide-react';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import { useAuth } from '../context/AuthContext';
 import { useT, getT, tTag } from '../utils/i18n';
@@ -585,7 +585,9 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 {isCustomSelected && (
                     <div className="scene-custom-block">
                         <div className="scene-custom-label" role="presentation">
-                            <span className="scene-custom-label__icon" aria-hidden="true">✏️</span>
+                            <span className="scene-custom-label__icon" aria-hidden="true">
+                                <Pencil size={11} strokeWidth={2.25} />
+                            </span>
                             <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                         </div>
                         <textarea

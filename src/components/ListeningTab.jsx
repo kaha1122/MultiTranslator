@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, BookOpen } from 'lucide-react';
+import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, BookOpen, Pencil, Headphones } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -543,7 +543,9 @@ export default function ListeningTab({
             {/* Custom Input — Free Talking과 동일 UI (왼쪽 2줄 label + 오른쪽 2줄 textarea) */}
             <div className="scene-custom-block">
                 <div className="scene-custom-label" role="presentation">
-                    <span className="scene-custom-label__icon" aria-hidden="true">✏️</span>
+                    <span className="scene-custom-label__icon" aria-hidden="true">
+                        <Pencil size={11} strokeWidth={2.25} />
+                    </span>
                     <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
@@ -700,7 +702,7 @@ export default function ListeningTab({
             {/* Empty State */}
             {!passage && !isLoading && (
                 <div className="listening-empty">
-                    <div className="listening-empty-icon">🎧</div>
+                    <div className="listening-empty-icon"><Headphones size={28} strokeWidth={1.5} /></div>
                     <p>{t('listening.emptyState')}</p>
                 </div>
             )}
