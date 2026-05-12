@@ -608,6 +608,11 @@
     "partial": "未达成",
     "noActivity": "无活动"
   },
+  "topbar": {
+    "today": "今天",
+    "week": "本周",
+    "streak": "连续"
+  },
   "streak": {
     "currentLabel": "当前 Streak",
     "longest": "最长 Streak",

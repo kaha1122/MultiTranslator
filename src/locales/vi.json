@@ -608,6 +608,11 @@
     "partial": "Chưa đạt",
     "noActivity": "Không hoạt động"
   },
+  "topbar": {
+    "today": "Hôm nay",
+    "week": "Tuần",
+    "streak": "Chuỗi"
+  },
   "streak": {
     "currentLabel": "Streak hiện tại",
     "longest": "Streak dài nhất",

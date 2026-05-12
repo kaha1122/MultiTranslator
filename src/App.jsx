@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle, MessageCircleMore } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle, MessageCircleMore, Target, Mic, Gem, Gift } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
@@ -3692,144 +3692,96 @@ function App() {
 
         {/* 2026-05-04: 탭 상단 고정바(tab-title-bar) 제거 — 하단 탭 활성 색상으로 현재 위치 시각화 대체 */}
 
-        {/* 미니 일일 진도 바 + 주간 캘린더 (홈에서는 숨김 — 홈에서 더 크게 표시) */}
+        {/* 상단 고정바: TODAY · WEEK · STREAK 3분할 (시간축) — 홈에서는 StreakHero가 대체 */}
         {user && viewMode !== 'home' && (() => {
           const today = getToday();
           const dayLabels = getT(sourceLang, 'daily.days').split(',');
-          // Trial: 일간 발음 게이지, Pro: 월간 발음 게이지, Premium/Admin: 숨김
           const isTrialTier = tier === 'trial';
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;
+
+          const ftLimit = isTrialTier ? TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits : dailyGoal;
+          const ftCount = isTrialTier ? todayFreeTalkCount : todayCount;
+          const ftFull = ftCount >= ftLimit;
+          const ftRatio = Math.min((ftCount / ftLimit) * 100, 100);
+          const ftFillClass = ftFull
+            ? (isTrialTier ? 'is-full' : 'is-success')
+            : (isTrialTier ? 'is-success' : '');
+
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
           const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + pronCredits : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
+          const pronRatio = Math.min((pronCurrent / pronLimit) * 100, 100);
+          const pronFillClass = pronFull ? 'is-full' : (isProTier ? 'is-success' : 'is-warn');
           const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
+
+          const streakZero = streakCurrent === 0;
+          const daysUnit = getT(sourceLang, 'streak.daysUnit') || '일';
+          const daysLeftUnit = getT(sourceLang, 'streak.daysLeftUnit') || 'D';
+
           return (
-            <div style={{ display: 'flex', alignItems: 'stretch', gap: '8px', marginTop: '6px', width: '100%' }}>
-              {/* 좌측: 게이지 바 2개 세로 배치 */}
-              <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: showPronGauge ? '4px' : '0', flex: '0 0 auto', width: '38%' }}>
-                {/* 2026-05-07 v1.5.0: 카드 게이지 → Free Talking 게이지 (Trial). 유료/Admin: 학습 목표 게이지 그대로. */}
-                {(() => {
-                  const isTrial = tier === 'trial';
-                  const ftLimit = TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits;
-                  const goal = dailyGoal;
-                  const count = isTrial ? todayFreeTalkCount : todayCount;
-                  const isFull = isTrial ? count >= ftLimit : count >= goal;
-                  const ratio = isTrial ? Math.min((count / ftLimit) * 100, 100) : Math.min((count / goal) * 100, 100);
-                  const barColor = isTrial
-                    ? (isFull
-                      ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
-                      : 'linear-gradient(90deg, #6ee7b7 0%, #34d399 50%, #059669 100%)')
-                    : (isFull
-                      ? 'linear-gradient(90deg, #6ee7b7 0%, #10b981 60%, #047857 100%)'
-                      : 'linear-gradient(90deg, #c4b5fd 0%, #818cf8 50%, #4338ca 100%)');
-                  const glow = isTrial
-                    ? (isFull ? '0 0 6px rgba(239,68,68,0.5)' : '0 0 6px rgba(52,211,153,0.4)')
-                    : (isFull ? '0 0 6px rgba(16,185,129,0.5)' : '0 0 6px rgba(99,102,241,0.4)');
-                  const textColor = isTrial
-                    ? (isFull ? '#ef4444' : '#059669')
-                    : (isFull ? '#059669' : '#818cf8');
-                  return (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', flexShrink: 0 }}>
-                        {isTrial
-                          ? <MessageCircleMore size={12} color="#f59e0b" strokeWidth={2.5} />
-                          : <span style={{ fontSize: '0.65rem' }}>🎯</span>}
-                      </span>
-                      <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-                        <div style={{
-                          height: '100%', borderRadius: '99px',
-                          width: `${ratio}%`,
-                          background: barColor,
-                          transition: 'width 0.5s ease',
-                          boxShadow: glow,
-                        }} />
-                      </div>
-                      <span style={{ fontSize: '0.6rem', fontWeight: '700', color: textColor, flexShrink: 0, whiteSpace: 'nowrap' }}>
-                        {count}/{isTrial ? ftLimit : goal}
-                      </span>
-                    </div>
-                  );
-                })()}
-                {/* 발음 게이지 (Trial: 일간, Pro: 월간) */}
+            <div className="top-status-bar">
+              {/* TODAY */}
+              <div className="tsb-col">
+                <div className="tsb-label">{getT(sourceLang, 'topbar.today') || '오늘'}</div>
+                <div className="tsb-gauge">
+                  <span className="tsb-gauge-icon" aria-hidden>
+                    {isTrialTier
+                      ? <MessageCircleMore size={12} strokeWidth={2.25} />
+                      : <Target size={12} strokeWidth={2.25} />}
+                  </span>
+                  <div className="tsb-gauge-bar">
+                    <div className={`tsb-gauge-fill ${ftFillClass}`} style={{ width: `${ftRatio}%` }} />
+                  </div>
+                  <span className="tsb-gauge-text">{ftCount}/{ftLimit}</span>
+                </div>
                 {showPronGauge && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ fontSize: '0.65rem', color: '#94a3b8', flexShrink: 0 }}>🎙️</span>
-                    <div style={{ flex: 1, height: '6px', background: '#e2e8f0', borderRadius: '99px', overflow: 'hidden', boxShadow: 'inset 0 1px 3px rgba(0,0,0,0.08)' }}>
-                      <div style={{
-                        height: '100%', borderRadius: '99px',
-                        width: `${Math.min((pronCurrent / pronLimit) * 100, 100)}%`,
-                        background: pronFull
-                          ? 'linear-gradient(90deg, #fca5a5 0%, #ef4444 60%, #b91c1c 100%)'
-                          : isProTier
-                            ? 'linear-gradient(90deg, #a7f3d0 0%, #34d399 50%, #059669 100%)'
-                            : 'linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%)',
-                        transition: 'width 0.5s ease',
-                        boxShadow: pronFull
-                          ? '0 0 6px rgba(239,68,68,0.5)'
-                          : isProTier
-                            ? '0 0 6px rgba(52,211,153,0.4)'
-                            : '0 0 6px rgba(245,158,11,0.4)',
-                      }} />
+                  <div className="tsb-gauge">
+                    <span className="tsb-gauge-icon" aria-hidden><Mic size={12} strokeWidth={2.25} /></span>
+                    <div className="tsb-gauge-bar">
+                      <div className={`tsb-gauge-fill ${pronFillClass}`} style={{ width: `${pronRatio}%` }} />
                     </div>
-                    <span style={{ fontSize: '0.6rem', fontWeight: '700', color: pronFull ? '#dc2626' : (isProTier ? '#059669' : '#d97706'), flexShrink: 0, whiteSpace: 'nowrap' }}>
-                      {pronLabel}
-                    </span>
+                    <span className="tsb-gauge-text">{pronLabel}</span>
                   </div>
                 )}
               </div>
 
-              {/* 우측: Streak 헤드라인 + 주간 7-dot (축소) */}
-              <div style={{ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: '3px', minWidth: 0 }}>
-                {/* Streak 헤드라인 — 💎 N일 + 다음 보상 카운트다운 (압축) */}
-                <div style={{
-                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                  gap: '4px', padding: '2px 6px',
-                  background: streakCurrent > 0
-                    ? 'linear-gradient(90deg, #eef2ff 0%, #fdf4ff 100%)'
-                    : 'transparent',
-                  borderRadius: '6px',
-                  border: streakCurrent > 0 ? '1px solid #c7d2fe' : '1px solid transparent',
-                }}>
-                  <span style={{ display: 'flex', alignItems: 'center', gap: '3px', flexShrink: 0 }}>
-                    <span style={{ fontSize: '0.75rem', lineHeight: 1, filter: streakCurrent > 0 ? 'drop-shadow(0 0 2px rgba(139,92,246,0.5))' : 'grayscale(0.5)' }}>💎</span>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: streakCurrent > 0 ? '#7c3aed' : '#94a3b8', lineHeight: 1 }}>
-                      {streakCurrent}
-                    </span>
-                    <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#94a3b8', lineHeight: 1 }}>
-                      {getT(sourceLang, 'streak.daysUnit') || '일'}
-                    </span>
-                  </span>
-                  {nextMilestone && streakCurrent > 0 && (
-                    <span style={{ fontSize: '0.55rem', fontWeight: 600, color: '#a855f7', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                      🎁 {nextMilestone}{getT(sourceLang, 'streak.daysUnit') || '일'} · {daysToNext}{getT(sourceLang, 'streak.daysLeftUnit') || 'D'}
-                    </span>
-                  )}
-                </div>
-                {/* 주간 7-dot (축소) */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', gap: '2px' }}>
+              {/* WEEK */}
+              <div className="tsb-col">
+                <div className="tsb-label">{getT(sourceLang, 'topbar.week') || '이번 주'}</div>
+                <div className="tsb-week">
                   {weeklyData.map((d, i) => {
                     const isToday = d.date === today;
                     const isFuture = d.date > today;
-                    let icon = '○';
-                    if (d.achieved) icon = '✅';
-                    else if (!isFuture && d.date < today) icon = '🌙';
+                    const classes = ['tsb-week-day'];
+                    if (d.achieved) classes.push('is-done');
+                    else if (isFuture) classes.push('is-future');
+                    else if (d.date < today) classes.push('is-missed');
+                    if (isToday) classes.push('is-today');
                     return (
-                      <div key={d.date} style={{
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', flex: 1,
-                        padding: '1px 0', borderRadius: '4px',
-                        background: isToday ? '#eef2ff' : 'transparent',
-                        border: isToday ? '1px solid #c7d2fe' : '1px solid transparent',
-                        opacity: isFuture ? 0.35 : 1,
-                      }}>
-                        <span style={{ fontSize: '0.45rem', fontWeight: 700, color: isToday ? '#6366f1' : '#94a3b8', lineHeight: 1 }}>
-                          {dayLabels[i] || ''}
-                        </span>
-                        <span style={{ fontSize: '0.6rem', lineHeight: 1, marginTop: '1px' }}>{icon}</span>
+                      <div key={d.date} className={classes.join(' ')}>
+                        <span className="tsb-week-dow">{dayLabels[i] || ''}</span>
+                        <span className="tsb-week-dot" aria-hidden />
                       </div>
                     );
                   })}
                 </div>
+              </div>
+
+              {/* STREAK */}
+              <div className={`tsb-col tsb-streak${streakZero ? ' is-zero' : ''}`}>
+                <div className="tsb-label">{getT(sourceLang, 'topbar.streak') || '연속'}</div>
+                <div className="tsb-streak-headline">
+                  <Gem size={14} strokeWidth={2.25} className="tsb-streak-icon" aria-hidden />
+                  <span className="tsb-streak-num">{streakCurrent}</span>
+                  <span className="tsb-streak-unit">{daysUnit}</span>
+                </div>
+                {nextMilestone && !streakZero && (
+                  <div className="tsb-streak-next" title={`${nextMilestone}${daysUnit} · ${daysToNext}${daysLeftUnit}`}>
+                    <Gift size={10} strokeWidth={2.25} aria-hidden />
+                    {nextMilestone}{daysUnit} · {daysToNext}{daysLeftUnit}
+                  </div>
+                )}
               </div>
             </div>
           );

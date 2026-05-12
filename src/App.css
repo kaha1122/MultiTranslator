@@ -209,6 +209,191 @@ html.admob-active.platform-native::after {
   background: rgba(0, 0, 0, 0.06);
 }
 
+/* ── 상단 고정바: TODAY · WEEK · STREAK 3분할 (시간축) ──
+   디자인 토큰화: 폰트 3단 / 색 4종 / radius 2종 / gap 3단 */
+.top-status-bar {
+  --tsb-ink-primary: #0f172a;
+  --tsb-ink-secondary: #64748b;
+  --tsb-ink-muted: #94a3b8;
+  --tsb-accent: #6366f1;
+  --tsb-accent-soft: #eef2ff;
+  --tsb-success: #10b981;
+  --tsb-warn: #f59e0b;
+  --tsb-danger: #ef4444;
+  --tsb-track: #f1f5f9;
+  --tsb-divider: #e2e8f0;
+  --tsb-fs-label: 9px;
+  --tsb-fs-value: 11px;
+  --tsb-fs-emphasis: 15px;
+  --tsb-radius-card: 10px;
+  --tsb-radius-pill: 999px;
+
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: stretch;
+  margin-top: 6px;
+  width: 100%;
+  background: #ffffff;
+  border: 1px solid var(--tsb-divider);
+  border-radius: var(--tsb-radius-card);
+  overflow: hidden;
+}
+.tsb-col {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 7px 9px;
+  min-width: 0;
+}
+.tsb-col + .tsb-col {
+  border-left: 1px solid var(--tsb-divider);
+}
+.tsb-label {
+  font-size: var(--tsb-fs-label);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: var(--tsb-ink-muted);
+  text-transform: uppercase;
+  line-height: 1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 좌측: 게이지 ──────────────────────────────────── */
+.tsb-gauge {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.tsb-gauge-icon {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--tsb-ink-secondary);
+}
+.tsb-gauge-bar {
+  flex: 1 1 auto;
+  height: 5px;
+  background: var(--tsb-track);
+  border-radius: var(--tsb-radius-pill);
+  overflow: hidden;
+  min-width: 0;
+}
+.tsb-gauge-fill {
+  height: 100%;
+  border-radius: var(--tsb-radius-pill);
+  background: var(--tsb-accent);
+  transition: width 0.5s ease;
+}
+.tsb-gauge-fill.is-success { background: var(--tsb-success); }
+.tsb-gauge-fill.is-warn { background: var(--tsb-warn); }
+.tsb-gauge-fill.is-full { background: var(--tsb-danger); }
+.tsb-gauge-text {
+  flex-shrink: 0;
+  font-size: var(--tsb-fs-value);
+  font-weight: 700;
+  color: var(--tsb-ink-primary);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* 중앙: 주간 7-dot ─────────────────────────────── */
+.tsb-week {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 2px;
+  align-items: end;
+  flex: 1;
+}
+.tsb-week-day {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  min-width: 0;
+}
+.tsb-week-dow {
+  font-size: 8px;
+  font-weight: 700;
+  color: var(--tsb-ink-muted);
+  line-height: 1;
+}
+.tsb-week-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #cbd5e1;
+}
+.tsb-week-day.is-done .tsb-week-dot {
+  background: var(--tsb-accent);
+}
+.tsb-week-day.is-missed .tsb-week-dot {
+  background: transparent;
+  border: 1.5px solid #cbd5e1;
+  width: 6px;
+  height: 6px;
+}
+.tsb-week-day.is-future .tsb-week-dot {
+  background: #e2e8f0;
+}
+.tsb-week-day.is-today .tsb-week-dow {
+  color: var(--tsb-accent);
+}
+.tsb-week-day.is-today .tsb-week-dot {
+  outline: 2px solid var(--tsb-accent);
+  outline-offset: 1px;
+}
+
+/* 우측: Streak ─────────────────────────────────── */
+.tsb-streak-headline {
+  display: flex;
+  align-items: baseline;
+  gap: 4px;
+  min-width: 0;
+}
+.tsb-streak-icon {
+  flex-shrink: 0;
+  color: var(--tsb-accent);
+  align-self: center;
+}
+.tsb-streak-num {
+  font-size: var(--tsb-fs-emphasis);
+  font-weight: 800;
+  color: var(--tsb-accent);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.tsb-streak-unit {
+  font-size: var(--tsb-fs-label);
+  font-weight: 600;
+  color: var(--tsb-ink-muted);
+}
+.tsb-streak.is-zero .tsb-streak-num,
+.tsb-streak.is-zero .tsb-streak-icon {
+  color: var(--tsb-ink-muted);
+}
+.tsb-streak-next {
+  font-size: var(--tsb-fs-label);
+  font-weight: 600;
+  color: var(--tsb-ink-secondary);
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.tsb-streak-next svg { flex-shrink: 0; color: var(--tsb-accent); }
+
+@media (max-width: 360px) {
+  .tsb-col { padding: 6px 7px; }
+  .tsb-streak-num { font-size: 13px; }
+  .tsb-week-dow { font-size: 7px; }
+}
+
 /* 탭 타이틀 바 — 아이콘 왼쪽 고정 + 탭 이름 진짜 가운데 정렬 */
 .tab-title-bar {
   width: 100%;

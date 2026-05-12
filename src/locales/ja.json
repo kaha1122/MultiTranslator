@@ -608,6 +608,11 @@
     "partial": "未達成",
     "noActivity": "活動なし"
   },
+  "topbar": {
+    "today": "今日",
+    "week": "今週",
+    "streak": "連続"
+  },
   "streak": {
     "currentLabel": "現在の Streak",
     "longest": "最長 Streak",

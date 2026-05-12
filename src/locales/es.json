@@ -608,6 +608,11 @@
     "partial": "Parcial",
     "noActivity": "Sin actividad"
   },
+  "topbar": {
+    "today": "Hoy",
+    "week": "Semana",
+    "streak": "Racha"
+  },
   "streak": {
     "currentLabel": "Racha actual",
     "longest": "Mejor marca",

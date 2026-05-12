@@ -608,6 +608,11 @@
     "partial": "Частично",
     "noActivity": "Нет активности"
   },
+  "topbar": {
+    "today": "Сегодня",
+    "week": "Неделя",
+    "streak": "Серия"
+  },
   "streak": {
     "currentLabel": "Текущая серия",
     "longest": "Личный рекорд",

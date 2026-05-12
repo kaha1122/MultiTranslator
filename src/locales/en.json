@@ -614,6 +614,11 @@
     "partial": "Partial",
     "noActivity": "No activity"
   },
+  "topbar": {
+    "today": "Today",
+    "week": "Week",
+    "streak": "Streak"
+  },
   "streak": {
     "currentLabel": "Current Streak",
     "longest": "Personal Best",

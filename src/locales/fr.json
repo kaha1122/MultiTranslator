@@ -608,6 +608,11 @@
     "partial": "Partiel",
     "noActivity": "Aucune activité"
   },
+  "topbar": {
+    "today": "Auj.",
+    "week": "Semaine",
+    "streak": "Série"
+  },
   "streak": {
     "currentLabel": "Série actuelle",
     "longest": "Record",
