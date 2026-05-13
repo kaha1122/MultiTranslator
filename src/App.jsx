@@ -31,8 +31,6 @@ import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getT, useT } from './utils/i18n';
-import { pickReminderMessage } from './utils/streakReminderPool';
-import { loadReminderPrefs } from './utils/localNotifications';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 import { authFetch, getIdToken } from './utils/authFetch';
 
@@ -512,39 +510,9 @@ function App() {
   // Streak 시스템 — 마일스톤 7/14/30/100일 자동 보너스 (Phase 1)
   const { streakCurrent, streakLongest, totalAchievedDays, earnedMilestones, nextMilestone, nextReward, daysToNext, celebration, dismissCelebration } = useStreak(user, weeklyData, dailyGoal);
 
-  // Phase 2: Streak 리마인더 자동 재스케줄 — streakCurrent/sourceLang 변경 시 LocalNotifications에
-  // 최신 메시지로 덮어쓰기. NotificationSettings에서 enabled=true로 set한 경우만.
-  useEffect(() => {
-    if (!user?.uid || !Capacitor.isNativePlatform?.()) return;
-    const prefs = loadReminderPrefs();
-    if (!prefs.enabled) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const mod = await import('@capacitor/local-notifications');
-        if (cancelled) return;
-        const plugin = mod.LocalNotifications;
-        const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
-        await plugin.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
-        await plugin.schedule({
-          notifications: [{
-            id: 1001,
-            title: msg.title || "Time to practice!",
-            body: msg.body || "Keep your streak alive.",
-            schedule: {
-              on: { hour: prefs.hour, minute: prefs.minute },
-              allowWhileIdle: true,
-              repeats: true,
-            },
-            smallIcon: 'ic_stat_icon_config_sample',
-          }],
-        });
-      } catch (err) {
-        console.warn('[StreakReminder] auto reschedule failed:', err?.message);
-      }
-    })();
-    return () => { cancelled = true; };
-  }, [user?.uid, streakCurrent, sourceLang]);
+  // 2026-05-13 핫픽스: Phase 2 자동 reschedule useEffect 제거 (TDZ "Cannot access 'W' before
+  // initialization" 크래시 유발). 사용자가 알림 설정 화면에서 명시적으로 토글 시 NotificationSettings
+  // 내부에서 streak 동적 메시지 reschedule되므로 부분 기능은 유지됨.
 
   // Trial 일일 Free Talking 세션 한도 — AuthContext 의 TRIAL_FREETALK_DAILY_LIMIT (2회) 사용
   // Pro/Premium 은 무제한 (세션당 자유 발화 25/300턴 한도만 useConversation 내부 적용)
