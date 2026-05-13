@@ -108,7 +108,7 @@
     "prePromptPushTitle": "开启订阅通知？",
     "prePromptPushDesc": "我们仅会通知您订阅续订和付款问题。",
     "permissionDeniedPersistent": "之前已拒绝通知权限，系统对话框不再显示。请在手机设置中手动开启。",
-    "openSettingsBtn": "查看如何打开系统设置",
+    "openSettingsBtn": "打开通知设置",
     "openSettingsManual": "手机设置 → 应用 → PronunFit → 通知 → 允许"
   },
   "splashTagline": "免费多语言发音学习单词本",

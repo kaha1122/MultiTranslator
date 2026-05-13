@@ -108,7 +108,7 @@
     "prePromptPushTitle": "Bật thông báo gói đăng ký?",
     "prePromptPushDesc": "Chúng tôi chỉ thông báo về việc gia hạn và vấn đề thanh toán.",
     "permissionDeniedPersistent": "Quyền thông báo trước đây đã bị từ chối, nên hộp thoại hệ thống không còn xuất hiện. Vui lòng bật thủ công trong Cài đặt điện thoại.",
-    "openSettingsBtn": "Cách mở Cài đặt hệ thống",
+    "openSettingsBtn": "Mở cài đặt thông báo",
     "openSettingsManual": "Cài đặt điện thoại → Ứng dụng → PronunFit → Thông báo → Cho phép"
   },
   "splashTagline": "Sổ tay từ vựng học phát âm đa ngôn ngữ miễn phí",

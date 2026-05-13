@@ -96,7 +96,7 @@
     "scheduleFailed": "설정 실패. 권한을 확인해 주세요.",
     "permissionDenied": "권한이 거부되었습니다. 시스템 설정에서 활성화해 주세요.",
     "permissionDeniedPersistent": "이전에 알림 권한을 거부하셔서 OS 다이얼로그가 더 이상 뜨지 않습니다. 휴대폰 설정에서 직접 허용해 주세요.",
-    "openSettingsBtn": "시스템 설정 열기 방법 보기",
+    "openSettingsBtn": "알림 설정 바로 열기",
     "openSettingsManual": "휴대폰 설정 → 앱 → PronunFit → 알림 → 허용으로 변경해 주세요.",
     "subAlerts": "구독 알림",
     "subAlertsDesc": "결제 문제, 갱신, 만료 관련 알림입니다.",

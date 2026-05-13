@@ -108,7 +108,7 @@
     "prePromptPushTitle": "Abo-Benachrichtigungen aktivieren?",
     "prePromptPushDesc": "Wir informieren dich nur über Abo-Verlängerungen und Zahlungsprobleme.",
     "permissionDeniedPersistent": "Die Benachrichtigungsberechtigung wurde zuvor abgelehnt. Der Systemdialog erscheint nicht mehr — bitte in den Telefoneinstellungen manuell aktivieren.",
-    "openSettingsBtn": "Systemeinstellungen öffnen",
+    "openSettingsBtn": "Benachrichtigungseinstellungen öffnen",
     "openSettingsManual": "Telefoneinstellungen → Apps → PronunFit → Benachrichtigungen → Erlauben"
   },
   "splashTagline": "Kostenloses mehrsprachiges Aussprache-Vokabelheft",

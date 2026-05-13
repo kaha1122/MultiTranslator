@@ -108,7 +108,7 @@
     "prePromptPushTitle": "¿Activar alertas de suscripción?",
     "prePromptPushDesc": "Solo te notificaremos sobre renovaciones y problemas de pago.",
     "permissionDeniedPersistent": "El permiso de notificación fue denegado anteriormente. El diálogo del sistema ya no aparece — habilítalo manualmente en los ajustes del teléfono.",
-    "openSettingsBtn": "Cómo abrir los ajustes del sistema",
+    "openSettingsBtn": "Abrir ajustes de notificación",
     "openSettingsManual": "Ajustes del teléfono → Aplicaciones → PronunFit → Notificaciones → Permitir"
   },
   "splashTagline": "Cuaderno de vocabulario de pronunciación multilingüe gratis",

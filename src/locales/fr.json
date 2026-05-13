@@ -108,7 +108,7 @@
     "prePromptPushTitle": "Activer les alertes d'abonnement ?",
     "prePromptPushDesc": "Nous vous informerons uniquement des renouvellements et des problèmes de paiement.",
     "permissionDeniedPersistent": "L'autorisation de notification a été refusée précédemment. La boîte de dialogue système ne s'affiche plus — activez-la manuellement dans les réglages du téléphone.",
-    "openSettingsBtn": "Comment ouvrir les réglages système",
+    "openSettingsBtn": "Ouvrir les paramètres de notification",
     "openSettingsManual": "Réglages → Applications → PronunFit → Notifications → Autoriser"
   },
   "splashTagline": "Cahier de vocabulaire de prononciation multilingue gratuit",

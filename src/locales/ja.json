@@ -108,7 +108,7 @@
     "prePromptPushTitle": "サブスク通知を受け取りますか？",
     "prePromptPushDesc": "サブスクの更新と支払いの問題のみお知らせします。",
     "permissionDeniedPersistent": "以前に通知の権限を拒否されたため、システムダイアログは表示されません。スマホの設定から直接許可してください。",
-    "openSettingsBtn": "システム設定の開き方を見る",
+    "openSettingsBtn": "通知設定を開く",
     "openSettingsManual": "スマホ設定 → アプリ → PronunFit → 通知 → 許可に変更してください。"
   },
   "splashTagline": "無料の多言語発音学習単語帳",

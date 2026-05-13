@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Bell, Clock } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
+import { App as CapacitorApp } from '@capacitor/app';
 import { getT } from '../utils/i18n';
 import { loadReminderPrefs, saveReminderPrefs } from '../utils/localNotifications';
 import { pickReminderMessage } from '../utils/streakReminderPool';
@@ -53,8 +54,27 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
         return tpl.replace('{time}', timeStr);
     };
 
-    const openSystemSettings = () => {
-        const msg = Capacitor.getPlatform() === 'android'
+    // 옵션 A (2026-05-13): OS 설정 화면 deep-link
+    // - iOS: 'app-settings:' scheme → 앱 자체 설정 페이지로 자동 이동 (iOS 8+)
+    // - Android: 'package:' URL 시도 — 일부 기기 작동, 실패 시 텍스트 안내 fallback
+    //   (정확한 알림 설정 deep-link는 @capacitor-community/native-settings 같은 plugin 필요 →
+    //    다음 AAB 빌드 시 추가 검토)
+    const openSystemSettings = async () => {
+        const platform = Capacitor.getPlatform();
+        try {
+            if (platform === 'ios') {
+                await CapacitorApp.openUrl({ url: 'app-settings:' });
+                return;
+            }
+            if (platform === 'android') {
+                const result = await CapacitorApp.openUrl({ url: 'package:com.arigems.pronunfit' });
+                if (result?.completed) return;
+            }
+        } catch (err) {
+            console.warn('[NotifSettings] openSystemSettings deep-link failed:', err?.message);
+        }
+        // fallback: 텍스트 안내
+        const msg = platform === 'android'
             ? (t('notifications.openSettingsManual') || '휴대폰 설정 → 앱 → PronunFit → 알림 에서 활성화해 주세요.')
             : (t('notifications.openSettingsManual') || 'Go to Settings → PronunFit → Notifications');
         showStatus(msg, { isError: true });

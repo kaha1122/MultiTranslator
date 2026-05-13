@@ -108,7 +108,7 @@
     "prePromptPushTitle": "Ativar alertas de assinatura?",
     "prePromptPushDesc": "Só enviaremos avisos sobre renovações e problemas de pagamento.",
     "permissionDeniedPersistent": "A permissão de notificação foi negada anteriormente. A caixa de diálogo do sistema não aparece mais — habilite manualmente nas configurações do telefone.",
-    "openSettingsBtn": "Como abrir as configurações do sistema",
+    "openSettingsBtn": "Abrir configurações de notificação",
     "openSettingsManual": "Configurações do telefone → Aplicativos → PronunFit → Notificações → Permitir"
   },
   "splashTagline": "Caderno de Pronúncia Multilíngue Gratuito",

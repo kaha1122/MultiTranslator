@@ -96,7 +96,7 @@
     "scheduleFailed": "Failed to schedule. Check permissions.",
     "permissionDenied": "Permission denied. Enable in system settings.",
     "permissionDeniedPersistent": "Notification permission was previously denied. The system dialog no longer appears — please enable it manually in phone settings.",
-    "openSettingsBtn": "How to open system settings",
+    "openSettingsBtn": "Open notification settings",
     "openSettingsManual": "Phone Settings → Apps → PronunFit → Notifications → Allow",
     "subAlerts": "Subscription Alerts",
     "subAlertsDesc": "Payment issues, renewals, and expirations.",
