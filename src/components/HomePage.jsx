@@ -222,21 +222,30 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 })}
             </div>
 
-            {/* 섹션 3: 이번주 학습현황 (주간 목표 별) — 학습기록 아래로 이동 */}
+            {/* 섹션 3: 이번주 학습현황 — 통계 탭과 동일 시각 양식 (✅ 체크 + 사각형 배경) */}
             <div className="home-section home-weekly">
                 <h3 className="home-section-title">{t('home.weeklyGoal')}</h3>
                 <div className="home-weekly-stars">
                     {weeklyData.map((d, i) => {
                         const isToday = d.date === today;
                         const isFuture = d.date > today;
-                        let icon = '○';
-                        if (d.achieved) icon = '⭐';
-                        else if (!isFuture && d.date < today) icon = '🌙';
+                        const achieved = d.achieved;
+                        const count = d.count || 0;
+                        const missed = !isFuture && !achieved && d.date < today;
+                        const classes = ['home-star-day'];
+                        if (achieved) classes.push('achieved');
+                        else if (missed && count > 0) classes.push('partial');
+                        if (isFuture) classes.push('future');
+                        if (isToday) classes.push('today');
+                        let icon;
+                        if (isFuture) icon = '';
+                        else if (achieved) icon = '✅';
+                        else if (d.date < today) icon = count > 0 ? '🌙' : '·';
+                        else icon = '○';
                         return (
-                            <div key={d.date} className={`home-star-day ${isToday ? 'today' : ''} ${isFuture ? 'future' : ''}`}>
+                            <div key={d.date} className={classes.join(' ')}>
                                 <span className="home-star-label">{dayLabels[i] || ''}</span>
                                 <span className="home-star-icon">{icon}</span>
-                                {!isFuture && <span className="home-star-count">{d.count || 0}</span>}
                             </div>
                         );
                     })}

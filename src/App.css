@@ -304,13 +304,18 @@ html.admob-active.platform-native::after {
 .tsb-week {
   display: grid;
   grid-template-columns: repeat(7, 1fr);
-  gap: 2px;
+  gap: 3px;
 }
 .tsb-week-day {
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 2px;
+  justify-content: center;
+  gap: 1px;
+  padding: 2px 0;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  background: transparent;
   min-width: 0;
 }
 .tsb-week-dow {
@@ -319,30 +324,22 @@ html.admob-active.platform-native::after {
   color: var(--tsb-ink-muted);
   line-height: 1;
 }
-.tsb-week-dot {
-  width: 7px;
-  height: 7px;
-  border-radius: 50%;
-  background: #cbd5e1;
+.tsb-week-mark {
+  font-size: 10px;
+  line-height: 1;
+  margin-top: 1px;
 }
-.tsb-week-day.is-done .tsb-week-dot {
-  background: var(--tsb-accent);
-}
-.tsb-week-day.is-missed .tsb-week-dot {
-  background: transparent;
-  border: 1.5px solid #cbd5e1;
-  width: 6px;
-  height: 6px;
-}
-.tsb-week-day.is-future .tsb-week-dot {
-  background: #e2e8f0;
+/* 상태별 — 통계 탭과 동일 토큰 */
+.tsb-week-day.is-done       { background: #ecfdf5; }
+.tsb-week-day.is-partial    { background: #fefce8; }
+.tsb-week-day.is-future     { opacity: 0.3; }
+.tsb-week-day.is-today {
+  background: #eef2ff;
+  border-color: #c7d2fe;
 }
 .tsb-week-day.is-today .tsb-week-dow {
   color: var(--tsb-accent);
-}
-.tsb-week-day.is-today .tsb-week-dot {
-  outline: 2px solid var(--tsb-accent);
-  outline-offset: 1px;
+  font-weight: 800;
 }
 
 /* 우측: Streak ─────────────────────────────────── */

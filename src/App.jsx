@@ -3762,22 +3762,30 @@ function App() {
                 )}
               </div>
 
-              {/* WEEK (오른쪽) */}
+              {/* WEEK (오른쪽) — 통계 탭과 동일 시각 양식 */}
               <div className="tsb-col">
                 <div className="tsb-label">{getT(sourceLang, 'topbar.week') || '이번 주'}</div>
                 <div className="tsb-week">
                   {weeklyData.map((d, i) => {
                     const isToday = d.date === today;
                     const isFuture = d.date > today;
+                    const achieved = d.achieved;
+                    const count = d.count || 0;
+                    const missed = !isFuture && !achieved && d.date < today;
                     const classes = ['tsb-week-day'];
-                    if (d.achieved) classes.push('is-done');
-                    else if (isFuture) classes.push('is-future');
-                    else if (d.date < today) classes.push('is-missed');
+                    if (achieved) classes.push('is-done');
+                    else if (missed && count > 0) classes.push('is-partial');
+                    if (isFuture) classes.push('is-future');
                     if (isToday) classes.push('is-today');
+                    let mark;
+                    if (isFuture) mark = '';
+                    else if (achieved) mark = '✅';
+                    else if (d.date < today) mark = count > 0 ? '🌙' : '·';
+                    else mark = '○';
                     return (
                       <div key={d.date} className={classes.join(' ')}>
                         <span className="tsb-week-dow">{dayLabels[i] || ''}</span>
-                        <span className="tsb-week-dot" aria-hidden />
+                        <span className="tsb-week-mark" aria-hidden>{mark}</span>
                       </div>
                     );
                   })}

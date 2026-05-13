@@ -43,6 +43,12 @@
     background: #eef2ff;
     border: 1.5px solid #c7d2fe;
 }
+.home-star-day.achieved {
+    background: #ecfdf5;
+}
+.home-star-day.partial {
+    background: #fefce8;
+}
 .home-star-day.future {
     opacity: 0.3;
 }
