@@ -224,7 +224,13 @@
     "noTarget": "请先在上方选择学习语言。",
     "saveReturn": "保存设置并返回",
     "defaultLevel": "默认学习难度",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "账户",
+    "groupLanguage": "语言",
+    "groupLearning": "学习设置",
+    "groupNotif": "通知",
+    "groupSubscription": "订阅",
+    "groupAbout": "应用信息"
   },
   "translate": {
     "detectionFailed": "无法检测输入语言，仅显示目标翻译。请检查是否有拼写错误。",

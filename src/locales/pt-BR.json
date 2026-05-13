@@ -224,7 +224,13 @@
     "noTarget": "Selecione um idioma de destino acima primeiro.",
     "saveReturn": "Salvar Configurações e Voltar",
     "defaultLevel": "Nível de aprendizado padrão",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Conta",
+    "groupLanguage": "Idioma",
+    "groupLearning": "Aprendizagem",
+    "groupNotif": "Notificações",
+    "groupSubscription": "Assinatura",
+    "groupAbout": "Sobre"
   },
   "translate": {
     "detectionFailed": "Não foi possível detectar o idioma de entrada; mostrando apenas as traduções de destino. Verifique se há erros de digitação.",

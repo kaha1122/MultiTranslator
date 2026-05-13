@@ -224,7 +224,13 @@
     "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
     "saveReturn": "Lưu cài đặt & Quay lại",
     "defaultLevel": "Cấp độ học mặc định",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Tài khoản",
+    "groupLanguage": "Ngôn ngữ",
+    "groupLearning": "Học tập",
+    "groupNotif": "Thông báo",
+    "groupSubscription": "Đăng ký",
+    "groupAbout": "Thông tin ứng dụng"
   },
   "translate": {
     "detectionFailed": "Không thể phát hiện ngôn ngữ đầu vào; chỉ hiển thị bản dịch mục tiêu. Vui lòng kiểm tra lỗi chính tả.",

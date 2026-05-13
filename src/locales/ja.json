@@ -224,7 +224,13 @@
     "noTarget": "まず上で学習言語を選択してください。",
     "saveReturn": "設定を保存して戻る",
     "defaultLevel": "デフォルト学習レベル",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "アカウント",
+    "groupLanguage": "言語",
+    "groupLearning": "学習設定",
+    "groupNotif": "通知",
+    "groupSubscription": "サブスクリプション",
+    "groupAbout": "アプリ情報"
   },
   "translate": {
     "detectionFailed": "入力言語を検出できませんでした。基本翻訳のみ表示します。入力ミスがないかご確認ください。",

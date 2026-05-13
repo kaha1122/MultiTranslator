@@ -224,7 +224,13 @@
     "noTarget": "Сначала выберите целевой язык выше.",
     "saveReturn": "Сохранить настройки и вернуться",
     "defaultLevel": "Уровень обучения по умолчанию",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Аккаунт",
+    "groupLanguage": "Язык",
+    "groupLearning": "Обучение",
+    "groupNotif": "Уведомления",
+    "groupSubscription": "Подписка",
+    "groupAbout": "О приложении"
   },
   "translate": {
     "detectionFailed": "Не удалось определить язык ввода; показаны только целевые переводы. Пожалуйста, проверьте опечатки.",

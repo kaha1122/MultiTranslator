@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { Languages, Sparkles, Settings as SettingsIcon, ArrowLeft, CheckCircle2, LogOut, User, Mail, Phone, X, Lock, Youtube, Volume2, BookOpen, BarChart3 } from 'lucide-react';
 // [중요] 새 아이콘은 별도 import — 기존 라인 수정 시 Rollup 번들 순서 변경으로 TDZ 오류 발생
-import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle, MessageCircleMore, Target, Mic, Gem, Gift } from 'lucide-react';
+import { Menu, HelpCircle, ChevronDown, ChevronRight, ShieldCheck, Home, CreditCard, Headphones, MessageCircle, MessageCircleMore, Target, Mic, Gem, Gift, Bell, Info } from 'lucide-react';
 import { Camera } from 'lucide-react'; // [신규] 카메라 OCR 버튼 아이콘
 import ReferralModal from './components/ReferralModal';
 import ReviewBonusModal from './components/ReviewBonusModal';
@@ -345,6 +345,8 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [showAnonSignupPrompt, setShowAnonSignupPrompt] = useState(false);
   const [showExtraLangs, setShowExtraLangs] = useState(false);
+  // 설정 화면 sub-screen (단계적 진입) — 'main' | 'account' | 'language' | 'learning' | 'notif' | 'subscription' | 'about'
+  const [settingsScreen, setSettingsScreen] = useState('main');
   // 로그인 성공 시 모달 자동 닫기
   useEffect(() => {
     if (showLoginModal && user && !user.isAnonymous) setShowLoginModal(false);
@@ -2037,20 +2039,17 @@ function App() {
   const isGoogleUser = user?.providerData?.[0]?.providerId === 'google.com';
 
   // [수정] 설정 저장 (홈 화면으로 돌아가기) 및 인앱 브라우저 감지 경고 띄우기
-  const handleSaveSettings = () => {
-    // ❗ [Bug 수정] 언어 설정을 localStorage에 저장합니다.
-    //   이전에는 저장을 하지 않아서 로그아웃 후 재접속하면
-    //   sourceLang·targetLangs가 기본값(한국어+영어)으로 초기화됐습니다.
+  // 설정 즉시 반영 — sourceLang/targetLangs/languageGoals 변경 시 localStorage 자동 sync
+  // (기존 handleSaveSettings의 명시적 저장 패턴 대체. 단계적 진입 설정에서 백 버튼만으로 자연스럽게 저장됨)
+  useEffect(() => {
     try {
       localStorage.setItem('sourceLang', sourceLang);
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals));
-    } catch (e) {
-      console.warn('언어 설정 로컬 저장 실패:', e);
+    } catch (err) {
+      console.warn('언어 설정 로컬 저장 실패:', err);
     }
-
-    setViewMode('home');
-  };
+  }, [sourceLang, targetLangs, languageGoals]);
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
@@ -3583,7 +3582,7 @@ function App() {
 
               {/* 설정 */}
               <button className={`sidebar-nav-item sidebar-nav-util ${viewMode === 'settings' ? 'active' : ''}`}
-                onClick={() => { setViewMode('settings'); setSidebarOpen(false); }}>
+                onClick={() => { setViewMode('settings'); setSettingsScreen('main'); setSidebarOpen(false); }}>
                 <span className="sidebar-nav-icon">
                   <SettingsIcon size={16} />
                   {!notificationsSeen && supportsFeature('notifications', profile) && <span className="nav-new-dot" />}
@@ -4118,32 +4117,120 @@ function App() {
         <div style={{ display: viewMode === 'settings' ? 'block' : 'none', width: '100%' }}>
           <div className="settings-container" style={{ position: 'relative' }}>
 
-            <div className="user-profile-section">
-              <div className="user-info">
-                <div className="user-avatar">
-                  <User size={24} color="var(--primary-color)" />
+            {/* ─────────────────────────────────────────────────────────────────
+                메인 설정 화면 (단계적 진입 — 카드 6개 그룹)
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'main' && (
+              <div className="settings-main">
+                {/* 프로필 카드 (Logout 없음 — 맨 하단으로 이동) */}
+                <div className="settings-profile-card">
+                  <div className="user-avatar">
+                    <User size={20} color="var(--primary-color)" />
+                  </div>
+                  <div className="settings-profile-card-text">
+                    <p className="settings-profile-name">
+                      {profile?.displayName || user?.displayName || 'User'}
+                      <span className="settings-profile-edit" onClick={handleEditProfile}>Edit</span>
+                    </p>
+                    <p className="settings-profile-email">{user?.email}</p>
+                    <p className="settings-profile-tier">{{
+                      trial: 'Free Trial',
+                      admin: 'Admin',
+                      byok_free: 'BYOK Free',
+                      silver: 'Silver',
+                      pro: 'Pro',
+                      premium: 'Premium',
+                    }[tier] || 'Free Trial'}</p>
+                  </div>
                 </div>
-                <div className="user-details">
-                  <p className="user-email" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    {profile?.displayName || user?.displayName || 'Google User'}
-                    <span onClick={handleEditProfile} style={{ fontSize: '0.8rem', color: 'var(--primary-color)', cursor: 'pointer', textDecoration: 'underline', fontWeight: 'bold' }}>Edit</span>
-                  </p>
-                  <p className="user-email-secondary">{user?.email}</p>
-                  <p className="user-status" style={{ textDecoration: 'underline' }}>{{
-                    trial: 'Free Trial',
-                    admin: 'Admin',
-                    byok_free: 'BYOK Free',
-                    silver: 'Silver',
-                    pro: 'Pro',
-                    premium: 'Premium',
-                  }[tier] || 'Free Trial'}</p>
+
+                {/* 카드 그룹 1: 언어 · 학습 · 알림 */}
+                <div className="settings-card-group">
+                  <button className="settings-card-item" onClick={() => setSettingsScreen('language')}>
+                    <span className="settings-card-icon"><Languages size={20} /></span>
+                    <span className="settings-card-text">
+                      <span className="settings-card-title">{getT(sourceLang, 'settings.groupLanguage')}</span>
+                      <span className="settings-card-summary">
+                        {getT(sourceLang, `langNames.${sourceLang}`)}
+                        {targetLangs.length > 0 && ` → ${targetLangs.map(c => getT(sourceLang, `langNames.${c}`) || c).join(' · ')}`}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="settings-card-chevron" />
+                  </button>
+                  <button className="settings-card-item" onClick={() => setSettingsScreen('learning')}>
+                    <span className="settings-card-icon"><Target size={20} /></span>
+                    <span className="settings-card-text">
+                      <span className="settings-card-title">{getT(sourceLang, 'settings.groupLearning')}</span>
+                      <span className="settings-card-summary">
+                        {getT(sourceLang, `scene.diff${(userLevel || 'basic').charAt(0).toUpperCase() + (userLevel || 'basic').slice(1)}`)}
+                        {' · '}
+                        {getT(sourceLang, 'daily.settingsLabel')} {dailyGoal || 3}{getT(sourceLang, 'daily.settingsUnit')}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="settings-card-chevron" />
+                  </button>
+                  <button className="settings-card-item" onClick={() => setSettingsScreen('notif')}>
+                    <span className="settings-card-icon"><Bell size={20} /></span>
+                    <span className="settings-card-text">
+                      <span className="settings-card-title">{getT(sourceLang, 'settings.groupNotif')}</span>
+                    </span>
+                    <ChevronRight size={18} className="settings-card-chevron" />
+                  </button>
+                </div>
+
+                {/* 카드 그룹 2: 구독 */}
+                <div className="settings-card-group">
+                  <button className="settings-card-item" onClick={() => setSettingsScreen('subscription')}>
+                    <span className="settings-card-icon"><Gem size={20} /></span>
+                    <span className="settings-card-text">
+                      <span className="settings-card-title">{getT(sourceLang, 'settings.groupSubscription')}</span>
+                      <span className="settings-card-summary">{{
+                        trial: getT(sourceLang, 'settings.tierTrial') || 'Free Trial',
+                        admin: getT(sourceLang, 'settings.tierAdmin') || 'Admin',
+                        silver: getT(sourceLang, 'settings.tierSilver') || 'Silver',
+                        pro: getT(sourceLang, 'settings.tierPro') || 'Pro',
+                        premium: getT(sourceLang, 'settings.tierPremium') || 'Premium',
+                      }[tier] || 'Free Trial'}</span>
+                    </span>
+                    <ChevronRight size={18} className="settings-card-chevron" />
+                  </button>
+                </div>
+
+                {/* 카드 그룹 3: 앱 정보 */}
+                <div className="settings-card-group">
+                  <button className="settings-card-item" onClick={() => setSettingsScreen('about')}>
+                    <span className="settings-card-icon"><Info size={20} /></span>
+                    <span className="settings-card-text">
+                      <span className="settings-card-title">{getT(sourceLang, 'settings.groupAbout')}</span>
+                      <span className="settings-card-summary">
+                        PronunFit{appVersion ? ` v${appVersion}` : ''}
+                      </span>
+                    </span>
+                    <ChevronRight size={18} className="settings-card-chevron" />
+                  </button>
+                </div>
+
+                {/* 하단: Logout */}
+                <div className="settings-logout-row">
+                  <button className="settings-logout-btn-bottom" onClick={handleLogout}>
+                    <LogOut size={16} />
+                    Logout
+                  </button>
                 </div>
               </div>
-              <button className="logout-btn" onClick={handleLogout}>
-                <LogOut size={18} />
-                Logout
-              </button>
-            </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────────────
+                서브 화면: 언어 (모국어 + 학습 언어 + 기타 28개)
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'language' && (
+              <>
+                <div className="settings-back-header">
+                  <button className="settings-back-btn" onClick={() => setSettingsScreen('main')} aria-label="Back">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <span className="settings-back-title">{getT(sourceLang, 'settings.groupLanguage')}</span>
+                </div>
 
             {/* 출발 언어(입력 언어)를 바꾸는 곳 */}
             <div className="settings-group">
@@ -4220,6 +4307,20 @@ function App() {
                 </div>
               )}
             </div>
+              </>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────────────
+                서브 화면: 학습 설정 (목표 점수 + 난이도 + 하루 카드 수)
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'learning' && (
+              <>
+                <div className="settings-back-header">
+                  <button className="settings-back-btn" onClick={() => setSettingsScreen('main')} aria-label="Back">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <span className="settings-back-title">{getT(sourceLang, 'settings.groupLearning')}</span>
+                </div>
 
             {/* [신규] 언어별 목표 점수 관리 UI (슬라이더 방식) */}
             <div className="settings-group">
@@ -4345,20 +4446,43 @@ function App() {
                 )}
               </div>
             </div>
+              </>
+            )}
 
-            <button className="translate-btn" style={{ alignSelf: 'center' }} onClick={handleSaveSettings}>
-              {getT(sourceLang, 'settings.saveReturn')}
-            </button>
+            {/* ─────────────────────────────────────────────────────────────────
+                서브 화면: 알림
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'notif' && (
+              <>
+                <div className="settings-back-header">
+                  <button className="settings-back-btn" onClick={() => setSettingsScreen('main')} aria-label="Back">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <span className="settings-back-title">{getT(sourceLang, 'settings.groupNotif')}</span>
+                </div>
 
-            {/* ── API 키 & 플랜 섹션 ───────────────────────────────────────── */}
-            <NotificationSettings
-              sourceLang={sourceLang}
-              uid={user?.uid}
-              profile={profile}
-              active={viewMode === 'settings'}
-            />
+                <NotificationSettings
+                  sourceLang={sourceLang}
+                  uid={user?.uid}
+                  profile={profile}
+                  active={viewMode === 'settings' && settingsScreen === 'notif'}
+                />
+              </>
+            )}
 
-            <div className="settings-group" style={{ marginTop: '4px' }} ref={subscriptionSectionRef}>
+            {/* ─────────────────────────────────────────────────────────────────
+                서브 화면: 구독
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'subscription' && (
+              <>
+                <div className="settings-back-header">
+                  <button className="settings-back-btn" onClick={() => setSettingsScreen('main')} aria-label="Back">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <span className="settings-back-title">{getT(sourceLang, 'settings.groupSubscription')}</span>
+                </div>
+
+                <div className="settings-group" style={{ marginTop: '4px' }} ref={subscriptionSectionRef}>
               <label className="settings-label">
                 <Lock size={16} /> {getT(sourceLang, 'settings.mySubscription')}
               </label>
@@ -4433,18 +4557,26 @@ function App() {
                 </div>
               </div>
             </div>
+              </>
+            )}
 
-            {/* ── Legal 링크 Footer ──────────────────────────────────────────────
-                    AdSense 심사를 위해 Privacy Policy / Terms / Contact 링크가
-                    앱 안에서 눈에 잘 띄는 곳에 있어야 합니다.
-                    Settings 화면 하단에 항상 표시합니다.
-                ──────────────────────────────────────────────────────────────────── */}
+            {/* ─────────────────────────────────────────────────────────────────
+                서브 화면: 앱 정보 (Legal links + 버전)
+            ───────────────────────────────────────────────────────────────── */}
+            {settingsScreen === 'about' && (
+              <>
+                <div className="settings-back-header">
+                  <button className="settings-back-btn" onClick={() => setSettingsScreen('main')} aria-label="Back">
+                    <ArrowLeft size={20} />
+                  </button>
+                  <span className="settings-back-title">{getT(sourceLang, 'settings.groupAbout')}</span>
+                </div>
+
             <div style={{
               display: 'flex',
               justifyContent: 'center',
               gap: '16px',
               paddingTop: '8px',
-              borderTop: '1px solid #f1f5f9',
               flexWrap: 'wrap'
             }}>
               {[
@@ -4481,6 +4613,8 @@ function App() {
                 <div style={{ marginTop: '4px', color: '#0ea5e9', fontSize: '0.72rem' }}>{updateStatus}</div>
               ) : null}
             </div>
+              </>
+            )}
           </div>
         </div>
 

@@ -224,7 +224,13 @@
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
     "saveReturn": "Enregistrer & Retour",
     "defaultLevel": "Niveau par défaut",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Compte",
+    "groupLanguage": "Langue",
+    "groupLearning": "Apprentissage",
+    "groupNotif": "Notifications",
+    "groupSubscription": "Abonnement",
+    "groupAbout": "À propos"
   },
   "translate": {
     "detectionFailed": "Impossible de détecter la langue saisie ; affichage des traductions cibles uniquement. Veuillez vérifier les fautes de frappe.",

@@ -224,7 +224,13 @@
     "noTarget": "Por favor, selecciona primero un idioma objetivo arriba.",
     "saveReturn": "Guardar ajustes y volver",
     "defaultLevel": "Nivel de aprendizaje predeterminado",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Cuenta",
+    "groupLanguage": "Idioma",
+    "groupLearning": "Aprendizaje",
+    "groupNotif": "Notificaciones",
+    "groupSubscription": "Suscripción",
+    "groupAbout": "Acerca de"
   },
   "translate": {
     "detectionFailed": "No se pudo detectar el idioma de entrada; se muestran solo las traducciones de destino. Por favor, verifique si hay errores tipográficos.",

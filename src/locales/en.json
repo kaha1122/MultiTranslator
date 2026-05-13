@@ -224,7 +224,13 @@
     "noTarget": "Please select a target language above first.",
     "saveReturn": "Save Settings & Return",
     "defaultLevel": "Default Learning Level",
-    "usageFreeTalk": "Free Talking"
+    "usageFreeTalk": "Free Talking",
+    "groupAccount": "Account",
+    "groupLanguage": "Language",
+    "groupLearning": "Learning",
+    "groupNotif": "Notifications",
+    "groupSubscription": "Subscription",
+    "groupAbout": "About"
   },
   "translate": {
     "detectionFailed": "Couldn't detect the input language; showing target translations only. Please check for typos.",
