@@ -1225,10 +1225,16 @@ html.admob-active.platform-native::after {
   white-space: nowrap;
 }
 .settings-profile-tier {
-  font-size: 0.75rem;
+  flex-shrink: 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: #ecfdf5;
+  border: 1px solid #a7f3d0;
   color: var(--primary-color);
   font-weight: 700;
-  margin-top: 2px;
+  font-size: 0.72rem;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 /* 카드 그룹 (한 묶음에 여러 진입 항목) */

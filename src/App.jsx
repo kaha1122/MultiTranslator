@@ -926,6 +926,9 @@ function App() {
   const viewModeHistoryRef = useRef(['home']);
   const isNavigatingBackRef = useRef(false);
   const videoReaderRef = useRef(null);
+  // 설정 sub-screen 최신 값을 hardware back handler에서 stale closure 없이 참조하기 위한 ref
+  const settingsScreenRef = useRef('main');
+  useEffect(() => { settingsScreenRef.current = settingsScreen; }, [settingsScreen]);
 
   // viewMode가 바뀔 때마다 히스토리에 push (뒤로가기로 인한 변경은 제외)
   React.useEffect(() => {
@@ -961,6 +964,13 @@ function App() {
         // 동영상 상세뷰가 열려있으면 목록으로 복귀
         if (videoReaderRef.current?.isDetailOpen?.()) {
           videoReaderRef.current.closeDetail();
+          return;
+        }
+
+        // 설정 sub-screen이 열려있으면 main으로 복귀 (단계적 진입 뒤로가기)
+        const currentViewMode = viewModeHistoryRef.current[viewModeHistoryRef.current.length - 1];
+        if (currentViewMode === 'settings' && settingsScreenRef.current !== 'main') {
+          setSettingsScreen('main');
           return;
         }
 
@@ -4133,15 +4143,15 @@ function App() {
                       <span className="settings-profile-edit" onClick={handleEditProfile}>Edit</span>
                     </p>
                     <p className="settings-profile-email">{user?.email}</p>
-                    <p className="settings-profile-tier">{{
-                      trial: 'Free Trial',
-                      admin: 'Admin',
-                      byok_free: 'BYOK Free',
-                      silver: 'Silver',
-                      pro: 'Pro',
-                      premium: 'Premium',
-                    }[tier] || 'Free Trial'}</p>
                   </div>
+                  <span className="settings-profile-tier">{{
+                    trial: 'Free Trial',
+                    admin: 'Admin',
+                    byok_free: 'BYOK Free',
+                    silver: 'Silver',
+                    pro: 'Pro',
+                    premium: 'Premium',
+                  }[tier] || 'Free Trial'}</span>
                 </div>
 
                 {/* 카드 그룹 1: 언어 · 학습 · 알림 */}
@@ -4203,7 +4213,7 @@ function App() {
                     <span className="settings-card-text">
                       <span className="settings-card-title">{getT(sourceLang, 'settings.groupAbout')}</span>
                       <span className="settings-card-summary">
-                        PronunFit{appVersion ? ` v${appVersion}` : ''}
+                        PronunFit{appVersion ? ` v${appVersion}` : ''}{bundleVersion ? ` (OTA ${bundleVersion})` : ''}
                       </span>
                     </span>
                     <ChevronRight size={18} className="settings-card-chevron" />
