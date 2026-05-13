@@ -229,7 +229,7 @@ html.admob-active.platform-native::after {
   --tsb-radius-pill: 999px;
 
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 6fr 3fr 6fr;
   align-items: stretch;
   margin-top: 6px;
   width: 100%;
@@ -349,6 +349,7 @@ html.admob-active.platform-native::after {
 .tsb-streak-headline {
   display: flex;
   align-items: baseline;
+  justify-content: center;
   gap: 4px;
   min-width: 0;
 }

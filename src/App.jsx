@@ -3746,7 +3746,23 @@ function App() {
                 )}
               </div>
 
-              {/* WEEK */}
+              {/* STREAK (가운데) */}
+              <div className={`tsb-col tsb-streak${streakZero ? ' is-zero' : ''}`}>
+                <div className="tsb-label">{getT(sourceLang, 'topbar.streak') || '연속'}</div>
+                <div className="tsb-streak-headline">
+                  <Gem size={14} strokeWidth={2.25} className="tsb-streak-icon" aria-hidden />
+                  <span className="tsb-streak-num">{streakCurrent}</span>
+                  <span className="tsb-streak-unit">{daysUnit}</span>
+                </div>
+                {nextMilestone && !streakZero && (
+                  <div className="tsb-streak-next" title={`${nextMilestone}${daysUnit} · ${daysToNext}${daysLeftUnit}`}>
+                    <Gift size={10} strokeWidth={2.25} aria-hidden />
+                    {nextMilestone}{daysUnit} · {daysToNext}{daysLeftUnit}
+                  </div>
+                )}
+              </div>
+
+              {/* WEEK (오른쪽) */}
               <div className="tsb-col">
                 <div className="tsb-label">{getT(sourceLang, 'topbar.week') || '이번 주'}</div>
                 <div className="tsb-week">
@@ -3766,22 +3782,6 @@ function App() {
                     );
                   })}
                 </div>
-              </div>
-
-              {/* STREAK */}
-              <div className={`tsb-col tsb-streak${streakZero ? ' is-zero' : ''}`}>
-                <div className="tsb-label">{getT(sourceLang, 'topbar.streak') || '연속'}</div>
-                <div className="tsb-streak-headline">
-                  <Gem size={14} strokeWidth={2.25} className="tsb-streak-icon" aria-hidden />
-                  <span className="tsb-streak-num">{streakCurrent}</span>
-                  <span className="tsb-streak-unit">{daysUnit}</span>
-                </div>
-                {nextMilestone && !streakZero && (
-                  <div className="tsb-streak-next" title={`${nextMilestone}${daysUnit} · ${daysToNext}${daysLeftUnit}`}>
-                    <Gift size={10} strokeWidth={2.25} aria-hidden />
-                    {nextMilestone}{daysUnit} · {daysToNext}{daysLeftUnit}
-                  </div>
-                )}
               </div>
             </div>
           );
