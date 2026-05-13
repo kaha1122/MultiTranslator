@@ -87,6 +87,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
     const isComplete = todayCount >= dailyGoal;
     const pronPercent = Math.min((todayPronCount / dailyPronLimit) * 100, 100);
     const listenPercent = Math.min((todayListenCount / dailyListenLimit) * 100, 100);
+    const freeTalkPercent = Math.min((todayFreeTalkCount / dailyFreeTalkLimit) * 100, 100);
 
     return (
         <div className="home-page">
@@ -242,7 +243,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 </div>
             </div>
 
-            {/* 섹션 4: 오늘의 진도 — 3개 게이지 — 학습기록 아래로 이동 */}
+            {/* 섹션 4: 오늘의 진도 — 4개 게이지 (카드/발음/듣기/Free Talking) */}
             <div className="home-section home-gauge">
                 <span className="home-gauge-title">{t('home.todayProgress')}</span>
 
@@ -257,6 +258,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
+                    <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
                 </div>
 
                 {/* 발음 연습 */}
@@ -270,6 +272,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
+                    <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
                 </div>
 
                 {/* 듣기 조회 */}
@@ -283,6 +286,21 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             transition={{ duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
+                    <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
+                </div>
+
+                {/* Free Talking */}
+                <div className="home-gauge-row">
+                    <span className="home-gauge-row-label">💬</span>
+                    <div className="home-gauge-track">
+                        <motion.div
+                            className="home-gauge-fill freetalk"
+                            initial={{ width: 0 }}
+                            animate={{ width: `${freeTalkPercent}%` }}
+                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                        />
+                    </div>
+                    <span className="home-gauge-count freetalk">{todayFreeTalkCount}/{dailyFreeTalkLimit}</span>
                 </div>
             </div>
 

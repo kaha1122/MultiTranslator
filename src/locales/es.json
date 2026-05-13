@@ -611,7 +611,7 @@
   "topbar": {
     "today": "Hoy",
     "week": "Semana",
-    "streak": "Racha"
+    "streak": "Streak"
   },
   "streak": {
     "currentLabel": "Racha actual",

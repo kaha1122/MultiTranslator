@@ -117,6 +117,9 @@
 .home-gauge-count.listen {
     color: #7c3aed;
 }
+.home-gauge-count.freetalk {
+    color: #d97706;
+}
 .home-gauge-fill {
     height: 100%;
     border-radius: 99px;
@@ -134,6 +137,10 @@
 .home-gauge-fill.listen {
     background: linear-gradient(90deg, #ddd6fe 0%, #a78bfa 50%, #7c3aed 100%);
     box-shadow: 0 0 6px rgba(124,58,237,0.4);
+}
+.home-gauge-fill.freetalk {
+    background: linear-gradient(90deg, #fde68a 0%, #f59e0b 50%, #d97706 100%);
+    box-shadow: 0 0 6px rgba(245,158,11,0.4);
 }
 
 /* ── 섹션 3: 폴더 탭 ── */

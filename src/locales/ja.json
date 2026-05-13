@@ -611,7 +611,7 @@
   "topbar": {
     "today": "今日",
     "week": "今週",
-    "streak": "連続"
+    "streak": "Streak"
   },
   "streak": {
     "currentLabel": "現在の Streak",

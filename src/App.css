@@ -295,7 +295,7 @@ html.admob-active.platform-native::after {
   flex-shrink: 0;
   font-size: var(--tsb-fs-value);
   font-weight: 700;
-  color: var(--tsb-ink-primary);
+  color: var(--tsb-accent);
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }

@@ -611,7 +611,7 @@
   "topbar": {
     "today": "Hoje",
     "week": "Semana",
-    "streak": "Sequência"
+    "streak": "Streak"
   },
   "streak": {
     "currentLabel": "Sequência atual",

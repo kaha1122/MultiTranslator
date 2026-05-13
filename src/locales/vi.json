@@ -611,7 +611,7 @@
   "topbar": {
     "today": "Hôm nay",
     "week": "Tuần",
-    "streak": "Chuỗi"
+    "streak": "Streak"
   },
   "streak": {
     "currentLabel": "Streak hiện tại",

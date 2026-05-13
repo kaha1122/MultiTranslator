@@ -617,7 +617,7 @@
   "topbar": {
     "today": "오늘",
     "week": "이번 주",
-    "streak": "연속"
+    "streak": "Streak"
   },
   "streak": {
     "currentLabel": "현재 Streak",
