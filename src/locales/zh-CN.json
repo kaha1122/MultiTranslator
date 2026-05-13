@@ -658,6 +658,31 @@
       "dontShowAgain": "不再显示",
       "later": "稍后",
       "cta": "前往统计查看"
+    },
+    "reminder": {
+      "startTitle": "今天开启 Streak！",
+      "startBody0": "学习3张卡片，开始你的第一个 Streak",
+      "startBody1": "今天是开始的最佳一天",
+      "earlyTitle": "Streak {n} 天！",
+      "earlyBody0": "刚开始的势头，今天继续保持",
+      "earlyBody1": "短短几分钟，每天都重要",
+      "formingTitle": "已经 {n} 天！",
+      "formingBody0": "今天3张卡片继续保持节奏",
+      "formingBody1": "坚持就是力量。{n} 天为你加油",
+      "week1Title": "突破1周！{n} 天",
+      "week1Body0": "照此下去奖励就在眼前",
+      "week1Body1": "坚持1周的你，今天也来一张吧！",
+      "week2Title": "了不起！{n} 天",
+      "week2Body0": "超过2周的习惯，真的很棒",
+      "week2Body1": "已经成为日常了吧？",
+      "monthTitle": "{n} 天！一个月的习惯",
+      "monthBody0": "稳固的学习习惯，今天也轻松一下！",
+      "monthBody1": "照这个节奏离掌握不远了",
+      "legendTitle": "传奇 Streak {n} 天！",
+      "legendBody0": "真正的高手，今天也来一张！",
+      "legendBody1": "你的坚持就是实力",
+      "riskTitle": "⚠️ Streak {n} 天可能中断！",
+      "riskBody": "今天还没学习。哪怕一张卡也好！"
     }
   },
   "gauge": {

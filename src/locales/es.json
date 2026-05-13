@@ -658,6 +658,31 @@
       "dontShowAgain": "No mostrar de nuevo",
       "later": "Más tarde",
       "cta": "Ver en Estadísticas"
+    },
+    "reminder": {
+      "startTitle": "¡Comienza tu Streak hoy!",
+      "startBody0": "Estudia 3 tarjetas para crear tu primera Streak",
+      "startBody1": "Hoy es el día perfecto para empezar",
+      "earlyTitle": "¡Streak día {n}!",
+      "earlyBody0": "Mantén el impulso, sigue hoy",
+      "earlyBody1": "Unos minutos al día cuentan",
+      "formingTitle": "¡Ya {n} días!",
+      "formingBody0": "3 tarjetas hoy para mantener el ritmo",
+      "formingBody1": "La constancia gana. ¡Día {n}, te animamos!",
+      "week1Title": "¡Semana completa! Día {n}",
+      "week1Body0": "Sigue así, el bono está cerca",
+      "week1Body1": "Una semana cumplida, ¡una tarjeta más hoy!",
+      "week2Title": "¡Genial! Día {n}",
+      "week2Body0": "Más de 2 semanas — realmente impresionante",
+      "week2Body1": "Ya es tu rutina natural, ¿verdad?",
+      "monthTitle": "¡Día {n}! Hábito mensual",
+      "monthBody0": "Rutina sólida — ¡hoy ligero!",
+      "monthBody1": "A este ritmo, el dominio está cerca",
+      "legendTitle": "¡Streak legendaria de {n} días!",
+      "legendBody0": "Verdadero maestro — ¡una tarjeta hoy!",
+      "legendBody1": "Tu constancia es tu habilidad",
+      "riskTitle": "⚠️ ¡Streak de {n} en riesgo!",
+      "riskBody": "Hoy aún no has practicado. ¡Solo una tarjeta!"
     }
   },
   "gauge": {

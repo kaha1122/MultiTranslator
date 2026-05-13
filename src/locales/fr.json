@@ -658,6 +658,31 @@
       "dontShowAgain": "Ne plus afficher",
       "later": "Plus tard",
       "cta": "Voir dans les Stats"
+    },
+    "reminder": {
+      "startTitle": "Commencez votre Streak aujourd'hui !",
+      "startBody0": "Étudiez 3 cartes pour créer votre premier Streak",
+      "startBody1": "Aujourd'hui est le jour parfait pour commencer",
+      "earlyTitle": "Streak jour {n} !",
+      "earlyBody0": "Gardez l'élan, continuons aujourd'hui",
+      "earlyBody1": "Quelques minutes par jour, ça compte",
+      "formingTitle": "Déjà {n} jours !",
+      "formingBody0": "3 cartes aujourd'hui pour maintenir le rythme",
+      "formingBody1": "La constance paie. Jour {n}, on vous soutient !",
+      "week1Title": "1 semaine franchie ! Jour {n}",
+      "week1Body0": "Continuez ainsi, le bonus approche",
+      "week1Body1": "Une semaine tenue, une carte de plus aujourd'hui !",
+      "week2Title": "Bravo ! Jour {n}",
+      "week2Body0": "Plus de 2 semaines — vraiment impressionnant",
+      "week2Body1": "C'est devenu une routine naturelle, non ?",
+      "monthTitle": "Jour {n} ! Habitude mensuelle",
+      "monthBody0": "Routine solide, allez-y léger aujourd'hui !",
+      "monthBody1": "À ce rythme, la maîtrise approche",
+      "legendTitle": "Streak légendaire {n} jours !",
+      "legendBody0": "Vrai maître, une carte aujourd'hui !",
+      "legendBody1": "Votre constance fait votre compétence",
+      "riskTitle": "⚠️ Streak {n} en danger !",
+      "riskBody": "Vous n'avez pas pratiqué aujourd'hui. Une seule carte !"
     }
   },
   "gauge": {

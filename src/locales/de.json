@@ -658,6 +658,31 @@
       "dontShowAgain": "Nicht mehr anzeigen",
       "later": "Später",
       "cta": "In Statistik ansehen"
+    },
+    "reminder": {
+      "startTitle": "Starte heute deine Streak!",
+      "startBody0": "Lerne 3 Karten und beginne deine erste Streak",
+      "startBody1": "Heute ist der perfekte Tag zum Anfangen",
+      "earlyTitle": "Streak Tag {n}!",
+      "earlyBody0": "Halte den Schwung, mach heute weiter",
+      "earlyBody1": "Auch ein paar Minuten am Tag zählen",
+      "formingTitle": "Schon {n} Tage!",
+      "formingBody0": "Heute 3 Karten, um den Rhythmus zu halten",
+      "formingBody1": "Beständigkeit gewinnt. Tag {n} — wir feuern dich an!",
+      "week1Title": "1 Woche geschafft! Tag {n}",
+      "week1Body0": "Weiter so, der Bonus ist in Sicht",
+      "week1Body1": "Eine Woche gehalten, heute eine Karte mehr!",
+      "week2Title": "Großartig! Tag {n}",
+      "week2Body0": "Über 2 Wochen — wirklich beeindruckend",
+      "week2Body1": "Lernen ist jetzt deine Routine",
+      "monthTitle": "Tag {n}! Eine monatliche Gewohnheit",
+      "monthBody0": "Solide Routine — heute ganz locker!",
+      "monthBody1": "In diesem Tempo ist Meisterschaft nah",
+      "legendTitle": "Legendäre Streak von {n} Tagen!",
+      "legendBody0": "Wahrer Meister — heute eine Karte!",
+      "legendBody1": "Deine Beständigkeit ist dein Können",
+      "riskTitle": "⚠️ Streak {n} in Gefahr!",
+      "riskBody": "Heute noch nicht gelernt. Nur eine Karte!"
     }
   },
   "gauge": {

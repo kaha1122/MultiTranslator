@@ -100,6 +100,20 @@ const PUSH_MESSAGES = {
         'ru':    { title: 'Продолжим учиться сегодня с PronunFit!', body: 'Возьмите за привычку учить 10 карточек каждый день.' },
         'pt-BR': { title: 'Vamos continuar aprendendo hoje com o PronunFit!', body: 'Crie o hábito de estudar 10 cartões por dia.' },
     },
+    // Phase 2: Streak 위험 푸시 — 오늘 미달성 + streakCurrent >= 3 유저에게 현지 22시 발송
+    // {n} placeholder는 sendStreakRiskPush에서 streakCurrent로 치환됨
+    streak_risk: {
+        'ko':    { title: '⚠️ Streak {n}일 끊길 수 있어요!', body: '오늘 학습이 아직이에요. 카드 한 장만이라도!' },
+        'en':    { title: '⚠️ Streak of {n} days at risk!', body: "You haven't practiced today. Just one card!" },
+        'ja':    { title: '⚠️ Streak {n}日途切れそう！', body: '今日まだ学習していません。カード1枚だけでも！' },
+        'zh-CN': { title: '⚠️ Streak {n} 天可能中断！', body: '今天还没学习。哪怕一张卡也好！' },
+        'vi':    { title: '⚠️ Streak {n} ngày có thể đứt!', body: 'Hôm nay bạn chưa học. Chỉ 1 thẻ thôi!' },
+        'es':    { title: '⚠️ ¡Streak de {n} días en riesgo!', body: 'Hoy aún no has practicado. ¡Solo una tarjeta!' },
+        'fr':    { title: '⚠️ Streak de {n} jours en danger !', body: "Vous n'avez pas pratiqué aujourd'hui. Une seule carte !" },
+        'de':    { title: '⚠️ Streak von {n} Tagen in Gefahr!', body: 'Heute noch nicht gelernt. Nur eine Karte!' },
+        'ru':    { title: '⚠️ Streak {n} дней под угрозой!', body: 'Сегодня ещё не занимались. Хотя бы одна карточка!' },
+        'pt-BR': { title: '⚠️ Streak de {n} dias em risco!', body: 'Hoje ainda não praticou. Só um cartão!' },
+    },
 };
 
 function renderMessage(type, deviceLang) {
@@ -251,4 +265,86 @@ async function sendReengagementPush(uid, { doc, type, window, dryRun = false } =
     }
 }
 
-module.exports = { sendSubscriptionPush, sendReengagementPush };
+/**
+ * Phase 2: Streak 위험 푸시 — 오늘 미달성 + streakCurrent >= 3 유저에게 현지 22시 발송
+ * @param {string} uid
+ * @param {{ doc?: object, streakCurrent: number, dryRun?: boolean }} opts
+ *   - doc: 이미 읽어둔 user data (cron이 재사용해 read 절감). 없으면 내부에서 fetch
+ *   - streakCurrent: 메시지 {n} placeholder 치환용 (cron이 user doc에서 읽어 전달)
+ *   - dryRun: true면 메시지 렌더만 하고 실제 발송 안 함
+ */
+async function sendStreakRiskPush(uid, { doc, streakCurrent, dryRun = false } = {}) {
+    if (!admin?.messaging || !adminDb) return { ok: false, reason: 'admin-not-init' };
+    try {
+        let data = doc;
+        if (!data) {
+            const snap = await adminDb.collection('users').doc(uid).get();
+            if (!snap.exists) return { ok: false, reason: 'user-not-found' };
+            data = snap.data();
+        }
+
+        // 사용자 opt-out 존중 (Streak 리마인더 전용 플래그)
+        if (data.streakRiskOptOut === true) {
+            return { ok: false, reason: 'opted-out' };
+        }
+
+        const tokens = Array.isArray(data.fcmTokens) ? data.fcmTokens.filter(Boolean) : [];
+        if (tokens.length === 0) return { ok: false, reason: 'no-tokens' };
+
+        const tpl = PUSH_MESSAGES['streak_risk'];
+        const lang = pickLangForUser(data);
+        const base = tpl[lang] || tpl['en'];
+        const n = Number.isFinite(streakCurrent) ? Math.floor(streakCurrent) : (data.streakCurrent || 0);
+        const msg = {
+            title: base.title.replace(/\{n\}/g, String(n)),
+            body: base.body.replace(/\{n\}/g, String(n)),
+        };
+
+        if (dryRun) {
+            return {
+                ok: true, dryRun: true, sent: 0, failed: 0,
+                preview: {
+                    title: msg.title, body: msg.body,
+                    lang, streakCurrent: n,
+                    sourceLang: data.sourceLang || null,
+                    deviceLang: data.deviceLang || null,
+                    tokens: tokens.length,
+                },
+            };
+        }
+
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: { title: msg.title, body: msg.body },
+            data: { type: 'streak_risk', screen: 'home' },
+            android: { priority: 'high' },
+            apns: { payload: { aps: { sound: 'default' } } },
+        });
+
+        // 실패 토큰 정리
+        const staleTokens = [];
+        response.responses.forEach((r, i) => {
+            if (!r.success) {
+                const code = r.error?.code || '';
+                if (code === 'messaging/registration-token-not-registered' ||
+                    code === 'messaging/invalid-registration-token' ||
+                    code === 'messaging/invalid-argument') {
+                    staleTokens.push(tokens[i]);
+                }
+            }
+        });
+        if (staleTokens.length > 0) {
+            const remaining = tokens.filter(t => !staleTokens.includes(t));
+            await adminDb.collection('users').doc(uid).update({ fcmTokens: remaining });
+            console.log(`[StreakRisk] ${uid} — cleaned ${staleTokens.length} stale tokens`);
+        }
+
+        console.log(`[StreakRisk] ${uid} ← streak=${n}: sent=${response.successCount}, failed=${response.failureCount}`);
+        return { ok: true, sent: response.successCount, failed: response.failureCount };
+    } catch (e) {
+        console.warn('[StreakRisk] sendStreakRiskPush failed:', e.message);
+        return { ok: false, reason: e.message };
+    }
+}
+
+module.exports = { sendSubscriptionPush, sendReengagementPush, sendStreakRiskPush };

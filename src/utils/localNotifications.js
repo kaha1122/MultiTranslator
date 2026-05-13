@@ -7,16 +7,17 @@ const STORAGE_KEY_MINUTE = 'pronunfit.localReminder.minute';
 
 export function loadReminderPrefs() {
     try {
+        // Phase 2: default 시각 20:00 → 12:30 (점심 후 여유 시간대 / Streak 리마인더 톤)
         const enabled = localStorage.getItem(STORAGE_KEY_ENABLED) === 'true';
-        const hour = parseInt(localStorage.getItem(STORAGE_KEY_HOUR) ?? '20', 10);
-        const minute = parseInt(localStorage.getItem(STORAGE_KEY_MINUTE) ?? '0', 10);
+        const hour = parseInt(localStorage.getItem(STORAGE_KEY_HOUR) ?? '12', 10);
+        const minute = parseInt(localStorage.getItem(STORAGE_KEY_MINUTE) ?? '30', 10);
         return {
             enabled,
-            hour: isNaN(hour) ? 20 : Math.max(0, Math.min(23, hour)),
-            minute: isNaN(minute) ? 0 : Math.max(0, Math.min(59, minute)),
+            hour: isNaN(hour) ? 12 : Math.max(0, Math.min(23, hour)),
+            minute: isNaN(minute) ? 30 : Math.max(0, Math.min(59, minute)),
         };
     } catch {
-        return { enabled: false, hour: 20, minute: 0 };
+        return { enabled: false, hour: 12, minute: 30 };
     }
 }
 

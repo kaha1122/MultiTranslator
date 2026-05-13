@@ -17,9 +17,9 @@ const express = require('express');
 const router = express.Router();
 const { admin, adminDb } = require('../config/firebase');
 const { requireCronAuth } = require('../middleware/auth');
-const { sendReengagementPush } = require('../utils/sendPush');
+const { sendReengagementPush, sendStreakRiskPush } = require('../utils/sendPush');
 const { sendFreeTalkEmail, verifyUnsubToken } = require('../utils/sendEmail');
-const { effectiveCountry, getLocalHour, countriesAtLocalHour10, TZ_BY_COUNTRY } = require('../utils/countryTimezone');
+const { effectiveCountry, getLocalHour, countriesAtLocalHour10, countriesAtLocalHour22, TZ_BY_COUNTRY } = require('../utils/countryTimezone');
 
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
@@ -312,6 +312,107 @@ async function processOnlyUid(uid, opts) {
     return { uid, window, type: target.type, result };
 }
 
+// ─────────────────────────────────────────────────────────────────────────
+// Phase 2: Streak 위험 푸시 처리 — 오늘 미달성 + streakCurrent >= 3 유저 대상
+// 한 country에 대해 후보 쿼리 + 필터 + 발송. local 22시 슬롯에서만 실행됨.
+// ─────────────────────────────────────────────────────────────────────────
+function toLocalDateStr(d = new Date()) {
+    const yyyy = d.getFullYear();
+    const mm = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${yyyy}-${mm}-${dd}`;
+}
+
+async function processStreakRiskForCountry(country, now, opts) {
+    const todayStr = toLocalDateStr(now);
+    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+    const tsStartOfToday = Timestamp.fromDate(startOfToday);
+
+    let snap;
+    try {
+        snap = await adminDb.collection('users')
+            .where('geoCountry', '==', country)
+            .where('streakCurrent', '>=', 3)
+            .where('lastActiveAt', '<', tsStartOfToday)
+            .limit(MAX_PER_WINDOW)
+            .get();
+    } catch (e) {
+        // 복합 인덱스 누락 가능: (geoCountry, streakCurrent, lastActiveAt)
+        return { country, error: e.message, sent: 0, skipped: 0, candidates: 0 };
+    }
+
+    let sent = 0;
+    let failedSend = 0;
+    const skipReasons = {};
+    const candidates = snap.size;
+    const sentUids = [];
+
+    for (const doc of snap.docs) {
+        const data = doc.data();
+
+        // 공통 제외 (D0 신규/iOS 가드/no-tokens/admin) — re-engagement와 동일 정책
+        const skip = shouldSkipUser(data);
+        if (skip) {
+            skipReasons[skip] = (skipReasons[skip] || 0) + 1;
+            continue;
+        }
+
+        // streakRiskOptOut 사용자 존중
+        if (data.streakRiskOptOut === true) {
+            skipReasons['opted-out'] = (skipReasons['opted-out'] || 0) + 1;
+            continue;
+        }
+
+        // 하루 1회 제한 — lastStreakRiskPush가 오늘이면 skip
+        const lastSentDate = data.lastStreakRiskPushDate;
+        if (lastSentDate === todayStr) {
+            skipReasons['already-sent-today'] = (skipReasons['already-sent-today'] || 0) + 1;
+            continue;
+        }
+
+        if (opts.onlyUid && doc.id !== opts.onlyUid) {
+            skipReasons['only-uid-filter'] = (skipReasons['only-uid-filter'] || 0) + 1;
+            continue;
+        }
+
+        const result = await sendStreakRiskPush(doc.id, {
+            doc: data,
+            streakCurrent: data.streakCurrent || 0,
+            dryRun: opts.dryRun,
+        });
+
+        if (opts.dryRun && result.ok) {
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent > 0) {
+            try {
+                await doc.ref.update({
+                    lastStreakRiskPushDate: todayStr,
+                    lastStreakRiskPushAt: FieldValue.serverTimestamp(),
+                });
+            } catch (e) {
+                console.warn(`[StreakRisk] sentAt update failed for ${doc.id}:`, e.message);
+            }
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent === 0) {
+            skipReasons['fcm-all-invalid'] = (skipReasons['fcm-all-invalid'] || 0) + 1;
+        } else {
+            failedSend += 1;
+            skipReasons[result.reason || 'send-failed'] = (skipReasons[result.reason || 'send-failed'] || 0) + 1;
+        }
+    }
+
+    return {
+        country,
+        candidates,
+        sent,
+        failed: failedSend,
+        skipped: skipReasons,
+        sentUids: opts.dryRun ? sentUids : undefined,
+    };
+}
+
 router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => {
     const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
     const onlyUid = req.query.onlyUid || null;
@@ -346,7 +447,16 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             noGeoResults.push(r);
         }
 
-        // 집계
+        // Phase 2: Streak 위험 푸시 — local 22시 슬롯에서만 실행
+        // 후보 조건: geoCountry == country (현지 22시) + streakCurrent >= 3 + lastActiveAt < 오늘 시작
+        const streakRiskCountries = countriesAtLocalHour22(now);
+        const streakRiskResults = [];
+        for (const country of streakRiskCountries) {
+            const r = await processStreakRiskForCountry(country, now, opts);
+            streakRiskResults.push(r);
+        }
+
+        // 집계 (re-engagement)
         const totals = {
             candidates: 0, sent: 0, failed: 0,
         };
@@ -360,6 +470,18 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             }
         }
 
+        // 집계 (streak-risk — 별도 집계)
+        const streakRiskTotals = { candidates: 0, sent: 0, failed: 0 };
+        const streakRiskSkip = {};
+        for (const r of streakRiskResults) {
+            streakRiskTotals.candidates += r.candidates || 0;
+            streakRiskTotals.sent += r.sent || 0;
+            streakRiskTotals.failed += r.failed || 0;
+            for (const [k, v] of Object.entries(r.skipped || {})) {
+                streakRiskSkip[k] = (streakRiskSkip[k] || 0) + v;
+            }
+        }
+
         const summary = {
             ranAt: now.toISOString(),
             mode: dryRun ? 'dryRun' : 'send',
@@ -367,24 +489,36 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             totals,
             skipAggregate,
             details: [...perCountryResults, ...noGeoResults].filter(r => (r.candidates || 0) > 0 || r.error),
+            streakRisk: {
+                targetCountries: streakRiskCountries,
+                totals: streakRiskTotals,
+                skipAggregate: streakRiskSkip,
+                details: streakRiskResults.filter(r => (r.candidates || 0) > 0 || r.error),
+            },
         };
 
         // 관측: 실발송 시에만 reengagementLogs에 기록 (dryRun은 응답으로만)
-        if (!dryRun && targetCountries.length > 0) {
+        if (!dryRun && (targetCountries.length > 0 || streakRiskCountries.length > 0)) {
             try {
-                const logId = `${now.toISOString().slice(0, 13).replace(/[-:T]/g, '')}-${targetCountries.join('_').slice(0, 60)}`;
+                const allCountries = [...new Set([...targetCountries, ...streakRiskCountries])];
+                const logId = `${now.toISOString().slice(0, 13).replace(/[-:T]/g, '')}-${allCountries.join('_').slice(0, 60)}`;
                 await adminDb.collection('reengagementLogs').doc(logId).set({
                     ranAt: FieldValue.serverTimestamp(),
                     targetCountries,
                     totals,
                     skipAggregate,
+                    streakRisk: {
+                        targetCountries: streakRiskCountries,
+                        totals: streakRiskTotals,
+                        skipAggregate: streakRiskSkip,
+                    },
                 });
             } catch (e) {
                 console.warn('[Reengagement] log write failed:', e.message);
             }
         }
 
-        console.log(`[Reengagement] ${dryRun ? 'DRY' : 'SEND'} ranAt=${now.toISOString()} countries=${targetCountries.length} sent=${totals.sent} candidates=${totals.candidates}`);
+        console.log(`[Reengagement] ${dryRun ? 'DRY' : 'SEND'} ranAt=${now.toISOString()} re=${totals.sent}/${totals.candidates} streakRisk=${streakRiskTotals.sent}/${streakRiskTotals.candidates}`);
         return res.json(summary);
     } catch (e) {
         console.error('[Reengagement] cron failed:', e);

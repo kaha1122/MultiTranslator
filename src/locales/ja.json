@@ -658,6 +658,31 @@
       "dontShowAgain": "今後表示しない",
       "later": "後で",
       "cta": "統計タブで見る"
+    },
+    "reminder": {
+      "startTitle": "今日からStreakスタート！",
+      "startBody0": "カード3枚学習で最初のStreakを作りましょう",
+      "startBody1": "始めるのに最高の日です",
+      "earlyTitle": "Streak {n}日目！",
+      "earlyBody0": "始まった流れ、今日も続けましょう",
+      "earlyBody1": "短い時間でも毎日が大切です",
+      "formingTitle": "もう{n}日！",
+      "formingBody0": "今日もカード3枚で流れを保ちましょう",
+      "formingBody1": "継続が力。{n}日目も応援します",
+      "week1Title": "1週間突破！{n}日目",
+      "week1Body0": "このまま行けばボーナスが見えます",
+      "week1Body1": "1週間続けたあなた、今日も1枚！",
+      "week2Title": "すごい！{n}日目",
+      "week2Body0": "2週間超えの習慣、本当に立派です",
+      "week2Body1": "もう自然な日常になりましたね",
+      "monthTitle": "{n}日！1ヶ月の習慣",
+      "monthBody0": "確立されたルーティン、今日も気軽に！",
+      "monthBody1": "このペースならマスターも近い",
+      "legendTitle": "伝説のStreak {n}日！",
+      "legendBody0": "真のマスター、今日も1枚！",
+      "legendBody1": "あなたの継続力こそが実力です",
+      "riskTitle": "⚠️ Streak {n}日途切れそう！",
+      "riskBody": "今日まだ学習していません。カード1枚だけでも！"
     }
   },
   "gauge": {

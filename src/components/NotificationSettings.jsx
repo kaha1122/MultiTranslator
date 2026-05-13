@@ -3,6 +3,7 @@ import { Bell, Clock } from 'lucide-react';
 import { Capacitor } from '@capacitor/core';
 import { getT } from '../utils/i18n';
 import { loadReminderPrefs, saveReminderPrefs } from '../utils/localNotifications';
+import { pickReminderMessage } from '../utils/streakReminderPool';
 import {
     loadSubscriptionAlertPref,
     setSubscriptionAlertPref,
@@ -18,7 +19,7 @@ const STATUS_AUTO_DISMISS_MS = 3000;
 // - 로컬 매일 연습 리마인더 (Phase 2) — 플러그인 직접 호출로 통합
 // - 구독 이벤트 푸시 (Phase 1)
 // 웹 환경에서는 "네이티브 앱 필요" 안내만 표시
-export default function NotificationSettings({ sourceLang, uid, profile, active }) {
+export default function NotificationSettings({ sourceLang, uid, profile, active, streakCurrent = 0 }) {
     const t = (key) => getT(sourceLang, key);
     const isNative = Capacitor.isNativePlatform?.() === true;
 
@@ -175,12 +176,14 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
             saveReminderPrefs(updated);
 
             try {
+                // Phase 2: Streak 기반 동적 메시지 (구간별 본문 풀 + 요일 rotate)
+                const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
                 await plugin.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
                 await plugin.schedule({
                     notifications: [{
                         id: REMINDER_ID,
-                        title: t('notifications.reminderTitle') || 'Time to practice!',
-                        body: t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
+                        title: msg.title || t('notifications.reminderTitle') || 'Time to practice!',
+                        body: msg.body || t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
                         schedule: {
                             on: { hour: updated.hour, minute: updated.minute },
                             allowWhileIdle: true,
@@ -224,12 +227,14 @@ export default function NotificationSettings({ sourceLang, uid, profile, active 
         try {
             const mod = await import('@capacitor/local-notifications');
             const plugin = mod.LocalNotifications;
+            // Phase 2: Streak 기반 동적 메시지
+            const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
             await plugin.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
             await plugin.schedule({
                 notifications: [{
                     id: REMINDER_ID,
-                    title: t('notifications.reminderTitle') || 'Time to practice!',
-                    body: t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
+                    title: msg.title || t('notifications.reminderTitle') || 'Time to practice!',
+                    body: msg.body || t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
                     schedule: {
                         on: { hour, minute },
                         allowWhileIdle: true,

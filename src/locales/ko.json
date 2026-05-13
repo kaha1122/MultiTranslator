@@ -664,6 +664,31 @@
       "dontShowAgain": "다시 보지 않음",
       "later": "나중에",
       "cta": "통계 탭에서 보기"
+    },
+    "reminder": {
+      "startTitle": "오늘부터 Streak 시작!",
+      "startBody0": "카드 3장 학습으로 첫 Streak를 만들어 보세요",
+      "startBody1": "오늘이 시작하기 가장 좋은 날입니다",
+      "earlyTitle": "Streak {n}일째!",
+      "earlyBody0": "막 시작한 흐름, 오늘도 이어가세요",
+      "earlyBody1": "짧은 시간이라도 매일이 중요해요",
+      "formingTitle": "벌써 Streak {n}일!",
+      "formingBody0": "오늘도 카드 3장으로 흐름 유지해 볼까요?",
+      "formingBody1": "꾸준함이 무기예요. {n}일째 응원합니다",
+      "week1Title": "1주 돌파! Streak {n}일째",
+      "week1Body0": "이대로만 가면 보너스가 보입니다",
+      "week1Body1": "한 주를 이어온 당신, 오늘도 한 장!",
+      "week2Title": "대단해요! Streak {n}일째",
+      "week2Body0": "2주 넘은 습관, 정말 자랑스럽습니다",
+      "week2Body1": "이제는 자연스러운 일상이 됐죠?",
+      "monthTitle": "Streak {n}일! 한 달의 습관",
+      "monthBody0": "단단해진 학습 루틴, 오늘도 가볍게!",
+      "monthBody1": "이 페이스라면 마스터까지 멀지 않아요",
+      "legendTitle": "전설의 Streak {n}일!",
+      "legendBody0": "진정한 마스터, 오늘도 한 장!",
+      "legendBody1": "당신의 꾸준함이 곧 실력입니다",
+      "riskTitle": "⚠️ Streak {n}일 끊길 수 있어요!",
+      "riskBody": "오늘 학습이 아직이에요. 카드 한 장만이라도!"
     }
   },
   "gauge": {

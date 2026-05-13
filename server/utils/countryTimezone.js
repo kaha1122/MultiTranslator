@@ -292,6 +292,16 @@ function countriesAtLocalHour10(now = new Date()) {
     return Object.keys(TZ_BY_COUNTRY).filter(c => isLocalHour10(c, now));
 }
 
+/**
+ * Phase 2: Streak 위험 푸시용 — local 22시인 모든 국가 목록 반환
+ * cron 통합 운영 시 매시간 호출되며 22시 슬롯에서만 발송됨
+ * @param {Date} [now]
+ * @returns {string[]} ISO country codes
+ */
+function countriesAtLocalHour22(now = new Date()) {
+    return Object.keys(TZ_BY_COUNTRY).filter(c => getLocalHour(c, now) === 22);
+}
+
 module.exports = {
     TZ_BY_COUNTRY,
     deviceLangToCountry,
@@ -299,4 +309,5 @@ module.exports = {
     getLocalHour,
     isLocalHour10,
     countriesAtLocalHour10,
+    countriesAtLocalHour22,
 };

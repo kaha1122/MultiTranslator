@@ -664,6 +664,31 @@
       "dontShowAgain": "Don't show this again",
       "later": "Later",
       "cta": "View in Stats"
+    },
+    "reminder": {
+      "startTitle": "Start your Streak today!",
+      "startBody0": "Practice 3 cards to build your first Streak",
+      "startBody1": "Today is the perfect day to begin",
+      "earlyTitle": "Streak day {n}!",
+      "earlyBody0": "Keep the momentum going",
+      "earlyBody1": "Even a few minutes makes a difference",
+      "formingTitle": "Already {n} days!",
+      "formingBody0": "3 cards today to keep the flow",
+      "formingBody1": "Consistency wins. Day {n}, cheering you on!",
+      "week1Title": "1 week strong! Day {n}",
+      "week1Body0": "Stay on track — bonus is in sight",
+      "week1Body1": "One card today keeps the chain alive",
+      "week2Title": "Amazing! Day {n}",
+      "week2Body0": "Over 2 weeks — truly impressive",
+      "week2Body1": "Learning has become your routine",
+      "monthTitle": "Day {n}! A monthly habit",
+      "monthBody0": "Solid routine — keep it light today",
+      "monthBody1": "Mastery is closer at this pace",
+      "legendTitle": "Legendary Streak: day {n}!",
+      "legendBody0": "True master — one card today!",
+      "legendBody1": "Your consistency is your skill",
+      "riskTitle": "⚠️ Streak {n} at risk!",
+      "riskBody": "You haven't practiced today. Just one card!"
     }
   },
   "gauge": {

@@ -658,6 +658,31 @@
       "dontShowAgain": "Không hiển thị lại",
       "later": "Để sau",
       "cta": "Xem trong Thống kê"
+    },
+    "reminder": {
+      "startTitle": "Bắt đầu Streak hôm nay!",
+      "startBody0": "Học 3 thẻ để tạo Streak đầu tiên",
+      "startBody1": "Hôm nay là ngày hoàn hảo để bắt đầu",
+      "earlyTitle": "Streak ngày {n}!",
+      "earlyBody0": "Giữ đà mới bắt đầu, hôm nay tiếp tục nhé",
+      "earlyBody1": "Vài phút mỗi ngày cũng quan trọng",
+      "formingTitle": "Đã {n} ngày!",
+      "formingBody0": "Hôm nay 3 thẻ để giữ nhịp",
+      "formingBody1": "Kiên trì là sức mạnh. Ngày {n} cùng cố lên!",
+      "week1Title": "Vượt 1 tuần! Ngày {n}",
+      "week1Body0": "Cứ thế này phần thưởng sắp đến",
+      "week1Body1": "Đã giữ 1 tuần, hôm nay 1 thẻ nữa!",
+      "week2Title": "Tuyệt vời! Ngày {n}",
+      "week2Body0": "Hơn 2 tuần — thật đáng ngưỡng mộ",
+      "week2Body1": "Đã thành thói quen tự nhiên rồi nhỉ?",
+      "monthTitle": "Ngày {n}! Thói quen 1 tháng",
+      "monthBody0": "Thói quen vững chắc, hôm nay nhẹ nhàng thôi!",
+      "monthBody1": "Với nhịp này, làm chủ không còn xa",
+      "legendTitle": "Streak huyền thoại {n} ngày!",
+      "legendBody0": "Bậc thầy thực sự, hôm nay 1 thẻ!",
+      "legendBody1": "Sự kiên trì của bạn là kỹ năng",
+      "riskTitle": "⚠️ Streak {n} ngày có thể đứt!",
+      "riskBody": "Hôm nay bạn chưa học. Chỉ 1 thẻ thôi!"
     }
   },
   "gauge": {
