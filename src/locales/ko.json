@@ -566,6 +566,7 @@
     "cardsToday": "오늘 달성",
     "streakSuffix": "일 연속 달성!",
     "days": "월,화,수,목,금,토,일",
+    "daysShort": "월,화,수,목,금,토,일",
     "settingsTitle": "하루 학습 목표 🎯",
     "settingsDesc": "하루에 달성할 카드 수를 설정하세요.",
     "settingsLabel": "하루",

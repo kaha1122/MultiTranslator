@@ -560,6 +560,7 @@
     "cardsToday": "Heute erreicht",
     "streakSuffix": "Tage in Folge!",
     "days": "Mo,Di,Mi,Do,Fr,Sa,So",
+    "daysShort": "M,D,M,D,F,S,S",
     "settingsTitle": "Tägliches Lernziel 🎯",
     "settingsDesc": "Legen Sie fest, wie viele Karten Sie täglich erreichen möchten.",
     "settingsLabel": "Täglich",

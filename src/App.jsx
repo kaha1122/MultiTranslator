@@ -3704,7 +3704,8 @@ function App() {
         {/* 상단 고정바: TODAY · WEEK · STREAK 3분할 (시간축) — 홈에서는 StreakHero가 대체 */}
         {user && viewMode !== 'home' && (() => {
           const today = getToday();
-          const dayLabels = getT(sourceLang, 'daily.days').split(',');
+          // 상단 고정바 WEEK 컬럼은 좁아서 1자 약어 사용 (홈/통계는 daily.days 그대로 3자리 유지)
+          const dayLabels = getT(sourceLang, 'daily.daysShort').split(',');
           const isTrialTier = tier === 'trial';
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;

@@ -560,6 +560,7 @@
     "cardsToday": "Tarjetas hoy",
     "streakSuffix": "días seguidos!",
     "days": "Lun,Mar,Mié,Jue,Vie,Sáb,Dom",
+    "daysShort": "L,M,M,J,V,S,D",
     "settingsTitle": "Meta de aprendizaje diaria 🎯",
     "settingsDesc": "Establece cuántas tarjetas quieres lograr por día.",
     "settingsLabel": "Diario",

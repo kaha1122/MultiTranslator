@@ -566,6 +566,7 @@
     "cardsToday": "Cards Today",
     "streakSuffix": "day streak!",
     "days": "Mon,Tue,Wed,Thu,Fri,Sat,Sun",
+    "daysShort": "M,T,W,T,F,S,S",
     "settingsTitle": "Daily Learning Goal 🎯",
     "settingsDesc": "Set how many cards you want to achieve per day.",
     "settingsLabel": "Daily",

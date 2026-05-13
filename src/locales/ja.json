@@ -560,6 +560,7 @@
     "cardsToday": "今日の達成",
     "streakSuffix": "日連続達成！",
     "days": "月,火,水,木,金,土,日",
+    "daysShort": "月,火,水,木,金,土,日",
     "settingsTitle": "1日の学習目標 🎯",
     "settingsDesc": "1日に達成したいカード数を設定してください。",
     "settingsLabel": "1日",

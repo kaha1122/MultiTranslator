@@ -560,6 +560,7 @@
     "cardsToday": "Cartões Hoje",
     "streakSuffix": "dias seguidos!",
     "days": "Seg,Ter,Qua,Qui,Sex,Sáb,Dom",
+    "daysShort": "S,T,Q,Q,S,S,D",
     "settingsTitle": "Meta Diária de Aprendizado 🎯",
     "settingsDesc": "Defina quantos cartões você deseja alcançar por dia.",
     "settingsLabel": "Diário",
