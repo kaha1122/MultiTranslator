@@ -8,7 +8,10 @@ const STORAGE_KEY_MINUTE = 'pronunfit.localReminder.minute';
 export function loadReminderPrefs() {
     try {
         // Phase 2: default 시각 20:00 → 12:30 (점심 후 여유 시간대 / Streak 리마인더 톤)
-        const enabled = localStorage.getItem(STORAGE_KEY_ENABLED) === 'true';
+        // 옵션 C (2026-05-13): default enabled true — 첫 진입 시 자동 권한 prompt + schedule
+        // (App.jsx의 notifAutoPromptedV2 useEffect가 trigger 후 권한 거부 시 false로 저장)
+        const stored = localStorage.getItem(STORAGE_KEY_ENABLED);
+        const enabled = stored === null ? true : stored === 'true';
         const hour = parseInt(localStorage.getItem(STORAGE_KEY_HOUR) ?? '12', 10);
         const minute = parseInt(localStorage.getItem(STORAGE_KEY_MINUTE) ?? '30', 10);
         return {
@@ -17,7 +20,7 @@ export function loadReminderPrefs() {
             minute: isNaN(minute) ? 30 : Math.max(0, Math.min(59, minute)),
         };
     } catch {
-        return { enabled: false, hour: 12, minute: 30 };
+        return { enabled: true, hour: 12, minute: 30 };
     }
 }
 

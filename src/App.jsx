@@ -32,7 +32,7 @@ import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getT, useT } from './utils/i18n';
 import { pickReminderMessage } from './utils/streakReminderPool';
-import { loadReminderPrefs } from './utils/localNotifications';
+import { loadReminderPrefs, saveReminderPrefs } from './utils/localNotifications';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 import { authFetch, getIdToken } from './utils/authFetch';
 
@@ -1153,6 +1153,58 @@ function App() {
       return getDefaultTargetLangs(detectBrowserSourceLang());
     }
   });
+
+  // 옵션 C (2026-05-13): 첫 앱 진입 시 알림 권한 자동 prompt + schedule
+  // 사용자가 명시적으로 알림 화면을 안 가도 12:30 리마인더가 활성됨.
+  // localStorage 'notifAutoPromptedV2' flag로 1회만 실행 (재진입 시 prompt 안 뜸).
+  // 권한 거부 시 enabled=false로 저장해 UI 토글과 일치 유지.
+  useEffect(() => {
+    if (!user?.uid || !Capacitor.isNativePlatform?.()) return;
+    if (localStorage.getItem('notifAutoPromptedV2') === '1') return;
+    const timer = setTimeout(async () => {
+      try {
+        const mod = await import('@capacitor/local-notifications');
+        const plugin = mod.LocalNotifications;
+        const perm = await plugin.requestPermissions();
+        const granted = perm.display === 'granted';
+        if (granted) {
+          const prefs = loadReminderPrefs(); // default 12:30 + enabled true
+          saveReminderPrefs({ ...prefs, enabled: true });
+          const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
+          await plugin.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
+          await plugin.schedule({
+            notifications: [{
+              id: 1001,
+              title: msg.title || "Time to practice!",
+              body: msg.body || "Keep your streak alive.",
+              schedule: {
+                on: { hour: prefs.hour, minute: prefs.minute },
+                allowWhileIdle: true,
+                repeats: true,
+              },
+              smallIcon: 'ic_stat_icon_config_sample',
+            }],
+          });
+          // Android: POST_NOTIFICATIONS grant 시 FCM도 자동 등록 — NotificationSettings 패턴 차용
+          if (Capacitor.getPlatform() === 'android') {
+            try {
+              const pushMod = await import('@capacitor/push-notifications');
+              await pushMod.PushNotifications.register();
+            } catch (err) {
+              console.warn('[StreakReminder] push register failed:', err?.message);
+            }
+          }
+        } else {
+          // 권한 거부 → UI 토글 OFF로 일치
+          saveReminderPrefs({ ...loadReminderPrefs(), enabled: false });
+        }
+        localStorage.setItem('notifAutoPromptedV2', '1');
+      } catch (err) {
+        console.warn('[StreakReminder] first prompt failed:', err?.message);
+      }
+    }, 1500); // 사용자가 첫 화면을 인지할 시간
+    return () => clearTimeout(timer);
+  }, [user?.uid, streakCurrent, sourceLang]);
 
   // Phase 2: Streak 리마인더 자동 재스케줄 — sourceLang 선언 직후 위치 (TDZ 회피)
   // streakCurrent / sourceLang 변경 시 OS LocalNotifications에 최신 메시지로 덮어쓰기.
