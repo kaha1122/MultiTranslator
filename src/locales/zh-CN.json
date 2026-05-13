@@ -628,6 +628,7 @@
     "nextMilestone": "下一奖励",
     "milestones": "里程碑",
     "daysUnit": "天",
+    "daysUnitShort": "天",
     "daysLeftUnit": "天后",
     "celebration": {
       "title": "Streak 里程碑达成!",

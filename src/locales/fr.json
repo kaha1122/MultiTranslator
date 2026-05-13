@@ -627,7 +627,8 @@
     "totalDays": "Total des jours",
     "nextMilestone": "Prochaine étape",
     "milestones": "Étapes",
-    "daysUnit": "j",
+    "daysUnit": "jours",
+    "daysUnitShort": "j",
     "daysLeftUnit": "j restants",
     "celebration": {
       "title": "Étape atteinte !",

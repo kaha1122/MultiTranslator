@@ -627,7 +627,8 @@
     "totalDays": "Días totales",
     "nextMilestone": "Próximo hito",
     "milestones": "Hitos",
-    "daysUnit": "d",
+    "daysUnit": "días",
+    "daysUnitShort": "d",
     "daysLeftUnit": "d restantes",
     "celebration": {
       "title": "¡Hito alcanzado!",

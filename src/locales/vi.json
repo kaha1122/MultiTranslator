@@ -628,6 +628,7 @@
     "nextMilestone": "Mốc tiếp theo",
     "milestones": "Cột mốc",
     "daysUnit": "ngày",
+    "daysUnitShort": "ng",
     "daysLeftUnit": "ngày nữa",
     "celebration": {
       "title": "Đạt cột mốc Streak!",

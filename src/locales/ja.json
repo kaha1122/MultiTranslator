@@ -628,6 +628,7 @@
     "nextMilestone": "次の報酬",
     "milestones": "マイルストーン",
     "daysUnit": "日",
+    "daysUnitShort": "日",
     "daysLeftUnit": "日後",
     "celebration": {
       "title": "Streak マイルストーン達成!",

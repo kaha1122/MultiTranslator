@@ -293,7 +293,7 @@ html.admob-active.platform-native::after {
 .tsb-gauge-fill.is-full { background: var(--tsb-danger); }
 .tsb-gauge-text {
   flex-shrink: 0;
-  font-size: var(--tsb-fs-value);
+  font-size: 10px;
   font-weight: 700;
   color: var(--tsb-accent);
   font-variant-numeric: tabular-nums;

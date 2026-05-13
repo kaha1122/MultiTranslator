@@ -627,7 +627,8 @@
     "totalDays": "Gesamttage",
     "nextMilestone": "Nächster Meilenstein",
     "milestones": "Meilensteine",
-    "daysUnit": "T",
+    "daysUnit": "Tage",
+    "daysUnitShort": "T",
     "daysLeftUnit": "T übrig",
     "celebration": {
       "title": "Meilenstein erreicht!",

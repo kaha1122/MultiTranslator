@@ -3727,6 +3727,7 @@ function App() {
 
           const streakZero = streakCurrent === 0;
           const daysUnit = getT(sourceLang, 'streak.daysUnit') || '일';
+          const daysUnitShort = getT(sourceLang, 'streak.daysUnitShort') || daysUnit;
           const daysLeftUnit = getT(sourceLang, 'streak.daysLeftUnit') || 'D';
 
           return (
@@ -3765,9 +3766,9 @@ function App() {
                   <span className="tsb-streak-unit">{daysUnit}</span>
                 </div>
                 {nextMilestone && !streakZero && (
-                  <div className="tsb-streak-next" title={`${nextMilestone}${daysUnit} · ${daysToNext}${daysLeftUnit}`}>
+                  <div className="tsb-streak-next" title={`${nextMilestone}${daysUnitShort} · ${daysToNext}${daysLeftUnit}`}>
                     <Gift size={10} strokeWidth={2.25} aria-hidden />
-                    {nextMilestone}{daysUnit} · {daysToNext}{daysLeftUnit}
+                    {nextMilestone}{daysUnitShort} · {daysToNext}{daysLeftUnit}
                   </div>
                 )}
               </div>

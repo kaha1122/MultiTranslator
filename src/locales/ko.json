@@ -634,6 +634,7 @@
     "nextMilestone": "다음 보상",
     "milestones": "마일스톤",
     "daysUnit": "일",
+    "daysUnitShort": "일",
     "daysLeftUnit": "일 남음",
     "celebration": {
       "title": "Streak 마일스톤 달성!",

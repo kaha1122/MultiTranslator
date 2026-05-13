@@ -627,7 +627,8 @@
     "totalDays": "Всего дней",
     "nextMilestone": "Следующая цель",
     "milestones": "Этапы",
-    "daysUnit": "д",
+    "daysUnit": "дн.",
+    "daysUnitShort": "д",
     "daysLeftUnit": "д осталось",
     "celebration": {
       "title": "Цель достигнута!",

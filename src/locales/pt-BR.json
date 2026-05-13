@@ -627,7 +627,8 @@
     "totalDays": "Dias totais",
     "nextMilestone": "Próximo marco",
     "milestones": "Marcos",
-    "daysUnit": "d",
+    "daysUnit": "dias",
+    "daysUnitShort": "d",
     "daysLeftUnit": "d restantes",
     "celebration": {
       "title": "Marco alcançado!",

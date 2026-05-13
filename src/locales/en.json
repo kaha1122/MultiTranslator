@@ -633,7 +633,8 @@
     "totalDays": "Total Days",
     "nextMilestone": "Next milestone",
     "milestones": "Milestones",
-    "daysUnit": "d",
+    "daysUnit": "days",
+    "daysUnitShort": "d",
     "daysLeftUnit": "d left",
     "celebration": {
       "title": "Streak Milestone!",
