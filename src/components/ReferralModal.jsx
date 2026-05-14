@@ -110,33 +110,43 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
 
     // target: 'android' | 'iosweb' — 받는 친구의 단말 기준
     const handleShare = async (target) => {
-        const message = (t('bonus.referral.shareMessage') || 'Code: {code}\n{url}')
-            .replace('{code}', myCode)
-            .replace('{url}', getShareUrl(target));
+        const rawMsg = t('bonus.referral.shareMessage') || 'Code: {code}\n{url}';
+        const url = getShareUrl(target);
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
+
+        // 네이티브 share sheet용 텍스트: {url} 포함된 마지막 라인을 통째 제거 → url 필드로 분리.
+        // (카톡 iOS share extension이 text 안에 embedded URL을 받으면 메시지 전송 실패하는
+        //  케이스 회피. 모든 locale이 "...{code}\n\n[label]: {url}" 패턴이라 정규식 일괄 처리.)
+        const textForShare = rawMsg
+            .replace(/\n*[^\n]*\{url\}[^\n]*$/, '')
+            .replace('{code}', myCode)
+            .trim();
+
+        // 클립보드 fallback용: URL 포함된 전체 메시지 (붙여넣기 한 번으로 친구가 코드+URL 모두 받음)
+        const fullMessage = rawMsg.replace('{code}', myCode).replace('{url}', url);
 
         // Android System WebView는 navigator.share 미노출(2026-04-26 단말 검증).
         // 데스크탑 Chrome/Edge·iOS WKWebView 등에서는 동작할 수 있어 시도는 유지.
         // 안드로이드 native Share 플러그인은 다음 AAB 빌드 시 cap sync 후 부활 예정.
         if (typeof navigator.share === 'function') {
             try {
-                await navigator.share({ title, text: message });
+                await navigator.share({ title, text: textForShare, url });
                 return;
-            } catch (e) {
-                if (e?.name === 'AbortError') return;
-                console.warn('[Referral] navigator.share failed:', e?.name, e?.message);
+            } catch (err) {
+                if (err?.name === 'AbortError') return;
+                console.warn('[Referral] navigator.share failed:', err?.name, err?.message);
             }
         }
 
         // Fallback — 메시지 전체를 클립보드 복사 + 사용자에게 다음 동작 안내
         try {
-            await navigator.clipboard.writeText(message);
+            await navigator.clipboard.writeText(fullMessage);
             setCopiedFlash(true);
             setShareHintVisible(true);
             setTimeout(() => setCopiedFlash(false), 1500);
             setTimeout(() => setShareHintVisible(false), 4000);
-        } catch (e) {
-            console.error('[Referral] clipboard failed:', e);
+        } catch (err) {
+            console.error('[Referral] clipboard failed:', err);
         }
     };
 
