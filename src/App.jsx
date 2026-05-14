@@ -239,6 +239,31 @@ function App() {
     return () => { removers.forEach(h => { try { h.remove?.(); } catch {} }); };
   }, []);
 
+  // Web FCM foreground 메시지 리스너 — 네이티브가 아닐 때만 발화
+  // 브라우저는 foreground 시 시스템 알림 자동 표시 안 함 → 수동으로 Notification 띄움
+  // background 메시지는 firebase-messaging-sw.js가 처리
+  useEffect(() => {
+    if (Capacitor.isNativePlatform?.()) return;
+    let unsub = null;
+    (async () => {
+      try {
+        const { attachWebFCMForegroundListener } = await import('./utils/pushNotifications');
+        unsub = await attachWebFCMForegroundListener((payload) => {
+          const title = payload?.notification?.title || payload?.data?.title;
+          const body = payload?.notification?.body || payload?.data?.body || '';
+          if (!title) return;
+          // 시스템 알림 직접 표시 (foreground UX — 사용자가 다른 탭을 보고 있을 수 있음)
+          if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            try { new Notification(title, { body, icon: '/icon-192.png' }); } catch {}
+          }
+        });
+      } catch (err) {
+        console.warn('[Push-Web] foreground listener setup failed:', err?.message);
+      }
+    })();
+    return () => { try { unsub?.(); } catch {} };
+  }, []);
+
   // 네이티브 앱 버전 추적 — 앱 실행 시마다 users.currentNativeVersion + currentNativePlatform 업데이트
   // + 최초 1회 users.firstNativeVersion + firstNativePlatform 설정 (향후 feature launch 판정용)
   // iOS/Android 버전이 독립적으로 관리되므로 플랫폼 필드 함께 저장 (예: iOS v1.2.4 vs Android v1.2.7)
@@ -1832,18 +1857,26 @@ function App() {
     // FCM 토큰: 네이티브 + 권한 granted + 토큰 배열 비어있을 때 register() 재호출
     // 'registration' 이벤트는 App.jsx 전역 리스너가 saveFcmTokenToFirestore로 처리
     const hasTokens = Array.isArray(profile.fcmTokens) && profile.fcmTokens.length > 0;
-    if (Capacitor.isNativePlatform?.() && !hasTokens && !asyncHealRef.current.fcm) {
+    if (!hasTokens && !asyncHealRef.current.fcm) {
       asyncHealRef.current.fcm = true;
       (async () => {
         try {
-          const { PushNotifications } = await import('@capacitor/push-notifications');
-          const perm = await PushNotifications.checkPermissions();
-          if (perm.receive === 'granted') {
-            console.log('[ProfileHeal] FCM tokens empty — re-registering');
-            await PushNotifications.register();
+          if (Capacitor.isNativePlatform?.()) {
+            const { PushNotifications } = await import('@capacitor/push-notifications');
+            const perm = await PushNotifications.checkPermissions();
+            if (perm.receive === 'granted') {
+              console.log('[ProfileHeal] FCM tokens empty — re-registering (native)');
+              await PushNotifications.register();
+            }
+          } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+            // Web: 이전에 권한을 받아둔 적이 있으면 (브라우저 영구 기억) 토큰 재발급 시도.
+            // 권한 prompt는 발화 안 함 (사용자 액션 없이 reqestPermission 호출 금지).
+            console.log('[ProfileHeal] FCM tokens empty — re-registering (web)');
+            const { registerWebFCM } = await import('./utils/pushNotifications');
+            await registerWebFCM(user.uid);
           }
-        } catch (e) {
-          console.warn('[ProfileHeal] FCM re-register failed:', e.message);
+        } catch (err) {
+          console.warn('[ProfileHeal] FCM re-register failed:', err.message);
         }
       })();
     }

@@ -18,7 +18,26 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
     const finish = (result) => onClose?.({ result });
 
     const handleAccept = async () => {
-        if (!isNative) { finish('registered'); return; }
+        // Web 경로 — registerWebFCM (권한 + 토큰 + Firestore 저장 통합)
+        if (!isNative) {
+            setBusy(true);
+            try {
+                const { registerWebFCM } = await import('../utils/pushNotifications');
+                const res = await registerWebFCM(uid);
+                if (res.ok) {
+                    if (uid) await setSubscriptionAlertPref(uid, true);
+                    setBusy(false); finish('registered'); return;
+                }
+                setBusy(false);
+                // 브라우저 미지원 / 거부 → escape (dismissed로 분류해서 재발화 가능하도록)
+                finish(res.reason === 'denied' ? 'denied' : 'dismissed');
+            } catch (e) {
+                console.warn('[PushOptIn-Web] failed:', e?.message);
+                setBusy(false);
+                finish('dismissed');
+            }
+            return;
+        }
         setBusy(true);
         try {
             const mod = await import('@capacitor/push-notifications');
@@ -43,8 +62,8 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
             if (uid) await setSubscriptionAlertPref(uid, true);
             setBusy(false);
             finish('registered');
-        } catch (e) {
-            console.warn('[PushOptIn] handleAccept failed:', e?.message);
+        } catch (err) {
+            console.warn('[PushOptIn] handleAccept failed:', err?.message);
             setBusy(false);
             finish('dismissed');
         }

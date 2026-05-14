@@ -3,6 +3,7 @@ import { getAuth, initializeAuth, browserLocalPersistence, GoogleAuthProvider, F
 import { getFirestore, initializeFirestore } from "firebase/firestore";
 import { getStorage } from "firebase/storage";
 import { getAnalytics } from "firebase/analytics";
+import { getMessaging, isSupported as isMessagingSupported } from "firebase/messaging";
 import { Capacitor } from '@capacitor/core';
 
 const firebaseConfig = {
@@ -43,6 +44,27 @@ export const appleProvider = new OAuthProvider('apple.com');
 appleProvider.addScope('email');
 appleProvider.addScope('name');
 export const analytics = typeof window !== 'undefined' ? getAnalytics(app) : null;
+
+// Web FCM messaging — 네이티브는 Capacitor PushNotifications 사용하므로 skip.
+// isSupported(): 시크릿모드/구형 브라우저/일부 인앱 브라우저(카카오/네이버/인스타)는 false 반환.
+// lazy 캐시: 첫 호출에만 init, 이후 동일 인스턴스 반환.
+let _webMessaging = null;
+let _webMessagingChecked = false;
+export async function getWebMessaging() {
+    if (_webMessagingChecked) return _webMessaging;
+    _webMessagingChecked = true;
+    if (typeof window === 'undefined') return null;
+    if (Capacitor.isNativePlatform?.()) return null;
+    try {
+        const supported = await isMessagingSupported();
+        if (!supported) return null;
+        _webMessaging = getMessaging(app);
+        return _webMessaging;
+    } catch (e) {
+        console.warn('[Firebase] Web messaging init failed:', e?.message);
+        return null;
+    }
+}
 
 export { RecaptchaVerifier };
 export default app;

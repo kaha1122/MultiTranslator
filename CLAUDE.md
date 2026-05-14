@@ -39,7 +39,7 @@ npm run cap:ios          # Xcode 열기
 - `VITE_*` 접두사는 **클라이언트에 평문 inline됨** → 비밀은 절대 `VITE_` 금지
 - 비밀의 유일한 거처: **Render 환경변수**. 클라는 서버 경유 호출
 - **배포 전 `npm run check-secrets` 필수** — `dist/`에서 ALLOWLIST 외 키 발견 시 즉시 폐기 + 재발급
-- 안전한 `VITE_*`: `VITE_FIREBASE_*` (Web config), `VITE_TOSS_CLIENT_KEY`, `VITE_REVENUECAT_*_KEY`, `VITE_PAYPAL_CLIENT_ID`, `VITE_API_URL`만
+- 안전한 `VITE_*`: `VITE_FIREBASE_*` (Web config + VAPID public key), `VITE_TOSS_CLIENT_KEY`, `VITE_REVENUECAT_*_KEY`, `VITE_PAYPAL_CLIENT_ID`, `VITE_API_URL`만
 - **금지**: `VITE_GEMINI_*`, `VITE_AZURE_*_KEY`, `VITE_OPENAI_*`, `VITE_*_SECRET`, `VITE_YOUTUBE_API_KEY`
 
 ### 2. `.env.local` 파일명 사용 금지
