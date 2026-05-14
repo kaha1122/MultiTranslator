@@ -510,7 +510,7 @@ function App() {
   const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
 
   // Streak 시스템 — 마일스톤 7/14/30/100일 자동 보너스 (Phase 1)
-  const { streakCurrent, streakLongest, totalAchievedDays, earnedMilestones, nextMilestone, nextReward, daysToNext, celebration, dismissCelebration } = useStreak(user, weeklyData, dailyGoal);
+  const { streakCurrent, streakLongest, totalAchievedDays, earnedMilestones, nextMilestone, nextReward, daysToNext, celebration, dismissCelebration } = useStreak(user, weeklyData, dailyGoal, profile);
 
   // Phase 2 자동 reschedule useEffect: sourceLang TDZ 회피를 위해 sourceLang useState 선언
   // 이후 위치로 이동됨 (App.jsx 하단부). 여기서는 placeholder만.

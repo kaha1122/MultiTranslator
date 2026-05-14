@@ -60,7 +60,7 @@ const calcLongestFromSet = (achievedSet) => {
 
 const API_URL = import.meta.env.VITE_API_URL || '';
 
-export const useStreak = (user, weeklyData, dailyGoal = 3) => {
+export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
     const [streakCurrent, setStreakCurrent] = useState(0);
     const [streakLongest, setStreakLongest] = useState(0);
     const [totalAchievedDays, setTotalAchievedDays] = useState(0);
@@ -140,13 +140,13 @@ export const useStreak = (user, weeklyData, dailyGoal = 3) => {
     useEffect(() => {
         const uid = user?.uid;
         if (!uid) return;
-        // race 가드: dailyProgress 비어있고 streak 0이면 의미 없는 초기값이라 persist 스킵.
-        // 신규 anon 유저 부팅 시 AuthContext의 initial setDoc(no-merge, 전체 식별 필드 기록)보다
-        // useStreak의 setDoc-merge가 먼저 도착하면 phantom users doc이 생기고, AuthContext의
-        // getDoc은 snap.exists()=true로 보고 initial setDoc과 onSnapshot fallback을 모두 스킵 →
-        // uid/isAnonymous/tier/platform/deviceLang/createdAt이 영구 누락되는 사고가 발생함
-        // (HBr7nyrvj4SkLxsiDDHM415FsWK2 사례, 2026-05-13 Google Ads 트래픽 첫날 다수 검출).
-        if (achievedSetRef.current.size === 0 && streakCurrent === 0 && streakLongest === 0) return;
+        // race 가드: AuthContext의 initial setDoc 완료 후에만 persist.
+        // profile.createdAt이 셋되었다 = AuthContext가 users doc을 정상 생성하고 onSnapshot으로
+        // profile에 반영된 시점 = race 위험 0. 이전(profile=null 또는 createdAt 없음)에 persist하면
+        // phantom users doc 생성 race로 uid/isAnonymous/tier/platform/deviceLang/createdAt이
+        // 영구 누락됨 (HBr7nyrvj4SkLxsiDDHM415FsWK2 사례, 2026-05-13 Google Ads 트래픽 첫날 다수 검출).
+        // AuthContext가 완료되면 dep 변경으로 effect 재발화 → streak=0/0이어도 정상 persist됨.
+        if (!profile?.createdAt) return;
         if (streakCurrent === lastPersistedRef.current.current && streakLongest === lastPersistedRef.current.longest) return;
         lastPersistedRef.current = { current: streakCurrent, longest: streakLongest };
         setDoc(doc(db, 'users', uid), {
@@ -154,7 +154,7 @@ export const useStreak = (user, weeklyData, dailyGoal = 3) => {
             streakLongest,
             streakUpdatedAt: serverTimestamp(),
         }, { merge: true }).catch(e => console.error('[useStreak] persist failed:', e));
-    }, [streakCurrent, streakLongest, user?.uid]);
+    }, [streakCurrent, streakLongest, user?.uid, profile?.createdAt]);
 
     // 마일스톤 도달 시 자동 claim (Option B)
     useEffect(() => {
