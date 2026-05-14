@@ -132,14 +132,17 @@ export default function ReferralModal({ open, onClose, sourceLang, phoneCountry,
         const fullMessage = rawMsg.replace('{code}', myCode).replace('{url}', url);
 
         // Android System WebView는 navigator.share 미노출(2026-04-26 단말 검증).
-        // 데스크탑 Chrome/Edge·iOS WKWebView 등에서는 동작할 수 있어 시도는 유지.
-        // 안드로이드 native Share 플러그인은 다음 AAB 빌드 시 cap sync 후 부활 예정.
+        // iOS WKWebView·데스크탑 Chrome/Edge 등은 빌트인 지원이라 OS share sheet 자동 발화.
+        // Android native @capacitor/share는 다음 AAB 빌드 시 cap sync + 분기 추가 예정.
         if (typeof navigator.share === 'function') {
             try {
                 await navigator.share({ title, text: textForShare, url });
+                // 성공 → 모달 자동 닫기. 외부 앱(카톡/메일 등)에서 돌아온 사용자에게
+                // "친구 추천 완료"의 명확한 피드백 제공 (어제까지는 모달 그대로 열려있어 헷갈림).
+                onClose?.();
                 return;
             } catch (err) {
-                if (err?.name === 'AbortError') return;
+                if (err?.name === 'AbortError') return; // 취소 → 모달 유지 (재시도 가능)
                 console.warn('[Referral] navigator.share failed:', err?.name, err?.message);
             }
         }
@@ -150,7 +153,11 @@ export default function ReferralModal({ open, onClose, sourceLang, phoneCountry,
             setCopiedFlash(true);
             setShareHintVisible(true);
             setTimeout(() => setCopiedFlash(false), 1500);
-            setTimeout(() => setShareHintVisible(false), 4000);
+            // hint 4초 표시 후 모달 자동 닫기 (사용자는 카톡으로 가서 붙여넣기 진행)
+            setTimeout(() => {
+                setShareHintVisible(false);
+                onClose?.();
+            }, 4000);
         } catch (err) {
             console.error('[Referral] clipboard failed:', err);
         }

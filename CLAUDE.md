@@ -115,7 +115,7 @@ npm run cap:ios          # Xcode 열기
 
 ## 대기 작업 (코드 변경 트리거 시 상기)
 
-- **다음 AAB 빌드 시**: Direct Boot 가드 / FB SDK 17.0.2 고정 / `@capacitor/share` cap sync + ReferralModal native 분기 / Android Firebase Auth `browserLocalPersistence` 강제 (Phase 1-C, 우선순위 높음)
+- **다음 AAB 빌드 시 (Android 한정)**: Direct Boot 가드 / FB SDK 17.0.2 고정 / `@capacitor/share` cap sync + [ReferralModal.handleShare](src/components/ReferralModal.jsx#L107)에 `Capacitor.getPlatform() === 'android'` 분기로 `@capacitor/share Share.share()` 호출 추가 (try/catch + navigator.share fallback). Android System WebView는 `navigator.share` 미노출이라 native plugin 필수. iOS WKWebView는 `navigator.share` 빌트인 지원(iOS 12.2+)이라 동일 코드로 자동 OS share sheet 발화 — **iOS는 추가 작업 불필요** / Android Firebase Auth `browserLocalPersistence` 강제 (Phase 1-C, 우선순위 높음)
   - 트리거: AAB 빌드 / `versionCode` bump / `MainApplication.java` / `android/app/build.gradle` / `src/firebase/config.js` 편집
 - **iOS 심사 통과 후**: Push Notifications Xcode 통합 (Capability 추가 + AppDelegate.swift 핸들러) + Meta 대시보드 iPhone Store ID(`6761342764`) 등록
 
