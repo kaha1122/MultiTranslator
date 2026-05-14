@@ -140,6 +140,13 @@ export const useStreak = (user, weeklyData, dailyGoal = 3) => {
     useEffect(() => {
         const uid = user?.uid;
         if (!uid) return;
+        // race 가드: dailyProgress 비어있고 streak 0이면 의미 없는 초기값이라 persist 스킵.
+        // 신규 anon 유저 부팅 시 AuthContext의 initial setDoc(no-merge, 전체 식별 필드 기록)보다
+        // useStreak의 setDoc-merge가 먼저 도착하면 phantom users doc이 생기고, AuthContext의
+        // getDoc은 snap.exists()=true로 보고 initial setDoc과 onSnapshot fallback을 모두 스킵 →
+        // uid/isAnonymous/tier/platform/deviceLang/createdAt이 영구 누락되는 사고가 발생함
+        // (HBr7nyrvj4SkLxsiDDHM415FsWK2 사례, 2026-05-13 Google Ads 트래픽 첫날 다수 검출).
+        if (achievedSetRef.current.size === 0 && streakCurrent === 0 && streakLongest === 0) return;
         if (streakCurrent === lastPersistedRef.current.current && streakLongest === lastPersistedRef.current.longest) return;
         lastPersistedRef.current = { current: streakCurrent, longest: streakLongest };
         setDoc(doc(db, 'users', uid), {
