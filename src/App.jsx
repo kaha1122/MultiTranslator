@@ -3223,6 +3223,7 @@ function App() {
         open={showReferralModal}
         onClose={() => setShowReferralModal(false)}
         sourceLang={sourceLang}
+        phoneCountry={profile?.phoneCountry}
         onSuccess={() => {
           // 성공 후 잠시 후 닫기 (사용자가 메시지 볼 시간 확보)
           setTimeout(() => setShowReferralModal(false), 2000);

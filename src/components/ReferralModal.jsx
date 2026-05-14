@@ -16,27 +16,31 @@ const AndroidIcon = ({ size = 14 }) => (
 );
 import { useT } from '../utils/i18n';
 import { authFetch } from '../utils/authFetch';
+import { getCountryByLang } from '../utils/phoneFormat';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
-// 2026-05-08: iOS 앱 출시 → 기존 https://pronunfit.com/ 에서 App Store URL 로 교체.
-//   PC/웹 수신자가 클릭해도 App Store 페이지가 정상 표시되며 "iPhone 에서 열기" 안내 제공.
-// 2026-05-14: 국가 코드 없는 canonical 형태로 변경 — Apple이 접속자 IP 기반 자동 redirect.
-//   기존 /us/app/.../ URL은 카톡 인앱 브라우저가 Universal Link을 발화하지 않을 때
-//   US 페이지를 강제 표시해 한국·베트남 친구가 영어 페이지를 봄. canonical 형태는 한국 IP → KR,
-//   베트남 IP → VN 등으로 자동 redirect되어 자연스럽게 본인 국가 App Store 노출.
-const IOS_STORE_URL = 'https://apps.apple.com/app/id6761342764';
+const APPLE_APP_ID = '6761342764';
+const ANDROID_PKG = 'com.arigems.pronunfit';
+const PLAY_STORE_URL = `https://play.google.com/store/apps/details?id=${ANDROID_PKG}`;
 
 // 공유 URL은 "받는 친구의 단말" 기준으로 결정. 발신자가 친구 단말을 알고 직접 버튼을 고름.
 // (예전엔 발신자 플랫폼으로 분기했으나, Android 발신자 → iPhone 수신자 시 Play Store 링크가
 //  iPhone에서 죽은 링크가 되는 문제가 있어 사용자 명시 선택 방식으로 변경. 2026-04-26)
 // target: 'android' = 받는 친구가 Android(갤럭시 등) → Play Store
 //         'iosweb'  = 받는 친구가 iPhone 또는 PC/웹 사용자 → App Store
-function getShareUrl(target) {
-    return target === 'android' ? PLAY_STORE_URL : IOS_STORE_URL;
+//
+// 2026-05-14: iOS URL을 발신자 국가 명시 형태로 변경 — canonical /app/id... URL이 HTTP 301
+//   redirect를 일으켜 카톡 등 메신저의 link preview generator가 redirect 체인을 따라가지
+//   못하고 timeout → 친구에게 메시지 전송 실패하는 이슈 해결. 명시 국가 URL(`/kr/`, `/vn/`)은
+//   redirect 없이 직접 응답 → preview gen 정상. 카톡뿐 아니라 텔레그램·라인·WhatsApp 등
+//   모든 메신저 공통 best practice.
+function getShareUrl(target, country) {
+    if (target === 'android') return PLAY_STORE_URL;
+    const cc = (country || 'US').toLowerCase();
+    return `https://apps.apple.com/${cc}/app/id${APPLE_APP_ID}`;
 }
 
-export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) {
+export default function ReferralModal({ open, onClose, sourceLang, phoneCountry, onSuccess }) {
     const t = useT(sourceLang);
     const [myCode, setMyCode] = useState('');
     const [loadingCode, setLoadingCode] = useState(false);
@@ -111,7 +115,9 @@ export default function ReferralModal({ open, onClose, sourceLang, onSuccess }) 
     // target: 'android' | 'iosweb' — 받는 친구의 단말 기준
     const handleShare = async (target) => {
         const rawMsg = t('bonus.referral.shareMessage') || 'Code: {code}\n{url}';
-        const url = getShareUrl(target);
+        // 발신자 국가: profile.phoneCountry > sourceLang 추론 > 'US' 폴백
+        const country = phoneCountry || getCountryByLang(sourceLang) || 'US';
+        const url = getShareUrl(target, country);
         const title = t('bonus.referral.shareTitle') || 'PronunFit';
 
         // 네이티브 share sheet용 텍스트: {url} 포함된 마지막 라인을 통째 제거 → url 필드로 분리.
