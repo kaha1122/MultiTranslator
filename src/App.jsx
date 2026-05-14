@@ -1543,7 +1543,6 @@ function App() {
   const [showSubscriptionPrompt, setShowSubscriptionPrompt] = useState(false);
 
   const shouldShowSubscriptionPrompt = (p) => {
-    if (!Capacitor.isNativePlatform?.()) return false;
     if (!p) return false;
     // 같은 세션 내 한 번 닫혔으면 재발화 금지 (serverTimestamp pending race 차단)
     if (pushPromptDismissedRef.current) return false;
@@ -1552,13 +1551,26 @@ function App() {
     if (p.hasCompletedOnboarding !== true && localStorage.getItem('deviceOnboardingDone') !== '1') return false;
     // AI Consent 먼저 → AI Consent 완료 전에는 푸시 모달 보류
     if (!p.aiConsentAt && localStorage.getItem('aiConsentAccepted') !== '1') return false;
-    // 버전 가드 — 네이티브 플러그인 없는 구버전 유저에겐 프롬프트 안 띄움 (깨진 UI 방지)
-    if (!supportsFeature('notifications', p)) return false;
     // 누적 dismiss cap (spam 방지)
     if ((p.pushOptInDismissCount || 0) >= 3) return false;
     // 7일 스누즈 — 새 시스템에서 표시된 적 있으면 7일 대기
     const last = p.pushOptInLastShownAt?.toDate?.()?.getTime() || 0;
     if (last > 0 && Date.now() - last < 7 * 24 * 60 * 60 * 1000) return false;
+
+    // 플랫폼별 지원 가드
+    if (Capacitor.isNativePlatform?.()) {
+      // 네이티브: 플러그인 통합 버전 가드 (Android 1.2.7+, iOS 1.3.0+) — 깨진 UI 방지
+      if (!supportsFeature('notifications', p)) return false;
+    } else {
+      // Web: Notification API + serviceWorker + VAPID 가드.
+      // 모달 띄워도 토큰 발급 불가능한 환경(iOS Safari 일반탭, 카카오/인스타 인앱브라우저, 시크릿모드, VAPID 미설정)은 silent skip.
+      // → 사용자에게 헛된 권한 요청 안 함 (UX + Apple/Google 신뢰도 보호)
+      if (typeof Notification === 'undefined') return false;
+      if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) return false;
+      if (!import.meta.env.VITE_FIREBASE_VAPID_KEY) return false;
+      // 브라우저 영구 거부 상태면 재요청 불가 → 모달 무용
+      if (Notification.permission === 'denied') return false;
+    }
     return true;
   };
 
