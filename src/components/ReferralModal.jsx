@@ -21,7 +21,11 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';
 // 2026-05-08: iOS 앱 출시 → 기존 https://pronunfit.com/ 에서 App Store URL 로 교체.
 //   PC/웹 수신자가 클릭해도 App Store 페이지가 정상 표시되며 "iPhone 에서 열기" 안내 제공.
-const IOS_STORE_URL = 'https://apps.apple.com/us/app/pronunfit/id6761342764';
+// 2026-05-14: 국가 코드 없는 canonical 형태로 변경 — Apple이 접속자 IP 기반 자동 redirect.
+//   기존 /us/app/.../ URL은 카톡 인앱 브라우저가 Universal Link을 발화하지 않을 때
+//   US 페이지를 강제 표시해 한국·베트남 친구가 영어 페이지를 봄. canonical 형태는 한국 IP → KR,
+//   베트남 IP → VN 등으로 자동 redirect되어 자연스럽게 본인 국가 App Store 노출.
+const IOS_STORE_URL = 'https://apps.apple.com/app/id6761342764';
 
 // 공유 URL은 "받는 친구의 단말" 기준으로 결정. 발신자가 친구 단말을 알고 직접 버튼을 고름.
 // (예전엔 발신자 플랫폼으로 분기했으나, Android 발신자 → iPhone 수신자 시 Play Store 링크가
