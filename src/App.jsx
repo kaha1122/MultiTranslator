@@ -3635,16 +3635,15 @@ function App() {
                 </p>
                 {hasBonusActive && (
                   <div style={{
-                    width: '100%', display: 'block', padding: '10px 12px', marginBottom: '4px',
-                    borderRadius: '12px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                    border: '1px solid #93c5fd', textAlign: 'left',
+                    width: '100%', display: 'block', padding: '4px 4px 8px', marginBottom: '4px',
+                    textAlign: 'left',
                   }}>
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '2px' }}>
                       <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1d4ed8' }}>
                         🎁 {getT(sourceLang, 'bonus.label') || 'Bonus'} {bonusPoints}pt
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#2563eb' }}>
+                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
                       {getT(sourceLang, 'bonus.noInterstitialAd') || 'No interstitial ad'}
                     </div>
                   </div>
