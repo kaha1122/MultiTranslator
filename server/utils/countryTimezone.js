@@ -302,6 +302,51 @@ function countriesAtLocalHour22(now = new Date()) {
     return Object.keys(TZ_BY_COUNTRY).filter(c => getLocalHour(c, now) === 22);
 }
 
+// IANA TZ로 country의 현재 local Y/M/D/h/m/s 추출. 매핑 없으면 null.
+function getLocalDateParts(country, now = new Date()) {
+    const tz = TZ_BY_COUNTRY[country];
+    if (!tz) return null;
+    try {
+        const parts = new Intl.DateTimeFormat('en-CA', {
+            timeZone: tz,
+            year: 'numeric', month: '2-digit', day: '2-digit',
+            hour: '2-digit', minute: '2-digit', second: '2-digit',
+            hour12: false,
+        }).formatToParts(now);
+        const get = (type) => parseInt(parts.find(p => p.type === type).value, 10);
+        return {
+            Y: get('year'), M: get('month'), D: get('day'),
+            h: get('hour'), m: get('minute'), s: get('second'),
+        };
+    } catch {
+        return null;
+    }
+}
+
+/**
+ * country의 현재 local 날짜 ('YYYY-MM-DD'). 매핑 없으면 server local fallback.
+ */
+function getLocalDateStr(country, now = new Date()) {
+    const p = getLocalDateParts(country, now);
+    if (p) return `${p.Y}-${String(p.M).padStart(2, '0')}-${String(p.D).padStart(2, '0')}`;
+    const d = now;
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+}
+
+/**
+ * country의 현재 local 자정에 해당하는 UTC Date 객체.
+ * 매핑 없으면 server local 자정 fallback.
+ * 사용: streak-risk cron에서 "오늘 자정(현지) < lastActiveAt" 컷오프 비교.
+ */
+function getLocalStartOfToday(country, now = new Date()) {
+    const p = getLocalDateParts(country, now);
+    if (!p) {
+        const d = new Date(now); d.setHours(0, 0, 0, 0); return d;
+    }
+    const elapsedMs = (p.h * 3600 + p.m * 60 + p.s) * 1000;
+    return new Date(now.getTime() - elapsedMs);
+}
+
 module.exports = {
     TZ_BY_COUNTRY,
     deviceLangToCountry,
@@ -310,4 +355,6 @@ module.exports = {
     isLocalHour10,
     countriesAtLocalHour10,
     countriesAtLocalHour22,
+    getLocalDateStr,
+    getLocalStartOfToday,
 };

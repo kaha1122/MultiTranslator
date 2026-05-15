@@ -19,7 +19,7 @@ const { admin, adminDb } = require('../config/firebase');
 const { requireCronAuth } = require('../middleware/auth');
 const { sendReengagementPush, sendStreakRiskPush } = require('../utils/sendPush');
 const { sendFreeTalkEmail, verifyUnsubToken } = require('../utils/sendEmail');
-const { effectiveCountry, getLocalHour, countriesAtLocalHour10, countriesAtLocalHour22, TZ_BY_COUNTRY } = require('../utils/countryTimezone');
+const { effectiveCountry, getLocalHour, countriesAtLocalHour10, countriesAtLocalHour22, TZ_BY_COUNTRY, getLocalDateStr, getLocalStartOfToday } = require('../utils/countryTimezone');
 
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
@@ -315,17 +315,12 @@ async function processOnlyUid(uid, opts) {
 // ─────────────────────────────────────────────────────────────────────────
 // Phase 2: Streak 위험 푸시 처리 — 오늘 미달성 + streakCurrent >= 3 유저 대상
 // 한 country에 대해 후보 쿼리 + 필터 + 발송. local 22시 슬롯에서만 실행됨.
+// "오늘 자정"은 country의 IANA TZ 기준 — 서버 UTC 기준이면 KST/JST 09시 이후
+// 활동만으로도 무조건 탈락하는 버그가 있었음 (2026-05-15 vTXu7Zl... 사례).
 // ─────────────────────────────────────────────────────────────────────────
-function toLocalDateStr(d = new Date()) {
-    const yyyy = d.getFullYear();
-    const mm = String(d.getMonth() + 1).padStart(2, '0');
-    const dd = String(d.getDate()).padStart(2, '0');
-    return `${yyyy}-${mm}-${dd}`;
-}
-
 async function processStreakRiskForCountry(country, now, opts) {
-    const todayStr = toLocalDateStr(now);
-    const startOfToday = new Date(now); startOfToday.setHours(0, 0, 0, 0);
+    const todayStr = getLocalDateStr(country, now);
+    const startOfToday = getLocalStartOfToday(country, now);
     const tsStartOfToday = Timestamp.fromDate(startOfToday);
 
     let snap;

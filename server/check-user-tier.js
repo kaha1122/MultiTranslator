@@ -40,7 +40,23 @@ if (!uid) { console.error('UID required'); process.exit(1); }
         aiConsentAt: toIso(d.aiConsentAt),
         // Activity
         lastActiveAt: toIso(d.lastActiveAt),
+        lastActiveDay: d.lastActiveDay || null,
         createdAt: toIso(d.createdAt),
+        // Geo / Push reach (re-engagement + streak-risk 진단)
+        geoCountry: d.geoCountry || null,
+        deviceLang: d.deviceLang || null,
+        fcmTokensCount: Array.isArray(d.fcmTokens) ? d.fcmTokens.length : 0,
+        lifecycleStage: d.lifecycleStage || null,
+        reengagementOptOut: d.reengagementOptOut ?? null,
+        // Streak (Phase 1) + Streak Risk Push (Phase 2)
+        streakCurrent: d.streakCurrent ?? null,
+        streakLongest: d.streakLongest ?? null,
+        streakUpdatedAt: toIso(d.streakUpdatedAt),
+        earnedMilestones: Array.isArray(d.earnedMilestones) ? d.earnedMilestones : [],
+        streakIntroDismissed: d.streakIntroDismissed ?? null,
+        streakRiskOptOut: d.streakRiskOptOut ?? null,
+        lastStreakRiskPushDate: d.lastStreakRiskPushDate || null,
+        lastStreakRiskPushAt: toIso(d.lastStreakRiskPushAt),
     }, null, 2));
     process.exit(0);
 })().catch(e => { console.error(e); process.exit(3); });
