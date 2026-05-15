@@ -752,6 +752,12 @@ function App() {
   // 발음 평가 성공 핸들러 — daily 한도 미사용 분 우선 차감, 초과분은 pronCredits(영구) 소비.
   // addAdPoints(1)은 점수 시스템(15점)에 별도 차감 — Daily 한도와는 독립된 게이트.
   const onPronSuccess = useCallback(async () => {
+    // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가 보너스 차감 +
+    // 광고 카운터 누적 여부를 내부에서 모두 처리 — 잔여 보너스 부족 시 광고 카운터로 자연 fallback.
+    if (hasBonusActive) {
+      addAdPoints(1, { bonusCost: 2 });
+      return;
+    }
     if (tier === 'trial' && todayPronCount >= TRIAL_DAILY_PRON_LIMIT && pronCredits > 0) {
       // daily 20회 초과 → 광고 적립 credits 소비
       await consumePronCredits(1);
@@ -4216,15 +4222,21 @@ function App() {
                 setShowTrialLimitModal(true);
                 return;
               }
-              // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
-              if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
-                await consumeFreeTalkCredits(1);
+              // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
+              // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
+              if (hasBonusActive) {
+                addAdPoints(1, { bonusCost: 10 });
               } else {
-                incrementDailyFreeTalk();
+                // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
+                if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
+                  await consumeFreeTalkCredits(1);
+                } else {
+                  incrementDailyFreeTalk();
+                }
+                // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
+                // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
+                addAdPoints(1, { bonusCost: 10 });
               }
-              // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
-              // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-              addAdPoints(1, { bonusCost: 10 });
               // 분석용 평생 누적 카운터
               incrementTotalFreeTalk();
               setFreeTalkSetup(args);
