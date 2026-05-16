@@ -86,29 +86,42 @@ const escapeXml = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-// ── 코칭 나레이션 전용 Multilingual Neural Voice 매핑 ──────────────────
-// Azure 의 multilingual voice 는 단일 voice 로 모국어 + 학습언어 를 native-like
-// 으로 자연스럽게 코드스위치(매끄러운 prosody, transition gap 없음).
-// 비용은 일반 Neural 과 동일 ($16/1M chars, S0 tier). HD voice 는 별도 비싼 tier
-// 라 사용 안 함.
+// ── 코칭 나레이션 전용 Multilingual Neural Voice 매트릭스 ──────────────────
+// Microsoft 공식 (speech-synthesis-markup-voice 문서):
+//   - en-US-AvaMultilingualNeural 등 4 개 영어 base voice 만 **77 locale 지원**
+//     명시 — ko/zh-CN/ja/vi/ru/pt-BR/fr/de/es 모두 포함.
+//   - 그 외 multilingual voice (Hyunsu/Xiaoxiao/Masaru/Vivienne/Seraphina/
+//     Isidora/Macerio) 는 secondary locale 미명시 → "default locale (자체 base)
+//     + 영어" 만 안전 추정 (Hyunsu 가 zh-CN 한자를 한국식으로 발음한 사용자
+//     보고와 일치).
 //
-// 선정 원칙:
-//   1) sourceLang base 의 multilingual voice 우선 (모국어 native 발음 보장).
-//   2) 같은 sourceLang 에서 user/ai 페어와 음색이 겹치지 않는 voice 선택
-//      (narration ≠ user ≠ ai 보장 — voice 다양성).
-//   3) Multilingual variant 가 없는 언어(vi, ru) 는 매핑 없음 → endpoint 가
-//      204 No Content 반환 → 클라가 카드 모달 fallback.
-const NARRATION_MULTILINGUAL_VOICE_BY_LANG = {
-    'ko':    'ko-KR-HyunsuMultilingualNeural',     // 남 (user/ai SunHi/InJoon 과 다름)
-    'en':    'en-US-AvaMultilingualNeural',         // 여 (Jenny/Guy 와 다름)
-    'ja':    'ja-JP-MasaruMultilingualNeural',       // 남 (Nanami/Keita 와 다름)
-    'zh-CN': 'zh-CN-YunyiMultilingualNeural',        // 여 (Xiaoxiao/Yunxi 와 다름 — Xiaoxiao 회피)
-    'fr':    'fr-FR-VivienneMultilingualNeural',     // 여 (Denise/Henri 와 다름)
-    'de':    'de-DE-SeraphinaMultilingualNeural',    // 여 (Katja/Conrad 와 다름)
-    'es':    'es-ES-IsidoraMultilingualNeural',      // 여 (Elvira/Alvaro 와 다름)
-    'pt-BR': 'pt-BR-MacerioMultilingualNeural',      // 남 (Francisca/Antonio 와 다름)
-    // 'vi', 'ru': multilingual variant 없음 — 코칭 음성 미지원
-};
+// 보수 매트릭스 (Option A): (sourceLang, targetLang) 조합이 정확히 지원되는
+// 경우만 음성 합성. 미지원이면 204 No Content → 클라가 AI-Tip Popup 으로
+// 텍스트만 표시.
+//   - sourceLang='en' + 어떤 targetLang 이든 → en-US-Ava (77 locale)
+//   - sourceLang ∈ {ko, ja, zh-CN, fr, de, es, pt-BR} + targetLang='en' →
+//     자체 base multilingual voice
+//   - 그 외 (예: ko 사용자가 zh-CN 학습) → null → 204
+//
+// 비용은 일반 Neural 과 동일 ($16/1M chars, S0 tier). HD voice 별도 tier 미사용.
+function getNarrationVoice(sourceLang, targetLang) {
+    // en 사용자 — Ava 가 77 locale 지원 → 모든 targetLang OK
+    if (sourceLang === 'en') return 'en-US-AvaMultilingualNeural';
+
+    // 그 외 sourceLang — 영어 학습 (targetLang='en') 만 안전 지원
+    if (targetLang !== 'en') return null;
+
+    return {
+        'ko':    'ko-KR-HyunsuMultilingualNeural',
+        'ja':    'ja-JP-MasaruMultilingualNeural',
+        'zh-CN': 'zh-CN-XiaoxiaoMultilingualNeural',
+        'fr':    'fr-FR-VivienneMultilingualNeural',
+        'de':    'de-DE-SeraphinaMultilingualNeural',
+        'es':    'es-ES-IsidoraMultilingualNeural',
+        'pt-BR': 'pt-BR-MacerioMultilingualNeural',
+        // 'vi', 'ru': multilingual variant 없음 — 미지원
+    }[sourceLang] || null;
+}
 
 // ─────────────────────────────────────────────────────────────────────────
 // POST /api/converse-start
@@ -266,9 +279,10 @@ router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
         return res.status(400).json({ error: 'Missing tipText, sourceLang, or targetLang' });
     }
 
-    const narrationVoice = NARRATION_MULTILINGUAL_VOICE_BY_LANG[sourceLang];
+    const narrationVoice = getNarrationVoice(sourceLang, targetLang);
     if (!narrationVoice) {
-        // multilingual voice 미지원 언어 — 음성 합성 X. 클라가 카드 모달로 fallback.
+        // (sourceLang, targetLang) 조합이 매트릭스 미지원 — 음성 합성 X.
+        // 클라가 AI-Tip Popup 으로 텍스트만 표시 (사용자 결정 옵션 A).
         return res.status(204).end();
     }
 

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { X, Mic, MicOff, RotateCcw } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import MessageCardModal from './MessageCardModal';
+import AITipPopup from './AITipPopup';
 import { useConversation } from '../hooks/useConversation';
 import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
@@ -57,6 +58,8 @@ export default function FreeTalkingChat({
     const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
     // Learning Tip 코칭 TTS 로딩 중인 user_free 메시지 id (스피너 노출용)
     const [learningTipLoadingId, setLearningTipLoadingId] = useState(null);
+    // 음성 미지원 (sourceLang, targetLang) 조합 시 텍스트만 보여주는 popup
+    const [aiTipPopup, setAiTipPopup] = useState({ open: false, text: '' });
 
     // STT 녹음
     const recorder = useFreeTalkRecorder({
@@ -84,6 +87,7 @@ export default function FreeTalkingChat({
             setPlaybackQueueDone(false);
             setCardOpenMessage(null);
             setCardSavedIds({});
+            setAiTipPopup({ open: false, text: '' });
             resetSession();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -161,14 +165,15 @@ export default function FreeTalkingChat({
         if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
     }
 
-    // Learning Tip 버튼 — 옵션 D + Multilingual voice:
-    //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스)
+    // AI-Tip 버튼 — 옵션 A 보수 매트릭스:
+    //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스, 변경 X)
     //   m.learning_tip_narration : SPOKEN 나레이션용 (2~4 문장, TTS-friendly)
-    // 버튼 클릭 시 narration 우선 사용 → 없으면 short 로 fallback (기존 누적 메시지 호환).
-    // /api/converse-coach-tts 가 sourceLang multilingual voice 단일 합성 + ‘...’ 부분
-    // 만 <lang xml:lang> 태그로 학습언어 hint → 매끄러운 코드스위치 + 원어민 발음.
-    // multilingual voice 미지원 언어 (vi, ru) → 서버 204 No Content → 카드 모달로
-    // fallback (음성 코칭 없이 시각 카드만 보여줌).
+    // 흐름:
+    //   1) 서버 /api/converse-coach-tts 호출
+    //   2) (sourceLang, targetLang) 매트릭스 매칭 → multilingual voice 음성 합성 후 재생
+    //   3) 매트릭스 미지원 조합 → 서버 204 No Content → 클라가 AITipPopup 으로
+    //      narration 텍스트를 시각 표시 (음성 없이 문자로 코칭 확인 가능)
+    //   4) 네트워크 에러 등 → 동일하게 AITipPopup fallback
     const handleLearningTip = async (msg) => {
         const ttsText = msg?.learning_tip_narration || msg?.learning_tip;
         if (!ttsText) return;
@@ -187,8 +192,8 @@ export default function FreeTalkingChat({
                 }),
             });
             if (res.status === 204) {
-                // multilingual voice 미지원 언어 (vi, ru 등) — 음성 코칭 없이 카드 모달로 안내
-                setCardOpenMessage(msg);
+                // 매트릭스 미지원 (sourceLang, targetLang) — narration 텍스트 popup
+                setAiTipPopup({ open: true, text: ttsText });
                 return;
             }
             if (!res.ok) throw new Error(`coach-tts ${res.status}`);
@@ -201,9 +206,9 @@ export default function FreeTalkingChat({
                 audio.play().catch(resolve);
             });
         } catch (e) {
-            console.warn('[FreeTalkingChat] coach-tts failed, opening card as fallback:', e?.message);
-            // 네트워크 에러 등 — 음성 대신 카드 모달
-            setCardOpenMessage(msg);
+            console.warn('[FreeTalkingChat] coach-tts failed, falling back to text popup:', e?.message);
+            // 네트워크 에러 등 → 텍스트 popup fallback
+            setAiTipPopup({ open: true, text: ttsText });
         } finally {
             if (url) { try { URL.revokeObjectURL(url); } catch (e) { /* noop */ } }
             setLearningTipLoadingId(null);
@@ -268,10 +273,9 @@ export default function FreeTalkingChat({
                     </div>
                 </header>
 
-                {/* 항상 노출되는 컴팩트 안내 — 카드 + AI-Tip 두 핵심 기능 한 줄씩 안내 */}
+                {/* 항상 노출되는 컴팩트 안내 — 메시지 탭 시 카드 오픈 */}
                 <div className="ftc-tap-hint" role="note">
-                    <div>💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}</div>
-                    <div>🎓 {t('freeTalk.aiTipHint') || 'AI-Tip 버튼으로 학습 코칭 나레이션을 들어보세요'}</div>
+                    💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}
                 </div>
 
                 <div className="ftc-messages">
@@ -415,6 +419,13 @@ export default function FreeTalkingChat({
                 targetGoal={targetGoal}
                 t={t}
                 ScenePracticeCardComp={ScenePracticeCardComp}
+            />
+
+            <AITipPopup
+                open={aiTipPopup.open}
+                text={aiTipPopup.text}
+                onClose={() => setAiTipPopup({ open: false, text: '' })}
+                t={t}
             />
         </div>
     );

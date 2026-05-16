@@ -41,7 +41,7 @@
     "rerecord": "重说",
     "learningTip": "AI-Tip",
     "tapHint": "点击任意消息打开学习卡 · 发音练习 + 保存延续 Streak",
-    "aiTipHint": "点击 AI-Tip 收听学习指导语音",
+    "aiTipTitle": "AI-Tip",
     "listen": "听",
     "confirmEdit": "保存",
     "cancelEdit": "取消",
