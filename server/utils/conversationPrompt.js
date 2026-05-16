@@ -138,12 +138,52 @@ The 3 messages should feel like the first ~20 seconds of a real interaction:
 
 ### [Phase 0: Scene Coherence — MANDATORY FIRST STEP, BEFORE any other phase]
 Before drafting any field, internally plan ONE specific micro-situation that ties
-intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment. Fill in
-your private mental scratchpad:
+intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment.
 
-  ① WHERE: a specific spot in "${scene}" (not generic).
-       Bad : "at the airport"
-       Good: "at the airline check-in counter, just walked up"
+**🔴 Category-aware interpretation — APPLY BEFORE step ① below**:
+The string "${scene}" means different things depending on category="${category}":
+
+  • category = "locations" → "${scene}" IS the physical place itself
+    (airport, hotel, restaurant, gym, etc.). Skip directly to step ① below
+    using "${scene}" as the location.
+
+  • category = "situations" → "${scene}" IS a CONVERSATION TYPE / interaction
+    pattern, NOT a place. The learner wants to practice this kind of exchange,
+    and the specific setting is YOUR choice. Before step ①:
+      - Pick ONE realistic, concrete setting where "${scene}" naturally occurs.
+      - That chosen setting becomes the WHERE for step ① below.
+      - Pick a DIFFERENT realistic setting each session for variety (see
+        Anti-Duplication block if present).
+    Examples of natural settings per situation scene:
+      - "smalltalk"   → office coffee break / gym locker room / dog park /
+                         neighborhood elevator / café next to someone reading
+      - "lost"         → subway station info booth / mall lost-and-found /
+                         airport help desk / hotel front desk (lost key)
+      - "reservation"  → restaurant phone call / hotel front desk / dental
+                         clinic counter / hair salon
+      - "disagree"     → meeting room / customer service desk / friend chat
+                         over coffee / family dinner
+      - "problem"      → IT support call / restaurant kitchen issue with staff /
+                         apartment maintenance / appliance return counter
+      - "directions"   → street corner with passerby / hotel concierge /
+                         tourist info center / subway exit map
+      - "intro"        → first day at new office / networking event / club
+                         orientation / new neighbor at the door
+      - "compliment"   → workplace recognition / friend's new haircut / chef
+                         after good meal / colleague's presentation
+      - "decline"      → party invite from coworker / sales pitch / extra
+                         drink offer / overtime request
+      - "advice"       → friend's home over tea / mentor's office hours /
+                         older sibling chat / pharmacist consult
+    The chosen setting determines responder_role for step ②.
+
+Now fill in your private mental scratchpad (using the location decided above):
+
+  ① WHERE: a specific spot (not generic).
+       For locations category: a specific spot inside "${scene}".
+         Bad : "at the airport"          Good: "at the airline check-in counter"
+       For situations category: the concrete setting you chose above.
+         Bad : "somewhere people meet"   Good: "office break room, Monday morning"
 
   ② WHO is the responder: a specific person the learner can speak to RIGHT NOW.
        This person becomes the responder_role. Examples:
@@ -278,6 +318,9 @@ ${styleDesc}
 ### [Input Variables]
 - Scene: ${scene}
 - Category: ${category}
+    ▸ "locations" → Scene is a PLACE (use it as the WHERE directly).
+    ▸ "situations" → Scene is a CONVERSATION TYPE (choose a realistic
+      setting yourself — see Phase 0 Category-aware interpretation above).
 - Target Language: ${targetLangName}
 - Learner's Native Language: ${sourceLangName}
 ${avoidBlock}
