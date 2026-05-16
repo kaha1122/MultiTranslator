@@ -121,7 +121,7 @@ export default function ChatBubble({
                         <button
                             className="ftc-user-action-btn"
                             onClick={() => onLearningTipUserFree?.(message)}
-                            disabled={!message.learning_tip || isLearningTipLoading}
+                            disabled={(!message.learning_tip && !message.learning_tip_narration) || isLearningTipLoading}
                             title={t?.('freeTalk.learningTip') || 'Learning Tip'}
                         >
                             {isLearningTipLoading

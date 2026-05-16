@@ -485,10 +485,14 @@ export function useConversation({ tier = 'trial' } = {}) {
                         fullText: data.intentText || rawSttText,
                         translation: data.intentTranslation || '',
                         intentWasCorrected: !!data.intentWasCorrected,
-                        // userCoachingTip(서버) → user_free 메시지의 learning_tip 필드에 저장.
-                        // Learning Tip 버튼 클릭 시 narration voice 로 TTS 재생.
-                        // 카드 저장 시 MessageCardModal 이 자동으로 learning_tip 자리에 매핑.
+                        // 옵션 D — 서버에서 두 필드 동시 생성:
+                        //   userCoachingTip      → learning_tip            (UI 카드 표시용 SHORT)
+                        //   userCoachingNarration→ learning_tip_narration  (TTS 재생용 SPOKEN, 더 풍부)
+                        // 카드 저장 시 MessageCardModal 은 learning_tip(SHORT) 만 사용.
+                        // Learning Tip 버튼 클릭 시 handleLearningTip 가 narration 우선 사용
+                        // (없으면 SHORT 로 fallback — 기존 누적 메시지 호환).
                         learning_tip: data.userCoachingTip || '',
+                        learning_tip_narration: data.userCoachingNarration || '',
                     };
                 }
                 if (m.id === aiMsgId) {
