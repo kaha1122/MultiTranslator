@@ -10,6 +10,13 @@
     justify-content: center;
     animation: ftc-overlay-in 180ms ease-out;
 }
+/* iOS 전용: AdMob 배너가 WKWebView 위에 native overlay 로 그려져 모달 footer 와
+   겹치는 회귀 (안드로이드는 WebView 외부 영역이라 무관). 모달 자체를 admob-bottom
+   만큼 위에서 끝나게 해서 광고를 모달 밖으로 분리. Pro/Premium (광고 없음) 은
+   --admob-bottom=0 이라 영향 없음. */
+html.platform-ios .ftc-overlay {
+    bottom: var(--admob-bottom, 0px);
+}
 @keyframes ftc-overlay-in {
     from { background: rgba(0, 0, 0, 0); }
     to   { background: rgba(0, 0, 0, 0.5); }
