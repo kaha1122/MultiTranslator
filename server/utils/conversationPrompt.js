@@ -301,7 +301,27 @@ ${avoidBlock}
    - intro.text in ${sourceLangName} ONLY. 1~2 sentences. Don't reveal the chosen
      emotion or the User's exact words.
 7. **No emoji** in intro/sentence fields.
-8. **Opener, not full exchange — CRITICAL**: firstAiReply MUST end with an OPEN
+8. **No placeholder markers — CRITICAL**: NEVER output placeholder symbols
+   intended to be filled in later. Always commit to CONCRETE, realistic,
+   scene-appropriate values. Banned in EVERY user-facing field (intro.text,
+   firstUserTurn.sentence, firstAiReply.sentence, translation, scene_hint,
+   learning_tip):
+     ✗ Bad (universal):  ○○ / ×× / ＿＿ / ___ / XXX / [city] / [number]
+     ✗ Bad (Japanese):   ○○行き / ○○号車 / 某地行き / ××便
+     ✗ Bad (Korean):     ㅇㅇ역 / 어디어디 / 모처
+     ✗ Bad (Chinese):    某某 / 某地 / ××路
+     ✗ Bad (English):    "going to [destination]" / "Flight XX" / "to ___"
+   These are unusable in real conversation — the learner cannot say "○○行き"
+   out loud, and TTS produces awkward output. Pick a specific realistic value
+   every time:
+     ✓ Good (Japanese): "新宿行き" / "東京行き" / "3号車" / "NH123便"
+     ✓ Good (Korean):   "강남역" / "부산행" / "5호선"
+     ✓ Good (Chinese):  "去北京" / "10路公交"
+     ✓ Good (English):  "going to Boston" / "Flight KE072" / "Platform 5"
+   This rule binds Phase 0 (Scene Coherence) — when choosing the
+   micro-situation, COMMIT to one concrete destination/number/name/time
+   and use it consistently across all 3 messages.
+9. **Opener, not full exchange — CRITICAL**: firstAiReply MUST end with an OPEN
    prompt (question / offered choice / info request) and MUST leave ≥2 attributes
    from Phase 0 ④ unresolved. The 3 messages are the starting point for Free
    Talking, NOT a self-contained micro-dialogue. If firstAiReply could be
@@ -472,8 +492,12 @@ Target language: ${targetLangName}
 Conversation so far (oldest → newest, last ${recent.length} turn(s)):
 ${historyBlock}
 
-Current learner utterance (raw STT, may have mishears):
-  RAW_STT: "${rawSttText}"
+What the learner just spoke (may contain mishears from speech recognition):
+  SpokenInput: "${rawSttText}"
+
+(Note: "SpokenInput" is an INTERNAL label for your reference only. Never quote
+this label or words like "STT", "transcript", "intent recovery", "the system"
+in any user-facing field — see Strict Rules.)
 
 **Established facts** — Before generating any field, mentally extract what the
 learner has ALREADY stated/chosen in the turns above (e.g., account type chosen,
@@ -484,13 +508,13 @@ NOT be re-asked in aiReply.
 
 ### [Phase 0: Intent Recovery — produces intentText]
 Use the Conversation Context above. Recovery rules:
-1. If RAW_STT is grammatically reasonable AND fits the conversation context, return it AS-IS as intentText.
-2. If RAW_STT contains likely STT mishears (homophones, dropped words, wrong tense) given the context, correct ONLY those minimal misrecognitions to produce a fluent ${targetLangName} sentence the learner most likely intended. Examples:
+1. If SpokenInput is grammatically reasonable AND fits the conversation context, return it AS-IS as intentText.
+2. If SpokenInput contains likely STT mishears (homophones, dropped words, wrong tense) given the context, correct ONLY those minimal misrecognitions to produce a fluent ${targetLangName} sentence the learner most likely intended. Examples:
    - "I boat a new car" → "I bought a new car" (homophone bought↔boat)
    - "where is bath room" → "Where is the bathroom?" (article + capitalization + punctuation)
-3. Do NOT rewrite the learner's vocabulary level or change the meaning. Stay close to RAW_STT — only fix obvious STT artifacts.
+3. Do NOT rewrite the learner's vocabulary level or change the meaning. Stay close to SpokenInput — only fix obvious STT artifacts.
 4. Preserve the learner's likely tone (casual/formal) — do not over-polish.
-5. If RAW_STT is too garbled or empty to recover (less than 2 plausible words), set intentText to RAW_STT verbatim and aiReply.sentence to a polite request to repeat (in ${targetLangName}, in role ${responderRole}).
+5. If SpokenInput is too garbled or empty to recover (less than 2 plausible words), set intentText to SpokenInput verbatim and aiReply.sentence to a polite request to repeat (in ${targetLangName}, in role ${responderRole}).
 
 ---
 
@@ -563,41 +587,41 @@ the narration from the short tip's content, just expand the delivery):
   • userCoachingNarration → LONGER, SPOKEN aloud by TTS. 2~4 sentences,
     conversational tutor delivery with natural rhythm.
 
-Both must address the SAME learning point (same RAW_STT analysis, same Branch).
+Both must address the SAME learning point (same SpokenInput analysis, same Branch).
 The narration is the spoken expansion — a richer 1:1 voice version of what the
 short tip says. Never have them disagree on what the issue is.
 
 **CRITICAL evaluation basis — do NOT confuse this**:
 The coaching tip MUST be evaluated against **what the learner ACTUALLY said
-(RAW_STT)** — not against the polished intentText. RAW_STT is the ground truth
+(SpokenInput)** — not against the polished intentText. SpokenInput is the ground truth
 of what the user produced; intentText is only YOUR best guess at what they
 might have meant. If your guess is wrong, praising intentText would mean
 praising a sentence the learner never spoke.
 
-**MANDATORY pre-step before drafting either tip — RAW_STT word inventory**:
-Mentally list EVERY content word and key phrase actually present in RAW_STT
+**MANDATORY pre-step before drafting either tip — SpokenInput word inventory**:
+Mentally list EVERY content word and key phrase actually present in SpokenInput
 (verbs, nouns, prepositions like "for free", articles, modals). Then verify
 your coaching against this list with the following checks — if ANY check
 fails, redraft:
 
   ✗ FORBIDDEN — "ghost praise": praising or quoting a phrase from intentText
-    that does NOT appear (in any form) in RAW_STT. The learner never said it.
-    Example violation: RAW_STT = "water is for free or I need to pay" →
+    that does NOT appear (in any form) in SpokenInput. The learner never said it.
+    Example violation: SpokenInput = "water is for free or I need to pay" →
     intentText = "Is the water free or do I need to pay?" — coaching praises
     "good question form 'Is the water free?'" — BUT the learner never produced
     that question form. Ghost praise.
 
   ✗ FORBIDDEN — "polish-already-said": suggesting the learner ADD or USE a
-    word/phrase that is ALREADY present in RAW_STT.
-    Example violation: RAW_STT contains "for free" → coaching says "혹시
+    word/phrase that is ALREADY present in SpokenInput.
+    Example violation: SpokenInput contains "for free" → coaching says "혹시
     'free'를 'for free'라고 표현하면 더 자연스러울 때도 있어요". The learner
     already said "for free" — this teaches them something they already did.
 
   ✗ FORBIDDEN — "intentText quotation": directly quoting intentText in the tip
-    when intentText differs from RAW_STT in any non-trivial way (more than
+    when intentText differs from SpokenInput in any non-trivial way (more than
     punctuation/capitalization). The learner sees "you said X" but never said X.
 
-  ✓ REQUIRED — coach the GAP between RAW_STT and intentText (when there is
+  ✓ REQUIRED — coach the GAP between SpokenInput and intentText (when there is
     one). If intent recovery rewrote word order (statement → question), changed
     a word, or added/removed key tokens, the GAP itself IS the lesson. Coach
     that gap directly: "방금 ‘water is for free or I need to pay’ 라고 평서문
@@ -606,24 +630,51 @@ fails, redraft:
 
 **Decision flow (apply IN ORDER, pick the FIRST that matches)**:
 
-  ── Branch B (highest priority): RAW_STT contains a likely PRONUNCIATION issue
-     i.e. a word in RAW_STT that, given the scene/context, is probably a
+  ── Branch B (highest priority): SpokenInput contains a likely PRONUNCIATION issue
+     i.e. a word in SpokenInput that, given the scene/context, is probably a
      mispronunciation of a different intended word (1~2 phoneme difference,
      scene-plausible alternate meaning).
-     Examples:
-       - Scene = market food stall, RAW_STT = "Can I test it?"
-         → intended is almost certainly "taste it" (scene-plausible) — "test/taste"
-         differ by /ɛ/ vs /eɪ/. Coach pronunciation, NOT word choice.
-       - RAW_STT = "I want to live this hotel" (scene = checkout)
-         → intended "leave"; /ɪ/ vs /iː/ pronunciation issue.
-     Coaching pattern (in ${sourceLangName}):
-       "발음이 ‘test’로 들렸어요. 시장에서 음식을 맛볼 때는 ‘taste’가 자연스러운데,
-       ‘ay’ 발음을 길게 — 테~이스트 처럼 늘여보세요."
-     → Always (a) name what you HEARD in RAW_STT, (b) name the likely intended
-       word, (c) give a concrete pronunciation tip (vowel length, mouth shape,
-       stress, syllable). Do NOT just say "잘못 발음했어요" without the fix.
 
-  ── Branch C: RAW_STT contains a real grammar / word-choice / register / WORD
+     **CRITICAL trigger rule**: ANY time SpokenInput differs from intentText
+     in EXACTLY ONE phoneme (one consonant or one vowel) AND the intentText
+     word is more scene-appropriate, IMMEDIATELY classify as Branch B —
+     do NOT fall back to Branch A "praise". The 1-phoneme gap IS the lesson.
+
+     Common 1-phoneme confusions per language (extend by analogy):
+       - English:  v↔b ("very/berry"), l↔r ("light/right"), f↔p, θ↔s ("think/sink"),
+                   /ɛ/↔/eɪ/ ("test/taste"), /ɪ/↔/iː/ ("live/leave")
+       - Japanese: d↔g ("デート/ゲート" date/gate), r↔l (single tap),
+                   long↔short vowels ("おじさん/おじいさん" uncle/grandpa),
+                   は↔わ particle confusion when SpokenInput drops particles
+       - Korean:   ㄹ↔ㄴ ("결혼/견혼"), aspirated↔plain ("커피/거피"),
+                   tense↔plain (ㄲ↔ㄱ, ㅆ↔ㅅ)
+       - Chinese:  tone confusions (mā/má/mǎ/mà), zh↔z, sh↔s, retroflex distinctions
+       - French:   nasal vowels (an/on/en), r 발음, liaison
+       - Spanish:  b↔v (same phoneme but spelling), r↔rr (tap vs trill)
+
+     Concrete worked examples:
+       - Scene = market food stall, SpokenInput = "Can I test it?" → intended
+         "taste it". Differ by /ɛ/ vs /eɪ/. Branch B.
+         Tip: "발음이 ‘test’로 들렸어요. 시장에서 음식을 맛볼 때는 ‘taste’가
+         자연스러운데, ‘ay’ 발음을 길게 — 테~이스트 처럼 늘여보세요."
+       - Scene = airport, SpokenInput = "デート番号を教えてもらえませんか" → intended
+         "ゲート番号". Differ by d↔g. Branch B.
+         Tip (sourceLangName=English): "It sounded like ‘デート’ (date). In an
+         airport you almost certainly meant ‘ゲート’ (gate). The 'g' sound is
+         voiced from the back of the throat — try a firmer 'g' like in 'go'."
+       - Scene = checkout, SpokenInput = "I want to live this hotel" → intended
+         "leave". Differ by /ɪ/ vs /iː/. Branch B.
+         Tip: "방금 ‘live’로 들렸는데, 체크아웃 상황이라 ‘leave’를 말씀하신 것
+         같아요. ‘ee’ 모음을 길게 — 리~브 처럼 늘여보세요."
+
+     → Always (a) name what you HEARD as a quoted target-language word, (b)
+       name the likely intended word as another quoted target-language word,
+       (c) give a concrete pronunciation tip (vowel length, mouth shape, stress,
+       voicing, syllable). Do NOT just say "잘못 발음했어요" without the fix.
+     → Do NOT use system labels ("SpokenInput", "STT"); say "발음이 ‘...’로
+       들렸어요" / "It sounded like ‘...’" in the tutor's voice.
+
+  ── Branch C: SpokenInput contains a real grammar / word-choice / register / WORD
      ORDER error (the learner produced a wrong form in ${targetLangName}, NOT
      a phoneme slip). Includes:
        - wrong tense: "I goed yesterday"
@@ -634,7 +685,7 @@ fails, redraft:
          (any time intent recovery had to re-arrange word order to make the
          sentence well-formed, it's a Branch C error worth coaching)
        - missing function word the learner clearly omitted (modal, do-support, etc.)
-     Coaching pattern (in ${sourceLangName}) — name the actual RAW_STT form,
+     Coaching pattern (in ${sourceLangName}) — name the actual SpokenInput form,
      then give the corrected form:
        "‘goed’ 대신 ‘went’를 쓰세요 — go의 과거형이에요. ‘I went yesterday’가
        자연스러워요."
@@ -642,26 +693,26 @@ fails, redraft:
        의문문은 ‘Is the water free or do I need to pay?’ 처럼 ‘Is’와 ‘do’를
        앞으로 빼주셔야 해요."
 
-  ── Branch A (default): RAW_STT was understood correctly AND has no clear
-     pronunciation/grammar/word-order issue (intentText ≈ RAW_STT, or differs
+  ── Branch A (default): SpokenInput was understood correctly AND has no clear
+     pronunciation/grammar/word-order issue (intentText ≈ SpokenInput, or differs
      only by punctuation/capitalization).
      Praise + ONE concrete scene-relevant polish — but the polish MUST be a
-     genuinely NEW expression NOT already present in RAW_STT (re-check the
+     genuinely NEW expression NOT already present in SpokenInput (re-check the
      word inventory before suggesting).
-     Example: RAW_STT = "Can I have water?" → "자연스럽게 잘하셨어요! 호텔에서는
+     Example: SpokenInput = "Can I have water?" → "자연스럽게 잘하셨어요! 호텔에서는
      ‘Could I have some water, please?’ 처럼 ‘some’과 ‘please’를 더하면 좀 더
-     정중해요." (‘some’과 ‘please’는 RAW_STT 에 없던 새 단어 — 적절)
-     Bad example: RAW_STT = "Can I have some water please?" → suggesting "‘some
+     정중해요." (‘some’과 ‘please’는 SpokenInput 에 없던 새 단어 — 적절)
+     Bad example: SpokenInput = "Can I have some water please?" → suggesting "‘some
      water please’가 자연스러워요" — 이미 학습자가 한 말이라 polish-already-said
      위반.
 
 **Evaluation cross-check before writing**:
-  (1) Look at RAW_STT word-by-word. Is any single word a phonetic neighbor of
+  (1) Look at SpokenInput word-by-word. Is any single word a phonetic neighbor of
       a more scene-appropriate word? → Branch B.
-  (2) If not, does RAW_STT have a real ${targetLangName} mistake? → Branch C.
+  (2) If not, does SpokenInput have a real ${targetLangName} mistake? → Branch C.
   (3) Otherwise → Branch A.
 **NEVER** praise the learner using intentText quotes when intentText differs
-substantially from RAW_STT — that confuses the learner about what they actually
+substantially from SpokenInput — that confuses the learner about what they actually
 produced.
 
 **Rules applying to BOTH fields**:
@@ -748,13 +799,59 @@ produced.
    userCoachingTip = SHORT display version (1~2 sentences, ~80 chars).
    userCoachingNarration = SPOKEN expansion (2~4 sentences, ~150~250 chars,
    TTS-friendly delivery — see Phase 4 spoken rules).
-8. BOTH fields MUST evaluate against RAW_STT (what the learner actually said) —
-   never praise using intentText quotes when intentText differs from RAW_STT
+8. BOTH fields MUST evaluate against SpokenInput (what the learner actually said) —
+   never praise using intentText quotes when intentText differs from SpokenInput
    in a real word (e.g., test→try). See Phase 4 Branch B.
 9. BOTH fields MUST wrap ${targetLangName} example words in **Unicode curly
    single quotes ‘...’ (U+2018 / U+2019)** — NOT straight ASCII quotes '...'
    which collide with English contraction apostrophes. ${sourceLangName} text
    is unquoted.
+10. **No internal label leak — CRITICAL**: NEVER use these internal variable
+    names or system terms in any user-facing field (userCoachingTip /
+    userCoachingNarration / aiReply.sentence / intentText / aiReply.learning_tip):
+      "SpokenInput", "intentText", "STT", "transcript", "intent recovery",
+      "the system", "system corrected", "auto-corrected".
+    The learner does not know these terms — they confuse and break immersion.
+    Speak as a tutor would in natural human language.
+      ✗ Bad: "Your SpokenInput 'デート番号' was heard as 'gate number'."
+      ✗ Bad: "Good job correcting the STT miss!"
+      ✓ Good: "방금 'デート'라고 들렸어요. 공항에서 탑승구를 묻는 거였다면 'ゲート'
+        예요 — 'g' 발음을 좀 더 단단하게 해보세요."
+11. **No system-action ghost praise — CRITICAL**: NEVER praise the learner for
+    an action performed by the system, not the learner. The intent recovery
+    step happens silently; the learner does NOT know their words were
+    auto-corrected. Praising them for "correcting the STT" or "catching the
+    mistake" is meaningless to them and creates a false picture of their own
+    skill.
+      ✗ Bad: "Good job correcting the STT miss!"
+      ✗ Bad: "Nice catch on that homophone!"
+      ✓ Good: silently coach what the learner actually needs to improve.
+    Real praise is only for things the learner truly did (clear pronunciation,
+    appropriate register, complete sentence structure, etc.).
+12. **No diagnostic / system-report phrasing**: NEVER write user-facing text
+    that sounds like a system diagnostic report rather than a tutor speaking.
+      ✗ Bad: "Your X was heard as Y." / "Input phoneme is /d/, expected /g/."
+      ✗ Bad: "The transcript shows..." / "Speech recognition returned..."
+      ✓ Good (tutor voice): "발음이 ‘デート’로 들렸어요." / "It sounded like
+        ‘date’ — in airport context you probably meant ‘gate’."
+13. **No placeholder markers — CRITICAL**: NEVER output placeholder symbols
+    intended to be filled in later. Always commit to CONCRETE, realistic,
+    scene-appropriate values. Banned in ALL user-facing fields (intentText,
+    aiReply.sentence, firstUserTurn/firstAiReply.sentence, both coaching
+    fields):
+      ✗ Bad (universal):  ○○ / ×× / ＿＿ / ___ / XXX / [city] / [number]
+      ✗ Bad (Japanese):   ○○行き / ○○号車 / 某地行き
+      ✗ Bad (Korean):     ㅇㅇ역 / 어디어디 / 모처
+      ✗ Bad (Chinese):    某某 / 某地
+      ✗ Bad (English):    "going to [destination]" / "Flight XX"
+    These are unusable in real conversation — the learner can't say "○○行き"
+    out loud, and the TTS produces awkward output reading the placeholder.
+    Pick a specific realistic value for the scene every time:
+      ✓ Good (Japanese): "新宿行き" / "東京行き" / "3号車"
+      ✓ Good (Korean): "강남역" / "부산행"
+      ✓ Good (English): "going to Boston" / "Flight KE072"
+    If the scene truly requires variety, pick ONE concrete example — do not
+    leave a blank for the learner to fill.
 
 ---
 
@@ -764,10 +861,10 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
 
 ### [Return ONLY valid JSON — no markdown code fence]
 {
-  "intentText": "The learner's most likely intended sentence in ${targetLangName} (== RAW_STT if no correction needed).",
+  "intentText": "The learner's most likely intended sentence in ${targetLangName} (== SpokenInput if no correction needed).",
   "intentWasCorrected": true,
   "intentTranslation": "Translation of intentText in ${sourceLangName}.",
-  "userCoachingTip": "(DISPLAY — shown on the learner's card in the UI). In ${sourceLangName}, 1~2 SHORT sentences (~80 chars max). Tutor coaching evaluated against RAW_STT (what learner actually said), NOT intentText. Apply Phase 4 Decision Flow: Branch B (pronunciation issue heard in RAW_STT) → name what you heard, name likely intended word, give pronunciation tip. Branch C (real grammar/word error) → correct it. Branch A (correct) → praise + scene-relevant polish. ${targetLangName} example words MUST be wrapped in Unicode CURLY single quotes ‘...’ (NOT straight '...' which break on English contractions). No emoji glyphs and no emoji descriptions like '엄지 척'. Compact, scannable.",
+  "userCoachingTip": "(DISPLAY — shown on the learner's card in the UI). In ${sourceLangName}, 1~2 SHORT sentences (~80 chars max). Tutor coaching evaluated against SpokenInput (what learner actually said), NOT intentText. Apply Phase 4 Decision Flow: Branch B (pronunciation issue heard in SpokenInput) → name what you heard, name likely intended word, give pronunciation tip. Branch C (real grammar/word error) → correct it. Branch A (correct) → praise + scene-relevant polish. ${targetLangName} example words MUST be wrapped in Unicode CURLY single quotes ‘...’ (NOT straight '...' which break on English contractions). No emoji glyphs and no emoji descriptions like '엄지 척'. Compact, scannable.",
   "userCoachingNarration": "(SPOKEN — played aloud through TTS when learner taps Learning Tip button). In ${sourceLangName}, 2~4 sentences (~150~250 chars total), each sentence ≤ ~50 chars for natural TTS pacing. SAME Phase 4 Branch / coaching point as userCoachingTip — this is the spoken EXPANSION of that tip with richer warm-tutor delivery: brief acknowledgement → what was heard/intended → concrete tip → encouragement. NO filler ('음...', '어...', '있잖아요'), NO meta-introducer ('팁을 드릴게요'), NO abbreviations. ONE idea per sentence. End on encouragement. ${targetLangName} examples in CURLY ‘...’. No emoji or emoji descriptions. Read it mentally aloud — does it sound like a real tutor speaking?",
   "aiReply": {
     "selected_emotion": "Responder emotion (e.g., Helpful, Apologetic, Reassuring).",
