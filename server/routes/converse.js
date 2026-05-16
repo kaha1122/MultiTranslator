@@ -249,8 +249,9 @@ router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
     const sourceLocale = sourceVoiceName.split('-').slice(0, 2).join('-');
     const targetLocale = targetVoiceName.split('-').slice(0, 2).join('-');
 
-    // '...' 매치는 prompt 약속 — 학습언어 인용. 같은 voice 가 연속이면 머지 (불필요한
-    // <voice> 태그 분리 방지로 prosody 자연스럽게).
+    // ‘...’ (Unicode curly single quotes U+2018/U+2019) 매치는 prompt 약속 — 학습언어
+    // 인용. straight ASCII '...' 는 영어 contraction (What's, it's, can't 등)과 충돌하므로
+    // curly 만 허용. 같은 voice 연속은 머지 (불필요한 <voice> 태그 분리 방지로 prosody 자연스럽게).
     const segments = [];
     const pushSeg = (voice, text) => {
         if (!text) return;
@@ -259,14 +260,14 @@ router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
         else segments.push({ voice, text });
     };
     let lastIdx = 0;
-    const re = /'([^']+)'/g;
+    const re = /‘([^’]+)’/g;
     let m;
     while ((m = re.exec(tipText)) !== null) {
         if (m.index > lastIdx) pushSeg('source', tipText.slice(lastIdx, m.index));
         // 인용부호는 source voice 로 (모국어 톤 유지), 안의 단어만 target voice
-        pushSeg('source', "'");
+        pushSeg('source', '‘');
         pushSeg('target', m[1]);
-        pushSeg('source', "'");
+        pushSeg('source', '’');
         lastIdx = re.lastIndex;
     }
     if (lastIdx < tipText.length) pushSeg('source', tipText.slice(lastIdx));

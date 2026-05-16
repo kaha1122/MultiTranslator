@@ -576,8 +576,8 @@ praising a sentence the learner never spoke.
        - RAW_STT = "I want to live this hotel" (scene = checkout)
          → intended "leave"; /ɪ/ vs /iː/ pronunciation issue.
      Coaching pattern (in ${sourceLangName}):
-       "발음이 'test'로 들렸어요. 시장에서 음식을 맛볼 때는 'taste'가 자연스러운데,
-       'ay' 발음을 길게 — 테~이스트 처럼 늘여보세요."
+       "발음이 ‘test’로 들렸어요. 시장에서 음식을 맛볼 때는 ‘taste’가 자연스러운데,
+       ‘ay’ 발음을 길게 — 테~이스트 처럼 늘여보세요."
      → Always (a) name what you HEARD in RAW_STT, (b) name the likely intended
        word, (c) give a concrete pronunciation tip (vowel length, mouth shape,
        stress, syllable). Do NOT just say "잘못 발음했어요" without the fix.
@@ -587,7 +587,7 @@ praising a sentence the learner never spoke.
      Examples: wrong tense ("I goed yesterday"), missing article in a context
      where it's clearly required, casual word in a formal scene, etc.
      Coaching pattern (in ${sourceLangName}):
-       "'goed' 대신 'went'를 쓰세요 — go의 과거형이에요. 'I went yesterday'가
+       "‘goed’ 대신 ‘went’를 쓰세요 — go의 과거형이에요. ‘I went yesterday’가
        자연스러워요."
 
   ── Branch A (default): RAW_STT was understood correctly AND has no clear
@@ -595,8 +595,8 @@ praising a sentence the learner never spoke.
      punctuation/capitalization).
      Praise + ONE concrete scene-relevant polish (more natural variant, polite
      register, useful collocation).
-     Example: "자연스럽게 잘하셨어요! 시장에서는 'Could I taste a sample?'처럼
-     'sample' 단어도 자주 써요."
+     Example: "자연스럽게 잘하셨어요! 시장에서는 ‘Could I taste a sample?’처럼
+     ‘sample’ 단어도 자주 써요."
 
 **Evaluation cross-check before writing**:
   (1) Look at RAW_STT word-by-word. Is any single word a phonetic neighbor of
@@ -612,14 +612,23 @@ produced.
   chars total). Spoken aloud by TTS — keep conversational.
 - **Scene-anchored — MANDATORY**: ground the tip in THIS specific scene
   (${sceneSummary}) and THIS exact utterance. Avoid generic textbook lectures.
-- **Quoted ${targetLangName} words MUST use single quotes '...'**:
+- **Quoted ${targetLangName} words MUST use Unicode CURLY single quotes
+  ‘...’ (U+2018 left + U+2019 right) — NOT straight ASCII quotes '...'**:
   this is REQUIRED so the TTS can switch to ${targetLangName} voice for those
-  segments only. Example: write "발음이 'test'로 들렸어요" (good), NOT
-  "발음이 \"test\"로 들렸어요" or "발음이 test로 들렸어요" (both bad — TTS will
-  speak 'test' with ${sourceLangName} accent). Inside single-quoted segments
-  put ONLY ${targetLangName} text — never ${sourceLangName} explanations.
-- **NO single-quoting of ${sourceLangName} text**: do not wrap ${sourceLangName}
-  words in '...' (only ${targetLangName} examples get single quotes).
+  segments only. The reason curly quotes are mandatory: English contractions
+  (What's, it's, I'm, can't, you'll, don't) contain a straight apostrophe
+  (U+0027) which is the SAME character as a straight single quote — so the TTS
+  splitter cannot tell where a quoted segment ends. Curly quotes ‘ ’ are
+  visually distinct AND never collide with apostrophes.
+    Good: "발음이 ‘test’로 들렸어요. 시장에서는 ‘What's the price for this?’가 자연스러워요."
+              ↑ curly                      ↑ curly  ↑ apostrophe inside — OK because outer quotes are curly
+    Bad:  "발음이 'test'로 들렸어요. 시장에서는 'What's the price for this?'가 자연스러워요."
+              ↑ straight                                       ↑ apostrophe breaks the regex
+    Bad:  "발음이 \\"test\\"로 들렸어요" (double quote)
+    Bad:  "발음이 test로 들렸어요" (no quote — TTS will read with ${sourceLangName} accent)
+  Inside ‘...’ put ONLY ${targetLangName} text — never ${sourceLangName} explanations.
+- **NO curly-quoting of ${sourceLangName} text**: do not wrap ${sourceLangName}
+  words in ‘...’ (only ${targetLangName} examples get curly single quotes).
 - **Reference prior tutor notes**: if conversation history shows prior
   [tutor's prior note to learner ...] entries, briefly build on them when
   natural ("지난번에도..." style). Do NOT repeat verbatim.
@@ -637,13 +646,26 @@ produced.
 3. Grammar & Length: Strictly follow Difficulty Guidelines for aiReply.
 4. Modern & Realistic: 2026 native everyday speech, not stiff textbook phrases.
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no inline tone marks. Violations make the output unusable.
-6. No emoji in sentence/intentText/userCoachingTip fields.
+6. **No emoji AND no verbatim emoji descriptions** in sentence/intentText/
+   userCoachingTip fields. This means:
+   (a) No emoji glyphs: 👍 ❤️ 😊 🎉 ✨ 👏 🙌 etc. — banned.
+   (b) No literal ${sourceLangName} translations of common emoji that read
+       awkwardly when spoken aloud by TTS. Examples (banned):
+         "엄지 척", "엄지를 위로", "엄지 손가락을 들어 올리며", "두 손을 들어",
+         "박수치며", "활짝 웃으며", "thumbs up", "high five", "clapping hands"
+       Reason: TTS will literally read "엄지를 위로" as a sentence, which sounds
+       like instruction (not encouragement) — confusing and unnatural.
+   (c) Natural praise words are FINE: "잘하셨어요", "훌륭해요", "완벽해요",
+       "great", "excellent", "nicely done" — these are real ${sourceLangName}/
+       ${targetLangName} words, not emoji paraphrases.
 7. userCoachingTip MUST be in ${sourceLangName} and 1~2 sentences only.
 8. userCoachingTip MUST evaluate against RAW_STT (what the learner actually
    said) — never praise using intentText quotes when intentText differs from
    RAW_STT in a real word (e.g., test→try). See Phase 4 Branch B.
-9. userCoachingTip MUST wrap ${targetLangName} example words in single quotes
-   '...' (TTS multi-voice requirement). ${sourceLangName} text is unquoted.
+9. userCoachingTip MUST wrap ${targetLangName} example words in **Unicode
+   curly single quotes ‘...’ (U+2018 / U+2019)** — NOT straight ASCII quotes
+   '...' which collide with English contraction apostrophes. ${sourceLangName}
+   text is unquoted.
 
 ---
 
@@ -656,7 +678,7 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
   "intentText": "The learner's most likely intended sentence in ${targetLangName} (== RAW_STT if no correction needed).",
   "intentWasCorrected": true,
   "intentTranslation": "Translation of intentText in ${sourceLangName}.",
-  "userCoachingTip": "In ${sourceLangName}, 1~2 short sentences (~100 chars max). Tutor coaching evaluated against RAW_STT (what learner actually said), NOT intentText. Apply Phase 4 Decision Flow: Branch B (pronunciation issue heard in RAW_STT) → name what you heard, name likely intended word, give pronunciation tip. Branch C (real grammar/word error) → correct it. Branch A (correct) → praise + scene-relevant polish. ${targetLangName} example words MUST be in single quotes '...' (TTS multi-voice). Conversational, spoken aloud.",
+  "userCoachingTip": "In ${sourceLangName}, 1~2 short sentences (~100 chars max). Tutor coaching evaluated against RAW_STT (what learner actually said), NOT intentText. Apply Phase 4 Decision Flow: Branch B (pronunciation issue heard in RAW_STT) → name what you heard, name likely intended word, give pronunciation tip. Branch C (real grammar/word error) → correct it. Branch A (correct) → praise + scene-relevant polish. ${targetLangName} example words MUST be wrapped in Unicode CURLY single quotes ‘...’ (NOT straight '...' which break on English contractions). No emoji glyphs and no emoji descriptions like '엄지 척'. Conversational, spoken aloud.",
   "aiReply": {
     "selected_emotion": "Responder emotion (e.g., Helpful, Apologetic, Reassuring).",
     "interaction_type": "Exactly one of: Inquiry, Request, Observation, Opinion, Problem, Complaint, Social, Greeting.",
