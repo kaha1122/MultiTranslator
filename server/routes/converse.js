@@ -298,20 +298,37 @@ router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
     // ‘...’ curly quote 부분만 <lang xml:lang="targetLocale"> 으로 wrapping →
     // multilingual voice 가 명시 언어로 native-like 발음. 단일 voice 안에서 전환되므로
     // prosody 단절 없음.
+    //
+    // 속도 보정 (옵션 A 사용자 결정):
+    //   - sourceLang(모국어 narration) 부분: rate +5% (살짝 빠르게 — 답답함 해소)
+    //   - targetLang(학습언어 인용) 부분  : rate -10% (살짝 느리게 — 발음 학습용)
+    // multilingual voice 가 target locale 을 default rate 로 빠르게 발음하던 사용자
+    // 보고에 대응. ±5~15% 범위는 자연스러움 유지.
+    const SOURCE_RATE = '+5%';
+    const TARGET_RATE = '-10%';
+    const pushSourceChunk = (text) => {
+        if (!text) return '';
+        return `<prosody rate='${SOURCE_RATE}'>${escapeXml(text)}</prosody>`;
+    };
+    const pushTargetChunk = (text) => {
+        if (!text) return '';
+        return `<lang xml:lang='${targetLocale}'><prosody rate='${TARGET_RATE}'>${escapeXml(text)}</prosody></lang>`;
+    };
+
     let inner = '';
     let lastIdx = 0;
     const re = /‘([^’]+)’/g;
     let m;
     while ((m = re.exec(tipText)) !== null) {
-        if (m.index > lastIdx) inner += escapeXml(tipText.slice(lastIdx, m.index));
-        // 인용부호 글리프 자체는 source 톤 유지 (lang 태그 밖에 둠)
-        inner += '‘';
-        inner += `<lang xml:lang='${targetLocale}'>${escapeXml(m[1])}</lang>`;
-        inner += '’';
+        if (m.index > lastIdx) inner += pushSourceChunk(tipText.slice(lastIdx, m.index));
+        // 인용부호 글리프 자체는 source 톤 유지 (lang 태그 밖)
+        inner += pushSourceChunk('‘');
+        inner += pushTargetChunk(m[1]);
+        inner += pushSourceChunk('’');
         lastIdx = re.lastIndex;
     }
-    if (lastIdx < tipText.length) inner += escapeXml(tipText.slice(lastIdx));
-    if (!inner) inner = escapeXml(tipText);
+    if (lastIdx < tipText.length) inner += pushSourceChunk(tipText.slice(lastIdx));
+    if (!inner) inner = pushSourceChunk(tipText);
 
     const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${sourceLocale}'><voice name='${narrationVoice}'>${inner}</voice></speak>`;
 
