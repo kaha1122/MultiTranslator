@@ -586,9 +586,10 @@ Generate userCoachingTip in ${sourceLangName} following these rules:
    - Only set intentWasCorrected = true when the learner themselves likely
      produced a wrong form in ${targetLangName}.
 4. **Reference the tutor's prior notes**: if the conversation history above shows
-   prior `[tutor's prior note to learner ...]` entries, you may briefly build on
-   them ("지난번에도 정중한 표현 연습했죠 — 이번엔..." style) when natural. Do not
-   repeat the same tip verbatim.
+   prior [tutor's prior note to learner ...] entries (square-bracketed lines
+   attached to past LEARNER turns), you may briefly build on them ("지난번에도
+   정중한 표현 연습했죠 — 이번엔..." style) when natural. Do not repeat the same
+   tip verbatim.
 5. **Tone**: warm, encouraging, second-person ("당신은" / "you" / "vous" style
    appropriate to ${sourceLangName}). NO meta-commentary about the tip itself,
    no "Here is a tip:" preface — just speak directly to the learner.
