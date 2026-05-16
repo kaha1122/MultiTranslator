@@ -1,4 +1,4 @@
-import { Volume2, MessageCircle, RotateCcw, Lightbulb } from 'lucide-react';
+import { MessageCircle, RotateCcw, Lightbulb } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTTSSyncedReveal } from '../hooks/useTTSSyncedReveal';
 
@@ -25,7 +25,6 @@ export default function ChatBubble({
     onCardOpen,
     onReplay,
     onLearningTipUserFree,
-    onListenUserFree,
     isLastUserFree,
     isLearningTipLoading,
     t,
@@ -115,7 +114,7 @@ export default function ChatBubble({
                     </span>
                 </button>
 
-                {/* user_free 액션 바 — 마지막 user_free 만 노출 (Learning Tip 코칭 / 듣기) */}
+                {/* user_free 액션 바 — 마지막 user_free 만 노출 (AI-Tip 단일, 우측 정렬) */}
                 {message.role === 'user_free' && isLastUserFree && !message.isLoading && (
                     <div className="ftc-user-actions">
                         <button
@@ -128,13 +127,6 @@ export default function ChatBubble({
                                 ? <RotateCcw className="spin" size={13} />
                                 : <Lightbulb size={13} />}
                             {' '}{t?.('freeTalk.learningTip') || 'AI-Tip'}
-                        </button>
-                        <button
-                            className="ftc-user-action-btn"
-                            onClick={() => onListenUserFree?.(message)}
-                            title={t?.('freeTalk.listen') || '듣기'}
-                        >
-                            <Volume2 size={13} /> {t?.('freeTalk.listen') || '듣기'}
                         </button>
                     </div>
                 )}

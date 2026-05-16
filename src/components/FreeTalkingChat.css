@@ -89,6 +89,20 @@
     gap: 6px;
     flex-shrink: 0;
 }
+
+/* 헤더 아래 컴팩트 안내 띠 — 메시지 탭 시 카드 오픈 안내 (항상 노출) */
+.ftc-tap-hint {
+    flex-shrink: 0;
+    padding: 6px 14px;
+    background: rgba(99, 102, 241, 0.06);
+    border-bottom: 1px solid rgba(99, 102, 241, 0.12);
+    color: #4f46e5;
+    font-size: 11.5px;
+    font-weight: 500;
+    line-height: 1.4;
+    text-align: center;
+    letter-spacing: -0.01em;
+}
 .ftc-summary-btn {
     flex-shrink: 0;
     height: 32px;

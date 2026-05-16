@@ -247,12 +247,6 @@ export default function FreeTalkingChat({
         if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
     }
 
-    const handleListen = (msg) => {
-        // 사용자가 의도한 텍스트(보정된 fullText)를 그대로 TTS 재생 — onSpeak 위임
-        if (onSpeak && msg?.fullText) {
-            onSpeak(msg.fullText, setupArgs?.targetLang, msg.selected_emotion);
-        }
-    };
     // Learning Tip 버튼 — 옵션 D + Multilingual voice:
     //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스)
     //   m.learning_tip_narration : SPOKEN 나레이션용 (2~4 문장, TTS-friendly)
@@ -373,6 +367,11 @@ export default function FreeTalkingChat({
                     </div>
                 </header>
 
+                {/* 항상 노출되는 컴팩트 안내 — 메시지를 탭하면 카드가 열린다는 걸 안내 */}
+                <div className="ftc-tap-hint" role="note">
+                    💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}
+                </div>
+
                 <div className="ftc-messages">
                     {showFirstGuide && (
                         <div className="ftc-first-guide">
@@ -418,7 +417,6 @@ export default function FreeTalkingChat({
                             onCardOpen={handleCardOpen}
                             onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
                             onLearningTipUserFree={handleLearningTip}
-                            onListenUserFree={handleListen}
                             isLastUserFree={idx === lastUserFreeIdx}
                             isLearningTipLoading={learningTipLoadingId === m.id}
                             t={t}
