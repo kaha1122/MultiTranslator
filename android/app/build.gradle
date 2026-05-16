@@ -12,8 +12,8 @@ android {
         applicationId "com.arigems.pronunfit"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
-        versionCode 30
-        versionName "1.2.11"
+        versionCode 31
+        versionName "1.3.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
@@ -53,8 +53,8 @@ dependencies {
     // Firebase BOM + Analytics (GA 사용자 측정항목 수집)
     implementation platform('com.google.firebase:firebase-bom:33.7.0')
     implementation 'com.google.firebase:firebase-analytics'
-    // Facebook SDK for native Facebook Login
-    implementation 'com.facebook.android:facebook-login:latest.release'
+    // Facebook SDK for native Facebook Login (17.0.2 고정 — latest.release는 빌드 재현성 X, ANR 의심 사례)
+    implementation 'com.facebook.android:facebook-login:17.0.2'
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"

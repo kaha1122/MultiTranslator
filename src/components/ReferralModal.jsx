@@ -14,6 +14,7 @@ const AndroidIcon = ({ size = 14 }) => (
         <path d="M17.523 15.34c-.553 0-1-.447-1-1s.447-1 1-1 1 .447 1 1-.447 1-1 1m-11.046 0c-.553 0-1-.447-1-1s.447-1 1-1 1 .447 1 1-.447 1-1 1m11.405-6.402l1.997-3.46a.413.413 0 0 0-.151-.564.412.412 0 0 0-.564.151l-2.022 3.503C15.595 7.85 13.85 7.4 12 7.4c-1.85 0-3.595.45-5.142 1.168L4.836 5.065a.412.412 0 0 0-.564-.151.413.413 0 0 0-.151.564l1.997 3.46C2.69 10.665.5 14.012.5 17.832h23c0-3.82-2.19-7.167-5.618-8.894"/>
     </svg>
 );
+import { Capacitor } from '@capacitor/core';
 import { useT } from '../utils/i18n';
 import { authFetch } from '../utils/authFetch';
 import { getCountryByLang } from '../utils/phoneFormat';
@@ -131,9 +132,27 @@ export default function ReferralModal({ open, onClose, sourceLang, phoneCountry,
         // 클립보드 fallback용: URL 포함된 전체 메시지 (붙여넣기 한 번으로 친구가 코드+URL 모두 받음)
         const fullMessage = rawMsg.replace('{code}', myCode).replace('{url}', url);
 
-        // Android System WebView는 navigator.share 미노출(2026-04-26 단말 검증).
-        // iOS WKWebView·데스크탑 Chrome/Edge 등은 빌트인 지원이라 OS share sheet 자동 발화.
-        // Android native @capacitor/share는 다음 AAB 빌드 시 cap sync + 분기 추가 예정.
+        // 네이티브(iOS/Android) — Capacitor Share 플러그인이 OS 공유 시트 호출.
+        // Android System WebView는 navigator.share 미노출이라 native plugin 필수,
+        // iOS는 navigator.share 빌트인이지만 Capacitor.Share가 UIActivityViewController
+        // 동일 호출이라 일관성·예외처리 이점 → 양 플랫폼 동일 경로 사용.
+        if (Capacitor.isNativePlatform()) {
+            try {
+                const { Share } = await import('@capacitor/share');
+                await Share.share({ title, text: textForShare, url, dialogTitle: title });
+                onClose?.();
+                return;
+            } catch (err) {
+                // 사용자가 공유 시트에서 취소한 경우 — 모달 유지 + hint 안 띄움.
+                // Android는 'Share canceled', iOS는 'cancel' 등 메시지 다양 → 포괄 매칭.
+                const msg = String(err?.message || '').toLowerCase();
+                if (msg.includes('cancel')) return;
+                console.warn('[Referral] Capacitor.Share failed:', err?.message);
+                // 실패 시 아래 fallback (navigator.share → clipboard)로 진행
+            }
+        }
+
+        // 데스크탑 PWA / 일반 웹 — navigator.share 지원 시 OS share sheet 사용
         if (typeof navigator.share === 'function') {
             try {
                 await navigator.share({ title, text: textForShare, url });
