@@ -86,6 +86,30 @@ const escapeXml = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
+// ── 코칭 나레이션 전용 Multilingual Neural Voice 매핑 ──────────────────
+// Azure 의 multilingual voice 는 단일 voice 로 모국어 + 학습언어 를 native-like
+// 으로 자연스럽게 코드스위치(매끄러운 prosody, transition gap 없음).
+// 비용은 일반 Neural 과 동일 ($16/1M chars, S0 tier). HD voice 는 별도 비싼 tier
+// 라 사용 안 함.
+//
+// 선정 원칙:
+//   1) sourceLang base 의 multilingual voice 우선 (모국어 native 발음 보장).
+//   2) 같은 sourceLang 에서 user/ai 페어와 음색이 겹치지 않는 voice 선택
+//      (narration ≠ user ≠ ai 보장 — voice 다양성).
+//   3) Multilingual variant 가 없는 언어(vi, ru) 는 매핑 없음 → endpoint 가
+//      204 No Content 반환 → 클라가 카드 모달 fallback.
+const NARRATION_MULTILINGUAL_VOICE_BY_LANG = {
+    'ko':    'ko-KR-HyunsuMultilingualNeural',     // 남 (user/ai SunHi/InJoon 과 다름)
+    'en':    'en-US-AvaMultilingualNeural',         // 여 (Jenny/Guy 와 다름)
+    'ja':    'ja-JP-MasaruMultilingualNeural',       // 남 (Nanami/Keita 와 다름)
+    'zh-CN': 'zh-CN-YunyiMultilingualNeural',        // 여 (Xiaoxiao/Yunxi 와 다름 — Xiaoxiao 회피)
+    'fr':    'fr-FR-VivienneMultilingualNeural',     // 여 (Denise/Henri 와 다름)
+    'de':    'de-DE-SeraphinaMultilingualNeural',    // 여 (Katja/Conrad 와 다름)
+    'es':    'es-ES-IsidoraMultilingualNeural',      // 여 (Elvira/Alvaro 와 다름)
+    'pt-BR': 'pt-BR-MacerioMultilingualNeural',      // 남 (Francisca/Antonio 와 다름)
+    // 'vi', 'ru': multilingual variant 없음 — 코칭 음성 미지원
+};
+
 // ─────────────────────────────────────────────────────────────────────────
 // POST /api/converse-start
 //   3-메시지(intro / firstUserTurn / firstAiReply)를 단일 LLM 호출로 생성.
@@ -225,61 +249,57 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
 
 // ─────────────────────────────────────────────────────────────────────────
 // POST /api/converse-coach-tts
-//   Learning Tip (모국어 코칭 + 학습언어 단어 인용) 텍스트를 SSML multi-voice 로 합성.
-//   '...' single-quote 로 감싼 segment 는 targetLang voice (원어민 발음),
-//   나머지는 sourceLang voice (모국어 narration) 로 발화.
+//   Learning Tip (모국어 코칭 + 학습언어 단어 인용) 텍스트를 단일 multilingual voice
+//   로 합성. ‘...’ curly-quote segment 는 <lang xml:lang="targetLocale"> 태그로
+//   wrapping 해서 multilingual voice 에 명시적 언어 hint 제공 → 영어 native-like
+//   발음 + 코드스위치 자연스러움 (이전 다중 voice 방식의 transition gap/prosody
+//   단절 문제 해결).
+//
 //   요청: { tipText, sourceLang, targetLang, byokAzureKey?, byokAzureRegion? }
-//   응답: audio/mpeg blob (azure-tts 와 동일 형식)
+//   응답:
+//     - sourceLang 이 NARRATION_MULTILINGUAL_VOICE_BY_LANG 에 있음 → audio/mpeg blob
+//     - 없음 (vi, ru 등) → 204 No Content (클라가 카드 모달로 fallback)
 // ─────────────────────────────────────────────────────────────────────────
 router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
     const { tipText, sourceLang, targetLang, byokAzureKey, byokAzureRegion } = req.body || {};
     if (!tipText || !sourceLang || !targetLang) {
         return res.status(400).json({ error: 'Missing tipText, sourceLang, or targetLang' });
     }
+
+    const narrationVoice = NARRATION_MULTILINGUAL_VOICE_BY_LANG[sourceLang];
+    if (!narrationVoice) {
+        // multilingual voice 미지원 언어 — 음성 합성 X. 클라가 카드 모달로 fallback.
+        return res.status(204).end();
+    }
+
     const azureKey = byokAzureKey || AZURE_KEY;
     const azureRegion = byokAzureRegion || AZURE_REGION;
     if (!azureKey || !azureRegion) return res.status(500).json({ error: 'Azure TTS not configured' });
 
-    const fallbackVoice = AZURE_TTS_VOICE_MAP['en'];
-    const sourceVoiceInfo = AZURE_TTS_VOICE_MAP[sourceLang] || fallbackVoice;
-    const targetVoiceInfo = AZURE_TTS_VOICE_MAP[targetLang] || fallbackVoice;
-    // narration voice = userSpeaker (female default — useConversation pickVoices 와 동일 톤)
-    const sourceVoiceName = sourceVoiceInfo.voiceFemale || sourceVoiceInfo.voiceMale;
-    const targetVoiceName = targetVoiceInfo.voiceFemale || targetVoiceInfo.voiceMale;
-    const sourceLocale = sourceVoiceName.split('-').slice(0, 2).join('-');
-    const targetLocale = targetVoiceName.split('-').slice(0, 2).join('-');
+    const sourceLocale = narrationVoice.split('-').slice(0, 2).join('-');
+    // targetLocale 결정 (학습언어 인용 부분 <lang xml:lang> hint 용)
+    const targetVoiceInfo = AZURE_TTS_VOICE_MAP[targetLang] || AZURE_TTS_VOICE_MAP['en'];
+    const targetLocale = (targetVoiceInfo.voiceFemale || targetVoiceInfo.voiceMale).split('-').slice(0, 2).join('-');
 
-    // ‘...’ (Unicode curly single quotes U+2018/U+2019) 매치는 prompt 약속 — 학습언어
-    // 인용. straight ASCII '...' 는 영어 contraction (What's, it's, can't 등)과 충돌하므로
-    // curly 만 허용. 같은 voice 연속은 머지 (불필요한 <voice> 태그 분리 방지로 prosody 자연스럽게).
-    const segments = [];
-    const pushSeg = (voice, text) => {
-        if (!text) return;
-        const last = segments[segments.length - 1];
-        if (last && last.voice === voice) last.text += text;
-        else segments.push({ voice, text });
-    };
+    // ‘...’ curly quote 부분만 <lang xml:lang="targetLocale"> 으로 wrapping →
+    // multilingual voice 가 명시 언어로 native-like 발음. 단일 voice 안에서 전환되므로
+    // prosody 단절 없음.
+    let inner = '';
     let lastIdx = 0;
     const re = /‘([^’]+)’/g;
     let m;
     while ((m = re.exec(tipText)) !== null) {
-        if (m.index > lastIdx) pushSeg('source', tipText.slice(lastIdx, m.index));
-        // 인용부호는 source voice 로 (모국어 톤 유지), 안의 단어만 target voice
-        pushSeg('source', '‘');
-        pushSeg('target', m[1]);
-        pushSeg('source', '’');
+        if (m.index > lastIdx) inner += escapeXml(tipText.slice(lastIdx, m.index));
+        // 인용부호 글리프 자체는 source 톤 유지 (lang 태그 밖에 둠)
+        inner += '‘';
+        inner += `<lang xml:lang='${targetLocale}'>${escapeXml(m[1])}</lang>`;
+        inner += '’';
         lastIdx = re.lastIndex;
     }
-    if (lastIdx < tipText.length) pushSeg('source', tipText.slice(lastIdx));
-    if (segments.length === 0) pushSeg('source', tipText);
+    if (lastIdx < tipText.length) inner += escapeXml(tipText.slice(lastIdx));
+    if (!inner) inner = escapeXml(tipText);
 
-    const segXml = segments.map(s => {
-        const isTarget = s.voice === 'target';
-        const v = isTarget ? targetVoiceName : sourceVoiceName;
-        const lc = isTarget ? targetLocale : sourceLocale;
-        return `<voice xml:lang='${lc}' name='${v}'>${escapeXml(s.text)}</voice>`;
-    }).join('');
-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${sourceLocale}'>${segXml}</speak>`;
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${sourceLocale}'><voice name='${narrationVoice}'>${inner}</voice></speak>`;
 
     try {
         const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);

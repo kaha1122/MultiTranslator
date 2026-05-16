@@ -122,12 +122,12 @@ export default function ChatBubble({
                             className="ftc-user-action-btn"
                             onClick={() => onLearningTipUserFree?.(message)}
                             disabled={(!message.learning_tip && !message.learning_tip_narration) || isLearningTipLoading}
-                            title={t?.('freeTalk.learningTip') || 'Learning Tip'}
+                            title={t?.('freeTalk.learningTip') || 'AI-Tip'}
                         >
                             {isLearningTipLoading
                                 ? <RotateCcw className="spin" size={13} />
                                 : <Lightbulb size={13} />}
-                            {' '}{t?.('freeTalk.learningTip') || 'Learning Tip'}
+                            {' '}{t?.('freeTalk.learningTip') || 'AI-Tip'}
                         </button>
                         <button
                             className="ftc-user-action-btn"

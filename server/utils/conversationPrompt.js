@@ -574,6 +574,36 @@ of what the user produced; intentText is only YOUR best guess at what they
 might have meant. If your guess is wrong, praising intentText would mean
 praising a sentence the learner never spoke.
 
+**MANDATORY pre-step before drafting either tip — RAW_STT word inventory**:
+Mentally list EVERY content word and key phrase actually present in RAW_STT
+(verbs, nouns, prepositions like "for free", articles, modals). Then verify
+your coaching against this list with the following checks — if ANY check
+fails, redraft:
+
+  ✗ FORBIDDEN — "ghost praise": praising or quoting a phrase from intentText
+    that does NOT appear (in any form) in RAW_STT. The learner never said it.
+    Example violation: RAW_STT = "water is for free or I need to pay" →
+    intentText = "Is the water free or do I need to pay?" — coaching praises
+    "good question form 'Is the water free?'" — BUT the learner never produced
+    that question form. Ghost praise.
+
+  ✗ FORBIDDEN — "polish-already-said": suggesting the learner ADD or USE a
+    word/phrase that is ALREADY present in RAW_STT.
+    Example violation: RAW_STT contains "for free" → coaching says "혹시
+    'free'를 'for free'라고 표현하면 더 자연스러울 때도 있어요". The learner
+    already said "for free" — this teaches them something they already did.
+
+  ✗ FORBIDDEN — "intentText quotation": directly quoting intentText in the tip
+    when intentText differs from RAW_STT in any non-trivial way (more than
+    punctuation/capitalization). The learner sees "you said X" but never said X.
+
+  ✓ REQUIRED — coach the GAP between RAW_STT and intentText (when there is
+    one). If intent recovery rewrote word order (statement → question), changed
+    a word, or added/removed key tokens, the GAP itself IS the lesson. Coach
+    that gap directly: "방금 ‘water is for free or I need to pay’ 라고 평서문
+    어순으로 말씀하셨는데, 호텔에서 정중하게 묻는 의문문은 ‘Is the water free
+    or do I need to pay for it?’ 처럼 ‘Is’를 앞으로 빼주시는 게 더 자연스러워요."
+
 **Decision flow (apply IN ORDER, pick the FIRST that matches)**:
 
   ── Branch B (highest priority): RAW_STT contains a likely PRONUNCIATION issue
@@ -593,21 +623,37 @@ praising a sentence the learner never spoke.
        word, (c) give a concrete pronunciation tip (vowel length, mouth shape,
        stress, syllable). Do NOT just say "잘못 발음했어요" without the fix.
 
-  ── Branch C: RAW_STT contains a real grammar / word-choice / register error
-     (the learner produced a wrong form in ${targetLangName}, NOT a phoneme slip).
-     Examples: wrong tense ("I goed yesterday"), missing article in a context
-     where it's clearly required, casual word in a formal scene, etc.
-     Coaching pattern (in ${sourceLangName}):
+  ── Branch C: RAW_STT contains a real grammar / word-choice / register / WORD
+     ORDER error (the learner produced a wrong form in ${targetLangName}, NOT
+     a phoneme slip). Includes:
+       - wrong tense: "I goed yesterday"
+       - missing article in obligatory context
+       - casual word in a formal scene
+       - **statement word order where a question is needed**: "water is free
+         or I need to pay" — should be "Is the water free or do I need to pay?"
+         (any time intent recovery had to re-arrange word order to make the
+         sentence well-formed, it's a Branch C error worth coaching)
+       - missing function word the learner clearly omitted (modal, do-support, etc.)
+     Coaching pattern (in ${sourceLangName}) — name the actual RAW_STT form,
+     then give the corrected form:
        "‘goed’ 대신 ‘went’를 쓰세요 — go의 과거형이에요. ‘I went yesterday’가
        자연스러워요."
+       "방금 ‘water is for free or I need to pay’ 라고 평서문으로 말씀하셨는데,
+       의문문은 ‘Is the water free or do I need to pay?’ 처럼 ‘Is’와 ‘do’를
+       앞으로 빼주셔야 해요."
 
   ── Branch A (default): RAW_STT was understood correctly AND has no clear
-     pronunciation/grammar issue (intentText ≈ RAW_STT, or differs only by
-     punctuation/capitalization).
-     Praise + ONE concrete scene-relevant polish (more natural variant, polite
-     register, useful collocation).
-     Example: "자연스럽게 잘하셨어요! 시장에서는 ‘Could I taste a sample?’처럼
-     ‘sample’ 단어도 자주 써요."
+     pronunciation/grammar/word-order issue (intentText ≈ RAW_STT, or differs
+     only by punctuation/capitalization).
+     Praise + ONE concrete scene-relevant polish — but the polish MUST be a
+     genuinely NEW expression NOT already present in RAW_STT (re-check the
+     word inventory before suggesting).
+     Example: RAW_STT = "Can I have water?" → "자연스럽게 잘하셨어요! 호텔에서는
+     ‘Could I have some water, please?’ 처럼 ‘some’과 ‘please’를 더하면 좀 더
+     정중해요." (‘some’과 ‘please’는 RAW_STT 에 없던 새 단어 — 적절)
+     Bad example: RAW_STT = "Can I have some water please?" → suggesting "‘some
+     water please’가 자연스러워요" — 이미 학습자가 한 말이라 polish-already-said
+     위반.
 
 **Evaluation cross-check before writing**:
   (1) Look at RAW_STT word-by-word. Is any single word a phonetic neighbor of

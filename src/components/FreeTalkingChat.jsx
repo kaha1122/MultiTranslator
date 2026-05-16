@@ -253,12 +253,14 @@ export default function FreeTalkingChat({
             onSpeak(msg.fullText, setupArgs?.targetLang, msg.selected_emotion);
         }
     };
-    // Learning Tip 버튼 — 옵션 D: 서버가 매 턴 두 필드 동시 생성.
+    // Learning Tip 버튼 — 옵션 D + Multilingual voice:
     //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스)
     //   m.learning_tip_narration : SPOKEN 나레이션용 (2~4 문장, TTS-friendly)
     // 버튼 클릭 시 narration 우선 사용 → 없으면 short 로 fallback (기존 누적 메시지 호환).
-    // /api/converse-coach-tts 가 ‘...’ curly-quote 부분만 targetLang voice 로 합성 →
-    // 모국어 코칭 + 학습언어 단어는 원어민 발음.
+    // /api/converse-coach-tts 가 sourceLang multilingual voice 단일 합성 + ‘...’ 부분
+    // 만 <lang xml:lang> 태그로 학습언어 hint → 매끄러운 코드스위치 + 원어민 발음.
+    // multilingual voice 미지원 언어 (vi, ru) → 서버 204 No Content → 카드 모달로
+    // fallback (음성 코칭 없이 시각 카드만 보여줌).
     const handleLearningTip = async (msg) => {
         const ttsText = msg?.learning_tip_narration || msg?.learning_tip;
         if (!ttsText) return;
@@ -276,6 +278,11 @@ export default function FreeTalkingChat({
                     targetLang: setupArgs?.targetLang,
                 }),
             });
+            if (res.status === 204) {
+                // multilingual voice 미지원 언어 (vi, ru 등) — 음성 코칭 없이 카드 모달로 안내
+                setCardOpenMessage(msg);
+                return;
+            }
             if (!res.ok) throw new Error(`coach-tts ${res.status}`);
             const blob = await res.blob();
             url = URL.createObjectURL(blob);
@@ -286,9 +293,9 @@ export default function FreeTalkingChat({
                 audio.play().catch(resolve);
             });
         } catch (e) {
-            console.warn('[FreeTalkingChat] coach-tts failed, fallback to single voice:', e?.message);
-            // fallback: 단일 sourceLang voice (한국식 영어 발음이지만 무반응보다 나음)
-            try { await onSpeak?.(ttsText, sourceLang); } catch (e2) { /* swallow */ }
+            console.warn('[FreeTalkingChat] coach-tts failed, opening card as fallback:', e?.message);
+            // 네트워크 에러 등 — 음성 대신 카드 모달
+            setCardOpenMessage(msg);
         } finally {
             if (url) { try { URL.revokeObjectURL(url); } catch (e) { /* noop */ } }
             setLearningTipLoadingId(null);
