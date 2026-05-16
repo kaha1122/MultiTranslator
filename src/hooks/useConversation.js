@@ -40,11 +40,10 @@ const getServerUrl = () => {
 
 const SERVER_URL = getServerUrl();
 
-// 한도 정책 — Sprint 2 확정
-//   - Trial: 8턴/세션 (자유 발화 카운트)
-//   - Pro: 25턴/세션
-//   - Premium: 무제한 (300 soft cap)
-const TURN_LIMITS = { trial: 8, pro: 25, premium: 300 };
+// 한도 정책 — 모든 tier 5턴/세션으로 통일 (한 대화 깊이는 짧고 집중, 일일 generate
+// 횟수는 별도 daily quota 시스템에서 관리). Pro/Premium 은 daily quota 가 넉넉할 뿐
+// 한 세션 깊이는 동일.
+const TURN_LIMITS = { trial: 5, pro: 5, premium: 5 };
 const IDLE_TIMEOUT_MS = 30 * 60 * 1000;  // 30분
 
 // voiceSwap 결정 — 세션 시작 시 50% 확률로 swap.
@@ -436,12 +435,22 @@ export function useConversation({ tier = 'trial' } = {}) {
         setReplyError(null);
         try {
             // 2) /api/converse-reply
+            // user turn에 누적된 learning_tip(이전 turn의 코칭 결과)을 coachingTip 으로 carry —
+            // 서버 prompt 가 history block 에 inject 하여 AI 가 학습자의 누적 학습 맥락을
+            // 인지하며 자연스럽게 상호작용하도록 한다.
             const historyForApi = historyNow
                 .filter(m => m.role !== 'narration')
-                .map(m => ({
-                    role: m.role === 'ai' ? 'ai' : 'user',
-                    text: m.fullText || m.text || '',
-                }));
+                .map(m => {
+                    const isAi = m.role === 'ai';
+                    const entry = {
+                        role: isAi ? 'ai' : 'user',
+                        text: m.fullText || m.text || '',
+                    };
+                    if (!isAi && m.learning_tip) {
+                        entry.coachingTip = m.learning_tip;
+                    }
+                    return entry;
+                });
 
             const res = await authFetch(`${SERVER_URL}/api/converse-reply`, {
                 method: 'POST',
@@ -476,6 +485,10 @@ export function useConversation({ tier = 'trial' } = {}) {
                         fullText: data.intentText || rawSttText,
                         translation: data.intentTranslation || '',
                         intentWasCorrected: !!data.intentWasCorrected,
+                        // userCoachingTip(서버) → user_free 메시지의 learning_tip 필드에 저장.
+                        // Learning Tip 버튼 클릭 시 narration voice 로 TTS 재생.
+                        // 카드 저장 시 MessageCardModal 이 자동으로 learning_tip 자리에 매핑.
+                        learning_tip: data.userCoachingTip || '',
                     };
                 }
                 if (m.id === aiMsgId) {

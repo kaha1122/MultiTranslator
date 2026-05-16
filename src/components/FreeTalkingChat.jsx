@@ -16,7 +16,9 @@ import './FreeTalkingChat.css';
  *   - 시작: 3개 메시지 자동 streaming + TTS 직렬 재생
  *   - 자유 발화: 하단 [말하기] 버튼 → 녹음 → STT → /api/converse-reply (intent 보정 + AI 응답)
  *   - 메시지 클릭 → 카드 팝업 (MessageCardModal + ScenePracticeCard 재사용)
- *   - 마지막 user_free: [수정] [다시 말하기] [듣기] 버튼
+ *   - 마지막 user_free: [💡 Learning Tip] [듣기] 버튼 (Learning Tip 은 서버에서 매 턴
+ *       동봉된 모국어 코칭 텍스트를 narration voice 로 재생. 카드 저장 시 동일 텍스트가
+ *       learning_tip 필드로 매핑됨.)
  *   - 한도 도달 → 입력 disable + "대화 한도가 완료되었습니다" 시스템 메시지
  *   - 30분 무활동 → 자동 종료 ('idle')
  */
@@ -42,7 +44,7 @@ export default function FreeTalkingChat({
         sessionEnded, endedReason,
         summary, isSummarizing, summaryError,
         startSession, endSession, resetSession,
-        submitFreeUtterance, removeLastUserFreePair,
+        submitFreeUtterance,
         markMessagePlayed,
         requestSummary, clearSummary,
     } = useConversation({ tier });
@@ -60,6 +62,8 @@ export default function FreeTalkingChat({
     const messagesEndRef = useRef(null);
     const [cardOpenMessage, setCardOpenMessage] = useState(null);
     const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
+    // Learning Tip 코칭 TTS 로딩 중인 user_free 메시지 id (스피너 노출용)
+    const [learningTipLoadingId, setLearningTipLoadingId] = useState(null);
 
     // STT 녹음
     const recorder = useFreeTalkRecorder({
@@ -243,13 +247,25 @@ export default function FreeTalkingChat({
         if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
     }
 
-    const handleRerecord = () => {
-        removeLastUserFreePair();
-    };
     const handleListen = (msg) => {
         // 사용자가 의도한 텍스트(보정된 fullText)를 그대로 TTS 재생 — onSpeak 위임
         if (onSpeak && msg?.fullText) {
             onSpeak(msg.fullText, setupArgs?.targetLang, msg.selected_emotion);
+        }
+    };
+    // Learning Tip 버튼 — 코칭 텍스트(message.learning_tip, sourceLang)를 narration voice 로 재생.
+    // 텍스트는 서버 reply 시점에 이미 user_free.learning_tip 으로 동봉되어 있어 즉시 사용 가능.
+    // 카드 저장 시에도 동일 learning_tip 필드가 그대로 매핑된다 (MessageCardModal).
+    const handleLearningTip = async (msg) => {
+        if (!msg?.learning_tip) return;
+        if (learningTipLoadingId) return;
+        setLearningTipLoadingId(msg.id);
+        try {
+            // onSpeak(text, langCode) — langCode=sourceLang 으로 모국어 narration voice 발화.
+            // (시작 narration 과 동일 톤. Azure TTS 의 langCode-여성기본 voice 매핑 재사용.)
+            await onSpeak?.(msg.learning_tip, sourceLang);
+        } finally {
+            setLearningTipLoadingId(null);
         }
     };
 
@@ -368,9 +384,10 @@ export default function FreeTalkingChat({
                             onPlaybackDone={handleBubbleDone(idx)}
                             onCardOpen={handleCardOpen}
                             onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
-                            onRerecordUserFree={handleRerecord}
+                            onLearningTipUserFree={handleLearningTip}
                             onListenUserFree={handleListen}
                             isLastUserFree={idx === lastUserFreeIdx}
+                            isLearningTipLoading={learningTipLoadingId === m.id}
                             t={t}
                         />
                     ))}

@@ -1,4 +1,4 @@
-import { Volume2, MessageCircle, Mic, RotateCcw } from 'lucide-react';
+import { Volume2, MessageCircle, RotateCcw, Lightbulb } from 'lucide-react';
 import { useEffect } from 'react';
 import { useTTSSyncedReveal } from '../hooks/useTTSSyncedReveal';
 
@@ -24,9 +24,10 @@ export default function ChatBubble({
     onPlaybackDone,
     onCardOpen,
     onReplay,
-    onRerecordUserFree,
+    onLearningTipUserFree,
     onListenUserFree,
     isLastUserFree,
+    isLearningTipLoading,
     t,
 }) {
     const { revealedText, isPlaying, isDone } = useTTSSyncedReveal({
@@ -114,15 +115,19 @@ export default function ChatBubble({
                     </span>
                 </button>
 
-                {/* user_free 액션 바 — 마지막 user_free 만 노출 (수정 버튼은 제거, 다시말하기/듣기만) */}
+                {/* user_free 액션 바 — 마지막 user_free 만 노출 (Learning Tip 코칭 / 듣기) */}
                 {message.role === 'user_free' && isLastUserFree && !message.isLoading && (
                     <div className="ftc-user-actions">
                         <button
                             className="ftc-user-action-btn"
-                            onClick={() => onRerecordUserFree?.()}
-                            title={t?.('freeTalk.rerecord') || '다시 말하기'}
+                            onClick={() => onLearningTipUserFree?.(message)}
+                            disabled={!message.learning_tip || isLearningTipLoading}
+                            title={t?.('freeTalk.learningTip') || 'Learning Tip'}
                         >
-                            <Mic size={13} /> {t?.('freeTalk.rerecord') || '다시 말하기'}
+                            {isLearningTipLoading
+                                ? <RotateCcw className="spin" size={13} />
+                                : <Lightbulb size={13} />}
+                            {' '}{t?.('freeTalk.learningTip') || 'Learning Tip'}
                         </button>
                         <button
                             className="ftc-user-action-btn"
