@@ -253,18 +253,43 @@ export default function FreeTalkingChat({
             onSpeak(msg.fullText, setupArgs?.targetLang, msg.selected_emotion);
         }
     };
-    // Learning Tip 버튼 — 코칭 텍스트(message.learning_tip, sourceLang)를 narration voice 로 재생.
+    // Learning Tip 버튼 — 코칭 텍스트(message.learning_tip)를 SSML multi-voice 로 재생.
     // 텍스트는 서버 reply 시점에 이미 user_free.learning_tip 으로 동봉되어 있어 즉시 사용 가능.
+    // /api/converse-coach-tts 가 '...' single-quote 부분만 targetLang voice 로 합성 →
+    // 모국어 코칭 + 학습언어 단어는 원어민 발음 (한국어 TTS 가 영어를 한국식으로 발음하던
+    // 문제 해결).
     // 카드 저장 시에도 동일 learning_tip 필드가 그대로 매핑된다 (MessageCardModal).
     const handleLearningTip = async (msg) => {
         if (!msg?.learning_tip) return;
         if (learningTipLoadingId) return;
         setLearningTipLoadingId(msg.id);
+        let url = null;
         try {
-            // onSpeak(text, langCode) — langCode=sourceLang 으로 모국어 narration voice 발화.
-            // (시작 narration 과 동일 톤. Azure TTS 의 langCode-여성기본 voice 매핑 재사용.)
-            await onSpeak?.(msg.learning_tip, sourceLang);
+            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const res = await fetch(`${SERVER_URL}/api/converse-coach-tts`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    tipText: msg.learning_tip,
+                    sourceLang,
+                    targetLang: setupArgs?.targetLang,
+                }),
+            });
+            if (!res.ok) throw new Error(`coach-tts ${res.status}`);
+            const blob = await res.blob();
+            url = URL.createObjectURL(blob);
+            const audio = new Audio(url);
+            await new Promise((resolve) => {
+                audio.onended = resolve;
+                audio.onerror = resolve;  // graceful — finally 에서 cleanup
+                audio.play().catch(resolve);
+            });
+        } catch (e) {
+            console.warn('[FreeTalkingChat] coach-tts failed, fallback to single voice:', e?.message);
+            // fallback: 단일 sourceLang voice (한국식 영어 발음이지만 무반응보다 나음)
+            try { await onSpeak?.(msg.learning_tip, sourceLang); } catch (e2) { /* swallow */ }
         } finally {
+            if (url) { try { URL.revokeObjectURL(url); } catch (e) { /* noop */ } }
             setLearningTipLoadingId(null);
         }
     };

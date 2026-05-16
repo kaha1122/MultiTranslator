@@ -224,6 +224,87 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────
+// POST /api/converse-coach-tts
+//   Learning Tip (모국어 코칭 + 학습언어 단어 인용) 텍스트를 SSML multi-voice 로 합성.
+//   '...' single-quote 로 감싼 segment 는 targetLang voice (원어민 발음),
+//   나머지는 sourceLang voice (모국어 narration) 로 발화.
+//   요청: { tipText, sourceLang, targetLang, byokAzureKey?, byokAzureRegion? }
+//   응답: audio/mpeg blob (azure-tts 와 동일 형식)
+// ─────────────────────────────────────────────────────────────────────────
+router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
+    const { tipText, sourceLang, targetLang, byokAzureKey, byokAzureRegion } = req.body || {};
+    if (!tipText || !sourceLang || !targetLang) {
+        return res.status(400).json({ error: 'Missing tipText, sourceLang, or targetLang' });
+    }
+    const azureKey = byokAzureKey || AZURE_KEY;
+    const azureRegion = byokAzureRegion || AZURE_REGION;
+    if (!azureKey || !azureRegion) return res.status(500).json({ error: 'Azure TTS not configured' });
+
+    const fallbackVoice = AZURE_TTS_VOICE_MAP['en'];
+    const sourceVoiceInfo = AZURE_TTS_VOICE_MAP[sourceLang] || fallbackVoice;
+    const targetVoiceInfo = AZURE_TTS_VOICE_MAP[targetLang] || fallbackVoice;
+    // narration voice = userSpeaker (female default — useConversation pickVoices 와 동일 톤)
+    const sourceVoiceName = sourceVoiceInfo.voiceFemale || sourceVoiceInfo.voiceMale;
+    const targetVoiceName = targetVoiceInfo.voiceFemale || targetVoiceInfo.voiceMale;
+    const sourceLocale = sourceVoiceName.split('-').slice(0, 2).join('-');
+    const targetLocale = targetVoiceName.split('-').slice(0, 2).join('-');
+
+    // '...' 매치는 prompt 약속 — 학습언어 인용. 같은 voice 가 연속이면 머지 (불필요한
+    // <voice> 태그 분리 방지로 prosody 자연스럽게).
+    const segments = [];
+    const pushSeg = (voice, text) => {
+        if (!text) return;
+        const last = segments[segments.length - 1];
+        if (last && last.voice === voice) last.text += text;
+        else segments.push({ voice, text });
+    };
+    let lastIdx = 0;
+    const re = /'([^']+)'/g;
+    let m;
+    while ((m = re.exec(tipText)) !== null) {
+        if (m.index > lastIdx) pushSeg('source', tipText.slice(lastIdx, m.index));
+        // 인용부호는 source voice 로 (모국어 톤 유지), 안의 단어만 target voice
+        pushSeg('source', "'");
+        pushSeg('target', m[1]);
+        pushSeg('source', "'");
+        lastIdx = re.lastIndex;
+    }
+    if (lastIdx < tipText.length) pushSeg('source', tipText.slice(lastIdx));
+    if (segments.length === 0) pushSeg('source', tipText);
+
+    const segXml = segments.map(s => {
+        const isTarget = s.voice === 'target';
+        const v = isTarget ? targetVoiceName : sourceVoiceName;
+        const lc = isTarget ? targetLocale : sourceLocale;
+        return `<voice xml:lang='${lc}' name='${v}'>${escapeXml(s.text)}</voice>`;
+    }).join('');
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${sourceLocale}'>${segXml}</speak>`;
+
+    try {
+        const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
+        speechConfig.speechSynthesisOutputFormat = sdk.SpeechSynthesisOutputFormat.Audio48Khz192KBitRateMonoMp3;
+        const synthesizer = new sdk.SpeechSynthesizer(speechConfig, null);
+        const result = await new Promise((resolve, reject) => {
+            synthesizer.speakSsmlAsync(
+                ssml,
+                r => { synthesizer.close(); resolve(r); },
+                err => { synthesizer.close(); reject(err); }
+            );
+        });
+        if (result.reason !== sdk.ResultReason.SynthesizingAudioCompleted) {
+            const reasonName = sdk.ResultReason[result.reason] ?? `unknown(${result.reason})`;
+            console.error('[ConverseCoachTTS] synthesis non-completed:', reasonName);
+            return res.status(502).json({ error: 'TTS synthesis failed', reason: reasonName });
+        }
+        res.set('Content-Type', 'audio/mpeg');
+        res.send(Buffer.from(result.audioData));
+    } catch (e) {
+        console.error('[ConverseCoachTTS] Error:', e?.message || e);
+        res.status(500).json({ error: 'TTS failed' });
+    }
+});
+
+// ─────────────────────────────────────────────────────────────────────────
 // POST /api/converse-stt
 //   자유 발화 → Azure STT (발음 평가 없이 텍스트만).
 //   클라이언트가 webm/m4a/wav 어떤 포맷이든 보낼 수 있어, ffmpeg으로 16kHz mono PCM WAV 변환 후 SDK에 전달.
