@@ -367,9 +367,10 @@ export default function FreeTalkingChat({
                     </div>
                 </header>
 
-                {/* 항상 노출되는 컴팩트 안내 — 메시지를 탭하면 카드가 열린다는 걸 안내 */}
+                {/* 항상 노출되는 컴팩트 안내 — 카드 + AI-Tip 두 핵심 기능 한 줄씩 안내 */}
                 <div className="ftc-tap-hint" role="note">
-                    💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}
+                    <div>💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}</div>
+                    <div>🎓 {t('freeTalk.aiTipHint') || 'AI-Tip 버튼으로 학습 코칭 나레이션을 들어보세요'}</div>
                 </div>
 
                 <div className="ftc-messages">

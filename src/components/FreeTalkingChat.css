@@ -25,10 +25,11 @@
     flex-direction: column;
     overflow: hidden;
     box-shadow: 0 0 24px rgba(0, 0, 0, 0.25);
-    /* iOS safe area + Android status bar 영역 둘 다 대응.
-       일반 모바일 Chrome 브라우저(PWA 아님)에서는 env() = 0 이므로 보장값 48px 적용.
-       48px = Android status bar 24~30dp + iOS notch 44px 모두 커버하는 안전값. */
-    padding-top: max(env(safe-area-inset-top, 0px), 48px);
+    /* iOS notch / Android status bar 만큼만 padding — 일반 모바일 브라우저에서는
+       OS 상단 chrome 이 별도 영역이라 env()=0 이고 모달이 화면 상단까지 꽉 채워짐.
+       PWA standalone / iOS Capacitor / Android Capacitor 환경에서는 env() 가 적절한
+       safe-area 값을 반환해 status bar 침범 방지. */
+    padding-top: env(safe-area-inset-top, 0px);
     /* 하단: AdMob 네이티브 배너가 webview 위에 그려질 때 [말하기] 버튼이 가려지지 않도록
        --admob-bottom (useAdMob.js setOffset()에서 set)을 padding-bottom에 합산.
        Web/Pro/Premium에서는 --admob-bottom = 0px 이라 영향 없음. */
@@ -90,7 +91,7 @@
     flex-shrink: 0;
 }
 
-/* 헤더 아래 컴팩트 안내 띠 — 메시지 탭 시 카드 오픈 안내 (항상 노출) */
+/* 헤더 아래 컴팩트 안내 띠 — 두 줄 (메시지 탭 → 카드 / AI-Tip → 코칭 나레이션) */
 .ftc-tap-hint {
     flex-shrink: 0;
     padding: 6px 14px;
@@ -99,9 +100,12 @@
     color: #4f46e5;
     font-size: 11.5px;
     font-weight: 500;
-    line-height: 1.4;
+    line-height: 1.45;
     text-align: center;
     letter-spacing: -0.01em;
+}
+.ftc-tap-hint > div + div {
+    margin-top: 2px;
 }
 .ftc-summary-btn {
     flex-shrink: 0;
