@@ -427,10 +427,6 @@ export function useConversation({ tier = 'trial' } = {}) {
         };
         setMessages(prev => [...prev, userMsg, aiPlaceholder]);
 
-        // 카운트 +1 (functional updater — stale closure race 방지)
-        // limit 도달 차단은 별도 useEffect 에서 freeTurnCount 변화를 보고 처리.
-        setFreeTurnCount(prev => prev + 1);
-
         setIsReplying(true);
         setReplyError(null);
         try {
@@ -530,7 +526,11 @@ export function useConversation({ tier = 'trial' } = {}) {
                 return { ...m, isLoading: false, ttsReady: true, played: true, ttsFailed: true };
             }));
 
-            // 한도 도달은 freeTurnCount 변화를 보는 별도 useEffect 에서 처리
+            // turn 카운트 +1 — AI 응답이 정상 도착한 후에만 카운트. 마지막 turn 에서 사용자
+            // 발화 직후 sessionEnded 가 트리거되어 AI 응답 받기 전에 종료되던 회귀 fix.
+            // AI 응답 실패 시 카운트 안 올라감 → 사용자 재시도 가능 (의도된 동작).
+            // 한도 도달은 별도 useEffect 가 freeTurnCount 변화를 보고 처리.
+            setFreeTurnCount(prev => prev + 1);
         } catch (e) {
             console.error('[useConversation] reply failed:', e?.message || e);
             setReplyError(e?.message || 'Reply failed');
