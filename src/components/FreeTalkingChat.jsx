@@ -1,8 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
-import { X, Mic, MicOff, RotateCcw, Gem } from 'lucide-react';
+import { X, Mic, MicOff, RotateCcw } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import MessageCardModal from './MessageCardModal';
-import ConversationSummaryModal from './ConversationSummaryModal';
 import { useConversation } from '../hooks/useConversation';
 import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
@@ -42,17 +41,11 @@ export default function FreeTalkingChat({
         isReplying, replyError,
         freeTurnCount, turnLimit,
         sessionEnded, endedReason,
-        summary, isSummarizing, summaryError,
         startSession, endSession, resetSession,
         submitFreeUtterance,
         markMessagePlayed,
-        requestSummary, clearSummary,
     } = useConversation({ tier });
 
-    const [summaryModalOpen, setSummaryModalOpen] = useState(false);
-    // 자동 open useEffect 가드 — 새 summary 객체일 때만 1회 trigger.
-    // (모달 닫은 후 summary state 가 그대로면 useEffect 재실행으로 무한 reopen 되던 버그 차단)
-    const lastSummaryRef = useRef(null);
     // 첫 진입 안내 — localStorage 'pronunfit_freetalk_guide_seen' 미존재 시 모달 진입 직후 1회 표시
     const [showFirstGuide, setShowFirstGuide] = useState(false);
 
@@ -91,8 +84,6 @@ export default function FreeTalkingChat({
             setPlaybackQueueDone(false);
             setCardOpenMessage(null);
             setCardSavedIds({});
-            setSummaryModalOpen(false);
-            lastSummaryRef.current = null;
             resetSession();
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -153,83 +144,6 @@ export default function FreeTalkingChat({
     const handleClose = () => {
         endSession('user');
         onClose?.();
-    };
-
-    // 헤더 [💎 카드 만들기] 버튼 — 현재까지 대화로 핵심 표현 추출 → SummaryModal 표시
-    const handleSummarizeBtn = async () => {
-        if (isSummarizing) return;
-        if (freeTurnCount < 1) return;  // 최소 1턴 자유 발화 후 활성화
-        await requestSummary();
-    };
-
-    // summary 도착하면 모달 자동 open — 새 summary 객체일 때만 1회 trigger.
-    // (lastSummaryRef 비교로 동일 summary 에서 reopen 차단)
-    useEffect(() => {
-        if (summary && summary !== lastSummaryRef.current) {
-            lastSummaryRef.current = summary;
-            setSummaryModalOpen(true);
-        }
-    }, [summary]);
-
-    const handleSummarySaveSelected = async (selectedPhrases) => {
-        if (!onSaveConversationSummary) {
-            setSummaryModalOpen(false);
-            clearSummary();
-            return;
-        }
-        try {
-            const result = await onSaveConversationSummary({
-                selectedPhrases,
-                langCode: setupArgs?.targetLang,
-                sourceLang,
-                scene: setupArgs?.sceneId || setupArgs?.scene,
-                category: setupArgs?.category,
-                difficulty: setupArgs?.difficulty,
-                speechStyle: setupArgs?.speechStyle,
-                scenarioMeta,
-            });
-            // 결과 검증 — saved=0 이면 사용자에게 알림 (모달 닫지 않고 retry 가능)
-            const saved = result?.saved ?? 0;
-            const skipped = result?.skipped ?? 0;
-            const errors = result?.errors ?? [];
-            console.log('[FreeTalkingChat] save result:', { saved, skipped, errors });
-            if (saved === 0 && selectedPhrases.length > 0) {
-                // Trial 일일 카드 한도 도달인 경우 — App.jsx 가 이미 setShowTrialLimitModal(true)
-                // 호출함 → SummaryModal 만 닫고 TrialLimitModal 이 사용자에게 안내.
-                const isTrialLimit = errors.includes('trial-limit-during-loop')
-                    || errors.includes('trial-limit');
-                if (isTrialLimit) {
-                    console.log('[FreeTalkingChat] trial limit reached during save — TrialLimitModal will show');
-                    setSummaryModalOpen(false);
-                    clearSummary();
-                    return;
-                }
-                // 그 외 에러 — 디버그는 console 만, 사용자에게는 짧은 메시지 + 모달 유지
-                console.error('[FreeTalkingChat] save failed (0 saved):', {
-                    selected: selectedPhrases.length, errors,
-                });
-                alert(t('freeTalk.saveError') || 'Save failed. Please try again later.');
-                return;
-            }
-            // 1개 이상 저장 시 별표 사운드 1회
-            if (saved > 0) {
-                try { playStarSound(); } catch (e) { /* sound is best-effort */ }
-            }
-            if (skipped > 0 && saved > 0) {
-                console.warn(`[FreeTalkingChat] partial save: ${saved} saved, ${skipped} skipped (${errors.join(', ')})`);
-            }
-        } catch (e) {
-            console.error('[FreeTalkingChat] summary save failed:', e?.message, e);
-            alert(`저장 중 오류가 발생했어요: ${e?.message || '알 수 없는 오류'}`);
-            return;  // 모달 유지
-        }
-        setSummaryModalOpen(false);
-        clearSummary();
-    };
-
-    const handleSummarySkip = () => {
-        setSummaryModalOpen(false);
-        clearSummary();
     };
 
     const handleTalkBtn = async () => {
@@ -332,7 +246,6 @@ export default function FreeTalkingChat({
 
     const personaName = scenarioMeta?.responder_role || t('freeTalk.aiName') || 'AI';
     const headerLabel = setupArgs?.sceneI18nLabel || t('freeTalk.title') || 'Free-Talking';
-    const summarizeEnabled = freeTurnCount >= 1 && !isSummarizing;
     const targetGoal = languageGoals?.[setupArgs?.targetLang] || 80;
 
     const inputDisabled = !playbackQueueDone || sessionEnded || isReplying || recorder.isProcessing;
@@ -349,18 +262,6 @@ export default function FreeTalkingChat({
                         </div>
                     </div>
                     <div className="ftc-header-actions">
-                        <button
-                            className="ftc-summary-btn"
-                            onClick={handleSummarizeBtn}
-                            disabled={!summarizeEnabled}
-                            title={t('freeTalk.makeCard') || '카드 만들기'}
-                            aria-label={t('freeTalk.makeCard') || '카드 만들기'}
-                        >
-                            {isSummarizing
-                                ? <RotateCcw className="spin" size={16} />
-                                : <Gem size={16} />}
-                            <span>{t('freeTalk.makeCard') || '카드 만들기'}</span>
-                        </button>
                         <button className="ftc-close-btn" onClick={handleClose} aria-label="Close">
                             <X size={22} />
                         </button>
@@ -514,16 +415,6 @@ export default function FreeTalkingChat({
                 targetGoal={targetGoal}
                 t={t}
                 ScenePracticeCardComp={ScenePracticeCardComp}
-            />
-
-            <ConversationSummaryModal
-                open={summaryModalOpen}
-                summary={summary}
-                isSummarizing={isSummarizing}
-                summaryError={summaryError}
-                onSaveSelected={handleSummarySaveSelected}
-                onSkip={handleSummarySkip}
-                t={t}
             />
         </div>
     );

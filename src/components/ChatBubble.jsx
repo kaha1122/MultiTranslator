@@ -94,11 +94,6 @@ export default function ChatBubble({
                 {!isUser && personaName && (
                     <div className="ftc-persona-name">{personaName}</div>
                 )}
-                {message.role === 'user_auto' && (
-                    <div className="ftc-user-auto-hint">
-                        💡 {t?.('freeTalk.userAutoHint') || '이렇게 시작해볼 수 있어요'}
-                    </div>
-                )}
 
                 <button
                     type="button"
