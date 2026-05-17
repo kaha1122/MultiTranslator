@@ -19,20 +19,23 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 
-// ── 네이티브(iOS/Android) Auth persistence 대응 ──────────────────────────
-// iOS Capacitor capacitor://localhost 스킴은 IndexedDB hang 이슈, Android는
-// Play Store 업그레이드 시 IndexedDB 손상으로 인한 익명 UID 분실 사례
-// (Phase 1-C, 2026-05-17) → 두 네이티브 모두 localStorage 기반
-// browserLocalPersistence 강제. Firestore Long Polling은 iOS 스킴 한정 유지
-// (Android WebChannel은 정상 동작).
-const platform = Capacitor.getPlatform();
-const isNative = platform === 'ios' || platform === 'android';
+// ── iOS WKWebView 대응 ──────────────────────────────────────────────────
+// iOS Capacitor capacitor://localhost 커스텀 스킴에서 두 가지 문제:
+//   1) Firebase Auth 기본 persistence(IndexedDB)가 hang → browserLocalPersistence 사용
+//   2) Firestore 기본 WebChannel이 작동 안 함 → Long Polling 강제
+// Android(http://localhost)와 Web(https://...)은 default 유지.
+//
+// Phase 1-C 시도 이력 (2026-05-17): Android도 browserLocalPersistence로 통합 시도했으나
+// 기존 IndexedDB 세션이 자동 마이그레이션되지 않아 업그레이드 시 익명 UID 신규 발급
+// 사고 발생 → 즉시 revert. Android는 default(IndexedDB) + Phase 1-A/1-B (AuthContext
+// 20초 timeout) 유지로 안정.
+const isIOS = Capacitor.getPlatform() === 'ios';
 
-export const auth = isNative
+export const auth = isIOS
     ? initializeAuth(app, { persistence: browserLocalPersistence })
     : getAuth(app);
 
-export const db = platform === 'ios'
+export const db = isIOS
     ? initializeFirestore(app, { experimentalForceLongPolling: true })
     : getFirestore(app);
 export const storage = getStorage(app);
