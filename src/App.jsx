@@ -1735,6 +1735,8 @@ function App() {
     if (profile.hasCompletedOnboarding === true) return;
     // 이 기기에서 이미 온보딩을 마쳤으면 신규 anonymous여도 다시 묻지 않음
     if (localStorage.getItem('deviceOnboardingDone') === '1') return;
+    // Firestore에 언어 설정이 이미 있으면 = 과거 온보딩 통과자 (앱 업그레이드 후 LS 손실/필드 누락 방어)
+    if (profile.sourceLang && Array.isArray(profile.targetLangs) && profile.targetLangs.length > 0) return;
     setShowOnboarding(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
@@ -1837,10 +1839,30 @@ function App() {
     if (!profile.platform) {
       missing.platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
     }
+    // 온보딩 통과자(sourceLang + targetLangs 보유) 백필 — 앱 업그레이드 후 hasCompletedOnboarding 미백필 사고 방어
+    if (profile.hasCompletedOnboarding !== true
+        && profile.sourceLang
+        && Array.isArray(profile.targetLangs) && profile.targetLangs.length > 0) {
+      missing.hasCompletedOnboarding = true;
+    }
     if (Object.keys(missing).length > 0) {
       console.log('[ProfileHeal] restoring missing fields:', Object.keys(missing));
       updateUserProfile(missing).catch(() => {});
     }
+    // localStorage 백필 — LS 손실 시 다른 모달 트리거들(FreeTalk 안내 등)도 일괄 정상화
+    try {
+      if (profile.sourceLang && Array.isArray(profile.targetLangs) && profile.targetLangs.length > 0) {
+        if (localStorage.getItem('deviceOnboardingDone') !== '1') {
+          localStorage.setItem('deviceOnboardingDone', '1');
+          // FreeTalk 안내가 다시 뜨지 않도록 함께 set (기존 사용자는 이미 알고 있음)
+          if (!localStorage.getItem('pronunfit_freetalk_announce_seen')) {
+            localStorage.setItem('pronunfit_freetalk_announce_seen', '1');
+          }
+        }
+        if (!localStorage.getItem('sourceLang')) localStorage.setItem('sourceLang', profile.sourceLang);
+        if (!localStorage.getItem('targetLangs')) localStorage.setItem('targetLangs', JSON.stringify(profile.targetLangs));
+      }
+    } catch (err) { /* noop */ }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, profile?.sourceLang, profile?.tier, profile?.deviceLang, profile?.platform]);
 

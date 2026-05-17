@@ -104,37 +104,53 @@ export const AuthProvider = ({ children }) => {
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
                         setProfile(docSnap.data());
-                    } else {
-                        // 회원탈퇴 중이면 문서 재생성 방지
-                        if (accountDeletionInProgress) return;
-                        // 실계정 유저: 문서가 없으면 자동 생성
-                        const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
-                        const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
-                        await setDoc(docRef, {
-                            uid: authenticatedUser.uid,
-                            email: authenticatedUser.email,
-                            displayName: authenticatedUser.displayName || 'User',
-                            hasCompletedOnboarding: false,
-                            platform,
-                            deviceLang,
-                            createdAt: serverTimestamp(),
-                            updatedAt: serverTimestamp(),
-                        }, { merge: true });
-                        // 위치 정보 비동기 저장
-                        // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
-                        detectGeoInfo().then(info => {
-                            if (info.country) {
-                                updateDoc(docRef, {
-                                    geoCountry: info.country,
-                                    geoCity: info.city || '',
-                                    geoRegion: info.region || '',
-                                    phoneCountry: info.country,
-                                }).catch(() => {});
-                            }
-                        }).catch(() => {});
-                        return; // setDoc 후 onSnapshot이 다시 호출됨
+                        setLoading(false);
+                        return;
                     }
-                    setLoading(false);
+                    // 회원탈퇴 중이면 문서 재생성 방지
+                    if (accountDeletionInProgress) return;
+                    // 🚨 false-positive "문서 없음" 방어 (앱 업그레이드 직후 IndexedDB 재구축 중 cache miss
+                    //    또는 listener attach 직후 cached 빈 결과로 인해 기존 displayName/hasCompletedOnboarding
+                    //    이 덮어쓰여지던 데이터-파괴적 경로 차단)
+                    if (docSnap.metadata.fromCache) return; // cache 결과는 신뢰 안 함, server confirm 대기
+                    try {
+                        const verifySnap = await getDoc(docRef); // server-first 재확인
+                        if (verifySnap.exists()) {
+                            setProfile(verifySnap.data());
+                            setLoading(false);
+                            return;
+                        }
+                    } catch (err) {
+                        console.warn('[AuthContext] verify getDoc failed:', err?.message);
+                        return; // 확신 없으면 destructive write 금지
+                    }
+                    // 진짜 신규 — destructive default 제거 (null/empty로 기존 값 덮어쓰지 않도록 truthy일 때만 set)
+                    const platform = window.Capacitor?.isNativePlatform?.() ? 'app' : 'web';
+                    const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
+                    const newDoc = {
+                        uid: authenticatedUser.uid,
+                        platform,
+                        deviceLang,
+                        tier: 'trial',
+                        createdAt: serverTimestamp(),
+                        updatedAt: serverTimestamp(),
+                    };
+                    if (authenticatedUser.email) newDoc.email = authenticatedUser.email;
+                    if (authenticatedUser.displayName) newDoc.displayName = authenticatedUser.displayName;
+                    await setDoc(docRef, newDoc, { merge: true });
+                    // 위치 정보 비동기 저장
+                    // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
+                    detectGeoInfo().then(info => {
+                        if (info.country) {
+                            updateDoc(docRef, {
+                                geoCountry: info.country,
+                                geoCity: info.city || '',
+                                geoRegion: info.region || '',
+                                phoneCountry: info.country,
+                            }).catch(() => {});
+                        }
+                    }).catch(() => {});
+                    // setDoc 후 onSnapshot이 다시 호출되어 setLoading(false) 처리됨
                 }, (error) => {
                     console.error("Error fetching user profile:", error);
                     setProfile(null);
