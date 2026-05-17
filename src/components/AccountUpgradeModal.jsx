@@ -32,6 +32,9 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
     const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
     // ── 재방문 유저: 기존 계정으로 로그인 + 익명 데이터 마이그레이션 ──────────
+    // 이 경로는 linkWithCredential 시도가 credential-already-in-use / email-already-in-use /
+    // account-exists-with-different-credential 에러로 빠진 경우에만 호출됨 →
+    // 진입 자체가 "이미 존재하는 계정으로 재로그인"을 의미하므로 isNewUser: false 확정.
     const migrateAndSignIn = async (credential) => {
         const anonymousUid = auth.currentUser?.uid;
         // 기존 계정으로 로그인
@@ -46,7 +49,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                         'Content-Type': 'application/json',
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ anonymousUid }),
+                    body: JSON.stringify({ anonymousUid, isNewUser: false }),
                 });
                 const data = await resp.json();
                 if (data.success) {

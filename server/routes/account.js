@@ -170,7 +170,7 @@ router.post('/api/config/app', async (req, res) => {
 // 재방문 유저: 익명 계정 데이터를 기존 Google 계정으로 이전
 router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
     const targetUid = req.uid; // 현재 로그인된 유저 (Google 계정)
-    const { anonymousUid } = req.body;
+    const { anonymousUid, isNewUser: clientIsNewUser } = req.body;
     if (!anonymousUid) return res.status(400).json({ error: 'anonymousUid required' });
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
     if (targetUid === anonymousUid) return res.status(400).json({ error: 'same uid' });
@@ -219,7 +219,20 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
             anonSnapshotForArchive = anonData;
             const targetDoc = await adminDb.collection('users').doc(targetUid).get();
             const targetData = targetDoc.exists ? targetDoc.data() : {};
-            const isExistingAccount = targetDoc.exists && targetData.createdAt;
+
+            // ── 분기 판정 (2026-05-17 D2 패치) ──
+            // 1순위: 클라이언트가 명시한 isNewUser 시그널 (Firebase additionalInfo.isNewUser
+            //        또는 createUserWithEmail/signInWithEmail/credential-already-in-use 등으로 확정 가능)
+            // 2순위: 기존 추측 — targetData.createdAt 존재 여부 (AuthContext 자동 setDoc과 race 위험)
+            // 클라이언트가 명시적으로 false/true를 보내면 그대로 채택, 미전송(undefined)이면 fallback.
+            let isExistingAccount;
+            if (clientIsNewUser === true) {
+                isExistingAccount = false;
+            } else if (clientIsNewUser === false) {
+                isExistingAccount = true;
+            } else {
+                isExistingAccount = !!(targetDoc.exists && targetData.createdAt);
+            }
             isExistingAccountForArchive = !!isExistingAccount;
 
             const mergeFields = {};
@@ -227,11 +240,17 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
             if (isExistingAccount) {
                 // ── 기존 계정 분기 ──
                 // (a) 카운터: 합산
+                //   2026-05-17 D5 패치: freeTalkCredits/pronCredits/proPronCount/totalFreeTalkCount/
+                //     activeDayCount/totalGoalAchievedDays 추가 — 익명에서 적립한 영구 크레딧과
+                //     누적 활동/목표달성 카운터를 실계정에 합산하지 않으면 사용자 자산 손실.
                 const counterKeys = [
                     'trialCardCount', 'savedCardCount', 'trialPronCount',
                     'translationGenerateCount', 'sceneGenerateCount',
                     'vocabGenerateCount', 'listenGenerateCount', 'totalGenerateCount',
                     'bonusPoints',
+                    'freeTalkCredits', 'pronCredits',
+                    'proPronCount', 'totalFreeTalkCount',
+                    'activeDayCount', 'totalGoalAchievedDays',
                 ];
                 for (const key of counterKeys) {
                     if ((anonData[key] || 0) > 0) {
@@ -255,6 +274,28 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                     const aMs = anonData.lastActiveAt?.toMillis?.() || 0;
                     const tMs = targetData.lastActiveAt?.toMillis?.() || 0;
                     if (aMs > tMs) mergeFields.lastActiveAt = anonData.lastActiveAt;
+                }
+
+                // (c2) 2026-05-17 D4 패치: streak / 누적 활동 max-merge
+                //   streakCurrent: 단순 max — 익명에서 더 길게 쌓았으면 그 값 유지.
+                //     (정밀한 연속성 계산은 useStreak가 dailyProgress 서브컬렉션에서 재계산하므로
+                //      여기서는 보수적으로 max를 채택해 표시 손실만 방지.)
+                //   streakLongest: 단순 max — 역대 최장 기록은 큰 값이 진실.
+                //   streakUpdatedAt: 더 최근.
+                if ((anonData.streakCurrent || 0) > (targetData.streakCurrent || 0)) {
+                    mergeFields.streakCurrent = anonData.streakCurrent;
+                }
+                if ((anonData.streakLongest || 0) > (targetData.streakLongest || 0)) {
+                    mergeFields.streakLongest = anonData.streakLongest;
+                }
+                if (anonData.streakUpdatedAt) {
+                    const aMs = anonData.streakUpdatedAt?.toMillis?.() || 0;
+                    const tMs = targetData.streakUpdatedAt?.toMillis?.() || 0;
+                    if (aMs > tMs) mergeFields.streakUpdatedAt = anonData.streakUpdatedAt;
+                }
+                // lastActiveDay: 'YYYY-MM-DD' 문자열 — 더 최근(사전순 max) 채택
+                if (anonData.lastActiveDay && (!targetData.lastActiveDay || anonData.lastActiveDay > targetData.lastActiveDay)) {
+                    mergeFields.lastActiveDay = anonData.lastActiveDay;
                 }
 
                 // (d) dailyProgress: 날짜 키별 max(count) 머지
@@ -301,6 +342,7 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                     'featuresSeen',
                     'defaultLevel', 'userLevel',
                     'hasCompletedOnboarding',
+                    'dailyGoal', // 2026-05-17 D4: 익명에서 설정한 일일 목표 보존
                 ];
                 for (const key of fillIfMissingKeys) {
                     if (anonData[key] !== undefined && anonData[key] !== null
@@ -379,6 +421,173 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('[Migrate] error:', err.message);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ── [Admin] migrationArchive에서 누락 필드 backfill (2026-05-17) ────────────
+// 과거 race condition으로 "기존 계정"으로 오판되어 학습 이력(streak, credits 등)이
+// 누락된 사고를 복구. archive에 보관된 anonSnapshot을 보강된 머지 룰로 재적용.
+//
+// body: { targetUid: string, anonymousUid?: string, dryRun?: boolean, forceFields?: string[] }
+//   - targetUid: 복구 대상 (현 실계정 UID)
+//   - anonymousUid: 특정 archive 지정 (생략 시 targetUid의 모든 archive 합산)
+//   - dryRun: true면 어떤 필드를 어떻게 set할지만 반환
+//   - forceFields: 지정하면 해당 필드만 복구. 미지정 시 누락 위험 학습 이력 풀세트.
+router.post('/api/admin/restore-from-archive', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+
+    const { targetUid, anonymousUid, dryRun, forceFields } = req.body;
+    if (!targetUid) return res.status(400).json({ error: 'targetUid required' });
+
+    try {
+        // 1. archive 조회
+        let archiveQuery = adminDb.collection('migrationArchive')
+            .where('targetUid', '==', targetUid);
+        if (anonymousUid) archiveQuery = archiveQuery.where('anonymousUid', '==', anonymousUid);
+        const archives = await archiveQuery.get();
+        if (archives.empty) {
+            return res.status(404).json({ error: 'no archive found', targetUid, anonymousUid: anonymousUid || null });
+        }
+
+        // 2. 가장 최근 archive 1개만 사용 (archivedAt desc)
+        //    여러 익명 UID를 거쳐온 경우라도 가장 마지막 마이그레이션이 유일한 진실의 원천.
+        const latest = archives.docs
+            .sort((a, b) => {
+                const aMs = a.data().archivedAt?.toMillis?.() || 0;
+                const bMs = b.data().archivedAt?.toMillis?.() || 0;
+                return bMs - aMs;
+            })[0];
+        const archiveData = latest.data();
+        const anonSnapshot = archiveData.anonSnapshot || {};
+
+        // 3. 현재 target 문서 조회
+        const targetDoc = await adminDb.collection('users').doc(targetUid).get();
+        if (!targetDoc.exists) return res.status(404).json({ error: 'target user not found' });
+        const targetData = targetDoc.data();
+
+        // 4. 복구 대상 필드 — 보강된 머지 룰과 동일
+        const counterKeys = forceFields || [
+            'trialCardCount', 'savedCardCount', 'trialPronCount',
+            'translationGenerateCount', 'sceneGenerateCount',
+            'vocabGenerateCount', 'listenGenerateCount', 'totalGenerateCount',
+            'bonusPoints',
+            'freeTalkCredits', 'pronCredits',
+            'proPronCount', 'totalFreeTalkCount',
+            'activeDayCount', 'totalGoalAchievedDays',
+        ];
+
+        const plan = { counters: {}, streak: {}, fill: {}, skipped: [] };
+        const mergeFields = {};
+
+        // archive가 신규 가입(isExistingAccount=false)였다면 이미 모든 필드가 복사됐어야 함 →
+        // 그래도 누락된 게 있으면 복구. 기존 계정(true)이었다면 카운터 increment로 처리.
+        const wasExisting = archiveData.isExistingAccount === true;
+
+        for (const key of counterKeys) {
+            const anonVal = anonSnapshot[key] || 0;
+            const targetVal = targetData[key] || 0;
+            if (anonVal <= 0) continue;
+            if (wasExisting) {
+                // 기존 계정 분기였다면: archive 시점에 increment가 적용됐는지 확인 어려움 →
+                // mergedFieldKeys로 검증 후 미적용 키만 increment
+                const wasMerged = (archiveData.mergedFieldKeys || []).includes(key);
+                if (!wasMerged) {
+                    mergeFields[key] = admin.firestore.FieldValue.increment(anonVal);
+                    plan.counters[key] = { mode: 'increment', amount: anonVal };
+                } else {
+                    plan.skipped.push(`${key} (already merged)`);
+                }
+            } else {
+                // 신규 가입 분기였다면: anonData 전체가 복사됐어야 함 → target에 값이 없으면 set
+                if (targetVal === 0 || targetVal === undefined || targetVal === null) {
+                    mergeFields[key] = anonVal;
+                    plan.counters[key] = { mode: 'set', value: anonVal };
+                } else {
+                    plan.skipped.push(`${key} (target=${targetVal}, anon=${anonVal})`);
+                }
+            }
+        }
+
+        // streak: max-merge
+        if ((anonSnapshot.streakCurrent || 0) > (targetData.streakCurrent || 0)) {
+            mergeFields.streakCurrent = anonSnapshot.streakCurrent;
+            plan.streak.streakCurrent = anonSnapshot.streakCurrent;
+        }
+        if ((anonSnapshot.streakLongest || 0) > (targetData.streakLongest || 0)) {
+            mergeFields.streakLongest = anonSnapshot.streakLongest;
+            plan.streak.streakLongest = anonSnapshot.streakLongest;
+        }
+        if (anonSnapshot.streakUpdatedAt) {
+            const aMs = anonSnapshot.streakUpdatedAt?.toMillis?.() || 0;
+            const tMs = targetData.streakUpdatedAt?.toMillis?.() || 0;
+            if (aMs > tMs) {
+                mergeFields.streakUpdatedAt = anonSnapshot.streakUpdatedAt;
+                plan.streak.streakUpdatedAt = '(timestamp)';
+            }
+        }
+        if (anonSnapshot.lastActiveDay && (!targetData.lastActiveDay || anonSnapshot.lastActiveDay > targetData.lastActiveDay)) {
+            mergeFields.lastActiveDay = anonSnapshot.lastActiveDay;
+            plan.streak.lastActiveDay = anonSnapshot.lastActiveDay;
+        }
+
+        // fillIfMissing: 언어/온보딩/dailyGoal
+        const fillKeys = ['sourceLang', 'targetLang', 'targetLangs', 'defaultLevel', 'userLevel', 'hasCompletedOnboarding', 'dailyGoal'];
+        for (const key of fillKeys) {
+            const anonVal = anonSnapshot[key];
+            if (anonVal !== undefined && anonVal !== null
+                && (targetData[key] === undefined || targetData[key] === null)) {
+                mergeFields[key] = anonVal;
+                plan.fill[key] = anonVal;
+            }
+        }
+
+        const fieldKeysToSet = Object.keys(mergeFields);
+
+        if (dryRun) {
+            return res.json({
+                success: true,
+                action: 'dry-run',
+                targetUid,
+                anonymousUid: archiveData.anonymousUid,
+                archivedAt: archiveData.archivedAt,
+                wasExisting,
+                plan,
+                fieldKeysToSet,
+            });
+        }
+
+        if (fieldKeysToSet.length === 0) {
+            return res.json({ success: true, action: 'noop', message: 'nothing to restore', plan });
+        }
+
+        mergeFields.updatedAt = admin.firestore.FieldValue.serverTimestamp();
+        mergeFields.restoredFromArchiveAt = admin.firestore.FieldValue.serverTimestamp();
+        await adminDb.collection('users').doc(targetUid).set(mergeFields, { merge: true });
+
+        // 복구 이력 기록 (별도 컬렉션 — 회귀 추적용)
+        await adminDb.collection('migrationArchive').doc(latest.id).update({
+            restoredAt: admin.firestore.FieldValue.serverTimestamp(),
+            restoredFields: fieldKeysToSet,
+        });
+
+        console.log(`[Restore] ${targetUid}: ${fieldKeysToSet.length} fields restored from archive ${latest.id}`);
+        res.json({
+            success: true,
+            action: 'restored',
+            targetUid,
+            anonymousUid: archiveData.anonymousUid,
+            wasExisting,
+            plan,
+            fieldKeysToSet,
+        });
+    } catch (err) {
+        console.error('[Restore] error:', err);
+        res.status(500).json({ error: err.message, stack: err.stack });
     }
 });
 

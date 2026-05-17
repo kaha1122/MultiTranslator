@@ -13,14 +13,18 @@ const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 const SHOW_FACEBOOK_LOGIN = true;
 
 // 익명 유저 데이터를 새 계정으로 마이그레이션
-const migrateAnonymousData = async (anonymousUid, newUser) => {
+// isNewUser: 서버 분기 판정의 1순위 시그널 (2026-05-17 D1 패치).
+//   - 이메일 로그인: 항상 false (signInWithEmail은 무조건 재로그인)
+//   - 소셜 로그인: getAdditionalUserInfo(userCredential).isNewUser 값 그대로 전달
+//   - undefined 전송 시 서버는 createdAt 기반 추측으로 fallback
+const migrateAnonymousData = async (anonymousUid, newUser, isNewUser) => {
     if (!anonymousUid || anonymousUid === newUser.uid) return;
     try {
         const token = await newUser.getIdToken();
         const resp = await fetch(`${API_URL}/api/migrate-anonymous`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-            body: JSON.stringify({ anonymousUid }),
+            body: JSON.stringify({ anonymousUid, isNewUser }),
         });
         const data = await resp.json();
         if (data.success) console.log('[Login Migrate] success:', data.migrated);
@@ -63,7 +67,8 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
         const prevAnonUid = auth.currentUser?.isAnonymous ? auth.currentUser.uid : null;
         try {
             const result = await signInWithEmailAndPassword(auth, email, password);
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, result.user);
+            // signInWithEmailAndPassword는 무조건 재로그인 → isNewUser: false 확정
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, result.user, false);
         } catch (err) {
             console.error(err);
             setError(`${t('auth.loginFailed')}: ${err.code}`);
@@ -95,7 +100,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const user = userCredential.user;
                 const additionalInfo = getAdditionalUserInfo(userCredential);
                 const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
@@ -114,7 +119,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
@@ -158,7 +163,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const user = userCredential.user;
                 const additionalInfo = getAdditionalUserInfo(userCredential);
                 const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
@@ -177,7 +182,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
@@ -219,7 +224,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
                 const user = userCredential.user;
                 const additionalInfo = getAdditionalUserInfo(userCredential);
                 const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+                if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
                 const platform = 'app';
                 const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
                 const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
@@ -238,7 +243,7 @@ function Login({ onSwitchToSignup, sourceLang, onCancel }) {
             const user = userCredential.user;
             const additionalInfo = getAdditionalUserInfo(userCredential);
             const resolvedEmail = user.email || additionalInfo?.profile?.email || null;
-            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user);
+            if (prevAnonUid) await migrateAnonymousData(prevAnonUid, user, additionalInfo?.isNewUser === true);
             const platform = 'web';
             const deviceLang = (navigator.language || navigator.userLanguage || 'en').split('-')[0];
             const profileData = { uid: user.uid, email: resolvedEmail, platform, deviceLang, updatedAt: serverTimestamp() };
