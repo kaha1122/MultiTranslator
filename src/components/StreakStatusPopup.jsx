@@ -9,10 +9,10 @@ const StreakStatusPopup = ({ open, streakCurrent, nextMilestone, daysToNext, nex
     const t = useT(sourceLang);
     const isStart = !streakCurrent || streakCurrent === 0;
 
-    // 자동 닫힘 (6초)
+    // 자동 닫힘 (10초)
     useEffect(() => {
         if (!open) return;
-        const timer = setTimeout(onClose, 6000);
+        const timer = setTimeout(onClose, 10000);
         return () => clearTimeout(timer);
     }, [open, onClose]);
 
