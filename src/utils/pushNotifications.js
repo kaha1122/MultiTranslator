@@ -1,7 +1,7 @@
 // FCM push 설정 저장 — 스토리지 + Firestore 헬퍼만 담당
 // 플러그인 호출(checkPermissions/requestPermissions/register/listeners)은 호출 측에서 인라인으로 수행
 // (과거 래퍼 경로에서 hang 현상 발견 후 인라인 패턴으로 전환)
-import { doc, updateDoc, arrayUnion, serverTimestamp } from 'firebase/firestore';
+import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { getToken, onMessage } from 'firebase/messaging';
 import { db, getWebMessaging } from '../firebase/config';
 
@@ -102,25 +102,33 @@ export function getRegisteredFcmToken() {
     try { return localStorage.getItem(STORAGE_KEY_REGISTERED_TOKEN); } catch { return null; }
 }
 
-// FCM 토큰을 Firestore users/{uid}.fcmTokens 배열에 병합 저장
-// 플랫폼 정보는 별도의 currentNativePlatform 필드에서 관리 (App.jsx 버전 추적 useEffect)
-// 과거 fcmPlatform 필드는 더 이상 쓰지 않음 (기존 데이터는 호환성을 위해 유지)
-// localStorage 쇼트서킷은 쓰지 않는다:
-//   - arrayUnion은 멱등이라 중복 write가 Firestore에 누적되지 않음
-//   - 서버의 stale-token 정리(sendPush.js)가 실행되면 Firestore에서는 토큰이 빠지지만
-//     기기 localStorage에는 남아있어서, 과거 쇼트서킷으로 인해 영원히 복구 불가 divergence 발생
+// FCM 토큰을 Firestore users/{uid}.fcmTokens 배열에 dedup 저장 (2026-05-18 fix)
+// 같은 Instance ID(콜론 앞 prefix) 토큰은 회전된 옛 토큰으로 보고 제거 후 새 토큰 추가.
+// 다른 단말(폰+태블릿)은 prefix 달라 보존. 회전된 옛 토큰이 누적되어 같은 단말에 알림이
+// 2번 발화하는 결함을 근본 차단.
+//
+// 옛 arrayUnion-only 코드는 회전된 새 토큰(다른 문자열)을 별개로 보고 누적했음 → zmxn1999
+// 사고 패턴(같은 prefix 두 토큰 공존).
 export async function saveFcmTokenToFirestore(uid, token) {
     if (!uid || !token) {
         console.warn('[Push] saveFcmTokenToFirestore missing arg:', { uid: !!uid, token: !!token });
         return { ok: false, reason: 'missing-arg' };
     }
     try {
-        await updateDoc(doc(db, 'users', uid), {
-            fcmTokens: arrayUnion(token),
+        const ref = doc(db, 'users', uid);
+        const snap = await getDoc(ref);
+        const existing = Array.isArray(snap.data()?.fcmTokens) ? snap.data().fcmTokens.filter(Boolean) : [];
+        const newPrefix = token.split(':')[0];
+        const cleaned = existing.filter(t => t.split(':')[0] !== newPrefix);
+        const merged = [...cleaned, token]; // 같은 prefix 옛 토큰 제거 + 새 토큰 추가
+        // 동일 토큰 중복은 Set으로 한 번 더 정리
+        const dedup = [...new Set(merged)];
+        await updateDoc(ref, {
+            fcmTokens: dedup,
             fcmTokenUpdatedAt: serverTimestamp(),
         });
         try { localStorage.setItem(STORAGE_KEY_REGISTERED_TOKEN, token); } catch {}
-        console.log('[Push] token saved to Firestore:', token.slice(0, 12) + '...');
+        console.log('[Push] token saved (dedup):', token.slice(0, 12) + '... total=' + dedup.length);
         return { ok: true };
     } catch (e) {
         console.warn('[Push] token save failed:', e.message);

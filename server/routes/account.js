@@ -258,9 +258,18 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
                     }
                 }
 
-                // (b) FCM 토큰: arrayUnion 합집합 — 익명 기기에서 등록된 토큰을 보존
+                // (b) FCM 토큰: Instance ID prefix 기반 dedup 머지 (2026-05-18 fix)
+                //   기존 arrayUnion은 같은 단말의 회전된 옛 토큰 + 새 토큰을 둘 다 누적시켜
+                //   재설치 후 기존 계정 로그인 시 같은 단말에 알림 2번 발화하는 결함 있었음.
+                //   FCM 토큰의 콜론(:) 앞부분이 Instance ID = 같은 단말 식별자. 같은 prefix의
+                //   target 토큰은 옛 토큰으로 보고 익명 토큰으로 교체. 다른 단말은 prefix 달라 보존.
                 if (Array.isArray(anonData.fcmTokens) && anonData.fcmTokens.length > 0) {
-                    mergeFields.fcmTokens = admin.firestore.FieldValue.arrayUnion(...anonData.fcmTokens);
+                    const existing = Array.isArray(targetData.fcmTokens) ? targetData.fcmTokens.filter(Boolean) : [];
+                    const anonValid = anonData.fcmTokens.filter(Boolean);
+                    const anonPrefixes = new Set(anonValid.map(t => t.split(':')[0]));
+                    const cleaned = existing.filter(t => !anonPrefixes.has(t.split(':')[0]));
+                    const merged = [...new Set([...cleaned, ...anonValid])]; // 중복 문자열 제거
+                    mergeFields.fcmTokens = merged;
                 }
                 // FCM 메타: anon이 더 최근이면 채택
                 if (anonData.fcmTokenUpdatedAt) {
