@@ -1237,9 +1237,15 @@ function App() {
     return () => clearTimeout(timer);
   }, [user?.uid, streakCurrent, sourceLang]);
 
-  // Phase 2: Streak 리마인더 자동 재스케줄 — sourceLang 선언 직후 위치 (TDZ 회피)
-  // streakCurrent / sourceLang 변경 시 OS LocalNotifications에 최신 메시지로 덮어쓰기.
-  // NotificationSettings에서 reminder.enabled=true로 set한 경우만 실제 schedule 실행.
+  // Phase 1 fix (2026-05-18): chain-idempotent 가드 + dep 단순화
+  // 회귀 원인: dep에 streakCurrent/sourceLang 포함되어 변경마다 cancel+schedule 실행 →
+  // plugin의 internal chain(TimedNotificationPublisher)을 매번 끊고 재시작 → silently fail 1회면
+  // 영구 누락. 1.2.11 (Android Android 정상 fire) 패턴은 OS chain 위임이었음.
+  // Fix: chain이 살아있으면(getPending에 id=1001 존재) 손대지 않음. 첫 schedule은 옵션 C 자동
+  // prompt 또는 NotificationSettings 토글이 담당. 이 useEffect는 chain이 끊긴 경우(예: 권한 변경 후
+  // 첫 진입, silently failed)에만 복구용으로 동작.
+  // 메시지 personalize 손실: streak 구간 변경 시 톤 갱신은 chain이 자연 만료될 때까지 지연. retention
+  // 측면 손실 < 알림 자체 누락 손실로 trade-off 수용.
   useEffect(() => {
     if (!user?.uid || !Capacitor.isNativePlatform?.()) return;
     const prefs = loadReminderPrefs();
@@ -1250,8 +1256,10 @@ function App() {
         const mod = await import('@capacitor/local-notifications');
         if (cancelled) return;
         const plugin = mod.LocalNotifications;
+        const pending = await plugin.getPending();
+        if (cancelled) return;
+        if (pending?.notifications?.some(n => n.id === 1001)) return; // chain 살아있음 → no-op
         const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
-        await plugin.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
         await plugin.schedule({
           notifications: [{
             id: 1001,
@@ -1270,7 +1278,7 @@ function App() {
       }
     })();
     return () => { cancelled = true; };
-  }, [user?.uid, streakCurrent, sourceLang]);
+  }, [user?.uid]);
 
   // 생성된 번역 결과물들을 저장하는 곳
   const [translations, setTranslations] = useState(() => {
