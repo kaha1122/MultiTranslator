@@ -77,6 +77,7 @@ const TranslationCard = ({
     // Vocab 예문 (Library에서 vocab 카드 표시 시)
     example = '',
     exampleTranslation = '',
+    examplePronunciation = '',
     // 예문 TTS 재생용 (text, langCode) => void
     onSpeakText,
     // Scene 태그
@@ -369,6 +370,9 @@ Return only these 2 lines.`;
                                 <Volume2 size={14} />
                             </button>
                         </p>
+                        {examplePronunciation && (
+                            <p className={`card-example-pron font-${langCode}`}>{examplePronunciation}</p>
+                        )}
                         {exampleTranslation && (
                             <p className={`card-example-trans font-${sourceLangCode}`}>{exampleTranslation}</p>
                         )}

@@ -2763,7 +2763,7 @@ function App() {
   };
 
   // 7. Vocab 카드를 Library에 저장하는 함수
-  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
+  const saveVocabCard = async ({ word, meaning, example, exampleTranslation, examplePronunciation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     // 중복 체크: 같은 단어가 이미 저장되어 있으면 기존 ID 반환
@@ -2800,6 +2800,7 @@ function App() {
         learningTip: learningTip || [],
         example: example || '',
         exampleTranslation: exampleTranslation || '',
+        examplePronunciation: examplePronunciation || '',
         pronunciation: pronunciation || '',
         pronunciationScore,
         serialNumber,
@@ -4072,6 +4073,7 @@ function App() {
                       learningTip={learningTips[langCode]}
                       example={translationExamples[langCode]?.example || ''}
                       exampleTranslation={translationExamples[langCode]?.exampleTranslation || ''}
+                      examplePronunciation={translationExamples[langCode]?.examplePronunciation || ''}
                       sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}

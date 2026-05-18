@@ -435,6 +435,7 @@ export default function VocabTab({
             meaning: wordObj.meaning,
             example: wordObj.example,
             exampleTranslation: wordObj.exampleTranslation,
+            examplePronunciation: wordObj.examplePronunciation,
             pronunciation: wordObj.pronunciation,
             learningTip: wordObj.learningTip || [],
             langCode: selectedLang,

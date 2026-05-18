@@ -447,6 +447,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 learningTip={card.learningTip}
                                 example={card.example || ''}
                                 exampleTranslation={card.exampleTranslation || ''}
+                                examplePronunciation={card.examplePronunciation || ''}
                                 badgeColor={getLangInfo(card.langCode)?.color || '#f1f5f9'}
                                 badgeTextColor={getLangInfo(card.langCode)?.textColor || '#475569'}
                                 onSpeak={() => onSpeak(card.translatedText, card.langCode, card.selectedEmotion)}
