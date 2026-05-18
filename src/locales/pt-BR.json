@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Notificações",
     "webOnly": "As notificações exigem o aplicativo móvel.",
-    "dailyReminder": "Lembrete diário de prática",
+    "dailyReminder": "Lembrete diário de Streak",
     "dailyReminderDesc": "Um aviso leve para praticar todos os dias.",
     "reminderTime": "Hora",
+    "reminderFixedAt13": "O lembrete de Streak será enviado diariamente às 13:00.",
     "reminderTitle": "Hora de praticar!",
     "reminderBody": "Apenas alguns minutos hoje — mantenha sua sequência viva.",
     "reminderOn": "Lembrete diário agendado.",

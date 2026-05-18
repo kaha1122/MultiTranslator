@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "通知",
     "webOnly": "通知はモバイルアプリでのみ利用できます。",
-    "dailyReminder": "毎日の練習リマインダー",
+    "dailyReminder": "毎日のStreakリマインダー",
     "dailyReminderDesc": "毎日練習できるよう、やさしくお知らせします。",
     "reminderTime": "時刻",
+    "reminderFixedAt13": "毎日午後1時にStreakリマインダーが届きます。",
     "reminderTitle": "練習の時間です！",
     "reminderBody": "今日も数分だけ、連続記録を続けましょう。",
     "reminderOn": "毎日のリマインダーを設定しました。",

@@ -4,12 +4,12 @@ import { Capacitor } from '@capacitor/core';
 import { App as CapacitorApp } from '@capacitor/app';
 import { getT } from '../utils/i18n';
 import { loadReminderPrefs, saveReminderPrefs } from '../utils/localNotifications';
-import { pickReminderMessage } from '../utils/streakReminderPool';
 import {
     loadSubscriptionAlertPref,
     setSubscriptionAlertPref,
     loadReengagementAlertPref,
     setReengagementAlertPref,
+    setStreakReminderAlertPref,
 } from '../utils/pushNotifications';
 import { useFeatureSeen, supportsFeature } from '../utils/featureSeen';
 
@@ -148,7 +148,8 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
             setPrePrompt('local');
             return;
         }
-        // OFF
+        // OFF — 2026-05-18: 13:00 서버 cron 발송 차단(streakReminderOptOut Firestore 미러).
+        //   잔존 LocalNotifications 12:30 chain도 함께 cancel(기존 디바이스 정리).
         const updated = { ...reminder, enabled: false };
         setReminder(updated);
         saveReminderPrefs(updated);
@@ -156,6 +157,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
             const mod = await import('@capacitor/local-notifications');
             await mod.LocalNotifications.cancel({ notifications: [{ id: REMINDER_ID }] });
         } catch {}
+        try { await setStreakReminderAlertPref(uid, false); } catch {}
         showStatus(t('notifications.reminderOff') || 'Daily reminder turned off.');
     };
 
@@ -195,28 +197,16 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
             setReminder(updated);
             saveReminderPrefs(updated);
 
+            // 2026-05-18: LocalNotifications.schedule 제거 — 메시지는 서버 cron이 13:00 personalize 발송.
+            //   잔존 12:30 chain은 함께 cancel(기존 디바이스 정리).
+            //   FCM 등록은 유지 — 서버 발송 FCM을 수신하려면 토큰 필요.
             try {
-                // Phase 2: Streak 기반 동적 메시지 (구간별 본문 풀 + 요일 rotate)
-                const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
                 await plugin.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
-                await plugin.schedule({
-                    notifications: [{
-                        id: REMINDER_ID,
-                        title: msg.title || t('notifications.reminderTitle') || 'Time to practice!',
-                        body: msg.body || t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
-                        schedule: {
-                            on: { hour: updated.hour, minute: updated.minute },
-                            allowWhileIdle: true,
-                            repeats: true,
-                        },
-                        smallIcon: 'ic_stat_icon_config_sample',
-                    }],
-                });
+                // streakReminderOptOut: false 미러 — 서버 13:00 cron 발송 대상으로 등록
+                try { await setStreakReminderAlertPref(uid, true); } catch {}
                 showStatus(formatReminderOnAt(updated.hour, updated.minute));
 
                 // Android 13+: POST_NOTIFICATIONS는 로컬/푸시 공유 권한 — 이 시점에 FCM도 자동 등록
-                // (구독 알림 기본 ON이지만 UI 트리거 없이 토큰이 안 저장되는 갭 해결)
-                // iOS는 로컬/푸시 권한이 분리되어 있어 별도 다이얼로그 발생 → Android 한정
                 if (Capacitor.getPlatform() === 'android') {
                     try {
                         const pushMod = await import('@capacitor/push-notifications');
@@ -238,39 +228,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
         }
     };
 
-    // 시간 변경 시 즉시 재스케줄
-    const handleTimeChange = async (hour, minute) => {
-        const updated = { ...reminder, hour, minute };
-        setReminder(updated);
-        saveReminderPrefs(updated);
-        if (!updated.enabled || !isNative) return;
-        try {
-            const mod = await import('@capacitor/local-notifications');
-            const plugin = mod.LocalNotifications;
-            // Phase 2: Streak 기반 동적 메시지
-            const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
-            await plugin.cancel({ notifications: [{ id: REMINDER_ID }] }).catch(() => {});
-            await plugin.schedule({
-                notifications: [{
-                    id: REMINDER_ID,
-                    title: msg.title || t('notifications.reminderTitle') || 'Time to practice!',
-                    body: msg.body || t('notifications.reminderBody') || "Keep your streak alive — just a few minutes today.",
-                    schedule: {
-                        on: { hour, minute },
-                        allowWhileIdle: true,
-                        repeats: true,
-                    },
-                    smallIcon: 'ic_stat_icon_config_sample',
-                }],
-            });
-            showStatus(formatReminderOnAt(hour, minute));
-        } catch (e) {
-            showStatus(
-                `${t('notifications.scheduleFailed') || 'Failed to schedule.'} [${e?.message}]`,
-                { isError: true }
-            );
-        }
-    };
+    // 2026-05-18: 시간 선택 UI 제거 — 서버 cron이 local 13:00 fixed 발송. handleTimeChange 삭제.
 
     // 구독 알림 토글
     const handleSubAlertToggle = async (next) => {
@@ -467,21 +425,10 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
                         background: '#f8fafc', borderRadius: '12px', padding: '8px 14px',
                         display: 'flex', alignItems: 'center', gap: 8,
                     }}>
+                        <Clock size={12} style={{ color: '#64748b' }} />
                         <span style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                            {t('notifications.reminderTime') || 'Time'}:
+                            {t('notifications.reminderFixedAt13') || '매일 오후 1시에 학습 리마인더가 전송됩니다.'}
                         </span>
-                        <input
-                            type="time"
-                            value={`${String(reminder.hour).padStart(2, '0')}:${String(reminder.minute).padStart(2, '0')}`}
-                            onChange={(e) => {
-                                const [h, m] = e.target.value.split(':').map(Number);
-                                handleTimeChange(h, m);
-                            }}
-                            style={{
-                                padding: '6px 10px', borderRadius: '8px', border: '1px solid #e2e8f0',
-                                fontSize: '0.9rem',
-                            }}
-                        />
                     </div>
                 )}
 

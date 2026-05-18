@@ -302,6 +302,17 @@ function countriesAtLocalHour22(now = new Date()) {
     return Object.keys(TZ_BY_COUNTRY).filter(c => getLocalHour(c, now) === 22);
 }
 
+/**
+ * Streak 정기 리마인더용 — local 13시인 모든 국가 목록 반환
+ * cron 통합 운영 시 매시간 호출되며 13시 슬롯에서만 발송됨
+ * (2026-05-18: Android LocalNotifications 12:30 chain 회귀 → FCM cron 13:00 전환)
+ * @param {Date} [now]
+ * @returns {string[]} ISO country codes
+ */
+function countriesAtLocalHour13(now = new Date()) {
+    return Object.keys(TZ_BY_COUNTRY).filter(c => getLocalHour(c, now) === 13);
+}
+
 // IANA TZ로 country의 현재 local Y/M/D/h/m/s 추출. 매핑 없으면 null.
 function getLocalDateParts(country, now = new Date()) {
     const tz = TZ_BY_COUNTRY[country];
@@ -354,6 +365,7 @@ module.exports = {
     getLocalHour,
     isLocalHour10,
     countriesAtLocalHour10,
+    countriesAtLocalHour13,
     countriesAtLocalHour22,
     getLocalDateStr,
     getLocalStartOfToday,

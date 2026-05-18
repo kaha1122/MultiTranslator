@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Notificaciones",
     "webOnly": "Las notificaciones requieren la aplicación móvil.",
-    "dailyReminder": "Recordatorio diario de práctica",
+    "dailyReminder": "Recordatorio diario de Streak",
     "dailyReminderDesc": "Un pequeño aviso para practicar cada día.",
     "reminderTime": "Hora",
+    "reminderFixedAt13": "El recordatorio de Streak se enviará a las 13:00.",
     "reminderTitle": "¡Hora de practicar!",
     "reminderBody": "Solo unos minutos hoy — mantén tu racha viva.",
     "reminderOn": "Recordatorio diario programado.",

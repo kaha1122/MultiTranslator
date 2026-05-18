@@ -17,9 +17,9 @@ const express = require('express');
 const router = express.Router();
 const { admin, adminDb } = require('../config/firebase');
 const { requireCronAuth } = require('../middleware/auth');
-const { sendReengagementPush, sendStreakRiskPush } = require('../utils/sendPush');
+const { sendReengagementPush, sendStreakRiskPush, sendStreakReminderPush } = require('../utils/sendPush');
 const { sendFreeTalkEmail, verifyUnsubToken } = require('../utils/sendEmail');
-const { effectiveCountry, getLocalHour, countriesAtLocalHour10, countriesAtLocalHour22, TZ_BY_COUNTRY, getLocalDateStr, getLocalStartOfToday } = require('../utils/countryTimezone');
+const { effectiveCountry, getLocalHour, countriesAtLocalHour10, countriesAtLocalHour13, countriesAtLocalHour22, TZ_BY_COUNTRY, getLocalDateStr, getLocalStartOfToday } = require('../utils/countryTimezone');
 
 const Timestamp = admin.firestore.Timestamp;
 const FieldValue = admin.firestore.FieldValue;
@@ -313,26 +313,29 @@ async function processOnlyUid(uid, opts) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// Phase 2: Streak 위험 푸시 처리 — 오늘 미달성 + streakCurrent >= 3 유저 대상
+// Phase 2: Streak 위험 푸시 처리 — 오늘 dailyGoal 미달성 + streakCurrent >= 3 유저 대상
 // 한 country에 대해 후보 쿼리 + 필터 + 발송. local 22시 슬롯에서만 실행됨.
-// "오늘 자정"은 country의 IANA TZ 기준 — 서버 UTC 기준이면 KST/JST 09시 이후
-// 활동만으로도 무조건 탈락하는 버그가 있었음 (2026-05-15 vTXu7Zl... 사례).
+//
+// 2026-05-18 가드 교체:
+//   - 쿼리에서 `lastActiveAt < tsStartOfToday` 제거. 사용자가 오전에 카드 1장만 보고
+//     dailyGoal 미달성한 케이스에도 22시 알림이 도달하도록.
+//     (사고 사례: 4일 streak 유저가 22시 알림 기다리며 미루다 오전 접속만 한 채 잠들어 끊김)
+//   - 대신 후보 후 각 유저당 dailyProgress/{today}.goalAchievedToday 1회 read로
+//     "정확히 dailyGoal 달성한 사람"만 skip. 메시지 본문("오늘 학습이 아직이에요")
+//     정확성 유지하면서 단순 접속자에게도 알림 도달.
 // ─────────────────────────────────────────────────────────────────────────
 async function processStreakRiskForCountry(country, now, opts) {
     const todayStr = getLocalDateStr(country, now);
-    const startOfToday = getLocalStartOfToday(country, now);
-    const tsStartOfToday = Timestamp.fromDate(startOfToday);
 
     let snap;
     try {
         snap = await adminDb.collection('users')
             .where('geoCountry', '==', country)
             .where('streakCurrent', '>=', 3)
-            .where('lastActiveAt', '<', tsStartOfToday)
             .limit(MAX_PER_WINDOW)
             .get();
     } catch (e) {
-        // 복합 인덱스 누락 가능: (geoCountry, streakCurrent, lastActiveAt)
+        // 복합 인덱스 누락 가능: (geoCountry, streakCurrent)
         return { country, error: e.message, sent: 0, skipped: 0, candidates: 0 };
     }
 
@@ -365,6 +368,21 @@ async function processStreakRiskForCountry(country, now, opts) {
             continue;
         }
 
+        // 2026-05-18: dailyGoal 달성 여부로 skip 판정 (단순 lastActiveAt 비교 X)
+        // useDailyProgress가 dailyGoal 도달 시 progressRef.goalAchievedToday=true 마킹 (idempotent).
+        // 미달성이면 doc 없음 또는 goalAchievedToday !== true → 22시 알림 정상 도달.
+        try {
+            const progRef = adminDb.collection('users').doc(doc.id).collection('dailyProgress').doc(todayStr);
+            const progSnap = await progRef.get();
+            if (progSnap.exists && progSnap.data()?.goalAchievedToday === true) {
+                skipReasons['goal-achieved-today'] = (skipReasons['goal-achieved-today'] || 0) + 1;
+                continue;
+            }
+        } catch (e) {
+            // dailyProgress read 실패는 보수적으로 발송 진행 (사용자 불만 < 메시지 부정확 위험)
+            console.warn(`[StreakRisk] dailyProgress read failed for ${doc.id}: ${e.message}`);
+        }
+
         if (opts.onlyUid && doc.id !== opts.onlyUid) {
             skipReasons['only-uid-filter'] = (skipReasons['only-uid-filter'] || 0) + 1;
             continue;
@@ -387,6 +405,102 @@ async function processStreakRiskForCountry(country, now, opts) {
                 });
             } catch (e) {
                 console.warn(`[StreakRisk] sentAt update failed for ${doc.id}:`, e.message);
+            }
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent === 0) {
+            skipReasons['fcm-all-invalid'] = (skipReasons['fcm-all-invalid'] || 0) + 1;
+        } else {
+            failedSend += 1;
+            skipReasons[result.reason || 'send-failed'] = (skipReasons[result.reason || 'send-failed'] || 0) + 1;
+        }
+    }
+
+    return {
+        country,
+        candidates,
+        sent,
+        failed: failedSend,
+        skipped: skipReasons,
+        sentUids: opts.dryRun ? sentUids : undefined,
+    };
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// 2026-05-18: Streak 정기 리마인더 처리 — streakCurrent >= 1 유저 대상
+// 한 country에 대해 후보 쿼리 + 필터 + 발송. local 13시 슬롯에서만 실행됨.
+// 발송 시점에 Firestore에서 streakCurrent를 새로 읽기 때문에 메시지 톤이 항상 최신
+// (LocalNotifications 12:30 chain이 schedule 시점 톤이 박혀버리던 회귀 해결).
+//
+// streak risk(22시)와 별개:
+//   - streak risk: 오늘 미달성 + streakCurrent>=3 → 끊김 경고 메시지 (소수 발송)
+//   - streak reminder: streakCurrent>=1 (달성 여부 무관) → bucket별 격려 메시지 (정기)
+// ─────────────────────────────────────────────────────────────────────────
+async function processStreakReminderForCountry(country, now, opts) {
+    const todayStr = getLocalDateStr(country, now);
+
+    let snap;
+    try {
+        snap = await adminDb.collection('users')
+            .where('geoCountry', '==', country)
+            .where('streakCurrent', '>=', 1)
+            .limit(MAX_PER_WINDOW)
+            .get();
+    } catch (e) {
+        return { country, error: e.message, sent: 0, candidates: 0 };
+    }
+
+    let sent = 0;
+    let failedSend = 0;
+    const skipReasons = {};
+    const candidates = snap.size;
+    const sentUids = [];
+
+    for (const doc of snap.docs) {
+        const data = doc.data();
+
+        // 공통 제외 (D0 신규/iOS 가드/no-tokens/admin) — re-engagement와 동일 정책
+        const skip = shouldSkipUser(data);
+        if (skip) {
+            skipReasons[skip] = (skipReasons[skip] || 0) + 1;
+            continue;
+        }
+
+        // streakReminderOptOut — 13시 정기 리마인더 전용 플래그 (streak risk와 별개)
+        if (data.streakReminderOptOut === true) {
+            skipReasons['opted-out'] = (skipReasons['opted-out'] || 0) + 1;
+            continue;
+        }
+
+        // 하루 1회 제한
+        if (data.lastStreakReminderDate === todayStr) {
+            skipReasons['already-sent-today'] = (skipReasons['already-sent-today'] || 0) + 1;
+            continue;
+        }
+
+        if (opts.onlyUid && doc.id !== opts.onlyUid) {
+            skipReasons['only-uid-filter'] = (skipReasons['only-uid-filter'] || 0) + 1;
+            continue;
+        }
+
+        const result = await sendStreakReminderPush(doc.id, {
+            doc: data,
+            streakCurrent: data.streakCurrent || 0,
+            now,
+            dryRun: opts.dryRun,
+        });
+
+        if (opts.dryRun && result.ok) {
+            sent += 1;
+            sentUids.push(doc.id);
+        } else if (result.ok && result.sent > 0) {
+            try {
+                await doc.ref.update({
+                    lastStreakReminderDate: todayStr,
+                    lastStreakReminderAt: FieldValue.serverTimestamp(),
+                });
+            } catch (e) {
+                console.warn(`[StreakReminder] sentAt update failed for ${doc.id}: ${e.message}`);
             }
             sent += 1;
             sentUids.push(doc.id);
@@ -443,12 +557,21 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
         }
 
         // Phase 2: Streak 위험 푸시 — local 22시 슬롯에서만 실행
-        // 후보 조건: geoCountry == country (현지 22시) + streakCurrent >= 3 + lastActiveAt < 오늘 시작
+        // 후보 조건: geoCountry == country (현지 22시) + streakCurrent >= 3 + dailyGoal 미달성
         const streakRiskCountries = countriesAtLocalHour22(now);
         const streakRiskResults = [];
         for (const country of streakRiskCountries) {
             const r = await processStreakRiskForCountry(country, now, opts);
             streakRiskResults.push(r);
+        }
+
+        // 2026-05-18: Streak 정기 리마인더 — local 13시 슬롯에서만 실행
+        // 후보 조건: geoCountry == country (현지 13시) + streakCurrent >= 1 + streakReminderOptOut !== true
+        const streakReminderCountries = countriesAtLocalHour13(now);
+        const streakReminderResults = [];
+        for (const country of streakReminderCountries) {
+            const r = await processStreakReminderForCountry(country, now, opts);
+            streakReminderResults.push(r);
         }
 
         // 집계 (re-engagement)
@@ -477,6 +600,18 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             }
         }
 
+        // 집계 (streak-reminder — 별도 집계, 2026-05-18 신설)
+        const streakReminderTotals = { candidates: 0, sent: 0, failed: 0 };
+        const streakReminderSkip = {};
+        for (const r of streakReminderResults) {
+            streakReminderTotals.candidates += r.candidates || 0;
+            streakReminderTotals.sent += r.sent || 0;
+            streakReminderTotals.failed += r.failed || 0;
+            for (const [k, v] of Object.entries(r.skipped || {})) {
+                streakReminderSkip[k] = (streakReminderSkip[k] || 0) + v;
+            }
+        }
+
         const summary = {
             ranAt: now.toISOString(),
             mode: dryRun ? 'dryRun' : 'send',
@@ -490,12 +625,18 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
                 skipAggregate: streakRiskSkip,
                 details: streakRiskResults.filter(r => (r.candidates || 0) > 0 || r.error),
             },
+            streakReminder: {
+                targetCountries: streakReminderCountries,
+                totals: streakReminderTotals,
+                skipAggregate: streakReminderSkip,
+                details: streakReminderResults.filter(r => (r.candidates || 0) > 0 || r.error),
+            },
         };
 
         // 관측: 실발송 시에만 reengagementLogs에 기록 (dryRun은 응답으로만)
-        if (!dryRun && (targetCountries.length > 0 || streakRiskCountries.length > 0)) {
+        if (!dryRun && (targetCountries.length > 0 || streakRiskCountries.length > 0 || streakReminderCountries.length > 0)) {
             try {
-                const allCountries = [...new Set([...targetCountries, ...streakRiskCountries])];
+                const allCountries = [...new Set([...targetCountries, ...streakRiskCountries, ...streakReminderCountries])];
                 const logId = `${now.toISOString().slice(0, 13).replace(/[-:T]/g, '')}-${allCountries.join('_').slice(0, 60)}`;
                 await adminDb.collection('reengagementLogs').doc(logId).set({
                     ranAt: FieldValue.serverTimestamp(),
@@ -507,13 +648,18 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
                         totals: streakRiskTotals,
                         skipAggregate: streakRiskSkip,
                     },
+                    streakReminder: {
+                        targetCountries: streakReminderCountries,
+                        totals: streakReminderTotals,
+                        skipAggregate: streakReminderSkip,
+                    },
                 });
             } catch (e) {
                 console.warn('[Reengagement] log write failed:', e.message);
             }
         }
 
-        console.log(`[Reengagement] ${dryRun ? 'DRY' : 'SEND'} ranAt=${now.toISOString()} re=${totals.sent}/${totals.candidates} streakRisk=${streakRiskTotals.sent}/${streakRiskTotals.candidates}`);
+        console.log(`[Reengagement] ${dryRun ? 'DRY' : 'SEND'} ranAt=${now.toISOString()} re=${totals.sent}/${totals.candidates} streakRisk=${streakRiskTotals.sent}/${streakRiskTotals.candidates} streakReminder=${streakReminderTotals.sent}/${streakReminderTotals.candidates}`);
         return res.json(summary);
     } catch (e) {
         console.error('[Reengagement] cron failed:', e);
@@ -541,6 +687,36 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
 //   curl -X POST "$RENDER_URL/api/cron/backfill-last-active?dryRun=1"  # 미리보기
 //   curl -X POST "$RENDER_URL/api/cron/backfill-last-active"           # 실행
 //   maxBatches로 안전 캡 조정 가능 (기본 50, 25000명까지 한 번에 처리)
+// ── [Admin] Streak Push preview — 시각 매칭 우회, dryRun으로 단일 유저 메시지 톤 확인 (2026-05-18) ──
+// body: { uid: string, type?: 'reminder'|'risk' (default 'reminder') }
+// 일반 cron은 countriesAtLocalHour13/22 매칭 후 onlyUid 필터링 → 시각 안 맞으면 빈 응답.
+// 이 endpoint는 매칭 무시하고 sendStreakReminderPush/sendStreakRiskPush를 dryRun=true로 직접 호출.
+//
+// 사용 예:
+//   curl -X POST "$RENDER_URL/api/admin/preview-streak-push" \
+//     -H "Authorization: Bearer $BUILD_SECRET" \
+//     -H "Content-Type: application/json" \
+//     -d '{"uid":"vTXu7ZlWNXMOjXw5Orco2KKUaR72","type":"reminder"}'
+router.post('/api/admin/preview-streak-push', async (req, res) => {
+    const authHeader = req.headers.authorization;
+    const buildSecret = process.env.BUILD_SECRET;
+    if (!buildSecret || authHeader !== `Bearer ${buildSecret}`) {
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
+    const { uid, type = 'reminder' } = req.body || {};
+    if (!uid) return res.status(400).json({ error: 'uid required' });
+    try {
+        if (type === 'risk') {
+            const result = await sendStreakRiskPush(uid, { dryRun: true });
+            return res.json({ type: 'risk', uid, result });
+        }
+        const result = await sendStreakReminderPush(uid, { dryRun: true, now: new Date() });
+        return res.json({ type: 'reminder', uid, result });
+    } catch (e) {
+        return res.status(500).json({ error: e.message });
+    }
+});
+
 router.post('/api/cron/backfill-last-active', requireCronAuth, async (req, res) => {
     const dryRun = req.query.dryRun === '1' || req.query.dryRun === 'true';
     const batchSize = Math.min(parseInt(req.query.batchSize || '500', 10), 500);

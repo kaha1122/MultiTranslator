@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Benachrichtigungen",
     "webOnly": "Benachrichtigungen sind nur in der mobilen App verfügbar.",
-    "dailyReminder": "Tägliche Übungs-Erinnerung",
+    "dailyReminder": "Tägliche Streak-Erinnerung",
     "dailyReminderDesc": "Eine kleine Erinnerung, jeden Tag zu üben.",
     "reminderTime": "Uhrzeit",
+    "reminderFixedAt13": "Die Streak-Erinnerung wird täglich um 13:00 Uhr gesendet.",
     "reminderTitle": "Zeit zum Üben!",
     "reminderBody": "Nur ein paar Minuten heute — halte deine Serie am Leben.",
     "reminderOn": "Tägliche Erinnerung aktiviert.",

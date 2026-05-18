@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Notifications",
     "webOnly": "Notifications require the mobile app.",
-    "dailyReminder": "Daily Practice Reminder",
+    "dailyReminder": "Daily Streak Reminder",
     "dailyReminderDesc": "Get a gentle nudge to practice every day.",
     "reminderTime": "Time",
+    "reminderFixedAt13": "Streak reminder will be sent daily at 1:00 PM.",
     "reminderTitle": "Time to practice!",
     "reminderBody": "Keep your streak alive — just a few minutes today.",
     "reminderOn": "Daily reminder scheduled.",

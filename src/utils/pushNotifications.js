@@ -7,6 +7,7 @@ import { db, getWebMessaging } from '../firebase/config';
 
 const STORAGE_KEY_SUB_ALERT = 'pronunfit.pushAlert.subscription';
 const STORAGE_KEY_REENGAGEMENT = 'pronunfit.pushAlert.reengagement';
+const STORAGE_KEY_STREAK_REMINDER = 'pronunfit.pushAlert.streakReminder';
 const STORAGE_KEY_REGISTERED_TOKEN = 'pronunfit.pushAlert.registeredToken';
 
 // 구독 알림 ON/OFF 사용자 프리퍼런스 (기본 true)
@@ -64,6 +65,35 @@ export async function setReengagementAlertPref(uid, enabled) {
         });
     } catch (e) {
         console.warn('[Push] reengagement pref save failed:', e.message);
+    }
+}
+
+// 2026-05-18: Streak 정기 리마인더 ON/OFF — local 13:00 FCM 발송 (LocalNotifications 12:30 대체)
+// Firestore streakReminderOptOut 필드를 서버 cron이 검사
+export function loadStreakReminderAlertPref() {
+    try {
+        const v = localStorage.getItem(STORAGE_KEY_STREAK_REMINDER);
+        return v === null ? true : v === 'true';
+    } catch {
+        return true;
+    }
+}
+
+export function saveStreakReminderAlertPref(enabled) {
+    try {
+        localStorage.setItem(STORAGE_KEY_STREAK_REMINDER, enabled ? 'true' : 'false');
+    } catch {}
+}
+
+export async function setStreakReminderAlertPref(uid, enabled) {
+    saveStreakReminderAlertPref(enabled);
+    if (!uid) return;
+    try {
+        await updateDoc(doc(db, 'users', uid), {
+            streakReminderOptOut: !enabled,
+        });
+    } catch (e) {
+        console.warn('[Push] streak reminder pref save failed:', e.message);
     }
 }
 

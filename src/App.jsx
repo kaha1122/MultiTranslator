@@ -31,8 +31,8 @@ import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
 import { getT, useT } from './utils/i18n';
-import { pickReminderMessage } from './utils/streakReminderPool';
 import { loadReminderPrefs, saveReminderPrefs } from './utils/localNotifications';
+import { setStreakReminderAlertPref } from './utils/pushNotifications';
 import axios from 'axios'; // [신규] 백엔드 예열 통신을 위한 라이브러리 추가
 import { authFetch, getIdToken } from './utils/authFetch';
 
@@ -1185,10 +1185,11 @@ function App() {
     }
   });
 
-  // 옵션 C (2026-05-13): 첫 앱 진입 시 알림 권한 자동 prompt + schedule
-  // 사용자가 명시적으로 알림 화면을 안 가도 12:30 리마인더가 활성됨.
-  // localStorage 'notifAutoPromptedV2' flag로 1회만 실행 (재진입 시 prompt 안 뜸).
-  // 권한 거부 시 enabled=false로 저장해 UI 토글과 일치 유지.
+  // 옵션 C (2026-05-13 → 2026-05-18 개편): 첫 앱 진입 시 알림 권한 자동 prompt + FCM 등록
+  // 2026-05-18: streak reminder를 LocalNotifications 12:30 → 서버 cron FCM 13:00으로 전환.
+  //   - LocalNotifications.schedule() 호출 제거 (이제 메시지는 서버 cron이 13:00에 personalize 발송)
+  //   - 권한 grant + FCM 등록은 유지 (서버 cron이 보내는 FCM을 받아야 함)
+  //   - 권한 grant 시 streakReminderOptOut: false Firestore 미러 (서버 cron이 검사)
   useEffect(() => {
     if (!user?.uid || !Capacitor.isNativePlatform?.()) return;
     if (localStorage.getItem('notifAutoPromptedV2') === '1') return;
@@ -1199,24 +1200,11 @@ function App() {
         const perm = await plugin.requestPermissions();
         const granted = perm.display === 'granted';
         if (granted) {
-          const prefs = loadReminderPrefs(); // default 12:30 + enabled true
+          const prefs = loadReminderPrefs();
           saveReminderPrefs({ ...prefs, enabled: true });
-          const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
-          await plugin.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
-          await plugin.schedule({
-            notifications: [{
-              id: 1001,
-              title: msg.title || "Time to practice!",
-              body: msg.body || "Keep your streak alive.",
-              schedule: {
-                on: { hour: prefs.hour, minute: prefs.minute },
-                allowWhileIdle: true,
-                repeats: true,
-              },
-              smallIcon: 'ic_stat_icon_config_sample',
-            }],
-          });
-          // Android: POST_NOTIFICATIONS grant 시 FCM도 자동 등록 — NotificationSettings 패턴 차용
+          // streakReminderOptOut: false 미러 — 서버 13:00 cron 발송 대상으로 등록
+          try { await setStreakReminderAlertPref(user.uid, true); } catch {}
+          // Android: POST_NOTIFICATIONS grant 시 FCM도 자동 등록
           if (Capacitor.getPlatform() === 'android') {
             try {
               const pushMod = await import('@capacitor/push-notifications');
@@ -1226,59 +1214,32 @@ function App() {
             }
           }
         } else {
-          // 권한 거부 → UI 토글 OFF로 일치
           saveReminderPrefs({ ...loadReminderPrefs(), enabled: false });
         }
         localStorage.setItem('notifAutoPromptedV2', '1');
       } catch (err) {
         console.warn('[StreakReminder] first prompt failed:', err?.message);
       }
-    }, 1500); // 사용자가 첫 화면을 인지할 시간
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [user?.uid, streakCurrent, sourceLang]);
+  }, [user?.uid]);
 
-  // Phase 1 fix (2026-05-18): chain-idempotent 가드 + dep 단순화
-  // 회귀 원인: dep에 streakCurrent/sourceLang 포함되어 변경마다 cancel+schedule 실행 →
-  // plugin의 internal chain(TimedNotificationPublisher)을 매번 끊고 재시작 → silently fail 1회면
-  // 영구 누락. 1.2.11 (Android Android 정상 fire) 패턴은 OS chain 위임이었음.
-  // Fix: chain이 살아있으면(getPending에 id=1001 존재) 손대지 않음. 첫 schedule은 옵션 C 자동
-  // prompt 또는 NotificationSettings 토글이 담당. 이 useEffect는 chain이 끊긴 경우(예: 권한 변경 후
-  // 첫 진입, silently failed)에만 복구용으로 동작.
-  // 메시지 personalize 손실: streak 구간 변경 시 톤 갱신은 chain이 자연 만료될 때까지 지연. retention
-  // 측면 손실 < 알림 자체 누락 손실로 trade-off 수용.
+  // 2026-05-18: 기존 디바이스의 LocalNotifications 12:30 chain 잔존분 정리 (1회).
+  // 12:30 로컬 + 13:00 FCM 매일 두 번 발화하던 회귀 차단. mount 시점에 cancel(id=1001)
+  // 호출하면 OS chain이 끊겨 더 이상 발화 안 함. localStorage flag로 1회만 실행.
   useEffect(() => {
-    if (!user?.uid || !Capacitor.isNativePlatform?.()) return;
-    const prefs = loadReminderPrefs();
-    if (!prefs.enabled) return;
-    let cancelled = false;
+    if (!Capacitor.isNativePlatform?.()) return;
+    if (localStorage.getItem('localNotif12_30_cleaned_v1') === '1') return;
     (async () => {
       try {
         const mod = await import('@capacitor/local-notifications');
-        if (cancelled) return;
-        const plugin = mod.LocalNotifications;
-        const pending = await plugin.getPending();
-        if (cancelled) return;
-        if (pending?.notifications?.some(n => n.id === 1001)) return; // chain 살아있음 → no-op
-        const msg = pickReminderMessage({ streakCurrent, sourceLang, getT });
-        await plugin.schedule({
-          notifications: [{
-            id: 1001,
-            title: msg.title || "Time to practice!",
-            body: msg.body || "Keep your streak alive.",
-            schedule: {
-              on: { hour: prefs.hour, minute: prefs.minute },
-              allowWhileIdle: true,
-              repeats: true,
-            },
-            smallIcon: 'ic_stat_icon_config_sample',
-          }],
-        });
+        await mod.LocalNotifications.cancel({ notifications: [{ id: 1001 }] }).catch(() => {});
+        localStorage.setItem('localNotif12_30_cleaned_v1', '1');
       } catch (err) {
-        console.warn('[StreakReminder] auto reschedule failed:', err?.message);
+        console.warn('[StreakReminder] legacy chain cleanup failed:', err?.message);
       }
     })();
-    return () => { cancelled = true; };
-  }, [user?.uid]);
+  }, []);
 
   // 생성된 번역 결과물들을 저장하는 곳
   const [translations, setTranslations] = useState(() => {

@@ -347,4 +347,82 @@ async function sendStreakRiskPush(uid, { doc, streakCurrent, dryRun = false } = 
     }
 }
 
-module.exports = { sendSubscriptionPush, sendReengagementPush, sendStreakRiskPush };
+/**
+ * Streak 정기 리마인더 — local 13:00 발송 (2026-05-18 신설)
+ * streakCurrent 기반 bucket으로 personalize된 톤. 발송 시점에 Firestore에서 streakCurrent를
+ * 새로 읽기 때문에 옛 메시지가 박히는 LocalNotifications 회귀(0518 fix)가 사라짐.
+ * @param {string} uid
+ * @param {{ doc?: object, streakCurrent: number, now?: Date, dryRun?: boolean }} opts
+ */
+async function sendStreakReminderPush(uid, { doc, streakCurrent, now, dryRun = false } = {}) {
+    if (!admin?.messaging || !adminDb) return { ok: false, reason: 'admin-not-init' };
+    const { pickStreakReminderMessage } = require('./streakReminderPool');
+    try {
+        let data = doc;
+        if (!data) {
+            const snap = await adminDb.collection('users').doc(uid).get();
+            if (!snap.exists) return { ok: false, reason: 'user-not-found' };
+            data = snap.data();
+        }
+
+        // 사용자 opt-out 존중 (streak risk 22시와 별개 플래그 — 13시 정기 리마인더 전용)
+        if (data.streakReminderOptOut === true) {
+            return { ok: false, reason: 'opted-out' };
+        }
+
+        const tokens = Array.isArray(data.fcmTokens) ? data.fcmTokens.filter(Boolean) : [];
+        if (tokens.length === 0) return { ok: false, reason: 'no-tokens' };
+
+        const lang = pickLangForUser(data);
+        const n = Number.isFinite(streakCurrent) ? Math.floor(streakCurrent) : (data.streakCurrent || 0);
+        const msg = pickStreakReminderMessage(n, lang, now || new Date());
+
+        if (dryRun) {
+            return {
+                ok: true, dryRun: true, sent: 0, failed: 0,
+                preview: {
+                    title: msg.title, body: msg.body,
+                    bucket: msg.bucket, variantIdx: msg.variantIdx,
+                    lang, streakCurrent: n,
+                    sourceLang: data.sourceLang || null,
+                    deviceLang: data.deviceLang || null,
+                    tokens: tokens.length,
+                },
+            };
+        }
+
+        const response = await admin.messaging().sendEachForMulticast({
+            tokens,
+            notification: { title: msg.title, body: msg.body },
+            data: { type: 'streak_reminder', bucket: msg.bucket, screen: 'home' },
+            android: { priority: 'high' },
+            apns: { payload: { aps: { sound: 'default' } } },
+        });
+
+        // 실패 토큰 정리
+        const staleTokens = [];
+        response.responses.forEach((r, i) => {
+            if (!r.success) {
+                const code = r.error?.code || '';
+                if (code === 'messaging/registration-token-not-registered' ||
+                    code === 'messaging/invalid-registration-token' ||
+                    code === 'messaging/invalid-argument') {
+                    staleTokens.push(tokens[i]);
+                }
+            }
+        });
+        if (staleTokens.length > 0) {
+            const remaining = tokens.filter(t => !staleTokens.includes(t));
+            await adminDb.collection('users').doc(uid).update({ fcmTokens: remaining });
+            console.log(`[StreakReminder] ${uid} — cleaned ${staleTokens.length} stale tokens`);
+        }
+
+        console.log(`[StreakReminder] ${uid} ← bucket=${msg.bucket}/streak=${n}: sent=${response.successCount}, failed=${response.failureCount}`);
+        return { ok: true, sent: response.successCount, failed: response.failureCount, bucket: msg.bucket };
+    } catch (e) {
+        console.warn('[StreakReminder] sendStreakReminderPush failed:', e.message);
+        return { ok: false, reason: e.message };
+    }
+}
+
+module.exports = { sendSubscriptionPush, sendReengagementPush, sendStreakRiskPush, sendStreakReminderPush };

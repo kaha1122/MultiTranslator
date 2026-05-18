@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "通知",
     "webOnly": "通知功能仅在移动应用中可用。",
-    "dailyReminder": "每日练习提醒",
+    "dailyReminder": "每日 Streak 提醒",
     "dailyReminderDesc": "每天轻轻提醒您坚持练习。",
     "reminderTime": "时间",
+    "reminderFixedAt13": "每天下午1点发送 Streak 提醒。",
     "reminderTitle": "该练习啦！",
     "reminderBody": "只需几分钟，保持您的连续学习记录。",
     "reminderOn": "每日提醒已设置。",

@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Notifications",
     "webOnly": "Les notifications nécessitent l'application mobile.",
-    "dailyReminder": "Rappel de pratique quotidien",
+    "dailyReminder": "Rappel Streak quotidien",
     "dailyReminderDesc": "Un petit rappel pour pratiquer chaque jour.",
     "reminderTime": "Heure",
+    "reminderFixedAt13": "Le rappel Streak sera envoyé tous les jours à 13h00.",
     "reminderTitle": "C'est l'heure de pratiquer !",
     "reminderBody": "Quelques minutes aujourd'hui pour continuer votre série.",
     "reminderOn": "Rappel quotidien programmé.",

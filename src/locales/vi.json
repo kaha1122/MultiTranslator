@@ -74,9 +74,10 @@
   "notifications": {
     "sectionTitle": "Thông báo",
     "webOnly": "Thông báo chỉ hoạt động trên ứng dụng di động.",
-    "dailyReminder": "Nhắc nhở luyện tập hàng ngày",
+    "dailyReminder": "Nhắc nhở Streak hàng ngày",
     "dailyReminderDesc": "Nhắc nhở nhẹ nhàng để bạn luyện tập mỗi ngày.",
     "reminderTime": "Thời gian",
+    "reminderFixedAt13": "Nhắc nhở Streak sẽ được gửi vào 1 giờ chiều mỗi ngày.",
     "reminderTitle": "Đến giờ luyện tập rồi!",
     "reminderBody": "Chỉ vài phút hôm nay — hãy duy trì chuỗi ngày luyện tập.",
     "reminderOn": "Đã đặt nhắc nhở hàng ngày.",
