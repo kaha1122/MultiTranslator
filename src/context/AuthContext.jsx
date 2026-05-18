@@ -314,7 +314,7 @@ export const AuthProvider = ({ children }) => {
 
     // 2026-05-07 v1.5.0: 카드 daily 한도 제거 — 점수 시스템(15점)이 단일 게이트.
     //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
-    const TRIAL_DAILY_PRON_LIMIT = 20;        // Free Trial: 하루 발음 20회 (+ pronCredits 영구)
+    const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
     const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
 
@@ -334,7 +334,7 @@ export const AuthProvider = ({ children }) => {
 
     // 2026-05-07 v1.5.0 신규: 보상광고 영구 적립 자산 (Firestore — 사용할 때까지 보관)
     //   freeTalkCredits: 광고 1회 시청 → +2 (Free Talking 추가 세션, 영구)
-    //   pronCredits:     광고 1회 시청 → +10 (발음 평가 추가 횟수, 영구)
+    //   pronCredits:     광고 1회 시청 → +5 (발음 평가 추가 횟수, 영구) — 2026-05-19 +10→+5
     //   기존 rewardBonus_{date} localStorage 시스템 폐기 (당일 리셋이라 미사용분 손실)
     const freeTalkCredits = profile?.freeTalkCredits || 0;
     const pronCredits = profile?.pronCredits || 0;

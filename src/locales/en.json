@@ -183,9 +183,9 @@
   },
   "trial": {
     "limitTitle": "Daily Trial Limit Reached!",
-    "limitDesc": "You've reached the daily limit: 10 cards, 20 pronunciation tests, or 2 Free-Talking sessions.",
+    "limitDesc": "You've reached the daily limit: 10 cards, 10 pronunciation tests, or 2 Free-Talking sessions.",
     "seeYouTomorrow": "See you tomorrow!",
-    "seeSidebarReward": "Want to keep learning? Use the +2 Free-Talking / +10 pronunciations buttons in the sidebar",
+    "seeSidebarReward": "Want to keep learning? Use the +2 Free-Talking / +5 pronunciations buttons in the sidebar",
     "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {
@@ -945,7 +945,7 @@
   "reward": {
     "watchForCards": "+5 Cards",
     "watchAd": "Watch ad for 5 extra cards",
-    "watchForProns": "+10 Pronunciation",
+    "watchForProns": "+5 Pronunciation",
     "watchAdPron": "Watch ad for 10 extra pronunciations (saved permanently)",
     "loading": "Loading ad...",
     "watchForFreeTalk": "+2 Free Talking",

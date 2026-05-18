@@ -770,8 +770,9 @@ function App() {
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
-  //   freeTalks 광고 → freeTalkCredits +2 (영구), prons 광고 → pronCredits +10 (영구).
+  //   freeTalks 광고 → freeTalkCredits +2 (영구), prons 광고 → pronCredits +5 (영구).
   //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
+  //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
 
   const handleRewardedAd = async (type) => {
@@ -786,7 +787,7 @@ function App() {
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          const amount = type === 'freeTalks' ? 2 : 10;
+          const amount = type === 'freeTalks' ? 2 : 5;
           const field = type === 'freeTalks' ? 'freeTalkCredits' : 'pronCredits';
           try {
             await updateDoc(doc(db, 'users', user.uid), { [field]: increment(amount) });

@@ -183,9 +183,9 @@
   },
   "trial": {
     "limitTitle": "本日の無料体験の上限に達しました！",
-    "limitDesc": "1日カード10枚、発音20回、またはFree-Talking2回の上限に達しました。",
+    "limitDesc": "1日カード10枚、発音10回、またはFree-Talking2回の上限に達しました。",
     "seeYouTomorrow": "また明日お会いしましょう！",
-    "seeSidebarReward": "もっと学習したい方は、サイドバーの +2 Free-Talking / +10発音 ボタンをご利用ください",
+    "seeSidebarReward": "もっと学習したい方は、サイドバーの +2 Free-Talking / +5発音 ボタンをご利用ください",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {
@@ -939,7 +939,7 @@
   "reward": {
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
-    "watchForProns": "+10 発音",
+    "watchForProns": "+5 発音",
     "watchAdPron": "広告視聴で発音 10回追加（永続保管）",
     "loading": "広告読み込み中...",
     "watchForFreeTalk": "+2 Free Talking",

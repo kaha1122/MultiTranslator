@@ -183,9 +183,9 @@
   },
   "trial": {
     "limitTitle": "Đã hết giới hạn dùng thử hôm nay!",
-    "limitDesc": "Bạn đã đạt giới hạn hàng ngày: 10 thẻ, 20 lần phát âm hoặc 2 phiên Free-Talking.",
+    "limitDesc": "Bạn đã đạt giới hạn hàng ngày: 10 thẻ, 10 lần phát âm hoặc 2 phiên Free-Talking.",
     "seeYouTomorrow": "Hẹn gặp lại bạn ngày mai!",
-    "seeSidebarReward": "Muốn học thêm? Hãy sử dụng nút +2 Free-Talking / +10 phát âm trong thanh bên",
+    "seeSidebarReward": "Muốn học thêm? Hãy sử dụng nút +2 Free-Talking / +5 phát âm trong thanh bên",
     "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {
@@ -939,7 +939,7 @@
   "reward": {
     "watchForCards": "+5 thẻ",
     "watchAd": "Xem quảng cáo để thêm 5 thẻ",
-    "watchForProns": "+10 phát âm",
+    "watchForProns": "+5 phát âm",
     "watchAdPron": "Xem quảng cáo để có thêm 10 lượt phát âm (lưu vĩnh viễn)",
     "loading": "Đang tải quảng cáo...",
     "watchForFreeTalk": "+2 Free Talking",

@@ -183,9 +183,9 @@
   },
   "trial": {
     "limitTitle": "Limite quotidienne d'essai atteinte !",
-    "limitDesc": "Vous avez atteint la limite quotidienne : 10 cartes, 20 tests de prononciation ou 2 sessions Free-Talking.",
+    "limitDesc": "Vous avez atteint la limite quotidienne : 10 cartes, 10 tests de prononciation ou 2 sessions Free-Talking.",
     "seeYouTomorrow": "À demain !",
-    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +2 Free-Talking / +10 prononciations de la barre latérale",
+    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +2 Free-Talking / +5 prononciations de la barre latérale",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {
@@ -939,7 +939,7 @@
   "reward": {
     "watchForCards": "+5 cartes",
     "watchAd": "Regardez une pub pour 5 cartes",
-    "watchForProns": "+10 prononc.",
+    "watchForProns": "+5 prononc.",
     "watchAdPron": "Regardez une pub pour 10 prononciations supplémentaires (conservées)",
     "loading": "Chargement...",
     "watchForFreeTalk": "+2 Free Talking",

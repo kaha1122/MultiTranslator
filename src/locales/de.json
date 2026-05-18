@@ -183,9 +183,9 @@
   },
   "trial": {
     "limitTitle": "Tägliches Testlimit erreicht!",
-    "limitDesc": "Sie haben das Tageslimit erreicht: 10 Karten, 20 Aussprachetests oder 2 Free-Talking-Sitzungen.",
+    "limitDesc": "Sie haben das Tageslimit erreicht: 10 Karten, 10 Aussprachetests oder 2 Free-Talking-Sitzungen.",
     "seeYouTomorrow": "Bis morgen!",
-    "seeSidebarReward": "Mehr lernen? Nutzen Sie die +2 Free-Talking / +10 Aussprachen Buttons in der Seitenleiste",
+    "seeSidebarReward": "Mehr lernen? Nutzen Sie die +2 Free-Talking / +5 Aussprachen Buttons in der Seitenleiste",
     "upgradeBtn": "Plan upgraden"
   },
   "apiSetup": {
@@ -939,7 +939,7 @@
   "reward": {
     "watchForCards": "+5 Karten",
     "watchAd": "Werbung ansehen für 5 Karten",
-    "watchForProns": "+10 Aussprache",
+    "watchForProns": "+5 Aussprache",
     "watchAdPron": "Werbung ansehen für 10 zusätzliche Aussprachen (dauerhaft)",
     "loading": "Werbung lädt...",
     "watchForFreeTalk": "+2 Free Talking",
