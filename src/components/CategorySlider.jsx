@@ -37,20 +37,43 @@ export default function CategorySlider({
     };
 
     // 2026-05-19: selectedCatId 변경 시 해당 카드로 자동 스크롤 (random topic 선택 시 카테고리 동기화).
-    //   - mount 직후엔 layout 안정 후 scroll (scrollWidth=0 회피)
-    //   - 첫 mount 시 'auto' (smooth 없이 즉시), 이후 변경엔 'smooth'
+    //   - VocabTab/ListeningTab은 display:none 상태로 선마운트되므로 mount 시점엔 scrollWidth=0.
+    //     단순 requestAnimationFrame으로는 부족 (display 전환 타이밍과 race).
+    //   - 즉시 scroll 시도 후 실패하면 ResizeObserver로 trackRef 너비 0→양수 전환 감지 후 1회 실행.
+    //   - 첫 발화는 'auto' (smooth 없이 즉시 정렬), 이후 변경엔 'smooth'.
     const didInitRef = useRef(false);
     useEffect(() => {
         if (!selectedCatId) return;
         const idx = VOCAB_CATEGORIES.findIndex(c => c.id === selectedCatId);
         if (idx < 0) return;
-        const behavior = didInitRef.current ? 'smooth' : 'auto';
-        // 다음 frame까지 대기 — trackRef layout 안정 보장
-        const raf = requestAnimationFrame(() => {
-            scrollToIdx(idx, behavior);
-            didInitRef.current = true;
-        });
-        return () => cancelAnimationFrame(raf);
+        const el = trackRef.current;
+        if (!el) return;
+
+        let done = false;
+        const tryScroll = () => {
+            if (done) return false;
+            if (el.scrollWidth > 0) {
+                scrollToIdx(idx, didInitRef.current ? 'smooth' : 'auto');
+                didInitRef.current = true;
+                done = true;
+                return true;
+            }
+            return false;
+        };
+
+        // 즉시 시도 (display 이미 활성 케이스)
+        if (tryScroll()) return;
+
+        // layout 안 됐으면 ResizeObserver로 너비 변화 감지
+        if (typeof ResizeObserver === 'undefined') {
+            // 폴백: 짧은 폴링
+            const tid = setInterval(() => { if (tryScroll()) clearInterval(tid); }, 100);
+            setTimeout(() => clearInterval(tid), 3000);
+            return () => { done = true; clearInterval(tid); };
+        }
+        const ro = new ResizeObserver(() => tryScroll());
+        ro.observe(el);
+        return () => { done = true; ro.disconnect(); };
     }, [selectedCatId]);
 
     return (
