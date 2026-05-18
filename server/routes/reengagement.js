@@ -55,16 +55,20 @@ function decideTarget(userData) {
 }
 
 // 공통 제외 정책 (윈도우 무관)
+// opts.ignoreD0New=true → 가입 24h 이내 가드 우회 (streak reminder 전용, 2026-05-19)
 function shouldSkipUser(userData, opts = {}) {
     if (!Array.isArray(userData.fcmTokens) || userData.fcmTokens.length === 0) return 'no-tokens';
     if (userData.reengagementOptOut === true) return 'opted-out';
     if (userData.tier === 'admin') return 'admin';
 
     // D0 신규 제외 — createdAt 24h 이내 → onboarding 트랙
-    const createdAt = userData.createdAt;
-    if (createdAt?.toMillis) {
-        const ageMs = Date.now() - createdAt.toMillis();
-        if (ageMs < 24 * 60 * 60 * 1000) return 'd0-new';
+    //   streak reminder는 신규 가입자 첫날부터 도달 가능하도록 ignoreD0New=true로 우회
+    if (!opts.ignoreD0New) {
+        const createdAt = userData.createdAt;
+        if (createdAt?.toMillis) {
+            const ageMs = Date.now() - createdAt.toMillis();
+            if (ageMs < 24 * 60 * 60 * 1000) return 'd0-new';
+        }
     }
 
     // iOS 가드 (env 플래그) — 1차 비활성
@@ -427,14 +431,18 @@ async function processStreakRiskForCountry(country, now, opts) {
 }
 
 // ─────────────────────────────────────────────────────────────────────────
-// 2026-05-18: Streak 정기 리마인더 처리 — streakCurrent >= 1 유저 대상
-// 한 country에 대해 후보 쿼리 + 필터 + 발송. local 13시 슬롯에서만 실행됨.
-// 발송 시점에 Firestore에서 streakCurrent를 새로 읽기 때문에 메시지 톤이 항상 최신
-// (LocalNotifications 12:30 chain이 schedule 시점 톤이 박혀버리던 회귀 해결).
+// 2026-05-18: Streak 정기 리마인더 처리 — local 13시 슬롯
+// 한 country에 대해 후보 쿼리 + 필터 + 발송. 발송 시점에 Firestore에서 streakCurrent를
+// 새로 읽기 때문에 메시지 톤이 항상 최신 (LocalNotifications 12:30 chain 회귀 해결).
+//
+// 2026-05-19 옵션 C 적용:
+//   - streakCurrent >= 0 (가드 완화) — 학습 시작 안 한 신규/dormant + streak 끊긴 사용자 포함
+//     ('start' bucket 메시지로 학습 유도/재시작 격려)
+//   - shouldSkipUser(data, { ignoreD0New: true }) — 가입 24h 이내 사용자도 첫날 도달 가능
 //
 // streak risk(22시)와 별개:
-//   - streak risk: 오늘 미달성 + streakCurrent>=3 → 끊김 경고 메시지 (소수 발송)
-//   - streak reminder: streakCurrent>=1 (달성 여부 무관) → bucket별 격려 메시지 (정기)
+//   - streak risk: 오늘 미달성 + streakCurrent>=3 → 끊김 경고 (소수 발송)
+//   - streak reminder: streakCurrent>=0 + fcmTokens 보유 → bucket별 격려 (정기)
 // ─────────────────────────────────────────────────────────────────────────
 async function processStreakReminderForCountry(country, now, opts) {
     const todayStr = getLocalDateStr(country, now);
@@ -443,7 +451,7 @@ async function processStreakReminderForCountry(country, now, opts) {
     try {
         snap = await adminDb.collection('users')
             .where('geoCountry', '==', country)
-            .where('streakCurrent', '>=', 1)
+            .where('streakCurrent', '>=', 0)
             .limit(MAX_PER_WINDOW)
             .get();
     } catch (e) {
@@ -459,8 +467,8 @@ async function processStreakReminderForCountry(country, now, opts) {
     for (const doc of snap.docs) {
         const data = doc.data();
 
-        // 공통 제외 (D0 신규/iOS 가드/no-tokens/admin) — re-engagement와 동일 정책
-        const skip = shouldSkipUser(data);
+        // 공통 제외 (no-tokens/admin/iOS 가드만) — d0-new는 ignoreD0New로 우회
+        const skip = shouldSkipUser(data, { ignoreD0New: true });
         if (skip) {
             skipReasons[skip] = (skipReasons[skip] || 0) + 1;
             continue;
