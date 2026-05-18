@@ -2766,7 +2766,10 @@ function App() {
   const saveVocabCard = async ({ word, meaning, example, exampleTranslation, examplePronunciation, pronunciation, learningTip, langCode, topic, categoryId = 'custom', topicId = 'custom', difficulty = 'basic', pronunciationScore = null, sourceType = 'vocab' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
-    // 중복 체크: 같은 단어가 이미 저장되어 있으면 기존 ID 반환
+    // 중복 체크: 같은 단어가 이미 저장되어 있으면 기존 ID 반환 (2026-05-18 fix)
+    // 옛 코드는 dup 발견 시 null 반환 → VocabTab.handleSave가 silent fail로 처리되어
+    // 사용자 입장에서 "별표 눌렀는데 반응 없음" 사고 (5장 중 첫째 카드 자주 발생).
+    // 코멘트 의도대로 기존 cardId 반환 + 새 점수 있으면 갱신(최신 실력 반영).
     try {
       const dupQ = query(
         collection(db, "savedCards"),
@@ -2776,7 +2779,13 @@ function App() {
       );
       const dupSnap = await getDocs(dupQ);
       const active = dupSnap.docs.find(d => !d.data().isDeleted);
-      if (active) return null; // 이미 저장됨 → 중복 방지
+      if (active) {
+        if (pronunciationScore != null) {
+          try { await updateDoc(active.ref, { pronunciationScore }); }
+          catch (e) { console.error('Vocab dup score update failed:', e); }
+        }
+        return active.id; // 기존 cardId — VocabTab이 별표 채움 + onNavigateToLibrary 작동
+      }
     } catch (e) { console.error("Vocab duplicate check failed:", e); }
 
     const langInfo = getLangInfo(langCode);
