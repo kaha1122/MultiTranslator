@@ -185,7 +185,7 @@
     "limitTitle": "오늘의 무료 체험 한도에 도달했습니다!",
     "limitDesc": "하루 카드 10장, 발음 20회, 또는 Free-Talking 2회 한도에 도달했습니다.",
     "seeYouTomorrow": "내일 다시 만나요!",
-    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +5 카드 / +10 발음 버튼을 활용하세요",
+    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +10 발음 버튼을 활용하세요",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {
@@ -463,7 +463,6 @@
     "toastFail": "결제에 실패하거나 취소되었습니다.",
     "duplicateSubscription": "이미 앱스토어에서 활성 구독이 있습니다. 먼저 기존 구독을 취소해 주세요.",
     "proFeature1": "발음 평가 월 1,500회",
-    "proFeature2": "Free-Talking 20회/일",
     "proFeature3": "모든 탭 무제한 이용",
     "premiumFeature1": "발음 평가 무제한",
     "premiumFeature2": "Free-Talking 무제한",

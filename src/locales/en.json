@@ -185,7 +185,7 @@
     "limitTitle": "Daily Trial Limit Reached!",
     "limitDesc": "You've reached the daily limit: 10 cards, 20 pronunciation tests, or 2 Free-Talking sessions.",
     "seeYouTomorrow": "See you tomorrow!",
-    "seeSidebarReward": "Want to keep learning? Use the +5 cards / +10 pronunciations buttons in the sidebar",
+    "seeSidebarReward": "Want to keep learning? Use the +2 Free-Talking / +10 pronunciations buttons in the sidebar",
     "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {
@@ -463,7 +463,6 @@
     "toastFail": "Payment failed or was cancelled.",
     "duplicateSubscription": "You already have an active subscription on the app store. Please cancel it first.",
     "proFeature1": "1,500 pronunciation assessments/mo",
-    "proFeature2": "Free-Talking 20 sessions/day",
     "proFeature3": "Unlimited access to all tabs",
     "premiumFeature1": "Unlimited pronunciation assessments",
     "premiumFeature2": "Unlimited Free-Talking",

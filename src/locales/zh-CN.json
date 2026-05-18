@@ -185,7 +185,7 @@
     "limitTitle": "今日免费体验额度已用完！",
     "limitDesc": "每日10张卡片、20次发音练习或2次Free-Talking的额度已用完。",
     "seeYouTomorrow": "明天再见！",
-    "seeSidebarReward": "想继续学习？请使用侧边栏的 +5 卡片 / +10 发音 按钮",
+    "seeSidebarReward": "想继续学习？请使用侧边栏的 +2 Free-Talking / +10 发音 按钮",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {
@@ -457,7 +457,6 @@
     "toastFail": "支付失败或已取消。",
     "duplicateSubscription": "您已在应用商店有活跃订阅，请先取消后再操作。",
     "proFeature1": "每月1,500次发音评估",
-    "proFeature2": "Free-Talking 20次/天",
     "proFeature3": "所有标签页无限使用",
     "premiumFeature1": "无限发音评估",
     "premiumFeature2": "Free-Talking 无限",

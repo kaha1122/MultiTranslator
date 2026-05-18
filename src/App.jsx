@@ -2260,8 +2260,10 @@ function App() {
         - word type: (1) Meaning & Part of Speech (2) Synonyms/Antonyms (3) Example sentence.
         Self-check before returning: if any tip string reads as if written in the target language (Japanese, Chinese, etc.), rewrite it in ${sourceLangName}.
 
-        [Task 4: Pronunciation]
+        [Task 4: Pronunciation — applies to BOTH "pronunciation" and "examplePronunciation" fields]
         en: IPA / ja: Hiragana / zh-CN: Pinyin / ru: Rewrite with accent marks (´) on stressed vowels per standard Russian dictionary stress (ё and single-syllable words excluded) / others: Romanization
+        **CRITICAL: For zh-CN/zh/ja/ru, the "pronunciation" and "examplePronunciation" fields MUST be non-empty strings. For other languages, may be empty string ''. An empty value for zh-CN/zh/ja/ru makes the response invalid.**
+        examplePronunciation = pronunciation rendering of the "example" sentence (skip if type=sentence and no example present).
 
         [Task 5: Difficulty Classification]
         Classify the source text difficulty as one of: "basic", "intermediate", "advanced".
@@ -2282,7 +2284,7 @@ function App() {
         [Task 8: Detected-Language Extra Card — conditional]
         If detectedLang is a supported code AND detectedLang !== "${sourceLang}" AND detectedLang is NOT in [${targetLangs.join(', ')}],
         also return:
-        - "detectedLangData": { "translation": "<the original source text, verbatim>", "pronunciation": "<per Task 4 rule for detectedLang>" }
+        - "detectedLangData": { "translation": "<the original source text, verbatim>", "pronunciation": "<per Task 4 rule for detectedLang>", "example": "<word type only>", "exampleTranslation": "<word type only>", "examplePronunciation": "<per Task 4, word type only>" }
         - "detectedLangTip": [ 2-3 tips about detectedLang grammar/usage for the source text, each string written in ${sourceLangName} (code "${sourceLang}") — DO NOT write in detectedLang or any other language ]
         Otherwise omit both "detectedLangData" and "detectedLangTip" fields entirely.
 
@@ -2295,7 +2297,7 @@ function App() {
             ${targetLangNames.map(name => `["<explanation in ${sourceLangName} about how the ${name} translation works>", "<another explanation in ${sourceLangName}>"]`).join(',\n            ')}
           ],
           "data": {
-            ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "...", "example": "...", "exampleTranslation": "..." }`).join(',\n            ')}
+            ${targetLangs.map(code => `"${code}": { "translation": "...", "pronunciation": "<per Task 4>", "example": "...", "exampleTranslation": "...", "examplePronunciation": "<per Task 4 for example sentence>" }`).join(',\n            ')}
           }
           // Optional: "sourceTranslation", "detectedLangData", "detectedLangTip" per Tasks 7 & 8
         }
@@ -2361,6 +2363,7 @@ function App() {
               newExamples[langCode] = {
                 example: stripAnnotations(entry.example, langCode),
                 exampleTranslation: entry.exampleTranslation || '',
+                examplePronunciation: entry.examplePronunciation || '',
               };
             }
           }
@@ -2375,6 +2378,7 @@ function App() {
           newExamples[rawDetected] = {
             example: stripAnnotations(entry.example, rawDetected),
             exampleTranslation: entry.exampleTranslation || '',
+            examplePronunciation: entry.examplePronunciation || '',
           };
         }
       }

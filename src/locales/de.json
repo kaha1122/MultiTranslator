@@ -185,7 +185,7 @@
     "limitTitle": "Tägliches Testlimit erreicht!",
     "limitDesc": "Sie haben das Tageslimit erreicht: 10 Karten, 20 Aussprachetests oder 2 Free-Talking-Sitzungen.",
     "seeYouTomorrow": "Bis morgen!",
-    "seeSidebarReward": "Mehr lernen? Nutzen Sie die +5 Karten / +10 Aussprachen Buttons in der Seitenleiste",
+    "seeSidebarReward": "Mehr lernen? Nutzen Sie die +2 Free-Talking / +10 Aussprachen Buttons in der Seitenleiste",
     "upgradeBtn": "Plan upgraden"
   },
   "apiSetup": {
@@ -457,7 +457,6 @@
     "toastFail": "Zahlung fehlgeschlagen oder abgebrochen.",
     "duplicateSubscription": "Sie haben bereits ein aktives Abo im App Store. Bitte kündigen Sie es zuerst.",
     "proFeature1": "1.500 Aussprache-Bewertungen/Monat",
-    "proFeature2": "Free-Talking 20 Sitzungen/Tag",
     "proFeature3": "Unbegrenzt alle Tabs nutzen",
     "premiumFeature1": "Unbegrenzte Aussprache-Bewertungen",
     "premiumFeature2": "Unbegrenztes Free-Talking",

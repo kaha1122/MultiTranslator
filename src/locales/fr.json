@@ -185,7 +185,7 @@
     "limitTitle": "Limite quotidienne d'essai atteinte !",
     "limitDesc": "Vous avez atteint la limite quotidienne : 10 cartes, 20 tests de prononciation ou 2 sessions Free-Talking.",
     "seeYouTomorrow": "À demain !",
-    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +5 cartes / +10 prononciations de la barre latérale",
+    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +2 Free-Talking / +10 prononciations de la barre latérale",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {
@@ -457,7 +457,6 @@
     "toastFail": "Paiement échoué ou annulé.",
     "duplicateSubscription": "Vous avez déjà un abonnement actif sur l'App Store. Veuillez d'abord l'annuler.",
     "proFeature1": "1 500 évaluations de prononciation/mois",
-    "proFeature2": "Free-Talking 20 sessions/jour",
     "proFeature3": "Accès illimité à tous les onglets",
     "premiumFeature1": "Évaluations de prononciation illimitées",
     "premiumFeature2": "Free-Talking illimité",

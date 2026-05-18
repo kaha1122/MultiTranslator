@@ -185,7 +185,7 @@
     "limitTitle": "本日の無料体験の上限に達しました！",
     "limitDesc": "1日カード10枚、発音20回、またはFree-Talking2回の上限に達しました。",
     "seeYouTomorrow": "また明日お会いしましょう！",
-    "seeSidebarReward": "もっと学習したい方は、サイドバーの +5カード / +10発音 ボタンをご利用ください",
+    "seeSidebarReward": "もっと学習したい方は、サイドバーの +2 Free-Talking / +10発音 ボタンをご利用ください",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {
@@ -457,7 +457,6 @@
     "toastFail": "支払いに失敗またはキャンセルされました。",
     "duplicateSubscription": "アプリストアで有効なサブスクリプションがあります。先にそちらを解約してください。",
     "proFeature1": "発音評価 月1,500回",
-    "proFeature2": "Free-Talking 20回/日",
     "proFeature3": "すべてのタブ無制限",
     "premiumFeature1": "発音評価無制限",
     "premiumFeature2": "Free-Talking 無制限",

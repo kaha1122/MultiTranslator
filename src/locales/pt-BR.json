@@ -185,7 +185,7 @@
     "limitTitle": "Limite diário de teste atingido!",
     "limitDesc": "Você atingiu o limite diário: 10 cartões, 20 testes de pronúncia ou 2 sessões Free-Talking.",
     "seeYouTomorrow": "Até amanhã!",
-    "seeSidebarReward": "Quer continuar aprendendo? Use os botões +5 cartões / +10 pronúncias na barra lateral",
+    "seeSidebarReward": "Quer continuar aprendendo? Use os botões +2 Free-Talking / +10 pronúncias na barra lateral",
     "upgradeBtn": "Atualize Seu Plano"
   },
   "apiSetup": {
@@ -457,7 +457,6 @@
     "toastFail": "Pagamento falhou ou foi cancelado.",
     "duplicateSubscription": "Você já tem uma assinatura ativa na loja de apps. Cancele-a primeiro.",
     "proFeature1": "1.500 avaliações de pronúncia/mês",
-    "proFeature2": "Free-Talking 20 sessões/dia",
     "proFeature3": "Acesso ilimitado a todas as abas",
     "premiumFeature1": "Avaliações de pronúncia ilimitadas",
     "premiumFeature2": "Free-Talking ilimitado",
