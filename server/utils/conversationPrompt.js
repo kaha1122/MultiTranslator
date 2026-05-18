@@ -388,7 +388,7 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
     "internal_scenario_summary": "English summary: chosen emotion, action type, micro-situation.",
     "sentence": "The learner's opening sentence in ${targetLangName}.",
     "translation": "Natural translation in ${sourceLangName}.",
-    "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: full sentence with stress accent marks (´) on stressed vowels of multi-syllable words (use accuracy of standard Russian dictionary; ё/single-syllable words need no accent). For all others: empty string ''.",
+    "pronunciation": "For zh-CN/zh: pinyin with tone marks (REQUIRED, non-empty). For ja: hiragana reading (REQUIRED, non-empty). For ru: full sentence with stress accent marks (´) on stressed vowels of multi-syllable words (REQUIRED, non-empty; use accuracy of standard Russian dictionary; ё/single-syllable words need no accent). For all others: empty string ''. **CRITICAL: an empty string for zh-CN/zh/ja/ru makes the response invalid.**",
     "scene_hint": "In ${sourceLangName}: vivid micro-situation description WITHOUT emotion tags.",
     "learning_tip": "In ${sourceLangName}: vocab/grammar/pronunciation tip explaining how the chosen emotion and ${speechStyle} style shape this expression."
   },
@@ -398,7 +398,7 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
     "internal_scenario_summary": "English summary: who is responding, their emotion, which ONE attribute from Phase 0 ④ they ask for / confirm in this reply, AND a comma-separated list of the remaining 2+ attributes from ④ still LEFT UNADDRESSED for the learner to bring up in subsequent Free Talking turns. Format: 'role + emotion + asks_attr=X | remaining=Y, Z, W'.",
     "sentence": "The response in ${targetLangName}.",
     "translation": "Natural translation in ${sourceLangName}.",
-    "pronunciation": "Same rules as firstUserTurn.pronunciation.",
+    "pronunciation": "Same rules as firstUserTurn.pronunciation — REQUIRED non-empty for zh-CN/zh/ja/ru.",
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
     "learning_tip": "In ${sourceLangName}: tip about the response — vocab/grammar/expression and how emotion + role shape this."
   },
@@ -958,7 +958,7 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
     "internal_scenario_summary": "English: who is responding, their emotion, the info given, why it answers intentText.",
     "sentence": "The reply in ${targetLangName}.",
     "translation": "Natural translation in ${sourceLangName}.",
-    "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: hiragana reading. For ru: full sentence with stress accents (´) on stressed vowels of multi-syllable words. For all others: empty string ''.",
+    "pronunciation": "For zh-CN/zh: pinyin with tone marks (REQUIRED, non-empty). For ja: hiragana reading (REQUIRED, non-empty). For ru: full sentence with stress accents (´) on stressed vowels of multi-syllable words (REQUIRED, non-empty). For all others: empty string ''. **CRITICAL: an empty string for zh-CN/zh/ja/ru makes the response invalid.**",
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
     "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply."
   }
