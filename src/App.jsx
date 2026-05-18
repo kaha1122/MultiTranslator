@@ -2479,6 +2479,7 @@ function App() {
         difficulty: translationDifficulty,
         example: translationExamples[langCode]?.example || '',
         exampleTranslation: translationExamples[langCode]?.exampleTranslation || '',
+        examplePronunciation: translationExamples[langCode]?.examplePronunciation || '',
         createdAt: serverTimestamp()
       };
 
