@@ -38,6 +38,9 @@ const FIELD_BY_WINDOW = { D1: 'd1At', D2: 'd2At', D3: 'd3At', D4: 'd4At', D5: 'd
 
 // 한 cron 실행에서 처리할 최대 유저 수 (윈도우당). FCM rate limit + Firestore read 비용 가드
 const MAX_PER_WINDOW = 500;
+// 2026-05-19 streak reminder 전용 limit — geoCountry로만 매칭하므로 모수 큼 (VN 1144명 등).
+//   reengagement D1~D6는 lastActiveAt window 매칭으로 모수 작아 500 유지 → 다른 분기 영향 0.
+const STREAK_REMINDER_MAX_PER_COUNTRY = 2000;
 
 // 기 발송 여부 — 같은 윈도우 필드가 이미 채워져 있으면 skip
 function alreadySent(userData, windowName) {
@@ -436,13 +439,15 @@ async function processStreakRiskForCountry(country, now, opts) {
 // 새로 읽기 때문에 메시지 톤이 항상 최신 (LocalNotifications 12:30 chain 회귀 해결).
 //
 // 2026-05-19 옵션 C 적용:
-//   - streakCurrent >= 0 (가드 완화) — 학습 시작 안 한 신규/dormant + streak 끊긴 사용자 포함
-//     ('start' bucket 메시지로 학습 유도/재시작 격려)
+//   - streakCurrent 쿼리 가드 완전 제거 — Firestore where('>=', 0)은 필드 null/undefined인
+//     doc을 자동 제외하므로 fcmTokens 있는데 streakCurrent 필드 없는 사용자(useStreak mount 전
+//     신규 가입자 등)가 빠지는 문제. fcmTokens 보유 모든 사용자에게 발송하려면 geoCountry로만
+//     쿼리 후 클라 측에서 shouldSkipUser의 'no-tokens' 가드로 필터.
 //   - shouldSkipUser(data, { ignoreD0New: true }) — 가입 24h 이내 사용자도 첫날 도달 가능
 //
 // streak risk(22시)와 별개:
 //   - streak risk: 오늘 미달성 + streakCurrent>=3 → 끊김 경고 (소수 발송)
-//   - streak reminder: streakCurrent>=0 + fcmTokens 보유 → bucket별 격려 (정기)
+//   - streak reminder: geoCountry 매칭 + fcmTokens 보유 (streakCurrent 무관) → bucket별 격려
 // ─────────────────────────────────────────────────────────────────────────
 async function processStreakReminderForCountry(country, now, opts) {
     const todayStr = getLocalDateStr(country, now);
@@ -451,8 +456,7 @@ async function processStreakReminderForCountry(country, now, opts) {
     try {
         snap = await adminDb.collection('users')
             .where('geoCountry', '==', country)
-            .where('streakCurrent', '>=', 0)
-            .limit(MAX_PER_WINDOW)
+            .limit(STREAK_REMINDER_MAX_PER_COUNTRY)
             .get();
     } catch (e) {
         return { country, error: e.message, sent: 0, candidates: 0 };
