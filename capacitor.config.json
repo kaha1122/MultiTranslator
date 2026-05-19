@@ -21,6 +21,9 @@
     "PushNotifications": {
       "presentationOptions": ["badge", "sound", "alert"]
     },
+    "FirebaseMessaging": {
+      "presentationOptions": ["badge", "sound", "alert"]
+    },
     "LocalNotifications": {
       "smallIcon": "ic_stat_icon_config_sample",
       "iconColor": "#7B2D8E"

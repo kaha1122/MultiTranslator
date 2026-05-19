@@ -178,18 +178,26 @@ function App() {
   }, []);
 
   // FCM 푸시 알림 전역 리스너 — 앱 시작 시 1회 등록
-  // - 'registration' → 토큰 받으면 Firestore에 저장
+  // - Android: PushNotifications 'registration' → FCM token (기존 경로)
+  // - iOS: FirebaseMessaging 'tokenReceived' → FCM token (2026-05-19 신규, APNs hex 회피)
   // - 'pushNotificationActionPerformed' → 탭 시 화면 이동 (subscription → 설정 탭)
   // 앱 열림은 Android/iOS가 기본 PendingIntent로 처리, 이 리스너는 "화면 라우팅"만 담당
   useEffect(() => {
     if (!Capacitor.isNativePlatform?.()) return;
     const removers = [];
+    const isIOS = Capacitor.getPlatform() === 'ios';
     (async () => {
       try {
         const { PushNotifications } = await import('@capacitor/push-notifications');
-        const { saveFcmTokenToFirestore } = await import('./utils/pushNotifications');
+        const { saveFcmTokenToFirestore, attachIOSFCMTokenListener, registerIOSFCM } = await import('./utils/pushNotifications');
 
+        // Android: PushNotifications.registration이 FCM token 반환
+        // iOS: PushNotifications.registration은 APNs hex(invalid) → 무시. FirebaseMessaging.tokenReceived로 대체
         const hReg = await PushNotifications.addListener('registration', async (token) => {
+          if (isIOS) {
+            console.log('[Push] iOS registration event ignored (APNs hex) — handled by FirebaseMessaging.tokenReceived');
+            return;
+          }
           const tk = token?.value;
           const uid = auth.currentUser?.uid;
           console.log('[Push] registration event fired:', { hasToken: !!tk, hasUid: !!uid });
@@ -201,6 +209,12 @@ function App() {
           console.log('[Push] global listener saveFcmTokenToFirestore:', res);
         });
         removers.push(hReg);
+
+        // iOS 전용: FirebaseMessaging의 tokenReceived (초기 + refresh)
+        if (isIOS) {
+          const unsubIOS = await attachIOSFCMTokenListener(() => auth.currentUser?.uid);
+          removers.push({ remove: unsubIOS });
+        }
 
         const hAction = await PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
           console.log('[Push] tap:', action.notification?.data);
@@ -227,10 +241,20 @@ function App() {
         // 리스너 중복 등록 방지 플래그 — 토글/모달/AuthContext가 재등록 안 하도록
         window.__pushListenersBound = true;
 
-        // 권한 이미 부여된 경우 자동으로 register() 호출 → 토큰 최신화
-        const perm = await PushNotifications.checkPermissions();
-        if (perm.receive === 'granted') {
-          await PushNotifications.register();
+        // 권한 이미 부여된 경우 자동으로 토큰 최신화
+        //   Android: PushNotifications.register() → 'registration' 이벤트
+        //   iOS: registerIOSFCM() → FirebaseMessaging.getToken() 명시 호출 + Firestore 저장
+        if (isIOS) {
+          const uid = auth.currentUser?.uid;
+          if (uid) {
+            const r = await registerIOSFCM(uid);
+            console.log('[Push-iOS] initial registerIOSFCM:', r);
+          }
+        } else {
+          const perm = await PushNotifications.checkPermissions();
+          if (perm.receive === 'granted') {
+            await PushNotifications.register();
+          }
         }
       } catch (e) {
         console.warn('[App] push listener setup failed:', e?.message);
@@ -1864,19 +1888,27 @@ function App() {
         }).catch(() => {});
     }
 
-    // FCM 토큰: 네이티브 + 권한 granted + 토큰 배열 비어있을 때 register() 재호출
-    // 'registration' 이벤트는 App.jsx 전역 리스너가 saveFcmTokenToFirestore로 처리
+    // FCM 토큰: 네이티브 + 권한 granted + 토큰 배열 비어있을 때 재등록
+    //   Android: PushNotifications.register() → 'registration' 이벤트 → 전역 리스너 저장
+    //   iOS: registerIOSFCM(uid) → FirebaseMessaging.getToken() + Firestore 직접 저장 (2026-05-19)
     const hasTokens = Array.isArray(profile.fcmTokens) && profile.fcmTokens.length > 0;
     if (!hasTokens && !asyncHealRef.current.fcm) {
       asyncHealRef.current.fcm = true;
       (async () => {
         try {
           if (Capacitor.isNativePlatform?.()) {
-            const { PushNotifications } = await import('@capacitor/push-notifications');
-            const perm = await PushNotifications.checkPermissions();
-            if (perm.receive === 'granted') {
-              console.log('[ProfileHeal] FCM tokens empty — re-registering (native)');
-              await PushNotifications.register();
+            if (Capacitor.getPlatform() === 'ios') {
+              const { registerIOSFCM } = await import('./utils/pushNotifications');
+              console.log('[ProfileHeal] FCM tokens empty — re-registering (iOS)');
+              const r = await registerIOSFCM(user.uid);
+              console.log('[ProfileHeal] registerIOSFCM:', r);
+            } else {
+              const { PushNotifications } = await import('@capacitor/push-notifications');
+              const perm = await PushNotifications.checkPermissions();
+              if (perm.receive === 'granted') {
+                console.log('[ProfileHeal] FCM tokens empty — re-registering (Android)');
+                await PushNotifications.register();
+              }
             }
           } else if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
             // Web: 이전에 권한을 받아둔 적이 있으면 (브라우저 영구 기억) 토큰 재발급 시도.

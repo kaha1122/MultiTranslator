@@ -274,6 +274,32 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
                 showStatus(t('notifications.webOnly') || 'Notifications require the mobile app.', { isError: true });
                 return;
             }
+
+            // iOS: FirebaseMessaging 경유 (2026-05-19) — APNs hex 토큰 회피
+            //   getToken()이 권한 + APNs 등록 + FCM 발급을 묶어서 처리하므로 listener wait 패턴 불필요
+            if (Capacitor.getPlatform() === 'ios') {
+                const { registerIOSFCM } = await import('../utils/pushNotifications');
+                const result = await registerIOSFCM(uid);
+                console.log('[Push-iOS] confirmPushPermission result:', result);
+                if (!result.ok) {
+                    setSubAlert(false);
+                    await setSubscriptionAlertPref(uid, false);
+                    const isDenied = result.reason === 'denied' || result.reason === 'denied-persistent';
+                    showStatus(
+                        isDenied
+                            ? (t('notifications.permissionDeniedPersistent') || '시스템 설정에서 알림을 수동으로 허용해 주세요.')
+                            : `${t('notifications.tokenFailed') || '알림 등록 실패 — 네트워크 상태를 확인해 주세요.'} [${result.reason}]`,
+                        { isError: true }
+                    );
+                    return;
+                }
+                setSubAlert(true);
+                await setSubscriptionAlertPref(uid, true);
+                showStatus(t('notifications.subAlertOn') || 'Subscription alerts enabled.');
+                return;
+            }
+
+            // Android: 기존 PushNotifications 경로 — FCM token이 'registration' 이벤트로 정상 반환됨
             const mod = await import('@capacitor/push-notifications');
             const plugin = mod.PushNotifications;
 

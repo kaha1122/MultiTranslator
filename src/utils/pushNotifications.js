@@ -3,6 +3,7 @@
 // (과거 래퍼 경로에서 hang 현상 발견 후 인라인 패턴으로 전환)
 import { doc, updateDoc, serverTimestamp, getDoc } from 'firebase/firestore';
 import { getToken, onMessage } from 'firebase/messaging';
+import { Capacitor } from '@capacitor/core';
 import { db, getWebMessaging } from '../firebase/config';
 
 const STORAGE_KEY_SUB_ALERT = 'pronunfit.pushAlert.subscription';
@@ -133,6 +134,57 @@ export async function saveFcmTokenToFirestore(uid, token) {
     } catch (e) {
         console.warn('[Push] token save failed:', e.message);
         return { ok: false, reason: e.message };
+    }
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// iOS 전용 FCM 등록 (2026-05-19) — @capacitor-firebase/messaging 경유
+// Android는 @capacitor/push-notifications의 'registration' 이벤트로 FCM token이 정상 반환되지만,
+// iOS는 Firebase Messaging iOS SDK 없이는 APNs hex token만 반환됨(firebase-admin에서 invalid-argument).
+// → iOS만 별도 경로로 FCM token 발급 후 동일한 saveFcmTokenToFirestore에 저장.
+// 반환 reason 분기:
+//   - 'no-uid' | 'denied' | 'denied-persistent' | 'no-token' | <error message>
+// ─────────────────────────────────────────────────────────────────────────
+export async function registerIOSFCM(uid) {
+    if (!uid) return { ok: false, reason: 'no-uid' };
+    if (Capacitor.getPlatform() !== 'ios') return { ok: false, reason: 'wrong-platform' };
+    try {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const check = await FirebaseMessaging.checkPermissions();
+        if (check.receive !== 'granted') {
+            if (check.receive === 'denied') return { ok: false, reason: 'denied-persistent' };
+            const result = await FirebaseMessaging.requestPermissions();
+            if (result.receive !== 'granted') return { ok: false, reason: 'denied' };
+        }
+        const { token } = await FirebaseMessaging.getToken();
+        if (!token) return { ok: false, reason: 'no-token' };
+        const saveResult = await saveFcmTokenToFirestore(uid, token);
+        return { ok: saveResult.ok, reason: saveResult.reason, token };
+    } catch (err) {
+        console.warn('[Push-iOS] registerIOSFCM failed:', err?.message);
+        return { ok: false, reason: err?.message || 'ios-fcm-failed' };
+    }
+}
+
+// iOS 토큰 갱신 리스너 — Firebase Messaging이 자체적으로 refresh할 때 발화
+// 반환: unsubscribe 함수
+export async function attachIOSFCMTokenListener(getUid) {
+    if (Capacitor.getPlatform() !== 'ios') return () => {};
+    try {
+        const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        const handle = await FirebaseMessaging.addListener('tokenReceived', async ({ token }) => {
+            const uid = typeof getUid === 'function' ? getUid() : getUid;
+            if (!token || !uid) {
+                console.warn('[Push-iOS] tokenReceived skipped — missing token/uid', { tk: !!token, uid: !!uid });
+                return;
+            }
+            const res = await saveFcmTokenToFirestore(uid, token);
+            console.log('[Push-iOS] tokenReceived saveFcmTokenToFirestore:', res);
+        });
+        return () => { try { handle?.remove?.(); } catch {} };
+    } catch (err) {
+        console.warn('[Push-iOS] tokenReceived listener setup failed:', err?.message);
+        return () => {};
     }
 }
 
