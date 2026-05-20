@@ -11,6 +11,26 @@ const STORAGE_KEY_REENGAGEMENT = 'pronunfit.pushAlert.reengagement';
 const STORAGE_KEY_STREAK_REMINDER = 'pronunfit.pushAlert.streakReminder';
 const STORAGE_KEY_REGISTERED_TOKEN = 'pronunfit.pushAlert.registeredToken';
 
+// APNs raw hex(64자 대문자 hex)는 FCM token이 아님 — firebase-admin sendEachForMulticast가
+// invalid-argument로 거부하므로 fcmTokens 배열에 절대 들어가면 안 됨.
+// 정상 FCM token은 ~150자 이상, ':' 포함, 소문자/숫자/하이픈/언더스코어 혼재.
+function looksLikeApnsHex(token) {
+    return typeof token === 'string' && /^[0-9A-F]{64}$/.test(token);
+}
+
+// 진단 결과를 users/{uid}.__fcmDiagnostic 필드에 기록 — 일반 user의 디바이스 console에 접근
+// 못 하는 경우 Firestore에서 진단 가능. 1.3.3 빌드의 APNs hex 저장 사고 추적용 (2026-05-20).
+async function writeFcmDiagnostic(uid, payload) {
+    if (!uid) return;
+    try {
+        await updateDoc(doc(db, 'users', uid), {
+            __fcmDiagnostic: { ...payload, at: serverTimestamp() },
+        });
+    } catch (e) {
+        // 진단 기록 실패는 silent — 본 흐름 영향 없음
+    }
+}
+
 // 구독 알림 ON/OFF 사용자 프리퍼런스 (기본 true)
 export function loadSubscriptionAlertPref() {
     try {
@@ -115,6 +135,19 @@ export async function saveFcmTokenToFirestore(uid, token) {
         console.warn('[Push] saveFcmTokenToFirestore missing arg:', { uid: !!uid, token: !!token });
         return { ok: false, reason: 'missing-arg' };
     }
+    // Fix A — 입구 sanity check: APNs raw hex가 어떤 경로로 들어와도 fcmTokens 배열에 저장 차단.
+    // 64자 대문자 hex만 거부 (정상 FCM token은 이 패턴에 안 걸림).
+    if (looksLikeApnsHex(token)) {
+        console.error('[Push] REJECT APNs hex token (not FCM):', token.slice(0, 12) + '...');
+        await writeFcmDiagnostic(uid, {
+            step: 'saveFcmTokenToFirestore',
+            result: 'rejected-apns-hex',
+            tokenLength: token.length,
+            tokenPrefix: token.slice(0, 16),
+            platform: Capacitor.getPlatform?.() || 'unknown',
+        });
+        return { ok: false, reason: 'apns-hex-rejected' };
+    }
     try {
         const ref = doc(db, 'users', uid);
         const snap = await getDoc(ref);
@@ -146,22 +179,67 @@ export async function saveFcmTokenToFirestore(uid, token) {
 //   - 'no-uid' | 'denied' | 'denied-persistent' | 'no-token' | <error message>
 // ─────────────────────────────────────────────────────────────────────────
 export async function registerIOSFCM(uid) {
+    console.log('[Push-iOS] registerIOSFCM start:', { hasUid: !!uid });
     if (!uid) return { ok: false, reason: 'no-uid' };
     if (Capacitor.getPlatform() !== 'ios') return { ok: false, reason: 'wrong-platform' };
+
+    // Fix B — 단계별 진단 로그 + Firestore 기록 (1.3.3 APNs hex 사고 추적)
+    // 각 단계 결과를 console + __fcmDiagnostic 양쪽에 남겨서 디바이스 접근 없이도 추적 가능.
+    let diag = { step: 'start', platform: 'ios' };
     try {
         const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
+        console.log('[Push-iOS] FirebaseMessaging plugin loaded');
+
         const check = await FirebaseMessaging.checkPermissions();
+        console.log('[Push-iOS] checkPermissions:', check);
+        diag = { ...diag, step: 'checkPermissions', checkPermissions: check.receive };
         if (check.receive !== 'granted') {
-            if (check.receive === 'denied') return { ok: false, reason: 'denied-persistent' };
+            if (check.receive === 'denied') {
+                await writeFcmDiagnostic(uid, { ...diag, result: 'denied-persistent' });
+                return { ok: false, reason: 'denied-persistent' };
+            }
             const result = await FirebaseMessaging.requestPermissions();
-            if (result.receive !== 'granted') return { ok: false, reason: 'denied' };
+            console.log('[Push-iOS] requestPermissions:', result);
+            diag = { ...diag, step: 'requestPermissions', requestPermissions: result.receive };
+            if (result.receive !== 'granted') {
+                await writeFcmDiagnostic(uid, { ...diag, result: 'denied' });
+                return { ok: false, reason: 'denied' };
+            }
         }
-        const { token } = await FirebaseMessaging.getToken();
-        if (!token) return { ok: false, reason: 'no-token' };
+
+        console.log('[Push-iOS] calling FirebaseMessaging.getToken()');
+        const getTokenResult = await FirebaseMessaging.getToken();
+        const token = getTokenResult?.token;
+        const tokenInfo = {
+            hasToken: !!token,
+            length: token?.length || 0,
+            prefix: token?.slice(0, 16) || '',
+            isApnsHexShape: looksLikeApnsHex(token),
+            hasColon: typeof token === 'string' && token.includes(':'),
+        };
+        console.log('[Push-iOS] getToken result:', tokenInfo);
+        diag = { ...diag, step: 'getToken', ...tokenInfo };
+
+        if (!token) {
+            await writeFcmDiagnostic(uid, { ...diag, result: 'no-token' });
+            return { ok: false, reason: 'no-token' };
+        }
+        if (looksLikeApnsHex(token)) {
+            // FirebaseMessaging.getToken()이 FCM token이 아닌 APNs hex를 반환한 비정상 케이스.
+            // 1.3.3 사고의 근본 원인 후보 #1 — 이 분기가 hit되면 Firebase iOS SDK가 APNs token
+            // race 또는 SPM 통합 결함으로 hex를 fallback한 것.
+            console.error('[Push-iOS] getToken returned APNs hex shape — REJECT (FCM SDK fallback?)');
+            await writeFcmDiagnostic(uid, { ...diag, result: 'apns-hex-fallback' });
+            return { ok: false, reason: 'apns-hex-fallback' };
+        }
+
         const saveResult = await saveFcmTokenToFirestore(uid, token);
+        console.log('[Push-iOS] saveFcmTokenToFirestore result:', saveResult);
+        await writeFcmDiagnostic(uid, { ...diag, step: 'save', result: saveResult.ok ? 'saved' : `save-failed:${saveResult.reason}` });
         return { ok: saveResult.ok, reason: saveResult.reason, token };
     } catch (err) {
-        console.warn('[Push-iOS] registerIOSFCM failed:', err?.message);
+        console.warn('[Push-iOS] registerIOSFCM failed:', err?.message, err);
+        await writeFcmDiagnostic(uid, { ...diag, step: 'catch', result: 'exception', error: err?.message || String(err) });
         return { ok: false, reason: err?.message || 'ios-fcm-failed' };
     }
 }
@@ -174,8 +252,27 @@ export async function attachIOSFCMTokenListener(getUid) {
         const { FirebaseMessaging } = await import('@capacitor-firebase/messaging');
         const handle = await FirebaseMessaging.addListener('tokenReceived', async ({ token }) => {
             const uid = typeof getUid === 'function' ? getUid() : getUid;
+            const tokenInfo = {
+                hasToken: !!token,
+                length: token?.length || 0,
+                prefix: token?.slice(0, 16) || '',
+                isApnsHexShape: looksLikeApnsHex(token),
+                hasColon: typeof token === 'string' && token.includes(':'),
+                hasUid: !!uid,
+            };
+            console.log('[Push-iOS] tokenReceived event:', tokenInfo);
             if (!token || !uid) {
-                console.warn('[Push-iOS] tokenReceived skipped — missing token/uid', { tk: !!token, uid: !!uid });
+                console.warn('[Push-iOS] tokenReceived skipped — missing token/uid');
+                return;
+            }
+            if (looksLikeApnsHex(token)) {
+                // tokenReceived 이벤트로도 APNs hex가 흘러올 수 있는지 검증 (Fix B 진단)
+                console.error('[Push-iOS] tokenReceived APNs hex shape — REJECT');
+                await writeFcmDiagnostic(uid, {
+                    step: 'tokenReceivedListener',
+                    result: 'apns-hex-rejected',
+                    ...tokenInfo,
+                });
                 return;
             }
             const res = await saveFcmTokenToFirestore(uid, token);
