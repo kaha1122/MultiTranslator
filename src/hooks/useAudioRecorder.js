@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import axios from 'axios';
 import { db } from '../firebase/config';
-import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { getT } from '../utils/i18n';
 import { getAuthHeaders } from '../utils/authFetch';
@@ -390,6 +390,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 try {
                     const textHash = text ? hashCode(text) : 'unknown';
                     const recordRef = doc(db, `users/${user.uid}/pronunciation_records`, textHash);
+                    // expiresAt = 기록 시점 + 7일. Firestore TTL 정책(expiresAt 필드)이 만료된 문서를 24~72h 내 삭제.
+                    // 사용자 단말 시계 의존 — 미래로 큰 시차 시 조기 삭제 가능하나 무시 가능 (영향 0, 읽기 경로 없음).
+                    const expiresAt = Timestamp.fromMillis(Date.now() + 7 * 24 * 60 * 60 * 1000);
                     await setDoc(recordRef, {
                         cardId: textHash,
                         originalText: text,
@@ -397,6 +400,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                         sourceLang: sourceLangCode,
                         platform: window.Capacitor?.isNativePlatform?.() ? 'app' : 'web',
                         timestamp: serverTimestamp(),
+                        expiresAt,
                         scores: {
                             accuracy: assessment.pronunciationScore || 0,
                             fluency: assessment.fluencyScore || 0,
