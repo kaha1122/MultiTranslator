@@ -39,16 +39,19 @@ html.platform-ios .ftc-overlay {
        PWA standalone / iOS Capacitor / Android Capacitor 환경에서는 env() 가 적절한
        safe-area 값을 반환해 status bar 침범 방지. */
     padding-top: env(safe-area-inset-top, 0px);
-    /* 2026-05-22 (v1.5.55) — 진짜 fix:
-       .ftc-overlay (iOS 위 분기) 가 이미 광고 + safe-area 위까지만 차지하므로,
-       .ftc-window 안의 padding-bottom 은 콘텐츠와 모달 bottom edge 사이 "추가 여백"이
-       될 뿐 — 0 이 정답. 어떤 값을 줘도 그만큼 광고 위에 빈 공간이 노출됨
-       (사용자 5/22 보고 → 5/16 c122cb8 으로 상단 padding 제거 후 가시화됐던 그것).
-       Android 의 경우 .ftc-overlay 가 default inset:0 (광고가 webview 외부) → 모달
-       콘텐츠가 webview bottom 까지 = 광고와 정확히 붙음. 마찬가지로 0 적절.
-       Web (광고 없음): overlay default bottom:0 → 화면 끝까지. safe-area 가 0 이라 OK.
-       PWA 일부 환경에서 safe-area 가 필요하면 그건 ftc-overlay 책임. */
+    /* 2026-05-22 (v1.5.56) — Android 도 광고가 webview overlay 임이 확인됨 (사용자
+       v1.5.54 "반쯤 가림" 보고). 이전 주석 ("Android 는 webview 외부") 정정.
+       플랫폼별 처리:
+       - iOS: .ftc-overlay 가 광고 + safe-area 위까지 분리 → padding 0 (아래)
+       - Web: 광고 없음 → padding 0 (아래)
+       - Android: html.platform-android 분기에서 광고 height 만큼 padding (아래 추가) */
     padding-bottom: 0;
+}
+/* Android: 광고가 WebView 안 overlay → 콘텐츠 가리지 않게 광고 height + 안전 마진.
+   admob-floor 100px 는 useAdMob setOffset 이 set 한 값 (Android 만, ADAPTIVE 미스리포트
+   보호용). 실제 admob-bottom 보고값이 더 크면 그 값 사용. */
+html.platform-android .ftc-window {
+    padding-bottom: max(var(--admob-bottom, 0px), var(--admob-floor, 100px));
 }
 
 /* ── Header ───────────────────────────────────── */
