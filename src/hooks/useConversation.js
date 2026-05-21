@@ -150,6 +150,45 @@ export function useConversation({ tier = 'trial' } = {}) {
         }
     }, [user]);
 
+    // 2026-05-22: 세션 시작 시 historyKey 기억 → 종료 시 같은 key 의 마지막 situation 에
+    // endedAt / durationMs / freeTurnCount / turnLimit / endedReason 추가 update.
+    // freeTurnCountRef 는 latest 값 캡처 (useEffect closure 회피).
+    const lastHistoryKeyRef = useRef(null);
+    const freeTurnCountRef = useRef(0);
+    useEffect(() => { freeTurnCountRef.current = freeTurnCount; }, [freeTurnCount]);
+
+    /**
+     * 마지막 freeTalkHistory situation 에 종료 데이터 추가 (idempotent: 이미 endedAt 있으면 skip).
+     * sessionEnded 가 true 로 바뀌면 자동 호출됨 (아래 useEffect).
+     */
+    const updateLastFreeTalkHistoryEnd = useCallback((reason) => {
+        const key = lastHistoryKeyRef.current;
+        if (!key) return;
+        const existing = historyCacheRef.current[key] || [];
+        if (existing.length === 0) return;
+        const lastIdx = existing.length - 1;
+        const last = existing[lastIdx];
+        if (last.endedAt) return;  // 중복 호출 보호
+        const startedAt = last.startedAt || last.createdAt || Date.now();
+        const endedAt = Date.now();
+        const updated = [...existing];
+        updated[lastIdx] = {
+            ...last,
+            endedAt,
+            durationMs: endedAt - startedAt,
+            freeTurnCount: freeTurnCountRef.current || 0,
+            turnLimit: TURN_LIMITS[tierRef.current] || TURN_LIMITS.trial,
+            endedReason: reason || 'unknown',
+        };
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key), {
+                situations: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory end update failed:', e?.message));
+        }
+    }, [user]);
+
     const startSession = useCallback(async (setupArgs) => {
         setIsStarting(true);
         setStartError(null);
@@ -200,12 +239,16 @@ export function useConversation({ tier = 'trial' } = {}) {
 
             // freeTalkHistory append — situationSummary + dimensions 가 응답에 있으면 저장.
             // 두 필드 중 하나라도 비어있으면 skip (이전 빌드 호환). serverTimestamp 는 setDoc 호출 시 attach.
+            // 2026-05-22: startedAt 추가 + lastHistoryKeyRef 기록 → 세션 종료 시 같은 situation
+            // 에 endedAt/durationMs/freeTurnCount/turnLimit 추가됨 (updateLastFreeTalkHistoryEnd).
             if (data.situationSummary || data.dimensions) {
                 appendFreeTalkHistory(historyKey, {
                     summary: data.situationSummary || '',
                     dimensions: data.dimensions || {},
                     createdAt: Date.now(),  // 클라이언트 epoch — Firestore 정렬엔 updatedAt 사용
+                    startedAt: Date.now(),  // 세션 시작 시각 (분석/추적용)
                 });
+                lastHistoryKeyRef.current = historyKey;
             }
 
             // 3개 메시지 골격을 즉시 마운트 (text는 빈 채로 — TTS reveal로 채워짐)
@@ -297,6 +340,14 @@ export function useConversation({ tier = 'trial' } = {}) {
         }
     }, [fetchTTS, loadAvoidSituations, appendFreeTalkHistory]);
 
+    // 세션 종료 자동 감지 — endSession/idle/limit 어느 경로든 sessionEnded=true 되면
+    // freeTalkHistory 마지막 situation 에 종료 데이터 update (idempotent).
+    useEffect(() => {
+        if (sessionEnded && lastHistoryKeyRef.current) {
+            updateLastFreeTalkHistoryEnd(endedReason || 'unknown');
+        }
+    }, [sessionEnded, endedReason, updateLastFreeTalkHistoryEnd]);
+
     const endSession = useCallback((reason = 'user') => {
         setSessionEnded(true);
         setEndedReason(reason);
@@ -307,6 +358,12 @@ export function useConversation({ tier = 'trial' } = {}) {
     }, []);
 
     const resetSession = useCallback(() => {
+        // 사용자가 endSession 안 거치고 모달 즉시 닫는 경로 보호 — 진행 중 세션이면 종료 데이터 기록.
+        // updateLastFreeTalkHistoryEnd 는 idempotent (이미 endedAt 있으면 skip).
+        if (lastHistoryKeyRef.current) {
+            updateLastFreeTalkHistoryEnd('closed');
+        }
+        lastHistoryKeyRef.current = null;
         setSessionId(null);
         setMessages([]);
         setSetup(null);
@@ -324,7 +381,7 @@ export function useConversation({ tier = 'trial' } = {}) {
             clearTimeout(idleTimerRef.current);
             idleTimerRef.current = null;
         }
-    }, []);
+    }, [updateLastFreeTalkHistoryEnd]);
 
     /**
      * 사용자가 SummaryModal을 [Skip]/[Save]/[X] 로 닫을 때 호출.
