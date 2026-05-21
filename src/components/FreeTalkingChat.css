@@ -11,11 +11,13 @@
     animation: ftc-overlay-in 180ms ease-out;
 }
 /* iOS 전용: AdMob 배너가 WKWebView 위에 native overlay 로 그려져 모달 footer 와
-   겹치는 회귀 (안드로이드는 WebView 외부 영역이라 무관). 모달 자체를 admob-bottom
-   만큼 위에서 끝나게 해서 광고를 모달 밖으로 분리. Pro/Premium (광고 없음) 은
-   --admob-bottom=0 이라 영향 없음. */
+   겹치는 회귀 (안드로이드는 WebView 외부 영역이라 무관). 모달 자체를 광고 위에서
+   끝나게 해서 광고를 모달 밖으로 분리.
+   2026-05-22 (v1.5.55): Pro/Premium (광고 없음) 케이스에 safe-area-inset-bottom 도
+   max 로 포함 — overlay 가 화면 끝까지 가서 홈 인디케이터 침범하던 잠재 이슈 차단.
+   광고 있으면 admob-bottom(이미 safe-area 합산값) 사용, 없으면 safe-area 만. */
 html.platform-ios .ftc-overlay {
-    bottom: var(--admob-bottom, 0px);
+    bottom: max(var(--admob-bottom, 0px), env(safe-area-inset-bottom, 0px));
 }
 @keyframes ftc-overlay-in {
     from { background: rgba(0, 0, 0, 0); }
@@ -37,18 +39,16 @@ html.platform-ios .ftc-overlay {
        PWA standalone / iOS Capacitor / Android Capacitor 환경에서는 env() 가 적절한
        safe-area 값을 반환해 status bar 침범 방지. */
     padding-top: env(safe-area-inset-top, 0px);
-    /* 하단: AdMob 네이티브 배너가 webview 위에 그려질 때 [말하기] 버튼이 가려지지 않도록
-       --admob-bottom (useAdMob.js setOffset()에서 set)을 padding-bottom 에 사용.
-       2026-05-22: --admob-bottom 은 iOS 에서 banner height + safe-area 를 이미 합산
-       (changes-0509 의 tab-nav 갭 fix 결과). 여기서 또 max(safe-area, admob-bottom)
-       을 쓰면 safe-area 가 admob-bottom 안에 중복 포함되어 모달 하단에 ~34px 여백
-       발생(5/16 c122cb8 으로 상단 padding 48px 제거 후 가시화됨). 중복 제거:
-       admob-bottom 에서 safe-area 를 빼고 그것과 safe-area 자체를 max — 광고 있으면
-       admob-bottom pure 크기만큼만, 광고 없으면 safe-area 만 적용. */
-    padding-bottom: max(
-        env(safe-area-inset-bottom, 0px),
-        calc(var(--admob-bottom, 0px) - env(safe-area-inset-bottom, 0px))
-    );
+    /* 2026-05-22 (v1.5.55) — 진짜 fix:
+       .ftc-overlay (iOS 위 분기) 가 이미 광고 + safe-area 위까지만 차지하므로,
+       .ftc-window 안의 padding-bottom 은 콘텐츠와 모달 bottom edge 사이 "추가 여백"이
+       될 뿐 — 0 이 정답. 어떤 값을 줘도 그만큼 광고 위에 빈 공간이 노출됨
+       (사용자 5/22 보고 → 5/16 c122cb8 으로 상단 padding 제거 후 가시화됐던 그것).
+       Android 의 경우 .ftc-overlay 가 default inset:0 (광고가 webview 외부) → 모달
+       콘텐츠가 webview bottom 까지 = 광고와 정확히 붙음. 마찬가지로 0 적절.
+       Web (광고 없음): overlay default bottom:0 → 화면 끝까지. safe-area 가 0 이라 OK.
+       PWA 일부 환경에서 safe-area 가 필요하면 그건 ftc-overlay 책임. */
+    padding-bottom: 0;
 }
 
 /* ── Header ───────────────────────────────────── */
