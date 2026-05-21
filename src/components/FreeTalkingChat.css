@@ -38,9 +38,17 @@ html.platform-ios .ftc-overlay {
        safe-area 값을 반환해 status bar 침범 방지. */
     padding-top: env(safe-area-inset-top, 0px);
     /* 하단: AdMob 네이티브 배너가 webview 위에 그려질 때 [말하기] 버튼이 가려지지 않도록
-       --admob-bottom (useAdMob.js setOffset()에서 set)을 padding-bottom에 합산.
-       Web/Pro/Premium에서는 --admob-bottom = 0px 이라 영향 없음. */
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px));
+       --admob-bottom (useAdMob.js setOffset()에서 set)을 padding-bottom 에 사용.
+       2026-05-22: --admob-bottom 은 iOS 에서 banner height + safe-area 를 이미 합산
+       (changes-0509 의 tab-nav 갭 fix 결과). 여기서 또 max(safe-area, admob-bottom)
+       을 쓰면 safe-area 가 admob-bottom 안에 중복 포함되어 모달 하단에 ~34px 여백
+       발생(5/16 c122cb8 으로 상단 padding 48px 제거 후 가시화됨). 중복 제거:
+       admob-bottom 에서 safe-area 를 빼고 그것과 safe-area 자체를 max — 광고 있으면
+       admob-bottom pure 크기만큼만, 광고 없으면 safe-area 만 적용. */
+    padding-bottom: max(
+        env(safe-area-inset-bottom, 0px),
+        calc(var(--admob-bottom, 0px) - env(safe-area-inset-bottom, 0px))
+    );
 }
 
 /* ── Header ───────────────────────────────────── */
