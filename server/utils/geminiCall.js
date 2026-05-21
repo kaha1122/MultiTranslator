@@ -14,12 +14,20 @@
  *   const parsed = result.parsed;
  */
 const axios = require('axios');
-const { geminiUrl, PRIMARY_MODEL, FALLBACK_MODEL } = require('../config/gemini');
+const { geminiUrl, PRIMARY_MODEL, FALLBACK_MODEL, GEMINI_MODE } = require('../config/gemini');
 
 const DEFAULT_GEN_CONFIG = { responseMimeType: 'application/json' };
 const BACKOFF_MS = [0, 800, 1600];
-const PRIMARY_ATTEMPTS = 3;
+const PRIMARY_ATTEMPTS_DEFAULT = 3;
 const TIMEOUT_MS = 30000;
+
+// 운영자 토글 GEMINI_MODE 에 따라 primary attempts 계산.
+// fast/flash 모드는 outage 시 빠른 escape — Render env 변경 후 재배포로 적용.
+function getPrimaryAttempts() {
+    if (GEMINI_MODE === 'flash') return 0;  // primary 건너뜀 → 바로 fallback
+    if (GEMINI_MODE === 'fast') return 1;   // 1회만 시도
+    return PRIMARY_ATTEMPTS_DEFAULT;        // 'auto' (기본): 3회
+}
 
 /**
  * 단일 호출 + JSON parse + validate. axios throw 포함 모든 에러를 구조화 반환.
@@ -77,10 +85,11 @@ async function callGeminiJson(prompt, geminiKey, opts = {}) {
     const label = opts.label || 'Gemini';
     const genConfig = opts.genConfig || DEFAULT_GEN_CONFIG;
     const validate = opts.validate;
+    const primaryAttempts = getPrimaryAttempts();
     let lastResult;
 
-    // 1~3차: Primary (Flash-Lite)
-    for (let i = 0; i < PRIMARY_ATTEMPTS; i++) {
+    // 1~N차: Primary (Flash-Lite) — GEMINI_MODE='flash' 면 N=0 (건너뜀)
+    for (let i = 0; i < primaryAttempts; i++) {
         if (BACKOFF_MS[i] > 0) {
             await new Promise(r => setTimeout(r, BACKOFF_MS[i]));
         }
@@ -97,15 +106,21 @@ async function callGeminiJson(prompt, geminiKey, opts = {}) {
         console.warn(`[${label}] ${PRIMARY_MODEL} attempt${i+1} retryable fail:`, r.error, '|', r.detail);
     }
 
-    // 4차: Fallback (Flash) — Flash-Lite 모두 fail 시 escalate
-    console.warn(`[${label}] Flash-Lite exhausted → escalating to ${FALLBACK_MODEL}`);
-    const r4 = await callOnce(FALLBACK_MODEL, prompt, geminiKey, genConfig, validate);
-    if (r4.parsed) {
-        console.info(`[${label}] ✅ ${FALLBACK_MODEL} succeeded (Flash-Lite outage rescued)`);
-        return { ...r4, modelUsed: FALLBACK_MODEL, attempts: PRIMARY_ATTEMPTS + 1 };
+    // Fallback (Flash) — Flash-Lite 소진 시 escalate. 'flash' 모드는 primary 건너뛰고 바로 진입.
+    if (primaryAttempts === 0) {
+        console.info(`[${label}] GEMINI_MODE=flash → using ${FALLBACK_MODEL} directly`);
+    } else {
+        console.warn(`[${label}] Flash-Lite exhausted → escalating to ${FALLBACK_MODEL}`);
     }
-    console.error(`[${label}] ❌ ${FALLBACK_MODEL} also failed:`, r4.error, '|', r4.detail);
-    return { ...r4, modelUsed: FALLBACK_MODEL, attempts: PRIMARY_ATTEMPTS + 1, userMsg: errToUserMsg(r4) };
+    const rFb = await callOnce(FALLBACK_MODEL, prompt, geminiKey, genConfig, validate);
+    if (rFb.parsed) {
+        if (primaryAttempts > 0) {
+            console.info(`[${label}] ✅ ${FALLBACK_MODEL} succeeded (Flash-Lite outage rescued)`);
+        }
+        return { ...rFb, modelUsed: FALLBACK_MODEL, attempts: primaryAttempts + 1 };
+    }
+    console.error(`[${label}] ❌ ${FALLBACK_MODEL} also failed:`, rFb.error, '|', rFb.detail);
+    return { ...rFb, modelUsed: FALLBACK_MODEL, attempts: primaryAttempts + 1, userMsg: errToUserMsg(rFb) };
 }
 
 function errToUserMsg(r) {
@@ -129,6 +144,7 @@ function errToUserMsg(r) {
 async function callGeminiText(prompt, geminiKey, opts = {}) {
     const label = opts.label || 'Gemini';
     const genConfig = opts.genConfig || {};
+    const primaryAttempts = getPrimaryAttempts();
 
     async function attemptText(model) {
         try {
@@ -153,7 +169,7 @@ async function callGeminiText(prompt, geminiKey, opts = {}) {
     }
 
     let lastResult;
-    for (let i = 0; i < PRIMARY_ATTEMPTS; i++) {
+    for (let i = 0; i < primaryAttempts; i++) {
         if (BACKOFF_MS[i] > 0) await new Promise(r => setTimeout(r, BACKOFF_MS[i]));
         const r = await attemptText(PRIMARY_MODEL);
         if (r.text !== undefined) return { ...r, modelUsed: PRIMARY_MODEL, attempts: i + 1 };
@@ -165,14 +181,20 @@ async function callGeminiText(prompt, geminiKey, opts = {}) {
         console.warn(`[${label}] ${PRIMARY_MODEL} attempt${i+1} retryable fail:`, r.error, '|', r.detail);
     }
 
-    console.warn(`[${label}] Flash-Lite exhausted → escalating to ${FALLBACK_MODEL}`);
-    const r4 = await attemptText(FALLBACK_MODEL);
-    if (r4.text !== undefined) {
-        console.info(`[${label}] ✅ ${FALLBACK_MODEL} succeeded (Flash-Lite outage rescued)`);
-        return { ...r4, modelUsed: FALLBACK_MODEL, attempts: PRIMARY_ATTEMPTS + 1 };
+    if (primaryAttempts === 0) {
+        console.info(`[${label}] GEMINI_MODE=flash → using ${FALLBACK_MODEL} directly`);
+    } else {
+        console.warn(`[${label}] Flash-Lite exhausted → escalating to ${FALLBACK_MODEL}`);
     }
-    console.error(`[${label}] ❌ ${FALLBACK_MODEL} also failed:`, r4.error, '|', r4.detail);
-    return { ...r4, modelUsed: FALLBACK_MODEL, attempts: PRIMARY_ATTEMPTS + 1, userMsg: errToUserMsg(r4) };
+    const rFb = await attemptText(FALLBACK_MODEL);
+    if (rFb.text !== undefined) {
+        if (primaryAttempts > 0) {
+            console.info(`[${label}] ✅ ${FALLBACK_MODEL} succeeded (Flash-Lite outage rescued)`);
+        }
+        return { ...rFb, modelUsed: FALLBACK_MODEL, attempts: primaryAttempts + 1 };
+    }
+    console.error(`[${label}] ❌ ${FALLBACK_MODEL} also failed:`, rFb.error, '|', rFb.detail);
+    return { ...rFb, modelUsed: FALLBACK_MODEL, attempts: primaryAttempts + 1, userMsg: errToUserMsg(rFb) };
 }
 
 module.exports = { callGeminiJson, callGeminiText, callOnce, errToUserMsg };
