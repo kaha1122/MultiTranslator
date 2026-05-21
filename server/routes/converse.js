@@ -567,27 +567,66 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         targetLang, sourceLang, difficulty, speechStyle,
     });
 
+    // converse-start 와 동일 패턴 — Gemini 1회 호출 + JSON parse + 필드 검증.
+    // axios throw 포함 모든 에러를 { error, status, retryable, detail } 형태로 반환.
+    async function attemptOnce() {
+        try {
+            const response = await axios.post(
+                geminiUrl(geminiKey),
+                {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    // 0.95 — instruction following 우선 (no-redundant-ask 등 룰 준수)
+                    generationConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
+                },
+                { timeout: 30000 }
+            );
+            const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+            let parsed;
+            try { parsed = JSON.parse(jsonStr); }
+            catch (parseErr) {
+                return { error: 'AI returned invalid JSON', status: 502, retryable: true, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
+            }
+            if (!parsed?.intentText || !parsed?.aiReply?.sentence) {
+                return { error: 'AI response missing required fields', status: 502, retryable: true, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
+            }
+            return { parsed };
+        } catch (e) {
+            const status = e.response?.status;
+            const geminiMsg = e.response?.data?.error?.message || e.message;
+            const retryable = status === 503 || status === 429 || status === 500 || !status || e.code === 'ECONNABORTED';
+            return {
+                error: status === 503 ? 'AI server busy' : status === 429 ? 'AI rate limited' : 'AI call failed',
+                status: status || 502,
+                retryable,
+                detail: `${status || e.code || 'network'}: ${(geminiMsg || '').slice(0, 250)}`,
+            };
+        }
+    }
+
+    // Retry loop — converse-start 와 동일 (max 3 + exp backoff 0/800/1600ms)
     try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                // 1.1 → 0.95 로 낮춤 — 다양성보다 instruction following (no-redundant-ask
-                // + attribute classification 룰 준수) 우선. 동일 시나리오에서 같은 질문이
-                // 반복되던 문제 완화.
-                generationConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            console.error('[ConverseReply] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
+        const maxAttempts = 3;
+        const backoffMs = [0, 800, 1600];
+        let result;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (backoffMs[attempt - 1] > 0) {
+                await new Promise(r => setTimeout(r, backoffMs[attempt - 1]));
+            }
+            result = await attemptOnce();
+            if (!result.error) break;
+            const isLast = attempt === maxAttempts;
+            if (!result.retryable || isLast) {
+                console.error(`[ConverseReply] attempt${attempt}${isLast ? '/final' : '/non-retryable'}:`, result.error, '|', result.detail);
+                const userMsg = (result.status === 503 || result.status === 429)
+                    ? 'AI service is temporarily busy. Please try again in a moment.'
+                    : 'Failed to generate reply';
+                return res.status(result.status).json({ error: userMsg });
+            }
+            console.warn(`[ConverseReply] attempt${attempt} retryable fail (backoff ${backoffMs[attempt] || 0}ms):`, result.error, '|', result.detail);
         }
 
+        const parsed = result.parsed;
         // 후처리
         if (parsed?.intentText) {
             parsed.intentText = stripAnnotations(parsed.intentText, targetLang);
@@ -595,16 +634,9 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         if (parsed?.aiReply?.sentence) {
             parsed.aiReply.sentence = stripAnnotations(parsed.aiReply.sentence, targetLang);
         }
-
-        // 최소 필드 검증
-        if (!parsed?.intentText || !parsed?.aiReply?.sentence) {
-            console.error('[ConverseReply] Missing required fields:', Object.keys(parsed || {}));
-            return res.status(502).json({ error: 'AI response missing required fields' });
-        }
-
         res.json(parsed);
     } catch (e) {
-        console.error('[ConverseReply] Error:', e.response?.data || e.message);
+        console.error('[ConverseReply] Unexpected:', e.message);
         res.status(500).json({ error: 'Failed to generate reply' });
     }
 });

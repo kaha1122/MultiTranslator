@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "Partenaire",
     "preparing": "Préparation de la conversation...",
-    "startError": "Impossible de démarrer la conversation.",
+    "startError": "Impossible de démarrer la conversation. Veuillez réessayer dans un instant.",
     "retry": "Réessayer",
     "cancel": "Fermer",
     "userAutoHint": "Vous pouvez commencer ainsi",

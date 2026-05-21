@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "Partner",
     "preparing": "Preparing your conversation...",
-    "startError": "Failed to start the conversation.",
+    "startError": "Couldn't start the conversation. Please try again in a moment.",
     "retry": "Try again",
     "cancel": "Close",
     "userAutoHint": "You could start like this",

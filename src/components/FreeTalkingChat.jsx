@@ -48,6 +48,7 @@ export default function FreeTalkingChat({
         sessionEnded, endedReason,
         startSession, endSession, resetSession,
         submitFreeUtterance,
+        retryLastReply,
         markMessagePlayed,
     } = useConversation({ tier });
 
@@ -326,9 +327,12 @@ export default function FreeTalkingChat({
                     )}
                     {startError && !isStarting && (
                         <div className="ftc-error">
-                            {t('freeTalk.startError') || '대화를 시작하지 못했습니다.'} <br />
-                            <small>{startError}</small>
-                            <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                            {/* 메시지 라인 — 영어 raw startError detail 은 노출하지 않음(console.error 디버그). */}
+                            <div style={{ lineHeight: 1.5 }}>
+                                {t('freeTalk.startError') || '대화를 시작하지 못했어요. 잠시 후 다시 시도해주세요.'}
+                            </div>
+                            {/* 버튼 라인 (다음 줄, 가운데 정렬) */}
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
                                 <button
                                     type="button"
                                     onClick={handleRetry}
@@ -376,6 +380,7 @@ export default function FreeTalkingChat({
                             onLearningTipUserFree={handleLearningTip}
                             isLastUserFree={idx === lastUserFreeIdx}
                             isLearningTipLoading={learningTipLoadingId === m.id}
+                            onRetryReply={m.replyError ? retryLastReply : undefined}
                             t={t}
                         />
                     ))}

@@ -227,7 +227,7 @@ html.platform-ios .ftc-overlay {
 .ftc-loading,
 .ftc-error {
     align-self: center;
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.85);
     border-radius: 14px;
     font-size: 13px;
@@ -236,7 +236,15 @@ html.platform-ios .ftc-overlay {
     align-items: center;
     gap: 8px;
 }
-.ftc-error { color: #c62828; }
+/* error 는 메시지/버튼을 위·아래 두 줄로 분리. 2026-05-22 UX 개선. */
+.ftc-error {
+    color: #c62828;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    max-width: 360px;
+    text-align: center;
+}
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 

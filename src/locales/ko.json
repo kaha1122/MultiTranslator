@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "대화 상대",
     "preparing": "대화를 준비하고 있어요...",
-    "startError": "대화를 시작하지 못했습니다.",
+    "startError": "대화를 시작하지 못했어요. 잠시 후 다시 시도해주세요.",
     "retry": "다시 시도",
     "cancel": "닫기",
     "userAutoHint": "이렇게 시작해볼 수 있어요",

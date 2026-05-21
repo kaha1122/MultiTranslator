@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "对话伙伴",
     "preparing": "正在准备对话...",
-    "startError": "无法开始对话。",
+    "startError": "无法开始对话。请稍后再试。",
     "retry": "重试",
     "cancel": "关闭",
     "userAutoHint": "可以这样开始",

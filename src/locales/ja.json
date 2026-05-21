@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "会話相手",
     "preparing": "会話を準備しています...",
-    "startError": "会話を開始できませんでした。",
+    "startError": "会話を開始できませんでした。しばらくしてからもう一度お試しください。",
     "retry": "再試行",
     "cancel": "閉じる",
     "userAutoHint": "こう始められます",

@@ -557,6 +557,37 @@ export function useConversation({ tier = 'trial' } = {}) {
     }, []);
 
     /**
+     * reply 실패한 직후 호출 — 마지막 user_free 메시지의 sttRaw 로 submitFreeUtterance 재호출.
+     * 실패한 ai placeholder + user_free 를 제거하고 정상 흐름으로 재시작.
+     * 2026-05-22: Gemini 503 같은 transient 외부 장애 후 사용자 1턴 손실 방지.
+     */
+    const retryLastReply = useCallback(async () => {
+        const msgs = messagesRef.current;
+        let lastUserFreeIdx = -1;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === 'user_free') { lastUserFreeIdx = i; break; }
+        }
+        if (lastUserFreeIdx === -1) return;
+        const userMsg = msgs[lastUserFreeIdx];
+        const sttRaw = userMsg.sttRaw || userMsg.fullText || userMsg.text;
+        if (!sttRaw) return;
+
+        // 실패한 user_free + 그 뒤 ai placeholder(replyError) 제거. 다른 메시지는 보존.
+        setMessages(prev => {
+            const next = [...prev];
+            const aiNext = next[lastUserFreeIdx + 1];
+            if (aiNext?.role === 'ai' && aiNext?.replyError) {
+                next.splice(lastUserFreeIdx, 2);
+            } else {
+                next.splice(lastUserFreeIdx, 1);
+            }
+            return next;
+        });
+        setReplyError(null);
+        await submitFreeUtterance(sttRaw);
+    }, [submitFreeUtterance]);
+
+    /**
      * 마지막 user_free 메시지의 텍스트를 사용자가 직접 수정하고, 직후 AI 응답을 재생성한다.
      */
     const editLastUserFree = useCallback(async (newText) => {
@@ -629,6 +660,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         summary, isSummarizing, summaryError,
         startSession, endSession, resetSession,
         submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
+        retryLastReply,
         markMessagePlayed,
         requestSummary,
         clearSummary,

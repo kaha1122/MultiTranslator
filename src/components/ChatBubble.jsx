@@ -27,6 +27,7 @@ export default function ChatBubble({
     onLearningTipUserFree,
     isLastUserFree,
     isLearningTipLoading,
+    onRetryReply,
     t,
 }) {
     const { revealedText, isPlaying, isDone } = useTTSSyncedReveal({
@@ -132,8 +133,29 @@ export default function ChatBubble({
                     </div>
                 )}
                 {message.replyError && (
-                    <div className="ftc-reply-error">
-                        ⚠️ {t?.('freeTalk.replyError') || '응답 생성 실패'} <small>{message.replyError}</small>
+                    <div className="ftc-reply-error" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+                        <div>⚠️ {t?.('freeTalk.replyError') || '응답 생성을 잠시 후 다시 시도해주세요.'}</div>
+                        {onRetryReply && (
+                            <button
+                                type="button"
+                                onClick={onRetryReply}
+                                style={{
+                                    padding: '5px 12px',
+                                    background: '#7c3aed',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                }}
+                            >
+                                <RotateCcw size={12} /> {t?.('freeTalk.retry') || '다시 시도'}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

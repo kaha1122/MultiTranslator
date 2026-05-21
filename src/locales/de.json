@@ -23,7 +23,7 @@
     "title": "Free-Talking",
     "aiName": "Gesprächspartner",
     "preparing": "Gespräch wird vorbereitet...",
-    "startError": "Gespräch konnte nicht gestartet werden.",
+    "startError": "Gespräch konnte nicht gestartet werden. Bitte versuchen Sie es in einem Moment erneut.",
     "retry": "Erneut versuchen",
     "cancel": "Schließen",
     "userAutoHint": "So könnten Sie beginnen",
