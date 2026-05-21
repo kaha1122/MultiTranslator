@@ -86,41 +86,23 @@ const escapeXml = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-// ── 코칭 나레이션 전용 Multilingual Neural Voice 매트릭스 ──────────────────
-// Microsoft 공식 (speech-synthesis-markup-voice 문서):
-//   - en-US-AvaMultilingualNeural 등 4 개 영어 base voice 만 **77 locale 지원**
-//     명시 — ko/zh-CN/ja/vi/ru/pt-BR/fr/de/es 모두 포함.
-//   - 그 외 multilingual voice (Hyunsu/Xiaoxiao/Masaru/Vivienne/Seraphina/
-//     Isidora/Macerio) 는 secondary locale 미명시 → "default locale (자체 base)
-//     + 영어" 만 안전 추정 (Hyunsu 가 zh-CN 한자를 한국식으로 발음한 사용자
-//     보고와 일치).
+// ── 코칭 나레이션 음성 합성: 전면 비활성화 (2026-05-22) ───────────────────
+// 사용자 검증 결과 ko-KR-HyunsuMultilingualNeural / en-US-AvaMultilingualNeural
+// 두 케이스 모두 인용부호 안 학습언어 발음 품질이 떨어진다는 보고. 다른
+// multilingual voice (Masaru/Xiaoxiao/Vivienne/Seraphina/Isidora/Macerio) 는
+// 애초에 secondary locale 미명시 voice 였음.
 //
-// 보수 매트릭스 (Option A): (sourceLang, targetLang) 조합이 정확히 지원되는
-// 경우만 음성 합성. 미지원이면 204 No Content → 클라가 AI-Tip Popup 으로
-// 텍스트만 표시.
-//   - sourceLang='en' + 어떤 targetLang 이든 → en-US-Ava (77 locale)
-//   - sourceLang ∈ {ko, ja, zh-CN, fr, de, es, pt-BR} + targetLang='en' →
-//     자체 base multilingual voice
-//   - 그 외 (예: ko 사용자가 zh-CN 학습) → null → 204
+// 잘못된 발음을 듣게 하는 것보다 popup 으로 텍스트만 보여주는 편이 학습상
+// 안전. 학습언어 발음은 카드 모달의 본문 turn TTS (정통 Neural voice) 로 별도
+// 청취 가능 — 보조 경로 존재.
 //
-// 비용은 일반 Neural 과 동일 ($16/1M chars, S0 tier). HD voice 별도 tier 미사용.
-function getNarrationVoice(sourceLang, targetLang) {
-    // en 사용자 — Ava 가 77 locale 지원 → 모든 targetLang OK
-    if (sourceLang === 'en') return 'en-US-AvaMultilingualNeural';
-
-    // 그 외 sourceLang — 영어 학습 (targetLang='en') 만 안전 지원
-    if (targetLang !== 'en') return null;
-
-    return {
-        'ko':    'ko-KR-HyunsuMultilingualNeural',
-        'ja':    'ja-JP-MasaruMultilingualNeural',
-        'zh-CN': 'zh-CN-XiaoxiaoMultilingualNeural',
-        'fr':    'fr-FR-VivienneMultilingualNeural',
-        'de':    'de-DE-SeraphinaMultilingualNeural',
-        'es':    'es-ES-IsidoraMultilingualNeural',
-        'pt-BR': 'pt-BR-MacerioMultilingualNeural',
-        // 'vi', 'ru': multilingual variant 없음 — 미지원
-    }[sourceLang] || null;
+// 모든 (sourceLang, targetLang) 조합 → null → 204 → 클라가 AITipPopup 으로
+// userCoachingNarration 텍스트만 표시. userCoachingNarration 은 prompt 에서
+// sourceLang 모국어로 강제 출력되므로 10 개 locale 모두 자연스럽게 표시.
+//
+// 부수: Azure TTS coach-tts 호출 비용 0 ($16/1M chars 절감, 비중은 작음).
+function getNarrationVoice(_sourceLang, _targetLang) {
+    return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
