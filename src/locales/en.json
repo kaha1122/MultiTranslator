@@ -24,6 +24,8 @@
     "aiName": "Partner",
     "preparing": "Preparing your conversation...",
     "startError": "Failed to start the conversation.",
+    "retry": "Try again",
+    "cancel": "Close",
     "userAutoHint": "You could start like this",
     "tapForCard": "Open card",
     "heardAs": "Heard as",

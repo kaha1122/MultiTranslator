@@ -24,6 +24,8 @@
     "aiName": "Gesprächspartner",
     "preparing": "Gespräch wird vorbereitet...",
     "startError": "Gespräch konnte nicht gestartet werden.",
+    "retry": "Erneut versuchen",
+    "cancel": "Schließen",
     "userAutoHint": "So könnten Sie beginnen",
     "tapForCard": "Karte öffnen",
     "heardAs": "Erkannt als",

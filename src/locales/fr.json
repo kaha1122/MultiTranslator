@@ -24,6 +24,8 @@
     "aiName": "Partenaire",
     "preparing": "Préparation de la conversation...",
     "startError": "Impossible de démarrer la conversation.",
+    "retry": "Réessayer",
+    "cancel": "Fermer",
     "userAutoHint": "Vous pouvez commencer ainsi",
     "tapForCard": "Ouvrir la carte",
     "heardAs": "Entendu comme",

@@ -24,6 +24,8 @@
     "aiName": "Compañero",
     "preparing": "Preparando la conversación...",
     "startError": "No se pudo iniciar la conversación.",
+    "retry": "Reintentar",
+    "cancel": "Cerrar",
     "userAutoHint": "Podrías comenzar así",
     "tapForCard": "Abrir tarjeta",
     "heardAs": "Escuchado como",

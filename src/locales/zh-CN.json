@@ -24,6 +24,8 @@
     "aiName": "对话伙伴",
     "preparing": "正在准备对话...",
     "startError": "无法开始对话。",
+    "retry": "重试",
+    "cancel": "关闭",
     "userAutoHint": "可以这样开始",
     "tapForCard": "打开卡片",
     "heardAs": "识别结果",

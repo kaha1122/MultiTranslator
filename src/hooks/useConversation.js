@@ -285,9 +285,13 @@ export function useConversation({ tier = 'trial' } = {}) {
                 });
                 applyTTS(aiMsg.id, aiTTS);
             })();
+            // 호출자(FreeTalkingChat)가 성공/실패 분기 — 성공 시 onSessionStarted 콜백으로 카운트 차감.
+            // 실패하면 사용자에게 [다시 시도] 버튼 노출하고 카운트는 보존(2026-05-21 UX 보호).
+            return true;
         } catch (e) {
             console.error('[useConversation] start failed:', e?.message || e);
             setStartError(e?.message || 'Failed to start');
+            return false;
         } finally {
             setIsStarting(false);
         }

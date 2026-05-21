@@ -135,7 +135,7 @@ ${avoidBlock}
             geminiUrl(geminiKey),
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
+                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
             }
         );
         const raw = response.data.candidates[0].content.parts[0].text;
@@ -262,7 +262,7 @@ ${avoidBlock}
             geminiUrl(geminiKey),
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
+                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
             }
         );
         const raw = response.data.candidates[0].content.parts[0].text;

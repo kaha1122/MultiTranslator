@@ -24,6 +24,8 @@
     "aiName": "대화 상대",
     "preparing": "대화를 준비하고 있어요...",
     "startError": "대화를 시작하지 못했습니다.",
+    "retry": "다시 시도",
+    "cancel": "닫기",
     "userAutoHint": "이렇게 시작해볼 수 있어요",
     "tapForCard": "카드 열기",
     "heardAs": "들린 결과",

@@ -24,6 +24,8 @@
     "aiName": "会話相手",
     "preparing": "会話を準備しています...",
     "startError": "会話を開始できませんでした。",
+    "retry": "再試行",
+    "cancel": "閉じる",
     "userAutoHint": "こう始められます",
     "tapForCard": "カードを開く",
     "heardAs": "認識結果",

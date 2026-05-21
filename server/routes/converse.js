@@ -156,7 +156,7 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
                 geminiUrl(geminiKey),
                 {
                     contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
+                    generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
                 },
                 { timeout: 30000 }
             );
@@ -575,7 +575,7 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
                 // 1.1 → 0.95 로 낮춤 — 다양성보다 instruction following (no-redundant-ask
                 // + attribute classification 룰 준수) 우선. 동일 시나리오에서 같은 질문이
                 // 반복되던 문제 완화.
-                generationConfig: { temperature: 0.95, topK: 40, topP: 0.95 },
+                generationConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
             },
             { timeout: 30000 }
         );
@@ -639,7 +639,7 @@ router.post('/api/converse-summarize', optionalAuth, async (req, res) => {
             geminiUrl(geminiKey),
             {
                 contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95 },
+                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
             },
             { timeout: 30000 }
         );

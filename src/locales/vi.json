@@ -24,6 +24,8 @@
     "aiName": "Đối tác trò chuyện",
     "preparing": "Đang chuẩn bị cuộc trò chuyện...",
     "startError": "Không thể bắt đầu cuộc trò chuyện.",
+    "retry": "Thử lại",
+    "cancel": "Đóng",
     "userAutoHint": "Bạn có thể bắt đầu như thế này",
     "tapForCard": "Mở thẻ",
     "heardAs": "Nghe được",

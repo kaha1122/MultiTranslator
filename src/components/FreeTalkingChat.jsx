@@ -33,6 +33,10 @@ export default function FreeTalkingChat({
     onPronSuccess,
     onSpeak,
     onBookmarkPrompt,
+    // 세션이 성공적으로 시작됐을 때(서버 200 응답 받고 scenarioMeta/3 messages 마운트 직후)
+    // 호출되는 콜백 — App.jsx에서 freeTalk 카운트/credits/점수 차감을 여기서 수행.
+    // 실패(startError) 시에는 호출되지 않아 카운트가 보존된다. 2026-05-21 UX 보호.
+    onSessionStarted,
     languageGoals = {},
 }) {
     const t = (key) => getT(sourceLang, key);
@@ -71,11 +75,16 @@ export default function FreeTalkingChat({
         sourceLang,
     });
 
-    // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정
+    // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정.
+    // 성공 시(true 반환)에만 onSessionStarted 호출 — 실패 시에는 카운트 보존하고
+    // 사용자에게 [다시 시도] 버튼 노출(아래 startError 블록).
     useEffect(() => {
         if (open && setupArgs && !startedRef.current) {
             startedRef.current = true;
-            startSession(setupArgs);
+            (async () => {
+                const ok = await startSession(setupArgs);
+                if (ok) onSessionStarted?.();
+            })();
             try {
                 const seen = localStorage.getItem('pronunfit_freetalk_guide_seen');
                 if (!seen) setShowFirstGuide(true);
@@ -92,6 +101,15 @@ export default function FreeTalkingChat({
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    // 시작 실패 시 [다시 시도] 핸들러 — 같은 setupArgs로 startSession 재호출.
+    // 성공하면 onSessionStarted 호출(첫 시도 실패→재시도 성공도 1회 차감으로 카운트).
+    // 무한 재시도는 사용자 발등의 불을 최소화하기 위해 의도된 동작(503 transient 회복 시도).
+    const handleRetry = async () => {
+        if (!setupArgs) return;
+        const ok = await startSession(setupArgs);
+        if (ok) onSessionStarted?.();
+    };
 
     // 시작 메시지 3개 모두 ttsReady=true 가 되면 자동재생 시작
     useEffect(() => {
@@ -310,6 +328,39 @@ export default function FreeTalkingChat({
                         <div className="ftc-error">
                             {t('freeTalk.startError') || '대화를 시작하지 못했습니다.'} <br />
                             <small>{startError}</small>
+                            <div style={{ marginTop: 12, display: 'flex', gap: 8, justifyContent: 'center' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleRetry}
+                                    style={{
+                                        padding: '8px 20px',
+                                        background: '#7c3aed',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {t('freeTalk.retry') || '다시 시도'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    style={{
+                                        padding: '8px 20px',
+                                        background: 'transparent',
+                                        color: '#6b7280',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                    }}
+                                >
+                                    {t('freeTalk.cancel') || '닫기'}
+                                </button>
+                            </div>
                         </div>
                     )}
 

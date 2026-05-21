@@ -4262,23 +4262,9 @@ function App() {
                 setShowTrialLimitModal(true);
                 return;
               }
-              // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
-              // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
-              if (hasBonusActive) {
-                addAdPoints(1, { bonusCost: 10 });
-              } else {
-                // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
-                if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
-                  await consumeFreeTalkCredits(1);
-                } else {
-                  incrementDailyFreeTalk();
-                }
-                // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
-                // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-                addAdPoints(1, { bonusCost: 10 });
-              }
-              // 분석용 평생 누적 카운터
-              incrementTotalFreeTalk();
+              // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
+              // 콜백에서 처리(서버 200 응답 받은 직후). 503/500 등으로 startSession 실패 시
+              // 카운트가 보존되어 사용자가 [다시 시도] 버튼으로 같은 1회를 재사용 가능.
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
@@ -4997,6 +4983,26 @@ function App() {
         onPronSuccess={onPronSuccess}
         onBookmarkPrompt={handleBookmarkPrompt}
         languageGoals={languageGoals}
+        onSessionStarted={async () => {
+          // 2026-05-21: startSession 성공(서버 200) 직후에만 호출됨. 실패 시 미호출 → 카운트 보존.
+          // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
+          // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
+          if (hasBonusActive) {
+            addAdPoints(1, { bonusCost: 10 });
+          } else {
+            // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
+            if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
+              await consumeFreeTalkCredits(1);
+            } else {
+              incrementDailyFreeTalk();
+            }
+            // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
+            // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
+            addAdPoints(1, { bonusCost: 10 });
+          }
+          // 분석용 평생 누적 카운터
+          incrementTotalFreeTalk();
+        }}
         onClose={() => { setFreeTalkOpen(false); setFreeTalkSetup(null); }}
       />
 
