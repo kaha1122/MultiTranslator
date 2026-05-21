@@ -142,45 +142,76 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         avoidSituations: Array.isArray(avoidSituations) ? avoidSituations : [],
     });
 
-    // Gemini 호출 + JSON parse + 필드 검증을 한 번 시도하는 inner.
-    // 성공 시 parsed 반환, 실패 시 { error, status, detail } 반환 (throw 하지 않음).
-    // invalid JSON / missing field 는 LLM 일시적 흔들림 가능 → 호출자가 1회 재시도.
-    async function attemptOnce() {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            return { error: 'AI returned invalid JSON', status: 502, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
-        }
-        if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
-            return { error: 'AI response missing required fields', status: 502, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
-        }
-        return { parsed };
+    // prompt size monitoring — Gemini Flash-Lite input limit 32K tokens.
+    // 50KB chars ≈ 14K tokens 임계값. 추세 모니터링용 (실제 차단 X).
+    if (prompt.length > 50000) {
+        console.warn(`[ConverseStart] prompt size large: ${prompt.length} chars (~${Math.round(prompt.length / 3.5)} tokens) — approaching 32K input limit`);
     }
 
-    try {
-        let result = await attemptOnce();
-        // LLM 일시적 invalid output 에 대한 1회 자동 재시도 (axios/network 에러는 외부 catch 로 분리).
-        if (result.error) {
-            console.warn('[ConverseStart] attempt1 failed, retrying once:', result.error, '|', result.detail);
-            result = await attemptOnce();
-            if (result.error) {
-                console.error('[ConverseStart] attempt2 also failed:', result.error, '|', result.detail);
-                return res.status(result.status).json({ error: result.error });
+    // Gemini 1회 호출 + JSON parse + 필드 검증. axios throw 포함 모든 에러를
+    // { error, status, retryable, detail } 형태로 반환 (외부 retry 루프가 판단).
+    async function attemptOnce() {
+        try {
+            const response = await axios.post(
+                geminiUrl(geminiKey),
+                {
+                    contents: [{ parts: [{ text: prompt }] }],
+                    generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
+                },
+                { timeout: 30000 }
+            );
+            const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+            const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
+            let parsed;
+            try { parsed = JSON.parse(jsonStr); }
+            catch (parseErr) {
+                return { error: 'AI returned invalid JSON', status: 502, retryable: true, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
             }
+            if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
+                return { error: 'AI response missing required fields', status: 502, retryable: true, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
+            }
+            return { parsed };
+        } catch (e) {
+            const status = e.response?.status;
+            const geminiMsg = e.response?.data?.error?.message || e.message;
+            // 503/429/500/network/timeout: transient — retry 가능.
+            // 400/403/404: key/permission/quota 문제 — retry 무의미.
+            const retryable = status === 503 || status === 429 || status === 500 || !status || e.code === 'ECONNABORTED';
+            return {
+                error: status === 503 ? 'AI server busy' : status === 429 ? 'AI rate limited' : 'AI call failed',
+                status: status || 502,
+                retryable,
+                detail: `${status || e.code || 'network'}: ${(geminiMsg || '').slice(0, 250)}`,
+            };
+        }
+    }
+
+    // Retry loop — max 3 attempts, exponential backoff (0 / 800 / 1600ms).
+    // 503/429/network/invalid JSON/missing field 모두 retry 대상.
+    // 400/403 같은 non-retryable 또는 마지막 시도까지 fail 시 즉시 사용자에게 응답.
+    try {
+        const maxAttempts = 3;
+        const backoffMs = [0, 800, 1600];
+        let result;
+        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+            if (backoffMs[attempt - 1] > 0) {
+                await new Promise(r => setTimeout(r, backoffMs[attempt - 1]));
+            }
+            result = await attemptOnce();
+            if (!result.error) break;
+            const isLast = attempt === maxAttempts;
+            if (!result.retryable || isLast) {
+                console.error(`[ConverseStart] attempt${attempt}${isLast ? '/final' : '/non-retryable'}:`, result.error, '|', result.detail);
+                // 503/429 → 사용자에게 명확한 안내 메시지 + 적절한 status code
+                const userMsg = (result.status === 503 || result.status === 429)
+                    ? 'AI service is temporarily busy. Please try again in a moment.'
+                    : 'Failed to generate conversation start';
+                return res.status(result.status).json({ error: userMsg });
+            }
+            console.warn(`[ConverseStart] attempt${attempt} retryable fail (backoff ${backoffMs[attempt] || 0}ms):`, result.error, '|', result.detail);
         }
 
         const parsed = result.parsed;
-
         // 후처리: 두 turn 의 sentence 에 stripAnnotations 적용 (보험)
         if (parsed?.firstUserTurn?.sentence) {
             parsed.firstUserTurn.sentence = stripAnnotations(parsed.firstUserTurn.sentence, targetLang);
@@ -188,10 +219,9 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         if (parsed?.firstAiReply?.sentence) {
             parsed.firstAiReply.sentence = stripAnnotations(parsed.firstAiReply.sentence, targetLang);
         }
-
         res.json(parsed);
     } catch (e) {
-        console.error('[ConverseStart] Error:', e.response?.data || e.message);
+        console.error('[ConverseStart] Unexpected:', e.message);
         res.status(500).json({ error: 'Failed to generate conversation start' });
     }
 });
