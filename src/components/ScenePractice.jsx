@@ -392,6 +392,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 body: JSON.stringify({
                     scene: sceneText,
                     category,
+                    isCustom: isCustomSelected,
                     targetLang: selectedLang,
                     sourceLang,
                     difficulty,
@@ -441,6 +442,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 body: JSON.stringify({
                     question: generated.sentence,
                     scene: sceneText,
+                    isCustom: isCustomSelected,
                     targetLang: selectedLang,
                     sourceLang,
                     difficulty,
@@ -641,6 +643,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                                 scene: sceneText,
                                 sceneId,
                                 category,
+                                isCustom: isCustomSelected,
                                 targetLang: selectedLang,
                                 sourceLang,
                                 difficulty,

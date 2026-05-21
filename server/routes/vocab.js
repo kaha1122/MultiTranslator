@@ -11,7 +11,7 @@ const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 
 router.post('/api/vocab-words', requireAuth, async (req, res) => {
-    const { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
+    const { topic, topicLabel, category, isCustom, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
     }
@@ -75,6 +75,17 @@ Only after all 5 candidates pass (a)(b)(c) do you output the JSON. If you cannot
         : '';
 
     const prompt = `You are a vocabulary teacher for language learners.
+
+[Step 0: Detect Topic Input Language — DO THIS SILENTLY FIRST]
+"${topicLabel || topic}" may be in ANY language (vi/ru/ko/ja/zh-CN/es/fr/
+de/pt-BR/en). Internally detect its language (hint: sourceLang is
+"${sourceLangName}"), interpret it NATIVELY in that language, and let the
+vocabulary you generate reflect that specific cultural register.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: trust the topic text verbatim —
+if the learner typed "Đi du lịch Đà Nẵng", generate Da Nang-specific
+vocabulary (not generic "travel" words). If they typed "병원 방문", generate
+Korean clinic vocabulary (접수/진료/처방전), not generic medical English.` : ''}
 
 Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})

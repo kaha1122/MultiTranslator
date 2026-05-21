@@ -53,17 +53,18 @@ Vietnamese) makes the output unusable.`;
 
 /**
  * @param {object} args
- * @param {string} args.scene             — i18n scene 키 또는 customInput (예: 'hotel', 'airport')
- * @param {string} args.category          — 'locations' | 'situations'
- * @param {string} args.targetLang        — 학습 대상 언어 코드
- * @param {string} args.sourceLang        — 학습자 모국어 코드
- * @param {string} args.difficulty        — 'basic' | 'intermediate' | 'advanced'
- * @param {string} args.speechStyle       — 'casual' | 'formal'
- * @param {Array}  args.avoidSituations   — 같은 (scene,difficulty,style,lang) 키로 이전 세션에서 누적된
+ * @param {string}  args.scene            — i18n scene 키 또는 customInput (예: 'hotel', 'airport')
+ * @param {string}  args.category         — 'locations' | 'situations' (i18n 카드 선택 시 의미; isCustom=true 면 단순 hint)
+ * @param {boolean} args.isCustom         — true면 사용자가 customInput을 입력한 경우. category 강제 매핑 우회.
+ * @param {string}  args.targetLang       — 학습 대상 언어 코드
+ * @param {string}  args.sourceLang       — 학습자 모국어 코드
+ * @param {string}  args.difficulty       — 'basic' | 'intermediate' | 'advanced'
+ * @param {string}  args.speechStyle      — 'casual' | 'formal'
+ * @param {Array}   args.avoidSituations  — 같은 (scene,difficulty,style,lang) 키로 이전 세션에서 누적된
  *                                          상황 메타. shape: [{ summary, dimensions: {emotion, action_type,
  *                                          responder_role, topic_focus}, createdAt? }]. 최근 30개까지 권고.
  */
-function buildStartPrompt({ scene, category, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
+function buildStartPrompt({ scene, category, isCustom = false, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
     const targetLangName = LANG_NAMES[targetLang] || 'English';
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
     const diffDesc = getDifficultyDesc(difficulty, targetLang);
@@ -151,7 +152,24 @@ Before drafting any field, internally plan ONE specific micro-situation that tie
 intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment.
 
 **🔴 Category-aware interpretation — APPLY BEFORE step ① below**:
-The string "${scene}" means different things depending on category="${category}":
+${isCustom ? `
+⚠️ **CUSTOM INPUT MODE (isCustom=true) — IGNORE the stated category="${category}"**:
+The learner typed "${scene}" as FREE-FORM custom input. The category value
+above is just a UI default and may NOT match the actual input. **Trust the
+scene TEXT itself**, interpreted per Step 0 in its native language:
+  - If "${scene}" is clearly a PLACE (e.g. "Starbucks", "공항 라운지",
+    "사우나", "kafe gần nhà") → treat as locations, use it as the setting.
+  - If "${scene}" is clearly a SITUATION / ACTION / CONVERSATION TYPE
+    (e.g. "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу",
+    "complain about delivery") → treat as situations: pick a realistic
+    setting where this exchange naturally occurs (do NOT force-fit into
+    a random unrelated location like airport/hotel/restaurant).
+  - If ambiguous, lean toward the most natural everyday interpretation
+    of the text in the learner's native language ("${sourceLangName}").
+Then proceed to step ① below using your decision as the source of truth.
+SKIP the locations/situations subsections below.
+` : `
+The string "${scene}" means different things depending on category="${category}":`}
 
   • category = "locations" → "${scene}" IS the physical place itself
     (airport, hotel, restaurant, gym, etc.). Skip directly to step ① below

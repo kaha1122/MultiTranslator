@@ -129,7 +129,7 @@ function getNarrationVoice(sourceLang, targetLang) {
 //   기존 /api/scene-sentence + /api/scene-answer 의 Phase/Rules/스키마를 재활용.
 // ─────────────────────────────────────────────────────────────────────────
 router.post('/api/converse-start', optionalAuth, async (req, res) => {
-    const { scene, category, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSituations } = req.body || {};
+    const { scene, category, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSituations } = req.body || {};
     if (!scene || !targetLang || !sourceLang) {
         return res.status(400).json({ error: 'Missing scene, targetLang, or sourceLang' });
     }
@@ -137,7 +137,8 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
     const prompt = buildStartPrompt({
-        scene, category, targetLang, sourceLang, difficulty, speechStyle,
+        scene, category, isCustom: isCustom === true,
+        targetLang, sourceLang, difficulty, speechStyle,
         avoidSituations: Array.isArray(avoidSituations) ? avoidSituations : [],
     });
 

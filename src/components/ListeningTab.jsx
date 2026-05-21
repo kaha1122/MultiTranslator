@@ -385,6 +385,7 @@ export default function ListeningTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
+                    isCustom: hasCustom,
                     level,
                     type: passageType,
                     targetLang: selectedLang,

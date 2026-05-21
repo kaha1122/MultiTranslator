@@ -398,6 +398,7 @@ export default function VocabTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
+                    isCustom: !selectedTopic,
                     level,
                     targetLang: selectedLang,
                     sourceLang,

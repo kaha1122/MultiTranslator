@@ -14,7 +14,7 @@ const LISTENING_ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultu
 
 router.post('/api/listening-passage', requireAuth, async (req, res) => {
     const {
-        topic, topicLabel, category, level, type, targetLang, sourceLang,
+        topic, topicLabel, category, isCustom, level, type, targetLang, sourceLang,
         byokGeminiKey, avoidTitles, passagesMeta,
     } = req.body;
     if (!topic || !targetLang) {
@@ -95,7 +95,13 @@ Rotation rules — ALL mandatory:
 (hint: sourceLang is "${sourceLangName}"), interpret it NATIVELY in that
 language, and reflect that culture/context in the passage you write. NOTE:
 passageKeywords (rule 14) must still stay English for cross-session dedup
-keys — this Step 0 only governs how you UNDERSTAND the input topic.
+keys — this Step 0 only governs how you UNDERSTAND the input topic.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: the learner typed
+"${topicLabel || topic}" freely. Trust the text verbatim — if it names a
+specific place ("Đà Nẵng"), local custom, or situation, build the passage
+around THAT exact subject, not a generic version. Do not substitute a
+generic topic just because the text isn't a pre-defined category.` : ''}
 
 Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})

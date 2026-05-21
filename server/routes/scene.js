@@ -23,7 +23,7 @@ const STYLE_DESC = {
 };
 
 router.post('/api/scene-sentence', optionalAuth, async (req, res) => {
-    const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
+    const { scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
     }
@@ -57,7 +57,14 @@ es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
 is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
 mentally translate to English before designing the scenario), and reflect
 that native cultural context in the Phase 1 micro-situation below. Output
-field languages still follow the rules later.
+field languages still follow the rules later.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: "${scene}" was typed FREELY by
+the learner. Trust the TEXT itself — if it describes a SITUATION/ACTION
+(e.g. "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу"), build
+the scenario around that exact intent in a realistic setting; do NOT
+force-fit it into an unrelated location (airport/hotel/etc.) just because
+the text isn't a place name.` : ''}
 
 ---
 
@@ -144,7 +151,7 @@ ${avoidBlock}
 });
 
 router.post('/api/scene-answer', requireAuth, async (req, res) => {
-    const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
+    const { question, scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
         return res.status(400).json({ error: 'Missing initiation sentence or targetLang' });
     }
@@ -179,7 +186,13 @@ is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
 mentally translate to English before designing the responder), and reflect
 that native cultural context (who the responder typically is, how they
 phrase the reply) in Phase 1 below. The learner's question ("${question}")
-is already in ${targetLangName} — no language detection needed for that.
+is already in ${targetLangName} — no language detection needed for that.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: "${scene}" was typed FREELY by
+the learner. The responder should fit the scenario implied by that exact
+text (a SITUATION like "자기소개" → a fitting partner such as a coworker
+on the first day; not a barista at an airport just because the text isn't
+a place name). Trust the text, then pick the natural responder.` : ''}
 
 ---
 

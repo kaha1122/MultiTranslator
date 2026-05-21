@@ -181,6 +181,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                 body: JSON.stringify({
                     scene: setupArgs.scene,
                     category: setupArgs.category,
+                    isCustom: setupArgs.isCustom === true,
                     targetLang: setupArgs.targetLang,
                     sourceLang: setupArgs.sourceLang,
                     difficulty: setupArgs.difficulty,
