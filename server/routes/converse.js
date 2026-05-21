@@ -142,7 +142,10 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         avoidSituations: Array.isArray(avoidSituations) ? avoidSituations : [],
     });
 
-    try {
+    // Gemini 호출 + JSON parse + 필드 검증을 한 번 시도하는 inner.
+    // 성공 시 parsed 반환, 실패 시 { error, status, detail } 반환 (throw 하지 않음).
+    // invalid JSON / missing field 는 LLM 일시적 흔들림 가능 → 호출자가 1회 재시도.
+    async function attemptOnce() {
         const response = await axios.post(
             geminiUrl(geminiKey),
             {
@@ -156,9 +159,27 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         let parsed;
         try { parsed = JSON.parse(jsonStr); }
         catch (parseErr) {
-            console.error('[ConverseStart] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
+            return { error: 'AI returned invalid JSON', status: 502, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
         }
+        if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
+            return { error: 'AI response missing required fields', status: 502, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
+        }
+        return { parsed };
+    }
+
+    try {
+        let result = await attemptOnce();
+        // LLM 일시적 invalid output 에 대한 1회 자동 재시도 (axios/network 에러는 외부 catch 로 분리).
+        if (result.error) {
+            console.warn('[ConverseStart] attempt1 failed, retrying once:', result.error, '|', result.detail);
+            result = await attemptOnce();
+            if (result.error) {
+                console.error('[ConverseStart] attempt2 also failed:', result.error, '|', result.detail);
+                return res.status(result.status).json({ error: result.error });
+            }
+        }
+
+        const parsed = result.parsed;
 
         // 후처리: 두 turn 의 sentence 에 stripAnnotations 적용 (보험)
         if (parsed?.firstUserTurn?.sentence) {
@@ -166,12 +187,6 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         }
         if (parsed?.firstAiReply?.sentence) {
             parsed.firstAiReply.sentence = stripAnnotations(parsed.firstAiReply.sentence, targetLang);
-        }
-
-        // 최소 필드 검증
-        if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
-            console.error('[ConverseStart] Missing required fields in response:', Object.keys(parsed || {}));
-            return res.status(502).json({ error: 'AI response missing required fields' });
         }
 
         res.json(parsed);

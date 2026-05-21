@@ -164,12 +164,17 @@ scene TEXT itself**, interpreted per Step 0 in its native language:
     "complain about delivery") → treat as situations: pick a realistic
     setting where this exchange naturally occurs (do NOT force-fit into
     a random unrelated location like airport/hotel/restaurant).
+  - If "${scene}" is abstract/poetic/fantastical (e.g. "dưới biển" /
+    "under the sea", "in a dream", "우주에서") → interpret as a CREATIVE
+    SCENE: pick a plausible realistic adaptation (e.g. snorkeling tour
+    guide on a Vietnam beach for "dưới biển") and proceed.
   - If ambiguous, lean toward the most natural everyday interpretation
     of the text in the learner's native language ("${sourceLangName}").
-Then proceed to step ① below using your decision as the source of truth.
-SKIP the locations/situations subsections below.
+Use your decision as the source of truth and proceed to step ① below.
+(The i18n-key locations/situations subsections below DO NOT apply in
+custom mode.)
 ` : `
-The string "${scene}" means different things depending on category="${category}":`}
+The string "${scene}" means different things depending on category="${category}":
 
   • category = "locations" → "${scene}" IS the physical place itself
     (airport, hotel, restaurant, gym, etc.). Skip directly to step ① below
@@ -204,6 +209,7 @@ The string "${scene}" means different things depending on category="${category}"
       - "advice"       → friend's home over tea / mentor's office hours /
                          older sibling chat / pharmacist consult
     The chosen setting determines responder_role for step ②.
+`}
 
 Now fill in your private mental scratchpad (using the location decided above):
 
