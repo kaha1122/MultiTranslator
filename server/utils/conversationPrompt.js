@@ -136,6 +136,16 @@ The 3 messages should feel like the first ~20 seconds of a real interaction:
 
 ---
 
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before classifying), and carry that native
+meaning into Phase 0's WHERE/WHO/WHY reasoning below. This governs INPUT
+INTERPRETATION only — output field languages still follow the rules later.
+
+---
+
 ### [Phase 0: Scene Coherence — MANDATORY FIRST STEP, BEFORE any other phase]
 Before drafting any field, internally plan ONE specific micro-situation that ties
 intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment.

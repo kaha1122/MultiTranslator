@@ -51,6 +51,16 @@ You are a highly creative Language Learning Content Architect. Your mission is t
 
 ---
 
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before designing the scenario), and reflect
+that native cultural context in the Phase 1 micro-situation below. Output
+field languages still follow the rules later.
+
+---
+
 ### [Phase 1: AI-Driven Scenario & Emotion Design]
 The learner's level is **${difficulty || 'basic'}**. Design the scenario complexity accordingly:
 - **Basic**: Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.
@@ -159,6 +169,17 @@ ${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
 
     const prompt = `### [Role]
 You are a highly creative Language Learning Content Architect. The learner just practiced saying an opening sentence (a question, statement, request, or observation). Now generate the most natural, context-appropriate RESPONSE that the other person would give.
+
+---
+
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before designing the responder), and reflect
+that native cultural context (who the responder typically is, how they
+phrase the reply) in Phase 1 below. The learner's question ("${question}")
+is already in ${targetLangName} — no language detection needed for that.
 
 ---
 

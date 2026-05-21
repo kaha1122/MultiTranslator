@@ -89,6 +89,14 @@ Rotation rules — ALL mandatory:
 
     const prompt = `You are a listening comprehension teacher creating ${contentType} materials for language learners.
 
+[Step 0: Detect Topic Input Language — DO THIS SILENTLY FIRST]
+"${topicLabel || topic}" is free-form text that may be in ANY language
+(vi/ru/ko/ja/zh-CN/es/fr/de/pt-BR/en). Internally detect its language
+(hint: sourceLang is "${sourceLangName}"), interpret it NATIVELY in that
+language, and reflect that culture/context in the passage you write. NOTE:
+passageKeywords (rule 14) must still stay English for cross-session dedup
+keys — this Step 0 only governs how you UNDERSTAND the input topic.
+
 Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})
 - Target language: ${targetLangName}
