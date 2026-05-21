@@ -1,11 +1,10 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE, getDifficultyDesc } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
@@ -130,24 +129,18 @@ ${avoidBlock}
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
-        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
-        res.json(parsed);
-    } catch (e) {
-        console.error('[SceneSentence] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate sentence' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => typeof p?.sentence === 'string' && p.sentence.length > 0,
+        label: 'SceneSentence',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate sentence' });
     }
+    const parsed = result.parsed;
+    // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+    parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
+    res.json(parsed);
 });
 
 router.post('/api/scene-answer', requireAuth, async (req, res) => {
@@ -257,23 +250,17 @@ ${avoidBlock}
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
-        res.json(parsed);
-    } catch (e) {
-        console.error('[SceneAnswer] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate answer' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => typeof p?.sentence === 'string' && p.sentence.length > 0,
+        label: 'SceneAnswer',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate answer' });
     }
+    const parsed = result.parsed;
+    parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
+    res.json(parsed);
 });
 
 module.exports = router;

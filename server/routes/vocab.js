@@ -1,11 +1,10 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
@@ -128,29 +127,23 @@ Return ONLY valid JSON (no markdown):
   ]
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.5, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
-        if (Array.isArray(parsed.words)) {
-            parsed.words.forEach(w => {
-                w.word = stripAnnotations(w.word, targetLang);
-                w.example = stripAnnotations(w.example, targetLang);
-            });
-        }
-        res.json(parsed);
-    } catch (e) {
-        console.error('[VocabWords] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate vocabulary' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.5, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => Array.isArray(p?.words) && p.words.length > 0,
+        label: 'VocabWords',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate vocabulary' });
     }
+    const parsed = result.parsed;
+    // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+    if (Array.isArray(parsed.words)) {
+        parsed.words.forEach(w => {
+            w.word = stripAnnotations(w.word, targetLang);
+            w.example = stripAnnotations(w.example, targetLang);
+        });
+    }
+    res.json(parsed);
 });
 
 module.exports = router;

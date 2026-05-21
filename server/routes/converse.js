@@ -1,5 +1,5 @@
 const express = require('express');
-const axios = require('axios');
+const axios = require('axios');  // Azure TTS/STT 등 비-Gemini 호출에 사용
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
@@ -7,7 +7,7 @@ const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const { optionalAuth } = require('../middleware/auth');
 const { buildStartPrompt, buildReplyPrompt, buildSummarizePrompt } = require('../utils/conversationPrompt');
 const { stripAnnotations } = require('../utils/stripAnnotations');
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const router = express.Router();
 
@@ -148,69 +148,17 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         console.warn(`[ConverseStart] prompt size large: ${prompt.length} chars (~${Math.round(prompt.length / 3.5)} tokens) — approaching 32K input limit`);
     }
 
-    // Gemini 1회 호출 + JSON parse + 필드 검증. axios throw 포함 모든 에러를
-    // { error, status, retryable, detail } 형태로 반환 (외부 retry 루프가 판단).
-    async function attemptOnce() {
-        try {
-            const response = await axios.post(
-                geminiUrl(geminiKey),
-                {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    generationConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
-                },
-                { timeout: 30000 }
-            );
-            const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-            let parsed;
-            try { parsed = JSON.parse(jsonStr); }
-            catch (parseErr) {
-                return { error: 'AI returned invalid JSON', status: 502, retryable: true, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
-            }
-            if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
-                return { error: 'AI response missing required fields', status: 502, retryable: true, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
-            }
-            return { parsed };
-        } catch (e) {
-            const status = e.response?.status;
-            const geminiMsg = e.response?.data?.error?.message || e.message;
-            // 503/429/500/network/timeout: transient — retry 가능.
-            // 400/403/404: key/permission/quota 문제 — retry 무의미.
-            const retryable = status === 503 || status === 429 || status === 500 || !status || e.code === 'ECONNABORTED';
-            return {
-                error: status === 503 ? 'AI server busy' : status === 429 ? 'AI rate limited' : 'AI call failed',
-                status: status || 502,
-                retryable,
-                detail: `${status || e.code || 'network'}: ${(geminiMsg || '').slice(0, 250)}`,
-            };
-        }
+    // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
+    // 기존 attemptOnce inline 로직은 shared helper 로 이전됨.
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => p?.intro?.text && p?.firstUserTurn?.sentence && p?.firstAiReply?.sentence,
+        label: 'ConverseStart',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate conversation start' });
     }
-
-    // Retry loop — max 3 attempts, exponential backoff (0 / 800 / 1600ms).
-    // 503/429/network/invalid JSON/missing field 모두 retry 대상.
-    // 400/403 같은 non-retryable 또는 마지막 시도까지 fail 시 즉시 사용자에게 응답.
     try {
-        const maxAttempts = 3;
-        const backoffMs = [0, 800, 1600];
-        let result;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            if (backoffMs[attempt - 1] > 0) {
-                await new Promise(r => setTimeout(r, backoffMs[attempt - 1]));
-            }
-            result = await attemptOnce();
-            if (!result.error) break;
-            const isLast = attempt === maxAttempts;
-            if (!result.retryable || isLast) {
-                console.error(`[ConverseStart] attempt${attempt}${isLast ? '/final' : '/non-retryable'}:`, result.error, '|', result.detail);
-                // 503/429 → 사용자에게 명확한 안내 메시지 + 적절한 status code
-                const userMsg = (result.status === 503 || result.status === 429)
-                    ? 'AI service is temporarily busy. Please try again in a moment.'
-                    : 'Failed to generate conversation start';
-                return res.status(result.status).json({ error: userMsg });
-            }
-            console.warn(`[ConverseStart] attempt${attempt} retryable fail (backoff ${backoffMs[attempt] || 0}ms):`, result.error, '|', result.detail);
-        }
-
         const parsed = result.parsed;
         // 후처리: 두 turn 의 sentence 에 stripAnnotations 적용 (보험)
         if (parsed?.firstUserTurn?.sentence) {
@@ -567,65 +515,17 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         targetLang, sourceLang, difficulty, speechStyle,
     });
 
-    // converse-start 와 동일 패턴 — Gemini 1회 호출 + JSON parse + 필드 검증.
-    // axios throw 포함 모든 에러를 { error, status, retryable, detail } 형태로 반환.
-    async function attemptOnce() {
-        try {
-            const response = await axios.post(
-                geminiUrl(geminiKey),
-                {
-                    contents: [{ parts: [{ text: prompt }] }],
-                    // 0.95 — instruction following 우선 (no-redundant-ask 등 룰 준수)
-                    generationConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
-                },
-                { timeout: 30000 }
-            );
-            const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-            const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-            let parsed;
-            try { parsed = JSON.parse(jsonStr); }
-            catch (parseErr) {
-                return { error: 'AI returned invalid JSON', status: 502, retryable: true, detail: `parse: ${parseErr.message} | raw: ${raw.slice(0, 200)}` };
-            }
-            if (!parsed?.intentText || !parsed?.aiReply?.sentence) {
-                return { error: 'AI response missing required fields', status: 502, retryable: true, detail: `keys: ${Object.keys(parsed || {}).join(',')}` };
-            }
-            return { parsed };
-        } catch (e) {
-            const status = e.response?.status;
-            const geminiMsg = e.response?.data?.error?.message || e.message;
-            const retryable = status === 503 || status === 429 || status === 500 || !status || e.code === 'ECONNABORTED';
-            return {
-                error: status === 503 ? 'AI server busy' : status === 429 ? 'AI rate limited' : 'AI call failed',
-                status: status || 502,
-                retryable,
-                detail: `${status || e.code || 'network'}: ${(geminiMsg || '').slice(0, 250)}`,
-            };
-        }
+    // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
+    const result = await callGeminiJson(prompt, geminiKey, {
+        // 0.95 — instruction following 우선 (no-redundant-ask 등 룰 준수)
+        genConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => p?.intentText && p?.aiReply?.sentence,
+        label: 'ConverseReply',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate reply' });
     }
-
-    // Retry loop — converse-start 와 동일 (max 3 + exp backoff 0/800/1600ms)
     try {
-        const maxAttempts = 3;
-        const backoffMs = [0, 800, 1600];
-        let result;
-        for (let attempt = 1; attempt <= maxAttempts; attempt++) {
-            if (backoffMs[attempt - 1] > 0) {
-                await new Promise(r => setTimeout(r, backoffMs[attempt - 1]));
-            }
-            result = await attemptOnce();
-            if (!result.error) break;
-            const isLast = attempt === maxAttempts;
-            if (!result.retryable || isLast) {
-                console.error(`[ConverseReply] attempt${attempt}${isLast ? '/final' : '/non-retryable'}:`, result.error, '|', result.detail);
-                const userMsg = (result.status === 503 || result.status === 429)
-                    ? 'AI service is temporarily busy. Please try again in a moment.'
-                    : 'Failed to generate reply';
-                return res.status(result.status).json({ error: userMsg });
-            }
-            console.warn(`[ConverseReply] attempt${attempt} retryable fail (backoff ${backoffMs[attempt] || 0}ms):`, result.error, '|', result.detail);
-        }
-
         const parsed = result.parsed;
         // 후처리
         if (parsed?.intentText) {
@@ -666,46 +566,32 @@ router.post('/api/converse-summarize', optionalAuth, async (req, res) => {
         targetLang, sourceLang, difficulty,
     });
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            console.error('[ConverseSummarize] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
-        }
-
-        // 후처리: 각 phrase에 stripAnnotations 적용
-        if (Array.isArray(parsed?.keyPhrases)) {
-            parsed.keyPhrases = parsed.keyPhrases
-                .filter(p => p && typeof p.phrase === 'string' && p.phrase.trim().length > 0)
-                .map(p => ({
-                    phrase: stripAnnotations(p.phrase, targetLang),
-                    translation: p.translation || '',
-                    why_useful: p.why_useful || '',
-                    source_role: p.source_role === 'partner' ? 'partner' : 'learner',
-                    pronunciation: p.pronunciation || '',
-                }));
-        }
-
-        if (!Array.isArray(parsed?.keyPhrases) || parsed.keyPhrases.length === 0) {
-            return res.status(502).json({ error: 'No key phrases extracted' });
-        }
-
-        res.json(parsed);
-    } catch (e) {
-        console.error('[ConverseSummarize] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to summarize' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 0.7, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => Array.isArray(p?.keyPhrases) && p.keyPhrases.length > 0,
+        label: 'ConverseSummarize',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to summarize' });
     }
+    const parsed = result.parsed;
+
+    // 후처리: 각 phrase에 stripAnnotations 적용
+    parsed.keyPhrases = parsed.keyPhrases
+        .filter(p => p && typeof p.phrase === 'string' && p.phrase.trim().length > 0)
+        .map(p => ({
+            phrase: stripAnnotations(p.phrase, targetLang),
+            translation: p.translation || '',
+            why_useful: p.why_useful || '',
+            source_role: p.source_role === 'partner' ? 'partner' : 'learner',
+            pronunciation: p.pronunciation || '',
+        }));
+
+    if (parsed.keyPhrases.length === 0) {
+        return res.status(502).json({ error: 'No key phrases extracted' });
+    }
+
+    res.json(parsed);
 });
 
 module.exports = router;

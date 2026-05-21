@@ -1,58 +1,45 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth } = require('../middleware/auth');
+const { callGeminiText } = require('../utils/geminiCall');
 
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { geminiUrl } = require('../config/gemini');
+
+// 2026-05-22 — Flash-Lite 503 outage 대응: callGeminiText 사용 (3회 retry + Flash fallback).
+// 클라이언트가 응답 text 를 JSON.parse 하므로 서버는 raw text 그대로 반환.
 
 router.post('/api/translate', requireAuth, async (req, res) => {
     const { prompt, byokGeminiKey } = req.body;
-    if (!prompt) {
-        return res.status(400).json({ error: 'Missing prompt' });
-    }
-
+    if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
-    try {
-        const response = await axios.post(geminiUrl(geminiKey), {
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: { responseMimeType: "application/json" }
-        });
-
-        const textResponse = response.data.candidates[0].content.parts[0].text;
-        res.json({ text: textResponse });
-    } catch (err) {
-        console.error('[translate] Gemini error:', err.response?.data || err.message);
-        const status = err.response?.status || 500;
-        res.status(status).json({ error: err.response?.data?.error?.message || 'Translation failed' });
+    const result = await callGeminiText(prompt, geminiKey, {
+        genConfig: { responseMimeType: 'application/json' },
+        label: 'translate',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || result.error });
     }
+    res.json({ text: result.text });
 });
 
-// TranslationCard AI 메모용
+// TranslationCard AI 메모용 (plain text)
 router.post('/api/translate-memo', requireAuth, async (req, res) => {
     const { prompt, byokGeminiKey } = req.body;
-    if (!prompt) {
-        return res.status(400).json({ error: 'Missing prompt' });
-    }
-
+    if (!prompt) return res.status(400).json({ error: 'Missing prompt' });
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
-    try {
-        const response = await axios.post(geminiUrl(geminiKey), {
-            contents: [{ parts: [{ text: prompt }] }]
-        });
-
-        const textResponse = response.data.candidates[0].content.parts[0].text.trim();
-        res.json({ text: textResponse });
-    } catch (err) {
-        console.error('[translate-memo] Gemini error:', err.response?.data || err.message);
-        const status = err.response?.status || 500;
-        res.status(status).json({ error: err.response?.data?.error?.message || 'Memo generation failed' });
+    const result = await callGeminiText(prompt, geminiKey, {
+        // memo 는 plain text — responseMimeType 미지정
+        label: 'translate-memo',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || result.error });
     }
+    res.json({ text: (result.text || '').trim() });
 });
 
 module.exports = router;
