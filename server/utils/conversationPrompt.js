@@ -28,8 +28,8 @@ const { STYLE_DESC } = require('../routes/scene');
  * @returns {string} prompt 블록
  */
 function languageComplianceBlock(sourceLangName, fields) {
-    const fieldList = fields.map(f => `  - "${f}"`).join('\n');
-    return `### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
+  const fieldList = fields.map(f => `  - "${f}"`).join('\n');
+  return `### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
 This rule is MANDATORY. The following fields MUST be written in ${sourceLangName}:
 ${fieldList}
 
@@ -65,40 +65,40 @@ Vietnamese) makes the output unusable.`;
  *                                          responder_role, topic_focus}, createdAt? }]. 최근 30개까지 권고.
  */
 function buildStartPrompt({ scene, category, isCustom = false, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
-    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    // ── Anti-Duplication 블록 — 차원 회전(Dimension Rotation) + 구조화 JSON 방식 ──
-    // 단순 문장 나열 대신 차원별 set 으로 압축해 LLM 의 lost-in-the-middle 한계 우회.
-    // 같은 카테고리(scene+difficulty+style+lang) 키 안에서만 누적되므로 카테고리 간섭 없음.
-    let avoidBlock = '';
-    if (Array.isArray(avoidSituations) && avoidSituations.length > 0) {
-        const recent = avoidSituations.slice(-30);
-        const olderCount = avoidSituations.length - recent.length;
-        const dims = {
-            emotions: new Set(),
-            action_types: new Set(),
-            responder_roles: new Set(),
-            topic_focuses: new Set(),
-        };
-        const lines = recent.map((s, i) => {
-            const d = s.dimensions || {};
-            if (d.emotion)         dims.emotions.add(d.emotion);
-            if (d.action_type)     dims.action_types.add(d.action_type);
-            if (d.responder_role)  dims.responder_roles.add(d.responder_role);
-            if (d.topic_focus)     dims.topic_focuses.add(d.topic_focus);
-            const summary = (s.summary || '').replace(/"/g, "'").slice(0, 120);
-            return `  ${String(i + 1).padStart(2, ' ')}. "${summary}" — ${d.emotion || '?'}/${d.action_type || '?'}/${d.responder_role || '?'}`;
-        }).join('\n');
-        const dimSummary = JSON.stringify({
-            emotions: [...dims.emotions],
-            action_types: [...dims.action_types],
-            responder_roles: [...dims.responder_roles],
-            topic_focuses: [...dims.topic_focuses],
-        });
-        avoidBlock = `
+  // ── Anti-Duplication 블록 — 차원 회전(Dimension Rotation) + 구조화 JSON 방식 ──
+  // 단순 문장 나열 대신 차원별 set 으로 압축해 LLM 의 lost-in-the-middle 한계 우회.
+  // 같은 카테고리(scene+difficulty+style+lang) 키 안에서만 누적되므로 카테고리 간섭 없음.
+  let avoidBlock = '';
+  if (Array.isArray(avoidSituations) && avoidSituations.length > 0) {
+    const recent = avoidSituations.slice(-30);
+    const olderCount = avoidSituations.length - recent.length;
+    const dims = {
+      emotions: new Set(),
+      action_types: new Set(),
+      responder_roles: new Set(),
+      topic_focuses: new Set(),
+    };
+    const lines = recent.map((s, i) => {
+      const d = s.dimensions || {};
+      if (d.emotion) dims.emotions.add(d.emotion);
+      if (d.action_type) dims.action_types.add(d.action_type);
+      if (d.responder_role) dims.responder_roles.add(d.responder_role);
+      if (d.topic_focus) dims.topic_focuses.add(d.topic_focus);
+      const summary = (s.summary || '').replace(/"/g, "'").slice(0, 120);
+      return `  ${String(i + 1).padStart(2, ' ')}. "${summary}" — ${d.emotion || '?'}/${d.action_type || '?'}/${d.responder_role || '?'}`;
+    }).join('\n');
+    const dimSummary = JSON.stringify({
+      emotions: [...dims.emotions],
+      action_types: [...dims.action_types],
+      responder_roles: [...dims.responder_roles],
+      topic_focuses: [...dims.topic_focuses],
+    });
+    avoidBlock = `
 
 ---
 
@@ -117,9 +117,9 @@ Rotation rules — apply ALL:
 4. Pick a **topic_focus** (the specific sub-situation: "seat change", "lost luggage", "menu recommendation", etc.) that is NOT in covered.topic_focuses.
 5. If ALL of the above dimensions are exhausted in a single dimension, prioritize topic_focus novelty + responder_role rotation over emotion/action repeat.
 6. The resulting situation MUST feel meaningfully different from each of the recent ${recent.length} listed above — not a paraphrase.`;
-    }
+  }
 
-    return `### [Role]
+  return `### [Role]
 You are a Language Learning Content Architect generating a SCRIPTED 3-MESSAGE conversation OPENER for a learner about to enter "${scene}".
 
 **CRITICAL framing — read first:** These 3 messages play out automatically BEFORE
@@ -277,12 +277,12 @@ If any check fails, redesign before writing JSON.
 
 ### [Phase 1A: User Initiation Design] — applies to firstUserTurn
 The learner's level is **${difficulty || 'basic'}**. Design the initiation complexity accordingly:
-- **Basic**: Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.
+- **Basic**: ${difficulty === 'basic' ? 'Do NOT apply any strong emotion. Keep the tone completely neutral, predictable, and straightforward (e.g., checking in, ordering food). Prefer action types: Greeting, Inquiry, Request, Social.' : 'Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.'}
 - **Intermediate**: Use the full emotion range. Introduce mild complications or unexpected elements. All action types are available.
 - **Advanced**: Favor nuanced emotions (Hesitant, Frustrated, Dissatisfied, Apologetic, Nervous). Design layered situations with social tension or cultural sensitivity. Prefer action types: Problem, Complaint, Opinion, Observation.
 
 Then for firstUserTurn:
-1. Select ONE emotion for the learner from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous.
+1. Select ONE emotion for the learner ${difficulty === 'basic' ? '(for Basic, just use "Neutral" or "Calm")' : 'from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous.'}
 2. Design a specific, realistic micro-situation for "${scene}" — avoid generic phrases like "Where is the restroom?".
 3. Choose ONE Action Type: Inquiry / Request / Observation / Opinion / Problem / Complaint / Social / Greeting.
 4. **Opener shape — CRITICAL**: firstUserTurn is a CONVERSATION OPENER. State
@@ -334,7 +334,7 @@ Then for firstUserTurn:
   unaddressed after firstAiReply, so the learner has concrete material to talk
   about during Free Talking.
 
-- **Length**: 1~2 sentences. Real-time conversation pacing, not a paragraph.
+- **Length**: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). Immediate understanding is the goal.' : '1~2 sentences. Real-time conversation pacing, not a paragraph.'}
 
 ---
 
@@ -364,7 +364,7 @@ ${avoidBlock}
 ### [Strict Rules]
 1. **Speaker Identity**: firstUserTurn = the LEARNER speaking (initiation). firstAiReply = the OTHER PERSON answering. Never swap.
 2. **Coherence**: firstAiReply MUST logically and naturally respond to firstUserTurn (same micro-situation, same emotional register, direct answer/follow-up).
-3. **Variety**: Avoid generic textbook phrases. Reflect 2026 native everyday speech.
+3. **Variety**: ${difficulty === 'basic' ? 'Textbook-style standard phrases are PREFERRED. The learner needs predictable, recognizable patterns. Do NOT use slang or colloquialisms.' : 'Avoid generic textbook phrases. Reflect 2026 native everyday speech.'}
 4. **Grammar & Length**: Strictly follow the Difficulty Guidelines for both turns.
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no tone marks inline. Violations make the output unusable.
 6. **Intro consistency — CRITICAL**: intro.text MUST set up the EXACT micro-situation
@@ -471,41 +471,41 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
  *   - Phase 1: "Established facts 재질문 금지" + "다음 단계로 advance" 강제
  */
 function buildReplyPrompt({
-    rawSttText,
-    history = [],
-    scenarioMeta = {},
-    targetLang,
-    sourceLang,
-    difficulty,
-    speechStyle,
+  rawSttText,
+  history = [],
+  scenarioMeta = {},
+  targetLang,
+  sourceLang,
+  difficulty,
+  speechStyle,
 }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
-    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    // history → 텍스트 블록 (최근 8턴까지 보존 — 컨텍스트 일관성용)
-    // 12 → 8 감축(2026-05-21): buildReplyPrompt 31KB → 28KB(-10%) + Gemini Flash-Lite
-    // 32K input limit 여유 확보. 8턴(약 4 user + 4 AI)이면 직전 ~4 단계의 대화 흐름
-    // 충분히 잡힘. 더 옛 맥락은 scenarioMeta.scene_summary_en으로 보강.
-    // user turn에 coachingTip(이전 턴에서 튜터가 학습자에게 준 모국어 코칭)이 있으면
-    // 별도 라인으로 inject — AI가 학습자의 누적 학습 맥락을 인지하며 자연스럽게 상호작용.
-    const recent = history.slice(-8);
-    const historyBlock = recent.length > 0
-        ? recent.map(h => {
-            const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
-            let line = `${speaker}: ${h.text || ''}`;
-            if (h.role !== 'ai' && h.coachingTip) {
-                line += `\n    [tutor's prior note to learner in ${sourceLangName}: "${h.coachingTip}"]`;
-            }
-            return line;
-        }).join('\n')
-        : '(no prior turns — this is the first free utterance)';
+  // history → 텍스트 블록 (최근 8턴까지 보존 — 컨텍스트 일관성용)
+  // 12 → 8 감축(2026-05-21): buildReplyPrompt 31KB → 28KB(-10%) + Gemini Flash-Lite
+  // 32K input limit 여유 확보. 8턴(약 4 user + 4 AI)이면 직전 ~4 단계의 대화 흐름
+  // 충분히 잡힘. 더 옛 맥락은 scenarioMeta.scene_summary_en으로 보강.
+  // user turn에 coachingTip(이전 턴에서 튜터가 학습자에게 준 모국어 코칭)이 있으면
+  // 별도 라인으로 inject — AI가 학습자의 누적 학습 맥락을 인지하며 자연스럽게 상호작용.
+  const recent = history.slice(-8);
+  const historyBlock = recent.length > 0
+    ? recent.map(h => {
+      const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
+      let line = `${speaker}: ${h.text || ''}`;
+      if (h.role !== 'ai' && h.coachingTip) {
+        line += `\n    [tutor's prior note to learner in ${sourceLangName}: "${h.coachingTip}"]`;
+      }
+      return line;
+    }).join('\n')
+    : '(no prior turns — this is the first free utterance)';
 
-    const responderRole = scenarioMeta.responder_role || 'the other person';
-    const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+  const responderRole = scenarioMeta.responder_role || 'the other person';
+  const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
 
-    return `### [Role]
+  return `### [Role]
 You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence, (B) generate a natural reply that ADVANCES the conversation, and (C) produce a private tutor coaching note for the learner.
 
 ---
@@ -641,7 +641,7 @@ Then list:
 6. Select a Response Emotion that complements the learner's tone.
 7. Be Specific & Informative: not "Sure!" or "Yes" — give a response with USEFUL INFO.
 8. Stay in character as ${responderRole}.
-9. Keep it short: 1~2 sentences. This is real-time conversation practice, not a monologue.
+9. Keep it short: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). The response should be immediately understandable by a beginner.' : '1~2 sentences. This is real-time conversation practice, not a monologue.'}
 
 ---
 
@@ -896,7 +896,7 @@ produced.
 1. Speaker Identity: aiReply = ${responderRole} speaking. Never speak as the learner.
 2. Relevance: aiReply.sentence MUST directly address intentText.
 3. Grammar & Length: Strictly follow Difficulty Guidelines for aiReply.
-4. Modern & Realistic: 2026 native everyday speech, not stiff textbook phrases.
+4. Modern & Realistic: ${difficulty === 'basic' ? 'Textbook-style standard phrases are PREFERRED for predictability. Do NOT use slang or complex 2026 native colloquialisms.' : '2026 native everyday speech, not stiff textbook phrases.'}
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no inline tone marks. Violations make the output unusable.
 6. **No emoji AND no verbatim emoji descriptions** in sentence/intentText/
    userCoachingTip/userCoachingNarration fields. This means:
@@ -1012,26 +1012,26 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
  *   - 사용자(user_auto / user_free)와 상대(ai) 양쪽에서 모두 추출 가능
  */
 function buildSummarizePrompt({
-    history = [],
-    scenarioMeta = {},
-    targetLang,
-    sourceLang,
-    difficulty,
+  history = [],
+  scenarioMeta = {},
+  targetLang,
+  sourceLang,
+  difficulty,
 }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const responderRole = scenarioMeta.responder_role || 'the other person';
-    const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const responderRole = scenarioMeta.responder_role || 'the other person';
+  const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
 
-    const historyBlock = history.length > 0
-        ? history.map(h => {
-            const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
-            return `${speaker}: ${h.text || ''}`;
-        }).join('\n')
-        : '(empty conversation)';
+  const historyBlock = history.length > 0
+    ? history.map(h => {
+      const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
+      return `${speaker}: ${h.text || ''}`;
+    }).join('\n')
+    : '(empty conversation)';
 
-    return `### [Role]
+  return `### [Role]
 You are a Language Learning Curator. After a learner finished a Free Talking
 practice session, your job is to extract 3~5 key expressions worth saving to
 the learner's Library — phrases that gave concrete learning value in this
