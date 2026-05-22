@@ -25,45 +25,45 @@ const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
 // scene/listening/scene-answer와 동일한 voice 모음을 활용하기 위해 tts.js와 동일 정의를
 // 미러링한다. (tts.js export 시 하위 변경 위험이 있어 보수적으로 별도 정의)
 const AZURE_TTS_VOICE_MAP = {
-    'en':    { voiceFemale: 'en-US-JennyNeural',      voiceMale: 'en-US-GuyNeural',        styles: ['chat','cheerful','sad','angry','excited','friendly','hopeful','empathetic'] },
-    'ja':    { voiceFemale: 'ja-JP-NanamiNeural',      voiceMale: 'ja-JP-KeitaNeural',      styles: ['chat'] },
-    'zh-CN': { voiceFemale: 'zh-CN-XiaoxiaoNeural',    voiceMale: 'zh-CN-YunxiNeural',      styles: ['chat','cheerful','sad','angry','fearful','gentle','serious','friendly','empathetic','calm'] },
-    'vi':    { voiceFemale: 'vi-VN-HoaiMyNeural',       voiceMale: 'vi-VN-NamMinhNeural',    styles: [] },
-    'fr':    { voiceFemale: 'fr-FR-DeniseNeural',       voiceMale: 'fr-FR-HenriNeural',      styles: [] },
-    'de':    { voiceFemale: 'de-DE-KatjaNeural',        voiceMale: 'de-DE-ConradNeural',     styles: [] },
-    'es':    { voiceFemale: 'es-ES-ElviraNeural',       voiceMale: 'es-ES-AlvaroNeural',     styles: [] },
-    'ko':    { voiceFemale: 'ko-KR-SunHiNeural',        voiceMale: 'ko-KR-InJoonNeural',     styles: ['chat','cheerful','sad','angry','friendly'] },
-    'ru':    { voiceFemale: 'ru-RU-SvetlanaNeural',     voiceMale: 'ru-RU-DmitryNeural',     styles: [] },
-    'pt-BR': { voiceFemale: 'pt-BR-FranciscaNeural',    voiceMale: 'pt-BR-AntonioNeural',    styles: [] },
-    'ar':    { voiceFemale: 'ar-SA-ZariyahNeural',      voiceMale: 'ar-SA-HamedNeural',      styles: [] },
-    'bn':    { voiceFemale: 'bn-IN-TanishaaNeural',     voiceMale: 'bn-IN-BashkarNeural',    styles: [] },
-    'bg':    { voiceFemale: 'bg-BG-KalinaNeural',       voiceMale: 'bg-BG-BorislavNeural',   styles: [] },
-    'zh-TW': { voiceFemale: 'zh-TW-HsiaoChenNeural',    voiceMale: 'zh-TW-YunJheNeural',     styles: [] },
-    'hr':    { voiceFemale: 'hr-HR-GabrijelaNeural',    voiceMale: 'hr-HR-SreckoNeural',     styles: [] },
-    'cs':    { voiceFemale: 'cs-CZ-VlastaNeural',       voiceMale: 'cs-CZ-AntoninNeural',    styles: [] },
-    'da':    { voiceFemale: 'da-DK-ChristelNeural',     voiceMale: 'da-DK-JeppeNeural',      styles: [] },
-    'nl':    { voiceFemale: 'nl-NL-ColetteNeural',      voiceMale: 'nl-NL-MaartenNeural',    styles: [] },
-    'et':    { voiceFemale: 'et-EE-AnuNeural',          voiceMale: 'et-EE-KertNeural',       styles: [] },
-    'fi':    { voiceFemale: 'fi-FI-NooraNeural',        voiceMale: 'fi-FI-HarriNeural',      styles: [] },
-    'el':    { voiceFemale: 'el-GR-AthinaNeural',       voiceMale: 'el-GR-NestorasNeural',   styles: [] },
-    'he':    { voiceFemale: 'he-IL-HilaNeural',         voiceMale: 'he-IL-AvriNeural',       styles: [] },
-    'hi':    { voiceFemale: 'hi-IN-SwaraNeural',        voiceMale: 'hi-IN-ArjunNeural',      styles: [] },
-    'hu':    { voiceFemale: 'hu-HU-NoemiNeural',        voiceMale: 'hu-HU-TamasNeural',      styles: [] },
-    'id':    { voiceFemale: 'id-ID-GadisNeural',        voiceMale: 'id-ID-ArdiNeural',       styles: [] },
-    'it':    { voiceFemale: 'it-IT-ElsaNeural',         voiceMale: 'it-IT-DiegoNeural',      styles: [] },
-    'lv':    { voiceFemale: 'lv-LV-EveritaNeural',     voiceMale: 'lv-LV-NilsNeural',       styles: [] },
-    'lt':    { voiceFemale: 'lt-LT-OnaNeural',          voiceMale: 'lt-LT-LeonasNeural',     styles: [] },
-    'no':    { voiceFemale: 'nb-NO-PernilleNeural',     voiceMale: 'nb-NO-FinnNeural',       styles: [] },
-    'pl':    { voiceFemale: 'pl-PL-AgnieszkaNeural',    voiceMale: 'pl-PL-MarekNeural',      styles: [] },
-    'ro':    { voiceFemale: 'ro-RO-AlinaNeural',        voiceMale: 'ro-RO-EmilNeural',       styles: [] },
-    'sr':    { voiceFemale: 'sr-RS-SophieNeural',       voiceMale: 'sr-RS-NicholasNeural',   styles: [] },
-    'sk':    { voiceFemale: 'sk-SK-ViktoriaNeural',     voiceMale: 'sk-SK-LukasNeural',      styles: [] },
-    'sl':    { voiceFemale: 'sl-SI-PetraNeural',        voiceMale: 'sl-SI-RokNeural',        styles: [] },
-    'sw':    { voiceFemale: 'sw-KE-ZuriNeural',         voiceMale: 'sw-KE-RafikiNeural',     styles: [] },
-    'sv':    { voiceFemale: 'sv-SE-SofieNeural',        voiceMale: 'sv-SE-MattiasNeural',    styles: [] },
-    'th':    { voiceFemale: 'th-TH-PremwadeeNeural',    voiceMale: 'th-TH-NiwatNeural',      styles: [] },
-    'tr':    { voiceFemale: 'tr-TR-EmelNeural',         voiceMale: 'tr-TR-AhmetNeural',      styles: [] },
-    'uk':    { voiceFemale: 'uk-UA-PolinaNeural',       voiceMale: 'uk-UA-OstapNeural',      styles: [] },
+    'en': { voiceFemale: 'en-US-JennyNeural', voiceMale: 'en-US-GuyNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'excited', 'friendly', 'hopeful', 'empathetic'] },
+    'ja': { voiceFemale: 'ja-JP-NanamiNeural', voiceMale: 'ja-JP-KeitaNeural', styles: ['chat'] },
+    'zh-CN': { voiceFemale: 'zh-CN-XiaoxiaoNeural', voiceMale: 'zh-CN-YunxiNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'fearful', 'gentle', 'serious', 'friendly', 'empathetic', 'calm'] },
+    'vi': { voiceFemale: 'vi-VN-HoaiMyNeural', voiceMale: 'vi-VN-NamMinhNeural', styles: [] },
+    'fr': { voiceFemale: 'fr-FR-DeniseNeural', voiceMale: 'fr-FR-HenriNeural', styles: [] },
+    'de': { voiceFemale: 'de-DE-KatjaNeural', voiceMale: 'de-DE-ConradNeural', styles: [] },
+    'es': { voiceFemale: 'es-ES-ElviraNeural', voiceMale: 'es-ES-AlvaroNeural', styles: [] },
+    'ko': { voiceFemale: 'ko-KR-SunHiNeural', voiceMale: 'ko-KR-InJoonNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'friendly'] },
+    'ru': { voiceFemale: 'ru-RU-SvetlanaNeural', voiceMale: 'ru-RU-DmitryNeural', styles: [] },
+    'pt-BR': { voiceFemale: 'pt-BR-FranciscaNeural', voiceMale: 'pt-BR-AntonioNeural', styles: [] },
+    'ar': { voiceFemale: 'ar-SA-ZariyahNeural', voiceMale: 'ar-SA-HamedNeural', styles: [] },
+    'bn': { voiceFemale: 'bn-IN-TanishaaNeural', voiceMale: 'bn-IN-BashkarNeural', styles: [] },
+    'bg': { voiceFemale: 'bg-BG-KalinaNeural', voiceMale: 'bg-BG-BorislavNeural', styles: [] },
+    'zh-TW': { voiceFemale: 'zh-TW-HsiaoChenNeural', voiceMale: 'zh-TW-YunJheNeural', styles: [] },
+    'hr': { voiceFemale: 'hr-HR-GabrijelaNeural', voiceMale: 'hr-HR-SreckoNeural', styles: [] },
+    'cs': { voiceFemale: 'cs-CZ-VlastaNeural', voiceMale: 'cs-CZ-AntoninNeural', styles: [] },
+    'da': { voiceFemale: 'da-DK-ChristelNeural', voiceMale: 'da-DK-JeppeNeural', styles: [] },
+    'nl': { voiceFemale: 'nl-NL-ColetteNeural', voiceMale: 'nl-NL-MaartenNeural', styles: [] },
+    'et': { voiceFemale: 'et-EE-AnuNeural', voiceMale: 'et-EE-KertNeural', styles: [] },
+    'fi': { voiceFemale: 'fi-FI-NooraNeural', voiceMale: 'fi-FI-HarriNeural', styles: [] },
+    'el': { voiceFemale: 'el-GR-AthinaNeural', voiceMale: 'el-GR-NestorasNeural', styles: [] },
+    'he': { voiceFemale: 'he-IL-HilaNeural', voiceMale: 'he-IL-AvriNeural', styles: [] },
+    'hi': { voiceFemale: 'hi-IN-SwaraNeural', voiceMale: 'hi-IN-ArjunNeural', styles: [] },
+    'hu': { voiceFemale: 'hu-HU-NoemiNeural', voiceMale: 'hu-HU-TamasNeural', styles: [] },
+    'id': { voiceFemale: 'id-ID-GadisNeural', voiceMale: 'id-ID-ArdiNeural', styles: [] },
+    'it': { voiceFemale: 'it-IT-ElsaNeural', voiceMale: 'it-IT-DiegoNeural', styles: [] },
+    'lv': { voiceFemale: 'lv-LV-EveritaNeural', voiceMale: 'lv-LV-NilsNeural', styles: [] },
+    'lt': { voiceFemale: 'lt-LT-OnaNeural', voiceMale: 'lt-LT-LeonasNeural', styles: [] },
+    'no': { voiceFemale: 'nb-NO-PernilleNeural', voiceMale: 'nb-NO-FinnNeural', styles: [] },
+    'pl': { voiceFemale: 'pl-PL-AgnieszkaNeural', voiceMale: 'pl-PL-MarekNeural', styles: [] },
+    'ro': { voiceFemale: 'ro-RO-AlinaNeural', voiceMale: 'ro-RO-EmilNeural', styles: [] },
+    'sr': { voiceFemale: 'sr-RS-SophieNeural', voiceMale: 'sr-RS-NicholasNeural', styles: [] },
+    'sk': { voiceFemale: 'sk-SK-ViktoriaNeural', voiceMale: 'sk-SK-LukasNeural', styles: [] },
+    'sl': { voiceFemale: 'sl-SI-PetraNeural', voiceMale: 'sl-SI-RokNeural', styles: [] },
+    'sw': { voiceFemale: 'sw-KE-ZuriNeural', voiceMale: 'sw-KE-RafikiNeural', styles: [] },
+    'sv': { voiceFemale: 'sv-SE-SofieNeural', voiceMale: 'sv-SE-MattiasNeural', styles: [] },
+    'th': { voiceFemale: 'th-TH-PremwadeeNeural', voiceMale: 'th-TH-NiwatNeural', styles: [] },
+    'tr': { voiceFemale: 'tr-TR-EmelNeural', voiceMale: 'tr-TR-AhmetNeural', styles: [] },
+    'uk': { voiceFemale: 'uk-UA-PolinaNeural', voiceMale: 'uk-UA-OstapNeural', styles: [] },
 };
 
 // emotion → Azure style 매핑 (tts.js와 동일 — 의도적으로 미러)
@@ -386,9 +386,9 @@ function recognizeFromWav(wavPath, azureLocale, azureKey, azureRegion) {
             const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
             speechConfig.speechRecognitionLanguage = azureLocale;
             // 긴 발화 안정성을 위한 silence timeout 조정
-            //   - EndSilence: phrase 종료 판단 침묵 길이 (default 500ms → 1500ms)
+            //   - EndSilence: phrase 종료 판단 침묵 길이 (기존 1500ms → 5000ms 로 대폭 연장)
             //   - InitialSilence: 시작 전 침묵 허용 (default 5000ms 유지)
-            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '1500');
+            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '5000');
             speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, '5000');
 
             recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
