@@ -746,6 +746,14 @@ function App() {
       return;
     }
 
+    // 2026-05-23: deferAd 옵션 — 임계 도달해도 광고 즉시 발화 안 함, 점수만 누적.
+    //   Free Talking 같이 인트로 TTS / 진행 중에 광고 끼어들면 UX 깨지는 액션 보호.
+    //   호출자가 적절한 시점(세션 종료)에 flushPendingAd() 로 발화 책임.
+    if (options.deferAd) {
+      setAdPoints(next);
+      return;
+    }
+
     // 임계 도달 — 광고 표시 가능한 경우만 인터스티셜 시도
     if (!adsReady()) {
       // 웹/광고 미준비: 누적값 유지 (다음 액션 시 재시도, 카운터는 0으로 보임)
@@ -766,6 +774,25 @@ function App() {
     if (!ok) {
       // 광고 로드/표시 실패 — 점수 롤백
       setAdPoints(next);
+      lastAdAtRef.current = 0;
+    }
+  };
+
+  // 2026-05-23: deferAd 누적된 점수를 안전 시점에 발화 — Free Talking 세션 종료 시점 등.
+  //   임계 미달이면 no-op. 쿨다운 / adsReady 체크는 addAdPoints 와 동일.
+  //   강제 종료 시 호출 못 되면 점수는 localStorage 에 보존 → 다음 세션 첫 액션에서 자연 발화.
+  const flushPendingAd = async () => {
+    if (tier !== 'trial') return;
+    const curr = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
+    if (curr < AD_POINT_THRESHOLD) return;
+    if (!adsReady()) return;
+    const now = Date.now();
+    if (now - lastAdAtRef.current < AD_COOLDOWN_MS) return;
+    lastAdAtRef.current = now;
+    setAdPoints(0);
+    const ok = await showInterstitial();
+    if (!ok) {
+      setAdPoints(curr);
       lastAdAtRef.current = 0;
     }
   };
@@ -5044,7 +5071,7 @@ function App() {
           // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
           // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
           if (hasBonusActive) {
-            addAdPoints(1, { bonusCost: 10 });
+            addAdPoints(1, { bonusCost: 10, deferAd: true });
           } else {
             // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
             if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
@@ -5054,12 +5081,17 @@ function App() {
             }
             // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
             // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-            addAdPoints(1, { bonusCost: 10 });
+            addAdPoints(1, { bonusCost: 10, deferAd: true });
           }
           // 분석용 평생 누적 카운터
           incrementTotalFreeTalk();
         }}
-        onClose={() => { setFreeTalkOpen(false); setFreeTalkSetup(null); }}
+        onClose={() => {
+          setFreeTalkOpen(false);
+          setFreeTalkSetup(null);
+          // 2026-05-23: 세션 종료 시점에 누적된 광고 점수 flush — 인트로/대화 중 광고 차단 후 보장.
+          flushPendingAd();
+        }}
       />
 
 
