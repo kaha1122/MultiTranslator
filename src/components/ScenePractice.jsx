@@ -253,8 +253,11 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
             setIsSaved(false);
         }
     }, [targetLangs, selectedLang]);
-    const [difficulty, setDifficulty] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setDifficulty(userLevel); }, [userLevel]);
+    // 2026-05-23: Free Talking 화면 default 는 항상 'basic' — 사용자 default 가 intermediate 여도
+    //   첫 사용자에게 너무 어려워 우선 basic 으로 적응 유도. 사용자가 화면에서 명시적으로
+    //   intermediate/advanced 로 변경한 값은 그 세션 내 유지, 컴포넌트 재마운트(다시 진입)
+    //   시에는 또 basic 으로 초기화. userLevel 동기화 effect 제거.
+    const [difficulty, setDifficulty] = useState('basic');
     const [speechStyle, setSpeechStyle] = useState('formal');
     const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);

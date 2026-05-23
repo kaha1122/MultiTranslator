@@ -4334,10 +4334,10 @@ function App() {
               // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
               // 콜백에서 처리(서버 200 응답 받은 직후). 503/500 등으로 startSession 실패 시
               // 카운트가 보존되어 사용자가 [다시 시도] 버튼으로 같은 1회를 재사용 가능.
-              // 2026-05-23: Free Talking 은 첫 사용자에게 너무 어려워 사용자 default 가
-              //   intermediate 여도 항상 'basic' 으로 진입 (세션 내 사용자가 직접 변경은 가능,
-              //   하지만 다시 들어올 때는 또 basic). default 학습 난이도 설정과 독립.
-              setFreeTalkSetup({ ...args, difficulty: 'basic' });
+              // 2026-05-23: Free Talking 화면 default basic 강제는 ScenePractice 컴포넌트
+              //   내부에서 처리 (difficulty useState 초기값 'basic'). 사용자가 화면에서 명시적으로
+              //   intermediate/advanced 로 변경했다면 args.difficulty 그 값 그대로 존중.
+              setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
           />
