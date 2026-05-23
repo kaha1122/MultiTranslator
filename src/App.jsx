@@ -227,9 +227,10 @@ function App() {
           if (typeof pushType === 'string' && pushType.startsWith('reengagement_')) {
             setViewMode('home');
           }
-          // Streak Reminder (정기 13:00 알림) → 홈 + StarGuide 환영 팝업으로 따뜻한 재참여 유도.
-          // streak_risk(위험 알림)는 제외 — urgency 메시지 희석 방지.
-          if (pushType === 'streak_reminder') {
+          // Streak 관련 모든 push (streak_reminder / streak_risk / 향후 추가 streak_* 타입) →
+          // 홈 + StarGuide 환영 팝업. 분기 없이 prefix 매칭으로 단순화 (2026-05-23 fix).
+          if (typeof pushType === 'string' && pushType.startsWith('streak_')) {
+            console.log('[Push] streak push → setForceStarGuideFromPush(true)', { pushType });
             setViewMode('home');
             setForceStarGuideFromPush(true);
           }
@@ -867,8 +868,8 @@ function App() {
 
   // 별표 안내 팝업 (첫 카드 생성 시 1회)
   const [showStarGuide, setShowStarGuide] = useState(false);
-  // Streak Reminder push 진입 시 StarGuide 강제 발화 (count/session/dismissedV2 가드 우회).
-  // streak_risk(위험 알림)는 제외 — 그쪽은 urgency 가 핵심이라 가이드 팝업이 메시지를 희석.
+  // Streak 관련 모든 push (streak_*) 진입 시 StarGuide 강제 발화 (count/session/dismissedV2 가드 우회).
+  // 2026-05-23: streak_reminder + streak_risk 둘 다 학습 동기 부여 메시지라 분기 없이 prefix 매칭으로 단순화.
   const [forceStarGuideFromPush, setForceStarGuideFromPush] = useState(false);
 
   // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
