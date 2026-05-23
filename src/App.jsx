@@ -1697,6 +1697,8 @@ function App() {
   // Streak 출시 안내 — 신규 유저는 Step 6 (PushOptIn) 닫힌 직후 마지막 팝업으로, 기존 유저는 다음 세션 진입 시 노출
   // "다시 보지 않음" 영구 dismiss 전까진 매 세션 재노출 (StreakIntroModal 내부 동작)
   // showOnboarding 등 선행 모달 deps 사용 → TDZ 회피를 위해 showOnboarding 선언 이후에 위치
+  // 2026-05-23 fix: profile.aiConsentAt Timestamp 객체가 매 snapshot 마다 새 reference 라
+  //   effect 가 generate 마다 재실행 → 세션 가드 + boolean 안정화로 1회만 발화 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
     if (profile.streakIntroDismissed === true) return;
@@ -1706,12 +1708,20 @@ function App() {
     if (!profile.aiConsentAt && localStorage.getItem('aiConsentAccepted') !== '1') return;
     // 선행 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
     if (showOnboarding || showAiConsent || showSubscriptionPrompt || showPushOptIn) return;
-    const timer = setTimeout(() => setShowStreakIntro(true), 1200);
+    // 세션당 1회 가드 — 닫은 뒤 generate 등으로 profile snapshot 이 바뀌어도 재발화 차단.
+    // 다음 세션(브라우저 탭 새로 열기 / 앱 재시작) 에선 sessionStorage 비어있어 정상 재노출.
+    if (sessionStorage.getItem('streakIntroShownThisSession') === '1') return;
+    const timer = setTimeout(() => {
+      // 타이머 콜백 내부에서 마킹 — effect cleanup 으로 timer 가 취소되면 sessionStorage 도
+      // 설정되지 않아 다음 dep settle 에서 정상 재시도 가능.
+      sessionStorage.setItem('streakIntroShownThisSession', '1');
+      setShowStreakIntro(true);
+    }, 1200);
     return () => clearTimeout(timer);
   }, [
     user?.uid,
     profile?.hasCompletedOnboarding,
-    profile?.aiConsentAt,
+    !!profile?.aiConsentAt,        // Timestamp 객체 → boolean 안정화 (snapshot 마다 새 instance 회피)
     profile?.streakIntroDismissed,
     showOnboarding,
     showAiConsent,
