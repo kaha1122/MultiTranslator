@@ -1,8 +1,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { authFetch } from '../utils/authFetch';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
+
+// Phase 1: turn 마다 incremental Firestore update 의 debounce 간격 (ms).
+// 빠른 연속 응답을 묶어 write 비용 최소화. 강제 종료 시 최대 3초 분의 turn 만 손실.
+const INCREMENTAL_WRITE_DEBOUNCE_MS = 3000;
 
 const getServerUrl = () => {
     try {
@@ -157,6 +163,48 @@ export function useConversation({ tier = 'trial' } = {}) {
     const freeTurnCountRef = useRef(0);
     useEffect(() => { freeTurnCountRef.current = freeTurnCount; }, [freeTurnCount]);
 
+    // Phase 1: turn 마다 incremental Firestore update 용 debounce timer.
+    // 매 turn 직후 scheduleIncrementalTurnWrite() 호출 → 3초 뒤 단 1회 write.
+    // 강제 종료 / 앱 kill / 크래시 시 최대 3초 분 turn 만 손실 (vs 종료 시 한 번에 쓰던 기존).
+    const incrementalWriteTimerRef = useRef(null);
+
+    const flushIncrementalTurnWrite = useCallback(() => {
+        const key = lastHistoryKeyRef.current;
+        if (!key) return;
+        const existing = historyCacheRef.current[key] || [];
+        if (existing.length === 0) return;
+        const lastIdx = existing.length - 1;
+        const last = existing[lastIdx];
+        // 이미 종료 update 가 들어간 situation 은 덮어쓰지 않음 (race-safe)
+        if (last.endedAt) return;
+        const turn = freeTurnCountRef.current || 0;
+        // 같은 turn 값이면 write skip (idempotent — Firestore 비용 절감)
+        if (last.freeTurnCount === turn && last.lastTurnAt) return;
+        const updated = [...existing];
+        updated[lastIdx] = {
+            ...last,
+            freeTurnCount: turn,
+            lastTurnAt: Date.now(),
+        };
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key), {
+                situations: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory incremental write failed:', e?.message));
+        }
+    }, [user]);
+
+    const scheduleIncrementalTurnWrite = useCallback(() => {
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+        }
+        incrementalWriteTimerRef.current = setTimeout(() => {
+            incrementalWriteTimerRef.current = null;
+            flushIncrementalTurnWrite();
+        }, INCREMENTAL_WRITE_DEBOUNCE_MS);
+    }, [flushIncrementalTurnWrite]);
+
     /**
      * 마지막 freeTalkHistory situation 에 종료 데이터 추가 (idempotent: 이미 endedAt 있으면 skip).
      * sessionEnded 가 true 로 바뀌면 자동 호출됨 (아래 useEffect).
@@ -169,6 +217,11 @@ export function useConversation({ tier = 'trial' } = {}) {
         const lastIdx = existing.length - 1;
         const last = existing[lastIdx];
         if (last.endedAt) return;  // 중복 호출 보호
+        // Phase 1: 펜딩 debounced write 가 endedAt 덮어쓰지 않도록 취소
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+            incrementalWriteTimerRef.current = null;
+        }
         const startedAt = last.startedAt || last.createdAt || Date.now();
         const endedAt = Date.now();
         const updated = [...existing];
@@ -188,6 +241,58 @@ export function useConversation({ tier = 'trial' } = {}) {
             }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory end update failed:', e?.message));
         }
     }, [user]);
+
+    // Phase 2: lifecycle 이벤트 후크 — 사용자가 X 안 눌러도 종료 데이터 캡처.
+    // visibilitychange='hidden' / pagehide / Capacitor appStateChange(isActive:false) 셋 모두 등록.
+    // 강제종료(앱 kill / 홈버튼 / 디바이스 OFF) 시점 직전에 OS 가 거의 항상 한 번은 발화.
+    // updateLastFreeTalkHistoryEnd 는 idempotent — 중복 발화돼도 안전.
+    useEffect(() => {
+        const handleLifecycleHidden = (source) => {
+            if (!lastHistoryKeyRef.current) return;  // 진행 중 세션 없음 → noop
+            updateLastFreeTalkHistoryEnd(`lifecycle_${source}`);
+        };
+        const onVisibilityChange = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                handleLifecycleHidden('visibility');
+            }
+        };
+        const onPageHide = () => handleLifecycleHidden('pagehide');
+
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', onVisibilityChange);
+        }
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', onPageHide);
+        }
+
+        // Capacitor 네이티브 — 앱 백그라운드 진입 / 종료 직전 발화
+        let capListenerHandle = null;
+        if (Capacitor?.isNativePlatform?.()) {
+            try {
+                const p = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                    if (!isActive) handleLifecycleHidden('appstate');
+                });
+                // Capacitor 8: addListener 가 Promise<PluginListenerHandle> 반환
+                if (p && typeof p.then === 'function') {
+                    p.then(h => { capListenerHandle = h; }).catch(() => {});
+                } else {
+                    capListenerHandle = p;
+                }
+            } catch (e) { /* noop — listener 등록 실패해도 web 이벤트로 fallback */ }
+        }
+
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', onVisibilityChange);
+            }
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('pagehide', onPageHide);
+            }
+            if (capListenerHandle?.remove) {
+                try { capListenerHandle.remove(); } catch (e) { /* noop */ }
+            }
+        };
+    }, [updateLastFreeTalkHistoryEnd]);
 
     const startSession = useCallback(async (setupArgs) => {
         setIsStarting(true);
@@ -362,6 +467,11 @@ export function useConversation({ tier = 'trial' } = {}) {
         // updateLastFreeTalkHistoryEnd 는 idempotent (이미 endedAt 있으면 skip).
         if (lastHistoryKeyRef.current) {
             updateLastFreeTalkHistoryEnd('closed');
+        }
+        // Phase 1: 펜딩 debounced write 취소 (resetSession 후엔 마지막 turn 가 의미 없음)
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+            incrementalWriteTimerRef.current = null;
         }
         lastHistoryKeyRef.current = null;
         setSessionId(null);
@@ -593,6 +703,9 @@ export function useConversation({ tier = 'trial' } = {}) {
             // AI 응답 실패 시 카운트 안 올라감 → 사용자 재시도 가능 (의도된 동작).
             // 한도 도달은 별도 useEffect 가 freeTurnCount 변화를 보고 처리.
             setFreeTurnCount(prev => prev + 1);
+            // Phase 1: turn 증가 직후 3초 debounce 로 Firestore 에 incremental 저장.
+            // 강제 종료 / 앱 kill 등으로 종료 update 가 안 들어가도 마지막 turn 기록 보존.
+            scheduleIncrementalTurnWrite();
         } catch (e) {
             console.error('[useConversation] reply failed:', e?.message || e);
             setReplyError(e?.message || 'Reply failed');
@@ -603,7 +716,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         } finally {
             setIsReplying(false);
         }
-    }, [fetchTTS, sessionEnded, resetIdleTimer]);
+    }, [fetchTTS, sessionEnded, resetIdleTimer, scheduleIncrementalTurnWrite]);
 
     /**
      * ChatBubble의 onPlaybackDone에서 호출 — 메시지를 played=true 로 마킹.
