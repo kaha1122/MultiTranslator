@@ -945,10 +945,12 @@
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
     "watchForProns": "+5 発音",
-    "watchAdPron": "広告視聴で発音 10回追加（永続保管）",
+    "watchAdPron": "広告視聴で発音5回追加",
     "loading": "広告読み込み中...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "広告視聴で Free Talking 2回追加（永続保管）"
+    "watchAdFreeTalk": "広告視聴で Free Talking 2回追加",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "広告視聴で Listening 3回追加"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",

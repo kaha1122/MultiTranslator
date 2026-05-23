@@ -944,11 +944,13 @@
   "reward": {
     "watchForCards": "+5 cartes",
     "watchAd": "Regardez une pub pour 5 cartes",
-    "watchForProns": "+5 prononc.",
-    "watchAdPron": "Regardez une pub pour 10 prononciations supplémentaires (conservées)",
+    "watchForProns": "+5 Prononciation",
+    "watchAdPron": "Regarder une pub → +5 tentatives de prononciation",
     "loading": "Chargement...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Regardez une pub pour 2 sessions Free Talking en plus (conservées)"
+    "watchAdFreeTalk": "Regarder une pub → +2 sessions Free Talking",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Regarder une pub → +3 passages Listening"
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",

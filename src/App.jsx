@@ -120,7 +120,7 @@ function App() {
     incrementTrialCard, incrementSavedCard, incrementTotalFreeTalk,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
-    freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
+    freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
     reviewBonusClaimed,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
     ensureAnonymousUser,
@@ -812,13 +812,15 @@ function App() {
     const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-      const adId = type === 'freeTalks' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      // 2026-05-23: listens 타입 추가 — AdMob Bonus01 (rewardedCards) 재사용 (별도 unit 미발급)
+      const adId = (type === 'freeTalks' || type === 'listens') ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
 
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          const amount = type === 'freeTalks' ? 2 : 5;
-          const field = type === 'freeTalks' ? 'freeTalkCredits' : 'pronCredits';
+          // 2026-05-23: listens 추가 — 광고 1회당 listenCredits +3 (일일 한도와 동일, 한 번 더 3 passage)
+          const amount = type === 'freeTalks' ? 2 : (type === 'listens' ? 3 : 5);
+          const field = type === 'freeTalks' ? 'freeTalkCredits' : (type === 'listens' ? 'listenCredits' : 'pronCredits');
           try {
             await updateDoc(doc(db, 'users', user.uid), { [field]: increment(amount) });
           } catch (e) { console.error(`[RewardedAd] ${field} 적립 실패:`, e); }
@@ -3632,27 +3634,47 @@ function App() {
                         {getT(sourceLang, 'reward.watchForFreeTalk') || '+2 Free Talking'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.watchAdFreeTalk') || '광고 시청 후 Free Talking 2회 추가 (영구 보관)'}
+                        {getT(sourceLang, 'reward.watchAdFreeTalk') || '광고 시청 후 Free Talking 2회 추가'}
                       </div>
                     </div>
                   </button>
-                  {/* 발음 +10 */}
+                  {/* 발음 +5 */}
                   <button
                     onClick={() => handleRewardedAd('prons')}
                     disabled={rewardAdLoading}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
+                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
                       border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                        {getT(sourceLang, 'reward.watchForProns') || '+10 발음'}
+                        {getT(sourceLang, 'reward.watchForProns') || '+5 발음'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
-                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가 (영구 보관)'}
+                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 5회 추가'}
+                      </div>
+                    </div>
+                  </button>
+                  {/* Listening +3 (2026-05-23 신설) */}
+                  <button
+                    onClick={() => handleRewardedAd('listens')}
+                    disabled={rewardAdLoading}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #faf5ff, #ede9fe)',
+                      border: '1px solid #ddd6fe', cursor: 'pointer', textAlign: 'left',
+                    }}>
+                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6d28d9' }}>
+                        {getT(sourceLang, 'reward.watchForListen') || '+3 Listening'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#a78bfa' }}>
+                        {getT(sourceLang, 'reward.watchAdListen') || '광고 시청 후 Listening 3회 추가'}
                       </div>
                     </div>
                   </button>
@@ -4246,7 +4268,17 @@ function App() {
             onSpeak={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1, { bonusCost: 5 }); }}
+            onGenerate={() => {
+              incrementListenGenerate();
+              // 2026-05-23: 한도(3) 도달 + listenCredits 보유 시 광고 적립 credits 우선 소비.
+              // Pron 의 onPronSuccess 와 동일 패턴 — 한도 안에선 daily 카운트, 초과분은 영구 credits.
+              if (tier === 'trial' && todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT && listenCredits > 0) {
+                consumeListenCredits(1);
+              } else {
+                incrementDailyListen();
+              }
+              addAdPoints(1, { bonusCost: 5 });
+            }}
             onFirstPlay={() => { addAdPoints(1, { bonusCost: 5 }); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
@@ -4302,7 +4334,10 @@ function App() {
               // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
               // 콜백에서 처리(서버 200 응답 받은 직후). 503/500 등으로 startSession 실패 시
               // 카운트가 보존되어 사용자가 [다시 시도] 버튼으로 같은 1회를 재사용 가능.
-              setFreeTalkSetup(args);
+              // 2026-05-23: Free Talking 은 첫 사용자에게 너무 어려워 사용자 default 가
+              //   intermediate 여도 항상 'basic' 으로 진입 (세션 내 사용자가 직접 변경은 가능,
+              //   하지만 다시 들어올 때는 또 basic). default 학습 난이도 설정과 독립.
+              setFreeTalkSetup({ ...args, difficulty: 'basic' });
               setFreeTalkOpen(true);
             }}
           />
@@ -4976,6 +5011,7 @@ function App() {
           sourceLang={sourceLang}
           pronCount={todayPronCount}
           freeTalkCount={todayFreeTalkCount}
+          listenCount={todayListenCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
         />

@@ -339,6 +339,7 @@ export const AuthProvider = ({ children }) => {
     //   기존 rewardBonus_{date} localStorage 시스템 폐기 (당일 리셋이라 미사용분 손실)
     const freeTalkCredits = profile?.freeTalkCredits || 0;
     const pronCredits = profile?.pronCredits || 0;
+    const listenCredits = profile?.listenCredits || 0;  // 2026-05-23: Listening 광고 보상권 (영구 적립)
 
     // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount/todayListenCount는 App.jsx에서 주입
     const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
@@ -348,8 +349,8 @@ export const AuthProvider = ({ children }) => {
     // 보너스 활성 시 일일 한도 우회. 광고 credits 보유 시도 우회 (광고로 한도 확장 효과).
     const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached && pronCredits === 0;
     const isTrialFreeTalkLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialFreeTalkReached && freeTalkCredits === 0;
-    // Listening 은 현재 광고-credits 시스템 없음 (Pron/FreeTalk 와 달리). 보너스 활성 시만 우회.
-    const isTrialListenLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialListenReached;
+    // 2026-05-23: Listening 도 광고 보상 listenCredits 시스템 도입 → 보너스 + credits 둘 다 우회 게이트.
+    const isTrialListenLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialListenReached && listenCredits === 0;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
     // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
@@ -405,6 +406,26 @@ export const AuthProvider = ({ children }) => {
                 consumed = Math.min(current, amount);
                 if (consumed > 0) {
                     tx.update(ref, { pronCredits: increment(-consumed) });
+                }
+            });
+            return consumed;
+        } catch (e) {
+            return 0;
+        }
+    };
+
+    // listenCredits 차감 — 광고로 적립한 영구 Listening 추가권 1회 소비 (2026-05-23 신설)
+    const consumeListenCredits = async (amount) => {
+        if (!user?.uid || amount <= 0) return 0;
+        try {
+            let consumed = 0;
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const current = snap.data()?.listenCredits || 0;
+                consumed = Math.min(current, amount);
+                if (consumed > 0) {
+                    tx.update(ref, { listenCredits: increment(-consumed) });
                 }
             });
             return consumed;
@@ -679,7 +700,7 @@ export const AuthProvider = ({ children }) => {
             incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
             bonusPoints, hasBonusActive, consumeBonusPoints,
-            freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
+            freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
             reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
             saveByokKeys,
             byokGeminiKey, byokAzureKey, byokAzureRegion,

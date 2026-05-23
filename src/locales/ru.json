@@ -944,11 +944,13 @@
   "reward": {
     "watchForCards": "+5 карточек",
     "watchAd": "Смотрите рекламу для +5 карточек",
-    "watchForProns": "+5 произнош.",
-    "watchAdPron": "Посмотрите рекламу за 10 доп. произношений (сохраняются)",
+    "watchForProns": "+5 Произношение",
+    "watchAdPron": "Смотреть рекламу → +5 попыток произношения",
     "loading": "Загрузка рекламы...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Посмотрите рекламу за 2 доп. сессии Free Talking (сохраняются)"
+    "watchAdFreeTalk": "Смотреть рекламу → +2 сессии Free Talking",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Смотреть рекламу → +3 текста Listening"
   },
   "renewal": {
     "title": "Срок подписки скоро истекает",

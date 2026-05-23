@@ -2,10 +2,14 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
-const TrialLimitModal = ({ sourceLang, pronCount, freeTalkCount = 0, onClose, onUpgrade }) => {
+const TrialLimitModal = ({ sourceLang, pronCount, freeTalkCount = 0, listenCount = 0, onClose, onUpgrade }) => {
     const t = useT(sourceLang);
-    // 2026-05-07 v1.5.0: 카드 한도 폐기. 발음/FT 한도(+credits 영구)만 표시.
-    const { TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, pronCredits, freeTalkCredits } = useAuth();
+    // 2026-05-07 v1.5.0: 카드 한도 폐기. 발음/FT/Listen 한도(+credits 영구)만 표시.
+    // 2026-05-23: Listening 한도 3 + listenCredits 추가 표시.
+    const {
+        TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+        pronCredits, freeTalkCredits, listenCredits,
+    } = useAuth();
     // 네이티브 앱(Android/iOS)에서는 사이드바의 보상형 광고 버튼 안내, 웹에서는 기존 메시지
     const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
     const messageKey = isNative ? 'trial.seeSidebarReward' : 'trial.seeYouTomorrow';
@@ -54,13 +58,16 @@ const TrialLimitModal = ({ sourceLang, pronCount, freeTalkCount = 0, onClose, on
                     }}>
                         {t(messageKey)}
                     </p>
-                    {/* 사용량 표시 — 2026-05-07 v1.5.0: 발음/FT 만 (카드 한도 폐기) */}
+                    {/* 사용량 표시 — 2026-05-23: Free Talk + Pronunciation + Listening 3종 */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🗣️ {freeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits} /day
                         </span>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🎤 {pronCount ?? 0}/{TRIAL_DAILY_PRON_LIMIT + pronCredits} /day
+                        </span>
+                        <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
+                            🎧 {listenCount ?? 0}/{TRIAL_DAILY_LISTEN_LIMIT + listenCredits} /day
                         </span>
                     </div>
                 </div>

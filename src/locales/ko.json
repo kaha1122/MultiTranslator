@@ -951,10 +951,12 @@
     "watchForCards": "+5 카드",
     "watchAd": "광고 시청 후 카드 5개 추가",
     "watchForProns": "+5 발음",
-    "watchAdPron": "광고 시청 후 발음 10회 추가 (영구 보관)",
+    "watchAdPron": "광고 시청 후 발음 5회 추가",
     "loading": "광고 로딩 중...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가 (영구 보관)"
+    "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "광고 시청 후 Listening 3회 추가"
   },
   "renewal": {
     "title": "구독 만료 예정",

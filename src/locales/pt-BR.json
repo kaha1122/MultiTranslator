@@ -944,11 +944,13 @@
   "reward": {
     "watchForCards": "+5 cartões",
     "watchAd": "Assistir anúncio por 5 cartões extra",
-    "watchForProns": "+5 pronúncia",
-    "watchAdPron": "Assista a um anúncio por 10 pronúncias extras (salvas)",
+    "watchForProns": "+5 Pronúncia",
+    "watchAdPron": "Assistir anúncio → +5 tentativas de pronúncia",
     "loading": "Carregando anúncio...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Assista a um anúncio por 2 sessões extras de Free Talking (salvas)"
+    "watchAdFreeTalk": "Assistir anúncio → +2 sessões de Free Talking",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Assistir anúncio → +3 textos de Listening"
   },
   "renewal": {
     "title": "Assinatura Expirando em Breve",

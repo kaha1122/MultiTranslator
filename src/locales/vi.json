@@ -944,11 +944,13 @@
   "reward": {
     "watchForCards": "+5 thẻ",
     "watchAd": "Xem quảng cáo để thêm 5 thẻ",
-    "watchForProns": "+5 phát âm",
-    "watchAdPron": "Xem quảng cáo để có thêm 10 lượt phát âm (lưu vĩnh viễn)",
+    "watchForProns": "+5 Phát âm",
+    "watchAdPron": "Xem quảng cáo → +5 lần phát âm",
     "loading": "Đang tải quảng cáo...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Xem quảng cáo để có thêm 2 lượt Free Talking (lưu vĩnh viễn)"
+    "watchAdFreeTalk": "Xem quảng cáo → +2 lần Free Talking",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Xem quảng cáo → +3 lần Listening"
   },
   "renewal": {
     "title": "Đăng ký sắp hết hạn",

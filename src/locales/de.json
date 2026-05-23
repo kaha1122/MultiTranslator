@@ -945,10 +945,12 @@
     "watchForCards": "+5 Karten",
     "watchAd": "Werbung ansehen für 5 Karten",
     "watchForProns": "+5 Aussprache",
-    "watchAdPron": "Werbung ansehen für 10 zusätzliche Aussprachen (dauerhaft)",
+    "watchAdPron": "Werbung ansehen → +5 Ausspracheversuche",
     "loading": "Werbung lädt...",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Werbung ansehen für 2 zusätzliche Free-Talking-Sitzungen (dauerhaft)"
+    "watchAdFreeTalk": "Werbung ansehen → +2 Free Talking-Sitzungen",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Werbung ansehen → +3 Listening-Passagen"
   },
   "renewal": {
     "title": "Abonnement läuft bald ab",
