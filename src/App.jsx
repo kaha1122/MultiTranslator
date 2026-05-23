@@ -1733,6 +1733,11 @@ function App() {
 
   // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
   // showOnboarding이 위에서 선언된 뒤로 위치해야 TDZ 회피
+  // 2026-05-23 fix: dismissStreakStatus 의 updateDoc 이 async 라 Firestore 반영 전
+  //   다른 dep 변경(다른 onSnapshot delivery 등) 으로 effect 가 재실행되면 게이트가 통과해
+  //   1.5초 후 재발화하던 회귀 — StreakIntro 와 동일 패턴 sessionStorage 세션 가드로 차단.
+  //   다음 세션(앱 재시작/브라우저 탭 재오픈) 에선 sessionStorage 비어있고, 같은 날이면
+  //   Firestore lastStreakStatusPopupAt === today 게이트가 매일 1회 정책을 cross-session 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
     if (profile.streakIntroDismissed !== true) return;
@@ -1740,8 +1745,15 @@ function App() {
     // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
     if (showOnboarding || showStreakIntro || showBonusCampaign) return;
     const today = getToday();
-    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨
-    const timer = setTimeout(() => setShowStreakStatus(true), 1500);
+    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨 (cross-session)
+    // 같은 세션 안에서는 한 번 열린 적 있으면 재발화 차단 (Firestore async race 회피)
+    if (sessionStorage.getItem('streakStatusShownThisSession') === '1') return;
+    const timer = setTimeout(() => {
+      // 타이머 콜백 내부에서 마킹 — effect cleanup 으로 timer 가 취소되면 sessionStorage 도
+      // 설정 안 됨 → 다음 dep settle 에서 정상 재시도 가능.
+      sessionStorage.setItem('streakStatusShownThisSession', '1');
+      setShowStreakStatus(true);
+    }, 1500);
     return () => clearTimeout(timer);
   }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
 
