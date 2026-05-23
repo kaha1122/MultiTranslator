@@ -5,7 +5,7 @@ import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
+const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 3, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');

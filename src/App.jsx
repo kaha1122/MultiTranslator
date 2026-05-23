@@ -114,9 +114,9 @@ function App() {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
     proPronCount, PRO_PRON_LIMIT,
-    TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-    isTrialPronLimitReached, isTrialFreeTalkLimitReached,
-    setDailyTrialPronReached, setDailyTrialFreeTalkReached,
+    TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+    isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
+    setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
     incrementTrialCard, incrementSavedCard, incrementTotalFreeTalk,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
@@ -851,11 +851,13 @@ function App() {
     if (tier === 'trial') {
       setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
       setDailyTrialFreeTalkReached(todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT);
+      setDailyTrialListenReached(todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT);
     } else {
       setDailyTrialPronReached(false);
       setDailyTrialFreeTalkReached(false);
+      setDailyTrialListenReached(false);
     }
-  }, [tier, todayPronCount, todayFreeTalkCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached]);
+  }, [tier, todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -4025,7 +4027,7 @@ function App() {
             dailyGoal={dailyGoal}
             dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + pronCredits}
             dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}
-            dailyListenLimit={10}
+            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
@@ -4223,6 +4225,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
+            isTrialListenLimitReached={isTrialListenLimitReached}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}

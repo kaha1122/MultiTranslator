@@ -316,6 +316,7 @@ export const AuthProvider = ({ children }) => {
     //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
     const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
+    const TRIAL_DAILY_LISTEN_LIMIT = 3;       // Free Trial: 하루 Listening passage 3회 (2026-05-23 신설) — Gemini + Azure TTS 비용 가드
     const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
 
     // 하위호환: 기존 필드 유지 (분석용)
@@ -339,13 +340,16 @@ export const AuthProvider = ({ children }) => {
     const freeTalkCredits = profile?.freeTalkCredits || 0;
     const pronCredits = profile?.pronCredits || 0;
 
-    // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount는 App.jsx에서 주입
+    // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount/todayListenCount는 App.jsx에서 주입
     const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
     const [dailyTrialFreeTalkReached, setDailyTrialFreeTalkReached] = useState(false);
+    const [dailyTrialListenReached, setDailyTrialListenReached] = useState(false);
 
     // 보너스 활성 시 일일 한도 우회. 광고 credits 보유 시도 우회 (광고로 한도 확장 효과).
     const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached && pronCredits === 0;
     const isTrialFreeTalkLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialFreeTalkReached && freeTalkCredits === 0;
+    // Listening 은 현재 광고-credits 시스템 없음 (Pron/FreeTalk 와 달리). 보너스 활성 시만 우회.
+    const isTrialListenLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialListenReached;
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
     // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
@@ -668,9 +672,9 @@ export const AuthProvider = ({ children }) => {
             tier,
             trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
             proPronCount, PRO_PRON_LIMIT,
-            TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-            isTrialPronLimitReached, isTrialFreeTalkLimitReached,
-            setDailyTrialPronReached, setDailyTrialFreeTalkReached,
+            TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+            isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
+            setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
             isProPronLimitReached,
             incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
             incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,

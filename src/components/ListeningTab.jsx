@@ -93,6 +93,7 @@ export default function ListeningTab({
     onNavigateToLibrary,
     userLevel,
     isActive = true,
+    isTrialListenLimitReached = false,  // 2026-05-23: Trial 일일 3회 한도 enforcement
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -175,6 +176,19 @@ export default function ListeningTab({
             return;
         }
 
+        // 2026-05-23: 첫 재생 dedup safety net — Option B "whichever first 1회만 카운트".
+        //   handleGenerate 가 정상 흐름에서 onGenerate 호출하므로 passage.counted=true 가 일반적 경로.
+        //   향후 "저장된 passage 재진입" 같은 경로에서 counted=false 일 경우 이 분기가 fallback.
+        //   현 코드 흐름에선 이 분기 거의 안 타지만 안전망으로 유지.
+        if (passage && !passage.counted) {
+            if (isTrialListenLimitReached) {
+                onTrialLimitReached?.();
+                return;
+            }
+            onGenerate?.();
+            setPassage(p => p ? { ...p, counted: true } : p);
+        }
+
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const isDialogue = passageType === 'dialogue';
         const dialogueTurns = isDialogue ? parseDialogueTurns(passage.text) : [];
@@ -241,7 +255,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate]);
 
     // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
     const playSentence = useCallback(async (sentence) => {
@@ -358,6 +372,11 @@ export default function ListeningTab({
     const handleGenerate = async () => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
+        if (isTrialListenLimitReached) {
+            onTrialLimitReached?.();
+            return;
+        }
         stopPassageAudio();
         setIsLoading(true);
         setActiveRecIdx(null);
@@ -406,6 +425,7 @@ export default function ListeningTab({
                     text: data.passage || '',
                     pronunciation: data.passagePronunciation || '',
                     translation: data.passageTranslation || '',
+                    counted: true,  // 2026-05-23: handleGenerate 에서 onGenerate 호출하므로 이미 카운트됨 — 첫 재생 중복 카운트 방지
                 });
                 setKeywords(data.words || []);
                 setSavedWords(new Set());
