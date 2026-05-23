@@ -579,12 +579,15 @@
     "counterUnit": "장",
     "bookmarkPromptTitle": "목표 점수 달성!",
     "bookmarkPromptDesc": "⭐ 버튼을 눌러 이 문장을 라이브러리에 저장하세요. 오늘의 학습 카드로 기록됩니다.",
-    "starGuideTitle": "단어장을 활용해보세요!",
-    "starGuideDesc": "학습 중 ⭐ 별표를 누르면 단어장에 저장됩니다. 저장된 카드는 라이브러리에서 언제든 복습할 수 있어요.",
+    "starGuideTitle": "⭐ 별표 → 발음 통과 → Streak!",
     "bookmarkConfirm": "확인",
     "dontShowAgain": "다시 알리지 않음",
     "bookmarkNow": "북마크하기",
-    "bookmarkLater": "나중에"
+    "bookmarkLater": "나중에",
+    "starGuideStep1": "학습하고자 하는 카드를 ⭐ 별표로 저장하세요.",
+    "starGuideStep2": "발음 점수를 통과하면 카드가 합격(qualified)이 돼요.",
+    "starGuideStep3": "매일 합격 카드 3장을 모으면, 오늘의 Streak 달성! 보너스 💎가 쏟아져요.",
+    "starGuideCta": "좋아요, 시작!"
   },
   "tabTag": {
     "home": "학습 현황과 메뉴를 한눈에 확인하세요",

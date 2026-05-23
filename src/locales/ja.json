@@ -573,12 +573,15 @@
     "counterUnit": "枚",
     "bookmarkPromptTitle": "目標スコア達成！",
     "bookmarkPromptDesc": "⭐ ボタンを押してこのフレーズをライブラリに保存してください。今日の学習カードとして記録されます。",
-    "starGuideTitle": "単語帳を活用しましょう！",
-    "starGuideDesc": "学習中に ⭐ をタップするとライブラリに保存できます。保存したカードはいつでも復習できます。",
+    "starGuideTitle": "⭐ 星 → 発音通過 → Streak！",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "今後表示しない",
     "bookmarkNow": "ブックマークする",
-    "bookmarkLater": "あとで"
+    "bookmarkLater": "あとで",
+    "starGuideStep1": "学びたいカードを ⭐ 星でブックマーク。",
+    "starGuideStep2": "発音スコアを通過するとカードが合格(qualified)に。",
+    "starGuideStep3": "1日3枚の合格カードでStreak達成！ボーナス 💎 を獲得。",
+    "starGuideCta": "了解、始めよう！"
   },
   "tabTag": {
     "home": "学習状況とメニューを一目で確認しましょう",

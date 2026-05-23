@@ -573,12 +573,15 @@
     "counterUnit": "thẻ",
     "bookmarkPromptTitle": "Đạt điểm mục tiêu!",
     "bookmarkPromptDesc": "Nhấn nút ⭐ để lưu câu này vào thư viện. Nó sẽ được tính vào mục tiêu học hôm nay.",
-    "starGuideTitle": "Lưu vào thư viện!",
-    "starGuideDesc": "Nhấn ⭐ trong khi học để lưu thẻ vào thư viện. Bạn có thể ôn tập bất cứ lúc nào.",
+    "starGuideTitle": "⭐ Lưu → Phát âm đạt → Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Không hiển thị lại",
     "bookmarkNow": "Đánh dấu ngay",
-    "bookmarkLater": "Để sau"
+    "bookmarkLater": "Để sau",
+    "starGuideStep1": "Nhấn ⭐ để lưu thẻ bạn muốn học.",
+    "starGuideStep2": "Đạt điểm phát âm — thẻ trở thành 'đạt' (qualified).",
+    "starGuideStep3": "Gom 3 thẻ đạt mỗi ngày → đạt Streak hôm nay! 💎 Phần thưởng chờ bạn.",
+    "starGuideCta": "Đã hiểu, bắt đầu!"
   },
   "tabTag": {
     "home": "Xem tiến độ học tập và menu của bạn",

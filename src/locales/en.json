@@ -579,12 +579,15 @@
     "counterUnit": "Card",
     "bookmarkPromptTitle": "Goal Reached!",
     "bookmarkPromptDesc": "Tap the ⭐ button to save this sentence to your library. It will count toward today's learning goal.",
-    "starGuideTitle": "Save to Your Library!",
-    "starGuideDesc": "Tap the ⭐ star during practice to save cards to your library. Review saved cards anytime from the Library tab.",
+    "starGuideTitle": "⭐ Star → Pass → Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Don't show again",
     "bookmarkNow": "Bookmark Now",
-    "bookmarkLater": "Later"
+    "bookmarkLater": "Later",
+    "starGuideStep1": "Tap the ⭐ star to save the card you want to learn.",
+    "starGuideStep2": "Pass the pronunciation score — your card becomes qualified.",
+    "starGuideStep3": "Collect 3 qualified cards a day to hit today's Streak! Bonus 💎 awaits.",
+    "starGuideCta": "Got it, let's go!"
   },
   "tabTag": {
     "home": "Check your progress and navigate learning menus",

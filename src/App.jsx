@@ -63,12 +63,12 @@ import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import { adsReady, showInterstitial } from './lib/adProvider';
 import AppGuide from './components/AppGuide';
-import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 OCR 모달
 import NotificationSettings from './components/NotificationSettings';
 import PushOptInModal from './components/PushOptInModal';
+import StarGuideModal from './components/StarGuideModal';
 import SubscriptionEventModal from './components/SubscriptionEventModal';
 import { useFeatureSeen, supportsFeature } from './utils/featureSeen';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
@@ -226,6 +226,12 @@ function App() {
           // Re-engagement 푸시 → 홈 탭으로 이동
           if (typeof pushType === 'string' && pushType.startsWith('reengagement_')) {
             setViewMode('home');
+          }
+          // Streak Reminder (정기 13:00 알림) → 홈 + StarGuide 환영 팝업으로 따뜻한 재참여 유도.
+          // streak_risk(위험 알림)는 제외 — urgency 메시지 희석 방지.
+          if (pushType === 'streak_reminder') {
+            setViewMode('home');
+            setForceStarGuideFromPush(true);
           }
         });
         removers.push(hAction);
@@ -859,6 +865,9 @@ function App() {
 
   // 별표 안내 팝업 (첫 카드 생성 시 1회)
   const [showStarGuide, setShowStarGuide] = useState(false);
+  // Streak Reminder push 진입 시 StarGuide 강제 발화 (count/session/dismissedV2 가드 우회).
+  // streak_risk(위험 알림)는 제외 — 그쪽은 urgency 가 핵심이라 가이드 팝업이 메시지를 희석.
+  const [forceStarGuideFromPush, setForceStarGuideFromPush] = useState(false);
 
   // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
   const [savedCardIds, setSavedCardIds] = useState({});
@@ -1100,47 +1109,6 @@ function App() {
   React.useEffect(() => {
     if (user) setSidebarOpen(false);
   }, [user]);
-
-  // 첫 방문 탭 튜토리얼 상태
-  const [tutorialTab, setTutorialTab] = useState(null);
-  const [tutorialStep, setTutorialStep] = useState(0);
-
-  // 튜토리얼 콘텐츠 버전 — 컨텐츠 변경 시 키 suffix를 올리면 기존 사용자도 1회 재노출
-  // (vocab: 슬라이더+모달+생성 흐름으로 문구 변경 → v2)
-  const TUTORIAL_VERSION = { vocab: 'v2' };
-  const tutorialKey = (tab) => {
-    const v = TUTORIAL_VERSION[tab];
-    return v ? `pronunfit_tutorial_${tab}_${v}` : `pronunfit_tutorial_${tab}`;
-  };
-
-  // viewMode 변경 시 첫 방문이면 튜토리얼 표시
-  React.useEffect(() => {
-    if (!TAB_TUTORIALS[viewMode]) return;
-    if (!localStorage.getItem(tutorialKey(viewMode))) {
-      const timer = setTimeout(() => {
-        setTutorialTab(viewMode);
-        setTutorialStep(0);
-      }, 700);
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode]);
-
-  const handleTutorialNext = () => {
-    const total = TAB_TUTORIALS[tutorialTab]?.length || 2;
-    if (tutorialStep < total - 1) {
-      setTutorialStep(tutorialStep + 1);
-    } else {
-      localStorage.setItem(tutorialKey(tutorialTab), 'seen');
-      setTutorialTab(null);
-      setTutorialStep(0);
-    }
-  };
-
-  const handleTutorialSkip = () => {
-    localStorage.setItem(tutorialKey(tutorialTab), 'seen');
-    setTutorialTab(null);
-    setTutorialStep(0);
-  };
 
   // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
   const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
@@ -1611,16 +1579,7 @@ function App() {
     }
   }, [!!profile]);
 
-  // Streak 출시 안내 — BonusCampaign과 동일한 "옵션 D" 게이트 + 영구 dismiss 미체크 시 매 세션 노출
-  useEffect(() => {
-    if (!user?.uid || !profile) return;
-    if (!profile.lifecycleStage) return;
-    if (profile.streakIntroDismissed === true) return;
-    // 온보딩 세션엔 노출 안 함 (BonusCampaign과 동일)
-    if (!initialLifecycleStageRef.current) return;
-    const timer = setTimeout(() => setShowStreakIntro(true), 1200);
-    return () => clearTimeout(timer);
-  }, [user?.uid, profile?.lifecycleStage, profile?.streakIntroDismissed]);
+  // Streak 출시 안내 effect 는 showOnboarding 선언 이후로 이동됨 — TDZ 회피 + 신규 유저 Step 6 직후 발화 (아래 참조)
 
   useEffect(() => {
     if (!user?.uid || !profile) return;
@@ -1735,6 +1694,31 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
 
+  // Streak 출시 안내 — 신규 유저는 Step 6 (PushOptIn) 닫힌 직후 마지막 팝업으로, 기존 유저는 다음 세션 진입 시 노출
+  // "다시 보지 않음" 영구 dismiss 전까진 매 세션 재노출 (StreakIntroModal 내부 동작)
+  // showOnboarding 등 선행 모달 deps 사용 → TDZ 회피를 위해 showOnboarding 선언 이후에 위치
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    if (profile.streakIntroDismissed === true) return;
+    // 온보딩 미통과면 보류 (PushOptIn 이후로 순차 흐름 유지)
+    if (!profile.hasCompletedOnboarding) return;
+    // AI Consent 미완료면 보류 (AI Consent 모달이 먼저)
+    if (!profile.aiConsentAt && localStorage.getItem('aiConsentAccepted') !== '1') return;
+    // 선행 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
+    if (showOnboarding || showAiConsent || showSubscriptionPrompt || showPushOptIn) return;
+    const timer = setTimeout(() => setShowStreakIntro(true), 1200);
+    return () => clearTimeout(timer);
+  }, [
+    user?.uid,
+    profile?.hasCompletedOnboarding,
+    profile?.aiConsentAt,
+    profile?.streakIntroDismissed,
+    showOnboarding,
+    showAiConsent,
+    showSubscriptionPrompt,
+    showPushOptIn,
+  ]);
+
   // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
   // showOnboarding이 위에서 선언된 뒤로 위치해야 TDZ 회피
   useEffect(() => {
@@ -1786,7 +1770,7 @@ function App() {
     localStorage.setItem('sourceLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
-    // 신규 사용자: TabTutorial 의 Scene step 으로 Free-Talking 안내 받음 → announce 모달 skip
+    // 신규 사용자는 처음부터 Free-Talking을 정상 동선으로 만남 → 기존 사용자 대상 announce 모달 skip
     localStorage.setItem('pronunfit_freetalk_announce_seen', '1');
     // AI Consent를 온보딩 마지막 step에 통합 — 별도 모달 안 뜨도록 즉시 캐시
     if (aiConsented) {
@@ -1804,14 +1788,39 @@ function App() {
     }).catch(() => { });
   };
 
-  // 별표 안내 팝업 — 첫 카드 생성 시 (totalGenerateCount 0→1) 1회만
+  // 별표 안내 팝업 — 두 발화 경로:
+  //   (1) Streak Reminder push 진입 강제 발화 — count/session/dismissedV2 가드 모두 우회, 선행 모달 닫힐 때까지만 대기.
+  //   (2) 첫 generate 이후 매 세션 1회 노출 — "다시 보지 않음" 체크 시 영구 차단(starGuideDismissedV2).
+  // localStorage 키 starGuideDismissedV2 사용 (기존 starGuideDone 은 dead key — 기존 사용자에게도 1회 자동 재노출)
+  // 세션 폭주 방지: sessionStorage 가드로 같은 세션 안에서는 1회만
   useEffect(() => {
     if (!profile) return;
+
+    // (1) Streak Reminder push 강제 발화 — 선행 모달이 차있으면 대기 (닫히면 effect 재실행)
+    if (forceStarGuideFromPush) {
+      if (showOnboarding || showAiConsent || showSubscriptionPrompt || showPushOptIn || showStreakIntro) return;
+      setForceStarGuideFromPush(false);
+      sessionStorage.setItem('starGuideShownThisSession', '1');
+      setShowStarGuide(true);
+      return;
+    }
+
+    // (2) 기본 트리거 — 첫 generate 후 매 세션 1회
     const count = profile.totalGenerateCount || 0;
-    if (count !== 1) return; // 정확히 1일 때만
-    if (localStorage.getItem('starGuideDone') === '1') return;
+    if (count < 1) return;
+    if (localStorage.getItem('starGuideDismissedV2') === '1') return;
+    if (sessionStorage.getItem('starGuideShownThisSession') === '1') return;
+    sessionStorage.setItem('starGuideShownThisSession', '1');
     setShowStarGuide(true);
-  }, [profile?.totalGenerateCount]);
+  }, [
+    profile?.totalGenerateCount,
+    forceStarGuideFromPush,
+    showOnboarding,
+    showAiConsent,
+    showSubscriptionPrompt,
+    showPushOptIn,
+    showStreakIntro,
+  ]);
 
   // Profile 자가치유(self-heal): 익명→실계정 전환 과정의 race condition 등으로
   // profile에 sourceLang/targetLangs/tier/deviceLang/platform이 누락된 기존 사용자를 발견 즉시 복원.
@@ -4893,35 +4902,18 @@ function App() {
         />
       )}
 
-      {/* 별표 안내 팝업 — 첫 카드 생성 시 1회 */}
-      {showStarGuide && (
-        <div className="bpm-overlay" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
-          <div className="bpm-card" onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>⭐</div>
-            <h3 className="bpm-title">{t('daily.starGuideTitle')}</h3>
-            <p className="bpm-desc">{t('daily.starGuideDesc')}</p>
-            <div className="bpm-actions">
-              <button className="bpm-btn-later" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
-                {t('daily.bookmarkConfirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 별표 안내 팝업 — 첫 generate 이후 매 세션 1회 (다시 보지 않음 미체크 시) */}
+      <StarGuideModal
+        open={showStarGuide}
+        sourceLang={sourceLang}
+        onClose={() => setShowStarGuide(false)}
+        onPermanentDismiss={() => {
+          localStorage.setItem('starGuideDismissedV2', '1');
+          setShowStarGuide(false);
+        }}
+      />
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
-
-      {/* 첫 방문 탭 튜토리얼 */}
-      {tutorialTab && TAB_TUTORIALS[tutorialTab] && (
-        <TabTutorial
-          tab={tutorialTab}
-          step={tutorialStep}
-          total={TAB_TUTORIALS[tutorialTab].length}
-          onNext={handleTutorialNext}
-          onSkip={handleTutorialSkip}
-          sourceLang={sourceLang}
-        />
-      )}
 
       {/* 하단 탭 바로가기 nav (도트 인디케이터 대체) */}
       {TAB_ORDER.includes(viewMode) && (

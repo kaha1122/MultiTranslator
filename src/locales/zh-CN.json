@@ -573,12 +573,15 @@
     "counterUnit": "张",
     "bookmarkPromptTitle": "达到目标分数！",
     "bookmarkPromptDesc": "点击 ⭐ 按钮将这个句子保存到库中，即可记录为今天的学习卡片。",
-    "starGuideTitle": "保存到词库！",
-    "starGuideDesc": "学习时点击 ⭐ 即可将卡片保存到词库。保存的卡片可以随时复习。",
+    "starGuideTitle": "⭐ 收藏 → 发音通过 → 连击!",
     "bookmarkConfirm": "确认",
     "dontShowAgain": "不再提示",
     "bookmarkNow": "立即收藏",
-    "bookmarkLater": "稍后再说"
+    "bookmarkLater": "稍后再说",
+    "starGuideStep1": "点击 ⭐ 收藏你想学习的卡片。",
+    "starGuideStep2": "发音得分通过后,卡片即视为合格(qualified)。",
+    "starGuideStep3": "每日集齐 3 张合格卡片即达成今日 Streak!💎 奖励到手。",
+    "starGuideCta": "好的,开始吧!"
   },
   "tabTag": {
     "home": "一目了然查看学习进度和菜单",

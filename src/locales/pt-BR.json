@@ -573,12 +573,15 @@
     "counterUnit": "Cartão",
     "bookmarkPromptTitle": "Meta Alcançada!",
     "bookmarkPromptDesc": "Toque no botão ⭐ para salvar esta frase na sua biblioteca. Isso contará para a meta de aprendizado de hoje.",
-    "starGuideTitle": "Salve na sua biblioteca!",
-    "starGuideDesc": "Toque em ⭐ durante a prática para salvar cartões. Revise os cartões salvos a qualquer momento na biblioteca.",
+    "starGuideTitle": "⭐ Estrela → Pronúncia → Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Não mostrar novamente",
     "bookmarkNow": "Salvar Agora",
-    "bookmarkLater": "Depois"
+    "bookmarkLater": "Depois",
+    "starGuideStep1": "Toque em ⭐ para salvar a carta que quer estudar.",
+    "starGuideStep2": "Passe na pontuação de pronúncia — a carta fica qualificada (qualified).",
+    "starGuideStep3": "Junte 3 cartas qualificadas por dia → Streak de hoje! 💎 Bônus te aguarda.",
+    "starGuideCta": "Entendi, vamos lá!"
   },
   "tabTag": {
     "home": "Confira seu progresso e navegue pelos menus de aprendizado",

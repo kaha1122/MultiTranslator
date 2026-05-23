@@ -573,12 +573,15 @@
     "counterUnit": "tarjeta",
     "bookmarkPromptTitle": "¡Meta alcanzada!",
     "bookmarkPromptDesc": "Toca el botón ⭐ para guardar esta frase en tu biblioteca. Contará en tu progreso de hoy.",
-    "starGuideTitle": "¡Guarda en tu biblioteca!",
-    "starGuideDesc": "Toca ⭐ durante la práctica para guardar tarjetas. Puedes repasarlas en cualquier momento desde la biblioteca.",
+    "starGuideTitle": "⭐ Estrella → Pronunciación → ¡Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "No volver a mostrar",
     "bookmarkNow": "Marcar ahora",
-    "bookmarkLater": "Más tarde"
+    "bookmarkLater": "Más tarde",
+    "starGuideStep1": "Toca ⭐ para guardar la tarjeta que quieres aprender.",
+    "starGuideStep2": "Aprueba la puntuación de pronunciación — la tarjeta queda calificada (qualified).",
+    "starGuideStep3": "¡Reúne 3 tarjetas calificadas al día para alcanzar tu Streak! 💎 Bonus te espera.",
+    "starGuideCta": "¡Entendido, vamos!"
   },
   "tabTag": {
     "home": "Consulta tu progreso y los menús de aprendizaje",

@@ -573,12 +573,15 @@
     "counterUnit": "Karte",
     "bookmarkPromptTitle": "Ziel erreicht!",
     "bookmarkPromptDesc": "Tippe auf den ⭐-Button, um diesen Satz in deiner Bibliothek zu speichern. Er zählt als heutiger Lernfortschritt.",
-    "starGuideTitle": "In die Bibliothek speichern!",
-    "starGuideDesc": "Tippe beim Lernen auf ⭐, um Karten zu speichern. Gespeicherte Karten kannst du jederzeit wiederholen.",
+    "starGuideTitle": "⭐ Stern → Aussprache → Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Nicht mehr anzeigen",
     "bookmarkNow": "Jetzt speichern",
-    "bookmarkLater": "Später"
+    "bookmarkLater": "Später",
+    "starGuideStep1": "Tippe auf ⭐, um die Lernkarte zu speichern.",
+    "starGuideStep2": "Bestehe den Aussprache-Score — die Karte gilt als qualifiziert.",
+    "starGuideStep3": "Sammle täglich 3 qualifizierte Karten und sichere deinen Streak! Bonus 💎 wartet.",
+    "starGuideCta": "Verstanden, los geht's!"
   },
   "tabTag": {
     "home": "Überprüfen Sie Ihren Fortschritt und die Lernmenüs",

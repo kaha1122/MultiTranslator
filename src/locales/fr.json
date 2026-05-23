@@ -573,12 +573,15 @@
     "counterUnit": "fiche",
     "bookmarkPromptTitle": "Objectif atteint !",
     "bookmarkPromptDesc": "Appuyez sur le bouton ⭐ pour enregistrer cette phrase dans votre bibliothèque. Elle comptera dans votre objectif du jour.",
-    "starGuideTitle": "Sauvegardez dans votre bibliothèque !",
-    "starGuideDesc": "Appuyez sur ⭐ pendant l'apprentissage pour enregistrer la carte. Révisez vos cartes à tout moment.",
+    "starGuideTitle": "⭐ Étoile → Prononciation → Streak !",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Ne plus afficher",
     "bookmarkNow": "Mettre en favori",
-    "bookmarkLater": "Plus tard"
+    "bookmarkLater": "Plus tard",
+    "starGuideStep1": "Appuyez sur ⭐ pour sauvegarder la carte à apprendre.",
+    "starGuideStep2": "Réussissez le score de prononciation — la carte est qualifiée.",
+    "starGuideStep3": "Réunissez 3 cartes qualifiées par jour pour valider votre Streak ! Bonus 💎 vous attend.",
+    "starGuideCta": "Compris, c'est parti !"
   },
   "tabTag": {
     "home": "Consultez vos progrès et les menus d'apprentissage",
