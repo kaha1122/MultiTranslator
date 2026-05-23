@@ -4246,6 +4246,7 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1, { bonusCost: 5 }); }}
+            onFirstPlay={() => { addAdPoints(1, { bonusCost: 5 }); }}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');

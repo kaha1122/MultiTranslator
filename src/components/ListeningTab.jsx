@@ -90,6 +90,7 @@ export default function ListeningTab({
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
+    onFirstPlay,                          // 2026-05-23: 첫 재생 시 추가 AdsPoint(15) 차감 — Azure TTS 비용 반영
     onNavigateToLibrary,
     userLevel,
     isActive = true,
@@ -176,10 +177,8 @@ export default function ListeningTab({
             return;
         }
 
-        // 2026-05-23: 첫 재생 dedup safety net — Option B "whichever first 1회만 카운트".
-        //   handleGenerate 가 정상 흐름에서 onGenerate 호출하므로 passage.counted=true 가 일반적 경로.
-        //   향후 "저장된 passage 재진입" 같은 경로에서 counted=false 일 경우 이 분기가 fallback.
-        //   현 코드 흐름에선 이 분기 거의 안 타지만 안전망으로 유지.
+        // 2026-05-23: 첫 재생 dedup safety net (daily 3-limit) — 정상 흐름에선 거의 안 타지만 fallback 유지.
+        //   passage.counted=false 인 경우 (향후 "저장된 passage 재진입" 등) handleGenerate 의 onGenerate 누락 보완.
         if (passage && !passage.counted) {
             if (isTrialListenLimitReached) {
                 onTrialLimitReached?.();
@@ -187,6 +186,14 @@ export default function ListeningTab({
             }
             onGenerate?.();
             setPassage(p => p ? { ...p, counted: true } : p);
+        }
+
+        // 2026-05-23: 첫 재생 시 추가 AdsPoint(15) 차감 — Azure TTS 가 실제로 호출되는 시점 비용 반영.
+        //   같은 passage 의 반복 재생(pause/resume/loop, Stop→Play 다시): 서버 텍스트 해시 캐시로 Azure 비용 0
+        //   이므로 AdsPoint 추가 차감 안 함. 새 passage 가 생성될 때마다 adsCharged=false 로 리셋.
+        if (passage && !passage.adsCharged) {
+            onFirstPlay?.();
+            setPassage(p => p ? { ...p, adsCharged: true } : p);
         }
 
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
@@ -255,7 +262,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
 
     // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
     const playSentence = useCallback(async (sentence) => {
@@ -425,7 +432,8 @@ export default function ListeningTab({
                     text: data.passage || '',
                     pronunciation: data.passagePronunciation || '',
                     translation: data.passageTranslation || '',
-                    counted: true,  // 2026-05-23: handleGenerate 에서 onGenerate 호출하므로 이미 카운트됨 — 첫 재생 중복 카운트 방지
+                    counted: true,       // daily 3-limit: handleGenerate 에서 onGenerate 호출 → 첫 재생 dedup safety net
+                    adsCharged: false,   // AdsPoint(15): 첫 재생 시 onFirstPlay 로 1회 더 차감 (Azure TTS 비용 반영)
                 });
                 setKeywords(data.words || []);
                 setSavedWords(new Set());
