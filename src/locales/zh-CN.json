@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "今日免费体验额度已用完！",
-    "limitDesc": "每日10张卡片、10次发音练习或2次Free-Talking的额度已用完。",
+    "limitDesc": "已达今日上限: 发音 10 次、Free-Talking 2 次、Listening 3 次。",
     "seeYouTomorrow": "明天再见！",
-    "seeSidebarReward": "想继续学习？请使用侧边栏的 +2 Free-Talking / +5 发音 按钮",
+    "seeSidebarReward": "想继续学习吗?请使用侧边栏的 +2 Free-Talking / +5 发音 / +3 Listening 按钮。",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {

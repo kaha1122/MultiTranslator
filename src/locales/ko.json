@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "오늘의 무료 체험 한도에 도달했습니다!",
-    "limitDesc": "하루 카드 10장, 발음 10회, 또는 Free-Talking 2회 한도에 도달했습니다.",
+    "limitDesc": "발음 10회, Free-Talking 2회, Listening 3회 한도에 도달했습니다.",
     "seeYouTomorrow": "내일 다시 만나요!",
-    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +5 발음 버튼을 활용하세요",
+    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +5 발음 / +3 Listening 버튼을 활용하세요",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {

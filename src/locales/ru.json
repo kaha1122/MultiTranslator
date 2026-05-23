@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "Дневной лимит Trial исчерпан!",
-    "limitDesc": "Вы достигли дневного лимита: 10 карточек, 10 тестов произношения или 2 сессии Free-Talking.",
+    "limitDesc": "Сегодняшний лимит достигнут: 10 Произношение, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "До завтра!",
-    "seeSidebarReward": "Хотите учиться дальше? Используйте кнопки +2 Free-Talking / +5 произношений в боковой панели",
+    "seeSidebarReward": "Хотите больше? Используйте кнопки +2 Free-Talking / +5 Произношение / +3 Listening в боковой панели.",
     "upgradeBtn": "Улучшить тарифный план"
   },
   "apiSetup": {

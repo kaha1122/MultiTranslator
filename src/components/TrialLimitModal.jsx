@@ -61,7 +61,7 @@ const TrialLimitModal = ({ sourceLang, pronCount, freeTalkCount = 0, listenCount
                     {/* 사용량 표시 — 2026-05-23: Free Talk + Pronunciation + Listening 3종 */}
                     <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', marginTop: '10px', flexWrap: 'wrap' }}>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
-                            🗣️ {freeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits} /day
+                            💬 {freeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits} /day
                         </span>
                         <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                             🎤 {pronCount ?? 0}/{TRIAL_DAILY_PRON_LIMIT + pronCredits} /day

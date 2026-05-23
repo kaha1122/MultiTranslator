@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "本日の無料体験の上限に達しました！",
-    "limitDesc": "1日カード10枚、発音10回、またはFree-Talking2回の上限に達しました。",
+    "limitDesc": "本日の上限に達しました: 発音10回、Free-Talking 2回、Listening 3回。",
     "seeYouTomorrow": "また明日お会いしましょう！",
-    "seeSidebarReward": "もっと学習したい方は、サイドバーの +2 Free-Talking / +5発音 ボタンをご利用ください",
+    "seeSidebarReward": "もっと学習したい？サイドバーの +2 Free-Talking / +5 発音 / +3 Listening ボタンをご利用ください。",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {

@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "Đã hết giới hạn dùng thử hôm nay!",
-    "limitDesc": "Bạn đã đạt giới hạn hàng ngày: 10 thẻ, 10 lần phát âm hoặc 2 phiên Free-Talking.",
+    "limitDesc": "Đã đạt giới hạn hôm nay: Phát âm 10 lần, Free-Talking 2 lần, Listening 3 lần.",
     "seeYouTomorrow": "Hẹn gặp lại bạn ngày mai!",
-    "seeSidebarReward": "Muốn học thêm? Hãy sử dụng nút +2 Free-Talking / +5 phát âm trong thanh bên",
+    "seeSidebarReward": "Muốn học thêm? Hãy dùng các nút +2 Free-Talking / +5 Phát âm / +3 Listening ở thanh bên.",
     "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {

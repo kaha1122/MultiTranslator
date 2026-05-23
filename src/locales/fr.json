@@ -185,9 +185,9 @@
   },
   "trial": {
     "limitTitle": "Limite quotidienne d'essai atteinte !",
-    "limitDesc": "Vous avez atteint la limite quotidienne : 10 cartes, 10 tests de prononciation ou 2 sessions Free-Talking.",
+    "limitDesc": "Limite atteinte aujourd'hui : 10 Prononciation, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "À demain !",
-    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +2 Free-Talking / +5 prononciations de la barre latérale",
+    "seeSidebarReward": "Envie de plus ? Utilisez les boutons +2 Free-Talking / +5 Prononciation / +3 Listening dans la barre latérale.",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {
