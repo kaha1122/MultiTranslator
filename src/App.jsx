@@ -223,14 +223,13 @@ function App() {
           if (['renewal', 'expiration', 'billingIssue', 'cancellation'].includes(pushType)) {
             tryShowSubscriptionEvent(pushType);
           }
-          // Re-engagement 푸시 → 홈 탭으로 이동
-          if (typeof pushType === 'string' && pushType.startsWith('reengagement_')) {
-            setViewMode('home');
-          }
-          // Streak 관련 모든 push (streak_reminder / streak_risk / 향후 추가 streak_* 타입) →
-          // 홈 + StarGuide 환영 팝업. 분기 없이 prefix 매칭으로 단순화 (2026-05-23 fix).
-          if (typeof pushType === 'string' && pushType.startsWith('streak_')) {
-            console.log('[Push] streak push → setForceStarGuideFromPush(true)', { pushType });
+          // 학습 재참여 유도 push (streak_reminder / streak_risk / reengagement_starter / reengagement_engaged)
+          // → 홈 + StarGuide 환영 팝업. 네 종류 모두 "다시 학습 시작" 동기 부여 메시지라 동일 동선.
+          // 2026-05-23: 기존엔 streak_* 만 StarGuide 트리거하고 reengagement_* 는 홈 이동만 했는데
+          // 두 카테고리 본질적으로 같은 의도라 통합 (단일 prefix-or 조건).
+          if (typeof pushType === 'string' &&
+              (pushType.startsWith('streak_') || pushType.startsWith('reengagement_'))) {
+            console.log('[Push] learning re-entry push → setForceStarGuideFromPush(true)', { pushType });
             setViewMode('home');
             setForceStarGuideFromPush(true);
           }
@@ -868,8 +867,10 @@ function App() {
 
   // 별표 안내 팝업 (첫 카드 생성 시 1회)
   const [showStarGuide, setShowStarGuide] = useState(false);
-  // Streak 관련 모든 push (streak_*) 진입 시 StarGuide 강제 발화 (count/session/dismissedV2 가드 우회).
-  // 2026-05-23: streak_reminder + streak_risk 둘 다 학습 동기 부여 메시지라 분기 없이 prefix 매칭으로 단순화.
+  // 학습 재참여 push (streak_* + reengagement_*) 진입 시 StarGuide 강제 발화
+  // (count/session/dismissedV2 가드 우회).
+  // 2026-05-23: streak_reminder + streak_risk + reengagement_starter + reengagement_engaged
+  // 네 종류 모두 학습 동기 부여 메시지라 분기 없이 통합.
   const [forceStarGuideFromPush, setForceStarGuideFromPush] = useState(false);
 
   // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
