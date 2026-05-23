@@ -4090,7 +4090,7 @@ function App() {
             dailyGoal={dailyGoal}
             dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + pronCredits}
             dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}
-            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT}
+            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT + listenCredits}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
