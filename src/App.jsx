@@ -4297,12 +4297,18 @@ function App() {
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => {
               incrementListenGenerate();
-              // 2026-05-23: 한도(3) 도달 + listenCredits 보유 시 광고 적립 credits 우선 소비.
-              // Pron 의 onPronSuccess 와 동일 패턴 — 한도 안에선 daily 카운트, 초과분은 영구 credits.
-              if (tier === 'trial' && todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT && listenCredits > 0) {
-                consumeListenCredits(1);
-              } else {
-                incrementDailyListen();
+              // 2026-05-23 fix: hasBonusActive 분기 누락 — Free Talking 정책 (2026-05-13)
+              //   "보너스 활성 시 daily 한도 차감 X" 와 일관성 맞춤. addAdPoints 내부에서
+              //   bonusCost:5 소비 시 광고 카운터 누적도 skip 되므로 daily 도 함께 면제하는 게 자연스러움.
+              // - hasBonusActive: daily/credits 둘 다 X, addAdPoints만 (bonus 소비)
+              // - 한도(3) 도달 + listenCredits 보유: 광고 적립 credits 우선 소비
+              // - 그 외: daily +1 (Pron 의 onPronSuccess 와 동일 패턴)
+              if (!hasBonusActive) {
+                if (tier === 'trial' && todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT && listenCredits > 0) {
+                  consumeListenCredits(1);
+                } else {
+                  incrementDailyListen();
+                }
               }
               addAdPoints(1, { bonusCost: 5 });
             }}
