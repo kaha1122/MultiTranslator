@@ -26,24 +26,20 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 
-    // ── 필터 상태 (localStorage 복원) ──
-    const [filterLang, setFilterLang] = useState(() => localStorage.getItem('library_filterLang') || 'all');
-    const [filterTypes, setFilterTypes] = useState(() => {
-        const saved = localStorage.getItem('library_filterTypes');
-        const parsed = saved ? JSON.parse(saved) : null;
-        return (parsed && parsed.length > 0) ? new Set(parsed) : new Set(['W', 'S']);
-    });
-    const [filterTargetMissed, setFilterTargetMissed] = useState(() => localStorage.getItem('library_filterTargetMissed') === 'true');
-    const [filterSource, setFilterSource] = useState(() => localStorage.getItem('library_filterSource') || 'all');
-    const [filterCategory, setFilterCategory] = useState(() => localStorage.getItem('library_filterCategory') || 'all');
-    const [filterDifficulty, setFilterDifficulty] = useState(() => localStorage.getItem('library_filterDifficulty') || 'all');
-    const [filterStarred, setFilterStarred] = useState(() => localStorage.getItem('library_filterStarred') === 'true');
-    const [filterThisWeek, setFilterThisWeek] = useState(() => {
-        const saved = localStorage.getItem('library_filterThisWeek');
-        return saved === null ? true : saved === 'true'; // 기본 ON
-    });
-    const [dateFrom, setDateFrom] = useState(() => localStorage.getItem('library_dateFrom') || '');
-    const [dateTo, setDateTo] = useState(() => localStorage.getItem('library_dateTo') || '');
+    // ── 필터 상태 ──
+    // 정책: 앱 cold start(페이지 로드) 시 무조건 default — 이번주만 ON, 나머지 전체.
+    //   동일 세션 내 사용자 변경은 React state로만 보존(다른 탭 다녀와도 display 토글뿐이라 유지),
+    //   localStorage 영구 보존은 하지 않음.
+    const [filterLang, setFilterLang] = useState('all');
+    const [filterTypes, setFilterTypes] = useState(() => new Set(['W', 'S']));
+    const [filterTargetMissed, setFilterTargetMissed] = useState(false);
+    const [filterSource, setFilterSource] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterDifficulty, setFilterDifficulty] = useState('all');
+    const [filterStarred, setFilterStarred] = useState(false);
+    const [filterThisWeek, setFilterThisWeek] = useState(true);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
 
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
@@ -56,20 +52,6 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     // ── 바텀시트 상태 ──
     const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source' | 'difficulty'
-
-    // ── localStorage 동기화 ──
-    useEffect(() => {
-        localStorage.setItem('library_filterLang', filterLang);
-        localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
-        localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
-        localStorage.setItem('library_filterSource', filterSource);
-        localStorage.setItem('library_filterCategory', filterCategory);
-        localStorage.setItem('library_filterDifficulty', filterDifficulty);
-        localStorage.setItem('library_filterStarred', filterStarred.toString());
-        localStorage.setItem('library_filterThisWeek', filterThisWeek.toString());
-        localStorage.setItem('library_dateFrom', dateFrom);
-        localStorage.setItem('library_dateTo', dateTo);
-    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterCategory, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
 
     // ── Firebase 실시간 구독 ──
     // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 모든 savedCards를
@@ -90,18 +72,13 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         return () => unsubscribe();
     }, [user]);
 
-    // ── Vocab에서 넘어온 카드 포커스: 필터 초기화 + 스크롤 ──
+    // ── 다른 탭에서 별표 저장 후 자동 진입 시: 새 카드로 스크롤 포커스 ──
+    // 정책: 동일 세션 내 필터 자동 reset 없음 — 사용자가 건 필터는 그대로 보존.
+    //   새 카드가 사용자 필터에 안 걸리면 DOM 미생성 → 스크롤 SKIP (의도된 동작).
     const focusCardPending = useRef(null);
     useEffect(() => {
         if (!focusCardId) return;
-        // 필터를 초기화하여 방금 생성된 카드가 반드시 보이도록
         focusCardPending.current = focusCardId;
-        setFilterSource('all');
-        setFilterDifficulty('all');
-        setFilterLang('all');
-        setFilterStarred(false);
-        setFilterTargetMissed(false);
-        setSearchTerm('');
     }, [focusCardId]);
 
     useEffect(() => {
@@ -115,7 +92,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
             focusCardPending.current = null;
             if (onFocusCardHandled) onFocusCardHandled();
         }
-    }, [savedCards, progressPopupOpen]);
+    }, [savedCards, progressPopupOpen, focusCardId]); // focusCardId: setSavedCards가 먼저 commit돼도 재발화
 
     // (Back키는 App.jsx에서 전역 관리 — header Back 버튼으로 복귀)
 
