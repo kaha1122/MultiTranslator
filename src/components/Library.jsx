@@ -93,14 +93,29 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         // cleanup으로 timer cancel하지 않음. effect 재발화(예: Firestore serverTimestamp confirm
         // 콜백으로 setSavedCards 재호출)가 진행 중인 timer를 끊어버리는 race를 차단.
         // 대신 stale 가드 + 중복 시도 차단 ref + DOM retry로 멱등성 확보.
+        const HEADER_OFFSET = 100; // sticky 헤더(.app-header + 보조 영역) 추정 높이
         let attempt = 0;
         const tryScroll = () => {
             if (focusCardPending.current !== targetId) return; // 새 별표 들어와 cardId 바뀐 경우
             const el = document.getElementById(`library-card-${targetId}`);
             if (el && el.offsetParent !== null) {
+                // 1차: smooth scroll 시도 (데스크톱/일부 모바일에선 자연스러움)
                 el.scrollIntoView({ behavior: 'smooth', block: 'start' });
                 el.classList.add('library-card-highlight');
-                setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
+                setTimeout(() => el.classList.remove('library-card-highlight'), 2500);
+
+                // 2차: 350ms 후 위치 검증 — Capacitor WebView가 smooth 무시했거나
+                // sticky 헤더에 가려진 경우 instant scrollTo + offset 보정 fallback.
+                setTimeout(() => {
+                    const el2 = document.getElementById(`library-card-${targetId}`);
+                    if (!el2) return;
+                    const r = el2.getBoundingClientRect();
+                    if (r.top < HEADER_OFFSET - 20 || r.top > window.innerHeight * 0.5) {
+                        const absTop = r.top + window.scrollY - HEADER_OFFSET;
+                        window.scrollTo({ top: Math.max(0, absTop), behavior: 'auto' });
+                    }
+                }, 350);
+
                 focusCardPending.current = null;
                 if (onFocusCardHandled) onFocusCardHandled();
                 return;
