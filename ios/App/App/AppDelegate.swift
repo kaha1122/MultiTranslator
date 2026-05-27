@@ -29,18 +29,22 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let bgColor = UIColor(red: 248/255.0, green: 250/255.0, blue: 252/255.0, alpha: 1.0) // #f8fafc
         window?.backgroundColor = bgColor
 
-        // 앱 시작 시 AVAudioSession을 블루투스 허용 모드로 미리 설정.
-        // 이렇게 해야 WebView의 getUserMedia 호출 전에 iOS가
-        // 에어팟 등 BT 마이크를 라우팅 후보로 인식합니다.
-        // 주의: setActive(true)는 여기서 호출하지 않음 — 실제 녹음 시점에 활성화
+        // [v1.5.67 idle 발열 절감] 앱 시작 카테고리를 .playback으로 설정.
+        // 이전(v1.5.66까지): .playAndRecord → idle 시에도 mediaserverd가 input subsystem을
+        //   active 상태로 유지하여 iPhone 15 Pro / iOS 26.4.2에서 앱 켜놓기만 해도 발열.
+        // 현재: .playback + .allowBluetoothA2DP — TTS/효과음 즉시 재생 가능, BT A2DP 출력 라우팅
+        //   자동 처리, mediaserverd input wake 차단. 마이크 라우팅(.playAndRecord + .allowBluetoothHFP)은
+        //   BluetoothAudioPlugin.activateAudioSession이 녹음 직전에 전환, 녹음 종료 후
+        //   deactivateAudioSession이 .playback으로 복귀.
+        // 주의: setActive(true)는 호출하지 않음 — 실제 녹음 시점에 plugin이 활성화.
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(
-                .playAndRecord,
+                .playback,
                 mode: .default,
-                options: [.allowBluetoothHFP, .allowBluetoothA2DP, .defaultToSpeaker]
+                options: [.allowBluetoothA2DP]
             )
-            print("[AppDelegate] AVAudioSession category set for Bluetooth")
+            print("[AppDelegate] AVAudioSession category set to .playback (idle thermal mode)")
         } catch {
             print("[AppDelegate] Failed to set AVAudioSession category: \(error)")
         }

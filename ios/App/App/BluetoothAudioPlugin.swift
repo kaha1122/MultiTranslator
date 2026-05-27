@@ -15,6 +15,7 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "startBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activateAudioSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "deactivateAudioSession", returnType: CAPPluginReturnPromise),
     ]
 
     /// 블루투스 오디오 장치가 연결되어 있는지 확인
@@ -98,6 +99,36 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             call.resolve(["success": true])
         } catch {
             print("[BluetoothAudio] Failed to activate AVAudioSession: \(error)")
+            call.resolve(["success": false])
+        }
+    }
+
+    /// [v1.5.67 idle 발열 절감] 녹음 종료 후 AVAudioSession을 .playback으로 복귀.
+    /// stopBluetoothSco는 BT 사용자(btScoActiveRef=true)일 때만 호출되어 내장 마이크
+    /// 사용자에겐 .playAndRecord 카테고리가 잔류 → idle 시 mediaserverd input subsystem
+    /// 지속 가동 → 발열. 이 메소드는 BT 무관 항상 호출되어 .playback으로 강제 복귀.
+    ///
+    /// 주의: setActive(false)는 호출하지 않음.
+    ///   - 과거 사례(BluetoothAudioPlugin.swift:62-63 주석): setActive(false)로 세션을
+    ///     완전히 끄면 에어팟 출력 라우트가 리셋되어 TTS가 스피커로 튀는 회귀 발생.
+    ///   - 카테고리만 .playback으로 전환해도 mediaserverd가 input subsystem을 깨우지 않아
+    ///     idle 발열 해소 효과는 동일.
+    @objc func deactivateAudioSession(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            // preferredInput 초기화 — BT 마이크 강제 선택 해제 (BT 사용자가 끊고 내장으로
+            // 전환한 경우에도 잔류 선호도 제거)
+            try session.setPreferredInput(nil)
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+            print("[BluetoothAudio] AVAudioSession switched to .playback (idle thermal mode)")
+            call.resolve(["success": true])
+        } catch {
+            print("[BluetoothAudio] Failed to deactivate AVAudioSession: \(error)")
+            // 실패해도 치명적이지 않으므로 resolve (호출 측에서 무시)
             call.resolve(["success": false])
         }
     }

@@ -94,6 +94,12 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
     const startRecording = useCallback(async () => {
         setLastError(null);
         setMicDenied(false);
+
+        // [v1.5.67] catch 경로 cleanup용 — stream 호이스트. v1.5.65에서 useAudioRecorder만
+        // 패치했고 여기엔 누락된 동일 패턴. iOS AVAudioSession이 .playAndRecord로 잠긴 채
+        // 유지되어 발열 → 명시적 cleanup 필요.
+        let stream = null;
+
         try {
             // ===== 1) 권한 확보 (네이티브) =====
             if (Capacitor.isNativePlatform()) {
@@ -128,7 +134,7 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
             // 동일하게 MediaRecorder 통합. iOS WKWebView도 MediaRecorder 정상 지원.
             isNativeRef.current = false; // stop 시 MediaRecorder 경로로 처리
 
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
             // iOS Safari/WKWebView는 mp4 우선, 그 외는 webm
             const mimeType = MediaRecorder.isTypeSupported('audio/webm')
@@ -142,6 +148,12 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
             mr.ondataavailable = (e) => { if (e.data && e.data.size > 0) audioChunksRef.current.push(e.data); };
             mr.onstop = async () => {
                 try { stream.getTracks().forEach(t => t.stop()); } catch (_) { /* noop */ }
+                // [iOS v1.5.67 idle 발열 절감] AVAudioSession을 .playback으로 복귀.
+                // useAudioRecorder의 onstop과 동일 이유 — Free Talking은 한 세션에 녹음을
+                // 수십 번 반복하므로 매 stop 마다 복귀.
+                if (Capacitor.getPlatform() === 'ios') {
+                    BluetoothAudio.deactivateAudioSession?.().catch(() => {});
+                }
                 const blob = new Blob(audioChunksRef.current, { type: mr.mimeType || 'audio/webm' });
                 await sendToSTT(blob);
             };
@@ -150,6 +162,15 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
             setIsRecording(true);
         } catch (e) {
             console.error('[useFreeTalkRecorder] startRecording failed:', e?.message || e);
+            // [v1.5.67] 에러 경로 cleanup — onstop이 발화하지 않으므로 직접 정리.
+            // stream tracks를 stop하지 않으면 iOS AVAudioSession이 .playAndRecord로 잠긴 채
+            // 유지되어 idle 발열.
+            if (stream) {
+                try { stream.getTracks().forEach(t => t.stop()); } catch (_) { /* noop */ }
+            }
+            if (Capacitor.getPlatform() === 'ios') {
+                BluetoothAudio.deactivateAudioSession?.().catch(() => {});
+            }
             const msg = String(e?.message || e);
             if (msg.includes('Permission') || msg.includes('NotAllowed') || msg.includes('denied')) {
                 setMicDenied(true);

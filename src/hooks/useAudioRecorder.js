@@ -291,6 +291,13 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     BluetoothAudio.stopBluetoothSco().catch(e => console.warn('BT SCO 종료 실패:', e));
                     btScoActiveRef.current = false;
                 }
+                // [iOS v1.5.67 idle 발열 절감] AVAudioSession을 .playback으로 복귀.
+                // 내장 마이크 사용자는 stopBluetoothSco가 호출되지 않아 .playAndRecord가
+                // 잔류 → idle mediaserverd 가동 → 발열. iOS 한정으로 강제 복귀.
+                // 옵셔널 체이닝: 구 IPA(deactivateAudioSession 메소드 없음) + 신 JS 콤보에서 silent fail.
+                if (Capacitor.getPlatform() === 'ios') {
+                    BluetoothAudio.deactivateAudioSession?.().catch(() => {});
+                }
                 // --- [신규 끝] ---
             };
 
@@ -318,6 +325,10 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             if (btScoActiveRef.current) {
                 BluetoothAudio.stopBluetoothSco().catch(() => {});
                 btScoActiveRef.current = false;
+            }
+            // [iOS v1.5.67] 에러 경로에서도 .playback으로 복귀 (onstop 동일 이유)
+            if (Capacitor.getPlatform() === 'ios') {
+                BluetoothAudio.deactivateAudioSession?.().catch(() => {});
             }
             // 네이티브: 설정에서 마이크 허용 안내 / 웹: 브라우저 설정 안내
             if (Capacitor.isNativePlatform()) {
