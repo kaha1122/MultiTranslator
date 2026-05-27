@@ -153,3 +153,23 @@ if (!isNative && 'serviceWorker' in navigator && import.meta.env.PROD) {
       });
   });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [idle 발열 절감 v1.5.66] 앱 숨김 시 무한 CSS animation 일시정지
+//
+// html[data-app-hidden="1"] 룰(index.css)이 animation-play-state: paused 처리.
+// document.visibilitychange는 web/PWA 표준이지만 iOS WKWebView에서 신뢰성 낮아
+// Capacitor App.appStateChange 시그널도 함께 등록.
+// ─────────────────────────────────────────────────────────────────────────────
+const setAppHidden = (hidden) => {
+  document.documentElement.dataset.appHidden = hidden ? '1' : '0';
+};
+setAppHidden(document.visibilityState === 'hidden');
+document.addEventListener('visibilitychange', () => {
+  setAppHidden(document.visibilityState === 'hidden');
+});
+if (isNative) {
+  import('@capacitor/app').then(({ App }) => {
+    App.addListener('appStateChange', ({ isActive }) => setAppHidden(!isActive));
+  }).catch(() => { /* plugin 미가용 시 visibilitychange만 동작 */ });
+}

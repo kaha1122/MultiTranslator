@@ -71,3 +71,15 @@ button:focus-visible {
   from { opacity: 0; transform: translateX(-50%) translateY(10px); }
   to   { opacity: 1; transform: translateX(-50%) translateY(0); }
 }
+
+/* [idle 발열 절감 v1.5.66] 앱 백그라운드/숨김 상태일 때 모든 CSS animation 일시정지.
+ * Why: 무한 spin/pulse/falling 애니메이션은 화면 visible 동안 GPU compositor를 지속 가동시켜
+ *      iOS WKWebView idle 발열의 주요 기여 요인. main.jsx의 visibilitychange + Capacitor
+ *      appStateChange 핸들러가 html[data-app-hidden] 토글.
+ * transition은 paused 시키지 않음 — foreground 복귀 시 UI 깜빡임 방지.
+ */
+html[data-app-hidden="1"] *,
+html[data-app-hidden="1"] *::before,
+html[data-app-hidden="1"] *::after {
+  animation-play-state: paused !important;
+}

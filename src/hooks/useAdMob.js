@@ -289,4 +289,41 @@ export const useAdMob = (tier) => {
             }
         };
     }, [isPaid, isReady]);
+
+    // [idle 발열 절감 v1.5.66] 백그라운드 진입 시 배너 숨김.
+    // Why: AdMob 배너는 기본 ~60초마다 자동 갱신 — 백그라운드에서도 네트워크 fetch +
+    //   광고 렌더링 + 추적 SDK 활동이 지속되어 idle 발열의 주요 기여 요인.
+    // hideBanner는 native view를 destroy하지 않고 가시성만 토글 → resumeBanner로 즉시 복원 가능.
+    // Pro/Premium은 처음부터 배너 미표시 → no-op.
+    useEffect(() => {
+        if (!isNativePlatform()) return;
+        if (!isReady || isPaid) return;
+        let handle = null;
+        let cancelled = false;
+        (async () => {
+            try {
+                const { App } = await import('@capacitor/app');
+                const h = await App.addListener('appStateChange', async ({ isActive }) => {
+                    if (!_adMob) return;
+                    try {
+                        if (isActive) {
+                            if (_bannerShowing) await _adMob.resumeBanner?.();
+                        } else {
+                            await _adMob.hideBanner?.();
+                        }
+                    } catch (e) {
+                        console.warn('[AdMob] background toggle failed:', e?.message);
+                    }
+                });
+                if (cancelled) { h.remove?.(); return; }
+                handle = h;
+            } catch (e) {
+                console.warn('[AdMob] appStateChange listener setup failed:', e?.message);
+            }
+        })();
+        return () => {
+            cancelled = true;
+            handle?.remove?.();
+        };
+    }, [isPaid, isReady]);
 };
