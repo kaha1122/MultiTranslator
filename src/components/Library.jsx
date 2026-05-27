@@ -76,29 +76,39 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     // 정책: 동일 세션 내 필터 자동 reset 없음 — 사용자가 건 필터는 그대로 보존.
     //   새 카드가 사용자 필터에 안 걸리면 DOM 미생성 → 스크롤 SKIP (의도된 동작).
     const focusCardPending = useRef(null);
+    const scrollAttemptedFor = useRef(null); // 같은 cardId에 시도가 이미 시작됐는지 추적
     useEffect(() => {
         if (!focusCardId) return;
         focusCardPending.current = focusCardId;
+        scrollAttemptedFor.current = null; // 새 cardId 진입 시 시도 자격 회복
     }, [focusCardId]);
 
     useEffect(() => {
         if (!focusCardPending.current || savedCards.length === 0) return;
         if (progressPopupOpen) return; // 팝업이 열려 있으면 스크롤 대기
         const targetId = focusCardPending.current;
-        // 팝업이 막 닫혔다면 modal unmount + layout shift 안정화 대기.
-        // smooth scrollIntoView는 layout 재계산 중에 호출되면 iOS WKWebView 등에서 무시됨.
-        const t = setTimeout(() => {
-            if (focusCardPending.current !== targetId) return; // stale 가드
+        if (scrollAttemptedFor.current === targetId) return; // 이미 시도 시작 — 중복 등록 방지
+        scrollAttemptedFor.current = targetId;
+
+        // cleanup으로 timer cancel하지 않음. effect 재발화(예: Firestore serverTimestamp confirm
+        // 콜백으로 setSavedCards 재호출)가 진행 중인 timer를 끊어버리는 race를 차단.
+        // 대신 stale 가드 + 중복 시도 차단 ref + DOM retry로 멱등성 확보.
+        let attempt = 0;
+        const tryScroll = () => {
+            if (focusCardPending.current !== targetId) return; // 새 별표 들어와 cardId 바뀐 경우
             const el = document.getElementById(`library-card-${targetId}`);
-            if (!el) return;
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            el.classList.add('library-card-highlight');
-            setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
-            focusCardPending.current = null;
-            if (onFocusCardHandled) onFocusCardHandled();
-        }, 120);
-        return () => clearTimeout(t);
-    }, [savedCards, progressPopupOpen, focusCardId]); // focusCardId: setSavedCards가 먼저 commit돼도 재발화
+            if (el && el.offsetParent !== null) {
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el.classList.add('library-card-highlight');
+                setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
+                focusCardPending.current = null;
+                if (onFocusCardHandled) onFocusCardHandled();
+                return;
+            }
+            if (attempt++ < 10) setTimeout(tryScroll, 100); // 최대 ~1.1초 retry
+        };
+        setTimeout(tryScroll, 120); // 팝업 closing layout shift 안정화 대기
+    }, [savedCards, progressPopupOpen, focusCardId]);
 
     // (Back키는 App.jsx에서 전역 관리 — header Back 버튼으로 복귀)
 
