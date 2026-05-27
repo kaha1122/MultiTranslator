@@ -142,7 +142,9 @@ function setOffset(height) {
 }
 
 export const useAdMob = (tier) => {
-    const isPaid = tier === 'pro' || tier === 'premium';
+    // [v1.5.70] admin tier도 광고 hide. 운영 룰 "admin = no ads"가 코드에 누락되어 있던 것 보완.
+    // Why: admin은 결제 안 했지만 광고 노출 안 시키는 게 의도된 운영 (Pro/Premium과 동일 ad-free 그룹).
+    const isPaid = tier === 'pro' || tier === 'premium' || tier === 'admin';
     // ⚠ 콜드스타트 미동기화 가드: tier가 null/undefined면 profile 미로드 상태로 간주.
     //   profile이 null일 때 AuthContext가 'trial' 폴백을 주면 Pro 유저에게 ATT 프롬프트 +
     //   배너 깜빡임이 발생함. App.jsx에서 `useAdMob(profile ? tier : null)` 로 호출.

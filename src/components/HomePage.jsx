@@ -133,7 +133,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                                 <motion.span
                                                     className="home-folder-emoji"
                                                     animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
-                                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                                    transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
                                                 </motion.span>
@@ -199,7 +199,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                                 <motion.span
                                                     className="home-folder-emoji"
                                                     animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
-                                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                                    transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
                                                 </motion.span>
