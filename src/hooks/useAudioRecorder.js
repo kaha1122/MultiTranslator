@@ -82,6 +82,10 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             return;
         }
 
+        // catch 경로에서도 cleanup 가능하도록 try 밖으로 호이스트
+        // Why: AudioContext / 100ms setInterval / mic stream 미정리 시 iOS AVAudioSession 잠금 → 발열
+        let stream = null;
+
         try {
             // 네이티브 환경: 마이크 하드웨어 권한 확보
             if (Capacitor.isNativePlatform()) {
@@ -144,7 +148,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             // 네이티브: 위에서 BluetoothAudio 플러그인이 이미 BT 라우팅을 설정했으므로
             //           getUserMedia({ audio: true })만으로 충분
             let isBtConnected = btScoActiveRef.current; // 네이티브 BT 상태
-            let stream;
+            // stream은 startRecording 상단에서 호이스트됨 (catch 경로 cleanup용)
             if (!Capacitor.isNativePlatform()) {
                 try {
                     // 1단계: 기본 마이크로 stream 열기 (권한 팝업 + 라벨 접근 확보)
@@ -296,6 +300,20 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access error:", err);
+            // [발열 수정] 에러 경로에서 onstop이 발화하지 않으므로 직접 cleanup
+            // 침묵 감지 setInterval(100ms) / AudioContext / mic stream 미정리 시
+            // iOS WKWebView의 AVAudioSession이 playAndRecord로 잠긴 채 유지 → 발열
+            if (silenceAnimationFrameRef.current) {
+                clearInterval(silenceAnimationFrameRef.current);
+                silenceAnimationFrameRef.current = null;
+            }
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close().catch(() => {});
+                audioContextRef.current = null;
+            }
+            if (stream) {
+                try { stream.getTracks().forEach(t => t.stop()); } catch { /* noop */ }
+            }
             // 블루투스 SCO가 열린 상태에서 에러 발생 시 정리
             if (btScoActiveRef.current) {
                 BluetoothAudio.stopBluetoothSco().catch(() => {});

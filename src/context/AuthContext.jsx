@@ -262,14 +262,23 @@ export const AuthProvider = ({ children }) => {
     //   - 실패 시 null 반환 → 호출 측에서 alert 등 처리
     const ensureAnonymousUser = async () => {
         if (auth.currentUser) return auth.currentUser;
-        // 진행 중 — onAuthStateChanged가 user를 채울 때까지 대기
+        // 진행 중 — onAuthStateChanged listener로 완료 대기 (최대 10초)
+        // Why: 50ms setInterval 폴링은 iOS 26 WKWebView에서 P-코어 wake 빈도가 높아 발열 유발
         if (anonSignInInProgress) {
             return new Promise((resolve) => {
-                const start = Date.now();
-                const tick = setInterval(() => {
-                    if (auth.currentUser) { clearInterval(tick); resolve(auth.currentUser); }
-                    else if (Date.now() - start > 10000) { clearInterval(tick); resolve(null); }
-                }, 50);
+                let settled = false;
+                let timer;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    unsubscribe();
+                    resolve(val);
+                };
+                const unsubscribe = onAuthStateChanged(auth, (u) => {
+                    if (u) finish(u);
+                });
+                timer = setTimeout(() => finish(auth.currentUser || null), 10000);
             });
         }
         anonSignInInProgress = true;
