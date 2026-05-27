@@ -154,25 +154,62 @@ intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment.
 **🔴 Category-aware interpretation — APPLY BEFORE step ① below**:
 ${isCustom ? `
 ⚠️ **CUSTOM INPUT MODE (isCustom=true) — IGNORE the stated category="${category}"**:
-The learner typed "${scene}" as FREE-FORM custom input. The category value
-above is just a UI default and may NOT match the actual input. **Trust the
-scene TEXT itself**, interpreted per Step 0 in its native language:
-  - If "${scene}" is clearly a PLACE (e.g. "Starbucks", "공항 라운지",
-    "사우나", "kafe gần nhà") → treat as locations, use it as the setting.
-  - If "${scene}" is clearly a SITUATION / ACTION / CONVERSATION TYPE
-    (e.g. "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу",
-    "complain about delivery") → treat as situations: pick a realistic
-    setting where this exchange naturally occurs (do NOT force-fit into
-    a random unrelated location like airport/hotel/restaurant).
-  - If "${scene}" is abstract/poetic/fantastical (e.g. "dưới biển" /
-    "under the sea", "in a dream", "우주에서") → interpret as a CREATIVE
-    SCENE: pick a plausible realistic adaptation (e.g. snorkeling tour
-    guide on a Vietnam beach for "dưới biển") and proceed.
-  - If ambiguous, lean toward the most natural everyday interpretation
-    of the text in the learner's native language ("${sourceLangName}").
-Use your decision as the source of truth and proceed to step ① below.
-(The i18n-key locations/situations subsections below DO NOT apply in
-custom mode.)
+The learner typed "${scene}" as FREE-FORM custom input. The category value above
+is just a UI default and may NOT match the actual input. **Trust the scene TEXT
+itself**, interpreted per Step 0 in its native language, and classify it into
+ONE of the 4 branches below. Each branch defines BOTH the setting choice AND
+how the dialogue's TOPIC connects to the input text — these are different per
+branch and MUST be followed precisely.
+
+  ─── BRANCH A — PLACE (입력이 명백한 장소) ───
+  Examples: "Starbucks", "공항 라운지", "사우나", "kafe gần nhà", "은행 창구"
+  - setting = 입력 장소 그 자체 (사용)
+  - 발화 topic = 그 장소에서 일어나는 자연 transaction (주문/문의/요청/예약)
+  - ✅ Good: "Starbucks" → "라떼 톨 사이즈 주세요, 휘핑은 빼주시고요"
+  - ❌ Bad: "Starbucks" → 보험 청구, 자기소개 같은 그 장소와 무관한 transaction
+  - 💡 Topic 연결: 장소 자체가 topic. 직접 단어 인용은 불필요.
+
+  ─── BRANCH B — SITUATION (입력이 명확한 대화 행위/액션) ───
+  Examples: "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу",
+            "complain about delivery", "환불 요청", "길 묻기"
+  - setting = 그 행위가 자연스러운 장소 모델 선택 (사무실 첫날 / 병원 접수 / 거리)
+  - 발화 topic = 입력 행위 자체를 수행 (행위 = topic)
+  - ✅ Good: "자기소개" → "처음 뵙겠습니다, 신입사원 김민수입니다, 잘 부탁드립니다"
+  - ❌ Bad: "자기소개" → 카페에서 커피 주문 (행위로 도망 → topic 위반)
+  - 💡 Topic 연결: 행위를 직접 수행. "지금 자기소개를 하겠습니다" 같은 메타 발언 ❌.
+
+  ─── BRANCH C — TOPIC (입력이 대화 주제 — 명사/주제어) ───
+  Examples: "하루 일과", "Lịch trình hàng ngày", "어제 본 영화", "주말 계획",
+            "취미", "여행 추억", "최근 읽은 책", "운동"
+  - setting = 그 주제를 자연스럽게 다룰 친밀한 장소 (친구 카페 / 가족 식탁 /
+              동료 점심 / 운동 후 휴게실) — transaction 장소(은행/공항) 회피
+  - 발화 topic = 입력 주제를 직접 대화 주제로 다룸 (주제 = topic)
+  - ✅ Good: "하루 일과" → "오늘 어땠어? 아침엔 뭐 하고?", "회사 가기 전에
+            보통 뭐 해?"
+  - ✅ Good: "주말 계획" → "이번 주말에 뭐 할 거야? 나는 한강 가려고"
+  - ❌ Bad: "하루 일과" → 카페에서 "주스 한 잔 주세요" (transaction 도망 →
+            입력 주제 사라짐. 직전 사용자 사고 사례 정확히 이 패턴)
+  - ❌ Bad: "하루 일과" → 자기소개 (다른 행위로 도망)
+  - 💡 Topic 연결: 입력 주제를 firstUserTurn 의 의미 중심으로. 그 주제를 묻거나
+                  공유하거나 비교하는 발화여야 함.
+
+  ─── BRANCH D — ABSTRACT (입력이 추상/판타지/은유적) ───
+  Examples: "dưới biển" / "under the sea", "in a dream", "우주에서",
+            "구름 위에서", "옛날옛적에"
+  - setting = 입력을 plausible 현실 adaptation (스노클링 가이드 + 베트남 해변 /
+              명상 수업 + 요가원 / 별보기 모임 + 천문대)
+  - 발화 topic = adaptation 시나리오의 자연 transaction
+  - ✅ Good: "dưới biển" → 스노클링 가이드 + "물이 차갑지 않을까요?"
+  - ❌ Bad: "dưới biển" → "바닷속이네요" (입력 단어 직접 인용 = adaptation 깨짐)
+  - 💡 Topic 연결: adaptation 자체가 topic. 입력 단어 직접 인용은 어색해서 X.
+
+  ─── 분류 모호 시 (애매한 경계 케이스) ───
+  - PLACE vs TOPIC: 입력이 "카페에서 데이트" → BRANCH B/C 혼합 — 둘 다 가능, TOPIC 우선 (주제 보존)
+  - SITUATION vs TOPIC: 입력이 "여행 이야기" → 행위(이야기)인가 주제(여행)인가?
+    동사형/-기/-함 끝 → SITUATION, 명사/주제어 단독 → TOPIC
+  - 정말 모호하면 학습자 모국어 ("${sourceLangName}") 일상 대화에서 가장 자연스러운 해석으로
+
+분류 결정 후 step ① 진행. (i18n-key locations/situations subsections 는 custom 모드에서 미적용)
 ` : `
 The string "${scene}" means different things depending on category="${category}":
 
@@ -362,7 +399,19 @@ ${avoidBlock}
 ---
 
 ### [Strict Rules]
-1. **Speaker Identity**: firstUserTurn = the LEARNER speaking (initiation). firstAiReply = the OTHER PERSON answering. Never swap.
+${isCustom ? `0. **CUSTOM INPUT topic preservation — CRITICAL self-check (BRANCH 룰 준수)**:
+   firstUserTurn draft 후 다음 self-check 통과 필수 (위반 시 redraft):
+   - Phase 0 CUSTOM INPUT MODE 에서 어떤 BRANCH (A=PLACE / B=SITUATION / C=TOPIC /
+     D=ABSTRACT) 로 분류했는지 mentally state.
+   - 그 BRANCH 의 "Topic 연결" 룰을 firstUserTurn 이 정확히 따르는가?
+     · BRANCH A (PLACE): 발화가 그 장소의 자연 transaction 인가?
+     · BRANCH B (SITUATION): 발화가 그 행위 자체를 수행하는가?
+     · BRANCH C (TOPIC): 발화의 의미 중심이 입력 주제를 직접 다루는가?
+              (transaction 으로 도망 X. 예: "하루 일과" 입력에 "주스 주문" = 위반)
+     · BRANCH D (ABSTRACT): 발화가 adaptation 시나리오의 transaction 인가?
+   - 위반 사례: BRANCH C 인데 transaction 발화 / BRANCH B 인데 무관 주제 /
+     BRANCH A 인데 그 장소와 무관한 행위 → 모두 redraft.
+` : ''}1. **Speaker Identity**: firstUserTurn = the LEARNER speaking (initiation). firstAiReply = the OTHER PERSON answering. Never swap.
 2. **Coherence**: firstAiReply MUST logically and naturally respond to firstUserTurn (same micro-situation, same emotional register, direct answer/follow-up).
 3. **Variety**: ${difficulty === 'basic' ? 'Textbook-style standard phrases are PREFERRED. The learner needs predictable, recognizable patterns. Do NOT use slang or colloquialisms.' : 'Avoid generic textbook phrases. Reflect 2026 native everyday speech.'}
 4. **Grammar & Length**: Strictly follow the Difficulty Guidelines for both turns.
