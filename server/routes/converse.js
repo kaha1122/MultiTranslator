@@ -132,8 +132,11 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
 
     // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
     // 기존 attemptOnce inline 로직은 shared helper 로 이전됨.
+    // temperature 1.3 → 1.0 (사용자 결정): BRANCH 룰(특히 BRANCH C TOPIC) 준수 ↑
+    // + placeholder/언어 swap 위반 ↓. 시나리오 다양성은 Anti-Duplication 의
+    // dimensions rotation 이 보완.
     const result = await callGeminiJson(prompt, geminiKey, {
-        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        genConfig: { temperature: 1.0, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
         validate: (p) => p?.intro?.text && p?.firstUserTurn?.sentence && p?.firstAiReply?.sentence,
         label: 'ConverseStart',
     });
