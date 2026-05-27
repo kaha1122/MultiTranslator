@@ -84,14 +84,20 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     useEffect(() => {
         if (!focusCardPending.current || savedCards.length === 0) return;
         if (progressPopupOpen) return; // 팝업이 열려 있으면 스크롤 대기
-        const el = document.getElementById(`library-card-${focusCardPending.current}`);
-        if (el) {
+        const targetId = focusCardPending.current;
+        // 팝업이 막 닫혔다면 modal unmount + layout shift 안정화 대기.
+        // smooth scrollIntoView는 layout 재계산 중에 호출되면 iOS WKWebView 등에서 무시됨.
+        const t = setTimeout(() => {
+            if (focusCardPending.current !== targetId) return; // stale 가드
+            const el = document.getElementById(`library-card-${targetId}`);
+            if (!el) return;
             el.scrollIntoView({ behavior: 'smooth', block: 'start' });
             el.classList.add('library-card-highlight');
             setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
             focusCardPending.current = null;
             if (onFocusCardHandled) onFocusCardHandled();
-        }
+        }, 120);
+        return () => clearTimeout(t);
     }, [savedCards, progressPopupOpen, focusCardId]); // focusCardId: setSavedCards가 먼저 commit돼도 재발화
 
     // (Back키는 App.jsx에서 전역 관리 — header Back 버튼으로 복귀)
