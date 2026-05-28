@@ -291,12 +291,19 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     BluetoothAudio.stopBluetoothSco().catch(e => console.warn('BT SCO 종료 실패:', e));
                     btScoActiveRef.current = false;
                 }
-                // [iOS v1.5.67 idle 발열 절감] AVAudioSession을 .playback으로 복귀.
-                // 내장 마이크 사용자는 stopBluetoothSco가 호출되지 않아 .playAndRecord가
-                // 잔류 → idle mediaserverd 가동 → 발열. iOS 한정으로 강제 복귀.
-                // 옵셔널 체이닝: 구 IPA(deactivateAudioSession 메소드 없음) + 신 JS 콤보에서 silent fail.
+                // [iOS v1.5.74 thermal-ios Pattern 1] 10s idle debounce.
+                // 즉시 카테고리만 .playback 전환(input subsystem 휴면) + 10s 후 setActive(false)
+                // 예약 → mediaserverd 완전 해제(발열 origin 차단). 10s 내 재녹음 시 activate가
+                // 예약 cancel → BT(에어팟) 라우트 보존.
+                //
+                // 적용 컨텍스트: 발음 카드(TranslationCard/ScenePractice/VocabTab) 전용.
+                // Why 10s — TTS 듣고 STT 발음 연습 반복 흐름에서 10초 침묵은 "잠시 사용 중단"의
+                // 명확한 신호. Free Talking 모달은 한 세션 내 10초+ 침묵이 자연스러우므로
+                // 본 메소드 미사용, 모달 닫힘에 endAudioSession(Pattern 4) 호출.
+                //
+                // 옵셔널 체이닝: 구 IPA(scheduleEndAudioSession 미존재) + 신 JS 콤보 silent fail.
                 if (Capacitor.getPlatform() === 'ios') {
-                    BluetoothAudio.deactivateAudioSession?.().catch(() => {});
+                    BluetoothAudio.scheduleEndAudioSession?.({ delayMs: 10000 }).catch(() => {});
                 }
                 // --- [신규 끝] ---
             };
@@ -326,9 +333,9 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                 BluetoothAudio.stopBluetoothSco().catch(() => {});
                 btScoActiveRef.current = false;
             }
-            // [iOS v1.5.67] 에러 경로에서도 .playback으로 복귀 (onstop 동일 이유)
+            // [iOS v1.5.74 Pattern 1] 에러 경로에서도 idle debounce 적용 (onstop 동일 이유)
             if (Capacitor.getPlatform() === 'ios') {
-                BluetoothAudio.deactivateAudioSession?.().catch(() => {});
+                BluetoothAudio.scheduleEndAudioSession?.({ delayMs: 10000 }).catch(() => {});
             }
             // 네이티브: 설정에서 마이크 허용 안내 / 웹: 브라우저 설정 안내
             if (Capacitor.isNativePlatform()) {
