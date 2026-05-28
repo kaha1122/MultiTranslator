@@ -152,3 +152,38 @@
     transition: transform 0.15s;
 }
 .streak-status-cta:active { transform: scale(0.97); }
+
+/* ─────────────────────────────────────────────────────────────────
+ * [v1.5.76+ thermal-ios] 발열 contributor 격리 가드
+ *
+ * 사용자 보고(2026-05-29): v1.5.75 IPA 홈 idle 5분에 thermal throttling →
+ * 오디오 강제 중지. mobile-production-guardian 분석으로 본 팝업이 홈 진입
+ * ~4~5초 후 자동 오픈되며, 전체화면 backdrop-filter:blur(6px) + 무한
+ * fall/pulse 애니메이션이 iOS WKWebView GPU compositor를 매 프레임 가동시켜
+ * major contributor로 확인됨. 사용자가 Streak Popup이 안 뜬 날 격리
+ * 테스트 결과 thermal throttling 미발생 → 가설 확정.
+ *
+ * 3중 가드:
+ *  - prefers-reduced-motion: iOS 손쉬운사용 "동작 줄이기" 존중 (Apple HIG)
+ *  - prefers-reduced-transparency: iOS 손쉬운사용 "투명도 줄이기" 존중
+ *  - html.platform-native (Capacitor iOS/Android WebView 공통 적용 클래스):
+ *    네이티브에서는 사용자 토글과 무관하게 GPU 부하 source 제거 (발열 origin 차단)
+ * ──────────────────────────────────────────────────────────────── */
+@media (prefers-reduced-motion: reduce) {
+    .streak-status-piece { animation: none; opacity: 0; }
+    .streak-status-icon { animation: none; }
+}
+@media (prefers-reduced-transparency: reduce) {
+    .streak-status-overlay {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+        background: rgba(15, 23, 42, 0.85);
+    }
+}
+html.platform-native .streak-status-overlay {
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+    background: rgba(15, 23, 42, 0.85);
+}
+html.platform-native .streak-status-piece { animation: none; opacity: 0; }
+html.platform-native .streak-status-icon { animation: none; }
