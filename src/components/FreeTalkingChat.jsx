@@ -70,6 +70,11 @@ export default function FreeTalkingChat({
     const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
     // Learning Tip 코칭 TTS 로딩 중인 user_free 메시지 id (스피너 노출용)
     const [learningTipLoadingId, setLearningTipLoadingId] = useState(null);
+    // [v1.5.74+ thermal-ios] handleClose에서 endAudioSession이 fire되기 전에 진행 중인
+    // Learning Tip audio를 명시적으로 정지하기 위한 ref. ChatBubble의 TTS는 setPlaybackIdx(-1)
+    // → useTTSSyncedReveal effect cleanup으로 자동 정지되지만, Learning Tip의 new Audio()는
+    // hook 외부 로컬 변수라 외부에서 접근할 수단이 없어 ref로 추적한다.
+    const learningTipAudioRef = useRef(null);
     // 음성 미지원 (sourceLang, targetLang) 조합 시 텍스트만 보여주는 popup
     const [aiTipPopup, setAiTipPopup] = useState({ open: false, text: '' });
 
@@ -186,6 +191,17 @@ export default function FreeTalkingChat({
     };
 
     const handleClose = () => {
+        // [v1.5.74+ thermal-ios] endAudioSession(useEffect [open]의 닫힘 분기에서 fire)이
+        // setActive(false)를 호출하기 전에 진행 중인 TTS를 명시적으로 정지한다.
+        // iOS에서 재생 중인 new Audio()가 setActive(false)와 겹치면 갑작스러운 끊김 /
+        // error 이벤트가 발생할 수 있어, 모달 닫힘 흐름을 매끄럽게 만들고 race를 차단.
+        //
+        // ChatBubble TTS: setPlaybackIdx(-1) → shouldAutoplay=false →
+        //   useTTSSyncedReveal의 effect cleanup(stop()) 자동 호출 (useTTSSyncedReveal.js:160-162).
+        // Learning Tip audio: hook 외부의 new Audio()라 learningTipAudioRef로 직접 pause.
+        setPlaybackIdx(-1);
+        try { learningTipAudioRef.current?.pause(); } catch (e) { /* noop */ }
+        learningTipAudioRef.current = null;
         endSession('user');
         onClose?.();
     };
@@ -240,11 +256,17 @@ export default function FreeTalkingChat({
             const blob = await res.blob();
             url = URL.createObjectURL(blob);
             const audio = new Audio(url);
+            // [v1.5.74+ thermal-ios] handleClose에서 정지할 수 있도록 ref로 추적.
+            learningTipAudioRef.current = audio;
             await new Promise((resolve) => {
                 audio.onended = resolve;
                 audio.onerror = resolve;  // graceful — finally 에서 cleanup
                 audio.play().catch(resolve);
             });
+            // 정상 종료 — ref가 이 audio를 가리키고 있을 때만 해제 (다음 호출로 교체된 경우 보호)
+            if (learningTipAudioRef.current === audio) {
+                learningTipAudioRef.current = null;
+            }
         } catch (e) {
             console.warn('[FreeTalkingChat] coach-tts failed, falling back to text popup:', e?.message);
             // 네트워크 에러 등 → 텍스트 popup fallback

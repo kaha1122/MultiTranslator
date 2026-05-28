@@ -225,9 +225,26 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             // 카테고리 전환 실패해도 예약은 진행 — best-effort
         }
 
-        // 2. 기존 예약이 있으면 cancel (debounce reset) + 새 timer 등록
+        // 2. 기존 예약이 있으면 cancel (debounce reset) + 새 timer 등록.
+        //
+        // [v1.5.74+] DispatchWorkItem cancel race 방어:
+        //   cancelPendingDeactivate()는 Capacitor serial queue에서 호출되지만, 실제 work
+        //   클로저는 global(.background) 큐에서 실행된다. cancel()이 호출된 시점에 이미
+        //   background 큐가 work 디스패치를 시작했다면 cancel은 무효가 되어 setActive(false)
+        //   가 새 activateAudioSession 직후에 fire되는 race window가 존재한다.
+        //   증상: setActive(true) 완료 → 본 work이 곧바로 setActive(false)로 덮어씀 →
+        //   세션이 비활성으로 굳어 다음 녹음에서 오디오 캡처 실패("발음 인식 안 됨").
+        //
+        //   해결: work 클로저 내부에서 자기 자신의 isCancelled를 weak 캡처로 확인.
+        //   var로 선언 후 할당 → 클로저가 [weak work]로 자기 참조. work가 이미 cancel된
+        //   상태로 실행 시작되면 즉시 return.
         cancelPendingDeactivate()
-        let work = DispatchWorkItem {
+        var work: DispatchWorkItem!
+        work = DispatchWorkItem { [weak work] in
+            guard let w = work, !w.isCancelled else {
+                print("[BluetoothAudio] scheduled deactivate cancelled mid-flight — race avoided")
+                return
+            }
             do {
                 try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
                 print("[BluetoothAudio] scheduled deactivate FIRED (Active=false) after \(delayMs)ms idle")
