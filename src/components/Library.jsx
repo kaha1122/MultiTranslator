@@ -54,11 +54,22 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source' | 'difficulty'
 
     // ── Firebase 실시간 구독 ──
-    // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 모든 savedCards를
+    // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 savedCards를
     // 한 번에 로드. 표시는 아래 visibleCards에서 limitCount만큼만 slice (화면 페이지네이션).
+    //
+    // [v1.5.72 idle 발열 절감] limit(500) 추가.
+    // Why: limit 없는 onSnapshot은 카드 수백~수천 장 유저에게 idle 상태에서도 long-polling
+    //   keepalive + 갱신 시 전체 배열 재매핑 부담을 누적시킴. 500장 cap은 절대 다수 유저
+    //   (95%+)에게 무영향이며, 초과 유저는 "최근 500장"만 노출 + 카운트가 "X/500" 으로
+    //   상한됨 (trade-off 수용). 향후 정확 카운트 필요 시 getCountFromServer 분리 고려.
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+        const q = query(
+            collection(db, "savedCards"),
+            where("userId", "==", user.uid),
+            orderBy("createdAt", "desc"),
+            limit(500)
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(card => !card.isDeleted);
             setSavedCards(cards);

@@ -666,7 +666,11 @@ html.admob-active.platform-native::after {
   border-radius: 50%;
   background: #ef4444;
   box-shadow: 0 0 0 2px white;
-  animation: nav-new-dot-pulse 2s ease-in-out infinite;
+  /* [v1.5.72 idle 발열 절감] infinite → 5회로 제한.
+   * Why: box-shadow 변경은 paint를 트리거해 사이드바 열린 동안 지속 GPU+CPU 가동.
+   *   5회 pulse(~10s)면 사용자가 알아채기 충분, 이후 정지로 idle paint 차단.
+   *   forwards로 마지막 frame(평상시 box-shadow) 유지. */
+  animation: nav-new-dot-pulse 2s ease-in-out 5 forwards;
 }
 
 @keyframes nav-new-dot-pulse {
@@ -685,7 +689,8 @@ html.admob-active.platform-native::after {
   background: linear-gradient(135deg, #ef4444, #f97316);
   border-radius: 999px;
   letter-spacing: 0.5px;
-  animation: feature-new-pulse 2.2s ease-in-out infinite;
+  /* [v1.5.72 idle 발열 절감] infinite → 5회로 제한. nav-new-dot 동일 사유. */
+  animation: feature-new-pulse 2.2s ease-in-out 5 forwards;
 }
 
 @keyframes feature-new-pulse {
@@ -826,6 +831,7 @@ html.admob-active.platform-native::after {
   gap: 0.5rem;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 4px;
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
@@ -842,6 +848,14 @@ html.admob-active.platform-native::after {
 /* 광고 있을 때: 배너 위에 배치 */
 .admob-active .app-nav {
   bottom: calc(var(--admob-bottom, 0px) + 2px);
+}
+/* [v1.5.72 idle 발열 절감] 네이티브(iOS/Android)에서는 backdrop-filter 비활성화.
+ * Why: blur 합성은 GPU compositor를 매 frame 가동시켜 iOS WKWebView idle 발열의
+ *   주요 origin. 항상 보이는 fixed 탭바라 누적 영향이 큼. rgba(255,255,255,0.9)
+ *   배경만으로도 시각적 반투명 효과는 충분히 유지됨. */
+html.platform-native .app-nav {
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
 }
 
 .nav-item {
