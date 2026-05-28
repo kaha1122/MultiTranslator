@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { X, Mic, MicOff, RotateCcw } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import MessageCardModal from './MessageCardModal';
@@ -8,6 +9,12 @@ import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
 import { playStarSound } from '../utils/soundEffects';
 import './FreeTalkingChat.css';
+
+// [v1.5.73 thermal-ios Pattern 4] 모달 닫힘 시점에 AVAudioSession 완전 해제용.
+// useFreeTalkRecorder의 deactivateAudioSession은 매 녹음 stop마다 카테고리만
+// 전환하지만, setActive(true)가 영구 잔류해 mediaserverd가 계속 awake → 발열 누적.
+// 모달 닫힘 시 endAudioSession 호출로 setActive(false) → mediaserverd 해제.
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 /**
  * 카카오톡 스타일 풀스크린 Free Talking 모달.
@@ -99,6 +106,20 @@ export default function FreeTalkingChat({
             setCardSavedIds({});
             setAiTipPopup({ open: false, text: '' });
             resetSession();
+            // [v1.5.73 thermal-ios Pattern 4] iOS 한정 AVAudioSession 완전 해제.
+            // Free Talking 한 세션 동안 녹음 수십 회 반복 → 매 stop 후 deactivateAudioSession
+            // 으로 카테고리만 .playback 전환했지만 setActive(true) 영구 잔류해 mediaserverd
+            // 가 계속 awake. 모달 닫힘 시점에 setActive(false) 호출해서 mediaserverd 해제 →
+            // 발열 누적 차단 → iOS thermal throttling 방지 → 마이크 silent capture 회복.
+            //
+            // Trade-off: 다음 활성화 시 BT(에어팟) 라우트 재선택 — iOS 17/26에서 .allowBluetoothA2DP
+            // 옵션 + 사용자가 컨트롤센터에서 명시 선택한 경우 보존되는 것으로 알려져 있으나
+            // 1차 IPA 검증 필요. 회귀 발생 시 라우트 캐시 복원(패턴 2) 추가 검토.
+            //
+            // 옵셔널 체이닝: 구 IPA(endAudioSession 미존재) + 신 JS 콤보에서 silent fail.
+            if (Capacitor.getPlatform() === 'ios') {
+                BluetoothAudio.endAudioSession?.().catch(() => {});
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);

@@ -16,6 +16,7 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "stopBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activateAudioSession", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "deactivateAudioSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "endAudioSession", returnType: CAPPluginReturnPromise),
     ]
 
     /// 블루투스 오디오 장치가 연결되어 있는지 확인
@@ -129,6 +130,44 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         } catch {
             print("[BluetoothAudio] Failed to deactivate AVAudioSession: \(error)")
             // 실패해도 치명적이지 않으므로 resolve (호출 측에서 무시)
+            call.resolve(["success": false])
+        }
+    }
+
+    /// [v1.5.73 thermal-ios Pattern 4] 세션 단위 완전 해제 — Free Talking 모달 닫힘 등
+    /// "사용자가 녹음 컨텍스트에서 완전히 빠져나간 시점"에만 호출.
+    ///
+    /// 배경:
+    ///   deactivateAudioSession은 매 녹음 stop마다 호출되어 카테고리만 .playback 으로
+    ///   전환하지만, setActive(false)는 호출하지 않음. 이유는 BT(에어팟 등) 사용자에게
+    ///   라우트 리셋 회귀가 발생하기 때문(역사적 관찰, 0322 commit).
+    ///   결과적으로 mediaserverd가 계속 awake 상태 → 발열 누적 → iOS thermal throttling
+    ///   → 마이크 silent capture → "발음 인식 안 됨" 증상 (사용자 보고 2026-05-28).
+    ///
+    /// 본 메소드는 모달 닫힘 등 명확한 종료 시점에만 호출되므로:
+    ///   - Free Talking 대화 내 녹음 반복(stop→start): deactivateAudioSession만 호출
+    ///     → 세션 활성 유지 → BT 라우트 보존
+    ///   - 모달 닫힘: endAudioSession 호출 → setActive(false) → mediaserverd 해제
+    ///     → BT 라우트는 다음 세션 활성화 시 재선택됨(라우트 끊김 회귀 가능, 1차 IPA 검증 대상)
+    ///
+    /// 옵션 .notifyOthersOnDeactivation: 다른 오디오 앱(음악 등)에 알림 → 자연스러운 재개
+    @objc func endAudioSession(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            // 카테고리는 .playback으로 유지 — 다음 활성화 시 BT A2DP 우선순위 보존
+            try session.setPreferredInput(nil)
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+            // 핵심: setActive(false) — mediaserverd가 audio HW context를 release할 수 있게 함
+            try session.setActive(false, options: .notifyOthersOnDeactivation)
+            print("[BluetoothAudio] AVAudioSession FULLY ended (setActive=false, thermal mode)")
+            call.resolve(["success": true])
+        } catch {
+            print("[BluetoothAudio] Failed to end AVAudioSession: \(error)")
+            // 실패해도 치명적이지 않음 — 호출 측은 best-effort 처리
             call.resolve(["success": false])
         }
     }
