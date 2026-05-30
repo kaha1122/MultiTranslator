@@ -4379,30 +4379,43 @@ function App() {
         </div>
 
         {/* Library 탭 */}
+        {/* [v1.5.77+ thermal-ios] Library만 조건부 마운트로 전환.
+         * 이전엔 display:none으로 항시 마운트되어 savedCards onSnapshot이 다른 탭에서도
+         * Firestore long-polling keepalive 유지 → iOS 네트워크 subsystem이 깨어 있어
+         * 5분 idle 발열의 잔존 contributor로 의심됨.
+         * unmount 시 onSnapshot useEffect cleanup이 자동 호출 → Firestore 구독 해제.
+         * focusCardId 흐름: 별표 저장 → setFocusCardId + setViewMode('library') React batch →
+         *   Library 새 마운트 시점에 prop으로 전달, [focusCardId] effect 정상 fire,
+         *   onSnapshot 첫 snapshot 도착 후 scroll 시도 (race 보호 ref 유지).
+         * Trade-off: 다른 탭 갔다 돌아오면 filter/search/limitCount(무한 스크롤 위치)
+         *   state 초기화 — 발열 회복 우선이라 수용.
+         * AdBanner는 display:none div 안에 그대로 두어 광고 재요청 회피. */}
         <div style={{ display: viewMode === 'library' ? 'block' : 'none', width: '100%' }}>
           {/* 광고: 라이브러리 목록 상단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '0 0 8px' }} />
-          <Library
-            user={user}
-            sourceLang={sourceLang}
-            onSpeak={handleSpeak}
-            languageGoals={languageGoals}
-            todayCount={todayCount}
-            dailyGoal={dailyGoal}
-            onTargetAchieved={handleTargetAchieved}
-            onCardDeleted={handleCardDeleted}
-            focusCardId={focusCardId}
-            onFocusCardHandled={() => setFocusCardId(null)}
-            progressPopupOpen={showProgressPopup}
-            libraryBackTo={libraryBackTo}
-            onBack={() => {
-              const target = libraryBackTo || 'vocab';
-              setLibraryBackTo(null);
-              setViewMode(target);
-            }}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={onPronSuccess}
-          />
+          {viewMode === 'library' && (
+            <Library
+              user={user}
+              sourceLang={sourceLang}
+              onSpeak={handleSpeak}
+              languageGoals={languageGoals}
+              todayCount={todayCount}
+              dailyGoal={dailyGoal}
+              onTargetAchieved={handleTargetAchieved}
+              onCardDeleted={handleCardDeleted}
+              focusCardId={focusCardId}
+              onFocusCardHandled={() => setFocusCardId(null)}
+              progressPopupOpen={showProgressPopup}
+              libraryBackTo={libraryBackTo}
+              onBack={() => {
+                const target = libraryBackTo || 'vocab';
+                setLibraryBackTo(null);
+                setViewMode(target);
+              }}
+              onTrialLimitReached={() => setShowTrialLimitModal(true)}
+              onPronSuccess={onPronSuccess}
+            />
+          )}
         </div>
 
         {/* Settings 탭 */}
