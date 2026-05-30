@@ -1062,13 +1062,8 @@
 
 /* [v1.5.76+ thermal-ios] 무한 pulse 애니메이션 가드 — Apple HIG 준수.
  * .recording-status / .record-button.recording / .memo-loading-dot 세 곳에서
- * 녹음 진행 중/메모 로딩 중 무한 pulse가 돔. 사용자가 "동작 줄이기" 토글
- * 시 정지. 네이티브에서도 GPU compositor 부하 최소화. */
-@media (prefers-reduced-motion: reduce) {
-    .recording-status,
-    .record-button.recording,
-    .memo-loading-dot { animation: none; }
-}
-html.platform-native .recording-status,
-html.platform-native .record-button.recording,
-html.platform-native .memo-loading-dot { animation: none; }
+ * 녹음 진행 중/메모 로딩 중 무한 pulse.
+ * [v1.5.81+] Safari 포함 universal — 사용 중 GPU 부하 감소. */
+.recording-status,
+.record-button.recording,
+.memo-loading-dot { animation: none !important; }

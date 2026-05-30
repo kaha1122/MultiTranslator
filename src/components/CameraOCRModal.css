@@ -550,19 +550,11 @@
 }
 
 /* [v1.5.76+ thermal-ios] backdrop-filter:blur 가드 — overlay/뷰파인더 mode
- * toggle/close 버튼에 blur 다중 적용. 사용자 토글 또는 네이티브에서 GPU
- * compositor 부하 제거. */
-@media (prefers-reduced-transparency: reduce) {
-    .camera-modal-overlay,
-    .vf-mode-toggle,
-    .vf-close-btn {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-    }
-}
-html.platform-native .camera-modal-overlay,
-html.platform-native .vf-mode-toggle,
-html.platform-native .vf-close-btn {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
+ * toggle/close 버튼에 blur 다중 적용.
+ * [v1.5.81+] Safari 포함 universal로 확장 */
+.camera-modal-overlay,
+.vf-mode-toggle,
+.vf-close-btn {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }

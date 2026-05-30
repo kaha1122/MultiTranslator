@@ -169,21 +169,12 @@
  *  - html.platform-native (Capacitor iOS/Android WebView 공통 적용 클래스):
  *    네이티브에서는 사용자 토글과 무관하게 GPU 부하 source 제거 (발열 origin 차단)
  * ──────────────────────────────────────────────────────────────── */
-@media (prefers-reduced-motion: reduce) {
-    .streak-status-piece { animation: none; opacity: 0; }
-    .streak-status-icon { animation: none; }
+/* [v1.5.81+] Safari 포함 universal로 확장 — 3차 분석에서 platform-native가
+ * Safari에서 무효임이 확인됨. backdrop-filter + 무한 애니메이션 모두 universal. */
+.streak-status-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(15, 23, 42, 0.85) !important;
 }
-@media (prefers-reduced-transparency: reduce) {
-    .streak-status-overlay {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: rgba(15, 23, 42, 0.85);
-    }
-}
-html.platform-native .streak-status-overlay {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(15, 23, 42, 0.85);
-}
-html.platform-native .streak-status-piece { animation: none; opacity: 0; }
-html.platform-native .streak-status-icon { animation: none; }
+.streak-status-piece { animation: none !important; opacity: 0 !important; }
+.streak-status-icon { animation: none !important; }

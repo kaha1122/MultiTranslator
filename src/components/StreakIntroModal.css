@@ -345,31 +345,16 @@
 
 /* [v1.5.76+ thermal-ios] 발열 contributor 격리 가드 — 자세한 설명은
  * StreakStatusPopup.css 동일 블록 참조 */
-@media (prefers-reduced-motion: reduce) {
-    .streak-intro-piece { animation: none; opacity: 0; }
-    .streak-intro-icon { animation: none; }
+/* [v1.5.81+] Safari 포함 universal로 확장 */
+.streak-intro-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(15, 23, 42, 0.85) !important;
 }
-@media (prefers-reduced-transparency: reduce) {
-    .streak-intro-overlay {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: rgba(15, 23, 42, 0.85);
-    }
-    .streak-intro-goal-card {
-        backdrop-filter: none;
-        -webkit-backdrop-filter: none;
-        background: rgba(255, 255, 255, 0.95);
-    }
+.streak-intro-goal-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.95) !important;
 }
-html.platform-native .streak-intro-overlay {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(15, 23, 42, 0.85);
-}
-html.platform-native .streak-intro-goal-card {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: rgba(255, 255, 255, 0.95);
-}
-html.platform-native .streak-intro-piece { animation: none; opacity: 0; }
-html.platform-native .streak-intro-icon { animation: none; }
+.streak-intro-piece { animation: none !important; opacity: 0 !important; }
+.streak-intro-icon { animation: none !important; }
