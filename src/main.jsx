@@ -173,3 +173,31 @@ if (isNative) {
     App.addListener('appStateChange', ({ isActive }) => setAppHidden(!isActive));
   }).catch(() => { /* plugin 미가용 시 visibilitychange만 동작 */ });
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// [v1.5.80 thermal-ios] 포그라운드 idle 30초 후 CSS 무한 애니메이션 일시정지
+//
+// data-app-hidden 가드는 백그라운드 진입(visibilitychange/appStateChange) 시에만
+// 발화하지만, 사용자가 화면을 보면서 손만 안 대는 포그라운드 idle 5분 시나리오에서는
+// 무효. 이게 사용자 보고 발열의 진짜 origin으로 mobile-production-guardian 3차 분석에서
+// 확인됨. Safari(platform-native 가드 미적용 환경) + Capacitor 양쪽 동시 cover.
+//
+// 동작: 30초 무활동 → data-app-idle="1" → index.css 가드로 animation-play-state: paused
+// 모든 CSS 무한 애니메이션(infinite pulse/spin/fall 등)이 일시정지됨. transition은
+// 영향 없음(animation-play-state는 keyframe animation만 제어).
+// 사용자 액션(touch/click/key/scroll/wheel) 즉시 0으로 복귀 + 30초 타이머 재시작.
+// capture:true로 모달 등 내부 핸들러가 stopPropagation해도 idle 리셋 보장.
+// ─────────────────────────────────────────────────────────────────────────────
+let __idleTimer = null;
+const IDLE_TIMEOUT_MS = 30000;
+const resetIdleTimer = () => {
+  if (__idleTimer) clearTimeout(__idleTimer);
+  document.documentElement.dataset.appIdle = '0';
+  __idleTimer = setTimeout(() => {
+    document.documentElement.dataset.appIdle = '1';
+  }, IDLE_TIMEOUT_MS);
+};
+['touchstart', 'touchmove', 'click', 'keydown', 'scroll', 'wheel'].forEach(evt => {
+  window.addEventListener(evt, resetIdleTimer, { passive: true, capture: true });
+});
+resetIdleTimer();
