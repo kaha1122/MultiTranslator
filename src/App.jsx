@@ -52,6 +52,7 @@ import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
 import StreakIntroModal from './components/StreakIntroModal';
 import StreakStatusPopup from './components/StreakStatusPopup';
+import ThermalGuardDiag from './components/ThermalGuardDiag'; // [v1.5.78-diag] staging 전용 진단 — 검증 후 제거
 import HomePage from './components/HomePage';
 import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
@@ -3307,6 +3308,10 @@ function App() {
   // 메인 앱 화면
   return (
     <div className="app-container">
+      {/* [v1.5.78-diag] Thermal Guard 진단 배지 — staging 전용. 검증 완료 후 제거.
+       * platform-native 클래스 적용 + CSS 가드 발화 여부를 디바이스 화면에 직접 표시.
+       * Tap to dismiss + sessionStorage 영구 닫기. */}
+      <ThermalGuardDiag />
       {nativeUpdatePopup}
       {/* Vercel 분석 도구 */}
       <Analytics />
