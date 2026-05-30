@@ -852,10 +852,16 @@ html.admob-active.platform-native::after {
 /* [v1.5.72 idle 발열 절감] 네이티브(iOS/Android)에서는 backdrop-filter 비활성화.
  * Why: blur 합성은 GPU compositor를 매 frame 가동시켜 iOS WKWebView idle 발열의
  *   주요 origin. 항상 보이는 fixed 탭바라 누적 영향이 큼. rgba(255,255,255,0.9)
- *   배경만으로도 시각적 반투명 효과는 충분히 유지됨. */
-html.platform-native .app-nav {
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+ *   배경만으로도 시각적 반투명 효과는 충분히 유지됨.
+ *
+ * [v1.5.81+ thermal-ios] Web/Safari universal 확장 — Safari에서는 platform-native
+ * 클래스가 없어서 blur가 항시 활성. 사용자 보고 Safari에서도 OS 오디오 차단까지
+ * 가는 발열 → universal 가드로 변경. .app-nav는 fixed로 항상 화면에 보이는 탭바
+ * 라서 사용 중에도 GPU compositor 매 frame 가동시킴(3차 mobile-production-guardian
+ * 분석에서 핵심 contributor로 지목). */
+.app-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .nav-item {
