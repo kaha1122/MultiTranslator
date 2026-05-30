@@ -50,7 +50,15 @@ export async function showInterstitialAd() {
             const cleanup = () => handles.forEach(h => h?.remove?.());
 
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
-                cleanup(); resolve(shown);
+                cleanup();
+                // [v1.5.82+ thermal-ios] 광고 시청 직후 60초 강제 idle —
+                // AdMob SDK가 끌어올린 thermal이 회복할 시간 확보. 사용자가 광고
+                // 직후 발음 시도해도 우리 앱의 CSS 무한 애니메이션 + Framer Motion
+                // 자체 부하는 최소 유지 → 임계점 돌파 차단. 광고 빈도/수익 영향 0.
+                if (typeof window !== 'undefined' && window.triggerForcedIdle) {
+                    window.triggerForcedIdle(60_000);
+                }
+                resolve(shown);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {
                 console.error('[AdMob Interstitial] FailedToLoad:', JSON.stringify(e));

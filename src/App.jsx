@@ -853,7 +853,13 @@ function App() {
           } catch (e) { console.error(`[RewardedAd] ${field} 적립 실패:`, e); }
           resolve();
         }));
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+          // [v1.5.82+ thermal-ios] 광고 시청 직후 60초 강제 idle (thermal 회복)
+          if (typeof window !== 'undefined' && window.triggerForcedIdle) {
+            window.triggerForcedIdle(60_000);
+          }
+          resolve();
+        }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>
           reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) =>

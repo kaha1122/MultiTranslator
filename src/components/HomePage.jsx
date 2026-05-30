@@ -1,15 +1,34 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BookOpen, Languages, Video, Library, Headphones, MessageCircle } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import './HomePage.css';
 
+// [v1.5.82+ thermal-ios] data-app-idle 상태 감지 — 광고 직후 60s 강제 idle
+// 또는 사용자 30s 무활동 시 true. Framer Motion animate 비활성화에 사용.
+function useAppIdle() {
+    const [isIdle, setIsIdle] = useState(
+        typeof document !== 'undefined' && document.documentElement.dataset.appIdle === '1'
+    );
+    useEffect(() => {
+        if (typeof document === 'undefined') return;
+        const check = () => setIsIdle(document.documentElement.dataset.appIdle === '1');
+        const observer = new MutationObserver(check);
+        observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-app-idle'] });
+        check();
+        return () => observer.disconnect();
+    }, []);
+    return isIdle;
+}
+
 const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 3, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
     const [openFolder, setOpenFolder] = useState('vocab');
+    // [v1.5.82+] 광고 직후 60s 또는 사용자 30s 무활동 시 Framer Motion 정지 — thermal 회복
+    const isAppIdle = useAppIdle();
 
     const folders = [
         {
@@ -132,7 +151,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                             <div className="home-folder-anim">
                                                 <motion.span
                                                     className="home-folder-emoji"
-                                                    animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
+                                                    animate={isAppIdle ? false : { scale: [1, 1.15, 1], y: [0, -6, 0] }}
                                                     transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
@@ -198,7 +217,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                             <div className="home-folder-anim">
                                                 <motion.span
                                                     className="home-folder-emoji"
-                                                    animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
+                                                    animate={isAppIdle ? false : { scale: [1, 1.15, 1], y: [0, -6, 0] }}
                                                     transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
@@ -264,7 +283,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
                             initial={{ width: 0 }}
                             animate={{ width: `${gaugePercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
                     <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
@@ -278,7 +297,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             className="home-gauge-fill pron"
                             initial={{ width: 0 }}
                             animate={{ width: `${pronPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
                     <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
@@ -292,7 +311,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             className="home-gauge-fill listen"
                             initial={{ width: 0 }}
                             animate={{ width: `${listenPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
                     <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
@@ -306,7 +325,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                             className="home-gauge-fill freetalk"
                             initial={{ width: 0 }}
                             animate={{ width: `${freeTalkPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
                         />
                     </div>
                     <span className="home-gauge-count freetalk">{todayFreeTalkCount}/{dailyFreeTalkLimit}</span>

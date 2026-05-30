@@ -187,10 +187,20 @@ if (isNative) {
 // 영향 없음(animation-play-state는 keyframe animation만 제어).
 // 사용자 액션(touch/click/key/scroll/wheel) 즉시 0으로 복귀 + 30초 타이머 재시작.
 // capture:true로 모달 등 내부 핸들러가 stopPropagation해도 idle 리셋 보장.
+//
+// [v1.5.82+ thermal-ios] 광고 직후 강제 idle 60s — window.__forcedIdleUntil
+// 활성 동안 사용자 액션이 와도 idle 모드 유지(thermal 회복 시간 확보).
+// useAdMob.js의 인터스티셜 Dismissed + App.jsx의 Reward Dismissed에서
+// window.triggerForcedIdle(60_000) 호출.
 // ─────────────────────────────────────────────────────────────────────────────
 let __idleTimer = null;
 const IDLE_TIMEOUT_MS = 30000;
 const resetIdleTimer = () => {
+  // [v1.5.82+] 강제 idle 중이면 사용자 액션 무시 — 광고 직후 thermal 회복 시간 보호
+  if (window.__forcedIdleUntil && Date.now() < window.__forcedIdleUntil) {
+    document.documentElement.dataset.appIdle = '1';
+    return;
+  }
   if (__idleTimer) clearTimeout(__idleTimer);
   document.documentElement.dataset.appIdle = '0';
   __idleTimer = setTimeout(() => {
@@ -201,3 +211,19 @@ const resetIdleTimer = () => {
   window.addEventListener(evt, resetIdleTimer, { passive: true, capture: true });
 });
 resetIdleTimer();
+
+// [v1.5.82+] 광고 dismiss 시 호출 — 60초 강제 idle 진입 후 정상 timer 복귀
+let __forcedIdleTimer = null;
+window.triggerForcedIdle = (durationMs = 60_000) => {
+  window.__forcedIdleUntil = Date.now() + durationMs;
+  if (__idleTimer) { clearTimeout(__idleTimer); __idleTimer = null; }
+  // 이전 forced idle setTimeout 취소 — 다중 광고 dismiss 시 stale timer가 __forcedIdleUntil을
+  // 0으로 reset해서 강제 idle을 일찍 끊는 race 차단.
+  if (__forcedIdleTimer) clearTimeout(__forcedIdleTimer);
+  document.documentElement.dataset.appIdle = '1';
+  __forcedIdleTimer = setTimeout(() => {
+    window.__forcedIdleUntil = 0;
+    __forcedIdleTimer = null;
+    resetIdleTimer(); // 정상 30s 타이머 재시작
+  }, durationMs);
+};
