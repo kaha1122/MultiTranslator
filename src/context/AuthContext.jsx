@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
@@ -696,26 +696,44 @@ export const AuthProvider = ({ children }) => {
     const byokAzureKey   = profile?.byokAzureKey   || null;
     const byokAzureRegion = profile?.byokAzureRegion || '';
 
+    // [v1.5.83+ thermal-ios] Context value useMemo wrap — render storm 차단.
+    // mobile-production-guardian 4차 분석에서 식별된 진짜 root cause.
+    // 이전엔 매 렌더마다 새 value 객체 생성 → 모든 consumer(App.jsx 5728라인 +
+    // 50+ 자식 컴포넌트, React.memo 사용 0) 통째로 재렌더 → iOS WKWebView
+    // 발열 임계점 누적 돌파. useMemo로 value reference를 안정시켜 차단.
+    //
+    // Deps 전략: user/profile/loading + 별도 useState 3개만 포함. 함수들(17개)은
+    // 매번 새 reference로 만들어지지만 deps 비교에서 제외(eslint-disable).
+    // Stale closure 위험: 모든 함수가 closure로 참조하는 state(user/profile/
+    // dailyTrial*Reached)는 deps에 포함됨 → state 변경 시 value 재생성 → 새 함수
+    // closure 사용. 함수가 의존하지 않는 외부 reference(db/auth/setProfile 등)는
+    // React 보장 stable. 따라서 stale closure 0%.
+    //
+    // 파생값(tier/counts/credits/bonusPoints/byok*)은 profile 기반이라 profile
+    // deps만으로 자동 재계산됨.
+    const contextValue = useMemo(() => ({
+        user, profile, loading, updateUserProfile,
+        tier,
+        trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
+        proPronCount, PRO_PRON_LIMIT,
+        TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+        isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
+        setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
+        isProPronLimitReached,
+        incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
+        incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
+        bonusPoints, hasBonusActive, consumeBonusPoints,
+        freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
+        reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
+        saveByokKeys,
+        byokGeminiKey, byokAzureKey, byokAzureRegion,
+        upgradeAnonymous,
+        ensureAnonymousUser,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [user, profile, loading, dailyTrialPronReached, dailyTrialFreeTalkReached, dailyTrialListenReached]);
+
     return (
-        <AuthContext.Provider value={{
-            user, profile, loading, updateUserProfile,
-            tier,
-            trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
-            proPronCount, PRO_PRON_LIMIT,
-            TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
-            isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
-            setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
-            isProPronLimitReached,
-            incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
-            incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
-            bonusPoints, hasBonusActive, consumeBonusPoints,
-            freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
-            reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
-            saveByokKeys,
-            byokGeminiKey, byokAzureKey, byokAzureRegion,
-            upgradeAnonymous,
-            ensureAnonymousUser,
-        }}>
+        <AuthContext.Provider value={contextValue}>
             {loading ? (
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
