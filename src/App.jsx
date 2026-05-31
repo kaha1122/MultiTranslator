@@ -854,10 +854,9 @@ function App() {
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          // [v1.5.82+ thermal-ios] 광고 시청 직후 60초 강제 idle (thermal 회복)
-          if (typeof window !== 'undefined' && window.triggerForcedIdle) {
-            window.triggerForcedIdle(60_000);
-          }
+          // [v1.5.85+] v1.5.82의 triggerForcedIdle(60_000) 호출 ROLLBACK.
+          // 사이드바/홈 진입 애니메이션 paused로 UX 회귀 발생. 자세한 사유는
+          // useAdMob.js의 InterstitialAd Dismissed 핸들러 주석 참조.
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>

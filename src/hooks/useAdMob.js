@@ -51,13 +51,15 @@ export async function showInterstitialAd() {
 
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
                 cleanup();
-                // [v1.5.82+ thermal-ios] 광고 시청 직후 60초 강제 idle —
-                // AdMob SDK가 끌어올린 thermal이 회복할 시간 확보. 사용자가 광고
-                // 직후 발음 시도해도 우리 앱의 CSS 무한 애니메이션 + Framer Motion
-                // 자체 부하는 최소 유지 → 임계점 돌파 차단. 광고 빈도/수익 영향 0.
-                if (typeof window !== 'undefined' && window.triggerForcedIdle) {
-                    window.triggerForcedIdle(60_000);
-                }
+                // [v1.5.85+] v1.5.82의 triggerForcedIdle(60_000) 호출 ROLLBACK.
+                // 이유: forced idle 60s 동안 CSS animation-play-state: paused 가
+                // 사이드바 슬라이드인(sidebar-slide-in), 홈 진입(homeSlideUp),
+                // 오버레이 페이드인(overlay-fade-in) 등 1회성 진입 애니메이션도
+                // 정지시켜 광고 후 사이드바/홈 화면이 보이지 않는 치명적 UX 회귀.
+                // v1.5.81 universal 가드가 이미 모든 무한 애니메이션을 항시 정지
+                // 시키고 있어 forced idle의 thermal 회복 효과는 미미했음. UX 회복
+                // 우선. main.jsx의 triggerForcedIdle 함수와 HomePage useAppIdle
+                // hook은 그대로 유지 (idle 30s 자연 발화 시 동작).
                 resolve(shown);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {
