@@ -937,6 +937,15 @@ function App() {
     return 'home';
   });
 
+  // [v1.5.86+ thermal] 탭 lazy-mount 추적 — 한번 방문한 탭만 마운트, 방문 후엔 계속 유지.
+  //   미방문 탭의 useEffect/YouTube iframe/오디오/이벤트 리스너가 아예 실행되지 않아
+  //   Home/Translation만 쓰는 유저의 idle 발열 contributor를 원천 제거.
+  //   방문 후 유지하므로 생성 콘텐츠(VocabTab.words / ListeningTab.passage / Scene.generated) 손실 없음.
+  //   (Library는 onSnapshot 재구독 의도로 별도 조건부 마운트 — 이 패턴과 무관.)
+  //   render마다 idempotent하게 현재 탭 등록 (Set.add는 부수효과 없음, lazy-init 패턴).
+  const visitedTabsRef = useRef(new Set(['home']));
+  visitedTabsRef.current.add(viewMode);
+
   // 새로고침 시 /privacy, /terms, /contact URL로 직접 진입한 로그인 사용자만 홈으로 리다이렉트
   const [initialRedirectDone, setInitialRedirectDone] = useState(false);
   useEffect(() => {
@@ -4265,6 +4274,7 @@ function App() {
 
         {/* Vocab 탭 — AI 단어 학습 */}
         <div style={{ display: viewMode === 'vocab' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('vocab') && (
           <VocabTab
             isActive={viewMode === 'vocab'}
             sourceLang={sourceLang}
@@ -4283,11 +4293,13 @@ function App() {
               setViewMode('library');
             }}
           />
+          )}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Listening 탭 — 듣기 학습 */}
         <div style={{ display: viewMode === 'listening' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('listening') && (
           <ListeningTab
             isActive={viewMode === 'listening'}
             sourceLang={sourceLang}
@@ -4324,10 +4336,12 @@ function App() {
               setViewMode('library');
             }}
           />
+          )}
         </div>
 
         {/* Video 탭 — 다국어 YouTube 동영상 학습 */}
         <div style={{ display: viewMode === 'video' ? 'block' : 'none', width: '100%', height: '100%' }}>
+          {visitedTabsRef.current.has('video') && (
           <VideoReader
             ref={videoReaderRef}
             sourceLang={sourceLang}
@@ -4344,10 +4358,12 @@ function App() {
               setViewMode('translation');
             }}
           />
+          )}
         </div>
 
         {/* Scene 탭 */}
         <div style={{ display: viewMode === 'scene' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('scene') && (
           <ScenePractice
             sourceLang={sourceLang}
             targetLangs={targetLangs}
@@ -4379,6 +4395,7 @@ function App() {
               setFreeTalkOpen(true);
             }}
           />
+          )}
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
@@ -4931,9 +4948,11 @@ function App() {
 
         {/* Stats 탭 (메인 탭) */}
         <div style={{ display: viewMode === 'stats' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('stats') && (
           <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} isActive={viewMode === 'stats'}
             streakCurrent={streakCurrent} streakLongest={streakLongest} totalAchievedDays={totalAchievedDays}
             nextMilestone={nextMilestone} nextReward={nextReward} daysToNext={daysToNext} earnedMilestones={earnedMilestones} />
+          )}
         </div>
       </main>
 
