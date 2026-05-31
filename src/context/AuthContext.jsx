@@ -91,11 +91,30 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // 앱 재실행 시 updatedAt 갱신 (방금 문서를 생성한 경우는 제외)
+                // [v1.5.84+ thermal-ios] 앱 재실행 시 updatedAt 갱신 — 5분 가드 추가
+                // Why: updatedAt write → onSnapshot 발화 → setProfile → AuthProvider 재렌더
+                //   cascade가 매 앱 실행마다 발생. v1.5.83 useMemo로 consumer 재렌더는
+                //   차단됐지만 profile reference 자체가 새로워져 useMemo deps 비교 실패 →
+                //   value 재생성 → consumer 재렌더. 따라서 write 빈도 자체를 줄이는 게
+                //   효과적. 4차 mobile-production-guardian Fix 3.
+                // localStorage 가드: 디바이스별 추적, 5분 이내 재실행 시 write skip.
+                // 다른 디바이스에서 동일 계정 사용 시는 가드 무시되지만 영향 미미
+                // (re-engagement push의 lastActiveAt 별도 추적).
                 if (!docJustCreated) {
-                    updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
-                        console.error('[AuthContext] updatedAt refresh failed:', e)
-                    );
+                    try {
+                        const lastUpdatedKey = `pronunfit_lastUpdatedAt_${authenticatedUser.uid}`;
+                        const lastUpdatedMs = parseInt(localStorage.getItem(lastUpdatedKey) || '0', 10);
+                        const FIVE_MIN_MS = 5 * 60 * 1000;
+                        if (Date.now() - lastUpdatedMs >= FIVE_MIN_MS) {
+                            updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
+                                console.error('[AuthContext] updatedAt refresh failed:', e)
+                            );
+                            localStorage.setItem(lastUpdatedKey, String(Date.now()));
+                        }
+                    } catch (e) {
+                        // localStorage 접근 실패 시 fallback — 가드 없이 write (이전 동작)
+                        updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(() => {});
+                    }
                 }
 
                 // Push 토큰 재등록은 App.jsx mount에서 전역 리스너가 처리

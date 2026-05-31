@@ -276,14 +276,19 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <span className="home-gauge-title">{t('home.todayProgress')}</span>
 
                 {/* 카드 달성 */}
+                {/* [v1.5.84+ thermal-ios] motion.div → div + CSS transition. Framer Motion
+                 * MotionValue 상시 구독 4개 제거 (JS RAF 부하 0). CSS transition은 브라우저
+                 * compositor thread에서 처리되어 main thread 무관 — 4차 mobile-production-
+                 * guardian Fix 2. */}
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎯</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${gaugePercent}%` }}
-                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${gaugePercent}%`,
+                                transition: isAppIdle ? 'none' : 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
@@ -293,11 +298,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎙</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill pron"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pronPercent}%` }}
-                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${pronPercent}%`,
+                                transition: isAppIdle ? 'none' : 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
@@ -307,11 +313,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎧</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill listen"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${listenPercent}%` }}
-                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${listenPercent}%`,
+                                transition: isAppIdle ? 'none' : 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
@@ -321,11 +328,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">💬</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill freetalk"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${freeTalkPercent}%` }}
-                            transition={isAppIdle ? { duration: 0 } : { duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${freeTalkPercent}%`,
+                                transition: isAppIdle ? 'none' : 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count freetalk">{todayFreeTalkCount}/{dailyFreeTalkLimit}</span>
