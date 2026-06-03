@@ -533,13 +533,17 @@ function buildReplyPrompt({
   const diffDesc = getDifficultyDesc(difficulty, targetLang);
   const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-  // history → 텍스트 블록 (최근 8턴까지 보존 — 컨텍스트 일관성용)
-  // 12 → 8 감축(2026-05-21): buildReplyPrompt 31KB → 28KB(-10%) + Gemini Flash-Lite
-  // 32K input limit 여유 확보. 8턴(약 4 user + 4 AI)이면 직전 ~4 단계의 대화 흐름
-  // 충분히 잡힘. 더 옛 맥락은 scenarioMeta.scene_summary_en으로 보강.
+  // history → 텍스트 블록 (세션 전체 보존 — 컨텍스트 일관성용)
+  // 2026-06-03: slice(-8) → slice(-30) 으로 복원. 과거 12→8 감축(2026-05-21)은
+  // "31KB→28KB(-10%)" 명목이었으나, 그 28KB 대부분은 정적 규칙(Phase 4 코칭 등)이고
+  // history block 은 턴당 ~100~200자에 불과 → 토큰 절감은 미미한데 기억력만 깎였다.
+  // 게다가 TURN_LIMITS=5(전 tier)라 세션의 유효 history 는 최대 ~12엔트리(opener 2 +
+  // 자유발화 4턴×2)뿐. slice(-8)이면 후반 턴에서 opener(시나리오 전체 맥락)와 초반
+  // 사실(예: 사용자가 말한 생일)이 잘려나가 AI 가 "이미 받은 정보 재질문" 회귀 발생.
+  // 30 cap 이면 5턴 세션 전체를 항상 포함하면서도 만일의 폭주를 방어. (32K input 여유 충분)
   // user turn에 coachingTip(이전 턴에서 튜터가 학습자에게 준 모국어 코칭)이 있으면
   // 별도 라인으로 inject — AI가 학습자의 누적 학습 맥락을 인지하며 자연스럽게 상호작용.
-  const recent = history.slice(-8);
+  const recent = history.slice(-30);
   const historyBlock = recent.length > 0
     ? recent.map(h => {
       const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
