@@ -5084,6 +5084,8 @@ function App() {
           listenCount={todayListenCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
+          onWatchAd={handleRewardedAd}
+          rewardAdLoading={rewardAdLoading}
         />
       )}
 
