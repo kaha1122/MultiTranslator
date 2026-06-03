@@ -620,6 +620,18 @@ export function useConversation({ tier = 'trial' } = {}) {
                     return entry;
                 });
 
+            // B안(slot memory): 직전 턴까지 누적된 establishedFacts 를 carry.
+            // 마지막 ai 메시지에 저장돼 있고, 서버가 cumulative 로 다시 반환하므로
+            // 가장 최근 것 하나만 넘기면 됨. 없으면 [] (세션 첫 자유발화).
+            // edit/remove 로 메시지가 trim 되면 자연스럽게 그 시점 facts 로 롤백됨.
+            let priorFacts = [];
+            for (let i = historyNow.length - 1; i >= 0; i--) {
+                if (historyNow[i].role === 'ai' && Array.isArray(historyNow[i].establishedFacts)) {
+                    priorFacts = historyNow[i].establishedFacts;
+                    break;
+                }
+            }
+
             const res = await authFetch(`${SERVER_URL}/api/converse-reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -631,6 +643,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     sourceLang: setupNow.sourceLang,
                     difficulty: setupNow.difficulty,
                     speechStyle: setupNow.speechStyle,
+                    establishedFacts: priorFacts,
                 }),
             });
             if (!res.ok) {
@@ -676,6 +689,9 @@ export function useConversation({ tier = 'trial' } = {}) {
                         learning_tip: a.learning_tip || '',
                         selected_emotion: a.selected_emotion || '',
                         interaction_type: a.interaction_type || '',
+                        // B안(slot memory): 누적 facts 저장 → 다음 턴 carry.
+                        // 모델 누락 시 priorFacts 유지(메모리 유실 방지).
+                        establishedFacts: Array.isArray(a.establishedFacts) ? a.establishedFacts : priorFacts,
                     };
                 }
                 return m;

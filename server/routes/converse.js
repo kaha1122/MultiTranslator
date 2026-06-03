@@ -487,6 +487,7 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     const {
         rawSttText, history, scenarioMeta,
         targetLang, sourceLang, difficulty, speechStyle,
+        establishedFacts,
         byokGeminiKey,
     } = req.body || {};
     if (!rawSttText || !targetLang || !sourceLang) {
@@ -495,9 +496,15 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
+    // B안(slot memory): 클라가 carry 한 누적 facts. 배열 아닌 입력은 [] 로 정규화.
+    const priorFacts = Array.isArray(establishedFacts)
+        ? establishedFacts.filter(f => typeof f === 'string' && f.trim())
+        : [];
+
     const prompt = buildReplyPrompt({
         rawSttText, history: history || [], scenarioMeta: scenarioMeta || {},
         targetLang, sourceLang, difficulty, speechStyle,
+        establishedFacts: priorFacts,
     });
 
     // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
@@ -518,6 +525,15 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         }
         if (parsed?.aiReply?.sentence) {
             parsed.aiReply.sentence = stripAnnotations(parsed.aiReply.sentence, targetLang);
+        }
+        // B안(slot memory): establishedFacts 정규화 — 모델이 누락/비배열로 내면
+        // 이전 누적 facts 를 유지(메모리 유실 방지). 문자열만 통과.
+        if (parsed?.aiReply) {
+            const next = Array.isArray(parsed.aiReply.establishedFacts)
+                ? parsed.aiReply.establishedFacts.filter(f => typeof f === 'string' && f.trim())
+                : [];
+            // 모델이 누적을 빠뜨려 prior 보다 짧아지면(드롭) prior 로 보강 — 합집합.
+            parsed.aiReply.establishedFacts = next.length >= priorFacts.length ? next : priorFacts;
         }
         res.json(parsed);
     } catch (e) {

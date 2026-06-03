@@ -527,6 +527,7 @@ function buildReplyPrompt({
   sourceLang,
   difficulty,
   speechStyle,
+  establishedFacts = [],
 }) {
   const targetLangName = LANG_NAMES[targetLang] || 'English';
   const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
@@ -557,6 +558,17 @@ function buildReplyPrompt({
 
   const responderRole = scenarioMeta.responder_role || 'the other person';
   const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+
+  // B안(slot memory): 이전 턴까지 누적된 established facts 를 명시적 체크리스트로 주입.
+  // 작은 모델(Flash-Lite)이 raw history 만으로 "이미 받은 정보"를 재추론하다 놓치는
+  // 문제(특히 한 답변에 여러 속성이 동시에 들어오는 composite)를 차단. cumulative list 라
+  // 매 턴 carry + append 되며, 윈도우(slice -30)가 잘려도 facts state 는 생존.
+  const priorFacts = Array.isArray(establishedFacts)
+    ? establishedFacts.filter(f => typeof f === 'string' && f.trim())
+    : [];
+  const factsBlock = priorFacts.length > 0
+    ? priorFacts.map(f => `  ✓ ${f}`).join('\n')
+    : '  (none yet — no attributes settled so far)';
 
   return `### [Role]
 You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence, (B) generate a natural reply that ADVANCES the conversation, and (C) produce a private tutor coaching note for the learner.
@@ -632,10 +644,22 @@ What the learner just spoke (may contain mishears from speech recognition):
 this label or words like "STT", "transcript", "intent recovery", "the system"
 in any user-facing field — see Strict Rules.)
 
-**Established facts** — Before generating any field, mentally extract what the
-learner has ALREADY stated/chosen in the turns above (e.g., account type chosen,
-name given, dates set, preferences expressed, items requested). These facts MUST
-NOT be re-asked in aiReply.
+**Established facts (RUNNING STATE — authoritative, NEVER re-ask)** — the
+attributes below are ALREADY settled earlier in this conversation (the learner
+provided them, OR you already asked about them). You MUST NOT ask about ANY of
+these again, even with different wording:
+${factsBlock}
+
+In ADDITION to the list above, scan the turns for any attribute not yet listed
+(account type, name, date of birth, dates/times, preferences, items, quantities,
+prices…) and treat those as settled too. If the learner's NEWEST utterance adds a
+new attribute, it becomes settled the instant they say it — do not re-ask it next
+turn. **A single utterance can settle MULTIPLE attributes at once** (e.g. "April
+14th is my birthday" settles birth-month AND birth-day together). If EVERY
+attribute a ${responderRole} normally needs is now settled, STOP gathering and
+ADVANCE: confirm the collected info, then move to the closing step (payment /
+confirmation / hand-off). Re-asking a settled fact is the #1 conversation-breaking
+failure — avoid it absolutely.
 
 ---
 
@@ -676,6 +700,14 @@ Then list:
    even with different wording ("style or color?", "any specific style?", etc.).
    Once learner has answered an attribute OR you've asked it once and they
    responded — that attribute is **closed**.
+   **Composite answers settle MULTIPLE attributes at once — CRITICAL**: one
+   utterance can close several slots simultaneously. e.g. "April 14th is my
+   birthday" closes BOTH birth-month AND birth-day → only birth-YEAR is left;
+   the moment the learner then says "1971", the FULL date of birth is complete.
+   Do NOT re-ask the month/day or the year, and do NOT alternate back and forth
+   between them. Confirm the whole value ("Got it — April 14th, 1971.") and
+   advance to the next step. (This exact alternating-re-ask loop is a real
+   reported failure — it is strictly forbidden.)
 
 2. **Acknowledge the learner's latest answer** in your reply (one short clause)
    if their answer addressed any attribute, then move on.
@@ -1050,7 +1082,8 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
     "translation": "Natural translation in ${sourceLangName}.",
     "pronunciation": "For zh-CN/zh: pinyin with tone marks (REQUIRED, non-empty). For ja: hiragana reading (REQUIRED, non-empty). For ru: full sentence with stress accents (´) on stressed vowels of multi-syllable words (REQUIRED, non-empty). For all others: empty string ''. **CRITICAL: an empty string for zh-CN/zh/ja/ru makes the response invalid.**",
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
-    "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply."
+    "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply.",
+    "establishedFacts": ["CUMULATIVE English list of EVERY attribute settled so far in this WHOLE conversation. Carry forward ALL items from the running-state list shown in Conversation Context above, ADD every attribute already visible in the turns, AND append any NEW attribute settled by the learner's current utterance or asked in THIS reply. Format each item as 'attribute: value' (e.g. 'birth_date: April 14 1971', 'seat: window', 'party_size: 4', 'payment: credit card'). If you are asking an attribute that has no value yet, write 'attribute: asked, awaiting answer'. A composite answer fills several items at once — list them separately. NEVER drop a previously-settled item; this array IS the conversation's memory and anything in it will never be re-asked. Empty array [] ONLY on the very first turn when nothing is settled yet."]
   }
 }`;
 }
