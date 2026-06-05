@@ -86,6 +86,38 @@ const escapeXml = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
+// ── B안(slot memory): establishedFacts key 기반 병합 (순수 in-memory, DB I/O 없음) ──
+// prior(클라가 carry 한 이전 누적) + next(모델이 이번 턴 반환)를 'attribute' key 로 병합.
+// 핵심 방어: 구체값이 있는 슬롯을 모델이 'asked, awaiting answer' 로 되돌려도(강등)
+// 무시하고 구체값 유지 → party_size: 8 같은 사실이 재질문/퇴행으로 사라지지 않음.
+// 새 구체값은 갱신(사용자 정정 허용), 새 key 는 누적. prior 순서 유지 후 신규 key append.
+function mergeEstablishedFacts(prior, next) {
+    const parse = (f) => {
+        const s = String(f);
+        const idx = s.indexOf(':');
+        if (idx === -1) return { key: s.trim().toLowerCase(), value: '', raw: s.trim() };
+        return { key: s.slice(0, idx).trim().toLowerCase(), value: s.slice(idx + 1).trim(), raw: s.trim() };
+    };
+    const isPending = (v) => !v || /^asked\b/i.test(v) || /awaiting/i.test(v);
+    const map = new Map();   // key -> raw string
+    const order = [];
+    const put = (f) => {
+        if (typeof f !== 'string' || !f.trim()) return;
+        const { key, value, raw } = parse(f);
+        if (!key) return;
+        if (!map.has(key)) { map.set(key, raw); order.push(key); return; }
+        const existing = parse(map.get(key));
+        const existingConcrete = !isPending(existing.value);
+        const incomingConcrete = !isPending(value);
+        if (incomingConcrete) map.set(key, raw);              // 새 구체값 → 갱신(정정 허용)
+        else if (!existingConcrete) map.set(key, raw);        // 둘 다 pending → 최신 표현 유지
+        // existingConcrete && !incomingConcrete → 강등 시도 → 무시(구체값 유지)
+    };
+    (Array.isArray(prior) ? prior : []).forEach(put);
+    (Array.isArray(next) ? next : []).forEach(put);
+    return order.map(k => map.get(k));
+}
+
 // ── 코칭 나레이션 음성 합성: 전면 비활성화 (2026-05-22) ───────────────────
 // 사용자 검증 결과 ko-KR-HyunsuMultilingualNeural / en-US-AvaMultilingualNeural
 // 두 케이스 모두 인용부호 안 학습언어 발음 품질이 떨어진다는 보고. 다른
@@ -526,14 +558,10 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         if (parsed?.aiReply?.sentence) {
             parsed.aiReply.sentence = stripAnnotations(parsed.aiReply.sentence, targetLang);
         }
-        // B안(slot memory): establishedFacts 정규화 — 모델이 누락/비배열로 내면
-        // 이전 누적 facts 를 유지(메모리 유실 방지). 문자열만 통과.
+        // B안(slot memory): establishedFacts key 기반 병합 — 구체값 강등 차단 +
+        // prior 누적 보존 + 새 구체값 갱신/추가. 모델이 누락/강등/드롭해도 서버가 방어.
         if (parsed?.aiReply) {
-            const next = Array.isArray(parsed.aiReply.establishedFacts)
-                ? parsed.aiReply.establishedFacts.filter(f => typeof f === 'string' && f.trim())
-                : [];
-            // 모델이 누적을 빠뜨려 prior 보다 짧아지면(드롭) prior 로 보강 — 합집합.
-            parsed.aiReply.establishedFacts = next.length >= priorFacts.length ? next : priorFacts;
+            parsed.aiReply.establishedFacts = mergeEstablishedFacts(priorFacts, parsed.aiReply.establishedFacts);
         }
         res.json(parsed);
     } catch (e) {

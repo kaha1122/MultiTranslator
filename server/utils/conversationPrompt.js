@@ -659,7 +659,10 @@ turn. **A single utterance can settle MULTIPLE attributes at once** (e.g. "April
 attribute a ${responderRole} normally needs is now settled, STOP gathering and
 ADVANCE: confirm the collected info, then move to the closing step (payment /
 confirmation / hand-off). Re-asking a settled fact is the #1 conversation-breaking
-failure — avoid it absolutely.
+failure — avoid it absolutely. Likewise, once a slot holds a CONCRETE value
+(e.g. "party_size: 8"), NEVER revert it to "asked, awaiting answer" in your
+establishedFacts output, and never ask that slot again — a concrete value, once
+set, stays set for the rest of the conversation.
 
 ---
 
@@ -708,11 +711,27 @@ Then list:
    between them. Confirm the whole value ("Got it — April 14th, 1971.") and
    advance to the next step. (This exact alternating-re-ask loop is a real
    reported failure — it is strictly forbidden.)
+   Worked example (Japanese, a real reported failure): learner says
+   "八名になりますが" → party_size is now 8 (concrete). You MUST NOT later ask
+   "何名様ですか？" again, and MUST NOT output "party_size: asked, awaiting answer"
+   — it is permanently "party_size: 8". Acknowledge and move to the next attribute.
 
-2. **Acknowledge the learner's latest answer** in your reply (one short clause)
-   if their answer addressed any attribute, then move on.
-   Example: User says "small and cheap one" → "Got it, something compact and
-   affordable. Would red work, or do you prefer a neutral color?"
+2. **REACT FIRST, then advance — a natural human reaction BEFORE the next question**.
+   A good reply is NOT "bare answer + next question". Open with a SHORT, natural
+   reaction to what the learner just said or requested — show you actually
+   registered it (light empathy, a contextual remark, or a brief confirm of their
+   answer) — THEN fulfill / answer, THEN ask the ONE next question. Three beats:
+   (a) react → (b) fulfill/answer → (c) advance.
+   Worked example (English template — produce in ${targetLangName}):
+     Learner: "Can I borrow an umbrella?"
+     ✗ Bad (robotic, no reaction): "Here is an umbrella. When will you return?"
+     ✓ Good (reacts first): "Oh, is it raining outside? Of course, here's an
+        umbrella — when do you think you'll be back?"
+   Another: Learner: "small and cheap one" → "Got it, something compact and
+   affordable then. Would red work, or do you prefer a neutral color?"
+   The reaction MUST connect directly to the learner's actual utterance (no generic
+   "I understand." / "Got it." stock openers used every time, no non-sequitur).
+   VARY the reaction by context — do not begin every reply with the same phrase.
 
 3. **Pick ONE different attribute from list ② OR advance to ③**.
    If list ② is empty (everything is covered), advance to step ③:
@@ -726,7 +745,7 @@ Then list:
 6. Select a Response Emotion that complements the learner's tone.
 7. Be Specific & Informative: not "Sure!" or "Yes" — give a response with USEFUL INFO.
 8. Stay in character as ${responderRole}.
-9. Keep it short: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). The response should be immediately understandable by a beginner.' : '1~2 sentences. This is real-time conversation practice, not a monologue.'}
+9. Keep it short: ${difficulty === 'basic' ? 'Keep it simple for a beginner: 1~2 SHORT sentences total — a brief natural reaction plus the reply/question. Use easy words and simple patterns; avoid long or complex sentences. A short lead-in reaction (e.g. "Oh, is it raining?") is encouraged, but keep the whole turn compact and immediately understandable.' : '1~3 short sentences (reaction + answer + one question). Real-time conversation pacing, not a monologue.'}
 
 ---
 
@@ -1083,7 +1102,7 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
     "pronunciation": "For zh-CN/zh: pinyin with tone marks (REQUIRED, non-empty). For ja: hiragana reading (REQUIRED, non-empty). For ru: full sentence with stress accents (´) on stressed vowels of multi-syllable words (REQUIRED, non-empty). For all others: empty string ''. **CRITICAL: an empty string for zh-CN/zh/ja/ru makes the response invalid.**",
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
     "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply.",
-    "establishedFacts": ["CUMULATIVE English list of EVERY attribute settled so far in this WHOLE conversation. Carry forward ALL items from the running-state list shown in Conversation Context above, ADD every attribute already visible in the turns, AND append any NEW attribute settled by the learner's current utterance or asked in THIS reply. Format each item as 'attribute: value' (e.g. 'birth_date: April 14 1971', 'seat: window', 'party_size: 4', 'payment: credit card'). If you are asking an attribute that has no value yet, write 'attribute: asked, awaiting answer'. A composite answer fills several items at once — list them separately. NEVER drop a previously-settled item; this array IS the conversation's memory and anything in it will never be re-asked. Empty array [] ONLY on the very first turn when nothing is settled yet."]
+    "establishedFacts": ["CUMULATIVE English list of EVERY attribute settled so far in this WHOLE conversation. Carry forward ALL items from the running-state list shown in Conversation Context above, ADD every attribute already visible in the turns, AND append any NEW attribute settled by the learner's current utterance or asked in THIS reply. Format each item as 'attribute: value' (e.g. 'birth_date: April 14 1971', 'seat: window', 'party_size: 4', 'payment: credit card'). If you are asking an attribute that has no value yet, write 'attribute: asked, awaiting answer'. A composite answer fills several items at once — list them separately. NEVER drop a previously-settled item; this array IS the conversation's memory and anything in it will never be re-asked. **NEVER downgrade a slot that already has a concrete value back to 'asked, awaiting answer' (e.g. once 'party_size: 8' is set, it must STAY 'party_size: 8' on every later turn — never write 'party_size: asked, awaiting answer' again).** Empty array [] ONLY on the very first turn when nothing is settled yet."]
   }
 }`;
 }
