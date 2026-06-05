@@ -262,7 +262,8 @@
     "loginRequired": "Please log in.",
     "customLabelTop": "Custom Input",
     "customLabelBottom": "Type freely",
-    "customPlaceholder": "Enter your own location or situation"
+    "customPlaceholder": "Enter your own location or situation",
+    "customPlaceholderFreetalk": "e.g. Taking a taxi / Debating AI with a friend"
   },
   "vocab": {
     "generate": "Generate Words",
@@ -284,6 +285,8 @@
     "office": "Office & Work",
     "bank": "Bank",
     "gym": "Gym",
+    "home": "Home & Neighbors",
+    "cinema": "Cinema & Theater",
     "custom": "Custom"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Compliments",
     "decline": "Declining Politely",
     "advice": "Asking for Advice",
+    "debate": "Debate & Opinions",
+    "phonecall": "Phone Call",
     "custom": "Custom"
   },
   "vocabCat": {

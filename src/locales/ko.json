@@ -262,7 +262,8 @@
     "loginRequired": "로그인이 필요합니다.",
     "customLabelTop": "직접 입력",
     "customLabelBottom": "자유롭게 입력",
-    "customPlaceholder": "장소나 상황을 직접 입력하세요"
+    "customPlaceholder": "장소나 상황을 직접 입력하세요",
+    "customPlaceholderFreetalk": "예) Taxi로 이동하기 / 친구와 AI주제로 토론하기"
   },
   "vocab": {
     "generate": "단어 생성",
@@ -284,6 +285,8 @@
     "office": "회사 & 사무실",
     "bank": "은행",
     "gym": "피트니스 센터",
+    "home": "집 & 이웃",
+    "cinema": "영화관 & 공연장",
     "custom": "직접입력"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "칭찬 & 감사 표현",
     "decline": "거절하기",
     "advice": "조언 구하기",
+    "debate": "토론 & 의견 나누기",
+    "phonecall": "전화 통화",
     "custom": "직접입력"
   },
   "vocabCat": {

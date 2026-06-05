@@ -262,7 +262,8 @@
     "loginRequired": "ログインしてください。",
     "customLabelTop": "直接入力",
     "customLabelBottom": "自由に入力",
-    "customPlaceholder": "場所や状況を直接入力してください"
+    "customPlaceholder": "場所や状況を直接入力してください",
+    "customPlaceholderFreetalk": "例) タクシーで移動する / 友達とAIについて議論する"
   },
   "vocab": {
     "generate": "単語を生成",
@@ -284,6 +285,8 @@
     "office": "オフィス・職場",
     "bank": "銀行",
     "gym": "ジム",
+    "home": "家 & ご近所",
+    "cinema": "映画館 & 劇場",
     "custom": "直接入力"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "感謝・褒め言葉",
     "decline": "断り方",
     "advice": "アドバイス",
+    "debate": "議論 & 意見交換",
+    "phonecall": "電話",
     "custom": "直接入力"
   },
   "vocabCat": {

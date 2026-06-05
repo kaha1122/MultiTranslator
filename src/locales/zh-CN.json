@@ -262,7 +262,8 @@
     "loginRequired": "请先登录。",
     "customLabelTop": "自定义输入",
     "customLabelBottom": "自由输入",
-    "customPlaceholder": "请输入您的场景或情境"
+    "customPlaceholder": "请输入您的场景或情境",
+    "customPlaceholderFreetalk": "例如：打车出行 / 和朋友讨论AI"
   },
   "vocab": {
     "generate": "生成词汇",
@@ -284,6 +285,8 @@
     "office": "办公室 & 职场",
     "bank": "银行",
     "gym": "健身房",
+    "home": "家 & 邻里",
+    "cinema": "电影院 & 剧场",
     "custom": "自定义"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "称赞 & 感谢",
     "decline": "礼貌拒绝",
     "advice": "寻求建议",
+    "debate": "讨论 & 交流意见",
+    "phonecall": "打电话",
     "custom": "自定义"
   },
   "vocabCat": {

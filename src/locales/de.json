@@ -262,7 +262,8 @@
     "loginRequired": "Bitte einloggen.",
     "customLabelTop": "Eigene Eingabe",
     "customLabelBottom": "Frei eingeben",
-    "customPlaceholder": "Eigenen Ort oder Situation eingeben"
+    "customPlaceholder": "Eigenen Ort oder Situation eingeben",
+    "customPlaceholderFreetalk": "z. B. Mit dem Taxi fahren / Mit einem Freund über KI diskutieren"
   },
   "vocab": {
     "generate": "Wörter generieren",
@@ -284,6 +285,8 @@
     "office": "Büro",
     "bank": "Bank",
     "gym": "Fitnessstudio",
+    "home": "Zuhause & Nachbarn",
+    "cinema": "Kino & Theater",
     "custom": "Eigene Eingabe"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Komplimente",
     "decline": "Höflich ablehnen",
     "advice": "Um Rat bitten",
+    "debate": "Diskussion & Meinungen",
+    "phonecall": "Telefongespräch",
     "custom": "Eigene Eingabe"
   },
   "vocabCat": {

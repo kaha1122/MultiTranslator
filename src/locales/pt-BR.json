@@ -262,7 +262,8 @@
     "loginRequired": "Faça login, por favor.",
     "customLabelTop": "Entrada personalizada",
     "customLabelBottom": "Digitar livremente",
-    "customPlaceholder": "Digite seu próprio local ou situação"
+    "customPlaceholder": "Digite seu próprio local ou situação",
+    "customPlaceholderFreetalk": "ex.) Pegar um táxi / Debater sobre IA com um amigo"
   },
   "vocab": {
     "generate": "Gerar Palavras",
@@ -284,6 +285,8 @@
     "office": "Escritório",
     "bank": "Banco",
     "gym": "Academia",
+    "home": "Casa & Vizinhos",
+    "cinema": "Cinema & Teatro",
     "custom": "Personalizado"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Elogios",
     "decline": "Recusar",
     "advice": "Pedir Conselhos",
+    "debate": "Debate & Opiniões",
+    "phonecall": "Ligação telefônica",
     "custom": "Personalizado"
   },
   "vocabCat": {

@@ -262,7 +262,8 @@
     "loginRequired": "Пожалуйста, войдите в аккаунт.",
     "customLabelTop": "Свой вариант",
     "customLabelBottom": "Введите свободно",
-    "customPlaceholder": "Введите своё место или ситуацию"
+    "customPlaceholder": "Введите своё место или ситуацию",
+    "customPlaceholderFreetalk": "напр.) Поездка на такси / Спор об ИИ с другом"
   },
   "vocab": {
     "generate": "Сгенерировать слова",
@@ -284,6 +285,8 @@
     "office": "Офис",
     "bank": "Банк",
     "gym": "Спортзал",
+    "home": "Дом и соседи",
+    "cinema": "Кино и театр",
     "custom": "Своё"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Комплименты",
     "decline": "Вежливый отказ",
     "advice": "Просьба о совете",
+    "debate": "Дискуссия и мнения",
+    "phonecall": "Телефонный звонок",
     "custom": "Своё"
   },
   "vocabCat": {

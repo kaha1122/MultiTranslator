@@ -262,7 +262,8 @@
     "loginRequired": "Veuillez vous connecter.",
     "customLabelTop": "Saisie personnalisée",
     "customLabelBottom": "Saisie libre",
-    "customPlaceholder": "Entrez votre propre lieu ou situation"
+    "customPlaceholder": "Entrez votre propre lieu ou situation",
+    "customPlaceholderFreetalk": "ex) Prendre un taxi / Débattre de l'IA avec un ami"
   },
   "vocab": {
     "generate": "Générer des mots",
@@ -284,6 +285,8 @@
     "office": "Bureau & Travail",
     "bank": "Banque",
     "gym": "Salle de sport",
+    "home": "Maison & Voisins",
+    "cinema": "Cinéma & Spectacle",
     "custom": "Personnalisé"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Compliments",
     "decline": "Refuser poliment",
     "advice": "Demander conseil",
+    "debate": "Débat & Opinions",
+    "phonecall": "Appel téléphonique",
     "custom": "Personnalisé"
   },
   "vocabCat": {

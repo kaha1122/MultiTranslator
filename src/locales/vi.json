@@ -262,7 +262,8 @@
     "loginRequired": "Vui lòng đăng nhập.",
     "customLabelTop": "Nhập tùy chỉnh",
     "customLabelBottom": "Nhập tự do",
-    "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn"
+    "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn",
+    "customPlaceholderFreetalk": "VD: Đi taxi / Tranh luận về AI với bạn"
   },
   "vocab": {
     "generate": "Tạo từ vựng",
@@ -284,6 +285,8 @@
     "office": "Văn phòng",
     "bank": "Ngân hàng",
     "gym": "Phòng tập",
+    "home": "Nhà & Hàng xóm",
+    "cinema": "Rạp phim & Nhà hát",
     "custom": "Tùy chỉnh"
   },
   "sceneSit": {
@@ -297,6 +300,8 @@
     "compliment": "Khen ngợi",
     "decline": "Từ chối lịch sự",
     "advice": "Xin lời khuyên",
+    "debate": "Tranh luận & Chia sẻ ý kiến",
+    "phonecall": "Gọi điện thoại",
     "custom": "Tùy chỉnh"
   },
   "vocabCat": {
