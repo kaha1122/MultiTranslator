@@ -4356,7 +4356,7 @@ function App() {
                   incrementDailyListen();
                 }
               }
-              addAdPoints(1, { bonusCost: 5 });
+              addAdPoints(3, { bonusCost: 5 }); // Generate=3점 (지문 생성=고비용)
             }}
             onFirstPlay={() => { addAdPoints(1, { bonusCost: 5 }); }}
             onNavigateToLibrary={(cardId) => {
@@ -5145,7 +5145,7 @@ function App() {
           // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
           // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
           if (hasBonusActive) {
-            addAdPoints(1, { bonusCost: 10, deferAd: true });
+            addAdPoints(3, { bonusCost: 10, deferAd: true }); // Generate=3점 (FreeTalk=고비용)
           } else {
             // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
             if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
@@ -5155,7 +5155,7 @@ function App() {
             }
             // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
             // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-            addAdPoints(1, { bonusCost: 10, deferAd: true });
+            addAdPoints(3, { bonusCost: 10, deferAd: true }); // Generate=3점 (FreeTalk=고비용)
           }
           // 분석용 평생 누적 카운터
           incrementTotalFreeTalk();
