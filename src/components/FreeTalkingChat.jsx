@@ -215,12 +215,6 @@ export default function FreeTalkingChat({
         }
     };
 
-    // 마지막 user_free 메시지 인덱스
-    let lastUserFreeIdx = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
-    }
-
     // AI-Tip 버튼 — 옵션 A 보수 매트릭스:
     //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스, 변경 X)
     //   m.learning_tip_narration : SPOKEN 나레이션용 (2~4 문장, TTS-friendly)
@@ -249,7 +243,7 @@ export default function FreeTalkingChat({
             });
             if (res.status === 204) {
                 // 매트릭스 미지원 (sourceLang, targetLang) — narration 텍스트 popup
-                setAiTipPopup({ open: true, text: ttsText });
+                setAiTipPopup({ open: true, text: ttsText, heard: msg?.sttRaw || '', corrected: msg?.fullText || msg?.text || '' });
                 return;
             }
             if (!res.ok) throw new Error(`coach-tts ${res.status}`);
@@ -270,7 +264,7 @@ export default function FreeTalkingChat({
         } catch (e) {
             console.warn('[FreeTalkingChat] coach-tts failed, falling back to text popup:', e?.message);
             // 네트워크 에러 등 → 텍스트 popup fallback
-            setAiTipPopup({ open: true, text: ttsText });
+            setAiTipPopup({ open: true, text: ttsText, heard: msg?.sttRaw || '', corrected: msg?.fullText || msg?.text || '' });
         } finally {
             if (url) { try { URL.revokeObjectURL(url); } catch (e) { /* noop */ } }
             setLearningTipLoadingId(null);
@@ -421,7 +415,6 @@ export default function FreeTalkingChat({
                             onCardOpen={handleCardOpen}
                             onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
                             onLearningTipUserFree={handleLearningTip}
-                            isLastUserFree={idx === lastUserFreeIdx}
                             isLearningTipLoading={learningTipLoadingId === m.id}
                             onRetryReply={m.replyError ? retryLastReply : undefined}
                             t={t}
@@ -523,6 +516,8 @@ export default function FreeTalkingChat({
             <AITipPopup
                 open={aiTipPopup.open}
                 text={aiTipPopup.text}
+                heard={aiTipPopup.heard}
+                corrected={aiTipPopup.corrected}
                 onClose={() => setAiTipPopup({ open: false, text: '' })}
                 t={t}
             />

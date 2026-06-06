@@ -66,6 +66,8 @@
     "guideStep1": "まず状況説明と例の会話を聞いて、次の会話を想像してみましょう",
     "guideStep2": "[話す]ボタンを押して、想像した会話を自由に続けましょう",
     "guideStep3": "やり取りしたメッセージをタップしてカードを開き、学習しましょう",
+    "heardMessage": "聞き取った内容",
+    "correctedMessage": "修正後の文",
     "guideDismiss": "始める"
   },
   "pushOptIn": {

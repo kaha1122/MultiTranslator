@@ -25,7 +25,6 @@ export default function ChatBubble({
     onCardOpen,
     onReplay,
     onLearningTipUserFree,
-    isLastUserFree,
     isLearningTipLoading,
     onRetryReply,
     t,
@@ -110,8 +109,9 @@ export default function ChatBubble({
                     </span>
                 </button>
 
-                {/* user_free 액션 바 — 마지막 user_free 만 노출 (AI-Tip 단일, 우측 정렬) */}
-                {message.role === 'user_free' && isLastUserFree && !message.isLoading && (
+                {/* user_free 액션 바 — 모든 user_free 에 노출 (지난 턴 피드백 다시보기 유지, AI-Tip 단일, 우측 정렬).
+                    팁 데이터(learning_tip/narration)는 메시지 객체에 보존되므로 대화창 닫힐 때까지 동작. */}
+                {message.role === 'user_free' && !message.isLoading && (
                     <div className="ftc-user-actions">
                         <button
                             className="ftc-user-action-btn"

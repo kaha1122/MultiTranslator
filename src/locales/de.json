@@ -66,6 +66,8 @@
     "guideStep1": "Hören Sie zuerst die Situation und das Beispielgespräch und stellen Sie sich das nächste Gespräch vor",
     "guideStep2": "Drücken Sie [Sprechen], um das vorgestellte Gespräch frei fortzusetzen",
     "guideStep3": "Tippen Sie auf die ausgetauschten Nachrichten, um Karten zu öffnen und zu lernen",
+    "heardMessage": "Erkannte Nachricht",
+    "correctedMessage": "Korrigierte Nachricht",
     "guideDismiss": "Starten"
   },
   "pushOptIn": {

@@ -87,6 +87,9 @@ function serializeTranscriptTurns(msgs) {
             const raw = m.sttRaw || '';
             if (raw && raw !== (m.fullText || m.text)) turn.raw = raw.slice(0, TRANSCRIPT_TEXT_CAP);
             if (m.intentWasCorrected) turn.c = true;
+            // AI Tip 기록(운영/분석용) — SHORT(tip) + SPOKEN(tipN) 둘 다
+            if (m.learning_tip) turn.tip = String(m.learning_tip).slice(0, TRANSCRIPT_TEXT_CAP);
+            if (m.learning_tip_narration) turn.tipN = String(m.learning_tip_narration).slice(0, TRANSCRIPT_TEXT_CAP);
         }
         if (m.role === 'ai' && Array.isArray(m.establishedFacts) && m.establishedFacts.length) {
             turn.f = m.establishedFacts;

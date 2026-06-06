@@ -66,6 +66,8 @@
     "guideStep1": "Primero escucha la situación y el diálogo de ejemplo, y luego imagina tu respuesta",
     "guideStep2": "Pulsa [Hablar] para continuar libremente la conversación que imaginaste",
     "guideStep3": "Toca los mensajes intercambiados para abrir tarjetas y estudiarlas",
+    "heardMessage": "Mensaje escuchado",
+    "correctedMessage": "Mensaje corregido",
     "guideDismiss": "Empezar"
   },
   "pushOptIn": {

@@ -66,6 +66,8 @@
     "guideStep1": "Hãy nghe phần giới thiệu tình huống và hội thoại mẫu, rồi tưởng tượng câu tiếp theo",
     "guideStep2": "Nhấn nút [Nói] để tự do tiếp tục cuộc trò chuyện bạn đã hình dung",
     "guideStep3": "Chạm vào các tin nhắn đã trao đổi để mở thẻ và học",
+    "heardMessage": "Nội dung nghe được",
+    "correctedMessage": "Câu đã sửa",
     "guideDismiss": "Bắt đầu"
   },
   "pushOptIn": {
