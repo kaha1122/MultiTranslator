@@ -119,6 +119,20 @@ let _admobInitialized = false;
 let _bannerShowing = false;
 let _bannerSetupInFlight = false;
 
+// [v1.5.98] FailedToLoad threshold —
+// AdMob auto-refresh 1회 일시 실패에도 setOffset(false)를 즉시 호출하면
+// CSS admob-active class가 제거되어 하단 탭바가 화면 맨 아래로 튀어 올라가고
+// 광고 자리가 사라져 사용자에게 "광고가 갑자기 사라짐"으로 인지됨.
+// 다음 60-120s 후 자동 갱신 성공 시 Loaded 이벤트로 복귀하지만, 그 사이 60초+
+// 동안 layout 무너짐. 2026-06-06 사용자 보고 + Android logcat 분석으로 확정
+// (23:43:34 요청 → creative 렌더 실패 → 66s 후 자동 재시도 성공).
+//
+// 해결: 3회 연속 실패까지는 CSS 유지(layout 보존) → 다음 Loaded/SizeChanged
+// 성공 시 자동 reset + setOffset(DEFAULT) 복원. 일시 실패는 사용자에게 안 보임.
+// 3회 연속 = 약 6분 (auto-refresh 120s × 3) 진짜 장애 상황 — 그때만 layout 정리.
+let _consecutiveFailures = 0;
+const FAIL_THRESHOLD = 3;
+
 async function loadAdMob() {
     if (_adMob) return;
     if (!isNativePlatform()) return;
@@ -226,17 +240,27 @@ export const useAdMob = (tier) => {
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => {
                     const h = info?.height || DEFAULT_BANNER_HEIGHT;
                     console.log('[AdMob Banner] SizeChanged, height:', h);
+                    // [v1.5.98] 성공 신호 — 실패 카운터 리셋
+                    _consecutiveFailures = 0;
                     setOffset(h);
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.Loaded, () => {
                     console.log('[AdMob Banner] Loaded OK');
+                    // [v1.5.98] 성공 신호 — 실패 카운터 리셋 + offset 복원
+                    _consecutiveFailures = 0;
                     setOffset(DEFAULT_BANNER_HEIGHT); // SizeChanged가 아직 안 왔을 때 폴백
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
-                    console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
-                    // no-fill 시 예약된 100px 공간 회수 — 빈 영역이 콘텐츠 아래 표시되는 결함 방지
-                    // (iOS 출시 전 AdMob no-fill / 인터넷 끊김 / 광고 차단기 사용 시 발생)
-                    setOffset(false);
+                    _consecutiveFailures++;
+                    console.error(`[AdMob Banner] FailedToLoad (${_consecutiveFailures}/${FAIL_THRESHOLD}):`, JSON.stringify(e));
+                    // [v1.5.98] 3회 연속 실패 시에만 CSS 정리 — 일시 실패는 layout 유지하여
+                    // 사용자에게 "광고 갑자기 사라짐"으로 안 보이게 함. 다음 자동 갱신
+                    // 성공 시 SizeChanged/Loaded handler가 자동 복귀.
+                    // 3회 연속 실패 = ~6분 (auto-refresh 120s × 3) 진짜 장애 상황 신호.
+                    if (_consecutiveFailures >= FAIL_THRESHOLD) {
+                        console.warn(`[AdMob Banner] ${FAIL_THRESHOLD}회 연속 실패 — layout 정리`);
+                        setOffset(false);
+                    }
                 }));
 
                 // NPE(BannerExecutor.java:230) 방어는 위쪽 모듈 락(_bannerShowing,
