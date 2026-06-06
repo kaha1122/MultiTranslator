@@ -54,27 +54,29 @@ export default function MessageCardModal({
                 <button className="mcm-close" onClick={onClose} aria-label="Close">
                     <X size={20} />
                 </button>
-                {ScenePracticeCardComp ? (
-                    <ScenePracticeCardComp
-                        generated={generated}
-                        langCode={langCode}
-                        sourceLang={sourceLang}
-                        onTrialLimitReached={onTrialLimitReached}
-                        onPronSuccess={onPronSuccess}
-                        onSave={onSave}
-                        isSaved={isSaved}
-                        onSpeak={onSpeak}
-                        t={t}
-                        targetGoal={targetGoal}
-                        onBookmarkPrompt={onBookmarkPrompt}
-                    />
-                ) : (
-                    <div className="mcm-fallback">
-                        <p>{generated.sentence}</p>
-                        {generated.translation && <p className="mcm-translation">{generated.translation}</p>}
-                        {generated.learning_tip && <p className="mcm-tip">💡 {generated.learning_tip}</p>}
-                    </div>
-                )}
+                <div className="mcm-body">
+                    {ScenePracticeCardComp ? (
+                        <ScenePracticeCardComp
+                            generated={generated}
+                            langCode={langCode}
+                            sourceLang={sourceLang}
+                            onTrialLimitReached={onTrialLimitReached}
+                            onPronSuccess={onPronSuccess}
+                            onSave={onSave}
+                            isSaved={isSaved}
+                            onSpeak={onSpeak}
+                            t={t}
+                            targetGoal={targetGoal}
+                            onBookmarkPrompt={onBookmarkPrompt}
+                        />
+                    ) : (
+                        <div className="mcm-fallback">
+                            <p>{generated.sentence}</p>
+                            {generated.translation && <p className="mcm-translation">{generated.translation}</p>}
+                            {generated.learning_tip && <p className="mcm-tip">💡 {generated.learning_tip}</p>}
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

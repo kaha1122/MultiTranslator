@@ -24,10 +24,26 @@
     width: 100%;
     max-width: 460px;
     max-height: 92vh;
-    overflow-y: auto;
+    /* 창 자신은 스크롤하지 않음 — 닫기 버튼(.mcm-close)을 스크롤 밖 고정 위치로 유지.
+       실제 스크롤은 내부 .mcm-body 가 담당한다. (콘텐츠가 길어져도 닫기 버튼이
+       콘텐츠와 함께 위로 사라지던 iOS 탈출불가 버그 방지) */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
     box-shadow: 0 8px 28px rgba(0, 0, 0, 0.3);
     animation: mcm-window-in 200ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
+}
+
+/* 스크롤 영역: 발음 피드백 등 콘텐츠가 늘어나면 여기서만 세로 스크롤된다.
+   닫기 버튼과 겹치지 않도록 상단 padding 을 버튼 높이만큼 확보. */
+.mcm-body {
+    flex: 1 1 auto;
+    min-height: 0;        /* flex 자식이 스크롤하려면 필수 */
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;   /* iOS 관성 스크롤 */
+    overscroll-behavior: contain;
     padding: 12px;
+    padding-top: 44px;
 }
 @keyframes mcm-window-in {
     from { transform: translateY(12px) scale(0.98); opacity: 0; }
