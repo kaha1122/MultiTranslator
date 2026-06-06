@@ -166,11 +166,17 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceFemale}'>${innerContent}</voice></speak>`;
     }
 
+    // 검증용 로그 토글 (기본 ON, TTS_LOG_VERBOSE=0 으로 끔)
+    const VERBOSE = process.env.TTS_LOG_VERBOSE !== '0';
+    const id = ttsCache.shortId(ssml);
+    const chars = ssml.length;
+
     // 캐시 조회 — 동일 SSML이면 Azure 재합성 없이 즉시 반환 (BYOK는 bypass)
     const useCache = !byokAzureKey;
     if (useCache) {
         const hit = ttsCache.get(ssml);
         if (hit) {
+            if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} chars=${chars} — 캐시 제공(Azure 호출 0)`);
             res.set('Content-Type', 'audio/mpeg');
             return res.send(hit);
         }
@@ -191,6 +197,7 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         );
         const buf = Buffer.from(response.data);
         if (useCache) ttsCache.set(ssml, buf); // 성공 응답만 캐시
+        if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} chars=${chars} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}`);
         res.set('Content-Type', 'audio/mpeg');
         res.send(buf);
     } catch (e) {

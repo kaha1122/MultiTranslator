@@ -134,6 +134,8 @@ export default function ListeningTab({
     const loopModeRef = useRef(false); // useCallback 내에서 최신 값 접근용
     const playGenRef = useRef(0); // 재생 세대 토큰 (stale fetch 응답 무효화)
     const ttsAbortRef = useRef(null); // 진행 중 TTS fetch 취소용
+    const sentenceCacheRef = useRef(new Map()); // 문장별 TTS objectURL 캐시 (key → blob URL) — 반복 재생 시 서버 재요청 0
+    const SENT_CACHE_MAX = 40; // 문장 캐시 상한 (passage 변경 시 stopPassageAudio 에서 전체 정리)
 
     // loopMode 최신 값 동기화
     useEffect(() => { loopModeRef.current = loopMode; }, [loopMode]);
@@ -155,6 +157,13 @@ export default function ListeningTab({
             try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
             passageAudioUrlRef.current = null;
         }
+        // 문장별 캐시 일괄 정리 — 다른 passage 의 문장 오디오는 무효이므로 revoke + clear
+        if (sentenceCacheRef.current.size > 0) {
+            for (const url of sentenceCacheRef.current.values()) {
+                try { URL.revokeObjectURL(url); } catch {}
+            }
+            sentenceCacheRef.current.clear();
+        }
         setPassagePlaying(false);
         setPassageLoading(false);
     }, []);
@@ -170,9 +179,16 @@ export default function ListeningTab({
             return;
         }
 
-        // 일시정지 상태에서 재개
-        if (passageAudioRef.current && passageAudioRef.current.paused && passageAudioRef.current.currentTime > 0) {
-            passageAudioRef.current.play().catch(() => {});
+        // 보존된 오디오 재사용 — 일시정지 재개(중간 위치부터) 또는 재생완료 후 재청취(처음부터).
+        // 서버 재요청 없이 로컬에서 즉시 재생 → Azure 재합성 비용 0 + 로딩 스피너 없음.
+        // (오디오는 같은 passage 가 유지되는 동안만 보존 — stopPassageAudio 에서 정리)
+        if (passageAudioRef.current && passageAudioRef.current.paused) {
+            const a = passageAudioRef.current;
+            // 재생이 끝난 상태면 처음으로 되감기 (ended 시 currentTime=duration 이라 그냥 play 하면 안 들림)
+            if (a.ended || (a.duration && a.currentTime >= a.duration)) {
+                try { a.currentTime = 0; } catch {}
+            }
+            a.play().catch(() => {});
             setPassagePlaying(true);
             return;
         }
@@ -236,11 +252,8 @@ export default function ListeningTab({
                     audio.play().catch(() => {});
                 } else {
                     setPassagePlaying(false);
-                    if (passageAudioUrlRef.current) {
-                        try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
-                        passageAudioUrlRef.current = null;
-                    }
-                    passageAudioRef.current = null;
+                    // 오디오/blob URL 보존 — 재청취 시 서버 재요청 없이 로컬 재생(Azure 비용 0).
+                    // 정리는 stopPassageAudio(새 passage·조건변경·탭이탈·언마운트)에서 일괄 수행.
                 }
             };
 
@@ -272,6 +285,17 @@ export default function ListeningTab({
             if (speaker && text) {
                 const SERVER_URL = getServerUrl();
                 const dialogueSeed = simpleHashString(passage?.text || '');
+                const cacheKey = `${selectedLang}:${dialogueSeed}:${speaker}:${text}`;
+
+                // 캐시 히트 — 서버 재요청 없이 즉시 재생 (Azure 비용 0)
+                const cachedUrl = sentenceCacheRef.current.get(cacheKey);
+                if (cachedUrl) {
+                    try {
+                        await new Audio(cachedUrl).play();
+                        return;
+                    } catch { /* 재생 실패 시 아래 재요청으로 진행 */ }
+                }
+
                 let objectUrl = null;
                 try {
                     const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
@@ -282,10 +306,18 @@ export default function ListeningTab({
                     if (!res.ok) throw new Error(`TTS ${res.status}`);
                     const blob = await res.blob();
                     objectUrl = URL.createObjectURL(blob);
+
+                    // LRU 캐시 저장 — 초과 시 가장 오래된 항목 revoke + 제거.
+                    // 캐시본은 onended 에서 revoke 하지 않음(재사용). 정리는 eviction/stopPassageAudio 가 담당.
+                    if (sentenceCacheRef.current.size >= SENT_CACHE_MAX) {
+                        const oldestKey = sentenceCacheRef.current.keys().next().value;
+                        try { URL.revokeObjectURL(sentenceCacheRef.current.get(oldestKey)); } catch {}
+                        sentenceCacheRef.current.delete(oldestKey);
+                    }
+                    sentenceCacheRef.current.set(cacheKey, objectUrl);
+
                     const audio = new Audio(objectUrl);
-                    const localUrl = objectUrl;
-                    audio.onended = () => { try { URL.revokeObjectURL(localUrl); } catch {} };
-                    objectUrl = null; // revoke 책임 onended로 이전
+                    objectUrl = null; // 캐시가 소유 — finally/onended 에서 revoke 안 함
                     await audio.play();
                     return;
                 } catch (e) {

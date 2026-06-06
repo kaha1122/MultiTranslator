@@ -77,4 +77,9 @@ const logTimer = setInterval(() => {
 }, 10 * 60 * 1000);
 if (typeof logTimer.unref === 'function') logTimer.unref();
 
-module.exports = { get, set, snapshot };
+/** 짧은 식별자(로그 매칭용) — 같은 콘텐츠는 같은 id. */
+function shortId(ssml) {
+    return keyFor(ssml).slice(0, 8);
+}
+
+module.exports = { get, set, snapshot, shortId };
