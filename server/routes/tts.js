@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const { optionalAuth } = require('../middleware/auth');
+const ttsCache = require('../utils/ttsCache');
 
 const router = express.Router();
 
@@ -165,6 +166,16 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceFemale}'>${innerContent}</voice></speak>`;
     }
 
+    // 캐시 조회 — 동일 SSML이면 Azure 재합성 없이 즉시 반환 (BYOK는 bypass)
+    const useCache = !byokAzureKey;
+    if (useCache) {
+        const hit = ttsCache.get(ssml);
+        if (hit) {
+            res.set('Content-Type', 'audio/mpeg');
+            return res.send(hit);
+        }
+    }
+
     try {
         const response = await axios.post(
             `https://${azureRegion}.tts.speech.microsoft.com/cognitiveservices/v1`,
@@ -178,8 +189,10 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
                 responseType: 'arraybuffer',
             }
         );
+        const buf = Buffer.from(response.data);
+        if (useCache) ttsCache.set(ssml, buf); // 성공 응답만 캐시
         res.set('Content-Type', 'audio/mpeg');
-        res.send(Buffer.from(response.data));
+        res.send(buf);
     } catch (e) {
         console.error('[AzureTTS] Error:', e.response?.status, e.message);
         res.status(500).json({ error: 'Azure TTS failed' });
