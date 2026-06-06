@@ -151,8 +151,8 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
                 const escaped = escapeXml(t.text);
                 // 대화 모드에서는 style을 각 턴에 적용 (emotion 전역이지만 각 voice에 중첩 필요)
                 const inner = voiceStyle
-                    ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
-                    : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
+                    ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
+                    : `${escaped}`;
                 return `<voice xml:lang='${locale}' name='${chosen}'>${inner}</voice>`;
             })
             .join('');
@@ -161,8 +161,8 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         // 단일 voice 경로 (기존 동작 유지) — voiceFemale 기본 사용
         const escaped = escapeXml(text);
         const innerContent = voiceStyle
-            ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
-            : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
+            ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
+            : `${escaped}`;
         ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceFemale}'>${innerContent}</voice></speak>`;
     }
 

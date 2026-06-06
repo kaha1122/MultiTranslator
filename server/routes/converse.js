@@ -222,8 +222,8 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
 
     const escaped = escapeXml(text);
     const inner = voiceStyle
-        ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
-        : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
+        ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
+        : `${escaped}`;
     const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${inner}</voice></speak>`;
 
     try {
