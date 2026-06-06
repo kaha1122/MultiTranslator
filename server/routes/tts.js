@@ -2,6 +2,7 @@ const express = require('express');
 const axios = require('axios');
 const { optionalAuth } = require('../middleware/auth');
 const ttsCache = require('../utils/ttsCache');
+const { recordTtsUsage } = require('../utils/ttsUsage');
 
 const router = express.Router();
 
@@ -164,6 +165,7 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         const hit = ttsCache.get(ssml);
         if (hit) {
             if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} billable=${billable} — 캐시 제공(Azure 호출 0)`);
+            recordTtsUsage(req.uid, { hit: true, billable });
             res.set('Content-Type', 'audio/mpeg');
             return res.send(hit);
         }
@@ -185,6 +187,7 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         const buf = Buffer.from(response.data);
         if (useCache) ttsCache.set(ssml, buf); // 성공 응답만 캐시
         if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} billable=${billable} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}`);
+        if (useCache) recordTtsUsage(req.uid, { hit: false, billable }); // BYOK(our 비용 아님)는 제외
         res.set('Content-Type', 'audio/mpeg');
         res.send(buf);
     } catch (e) {
