@@ -230,7 +230,7 @@ export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimi
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
+const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
     // 랜덤 초기 장소 선택 (custom 제외)
     const pickRandomScene = (cat = 'locations') => {
         const list = SCENES[cat].filter(s => s.id !== 'custom');
@@ -256,11 +256,14 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
             setIsSaved(false);
         }
     }, [targetLangs, selectedLang]);
-    // 2026-05-23: Free Talking 화면 default 는 항상 'basic' — 사용자 default 가 intermediate 여도
-    //   첫 사용자에게 너무 어려워 우선 basic 으로 적응 유도. 사용자가 화면에서 명시적으로
-    //   intermediate/advanced 로 변경한 값은 그 세션 내 유지, 컴포넌트 재마운트(다시 진입)
-    //   시에는 또 basic 으로 초기화. userLevel 동기화 effect 제거.
-    const [difficulty, setDifficulty] = useState('basic');
+    // 2026-06-06: 언어별 난이도(languageLevels) 도입 — Scene/FreeTalk 도 "선택 언어"의 설정
+    //   난이도를 따름. 언어 전환/해당 언어 설정 변경 시 자동 반영, 같은 언어 내 화면에서 수동
+    //   변경한 값은 deps 미변경으로 보존(setDifficulty는 difficulty만 바꿈).
+    //   (구 2026-05-23 'basic 고정' 규칙 대체 — 사용자가 설정에서 언어별 default 를 직접 정함)
+    const [difficulty, setDifficulty] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setDifficulty(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [speechStyle, setSpeechStyle] = useState('formal');
     const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);

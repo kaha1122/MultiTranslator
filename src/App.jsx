@@ -545,6 +545,17 @@ function App() {
     }
   });
 
+  // [신규] 언어별 기본 학습 난이도 맵 ({ en:'advanced', ja:'basic', ... }).
+  // languageGoals와 동일하게 localStorage 전용. 미설정 언어는 || userLevel || 'basic' 폴백.
+  const [languageLevels, setLanguageLevels] = useState(() => {
+    try {
+      const saved = localStorage.getItem('languageLevels');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
   // 하루 학습 목표 카드 수 (기본 3장 — 2026-05-05 retention 정책 변경: 10장 → 3장)
   // 1회성 강제 마이그레이션: 기존 유저의 localStorage 값(10장 default 또는 본인 설정값)도
   // 새 default(3장)로 reset. dailyGoalMigrated_v3 플래그로 1회만 실행 — 이후 사용자가
@@ -1496,11 +1507,12 @@ function App() {
       localStorage.setItem('learningTips', JSON.stringify(learningTips));
       localStorage.setItem('pronunciations', JSON.stringify(pronunciations));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals)); // [신규] 언어 목표 점수 자동 저장
+      localStorage.setItem('languageLevels', JSON.stringify(languageLevels)); // [신규] 언어별 난이도 자동 저장
       localStorage.setItem('dailyGoal', String(dailyGoal)); // [신규] 일일 학습 목표 자동 저장
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
+  }, [inputText, sourceLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, languageLevels, dailyGoal]);
 
   // Translation 탭을 벗어나면 inputText를 비워줍니다 (카드 내역은 유지)
   useEffect(() => {
@@ -2302,10 +2314,26 @@ function App() {
       localStorage.setItem('sourceLang', sourceLang);
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals));
+      localStorage.setItem('languageLevels', JSON.stringify(languageLevels));
     } catch (err) {
       console.warn('언어 설정 로컬 저장 실패:', err);
     }
-  }, [sourceLang, targetLangs, languageGoals]);
+  }, [sourceLang, targetLangs, languageGoals, languageLevels]);
+
+  // [신규] 기존 유저 시드: languageLevels에 없는 targetLang은 현재 defaultLevel(userLevel)로 채움.
+  // (언어별 난이도 도입 전 유저가 설정 화면에서 '현재 난이도'를 그대로 보고 조정할 수 있게)
+  useEffect(() => {
+    if (!Array.isArray(targetLangs) || targetLangs.length === 0) return;
+    const base = userLevel || 'basic';
+    setLanguageLevels(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const code of targetLangs) {
+        if (!next[code]) { next[code] = base; changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [targetLangs, userLevel]);
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
@@ -4309,6 +4337,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
+            languageLevels={languageLevels}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
@@ -4334,6 +4363,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
+            languageLevels={languageLevels}
             isTrialListenLimitReached={isTrialListenLimitReached}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={onPronSuccess}
@@ -4397,6 +4427,7 @@ function App() {
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
+            languageLevels={languageLevels}
             onTrialLimitReached={() => setShowTrialLimitModal(true)}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveSceneCard}
@@ -4417,9 +4448,9 @@ function App() {
               // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
               // 콜백에서 처리(서버 200 응답 받은 직후). 503/500 등으로 startSession 실패 시
               // 카운트가 보존되어 사용자가 [다시 시도] 버튼으로 같은 1회를 재사용 가능.
-              // 2026-05-23: Free Talking 화면 default basic 강제는 ScenePractice 컴포넌트
-              //   내부에서 처리 (difficulty useState 초기값 'basic'). 사용자가 화면에서 명시적으로
-              //   intermediate/advanced 로 변경했다면 args.difficulty 그 값 그대로 존중.
+              // 2026-06-06: Free Talking 화면 default 난이도는 선택 언어의 languageLevels 값을
+              //   따름 (ScenePractice difficulty 가 languageLevels[selectedLang] 로 초기화/동기화).
+              //   사용자가 화면에서 명시적으로 변경한 args.difficulty 는 그대로 존중.
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
@@ -4624,6 +4655,9 @@ function App() {
                     {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                     <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                     {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
+                    {targetLangs.includes(lang.code) && (
+                      <span className="lang-order-badge">{targetLangs.indexOf(lang.code) + 1}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -4658,6 +4692,9 @@ function App() {
                       {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                       <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                       {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
+                      {targetLangs.includes(lang.code) && (
+                        <span className="lang-order-badge">{targetLangs.indexOf(lang.code) + 1}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4734,24 +4771,34 @@ function App() {
               </div>
             </div>
 
-            {/* 기본 학습 난이도 */}
+            {/* 기본 학습 난이도 — 언어별 설정 (목표 점수 UI와 동일 레이아웃) */}
             <div className="settings-group">
               <label className="settings-label">{t('settings.defaultLevel')} 📊</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['basic', 'intermediate', 'advanced'].map(lv => (
-                  <button
-                    key={lv}
-                    className={`vocab-level-btn ${userLevel === lv ? 'active' : ''}`}
-                    onClick={() => {
-                      setUserLevel(lv);
-                      localStorage.setItem('userLevel', lv);
-                      updateUserProfile({ defaultLevel: lv }).catch(() => {});
-                    }}
-                    style={{ flex: 1 }}
-                  >
-                    {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
-                  </button>
-                ))}
+              <p className="target-limit-msg" style={{ marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                {getT(sourceLang, 'settings.defaultLevelDesc')}
+              </p>
+              <div className="goal-sliders">
+                {targetLangs.map(code => {
+                  const lang = getLangInfo(code);
+                  const lvl = languageLevels[code] || userLevel || 'basic';
+                  return (
+                    <div key={code} className="lang-level-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px', gap: '8px' }}>
+                      <span style={{ width: '72px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem', flexShrink: 0 }}>{lang?.name}</span>
+                      <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                        {['basic', 'intermediate', 'advanced'].map(lv => (
+                          <button
+                            key={lv}
+                            className={`vocab-level-btn ${lvl === lv ? 'active' : ''}`}
+                            onClick={() => setLanguageLevels({ ...languageLevels, [code]: lv })}
+                            style={{ flex: 1, padding: '6px 4px', fontSize: '0.76rem' }}
+                          >
+                            {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 

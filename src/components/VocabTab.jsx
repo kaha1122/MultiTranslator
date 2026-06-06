@@ -257,6 +257,7 @@ export default function VocabTab({
     onGenerate,
     onNavigateToLibrary,
     userLevel,
+    languageLevels = {},
     isActive = true,
 }) {
     const { byokGeminiKey, user } = useAuth();
@@ -273,8 +274,13 @@ export default function VocabTab({
     const initialTopic = pickRandomTopic();
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
+    // 난이도는 "선택 언어"의 설정값을 따름 (languageLevels[selectedLang]).
+    // 언어 전환 또는 해당 언어 설정 변경 시 자동 반영. 같은 언어 내 수동 변경은 deps가
+    // 안 바뀌어 보존됨(setLevel은 level만 바꾸므로 effect 재실행 트리거 아님).
+    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setLevel(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [pickerCatId, setPickerCatId] = useState(null);
     const [selectedTopic, setSelectedTopic] = useState(initialTopic);
     const [customInput, setCustomInput] = useState('');

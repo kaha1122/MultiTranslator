@@ -232,6 +232,7 @@
     "noTarget": "Vui lòng chọn ngôn ngữ mục tiêu ở trên trước.",
     "saveReturn": "Lưu cài đặt & Quay lại",
     "defaultLevel": "Cấp độ học mặc định",
+    "defaultLevelDesc": "Đặt cấp độ học mặc định cho từng ngôn ngữ.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Tài khoản",
     "groupLanguage": "Ngôn ngữ",

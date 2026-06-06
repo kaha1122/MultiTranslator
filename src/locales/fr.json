@@ -232,6 +232,7 @@
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
     "saveReturn": "Enregistrer & Retour",
     "defaultLevel": "Niveau par défaut",
+    "defaultLevelDesc": "Définissez le niveau d'apprentissage par défaut pour chaque langue.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Compte",
     "groupLanguage": "Langue",

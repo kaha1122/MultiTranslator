@@ -232,6 +232,7 @@
     "noTarget": "먼저 위에서 학습 언어를 선택하세요.",
     "saveReturn": "설정 저장 & 돌아가기",
     "defaultLevel": "기본 학습 난이도",
+    "defaultLevelDesc": "언어별 기본 학습 난이도를 설정하세요.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "계정",
     "groupLanguage": "언어",

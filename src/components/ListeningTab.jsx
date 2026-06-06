@@ -93,6 +93,7 @@ export default function ListeningTab({
     onFirstPlay,                          // 2026-05-23: 첫 재생 시 추가 AdsPoint(15) 차감 — Azure TTS 비용 반영
     onNavigateToLibrary,
     userLevel,
+    languageLevels = {},
     isActive = true,
     isTrialListenLimitReached = false,  // 2026-05-23: Trial 일일 3회 한도 enforcement
 }) {
@@ -109,8 +110,12 @@ export default function ListeningTab({
     };
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
+    // 난이도는 "선택 언어"의 설정값(languageLevels[selectedLang])을 따름. 언어 전환/해당 언어
+    // 설정 변경 시 자동 반영, 같은 언어 내 수동 변경은 보존(deps 미변경).
+    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setLevel(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);

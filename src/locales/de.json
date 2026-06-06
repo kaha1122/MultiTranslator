@@ -232,6 +232,7 @@
     "noTarget": "Bitte wähle zuerst oben eine Zielsprache aus.",
     "saveReturn": "Einstellungen speichern & Zurück",
     "defaultLevel": "Standard-Lernstufe",
+    "defaultLevelDesc": "Lege die Standard-Lernstufe für jede Sprache fest.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Konto",
     "groupLanguage": "Sprache",

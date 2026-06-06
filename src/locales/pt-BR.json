@@ -232,6 +232,7 @@
     "noTarget": "Selecione um idioma de destino acima primeiro.",
     "saveReturn": "Salvar Configurações e Voltar",
     "defaultLevel": "Nível de aprendizado padrão",
+    "defaultLevelDesc": "Defina o nível de aprendizado padrão para cada idioma.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Conta",
     "groupLanguage": "Idioma",

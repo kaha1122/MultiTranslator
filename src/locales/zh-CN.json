@@ -232,6 +232,7 @@
     "noTarget": "请先在上方选择学习语言。",
     "saveReturn": "保存设置并返回",
     "defaultLevel": "默认学习难度",
+    "defaultLevelDesc": "为每种语言设置默认学习难度。",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "账户",
     "groupLanguage": "语言",

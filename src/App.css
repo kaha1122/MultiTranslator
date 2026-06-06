@@ -1512,6 +1512,24 @@ html.admob-active.platform-native::after {
   flex-shrink: 0;
 }
 
+/* 학습 언어 선택 순서(1/2/3) 배지 — flex 흐름의 마지막 자식 + margin-left:auto로
+   텍스트 길이와 무관하게 항상 카드 우측·세로중앙 정렬 (절대좌표 미사용) */
+.lang-order-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
 .lang-option:not(.selected):hover {
   background: #f0fdf4;
   transform: translateY(-2px);

@@ -232,6 +232,7 @@
     "noTarget": "まず上で学習言語を選択してください。",
     "saveReturn": "設定を保存して戻る",
     "defaultLevel": "デフォルト学習レベル",
+    "defaultLevelDesc": "言語ごとのデフォルト学習レベルを設定してください。",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "アカウント",
     "groupLanguage": "言語",

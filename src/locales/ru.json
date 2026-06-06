@@ -232,6 +232,7 @@
     "noTarget": "Сначала выберите целевой язык выше.",
     "saveReturn": "Сохранить настройки и вернуться",
     "defaultLevel": "Уровень обучения по умолчанию",
+    "defaultLevelDesc": "Установите уровень обучения по умолчанию для каждого языка.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Аккаунт",
     "groupLanguage": "Язык",
