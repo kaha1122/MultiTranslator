@@ -124,15 +124,8 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
     const voiceInfo       = AZURE_TTS_VOICE_MAP[langCode] || { voiceFemale: 'en-US-JennyNeural', voiceMale: 'en-US-GuyNeural', styles: ['chat'] };
     const voiceFemale     = voiceInfo.voiceFemale || voiceInfo.voice || 'en-US-JennyNeural';
     const voiceMale       = voiceInfo.voiceMale || voiceFemale; // 남성 voice 없으면 여성으로 폴백
-    const supportedStyles = voiceInfo.styles || [];
     const locale          = voiceFemale.split('-').slice(0, 2).join('-');
-
-    // emotion → style 매핑 (단일 voice 경로 및 dialogue turns 공통)
-    let voiceStyle = null;
-    if (supportedStyles.length > 0) {
-        const mapped = emotion ? EMOTION_TO_STYLE[emotion.toLowerCase()] : null;
-        voiceStyle = (mapped && supportedStyles.includes(mapped)) ? mapped : (supportedStyles.includes('chat') ? 'chat' : supportedStyles[0]);
-    }
+    // 2026-06-06: emotion(mstts:express-as) 제거 — 과금 글자 절감(중립 톤). EMOTION_TO_STYLE/emotion 미사용.
 
     // ── SSML 생성 ──
     let ssml;
@@ -149,34 +142,28 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
                 const speaker = (t.speaker || 'A').toString().toUpperCase();
                 const chosen = speaker === 'B' ? voiceForB : voiceForA;
                 const escaped = escapeXml(t.text);
-                // 대화 모드에서는 style을 각 턴에 적용 (emotion 전역이지만 각 voice에 중첩 필요)
-                const inner = voiceStyle
-                    ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
-                    : `${escaped}`;
-                return `<voice xml:lang='${locale}' name='${chosen}'>${inner}</voice>`;
+                return `<voice xml:lang='${locale}' name='${chosen}'>${escaped}</voice>`;
             })
             .join('');
         ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'>${voiceTags}</speak>`;
     } else {
         // 단일 voice 경로 (기존 동작 유지) — voiceFemale 기본 사용
         const escaped = escapeXml(text);
-        const innerContent = voiceStyle
-            ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
-            : `${escaped}`;
-        ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceFemale}'>${innerContent}</voice></speak>`;
+        ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceFemale}'>${escaped}</voice></speak>`;
     }
 
     // 검증용 로그 토글 (기본 ON, TTS_LOG_VERBOSE=0 으로 끔)
     const VERBOSE = process.env.TTS_LOG_VERBOSE !== '0';
     const id = ttsCache.shortId(ssml);
-    const chars = ssml.length;
+    // billable = Azure 과금 기준 글자수 (<speak>,<voice> 태그는 과금 제외). express-as 제거 후엔 사실상 순수 텍스트.
+    const billable = ssml.replace(/<\/?(speak|voice)[^>]*>/gi, '').length;
 
     // 캐시 조회 — 동일 SSML이면 Azure 재합성 없이 즉시 반환 (BYOK는 bypass)
     const useCache = !byokAzureKey;
     if (useCache) {
         const hit = ttsCache.get(ssml);
         if (hit) {
-            if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} chars=${chars} — 캐시 제공(Azure 호출 0)`);
+            if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} billable=${billable} — 캐시 제공(Azure 호출 0)`);
             res.set('Content-Type', 'audio/mpeg');
             return res.send(hit);
         }
@@ -197,7 +184,7 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
         );
         const buf = Buffer.from(response.data);
         if (useCache) ttsCache.set(ssml, buf); // 성공 응답만 캐시
-        if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} chars=${chars} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}`);
+        if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} billable=${billable} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}`);
         res.set('Content-Type', 'audio/mpeg');
         res.send(buf);
     } catch (e) {
