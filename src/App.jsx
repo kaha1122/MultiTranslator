@@ -75,6 +75,7 @@ import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
 import { assignNextCardSerial } from './utils/cardSerial';
+import { getCachedAudio, putCachedAudio } from './utils/ttsAudioCache';
 import { stripAnnotations } from './utils/stripAnnotations';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -2968,7 +2969,7 @@ function App() {
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
 
-  const handleSpeak = async (text, langCode, emotion) => {
+  const handleSpeak = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
 
     // ⭐ 이전 요청/재생 즉시 중단 — "돌림노래" 방지
@@ -2995,6 +2996,31 @@ function App() {
         if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
+    }
+
+    // 영속 캐시(IndexedDB) 조회 — 저장 카드(opts.saved)만 대상. 앱 재시작·날짜 변경 후에도 유지.
+    // 단어장에 저장한 카드를 매일 다시 들어도 같은 오디오면 Azure 호출 0. (BYOK·일반 생성 카드는 제외)
+    if (opts.saved && !byokAzureKey) {
+      try {
+        const idbBlob = await getCachedAudio(cacheKey);
+        if (idbBlob && !isStale()) {
+          const url = URL.createObjectURL(idbBlob);
+          // 세션 메모리에도 승격 (LRU 상한 유지)
+          if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
+            const oldestKey = ttsCacheRef.current.keys().next().value;
+            URL.revokeObjectURL(ttsCacheRef.current.get(oldestKey));
+            ttsCacheRef.current.delete(oldestKey);
+          }
+          ttsCacheRef.current.set(cacheKey, url);
+          const audio = new Audio(url);
+          ttsAudioRef.current = audio;
+          audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+          audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
+          const p = audio.play();
+          if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+          return;
+        }
+      } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
     }
 
     const ac = new AbortController();
@@ -3026,6 +3052,9 @@ function App() {
         ttsCacheRef.current.delete(oldestKey);
       }
       ttsCacheRef.current.set(cacheKey, url);
+
+      // 영속 캐시(IndexedDB)에도 저장 — 저장 카드만. 재시작·날짜 변경 후 재청취 시 Azure 0. fire-and-forget.
+      if (opts.saved && !byokAzureKey) putCachedAudio(cacheKey, blob);
 
       // ⭐ 응답 도착 시점에 stale이면 재생 skip (사용자가 그동안 다른 버튼 눌렀음)
       if (isStale()) return;
@@ -4419,7 +4448,7 @@ function App() {
             <Library
               user={user}
               sourceLang={sourceLang}
-              onSpeak={handleSpeak}
+              onSpeak={(t, l, e) => handleSpeak(t, l, e, { saved: true })}
               languageGoals={languageGoals}
               todayCount={todayCount}
               dailyGoal={dailyGoal}
