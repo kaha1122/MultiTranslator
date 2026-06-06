@@ -63,9 +63,9 @@
     "micError": "Problema na gravação",
     "saveError": "Falha ao salvar. Por favor, tente novamente mais tarde.",
     "guideTitle": "Como usar Free-Talking",
-    "guideStep1": "Primeiro ouça a situação e o diálogo de exemplo",
+    "guideStep1": "Primeiro ouça a situação e o diálogo de exemplo e imagine sua resposta",
     "guideStep2": "Toque em [Falar] para conversar livremente",
-    "guideStep3": "Durante a conversa, toque em [Criar cartões] para salvar",
+    "guideStep3": "Toque nas mensagens trocadas para abrir cartões e estudar",
     "guideDismiss": "Começar"
   },
   "pushOptIn": {

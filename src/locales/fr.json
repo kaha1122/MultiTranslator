@@ -63,9 +63,9 @@
     "micError": "Problème d'enregistrement",
     "saveError": "Échec de l'enregistrement. Veuillez réessayer plus tard.",
     "guideTitle": "Comment utiliser Free-Talking",
-    "guideStep1": "Écoutez d'abord la situation et le dialogue exemple",
+    "guideStep1": "Écoutez d'abord la situation et le dialogue exemple, puis imaginez la suite",
     "guideStep2": "Appuyez sur [Parler] pour converser librement",
-    "guideStep3": "Pendant la conversation, [Créer cartes] pour enregistrer",
+    "guideStep3": "Touchez les messages échangés pour ouvrir des cartes et les étudier",
     "guideDismiss": "Commencer"
   },
   "pushOptIn": {

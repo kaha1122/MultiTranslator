@@ -347,9 +347,9 @@ export default function FreeTalkingChat({
                                 ✨ {t('freeTalk.guideTitle') || 'Free-Talking 사용법'}
                             </div>
                             <ol className="ftc-first-guide-list">
-                                <li>👂 {t('freeTalk.guideStep1') || '먼저 상황 설명과 예시 대화를 듣고 따라 해보세요'}</li>
+                                <li>👂 {t('freeTalk.guideStep1') || '먼저 상황 설명과 예시 대화를 듣고 다음 대화를 상상해 보세요'}</li>
                                 <li>🎤 {t('freeTalk.guideStep2') || '[말하기] 버튼을 눌러 자유롭게 대화하세요'}</li>
-                                <li>💎 {t('freeTalk.guideStep3') || '대화 중 [카드 만들기]로 핵심 표현을 저장하세요'}</li>
+                                <li>💎 {t('freeTalk.guideStep3') || '주고 받은 메시지를 탭 하여 카드를 열고 학습하세요'}</li>
                             </ol>
                             <button
                                 type="button"
