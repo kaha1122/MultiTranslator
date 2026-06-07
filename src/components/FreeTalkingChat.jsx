@@ -41,9 +41,10 @@ export default function FreeTalkingChat({
     onSpeak,
     onBookmarkPrompt,
     // 세션이 성공적으로 시작됐을 때(서버 200 응답 받고 scenarioMeta/3 messages 마운트 직후)
-    // 호출되는 콜백 — App.jsx에서 freeTalk 카운트/credits/점수 차감을 여기서 수행.
-    // 실패(startError) 시에는 호출되지 않아 카운트가 보존된다. 2026-05-21 UX 보호.
+    // onSessionStarted: opener 표시 신호(차감 X). 2026-06-07 레이어1부터 차감/카운트는 onFirstUserTurn로 이동.
+    // onFirstUserTurn: 첫 free turn(실제 발화 1회 성공) 시 1회 호출 — App에서 차감·카운트 수행.
     onSessionStarted,
+    onFirstUserTurn,
     languageGoals = {},
 }) {
     const t = (key) => getT(sourceLang, key);
@@ -65,6 +66,9 @@ export default function FreeTalkingChat({
     const [playbackIdx, setPlaybackIdx] = useState(-1);
     const [playbackQueueDone, setPlaybackQueueDone] = useState(false);
     const startedRef = useRef(false);
+    // 2026-06-07 레이어1: 세션당 첫 발화 차감 1회 가드. 세션 시작 시 false 로 리셋,
+    //   freeTurnCount 가 처음 ≥1 될 때 onFirstUserTurn 1회 호출. 편집 재생성(1→0→1)에도 재차감 X.
+    const firstTurnChargedRef = useRef(false);
     const messagesEndRef = useRef(null);
     const [cardOpenMessage, setCardOpenMessage] = useState(null);
     const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
@@ -88,12 +92,24 @@ export default function FreeTalkingChat({
         sourceLang,
     });
 
+    // 2026-06-07 레이어1: 첫 free turn(AI 응답 정상 도착 → freeTurnCount ≥1) 도달 시 1회만 차감·카운트.
+    //   세션 시작/오프너만 보고 닫으면 freeTurnCount 0 → onFirstUserTurn 미호출 → 차감 0.
+    //   firstTurnChargedRef 는 세션 시작 시에만 리셋되므로 편집 재생성(1→0→1)에도 재차감 안 됨.
+    useEffect(() => {
+        if (freeTurnCount >= 1 && !firstTurnChargedRef.current) {
+            firstTurnChargedRef.current = true;
+            onFirstUserTurn?.();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [freeTurnCount]);
+
     // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정.
     // 성공 시(true 반환)에만 onSessionStarted 호출 — 실패 시에는 카운트 보존하고
     // 사용자에게 [다시 시도] 버튼 노출(아래 startError 블록).
     useEffect(() => {
         if (open && setupArgs && !startedRef.current) {
             startedRef.current = true;
+            firstTurnChargedRef.current = false; // 새 세션 시작 — 첫 발화 차감 가드 리셋
             (async () => {
                 const ok = await startSession(setupArgs);
                 if (ok) onSessionStarted?.();

@@ -5138,14 +5138,15 @@ function App() {
         onPronSuccess={onPronSuccess}
         onBookmarkPrompt={handleBookmarkPrompt}
         languageGoals={languageGoals}
-        onSessionStarted={async () => {
-          // 2026-05-21: startSession 성공(서버 200) 직후에만 호출됨. 실패 시 미호출 → 카운트 보존.
-          // 2026-06-07 개편: 진입 게이트(isTrialFreeTalkLimitReached = 하드캡 OR 포인트<10)가 사전 차단.
-          //   여기 도달 = 허용된 세션. 항상 일일 카운터 +1(하드캡 집계) + 풀 10점 차감.
+        onSessionStarted={() => { /* 2026-06-07 레이어1: opener 표시 신호만. 차감·카운트는 첫 발화(onFirstUserTurn)로 이동 — 열고 안 쓰고 닫으면 0점. */ }}
+        onFirstUserTurn={() => {
+          // 2026-06-07 레이어1: 첫 free turn(실제 발화 1회 성공) 시점에만 차감·카운트.
+          //   오프너만 보고 닫으면(freeTurnCount 0) 차감 0 — 신규 유저 포인트 낭비 방지.
+          //   게이트(onFreeTalkStart의 isTrial/ProFreeTalkLimitReached)는 열기 시점에 이미 검사됨.
           incrementDailyFreeTalk();
-          incrementProFreeTalk(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
+          incrementProFreeTalk(); // Pro 월 카운트(+1) — tier==='pro' 가드, 그 외 no-op
           addAdPoints(10); // 풀 -10 (FreeTalk 세션 비용, trial만)
-          incrementTotalFreeTalk(); // 분석용 평생 누적
+          incrementTotalFreeTalk(); // 분석용 평생 누적(engaged 기준)
         }}
         onClose={() => {
           setFreeTalkOpen(false);
