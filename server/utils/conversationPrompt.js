@@ -290,6 +290,24 @@ Now fill in your private mental scratchpad (using the location decided above):
        UNADDRESSED so the learner has clear, concrete things to say next
        during Free Talking. firstAiReply must NOT resolve ③ in a single move.
 
+  ⑤-bis CONCRETE-VALUE COMMIT (NO placeholders — binds Rule 8, MANDATORY):
+       Even when the scene is INHERENTLY about an unknown/undecided value —
+       e.g. "not sure which platform / which train", "looking for a destination",
+       "which gate?", "lost, don't know the way" — you MUST still COMMIT to ONE
+       specific, real value for that slot and use it CONSISTENTLY across intro,
+       firstUserTurn, and firstAiReply. The learner's UNCERTAINTY is about which
+       option is correct, NOT a reason to leave the word itself blank.
+       The single most common failure this prevents: a "destination unknown"
+       scene producing "${targetLang === 'ja' ? '〇〇行き' : targetLang === 'zh-CN' || targetLang === 'zh' ? '去某地' : '[destination]'}" or "${targetLang === 'ja' ? '〇〇公園' : '___'}".
+       That is BANNED — the learner cannot speak "〇〇" out loud, and TTS reads
+       the placeholder literally.
+         ✗ Bad (ja): "この電車は〇〇行きですか？" / "〇〇公園行きですね"
+         ✓ Good (ja): "この電車は新宿行きですか？" → "いいえ、新宿行きは3番線です"
+       Concretely: if the slot is a DESTINATION, pick a real place name
+       (Shinjuku / Tokyo / Busan / Boston…). If a TRAIN/FLIGHT/SEAT number,
+       pick a real one. Bake that ONE value into ALL 3 messages so later Free
+       Talking turns inherit a concrete fact, never a placeholder to echo.
+
   ⑥ TARGET VOCABULARY (learning lens — this GOVERNS word choice): name 3~5
        high-frequency, ${difficulty || 'basic'}-appropriate ${targetLangName}
        words/phrases this micro-situation will naturally let the learner
