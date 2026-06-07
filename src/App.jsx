@@ -745,6 +745,16 @@ function App() {
     setShowTrialLimitModal(true);
   }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
 
+  // 2026-06-07: TTS 신규 합성 1점 게이트 — true=허용(차감 완료/무료), false=차단(포인트부족 팝업).
+  //   캐시 hit(메모리/IndexedDB/보존오디오)은 호출 전에 이미 return → 재청취는 무료.
+  //   신규 합성(서버 fetch)에만 적용. Trial 0점 → 차단+팝업. Pro/Premium은 무료 통과.
+  const tryConsumeTtsPoint = useCallback(() => {
+    if (tier !== 'trial') return true;
+    if (bonusPoints < 1) { requestLimitModal('tts'); return false; }
+    consumeBonusPoints(1);
+    return true;
+  }, [tier, bonusPoints, consumeBonusPoints, requestLimitModal]);
+
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
   //   freeTalks 광고 → freeTalkCredits +2 (영구), prons 광고 → pronCredits +5 (영구).
@@ -2963,6 +2973,10 @@ function App() {
       } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
     }
 
+    // 2026-06-07: 신규 합성(서버 fetch) 전 포인트 게이트 — 캐시 hit은 위에서 이미 return(무료).
+    //   Trial 0점이면 차단 + 포인트부족 팝업. BYOK는 자기 키라 통과. Pro/Premium 무료 통과.
+    if (!byokAzureKey && !tryConsumeTtsPoint()) return;
+
     const ac = new AbortController();
     ttsAbortRef.current = ac;
 
@@ -2983,10 +2997,6 @@ function App() {
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-
-      // 2026-06-07 개편: TTS 신규 합성(클라 캐시 miss = 서버 fetch) 1점 차감 (best-effort, Trial 전용).
-      //   메모리/IndexedDB 캐시 hit은 이 경로 전에 return → 재청취 무료. BYOK 제외.
-      if (tier === 'trial' && !byokAzureKey) consumeBonusPoints(1);
 
       // 캐시에 저장 (LRU: 오래된 항목 제거) — stale이어도 캐시는 저장(다음 호출에서 재사용)
       if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
@@ -4260,7 +4270,7 @@ function App() {
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
-            onTtsCharge={() => { if (tier === 'trial') consumeBonusPoints(1); }}
+            onTtsGate={tryConsumeTtsPoint}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => {

@@ -87,11 +87,11 @@ export default function ListeningTab({
     onPronSuccess,
     onSaveToLibrary,
     onSpeak,
-    onTtsCharge,                          // 2026-06-07: passage/sentence TTS 신규 합성 시 풀 1점 차감 (캐시 hit 제외)
+    onTtsGate,                            // 2026-06-07: 신규 합성 전 포인트 게이트 — true=허용(차감)/false=차단(0점 팝업). 캐시 hit 제외.
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
-    onFirstPlay,                          // 2026-06-07: no-op (TTS 차감은 onTtsCharge로 일원화)
+    onFirstPlay,                          // 2026-06-07: no-op (TTS 차감은 onTtsGate로 일원화)
     onNavigateToLibrary,
     userLevel,
     languageLevels = {},
@@ -218,6 +218,10 @@ export default function ListeningTab({
             setPassage(p => p ? { ...p, adsCharged: true } : p);
         }
 
+        // 2026-06-07: 신규 합성 전 포인트 게이트 — 보존 오디오 재청취는 위에서 이미 return(무료).
+        //   Trial 0점이면 차단 + 포인트부족 팝업(onTtsGate 내부), 새 TTS 합성 안 함.
+        if (onTtsGate && !onTtsGate()) return;
+
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const isDialogue = passageType === 'dialogue';
         const dialogueTurns = isDialogue ? parseDialogueTurns(passage.text) : [];
@@ -247,7 +251,6 @@ export default function ListeningTab({
             if (!res.ok) throw new Error(`TTS ${res.status}`);
             const blob = await res.blob();
             if (myGen !== playGenRef.current) return; // stale
-            onTtsCharge?.(); // 2026-06-07: 신규 합성(서버 fetch) 1점 차감. 보존 오디오 재청취는 위에서 return → 무료.
 
             objectUrl = URL.createObjectURL(blob);
             const audio = new Audio(objectUrl);
@@ -282,7 +285,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsCharge, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
 
     // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
     const playSentence = useCallback(async (sentence) => {
@@ -303,6 +306,9 @@ export default function ListeningTab({
                     } catch { /* 재생 실패 시 아래 재요청으로 진행 */ }
                 }
 
+                // 신규 합성 전 포인트 게이트 — 캐시 hit은 위에서 return(무료). 0점이면 차단+팝업.
+                if (onTtsGate && !onTtsGate()) return;
+
                 let objectUrl = null;
                 try {
                     const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
@@ -312,7 +318,6 @@ export default function ListeningTab({
                     });
                     if (!res.ok) throw new Error(`TTS ${res.status}`);
                     const blob = await res.blob();
-                    onTtsCharge?.(); // 2026-06-07: 문장 신규 합성 1점 차감. 캐시 hit은 위에서 return → 무료.
                     objectUrl = URL.createObjectURL(blob);
 
                     // LRU 캐시 저장 — 초과 시 가장 오래된 항목 revoke + 제거.
@@ -338,7 +343,7 @@ export default function ListeningTab({
         // 폴백/에세이: 기존 onSpeak
         const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
         onSpeak?.(ttsText, selectedLang);
-    }, [passageType, passage, selectedLang, onSpeak, onTtsCharge]);
+    }, [passageType, passage, selectedLang, onSpeak, onTtsGate]);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
