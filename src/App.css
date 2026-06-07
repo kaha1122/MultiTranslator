@@ -261,6 +261,13 @@ html.admob-active.platform-native::after {
 }
 
 /* 좌측: 게이지 ──────────────────────────────────── */
+/* 3개 게이지(FreeTalk/발음/Listening)를 박스 크기 유지하며 압축 — 행 간격·바 두께 슬림 */
+.tsb-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
 .tsb-gauge {
   display: flex;
   align-items: center;
@@ -276,7 +283,7 @@ html.admob-active.platform-native::after {
 }
 .tsb-gauge-bar {
   flex: 1 1 auto;
-  height: 5px;
+  height: 4px;
   background: var(--tsb-track);
   border-radius: var(--tsb-radius-pill);
   overflow: hidden;
@@ -293,7 +300,7 @@ html.admob-active.platform-native::after {
 .tsb-gauge-fill.is-full { background: var(--tsb-danger); }
 .tsb-gauge-text {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--tsb-accent);
   font-variant-numeric: tabular-nums;

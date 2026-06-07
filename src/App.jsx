@@ -774,9 +774,8 @@ function App() {
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          // [v1.5.85+] v1.5.82의 triggerForcedIdle(60_000) 호출 ROLLBACK.
-          // 사이드바/홈 진입 애니메이션 paused로 UX 회귀 발생. 자세한 사유는
-          // useAdMob.js의 InterstitialAd Dismissed 핸들러 주석 참조.
+          // 보상광고 dismiss 시 별도 처리 없음. (과거 v1.5.82 triggerForcedIdle 강제
+          // idle 호출은 진입 애니메이션을 멈춰 UX 회귀를 일으켜 폐기됐고, idle 로직 제거됨.)
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>
@@ -3938,6 +3937,11 @@ function App() {
           const pronFillClass = pronFull ? 'is-full' : (isProTier ? 'is-success' : 'is-warn');
           const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
 
+          // Listening 게이지 — Trial 전용(하드캡 3/일). 박스 크기 유지 위해 3행 압축(.tsb-gauges)
+          const listenFull = todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT;
+          const listenRatio = Math.min((todayListenCount / TRIAL_DAILY_LISTEN_LIMIT) * 100, 100);
+          const listenFillClass = listenFull ? 'is-full' : 'is-warn';
+
           const streakZero = streakCurrent === 0;
           const daysUnit = getT(sourceLang, 'streak.daysUnit') || '일';
           const daysUnitShort = getT(sourceLang, 'streak.daysUnitShort') || daysUnit;
@@ -3948,26 +3952,37 @@ function App() {
               {/* TODAY */}
               <div className="tsb-col">
                 <div className="tsb-label">{getT(sourceLang, 'topbar.today') || '오늘'}</div>
-                <div className="tsb-gauge">
-                  <span className="tsb-gauge-icon" aria-hidden>
-                    {isTrialTier
-                      ? <MessageCircleMore size={12} strokeWidth={2.25} />
-                      : <Target size={12} strokeWidth={2.25} />}
-                  </span>
-                  <div className="tsb-gauge-bar">
-                    <div className={`tsb-gauge-fill ${ftFillClass}`} style={{ width: `${ftRatio}%` }} />
-                  </div>
-                  <span className="tsb-gauge-text">{ftCount}/{ftLimit}</span>
-                </div>
-                {showPronGauge && (
+                <div className="tsb-gauges">
                   <div className="tsb-gauge">
-                    <span className="tsb-gauge-icon" aria-hidden><Mic size={12} strokeWidth={2.25} /></span>
+                    <span className="tsb-gauge-icon" aria-hidden>
+                      {isTrialTier
+                        ? <MessageCircleMore size={11} strokeWidth={2.25} />
+                        : <Target size={11} strokeWidth={2.25} />}
+                    </span>
                     <div className="tsb-gauge-bar">
-                      <div className={`tsb-gauge-fill ${pronFillClass}`} style={{ width: `${pronRatio}%` }} />
+                      <div className={`tsb-gauge-fill ${ftFillClass}`} style={{ width: `${ftRatio}%` }} />
                     </div>
-                    <span className="tsb-gauge-text">{pronLabel}</span>
+                    <span className="tsb-gauge-text">{ftCount}/{ftLimit}</span>
                   </div>
-                )}
+                  {showPronGauge && (
+                    <div className="tsb-gauge">
+                      <span className="tsb-gauge-icon" aria-hidden><Mic size={11} strokeWidth={2.25} /></span>
+                      <div className="tsb-gauge-bar">
+                        <div className={`tsb-gauge-fill ${pronFillClass}`} style={{ width: `${pronRatio}%` }} />
+                      </div>
+                      <span className="tsb-gauge-text">{pronLabel}</span>
+                    </div>
+                  )}
+                  {isTrialTier && (
+                    <div className="tsb-gauge">
+                      <span className="tsb-gauge-icon" aria-hidden><Headphones size={11} strokeWidth={2.25} /></span>
+                      <div className="tsb-gauge-bar">
+                        <div className={`tsb-gauge-fill ${listenFillClass}`} style={{ width: `${listenRatio}%` }} />
+                      </div>
+                      <span className="tsb-gauge-text">{todayListenCount}/{TRIAL_DAILY_LISTEN_LIMIT}</span>
+                    </div>
+                  )}
+                </div>
               </div>
 
               {/* STREAK (가운데) */}
