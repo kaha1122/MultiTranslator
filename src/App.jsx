@@ -648,6 +648,11 @@ function App() {
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
         console.log('[RevenueCat] Configured for', user.uid);
+        // 포인트 상품(소비성) 가격 조회 — 사이드바 구매 버튼 가격 표시용
+        try {
+          const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
+          if (products?.[0]?.priceString) setPointsPriceString(products[0].priceString);
+        } catch (pe) { console.warn('[RevenueCat] points product fetch failed:', pe?.message); }
         // Google Play 구매 내역 복원 + Firestore 직접 동기화
         try {
           const { customerInfo } = await Purchases.restorePurchases();
@@ -770,6 +775,33 @@ function App() {
   //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
   //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
+  // 2026-06-07: 인앱 포인트 구매(소비성, +200) — 가격 표시 + 구매 진행 상태
+  const POINTS_PRODUCT_ID = 'pronunfit_points_200';
+  const [pointsPriceString, setPointsPriceString] = useState('');
+  const [buyingPoints, setBuyingPoints] = useState(false);
+
+  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +200 적립(멱등).
+  //   클라는 결제 dialog만 띄우고, 적립은 webhook → Firestore onSnapshot 으로 자동 반영.
+  const handleBuyPoints = async () => {
+    if (!window.Capacitor?.isNativePlatform?.() || !user || buyingPoints) return;
+    setBuyingPoints(true);
+    try {
+      const { Purchases } = await import('@revenuecat/purchases-capacitor');
+      const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
+      const product = products?.[0];
+      if (!product) throw new Error('point product not found');
+      await Purchases.purchaseStoreProduct({ product });
+      // 성공 — 적립은 webhook(async). 안내만.
+      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 200포인트가 반영됩니다.');
+    } catch (e) {
+      if (!e?.userCancelled) {
+        console.error('[BuyPoints] 실패:', e);
+        alert(getT(sourceLang, 'reward.buyFail') || '구매에 실패했어요. 잠시 후 다시 시도해주세요.');
+      }
+    } finally {
+      setBuyingPoints(false);
+    }
+  };
 
   // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
   //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
@@ -3663,7 +3695,7 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 충전 (+5)'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +5'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
                         {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +5'}
@@ -3671,9 +3703,32 @@ function App() {
                     </div>
                   </button>
                   {rewardAdLoading && (
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 4px' }}>
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
+                  )}
+                  {/* 보너스포인트 구매 (+200, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
+                  {pointsPriceString && (
+                    <button
+                      onClick={handleBuyPoints}
+                      disabled={buyingPoints}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 12px', borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                        border: '1px solid #bfdbfe', cursor: buyingPoints ? 'default' : 'pointer',
+                        opacity: buyingPoints ? 0.6 : 1, textAlign: 'left',
+                      }}>
+                      <span style={{ fontSize: '1.2rem' }}>🪙</span>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
+                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +200'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
+                          {buyingPoints ? (getT(sourceLang, 'reward.buying') || '구매 처리 중...') : pointsPriceString}
+                        </div>
+                      </div>
+                    </button>
                   )}
                 </div>
               )}

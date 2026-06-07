@@ -11,6 +11,7 @@ const VALID_SOURCES = new Set([
     'streak30',
     'streak100',
     'adReward',            // 보상광고 보너스 충전 (+5)
+    'pointPurchase',       // 인앱 결제 포인트 구매 (+200) — 실제 결제라 tier 무관 항상 적립
     'admin_manual',        // 어드민 수동 부여
     'admin_test',          // 테스트
 ]);
@@ -33,8 +34,9 @@ async function grantBonusPoints({ uid, amount, source, meta = {} }) {
     const db = admin.firestore();
     const userRef = db.collection('users').doc(uid);
 
-    // Pro/Premium 사용자 캠페인 부여 차단 (admin 수동 부여는 통과)
-    const isAdminGrant = source === 'admin_manual' || source === 'admin_test';
+    // Pro/Premium 사용자 캠페인 부여 차단 (admin 수동 부여 + 실결제(pointPurchase)는 통과 —
+    //   결제는 실제 돈이라 tier 무관 반드시 적립해야 환불사고 방지)
+    const isAdminGrant = source === 'admin_manual' || source === 'admin_test' || source === 'pointPurchase';
     if (!isAdminGrant) {
         const userSnap = await userRef.get();
         const userTier = userSnap.data()?.tier || 'trial';
