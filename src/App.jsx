@@ -1719,7 +1719,8 @@ function App() {
   //   effect 가 generate 마다 재실행 → 세션 가드 + boolean 안정화로 1회만 발화 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
-    if (tier === 'trial') return; // 2026-06-07: Trial 은 Streak 팝업 제외
+    // 2026-06-07: Trial 가드 제거 — Streak 마일스톤(7/14/30/100)이 보너스포인트를 지급하므로
+    //   Trial 유저에게도 Streak 안내를 노출해 streak 유지(=리텐션) 동기 부여.
     if (profile.streakIntroDismissed === true) return;
     // 온보딩 미통과면 보류 (PushOptIn 이후로 순차 흐름 유지)
     if (!profile.hasCompletedOnboarding) return;
@@ -1758,7 +1759,7 @@ function App() {
   //   Firestore lastStreakStatusPopupAt === today 게이트가 매일 1회 정책을 cross-session 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
-    if (tier === 'trial') return; // 2026-06-07: Trial 은 Streak 일수 안내 팝업 제외
+    // 2026-06-07: Trial 가드 제거 — Streak 보너스포인트 동기로 Trial도 일수 안내 노출.
     if (profile.streakIntroDismissed !== true) return;
     if (!initialLifecycleStageRef.current) return;
     // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
@@ -1838,7 +1839,7 @@ function App() {
   // 세션 폭주 방지: sessionStorage 가드로 같은 세션 안에서는 1회만
   useEffect(() => {
     if (!profile) return;
-    if (tier === 'trial') return; // 2026-06-07: Trial 은 StarGuide(별표→발음→Streak 안내) 제외
+    // 2026-06-07: Trial 가드 제거 — Streak 보너스포인트 동기로 Trial도 StarGuide(별표→발음→Streak 안내) 노출.
 
     // (1) Streak Reminder push 강제 발화 — 선행 모달이 차있으면 대기 (닫히면 effect 재실행)
     if (forceStarGuideFromPush) {
