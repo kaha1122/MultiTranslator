@@ -2,15 +2,20 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
-// 2026-06-07 개편: 한도 모달 — 사유(reason)에 따라 2가지.
-//   'cap'  : 하드캡 도달(오늘 더 못함) → 업그레이드만. 충전 무의미.
-//   'points': 포인트 부족 → 업그레이드 + 보상광고 충전(+5) + 사용 항목별 차감 안내.
+// 2026-06-07 개편: 한도 모달 — 사유(reason)에 따라 3가지.
+//   'cap'       : Trial 하드캡 도달(오늘 더 못함) → 업그레이드만. 충전 무의미.
+//   'points'    : Trial 포인트 부족 → 업그레이드 + 보상광고 충전(+5) + 사용 항목별 차감 안내.
+//   'proMonthly': Pro 월 한도 도달 → 다음 달 리셋 안내 + Premium 업그레이드.
 const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
 }) => {
     const t = useT(sourceLang);
-    const { TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT } = useAuth();
+    const {
+        TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+        PRO_PRON_LIMIT, PRO_FREETALK_LIMIT, PRO_LISTEN_LIMIT,
+        proPronCount, proFreeTalkCount, proListenCount,
+    } = useAuth();
     const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.(); // 충전 버튼(보상광고)은 앱 전용
 
     const overlay = {
@@ -25,6 +30,53 @@ const TrialLimitModal = ({
         position: 'relative', maxHeight: '90vh', overflowY: 'auto'
     };
     const closeBtn = { position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' };
+
+    // ── Pro 월 한도 도달 모달 ──────────────────────────────────────────
+    if (reason === 'proMonthly') {
+        const rows = [
+            { icon: '💬', label: 'Free-Talking', cur: proFreeTalkCount, lim: PRO_FREETALK_LIMIT },
+            { icon: '🎤', label: t('settings.usagePron') || 'Pronunciation', cur: proPronCount, lim: PRO_PRON_LIMIT },
+            { icon: '🎧', label: 'Listening', cur: proListenCount, lim: PRO_LISTEN_LIMIT },
+        ];
+        return (
+            <div style={overlay} onClick={onClose}>
+                <div onClick={e => e.stopPropagation()} style={card}>
+                    <button onClick={onClose} style={closeBtn}><X size={22} /></button>
+                    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>📅</div>
+                        <h2 style={{ margin: '0 0 4px', fontSize: '1.12rem', color: '#1e293b', fontWeight: 800, lineHeight: 1.3 }}>
+                            {t('trial.proLimitTitle') || '이번 달 한도에 도달했어요'}
+                        </h2>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem', lineHeight: 1.4 }}>
+                            {t('trial.proLimitDesc') || '다음 달 1일에 초기화됩니다'}
+                        </p>
+                    </div>
+                    <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px', marginBottom: '12px' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                            {rows.map((r) => (
+                                <div key={r.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: '#475569' }}>
+                                    <span>{r.icon} {r.label}</span>
+                                    <span style={{ fontWeight: 700, color: r.cur >= r.lim ? '#dc2626' : '#475569' }}>{r.cur}/{r.lim}</span>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                    <p style={{ margin: '0 0 8px', fontSize: '0.82rem', color: '#7c3aed', fontWeight: 700, textAlign: 'center' }}>
+                        ✨ {t('trial.proUpgradeHint') || 'Premium은 한도 없이 무제한'}
+                    </p>
+                    <button
+                        onClick={onUpgrade}
+                        style={{
+                            width: '100%', padding: '13px', background: '#7c3aed', color: 'white',
+                            border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem',
+                        }}
+                    >
+                        ✨ {t('trial.proUpgradeBtn') || 'Premium 업그레이드'}
+                    </button>
+                </div>
+            </div>
+        );
+    }
 
     // ── 포인트 부족 모달 ──────────────────────────────────────────────
     if (reason === 'points') {

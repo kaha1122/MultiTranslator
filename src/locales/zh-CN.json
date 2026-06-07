@@ -197,6 +197,10 @@
     "costGuideTitle": "各功能消耗积分",
     "costPlay": "播放",
     "costGenerate": "生成",
+    "proLimitTitle": "已达本月上限",
+    "proLimitDesc": "下月1日重置",
+    "proUpgradeHint": "Premium 无限制使用",
+    "proUpgradeBtn": "升级到 Premium",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {
@@ -473,8 +477,8 @@
     "thankYou": "感谢您的订阅！",
     "toastFail": "支付失败或已取消。",
     "duplicateSubscription": "您已在应用商店有活跃订阅，请先取消后再操作。",
-    "proFeature1": "每月1,500次发音评估",
-    "proFeature3": "所有标签页无限使用",
+    "proFeature1": "发音评估 每月1,000次",
+    "proFeature3": "Free-Talking 100 · Listening 200次/月",
     "premiumFeature1": "无限发音评估",
     "premiumFeature2": "Free-Talking 无限",
     "premiumFeature3": "所有标签页无限使用",
@@ -1216,7 +1220,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "卡片无限 · 发音1,500次/月",
+    "proDesc": "F.Talking 100 · Listening 200 · 发音 1000/月",
     "premium": "👑 Premium",
     "premiumDesc": "卡片 · 发音 无限",
     "noAds": "无广告"

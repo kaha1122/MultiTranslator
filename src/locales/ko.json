@@ -197,6 +197,10 @@
     "costGuideTitle": "사용 시 차감 포인트",
     "costPlay": "듣기·재생",
     "costGenerate": "생성",
+    "proLimitTitle": "이번 달 한도에 도달했어요",
+    "proLimitDesc": "다음 달 1일에 초기화됩니다",
+    "proUpgradeHint": "Premium은 한도 없이 무제한",
+    "proUpgradeBtn": "Premium 업그레이드",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {
@@ -479,8 +483,8 @@
     "thankYou": "구독해 주셔서 감사합니다.",
     "toastFail": "결제에 실패하거나 취소되었습니다.",
     "duplicateSubscription": "이미 앱스토어에서 활성 구독이 있습니다. 먼저 기존 구독을 취소해 주세요.",
-    "proFeature1": "발음 평가 월 1,500회",
-    "proFeature3": "모든 탭 무제한 이용",
+    "proFeature1": "발음 평가 월 1,000회",
+    "proFeature3": "Free-Talking 100 · Listening 200회/월",
     "premiumFeature1": "발음 평가 무제한",
     "premiumFeature2": "Free-Talking 무제한",
     "premiumFeature3": "모든 탭 무제한 이용",
@@ -1222,7 +1226,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "카드 무제한 · 발음 1,500회/월",
+    "proDesc": "F.Talking 100 · Listening 200 · 발음 1000/월",
     "premium": "👑 Premium",
     "premiumDesc": "카드 · 발음 무제한",
     "noAds": "광고 없음"

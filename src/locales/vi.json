@@ -197,6 +197,10 @@
     "costGuideTitle": "Điểm trừ mỗi thao tác",
     "costPlay": "Phát",
     "costGenerate": "Tạo",
+    "proLimitTitle": "Bạn đã đạt giới hạn tháng này",
+    "proLimitDesc": "Đặt lại vào ngày 1 tháng sau",
+    "proUpgradeHint": "Premium không giới hạn",
+    "proUpgradeBtn": "Nâng cấp lên Premium",
     "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {
@@ -473,8 +477,8 @@
     "thankYou": "Cảm ơn bạn đã đăng ký!",
     "toastFail": "Thanh toán thất bại hoặc đã bị hủy.",
     "duplicateSubscription": "Bạn đã có đăng ký đang hoạt động trên cửa hàng ứng dụng. Vui lòng hủy trước.",
-    "proFeature1": "1.500 lần đánh giá phát âm/tháng",
-    "proFeature3": "Không giới hạn tất cả tab",
+    "proFeature1": "1.000 lượt đánh giá phát âm/tháng",
+    "proFeature3": "Free-Talking 100 · Listening 200/tháng",
     "premiumFeature1": "Đánh giá phát âm không giới hạn",
     "premiumFeature2": "Free-Talking không giới hạn",
     "premiumFeature3": "Không giới hạn tất cả tab",
@@ -1216,7 +1220,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "Thẻ không giới hạn · 1.500 phát âm/tháng",
+    "proDesc": "F.Talking 100 · Listening 200 · Phát âm 1000/tháng",
     "premium": "👑 Premium",
     "premiumDesc": "Thẻ & phát âm không giới hạn",
     "noAds": "Không quảng cáo"

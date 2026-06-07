@@ -346,14 +346,18 @@ export const AuthProvider = ({ children }) => {
     const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
     const TRIAL_DAILY_LISTEN_LIMIT = 3;       // Free Trial: 하루 Listening passage 3회 (2026-05-23 신설) — Gemini + Azure TTS 비용 가드
-    const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
+    const PRO_PRON_LIMIT = 1000;              // Pro: 월 발음 1000회 (2026-06-07 1500→1000)
+    const PRO_FREETALK_LIMIT = 100;           // Pro: 월 Free-Talking 100회 (2026-06-07 신설 — 무제한→월캡, Azure 꼬리위험 차단)
+    const PRO_LISTEN_LIMIT = 200;             // Pro: 월 Listening 생성 200회 (2026-06-07 신설). Premium은 무제한.
 
     // 하위호환: 기존 필드 유지 (분석용)
     const trialCardCount = profile?.trialCardCount || 0;
     const savedCardCount = profile?.savedCardCount || 0;
     const trialPronCount = profile?.trialPronCount || 0;
-    // Pro 발음 평가 월별 횟수
+    // Pro 월별 횟수 — proPronResetMonth 를 공통 월 앵커로 3종 동시 리셋
     const proPronCount = profile?.proPronCount || 0;
+    const proFreeTalkCount = profile?.proFreeTalkCount || 0;
+    const proListenCount = profile?.proListenCount || 0;
     const proPronResetMonth = profile?.proPronResetMonth || '';
     // Free Talking 평생 누적 세션 시작 횟수 (분석용 — 사용자별 generate 빈도 측정)
     const totalFreeTalkCount = profile?.totalFreeTalkCount || 0;
@@ -383,6 +387,8 @@ export const AuthProvider = ({ children }) => {
     const isTrialFreeTalkLimitReached = tier === 'trial' && (dailyTrialFreeTalkReached || bonusPoints < POINT_COST.freeTalk);
     const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
+    const isProFreeTalkLimitReached = tier === 'pro' && proFreeTalkCount >= PRO_FREETALK_LIMIT;
+    const isProListenLimitReached = tier === 'pro' && proListenCount >= PRO_LISTEN_LIMIT;
 
     // 보너스 포인트 차감 — 2026-06-07: 트랜잭션 → updateDoc(increment) 으로 단순화.
     //   트랜잭션은 같은 user 문서 동시 쓰기(markActiveDay 등)와 낙관적 락 충돌(failed-precondition)
@@ -505,10 +511,13 @@ export const AuthProvider = ({ children }) => {
         const _now = new Date();
         const currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`;
         if (proPronResetMonth && proPronResetMonth === currentMonth) return;
+        // 2026-06-07: 월 바뀌면 Pro 3종 카운트(발음/FreeTalk/Listening) 동시 리셋. proPronResetMonth가 공통 앵커.
         updateDoc(doc(db, 'users', user.uid), {
             proPronCount: 0,
+            proFreeTalkCount: 0,
+            proListenCount: 0,
             proPronResetMonth: currentMonth,
-        }).catch(e => console.error("Pro pron reset failed:", e));
+        }).catch(e => console.error("Pro monthly reset failed:", e));
     }, [user, tier, proPronResetMonth]);
 
     // 2026-06-07 개편: Trial 일일 포인트 충전 (1일차 30 / 2일차+ +10). 날짜 바뀌면 1회 실행.
@@ -700,6 +709,20 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementPronCount failed:", e); }
     };
 
+    // 2026-06-07: Pro 월별 FreeTalk/Listening 카운터 (Premium은 무제한이라 미증가)
+    const incrementProFreeTalk = async () => {
+        if (!user || tier !== 'pro') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { proFreeTalkCount: increment(1) });
+        } catch (e) { console.error("incrementProFreeTalk failed:", e); }
+    };
+    const incrementProListen = async () => {
+        if (!user || tier !== 'pro') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { proListenCount: increment(1) });
+        } catch (e) { console.error("incrementProListen failed:", e); }
+    };
+
     // Scene 생성 카운터
     const incrementSceneGenerate = async () => {
         if (!user) return;
@@ -771,11 +794,13 @@ export const AuthProvider = ({ children }) => {
         tier,
         trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
         proPronCount, PRO_PRON_LIMIT,
+        proFreeTalkCount, proListenCount, PRO_FREETALK_LIMIT, PRO_LISTEN_LIMIT,
         TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
         isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
         setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
-        isProPronLimitReached,
+        isProPronLimitReached, isProFreeTalkLimitReached, isProListenLimitReached,
         incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
+        incrementProFreeTalk, incrementProListen,
         incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
         bonusPoints, hasBonusActive, consumeBonusPoints, POINT_COST,
         freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,

@@ -197,6 +197,10 @@
     "costGuideTitle": "Pontos por ação",
     "costPlay": "Reproduzir",
     "costGenerate": "Gerar",
+    "proLimitTitle": "Você atingiu o limite deste mês",
+    "proLimitDesc": "Reinicia no dia 1º do próximo mês",
+    "proUpgradeHint": "Premium é ilimitado, sem limites",
+    "proUpgradeBtn": "Atualizar para Premium",
     "upgradeBtn": "Atualize Seu Plano"
   },
   "apiSetup": {
@@ -473,8 +477,8 @@
     "thankYou": "Obrigado por assinar!",
     "toastFail": "Pagamento falhou ou foi cancelado.",
     "duplicateSubscription": "Você já tem uma assinatura ativa na loja de apps. Cancele-a primeiro.",
-    "proFeature1": "1.500 avaliações de pronúncia/mês",
-    "proFeature3": "Acesso ilimitado a todas as abas",
+    "proFeature1": "1.000 avaliações de pronúncia/mês",
+    "proFeature3": "Free-Talking 100 · Listening 200/mês",
     "premiumFeature1": "Avaliações de pronúncia ilimitadas",
     "premiumFeature2": "Free-Talking ilimitado",
     "premiumFeature3": "Acesso ilimitado a todas as abas",
@@ -1216,7 +1220,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "Cartões ilimitados · 1.500 pronúncias/mês",
+    "proDesc": "F.Talking 100 · Listening 200 · Pron 1000/mês",
     "premium": "👑 Premium",
     "premiumDesc": "Cartões e pronúncias ilimitados",
     "noAds": "Sem anúncios"

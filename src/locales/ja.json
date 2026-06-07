@@ -197,6 +197,10 @@
     "costGuideTitle": "利用時の消費ポイント",
     "costPlay": "再生",
     "costGenerate": "生成",
+    "proLimitTitle": "今月の上限に達しました",
+    "proLimitDesc": "来月1日にリセットされます",
+    "proUpgradeHint": "Premiumは上限なしで無制限",
+    "proUpgradeBtn": "Premiumにアップグレード",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {
@@ -473,8 +477,8 @@
     "thankYou": "ご登録ありがとうございます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",
     "duplicateSubscription": "アプリストアで有効なサブスクリプションがあります。先にそちらを解約してください。",
-    "proFeature1": "発音評価 月1,500回",
-    "proFeature3": "すべてのタブ無制限",
+    "proFeature1": "発音評価 月1,000回",
+    "proFeature3": "Free-Talking 100 · Listening 200回/月",
     "premiumFeature1": "発音評価無制限",
     "premiumFeature2": "Free-Talking 無制限",
     "premiumFeature3": "すべてのタブ無制限",
@@ -1216,7 +1220,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "カード無制限 · 発音1,500回/月",
+    "proDesc": "F.Talking 100 · Listening 200 · 発音 1000/月",
     "premium": "👑 Premium",
     "premiumDesc": "カード・発音 無制限",
     "noAds": "広告なし"

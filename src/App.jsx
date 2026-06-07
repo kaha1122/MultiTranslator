@@ -114,6 +114,9 @@ function App() {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
     proPronCount, PRO_PRON_LIMIT,
+    proFreeTalkCount, proListenCount, PRO_FREETALK_LIMIT, PRO_LISTEN_LIMIT,
+    isProFreeTalkLimitReached, isProListenLimitReached, isProPronLimitReached,
+    incrementProFreeTalk, incrementProListen,
     TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
     isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
     setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
@@ -744,6 +747,12 @@ function App() {
     setTrialLimitReason(capReached ? 'cap' : 'points');
     setShowTrialLimitModal(true);
   }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
+
+  // 2026-06-07: Pro 월별 한도 도달 모달 — "다음 달 리셋 + Premium 업셀"(Trial 'cap'/'points'와 별개).
+  const requestProLimitModal = useCallback(() => {
+    setTrialLimitReason('proMonthly');
+    setShowTrialLimitModal(true);
+  }, []);
 
   // 2026-06-07: TTS 신규 합성 1점 게이트 — true=허용(차감 완료/무료), false=차단(포인트부족 팝업).
   //   캐시 hit(메모리/IndexedDB/보존오디오)은 호출 전에 이미 return → 재청취는 무료.
@@ -3930,27 +3939,23 @@ function App() {
           const dayLabels = getT(sourceLang, 'daily.daysShort').split(',');
           const isTrialTier = tier === 'trial';
           const isProTier = tier === 'pro';
-          const showPronGauge = isTrialTier || isProTier;
 
-          const ftLimit = isTrialTier ? TRIAL_FREETALK_DAILY_LIMIT : dailyGoal;
-          const ftCount = isTrialTier ? todayFreeTalkCount : todayCount;
-          const ftFull = ftCount >= ftLimit;
-          const ftRatio = Math.min((ftCount / ftLimit) * 100, 100);
-          const ftFillClass = ftFull
-            ? (isTrialTier ? 'is-full' : 'is-success')
-            : (isTrialTier ? 'is-success' : '');
-
-          const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
-          const pronFull = pronCurrent >= pronLimit;
-          const pronRatio = Math.min((pronCurrent / pronLimit) * 100, 100);
-          const pronFillClass = pronFull ? 'is-full' : (isProTier ? 'is-success' : 'is-warn');
-          const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
-
-          // Listening 게이지 — Trial 전용(하드캡 3/일). 박스 크기 유지 위해 3행 압축(.tsb-gauges)
-          const listenFull = todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT;
-          const listenRatio = Math.min((todayListenCount / TRIAL_DAILY_LISTEN_LIMIT) * 100, 100);
-          const listenFillClass = listenFull ? 'is-full' : 'is-warn';
+          // 2026-06-07: 상단바 게이지 = Trial(일일 하드캡 3종) / Pro(월 한도 3종) / Premium 등(무제한→없음).
+          //   목표달성(Target) 게이지는 홈 "오늘의 진도"에 있으므로 상단바에서 제거.
+          //   순서: 💬 FreeTalk / 🎤 발음 / 🎧 Listening (Pro도 동일 아이콘, 월 카운트/캡).
+          const gauges = isTrialTier
+            ? [
+                { icon: MessageCircleMore, cur: todayFreeTalkCount, lim: TRIAL_FREETALK_DAILY_LIMIT },
+                { icon: Mic,               cur: todayPronCount,     lim: TRIAL_DAILY_PRON_LIMIT },
+                { icon: Headphones,        cur: todayListenCount,   lim: TRIAL_DAILY_LISTEN_LIMIT },
+              ]
+            : isProTier
+            ? [
+                { icon: MessageCircleMore, cur: proFreeTalkCount, lim: PRO_FREETALK_LIMIT },
+                { icon: Mic,               cur: proPronCount,     lim: PRO_PRON_LIMIT },
+                { icon: Headphones,        cur: proListenCount,   lim: PRO_LISTEN_LIMIT },
+              ]
+            : []; // Premium 등 무제한 → 게이지 없음
 
           const streakZero = streakCurrent === 0;
           const daysUnit = getT(sourceLang, 'streak.daysUnit') || '일';
@@ -3962,37 +3967,26 @@ function App() {
               {/* TODAY */}
               <div className="tsb-col">
                 <div className="tsb-label">{getT(sourceLang, 'topbar.today') || '오늘'}</div>
-                <div className="tsb-gauges">
-                  <div className="tsb-gauge">
-                    <span className="tsb-gauge-icon" aria-hidden>
-                      {isTrialTier
-                        ? <MessageCircleMore size={11} strokeWidth={2.25} />
-                        : <Target size={11} strokeWidth={2.25} />}
-                    </span>
-                    <div className="tsb-gauge-bar">
-                      <div className={`tsb-gauge-fill ${ftFillClass}`} style={{ width: `${ftRatio}%` }} />
-                    </div>
-                    <span className="tsb-gauge-text">{ftCount}/{ftLimit}</span>
+                {gauges.length > 0 ? (
+                  <div className="tsb-gauges">
+                    {gauges.map((g, i) => {
+                      const full = g.cur >= g.lim;
+                      const ratio = Math.min((g.cur / g.lim) * 100, 100);
+                      const Icon = g.icon;
+                      return (
+                        <div className="tsb-gauge" key={i}>
+                          <span className="tsb-gauge-icon" aria-hidden><Icon size={11} strokeWidth={2.25} /></span>
+                          <div className="tsb-gauge-bar">
+                            <div className={`tsb-gauge-fill ${full ? 'is-full' : 'is-warn'}`} style={{ width: `${ratio}%` }} />
+                          </div>
+                          <span className="tsb-gauge-text">{g.cur}/{g.lim}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  {showPronGauge && (
-                    <div className="tsb-gauge">
-                      <span className="tsb-gauge-icon" aria-hidden><Mic size={11} strokeWidth={2.25} /></span>
-                      <div className="tsb-gauge-bar">
-                        <div className={`tsb-gauge-fill ${pronFillClass}`} style={{ width: `${pronRatio}%` }} />
-                      </div>
-                      <span className="tsb-gauge-text">{pronLabel}</span>
-                    </div>
-                  )}
-                  {isTrialTier && (
-                    <div className="tsb-gauge">
-                      <span className="tsb-gauge-icon" aria-hidden><Headphones size={11} strokeWidth={2.25} /></span>
-                      <div className="tsb-gauge-bar">
-                        <div className={`tsb-gauge-fill ${listenFillClass}`} style={{ width: `${listenRatio}%` }} />
-                      </div>
-                      <span className="tsb-gauge-text">{todayListenCount}/{TRIAL_DAILY_LISTEN_LIMIT}</span>
-                    </div>
-                  )}
-                </div>
+                ) : (
+                  <div className="tsb-unlimited" aria-hidden>∞ Premium</div>
+                )}
               </div>
 
               {/* STREAK (가운데) */}
@@ -4186,7 +4180,7 @@ function App() {
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
-                      onTrialLimitReached={() => requestLimitModal('pron')}
+                      onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
                       onPronSuccess={onPronSuccess}
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
@@ -4239,7 +4233,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             languageLevels={languageLevels}
-            onTrialLimitReached={() => requestLimitModal('pron')}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
@@ -4265,8 +4259,8 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             languageLevels={languageLevels}
-            isTrialListenLimitReached={isTrialListenLimitReached}
-            onTrialLimitReached={() => requestLimitModal('listen')}
+            isTrialListenLimitReached={isTrialListenLimitReached || isProListenLimitReached}
+            onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
@@ -4278,7 +4272,8 @@ function App() {
               //   여기 도달 = 허용된 생성. 항상 일일 카운터 +1(하드캡 집계) + 풀 5점 차감.
               incrementListenGenerate();
               incrementDailyListen();
-              addAdPoints(5); // 풀 -5 (Listening 생성 비용)
+              incrementProListen(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
+              addAdPoints(5); // 풀 -5 (Listening 생성 비용, trial만)
             }}
             onFirstPlay={() => {}}
             onNavigateToLibrary={(cardId) => {
@@ -4296,7 +4291,7 @@ function App() {
           <VideoReader
             ref={videoReaderRef}
             sourceLang={sourceLang}
-            onTrialLimitReached={() => requestLimitModal('pron')}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVideoCard}
             onDetailChange={setVideoDetailOpen}
@@ -4320,7 +4315,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             languageLevels={languageLevels}
-            onTrialLimitReached={() => requestLimitModal('pron')}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
@@ -4333,6 +4328,10 @@ function App() {
               setViewMode('library');
             }}
             onFreeTalkStart={async (args) => {
+              if (isProFreeTalkLimitReached) {
+                requestProLimitModal();
+                return;
+              }
               if (isTrialFreeTalkLimitReached) {
                 requestLimitModal('freeTalk');
                 return;
@@ -4386,7 +4385,7 @@ function App() {
                 setLibraryBackTo(null);
                 setViewMode(target);
               }}
-              onTrialLimitReached={() => requestLimitModal('pron')}
+              onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
               onPronSuccess={onPronSuccess}
             />
           )}
@@ -5077,7 +5076,7 @@ function App() {
         onSaveConversationMessage={saveConversationMessage}
         onSaveConversationSummary={saveConversationSummaryPhrases}
         onSpeak={handleSpeak}
-        onTrialLimitReached={() => requestLimitModal('pron')}
+        onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
         onPronSuccess={onPronSuccess}
         onBookmarkPrompt={handleBookmarkPrompt}
         languageGoals={languageGoals}
@@ -5086,7 +5085,8 @@ function App() {
           // 2026-06-07 개편: 진입 게이트(isTrialFreeTalkLimitReached = 하드캡 OR 포인트<10)가 사전 차단.
           //   여기 도달 = 허용된 세션. 항상 일일 카운터 +1(하드캡 집계) + 풀 10점 차감.
           incrementDailyFreeTalk();
-          addAdPoints(10); // 풀 -10 (FreeTalk 세션 비용)
+          incrementProFreeTalk(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
+          addAdPoints(10); // 풀 -10 (FreeTalk 세션 비용, trial만)
           incrementTotalFreeTalk(); // 분석용 평생 누적
         }}
         onClose={() => {

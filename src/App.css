@@ -268,6 +268,14 @@ html.admob-active.platform-native::after {
   gap: 2px;
   min-width: 0;
 }
+/* Premium(무제한) — 게이지 대신 표시 */
+.tsb-unlimited {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
+  padding: 4px 0;
+}
 .tsb-gauge {
   display: flex;
   align-items: center;
