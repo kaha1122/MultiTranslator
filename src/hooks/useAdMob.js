@@ -51,15 +51,9 @@ export async function showInterstitialAd() {
 
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
                 cleanup();
-                // [v1.5.85+] v1.5.82의 triggerForcedIdle(60_000) 호출 ROLLBACK.
-                // 이유: forced idle 60s 동안 CSS animation-play-state: paused 가
-                // 사이드바 슬라이드인(sidebar-slide-in), 홈 진입(homeSlideUp),
-                // 오버레이 페이드인(overlay-fade-in) 등 1회성 진입 애니메이션도
-                // 정지시켜 광고 후 사이드바/홈 화면이 보이지 않는 치명적 UX 회귀.
-                // v1.5.81 universal 가드가 이미 모든 무한 애니메이션을 항시 정지
-                // 시키고 있어 forced idle의 thermal 회복 효과는 미미했음. UX 회복
-                // 우선. main.jsx의 triggerForcedIdle 함수와 HomePage useAppIdle
-                // hook은 그대로 유지 (idle 30s 자연 발화 시 동작).
+                // 인터스티셜 dismiss 시 별도 처리 없음. (과거 v1.5.82 triggerForcedIdle
+                // 강제 idle 호출은 진입 애니메이션까지 멈춰 UX 회귀를 일으켜 폐기됐고,
+                // idle/forced-idle 로직 자체가 제거됨.)
                 resolve(shown);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {

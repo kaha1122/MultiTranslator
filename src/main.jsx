@@ -174,56 +174,8 @@ if (isNative) {
   }).catch(() => { /* plugin 미가용 시 visibilitychange만 동작 */ });
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// [v1.5.80 thermal-ios] 포그라운드 idle 30초 후 CSS 무한 애니메이션 일시정지
-//
-// data-app-hidden 가드는 백그라운드 진입(visibilitychange/appStateChange) 시에만
-// 발화하지만, 사용자가 화면을 보면서 손만 안 대는 포그라운드 idle 5분 시나리오에서는
-// 무효. 이게 사용자 보고 발열의 진짜 origin으로 mobile-production-guardian 3차 분석에서
-// 확인됨. Safari(platform-native 가드 미적용 환경) + Capacitor 양쪽 동시 cover.
-//
-// 동작: 30초 무활동 → data-app-idle="1" → index.css 가드로 animation-play-state: paused
-// 모든 CSS 무한 애니메이션(infinite pulse/spin/fall 등)이 일시정지됨. transition은
-// 영향 없음(animation-play-state는 keyframe animation만 제어).
-// 사용자 액션(touch/click/key/scroll/wheel) 즉시 0으로 복귀 + 30초 타이머 재시작.
-// capture:true로 모달 등 내부 핸들러가 stopPropagation해도 idle 리셋 보장.
-//
-// [v1.5.82+ thermal-ios] 광고 직후 강제 idle 60s — window.__forcedIdleUntil
-// 활성 동안 사용자 액션이 와도 idle 모드 유지(thermal 회복 시간 확보).
-// useAdMob.js의 인터스티셜 Dismissed + App.jsx의 Reward Dismissed에서
-// window.triggerForcedIdle(60_000) 호출.
-// ─────────────────────────────────────────────────────────────────────────────
-let __idleTimer = null;
-const IDLE_TIMEOUT_MS = 30000;
-const resetIdleTimer = () => {
-  // [v1.5.82+] 강제 idle 중이면 사용자 액션 무시 — 광고 직후 thermal 회복 시간 보호
-  if (window.__forcedIdleUntil && Date.now() < window.__forcedIdleUntil) {
-    document.documentElement.dataset.appIdle = '1';
-    return;
-  }
-  if (__idleTimer) clearTimeout(__idleTimer);
-  document.documentElement.dataset.appIdle = '0';
-  __idleTimer = setTimeout(() => {
-    document.documentElement.dataset.appIdle = '1';
-  }, IDLE_TIMEOUT_MS);
-};
-['touchstart', 'touchmove', 'click', 'keydown', 'scroll', 'wheel'].forEach(evt => {
-  window.addEventListener(evt, resetIdleTimer, { passive: true, capture: true });
-});
-resetIdleTimer();
-
-// [v1.5.82+] 광고 dismiss 시 호출 — 60초 강제 idle 진입 후 정상 timer 복귀
-let __forcedIdleTimer = null;
-window.triggerForcedIdle = (durationMs = 60_000) => {
-  window.__forcedIdleUntil = Date.now() + durationMs;
-  if (__idleTimer) { clearTimeout(__idleTimer); __idleTimer = null; }
-  // 이전 forced idle setTimeout 취소 — 다중 광고 dismiss 시 stale timer가 __forcedIdleUntil을
-  // 0으로 reset해서 강제 idle을 일찍 끊는 race 차단.
-  if (__forcedIdleTimer) clearTimeout(__forcedIdleTimer);
-  document.documentElement.dataset.appIdle = '1';
-  __forcedIdleTimer = setTimeout(() => {
-    window.__forcedIdleUntil = 0;
-    __forcedIdleTimer = null;
-    resetIdleTimer(); // 정상 30s 타이머 재시작
-  }, durationMs);
-};
+// [제거] 포그라운드 30초 무활동 idle 가드(v1.5.80) + 광고 직후 60초 강제 idle(v1.5.82)
+// 두 로직은 실측 발열 절감 효과가 없었던 반면, data-app-idle="1" 가드가 백그라운드
+// 복귀 시 리셋되지 않아 .home-page 진입 애니메이션(homeSlideUp)이 opacity:0에서 멈춰
+// "복귀 후 흰 화면 → 터치하면 깨어남" 버그를 유발 → 전면 제거.
+// 백그라운드 진입 시 정지(data-app-hidden, 위)만 유지 — 이건 실제 thermal 가드.

@@ -84,16 +84,6 @@ html[data-app-hidden="1"] *::after {
   animation-play-state: paused !important;
 }
 
-/* [v1.5.80 thermal-ios] 포그라운드 idle 30초 후 CSS 무한 애니메이션 일시정지.
- * Why: data-app-hidden은 백그라운드 진입에만 발화 → 사용자가 화면 보면서 손 안 대는
- *      포그라운드 idle 5분 시나리오에서는 무효. 이게 발열 + iOS OS 오디오 차단의
- *      진짜 origin (3차 mobile-production-guardian 분석). Safari(platform-native 가드
- *      미적용 환경) + Capacitor 양쪽 동시 cover.
- * Toggle: main.jsx의 idle timer (30s)가 touch/click/key/scroll/wheel 입력 시 0,
- *         30초 무활동 시 1로 토글. data-app-hidden과 직교(independent).
- */
-html[data-app-idle="1"] *,
-html[data-app-idle="1"] *::before,
-html[data-app-idle="1"] *::after {
-  animation-play-state: paused !important;
-}
+/* [제거] data-app-idle 가드(포그라운드 30초 무활동 정지, v1.5.80)는 실측 발열 절감
+ * 효과가 없던 반면 백그라운드 복귀 시 진입 애니메이션을 opacity:0에서 멈춰 흰 화면
+ * 버그를 유발 → main.jsx의 idle 로직과 함께 제거. 백그라운드 정지(위)만 유지. */
