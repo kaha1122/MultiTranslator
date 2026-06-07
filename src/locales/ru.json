@@ -190,6 +190,12 @@
     "limitDesc": "Сегодняшний лимит достигнут: 10 Произношение, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "До завтра!",
     "seeSidebarReward": "Хотите больше? Используйте кнопки +2 Free-Talking / +5 Произношение / +3 Listening в боковой панели.",
+    "pointsTitle": "Недостаточно очков",
+    "pointsDesc": "Пополните очки или оформите подписку",
+    "pointsUpgradeHint": "Подписка — без лимитов и очков",
+    "costGuideTitle": "Списание за действие",
+    "costPlay": "Воспроизведение",
+    "costGenerate": "Генерация",
     "upgradeBtn": "Улучшить тарифный план"
   },
   "apiSetup": {

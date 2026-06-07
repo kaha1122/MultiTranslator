@@ -190,6 +190,12 @@
     "limitDesc": "Đã đạt giới hạn hôm nay: Phát âm 10 lần, Free-Talking 2 lần, Listening 3 lần.",
     "seeYouTomorrow": "Hẹn gặp lại bạn ngày mai!",
     "seeSidebarReward": "Muốn học thêm? Hãy dùng các nút +2 Free-Talking / +5 Phát âm / +3 Listening ở thanh bên.",
+    "pointsTitle": "Hết điểm",
+    "pointsDesc": "Nạp điểm hoặc đăng ký",
+    "pointsUpgradeHint": "Đăng ký để dùng không giới hạn",
+    "costGuideTitle": "Điểm trừ mỗi thao tác",
+    "costPlay": "Phát",
+    "costGenerate": "Tạo",
     "upgradeBtn": "Nâng cấp gói"
   },
   "apiSetup": {

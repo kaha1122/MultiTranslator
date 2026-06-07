@@ -190,6 +190,12 @@
     "limitDesc": "Reached today's limit: 10 Pronunciation, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "See you tomorrow!",
     "seeSidebarReward": "Want more practice? Try the +2 Free-Talking / +5 Pronunciation / +3 Listening buttons in the sidebar.",
+    "pointsTitle": "Out of points",
+    "pointsDesc": "Top up points or subscribe to continue",
+    "pointsUpgradeHint": "Subscribe for unlimited — no limits or points",
+    "costGuideTitle": "Points used per action",
+    "costPlay": "Play",
+    "costGenerate": "Generate",
     "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {

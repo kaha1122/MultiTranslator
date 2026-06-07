@@ -190,6 +190,12 @@
     "limitDesc": "Limite atteinte aujourd'hui : 10 Prononciation, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "À demain !",
     "seeSidebarReward": "Envie de plus ? Utilisez les boutons +2 Free-Talking / +5 Prononciation / +3 Listening dans la barre latérale.",
+    "pointsTitle": "Plus de points",
+    "pointsDesc": "Rechargez des points ou abonnez-vous",
+    "pointsUpgradeHint": "Abonnez-vous pour un accès illimité",
+    "costGuideTitle": "Points par action",
+    "costPlay": "Écouter",
+    "costGenerate": "Générer",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {

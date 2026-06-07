@@ -190,6 +190,12 @@
     "limitDesc": "已达今日上限: 发音 10 次、Free-Talking 2 次、Listening 3 次。",
     "seeYouTomorrow": "明天再见！",
     "seeSidebarReward": "想继续学习吗?请使用侧边栏的 +2 Free-Talking / +5 发音 / +3 Listening 按钮。",
+    "pointsTitle": "积分不足",
+    "pointsDesc": "请充值积分或订阅",
+    "pointsUpgradeHint": "订阅后无限制·无需积分",
+    "costGuideTitle": "各功能消耗积分",
+    "costPlay": "播放",
+    "costGenerate": "生成",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {

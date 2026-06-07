@@ -520,10 +520,11 @@ export const AuthProvider = ({ children }) => {
         if (!user?.uid || !profile || tier !== 'trial') return;
         if (profile.lastTopUpDate === getToday()) return;
         claimDailyTopUp();
-        // deps에 profile 객체 전체 — lastTopUpDate가 undefined(신규/기존 유저)면 dep 미변화로
-        //   effect가 안 도는 버그 방지. 트랜잭션 가드로 이중충전은 차단되므로 재실행 안전.
+        // deps: !!profile(로드 시점 1회 트리거) + lastTopUpDate(충전 후 가드 재평가).
+        //   profile 객체 전체를 deps로 두면 매 snapshot마다 재실행돼 동시 트랜잭션 충돌(failed-precondition)
+        //   폭주 → !!profile 로 "로드 1회"만 트리거. 트랜잭션 가드로 이중충전 차단.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.uid, profile, tier]);
+    }, [user?.uid, !!profile, profile?.lastTopUpDate, tier]);
 
     // 구독 만료 체크
     useEffect(() => {

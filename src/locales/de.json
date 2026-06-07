@@ -190,6 +190,12 @@
     "limitDesc": "Heutiges Limit erreicht: 10 Aussprache, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "Bis morgen!",
     "seeSidebarReward": "Mehr üben? Nutze die Buttons +2 Free-Talking / +5 Aussprache / +3 Listening in der Seitenleiste.",
+    "pointsTitle": "Keine Punkte mehr",
+    "pointsDesc": "Punkte aufladen oder abonnieren",
+    "pointsUpgradeHint": "Abonnieren für unbegrenzt",
+    "costGuideTitle": "Punkte pro Aktion",
+    "costPlay": "Abspielen",
+    "costGenerate": "Erstellen",
     "upgradeBtn": "Plan upgraden"
   },
   "apiSetup": {

@@ -190,6 +190,12 @@
     "limitDesc": "발음 10회, Free-Talking 2회, Listening 3회 한도에 도달했습니다.",
     "seeYouTomorrow": "내일 다시 만나요!",
     "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +5 발음 / +3 Listening 버튼을 활용하세요",
+    "pointsTitle": "포인트가 부족합니다",
+    "pointsDesc": "포인트를 충전하시거나, 구독하여 주십시오",
+    "pointsUpgradeHint": "구독하면 한도·포인트 없이 무제한",
+    "costGuideTitle": "사용 시 차감 포인트",
+    "costPlay": "듣기·재생",
+    "costGenerate": "생성",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {

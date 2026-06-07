@@ -441,6 +441,8 @@ function App() {
 
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
+  // 2026-06-07: 한도 모달 사유 — 'cap'(하드캡 도달, 충전 무의미) / 'points'(포인트 부족, 충전 가능)
+  const [trialLimitReason, setTrialLimitReason] = useState('cap');
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   // 2026-05-07 v1.5.0: 카드 한도 폐기 — trialCardCurrentCount state 제거됨 (사용처 없음).
 
@@ -731,6 +733,17 @@ function App() {
     addAdPoints(1, { bonusCost: 2 }); // 풀 -2 (Pron 비용)
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [incrementDailyPron]);
+
+  // 2026-06-07: 한도 모달 호출 — feature별 하드캡 도달 여부로 사유 판정.
+  //   하드캡 도달 → 'cap'(충전 무의미, 업그레이드만) / 그 외(=포인트 부족) → 'points'(충전 가능).
+  const requestLimitModal = useCallback((feature) => {
+    const capReached =
+      feature === 'pron' ? todayPronCount >= TRIAL_DAILY_PRON_LIMIT :
+      feature === 'freeTalk' ? todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT :
+      feature === 'listen' ? todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT : false;
+    setTrialLimitReason(capReached ? 'cap' : 'points');
+    setShowTrialLimitModal(true);
+  }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
@@ -3910,7 +3923,7 @@ function App() {
           const isProTier = tier === 'pro';
           const showPronGauge = isTrialTier || isProTier;
 
-          const ftLimit = isTrialTier ? TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits : dailyGoal;
+          const ftLimit = isTrialTier ? TRIAL_FREETALK_DAILY_LIMIT : dailyGoal;
           const ftCount = isTrialTier ? todayFreeTalkCount : todayCount;
           const ftFull = ftCount >= ftLimit;
           const ftRatio = Math.min((ftCount / ftLimit) * 100, 100);
@@ -3919,7 +3932,7 @@ function App() {
             : (isTrialTier ? 'is-success' : '');
 
           const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + pronCredits : (isProTier ? PRO_PRON_LIMIT : 999);
+          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT : (isProTier ? PRO_PRON_LIMIT : 999);
           const pronFull = pronCurrent >= pronLimit;
           const pronRatio = Math.min((pronCurrent / pronLimit) * 100, 100);
           const pronFillClass = pronFull ? 'is-full' : (isProTier ? 'is-success' : 'is-warn');
@@ -4022,9 +4035,9 @@ function App() {
             todayListenCount={todayListenCount}
             todayFreeTalkCount={todayFreeTalkCount}
             dailyGoal={dailyGoal}
-            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + pronCredits}
-            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}
-            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT + listenCredits}
+            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT}
+            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT}
+            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
@@ -4148,7 +4161,7 @@ function App() {
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
-                      onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onTrialLimitReached={() => requestLimitModal('pron')}
                       onPronSuccess={onPronSuccess}
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
@@ -4201,7 +4214,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             languageLevels={languageLevels}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onTrialLimitReached={() => requestLimitModal('pron')}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
@@ -4228,7 +4241,7 @@ function App() {
             userLevel={userLevel}
             languageLevels={languageLevels}
             isTrialListenLimitReached={isTrialListenLimitReached}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onTrialLimitReached={() => requestLimitModal('listen')}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
@@ -4258,7 +4271,7 @@ function App() {
           <VideoReader
             ref={videoReaderRef}
             sourceLang={sourceLang}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onTrialLimitReached={() => requestLimitModal('pron')}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVideoCard}
             onDetailChange={setVideoDetailOpen}
@@ -4282,7 +4295,7 @@ function App() {
             targetLangs={targetLangs}
             userLevel={userLevel}
             languageLevels={languageLevels}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onTrialLimitReached={() => requestLimitModal('pron')}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
@@ -4296,7 +4309,7 @@ function App() {
             }}
             onFreeTalkStart={async (args) => {
               if (isTrialFreeTalkLimitReached) {
-                setShowTrialLimitModal(true);
+                requestLimitModal('freeTalk');
                 return;
               }
               // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
@@ -4348,7 +4361,7 @@ function App() {
                 setLibraryBackTo(null);
                 setViewMode(target);
               }}
-              onTrialLimitReached={() => setShowTrialLimitModal(true)}
+              onTrialLimitReached={() => requestLimitModal('pron')}
               onPronSuccess={onPronSuccess}
             />
           )}
@@ -4782,8 +4795,8 @@ function App() {
                   {/* 일일 사용량 (Trial) — 2026-05-07 v1.5.0: 카드 한도 폐기, FT/발음만 표시 */}
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🗣️ {getT(sourceLang, 'settings.usageFreeTalk') || 'Free Talking'}: {todayFreeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}/day<br />
-                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + pronCredits}/day
+                      🗣️ {getT(sourceLang, 'settings.usageFreeTalk') || 'Free Talking'}: {todayFreeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT}/day<br />
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
                     </span>
                   )}
                 </div>
@@ -5014,6 +5027,10 @@ function App() {
           listenCount={todayListenCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
+          reason={trialLimitReason}
+          bonusPoints={bonusPoints}
+          onCharge={handleRewardedAd}
+          rewardAdLoading={rewardAdLoading}
         />
       )}
 
@@ -5035,7 +5052,7 @@ function App() {
         onSaveConversationMessage={saveConversationMessage}
         onSaveConversationSummary={saveConversationSummaryPhrases}
         onSpeak={handleSpeak}
-        onTrialLimitReached={() => setShowTrialLimitModal(true)}
+        onTrialLimitReached={() => requestLimitModal('pron')}
         onPronSuccess={onPronSuccess}
         onBookmarkPrompt={handleBookmarkPrompt}
         languageGoals={languageGoals}
