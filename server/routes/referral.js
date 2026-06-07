@@ -112,14 +112,10 @@ router.post('/api/referral/apply', requireAuth, async (req, res) => {
             });
         }
 
-        // ── 양쪽 처리 ──────────────────────────────────────────────────────
-        // 1. B(나) 에게 100pt 부여 + referredBy set (immutable)
-        await grantBonusPoints({
-            uid,
-            amount: REFERRAL_BONUS_AMOUNT,
-            source: 'referralWelcome',
-            meta: { referrerUid, referrerCode: rawCode },
-        });
+        // ── 처리 ───────────────────────────────────────────────────────────
+        // 1. B(코드 입력자=친구) 에게는 보상 지급하지 않음 (2026-06-08 정책 변경:
+        //    추천인 A만 100pt). 단 referredBy 기록은 유지 — "이미 추천받음(1회 제한)"
+        //    가드와 추천 추적이 여기에 의존하므로 set 필수.
         await myRef.update({
             referredBy: rawCode,
             referredByUid: referrerUid,
@@ -145,7 +141,7 @@ router.post('/api/referral/apply', requireAuth, async (req, res) => {
         console.log(`[Referral] ${uid} redeemed code ${rawCode} (referrer=${referrerUid}, aGrant=${aGrant?.skipped ? 'skipped' : 'granted'})`);
         return res.json({
             success: true,
-            granted: REFERRAL_BONUS_AMOUNT,
+            granted: 0, // 친구(코드 입력자)는 보상 없음 — 추천인 A만 지급
             referrerSkipped: !!aGrant?.skipped,
         });
     } catch (err) {

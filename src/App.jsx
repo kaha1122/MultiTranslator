@@ -3830,9 +3830,6 @@ function App() {
                       +100pt
                     </span>
                   </div>
-                  <div style={{ fontSize: '0.72rem', color: '#be185d' }}>
-                    {getT(sourceLang, 'bonus.referralSubtitle') || 'Friend also gets 100pt'}
-                  </div>
                 </button>
 
                 {/* 리뷰 보상 — 오렌지 그라데이션 + +100pt 뱃지 (iOS는 Apple 5.6.1 정책상 비노출) */}
