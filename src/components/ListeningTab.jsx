@@ -87,10 +87,11 @@ export default function ListeningTab({
     onPronSuccess,
     onSaveToLibrary,
     onSpeak,
+    onTtsCharge,                          // 2026-06-07: passage/sentence TTS 신규 합성 시 풀 1점 차감 (캐시 hit 제외)
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
-    onFirstPlay,                          // 2026-05-23: 첫 재생 시 추가 AdsPoint(15) 차감 — Azure TTS 비용 반영
+    onFirstPlay,                          // 2026-06-07: no-op (TTS 차감은 onTtsCharge로 일원화)
     onNavigateToLibrary,
     userLevel,
     languageLevels = {},
@@ -246,6 +247,7 @@ export default function ListeningTab({
             if (!res.ok) throw new Error(`TTS ${res.status}`);
             const blob = await res.blob();
             if (myGen !== playGenRef.current) return; // stale
+            onTtsCharge?.(); // 2026-06-07: 신규 합성(서버 fetch) 1점 차감. 보존 오디오 재청취는 위에서 return → 무료.
 
             objectUrl = URL.createObjectURL(blob);
             const audio = new Audio(objectUrl);
@@ -280,7 +282,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsCharge, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
 
     // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
     const playSentence = useCallback(async (sentence) => {
@@ -310,6 +312,7 @@ export default function ListeningTab({
                     });
                     if (!res.ok) throw new Error(`TTS ${res.status}`);
                     const blob = await res.blob();
+                    onTtsCharge?.(); // 2026-06-07: 문장 신규 합성 1점 차감. 캐시 hit은 위에서 return → 무료.
                     objectUrl = URL.createObjectURL(blob);
 
                     // LRU 캐시 저장 — 초과 시 가장 오래된 항목 revoke + 제거.
@@ -335,7 +338,7 @@ export default function ListeningTab({
         // 폴백/에세이: 기존 onSpeak
         const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
         onSpeak?.(ttsText, selectedLang);
-    }, [passageType, passage, selectedLang, onSpeak]);
+    }, [passageType, passage, selectedLang, onSpeak, onTtsCharge]);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});

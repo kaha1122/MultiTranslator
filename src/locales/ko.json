@@ -961,6 +961,8 @@
     "watchForProns": "+5 발음",
     "watchAdPron": "광고 시청 후 발음 5회 추가",
     "loading": "광고 로딩 중...",
+    "topUpBonus": "보너스포인트 충전 (+5)",
+    "topUpBonusDesc": "광고 시청 후 포인트 +5",
     "watchForFreeTalk": "+2 Free Talking",
     "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가",
     "watchForListen": "+3 Listening",

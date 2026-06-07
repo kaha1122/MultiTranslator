@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
 import { authFetch } from '../utils/authFetch';
 import { detectGeoInfo } from '../utils/detectCountry';
+import { getToday } from '../hooks/useDailyProgress';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -374,11 +375,13 @@ export const AuthProvider = ({ children }) => {
     const [dailyTrialFreeTalkReached, setDailyTrialFreeTalkReached] = useState(false);
     const [dailyTrialListenReached, setDailyTrialListenReached] = useState(false);
 
-    // 보너스 활성 시 일일 한도 우회. 광고 credits 보유 시도 우회 (광고로 한도 확장 효과).
-    const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached && pronCredits === 0;
-    const isTrialFreeTalkLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialFreeTalkReached && freeTalkCredits === 0;
-    // 2026-05-23: Listening 도 광고 보상 listenCredits 시스템 도입 → 보너스 + credits 둘 다 우회 게이트.
-    const isTrialListenLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialListenReached && listenCredits === 0;
+    // 2026-06-07 개편: 하드캡 절대(일일 한도 초과 불가) + 통합 포인트 풀(bonusPoints) 게이트.
+    //   "한도 도달(하드캡)" 또는 "포인트 부족(< 액션 비용)" 중 하나라도면 차단. credits/bonus 우회 제거.
+    //   포인트 부족이면 사이드바 보상광고 충전(+5)으로 회복, 하드캡이면 Tier 변경만.
+    const POINT_COST = { freeTalk: 10, listen: 5, pron: 2 };
+    const isTrialPronLimitReached = tier === 'trial' && (dailyTrialPronReached || bonusPoints < POINT_COST.pron);
+    const isTrialFreeTalkLimitReached = tier === 'trial' && (dailyTrialFreeTalkReached || bonusPoints < POINT_COST.freeTalk);
+    const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
     // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
@@ -399,6 +402,30 @@ export const AuthProvider = ({ children }) => {
             return consumed;
         } catch (e) {
             return 0;
+        }
+    };
+
+    // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
+    //   날짜-키 트랜잭션 가드(markActiveDay 패턴)로 멀티기기 이중충전 차단. Trial 전용.
+    const claimDailyTopUp = async () => {
+        if (!user?.uid) return;
+        const today = getToday();
+        if (profile?.lastTopUpDate === today) return; // 빠른 우회
+        try {
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const d = snap.data() || {};
+                if (d.lastTopUpDate === today) return; // race 가드
+                const amount = d.firstTopUpDone ? 10 : 30;
+                tx.update(ref, {
+                    bonusPoints: increment(amount),
+                    lastTopUpDate: today,
+                    firstTopUpDone: true,
+                });
+            });
+        } catch (e) {
+            // 충전 실패는 다음 진입에서 재시도 (날짜 게이트 유지)
         }
     };
 
@@ -486,6 +513,15 @@ export const AuthProvider = ({ children }) => {
             proPronResetMonth: currentMonth,
         }).catch(e => console.error("Pro pron reset failed:", e));
     }, [user, tier, proPronResetMonth]);
+
+    // 2026-06-07 개편: Trial 일일 포인트 충전 (1일차 30 / 2일차+ +10). 날짜 바뀌면 1회 실행.
+    //   게이팅(isTrialXLimitReached)이 평가되기 전에 잔액이 채워지도록 profile 로드 직후 실행.
+    useEffect(() => {
+        if (!user?.uid || !profile || tier !== 'trial') return;
+        if (profile.lastTopUpDate === getToday()) return;
+        claimDailyTopUp();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.uid, profile?.lastTopUpDate, tier]);
 
     // 구독 만료 체크
     useEffect(() => {
@@ -741,7 +777,7 @@ export const AuthProvider = ({ children }) => {
         isProPronLimitReached,
         incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
         incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
-        bonusPoints, hasBonusActive, consumeBonusPoints,
+        bonusPoints, hasBonusActive, consumeBonusPoints, POINT_COST,
         freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
         reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
         saveByokKeys,

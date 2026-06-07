@@ -955,6 +955,8 @@
     "watchForProns": "+5 Aussprache",
     "watchAdPron": "Werbung ansehen → +5 Ausspracheversuche",
     "loading": "Werbung lädt...",
+    "topUpBonus": "Punkte aufladen (+5)",
+    "topUpBonusDesc": "Werbung ansehen für +5 Punkte",
     "watchForFreeTalk": "+2 Free Talking",
     "watchAdFreeTalk": "Werbung ansehen → +2 Free Talking-Sitzungen",
     "watchForListen": "+3 Listening",

@@ -61,7 +61,6 @@ import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
-import { adsReady, showInterstitial } from './lib/adProvider';
 import AppGuide from './components/AppGuide';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
@@ -709,104 +708,14 @@ function App() {
     })();
   }, [user?.uid]);
 
-  // 액션별 점수 누적 → 임계치 도달 시 전면광고 (Trial 전용, 플랫폼 공통)
-  //   카드 저장 2점 / Generate(Vocab·Listening·Scene/Translation) 1점 / 발음 1점
-  //   2026-05-04 변경: 발음도 인터스티셜 카운터에 누적 (이전엔 bonusOnly:true 였음)
-  //     이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조
-  //     보너스 활성 사용자는 보너스 점수에서 우선 차감 (cascade), 부족분만 인터스티셜 누적
-  //   localStorage 영속 누적 → 앱/탭 닫아도 유지 (Web/Android/iOS 동일)
-  //   추가: React state로도 동기화 → 헤더에 "광고까지 N점" 카운터 실시간 표시
-  const AD_POINT_THRESHOLD = 15;
-  const AD_POINT_KEY = 'interstitialPoints';
-  const AD_COOLDOWN_MS = 60_000;
-  const lastAdAtRef = useRef(0);
-
-  // 헤더 카운터용 React state — localStorage와 동기화
-  const [adPointsState, setAdPointsState] = useState(() => {
-    try { return parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10); } catch { return 0; }
-  });
-  const setAdPoints = useCallback((value) => {
-    try { localStorage.setItem(AD_POINT_KEY, String(value)); } catch {}
-    setAdPointsState(value);
-  }, []);
-
-  // 2026-05-08: adPoints 와 bonusPoints 분리 — 두 풀 독립 차감.
-  //   options.bonusCost 미지정 시 기본 = adsCost (= points 인자) 으로 호환성 유지.
-  //   액션별 권고치: Free Talking 10, Listening 5, Pronunciation 2, 그 외 1.
-  //   adsCost(=points) 는 항상 1로 유지해야 함 — 광고 본 직후 0 리셋 상태에서 큰 값 차감 시
-  //   즉시 음수→재광고 무한루프 위험. 보너스 풀만 액션 가치에 비례해 빠르게 소진하는 패턴.
+  // 2026-06-07 개편: 통합 포인트 풀(bonusPoints) 차감. 전면광고/AdPoint(localStorage) 시스템 제거.
+  //   addAdPoints(points, {bonusCost}) → bonusCost(없으면 points)만큼 풀에서 차감(best-effort, Trial 전용).
+  //   차단(게이팅)은 AuthContext isTrialXLimitReached(하드캡 OR 포인트 부족)가 담당 — 여기선 차감만.
+  //   액션 비용: FreeTalk 10 / Listening 5 / Pron 2 / Vocab·Scene 1 / TTS 1 (호출처의 bonusCost 그대로).
   const addAdPoints = async (points, options = {}) => {
     if (tier !== 'trial') return;
-    const bonusCost = options.bonusCost ?? points;
-
-    // 보너스 활성 시: bonusCost 만큼 차감 시도. 1점이라도 차감되면 광고 면제 (adPoints 누적 skip).
-    // 보너스 잔여가 bonusCost 보다 적어도 무료 — 다음 액션에서 0 도달 시 fall-through 로 정상 누적.
-    if (hasBonusActive && bonusCost > 0) {
-      const consumed = await consumeBonusPoints(bonusCost);
-      if (consumed > 0) return;
-    }
-
-    // bonusOnly 모드 (예: 발음 평가) — 남은 점수가 있어도 인터스티셜 누적 X
-    if (options.bonusOnly) return;
-
-    // 점수는 항상 누적 (웹·광고미준비 환경에서도 헤더 카운터 표시 위해)
-    const prev = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
-    const next = prev + points;
-
-    if (next < AD_POINT_THRESHOLD) {
-      setAdPoints(next);
-      return;
-    }
-
-    // 2026-05-23: deferAd 옵션 — 임계 도달해도 광고 즉시 발화 안 함, 점수만 누적.
-    //   Free Talking 같이 인트로 TTS / 진행 중에 광고 끼어들면 UX 깨지는 액션 보호.
-    //   호출자가 적절한 시점(세션 종료)에 flushPendingAd() 로 발화 책임.
-    if (options.deferAd) {
-      setAdPoints(next);
-      return;
-    }
-
-    // 임계 도달 — 광고 표시 가능한 경우만 인터스티셜 시도
-    if (!adsReady()) {
-      // 웹/광고 미준비: 누적값 유지 (다음 액션 시 재시도, 카운터는 0으로 보임)
-      setAdPoints(next);
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastAdAtRef.current < AD_COOLDOWN_MS) {
-      // 임계 도달했지만 쿨다운 중 — 점수는 유지해 다음 액션에서 재시도
-      setAdPoints(next);
-      return;
-    }
-
-    lastAdAtRef.current = now;
-    setAdPoints(0);
-    const ok = await showInterstitial();
-    if (!ok) {
-      // 광고 로드/표시 실패 — 점수 롤백
-      setAdPoints(next);
-      lastAdAtRef.current = 0;
-    }
-  };
-
-  // 2026-05-23: deferAd 누적된 점수를 안전 시점에 발화 — Free Talking 세션 종료 시점 등.
-  //   임계 미달이면 no-op. 쿨다운 / adsReady 체크는 addAdPoints 와 동일.
-  //   강제 종료 시 호출 못 되면 점수는 localStorage 에 보존 → 다음 세션 첫 액션에서 자연 발화.
-  const flushPendingAd = async () => {
-    if (tier !== 'trial') return;
-    const curr = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
-    if (curr < AD_POINT_THRESHOLD) return;
-    if (!adsReady()) return;
-    const now = Date.now();
-    if (now - lastAdAtRef.current < AD_COOLDOWN_MS) return;
-    lastAdAtRef.current = now;
-    setAdPoints(0);
-    const ok = await showInterstitial();
-    if (!ok) {
-      setAdPoints(curr);
-      lastAdAtRef.current = 0;
-    }
+    const cost = options.bonusCost ?? points;
+    if (cost > 0) await consumeBonusPoints(cost);
   };
 
   // 구버전 키 정리 (1회)
@@ -814,28 +723,14 @@ function App() {
     try { localStorage.removeItem('interstitialSaveCount'); } catch {}
   }, []);
 
-  // 발음 평가 성공 통합 핸들러 — 일일 카운터 증가 + 인터스티셜 점수 +1
-  // 2026-05-04 변경: bonusOnly:true 제거 → 발음도 일반 trial 인터스티셜 카운터에 누적.
-  //   이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조 차단.
-  //   addAdPoints 내부 cascade: 보너스 활성 시 보너스 점수 우선 차감 → 부족분 인터스티셜 누적.
-  // 발음 평가 성공 핸들러 — daily 한도 미사용 분 우선 차감, 초과분은 pronCredits(영구) 소비.
-  // addAdPoints(1)은 점수 시스템(15점)에 별도 차감 — Daily 한도와는 독립된 게이트.
+  // 발음 평가 성공 핸들러 — 2026-06-07 개편: 하드캡 카운터 +1 + 통합 풀 2점 차감.
+  //   진입 게이트(isTrialPronLimitReached = 하드캡 OR 포인트<2)가 useAudioRecorder 에서 사전 차단하므로
+  //   여기 도달 = 허용된 발음. 항상 일일 카운터 증가(하드캡 집계) + 풀 차감(addAdPoints가 trial 가드).
   const onPronSuccess = useCallback(async () => {
-    // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가 보너스 차감 +
-    // 광고 카운터 누적 여부를 내부에서 모두 처리 — 잔여 보너스 부족 시 광고 카운터로 자연 fallback.
-    if (hasBonusActive) {
-      addAdPoints(1, { bonusCost: 2 });
-      return;
-    }
-    if (tier === 'trial' && todayPronCount >= TRIAL_DAILY_PRON_LIMIT && pronCredits > 0) {
-      // daily 20회 초과 → 광고 적립 credits 소비
-      await consumePronCredits(1);
-    } else {
-      incrementDailyPron();
-    }
-    // adsCost=1, bonusCost=2 — Pron 은 Azure Speech 비용 발생 액션이라 보너스 풀에서 가중치 부여
-    addAdPoints(1, { bonusCost: 2 });
-  }, [incrementDailyPron, hasBonusActive, tier, todayPronCount, TRIAL_DAILY_PRON_LIMIT, pronCredits, consumePronCredits]);
+    incrementDailyPron();
+    addAdPoints(1, { bonusCost: 2 }); // 풀 -2 (Pron 비용)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incrementDailyPron]);
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
@@ -844,25 +739,25 @@ function App() {
   //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
 
-  const handleRewardedAd = async (type) => {
+  // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
+  //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
+  const handleRewardedAd = async () => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-      // 2026-05-23: listens 타입 추가 — AdMob Bonus01 (rewardedCards) 재사용 (별도 unit 미발급)
-      const adId = (type === 'freeTalks' || type === 'listens') ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      const adId = AD_UNITS.rewardedCards;
 
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          // 2026-05-23: listens 추가 — 광고 1회당 listenCredits +3 (일일 한도와 동일, 한 번 더 3 passage)
-          const amount = type === 'freeTalks' ? 2 : (type === 'listens' ? 3 : 5);
-          const field = type === 'freeTalks' ? 'freeTalkCredits' : (type === 'listens' ? 'listenCredits' : 'pronCredits');
+          // 서버 검증 엔드포인트 경유 +5 충전 (쿨다운/일일상한 가드). 클라 직접 increment 금지(위변조).
           try {
-            await updateDoc(doc(db, 'users', user.uid), { [field]: increment(amount) });
-          } catch (e) { console.error(`[RewardedAd] ${field} 적립 실패:`, e); }
+            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await authFetch(`${SERVER_URL}/api/bonus/ad-reward`, { method: 'POST' });
+          } catch (e) { console.error('[RewardedAd] 충전 실패:', e); }
           resolve();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
@@ -1761,6 +1656,7 @@ function App() {
   //   effect 가 generate 마다 재실행 → 세션 가드 + boolean 안정화로 1회만 발화 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
+    if (tier === 'trial') return; // 2026-06-07: Trial 은 Streak 팝업 제외
     if (profile.streakIntroDismissed === true) return;
     // 온보딩 미통과면 보류 (PushOptIn 이후로 순차 흐름 유지)
     if (!profile.hasCompletedOnboarding) return;
@@ -1783,6 +1679,7 @@ function App() {
     profile?.hasCompletedOnboarding,
     !!profile?.aiConsentAt,        // Timestamp 객체 → boolean 안정화 (snapshot 마다 새 instance 회피)
     profile?.streakIntroDismissed,
+    tier,
     showOnboarding,
     showAiConsent,
     showSubscriptionPrompt,
@@ -1798,6 +1695,7 @@ function App() {
   //   Firestore lastStreakStatusPopupAt === today 게이트가 매일 1회 정책을 cross-session 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
+    if (tier === 'trial') return; // 2026-06-07: Trial 은 Streak 일수 안내 팝업 제외
     if (profile.streakIntroDismissed !== true) return;
     if (!initialLifecycleStageRef.current) return;
     // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
@@ -1813,7 +1711,7 @@ function App() {
       setShowStreakStatus(true);
     }, 1500);
     return () => clearTimeout(timer);
-  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
+  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, tier, showOnboarding, showStreakIntro, showBonusCampaign]);
 
   // Free Talking 신기능 안내 — 이미 온보딩 통과한 기존 사용자에게만 1회 표시
   // 조건: deviceOnboardingDone='1' (기존 유저) AND announce_seen 미존재 AND 온보딩 모달 미진행
@@ -1877,6 +1775,7 @@ function App() {
   // 세션 폭주 방지: sessionStorage 가드로 같은 세션 안에서는 1회만
   useEffect(() => {
     if (!profile) return;
+    if (tier === 'trial') return; // 2026-06-07: Trial 은 StarGuide(별표→발음→Streak 안내) 제외
 
     // (1) Streak Reminder push 강제 발화 — 선행 모달이 차있으면 대기 (닫히면 effect 재실행)
     if (forceStarGuideFromPush) {
@@ -1896,6 +1795,7 @@ function App() {
     setShowStarGuide(true);
   }, [
     profile?.totalGenerateCount,
+    tier,
     forceStarGuideFromPush,
     showOnboarding,
     showAiConsent,
@@ -2626,7 +2526,7 @@ function App() {
       const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -2691,7 +2591,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2746,7 +2646,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2807,7 +2707,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2896,7 +2796,7 @@ function App() {
         saved += 1;
         incrementSavedCard();
         incrementDailySave();
-        addAdPoints(1);
+        // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       } catch (e) {
         console.error('[SaveSummary] save FAILED for phrase:', phrase, 'error:', e?.code, e?.message, e);
         skipped += 1;
@@ -2962,7 +2862,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -3071,6 +2971,10 @@ function App() {
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
+
+      // 2026-06-07 개편: TTS 신규 합성(클라 캐시 miss = 서버 fetch) 1점 차감 (best-effort, Trial 전용).
+      //   메모리/IndexedDB 캐시 hit은 이 경로 전에 return → 재청취 무료. BYOK 제외.
+      if (tier === 'trial' && !byokAzureKey) consumeBonusPoints(1);
 
       // 캐시에 저장 (LRU: 오래된 항목 제거) — stale이어도 캐시는 저장(다음 호출에서 재사용)
       if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
@@ -3710,69 +3614,28 @@ function App() {
                 {getT(sourceLang, 'nav.stats')}
               </button>
 
-              {/* 추가 학습 (Trial 전용 + 네이티브) — 보일 때만 위/아래 divider 노출 */}
+              {/* 보너스포인트 충전 (Trial 전용 + 네이티브) — 2026-06-07 개편: 단일 충전 버튼 */}
               {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
-                  {/* Free Talking +2 (영구 적립) — 2026-05-07 v1.5.0 */}
                   <button
-                    onClick={() => handleRewardedAd('freeTalks')}
+                    onClick={() => handleRewardedAd()}
                     disabled={rewardAdLoading}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                       border: '1px solid #bbf7d0', cursor: 'pointer', textAlign: 'left',
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.watchForFreeTalk') || '+2 Free Talking'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 충전 (+5)'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.watchAdFreeTalk') || '광고 시청 후 Free Talking 2회 추가'}
-                      </div>
-                    </div>
-                  </button>
-                  {/* 발음 +5 */}
-                  <button
-                    onClick={() => handleRewardedAd('prons')}
-                    disabled={rewardAdLoading}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                      border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
-                    }}>
-                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                        {getT(sourceLang, 'reward.watchForProns') || '+5 발음'}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
-                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 5회 추가'}
-                      </div>
-                    </div>
-                  </button>
-                  {/* Listening +3 (2026-05-23 신설) */}
-                  <button
-                    onClick={() => handleRewardedAd('listens')}
-                    disabled={rewardAdLoading}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #faf5ff, #ede9fe)',
-                      border: '1px solid #ddd6fe', cursor: 'pointer', textAlign: 'left',
-                    }}>
-                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#6d28d9' }}>
-                        {getT(sourceLang, 'reward.watchForListen') || '+3 Listening'}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#a78bfa' }}>
-                        {getT(sourceLang, 'reward.watchAdListen') || '광고 시청 후 Listening 3회 추가'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +5'}
                       </div>
                     </div>
                   </button>
@@ -3996,7 +3859,7 @@ function App() {
                 color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
                 textAlign: 'center', userSelect: 'none',
               }}>
-                {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
+                🎁 {bonusPoints}
               </span>
             )}
           </div>
@@ -4369,26 +4232,17 @@ function App() {
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
+            onTtsCharge={() => { if (tier === 'trial') consumeBonusPoints(1); }}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => {
+              // 2026-06-07 개편: 진입 게이트(isTrialListenLimitReached = 하드캡 OR 포인트<5)가 사전 차단.
+              //   여기 도달 = 허용된 생성. 항상 일일 카운터 +1(하드캡 집계) + 풀 5점 차감.
               incrementListenGenerate();
-              // 2026-05-23 fix: hasBonusActive 분기 누락 — Free Talking 정책 (2026-05-13)
-              //   "보너스 활성 시 daily 한도 차감 X" 와 일관성 맞춤. addAdPoints 내부에서
-              //   bonusCost:5 소비 시 광고 카운터 누적도 skip 되므로 daily 도 함께 면제하는 게 자연스러움.
-              // - hasBonusActive: daily/credits 둘 다 X, addAdPoints만 (bonus 소비)
-              // - 한도(3) 도달 + listenCredits 보유: 광고 적립 credits 우선 소비
-              // - 그 외: daily +1 (Pron 의 onPronSuccess 와 동일 패턴)
-              if (!hasBonusActive) {
-                if (tier === 'trial' && todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT && listenCredits > 0) {
-                  consumeListenCredits(1);
-                } else {
-                  incrementDailyListen();
-                }
-              }
-              addAdPoints(3, { bonusCost: 5 }); // Generate=3점 (지문 생성=고비용)
+              incrementDailyListen();
+              addAdPoints(5); // 풀 -5 (Listening 생성 비용)
             }}
-            onFirstPlay={() => { addAdPoints(1, { bonusCost: 5 }); }}
+            onFirstPlay={() => {}}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
@@ -5160,8 +5014,6 @@ function App() {
           listenCount={todayListenCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
-          onWatchAd={handleRewardedAd}
-          rewardAdLoading={rewardAdLoading}
         />
       )}
 
@@ -5189,29 +5041,15 @@ function App() {
         languageGoals={languageGoals}
         onSessionStarted={async () => {
           // 2026-05-21: startSession 성공(서버 200) 직후에만 호출됨. 실패 시 미호출 → 카운트 보존.
-          // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
-          // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
-          if (hasBonusActive) {
-            addAdPoints(3, { bonusCost: 10, deferAd: true }); // Generate=3점 (FreeTalk=고비용)
-          } else {
-            // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
-            if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
-              await consumeFreeTalkCredits(1);
-            } else {
-              incrementDailyFreeTalk();
-            }
-            // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
-            // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-            addAdPoints(3, { bonusCost: 10, deferAd: true }); // Generate=3점 (FreeTalk=고비용)
-          }
-          // 분석용 평생 누적 카운터
-          incrementTotalFreeTalk();
+          // 2026-06-07 개편: 진입 게이트(isTrialFreeTalkLimitReached = 하드캡 OR 포인트<10)가 사전 차단.
+          //   여기 도달 = 허용된 세션. 항상 일일 카운터 +1(하드캡 집계) + 풀 10점 차감.
+          incrementDailyFreeTalk();
+          addAdPoints(10); // 풀 -10 (FreeTalk 세션 비용)
+          incrementTotalFreeTalk(); // 분석용 평생 누적
         }}
         onClose={() => {
           setFreeTalkOpen(false);
           setFreeTalkSetup(null);
-          // 2026-05-23: 세션 종료 시점에 누적된 광고 점수 flush — 인트로/대화 중 광고 차단 후 보장.
-          flushPendingAd();
         }}
       />
 

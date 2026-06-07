@@ -10,6 +10,7 @@ const VALID_SOURCES = new Set([
     'streak14',
     'streak30',
     'streak100',
+    'adReward',            // 보상광고 보너스 충전 (+5)
     'admin_manual',        // 어드민 수동 부여
     'admin_test',          // 테스트
 ]);

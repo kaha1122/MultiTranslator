@@ -961,6 +961,8 @@
     "watchForProns": "+5 Pronunciation",
     "watchAdPron": "Watch ad → +5 Pronunciation attempts",
     "loading": "Loading ad...",
+    "topUpBonus": "Top up points (+5)",
+    "topUpBonusDesc": "Watch an ad for +5 points",
     "watchForFreeTalk": "+2 Free Talking",
     "watchAdFreeTalk": "Watch ad → +2 Free Talking sessions",
     "watchForListen": "+3 Listening",
