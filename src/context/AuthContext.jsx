@@ -520,8 +520,10 @@ export const AuthProvider = ({ children }) => {
         if (!user?.uid || !profile || tier !== 'trial') return;
         if (profile.lastTopUpDate === getToday()) return;
         claimDailyTopUp();
+        // deps에 profile 객체 전체 — lastTopUpDate가 undefined(신규/기존 유저)면 dep 미변화로
+        //   effect가 안 도는 버그 방지. 트랜잭션 가드로 이중충전은 차단되므로 재실행 안전.
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [user?.uid, profile?.lastTopUpDate, tier]);
+    }, [user?.uid, profile, tier]);
 
     // 구독 만료 체크
     useEffect(() => {
