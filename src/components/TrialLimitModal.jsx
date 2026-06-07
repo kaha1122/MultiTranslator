@@ -9,6 +9,7 @@ import { X } from 'lucide-react';
 const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
+    onBuyPoints, buyingPoints = false, pointsPriceString = '',
 }) => {
     const t = useT(sourceLang);
     const {
@@ -134,7 +135,22 @@ const TrialLimitModal = ({
                                     cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                                     fontWeight: 700, color: '#166534', fontSize: '0.9rem',
                                 }}>
-                                🎬 {t('reward.topUpBonus') || '보너스포인트 충전 (+5)'}
+                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +5'}
+                            </button>
+                        )}
+                        {/* 보너스포인트 구매 (+200, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
+                        {isNative && typeof onBuyPoints === 'function' && pointsPriceString && (
+                            <button
+                                onClick={() => onBuyPoints()}
+                                disabled={buyingPoints}
+                                style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    padding: '12px', marginBottom: '10px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
+                                    cursor: buyingPoints ? 'default' : 'pointer', opacity: buyingPoints ? 0.6 : 1,
+                                    fontWeight: 700, color: '#1e40af', fontSize: '0.9rem',
+                                }}>
+                                🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +200')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
                             </button>
                         )}
                         {rewardAdLoading && (

@@ -5110,6 +5110,9 @@ function App() {
           bonusPoints={bonusPoints}
           onCharge={handleRewardedAd}
           rewardAdLoading={rewardAdLoading}
+          onBuyPoints={handleBuyPoints}
+          buyingPoints={buyingPoints}
+          pointsPriceString={pointsPriceString}
         />
       )}
 
