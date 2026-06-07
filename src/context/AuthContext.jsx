@@ -384,21 +384,18 @@ export const AuthProvider = ({ children }) => {
     const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
 
-    // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
-    // 가능한 만큼 차감하고 실제 차감량을 number로 반환 (부족하면 잔여만큼만)
+    // 보너스 포인트 차감 — 2026-06-07: 트랜잭션 → updateDoc(increment) 으로 단순화.
+    //   트랜잭션은 같은 user 문서 동시 쓰기(markActiveDay 등)와 낙관적 락 충돌(failed-precondition)
+    //   을 일으켜 콘솔 폭주 + 재시도 낭비 → increment 는 서버 원자 연산이라 경합해도 실패 없음.
+    //   음수 방지: 클라 보유분(profile.bonusPoints)으로 clamp. 게이트가 사전에 pool>=cost 보장하므로
+    //   gated 액션은 음수 불가, best-effort(TTS/Vocab 등)도 clamp 로 0 미만 차감 안 함.
     const consumeBonusPoints = async (amount) => {
         if (!user?.uid || amount <= 0) return 0;
+        const current = profile?.bonusPoints || 0;
+        const consumed = Math.min(current, amount);
+        if (consumed <= 0) return 0;
         try {
-            let consumed = 0;
-            await runTransaction(db, async (tx) => {
-                const ref = doc(db, 'users', user.uid);
-                const snap = await tx.get(ref);
-                const current = snap.data()?.bonusPoints || 0;
-                consumed = Math.min(current, amount);
-                if (consumed > 0) {
-                    tx.update(ref, { bonusPoints: increment(-consumed) });
-                }
-            });
+            await updateDoc(doc(db, 'users', user.uid), { bonusPoints: increment(-consumed) });
             return consumed;
         } catch (e) {
             return 0;

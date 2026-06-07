@@ -11,7 +11,7 @@ const TrialLimitModal = ({
 }) => {
     const t = useT(sourceLang);
     const { TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT } = useAuth();
-    const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.();
+    const isNative = typeof window !== 'undefined' && window.Capacitor?.isNativePlatform?.(); // 충전 버튼(보상광고)은 앱 전용
 
     const overlay = {
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
@@ -32,8 +32,7 @@ const TrialLimitModal = ({
             { icon: '💬', label: 'Free-Talking', cost: 10 },
             { icon: '🎧', label: 'Listening', cost: 5 },
             { icon: '🎤', label: t('settings.usagePron') || 'Pronunciation', cost: 2 },
-            { icon: '🔊', label: t('trial.costPlay') || 'Play / 듣기', cost: 1 },
-            { icon: '📖', label: t('trial.costGenerate') || 'Generate / 생성', cost: 1 },
+            { icon: '✦', label: t('trial.costOther') || 'Other', cost: 1 },
         ];
         return (
             <div style={overlay} onClick={onClose}>
@@ -70,7 +69,7 @@ const TrialLimitModal = ({
                         </button>
                     </div>
 
-                    {/* 영역 2: 충전(+5) + 사용 항목별 차감 안내 */}
+                    {/* 영역 2: 충전(+5, 앱 전용) + 사용 항목별 차감(간략) */}
                     <div style={{ border: '1px solid #e2e8f0', borderRadius: '14px', padding: '12px' }}>
                         {isNative && typeof onCharge === 'function' && (
                             <button
@@ -94,12 +93,12 @@ const TrialLimitModal = ({
                         <p style={{ margin: '0 0 6px', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.03em' }}>
                             {t('trial.costGuideTitle') || '사용 시 차감 포인트'}
                         </p>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                        {/* 간략: 한 줄 칩(아이콘+라벨 −비용), 줄바꿈 허용 */}
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px 12px', fontSize: '0.8rem', color: '#475569' }}>
                             {costs.map((c) => (
-                                <div key={c.label} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', color: '#475569' }}>
-                                    <span>{c.icon} {c.label}</span>
-                                    <span style={{ fontWeight: 700, color: '#dc2626' }}>−{c.cost}</span>
-                                </div>
+                                <span key={c.label} style={{ whiteSpace: 'nowrap' }}>
+                                    {c.icon} {c.label} <b style={{ color: '#dc2626' }}>−{c.cost}</b>
+                                </span>
                             ))}
                         </div>
                     </div>
