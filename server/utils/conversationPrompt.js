@@ -137,6 +137,16 @@ The 3 messages should feel like the first ~20 seconds of a real interaction:
 
 ---
 
+### [Pedagogical Frame — this is a LANGUAGE-LEARNING session, not just role-play — READ FIRST]
+The learner is actively PRACTICING SPEAKING ${targetLangName} at **${difficulty || 'basic'}** level.
+Realism exists to SERVE learning, never the reverse. Binding on EVERY field below:
+- Pick a situation whose CORE VOCABULARY is high-frequency and REUSABLE at this level — choose the scene so the words the learner meets are COMMON, not exotic/technical.
+- EVERY sentence you generate (the learner's lines AND the responder's lines) MUST stay inside the ${difficulty || 'basic'} vocabulary + length budget defined in [Phase 2: Difficulty Guidelines] below — even when a "more realistic" version would be harder.
+- When realism conflicts with comprehensibility at basic/intermediate, **COMPREHENSIBILITY WINS**: a simpler fully-usable exchange beats an authentic-but-too-hard one.
+- The multi-turn ARC (handing the floor, leaving attributes open) stays — but make each individual utterance SHORT and EASY for the level. Many easy turns, not few hard ones.
+
+---
+
 ### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
 "${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
 es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
@@ -280,6 +290,14 @@ Now fill in your private mental scratchpad (using the location decided above):
        UNADDRESSED so the learner has clear, concrete things to say next
        during Free Talking. firstAiReply must NOT resolve ③ in a single move.
 
+  ⑥ TARGET VOCABULARY (learning lens — this GOVERNS word choice): name 3~5
+       high-frequency, ${difficulty || 'basic'}-appropriate ${targetLangName}
+       words/phrases this micro-situation will naturally let the learner
+       practice. Choose the scene so these stay COMMON and reusable — never a
+       scene that forces rare/technical terms. At basic, restrict to top-800
+       everyday words. These chosen words DRIVE the vocabulary of firstUserTurn
+       and firstAiReply (don't reach for harder synonyms in the name of realism).
+
 Then ALL three fields MUST reflect this exact plan:
   - intro.text         → describes ① and the situation that creates ③.
                           May implicitly or explicitly hint at ②.
@@ -371,7 +389,7 @@ Then for firstUserTurn:
   unaddressed after firstAiReply, so the learner has concrete material to talk
   about during Free Talking.
 
-- **Length**: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). Immediate understanding is the goal.' : '1~2 sentences. Real-time conversation pacing, not a paragraph.'}
+- **Length**: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). Immediate understanding is the goal.' : '1~2 SHORT sentences, within the Phase 2 word budget (intermediate ≤12, advanced ≤20 words per sentence). Real-time pacing, not a paragraph.'}
 
 ---
 
@@ -447,6 +465,9 @@ ${isCustom ? `0. **CUSTOM INPUT topic preservation — CRITICAL self-check (BRAN
    This rule binds Phase 0 (Scene Coherence) — when choosing the
    micro-situation, COMMIT to one concrete destination/number/name/time
    and use it consistently across all 3 messages.
+   At **basic** level the concrete value itself MUST be a common, short,
+   everyday word (e.g. "coffee", "2 o'clock", "Seoul", "Flight 7") — never a
+   rare flight code or technical term that adds vocabulary load.
 9. **Opener, not full exchange — CRITICAL**: firstAiReply MUST end with an OPEN
    prompt (question / offered choice / info request) and MUST leave ≥2 attributes
    from Phase 0 ④ unresolved. The 3 messages are the starting point for Free
@@ -572,6 +593,14 @@ function buildReplyPrompt({
 
   return `### [Role]
 You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence, (B) generate a natural reply that ADVANCES the conversation, and (C) produce a private tutor coaching note for the learner.
+
+---
+
+### [Pedagogical Frame — this is a LANGUAGE-LEARNING conversation — READ FIRST]
+You play ${responderRole}, but you are ALSO a tutor: the learner is PRACTICING SPEAKING ${targetLangName} at **${difficulty || 'basic'}** level, and your reply is comprehensible INPUT for them. Therefore:
+- Keep aiReply.sentence inside the ${difficulty || 'basic'} vocabulary + length budget ([Phase 2] below) — use COMMON, reusable words the learner can actually pick up; avoid rare/technical terms unless the learner introduced them first.
+- When natural-but-hard conflicts with simple-and-usable at basic/intermediate, choose simple-and-usable.
+- Keep the turn SHORT (see length rule) — short, easy turns give the learner room to speak and practice.
 
 ---
 
@@ -745,7 +774,7 @@ Then list:
 6. Select a Response Emotion that complements the learner's tone.
 7. Be Specific & Informative: not "Sure!" or "Yes" — give a response with USEFUL INFO.
 8. Stay in character as ${responderRole}.
-9. Keep it short: ${difficulty === 'basic' ? 'Keep it simple for a beginner: 1~2 SHORT sentences total — a brief natural reaction plus the reply/question. Use easy words and simple patterns; avoid long or complex sentences. A short lead-in reaction (e.g. "Oh, is it raining?") is encouraged, but keep the whole turn compact and immediately understandable.' : '1~3 short sentences (reaction + answer + one question). Real-time conversation pacing, not a monologue.'}
+9. Keep it short: ${difficulty === 'basic' ? 'Keep it simple for a beginner: 1~2 SHORT sentences total — a brief natural reaction plus the reply/question. Use easy words and simple patterns; avoid long or complex sentences. A short lead-in reaction (e.g. "Oh, is it raining?") is encouraged, but keep the whole turn compact and immediately understandable.' : '1~2 SHORT sentences total (brief reaction + answer/one question), within the Phase 2 word budget (intermediate ≤12, advanced ≤20 words per sentence). Real-time pacing, not a monologue.'}
 
 ---
 

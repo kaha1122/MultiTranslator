@@ -212,19 +212,12 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
     const supportedStyles = voiceInfo.styles || [];
     const locale = voiceName.split('-').slice(0, 2).join('-');
 
-    let voiceStyle = null;
-    if (supportedStyles.length > 0) {
-        const mapped = emotion ? EMOTION_TO_STYLE[String(emotion).toLowerCase()] : null;
-        voiceStyle = (mapped && supportedStyles.includes(mapped))
-            ? mapped
-            : (supportedStyles.includes('chat') ? 'chat' : supportedStyles[0]);
-    }
-
+    // 2026-06-07: express-as(emotion 마크업) 제거 — Azure TTS는 SSML 마크업도 과금(<speak>/<voice>만 제외).
+    //   짧은 FreeTalk 메시지에서 express-as 태그(~48자)가 billable 글자의 ~40%를 차지 → 중립 톤으로
+    //   전환해 세션 TTS 원가 ~24% 절감. 대부분 이미 style="chat" 기본값이라 톤 체감 차이 작음.
+    //   (supportedStyles/EMOTION_TO_STYLE 매핑은 추후 선택적 재도입 대비 보존)
     const escaped = escapeXml(text);
-    const inner = voiceStyle
-        ? `<mstts:express-as style="${voiceStyle}">${escaped}</mstts:express-as>`
-        : `${escaped}`;
-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${inner}</voice></speak>`;
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${escaped}</voice></speak>`;
 
     try {
         const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
