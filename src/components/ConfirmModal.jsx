@@ -1,5 +1,5 @@
 import { motion } from 'framer-motion';
-import { AlertTriangle } from 'lucide-react';
+import { AlertTriangle, X } from 'lucide-react';
 
 // 2026-06-09 모달 통일 Phase 1: 공통 토큰/클래스로 리팩토링.
 //   - 오버레이/카드/버튼을 .modal-overlay / .modal-card / .modal-btn-* 클래스로 전환
@@ -22,6 +22,16 @@ const ConfirmModal = ({ title, message, confirmText, cancelText, onConfirm, onCa
                 onClick={(e) => e.stopPropagation()}
                 style={{ maxWidth: '340px', textAlign: 'center' }}
             >
+                {/* 표준 닫기 버튼 — 우상단 lucide <X> (취소와 동일 동작) */}
+                <button
+                    type="button"
+                    className="modal-close"
+                    onClick={onCancel}
+                    aria-label={cancelText || 'Close'}
+                >
+                    <X size={20} />
+                </button>
+
                 <div style={{
                     width: '48px', height: '48px', borderRadius: '50%',
                     background: danger ? '#fef2f2' : 'var(--primary-light)',
