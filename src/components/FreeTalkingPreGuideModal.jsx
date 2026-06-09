@@ -29,12 +29,12 @@ export default function FreeTalkingPreGuideModal({
     const showCategory = scenarioCategory && scenarioCategory !== scenarioName;
 
     const roles = [
-        { emoji: '🎤', text: t('freeTalk.preGuide.role1') || '당신이 먼저 말해요' },
-        { emoji: '🤖', text: t('freeTalk.preGuide.role2') || 'AI가 당신의 대화 상대가 됩니다' },
-        { emoji: '👂', text: t('freeTalk.preGuide.role3') || 'AI의 답을 잘 듣고 자연스럽게 이어가세요' },
+        { emoji: '🎬', text: t('freeTalk.preGuide.role1') || '먼저 상황과 예시 대화를 들려드려요' },
+        { emoji: '👂', text: t('freeTalk.preGuide.role2') || '그 대화를 차근히 듣고, 무엇을 말할지 정해요' },
+        { emoji: '🎤', text: t('freeTalk.preGuide.role3') || '준비되면 [말하기]로 대화를 이어가세요' },
     ];
     const missions = [
-        t('freeTalk.preGuide.mission1') || '시나리오 상황에 맞게 첫 인사·요청 건네기',
+        t('freeTalk.preGuide.mission1') || '예시 대화의 흐름과 표현 파악하기',
         t('freeTalk.preGuide.mission2') || 'AI의 답에서 핵심 표현 한 가지 골라 기억하기',
         t('freeTalk.preGuide.mission3') || '다음 한 마디를 자연스럽게 이어가기',
     ];
@@ -66,7 +66,7 @@ export default function FreeTalkingPreGuideModal({
                 {/* 2. 환영문 */}
                 <p style={{ margin: '0 0 14px', fontSize: '0.86rem', color: '#475569', lineHeight: 1.5 }}>
                     {t('freeTalk.preGuide.welcome')
-                        || 'FreeTalking은 자유 대화 연습이에요. 당신이 먼저 말을 시작하면 AI가 응답해요.'}
+                        || 'FreeTalking은 AI와의 자유 대화 연습이에요. 먼저 예시 대화를 듣고, 차근히 생각해서 이어가는 방식이에요.'}
                 </p>
 
                 {/* 3. 역할 안내 카드 — muted accent(인디고) 단색 톤 */}
