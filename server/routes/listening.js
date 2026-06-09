@@ -220,11 +220,15 @@ router.post('/api/listening/annotate-sentence', requireAuth, async (req, res) =>
 
 Sentence: "${sentence}"
 
+### [CRITICAL LANGUAGE RULE]
+"translation" and "learning_tip" MUST be written ENTIRELY in ${sourceLangName} (the learner's native language).
+NEVER write them in ${targetLangName} or in English (unless ${sourceLangName} itself is English).
+
 ### [Return ONLY valid JSON (no markdown)]
 {
-  "translation": "Natural ${sourceLangName} translation of the sentence.",
+  "translation": "Natural translation of the sentence, written in ${sourceLangName}.",
   "pronunciation": "For zh-CN/zh: pinyin with tone marks. For ja: full hiragana reading. For ru: the sentence rewritten with accent marks (´) on the stressed vowel of each multi-syllable word. For all others (incl. Latin-script languages): empty string ''.",
-  "learning_tip": "In ${sourceLangName}: one concise vocabulary, grammar, or pronunciation tip drawn from THIS sentence."
+  "learning_tip": "One concise vocabulary, grammar, or pronunciation tip drawn from THIS sentence, written in ${sourceLangName}."
 }
 
 Rules: Do NOT insert parenthetical readings/furigana/pinyin INTO the sentence itself — readings go ONLY in the pronunciation field. Keep the tip short and practical.`;
