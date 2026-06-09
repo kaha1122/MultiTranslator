@@ -201,10 +201,10 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
 //   응답 본문 불요(204). optionalAuth로 uid 있으면 기록(없어도 통과).
 router.post('/api/tts/route-log', optionalAuth, (req, res) => {
     try {
-        const { source, engine, lang, platform, voice, localService, reason } = req.body || {};
+        const { source, engine, lang, platform, voice, localService, reason, charged } = req.body || {};
         const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
         const tail = engine === 'native'
-            ? `voice="${voice || '?'}" localService=${localService}`
+            ? `voice="${voice || '?'}" localService=${localService} charged=${charged}`
             : `reason=${reason || '?'}`;
         console.log(`[TTSRoute] uid=${uid} source=${source || '?'} engine=${engine || '?'} lang=${lang || '?'} platform=${platform || '?'} ${tail}`);
     } catch (e) {

@@ -2962,6 +2962,8 @@ function App() {
   const ttsAbortRef = useRef(null); // 진행 중인 fetch 중단용
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
+  // 네이티브 TTS "텍스트당 1회만 차감" — 이미 차감한 text+lang 키 집합(세션 내, Azure 캐시 무료-반복 동작과 동일)
+  const ttsChargedRef = useRef(new Set());
 
   // [TTS 비용 절감 2026-06-09] 절충안 라우팅 — Web Speech(기기 내장/네트워크) 우선, "진짜 실패"만 Azure 폴백.
   //   목적: Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감.
@@ -3030,9 +3032,16 @@ function App() {
     }
 
     const speakWith = (voice) => {
-      // 항상 1점 차감 (Trial만 실제 차감, 부족 시 차단+팝업). BYOK·Pro/Premium 무료 통과.
-      if (!byokAzureKey && !tryConsumeTtsPoint()) return;
-      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
+      // 텍스트당 1회만 차감 — 같은 text+lang 첫 재생만 1점(Trial), 이후 반복 재생은 무료.
+      //   (Azure 캐시 무료-반복과 동일 / 네이티브는 우리 비용 $0지만 신규 텍스트 사용량 게이트는 유지)
+      //   (2026-06-09: "누를 때마다 매번 차감" → "텍스트당 1회만 차감"으로 수정)
+      const chargeKey = `${ttsLang}:${text}`;
+      const alreadyCharged = ttsChargedRef.current.has(chargeKey);
+      if (!alreadyCharged) {
+        if (!byokAzureKey && !tryConsumeTtsPoint()) return; // 신규 텍스트 0점이면 차단+팝업
+        ttsChargedRef.current.add(chargeKey);
+      }
+      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService, charged: !alreadyCharged });
       const u = new SpeechSynthesisUtterance(text);
       if (ttsLang) u.lang = ttsLang;
       if (voice) u.voice = voice;
