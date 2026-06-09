@@ -62,13 +62,20 @@
     "openSettings": "打开设置",
     "micError": "录音出现问题",
     "saveError": "保存失败,请稍后再试。",
-    "guideTitle": "Free-Talking 使用方法",
-    "guideStep1": "先听情境说明和示例对话，再想象接下来要说的话",
-    "guideStep2": "按[说话]按钮，自由地把你想象的对话继续下去",
-    "guideStep3": "点击往来的消息，打开卡片进行学习",
     "heardMessage": "识别到的内容",
     "correctedMessage": "修正后的句子",
-    "guideDismiss": "开始"
+    "preGuide": {
+      "welcome": "Free-Talking 是自由对话练习。你先开口，AI 来回应。",
+      "role1": "你先开口说话",
+      "role2": "AI 成为你的对话伙伴",
+      "role3": "认真听 AI 的回复，自然地把对话继续下去",
+      "missionTitle": "在这次对话中试试这些",
+      "mission1": "用符合情境的问候或请求开场",
+      "mission2": "从 AI 的回复中挑一个想记住的关键表达",
+      "mission3": "自然地接上你的下一句",
+      "tip": "点击消息可打开卡片进行发音练习和保存",
+      "cta": "开始"
+    }
   },
   "pushOptIn": {
     "title": "接收学习通知吗？",

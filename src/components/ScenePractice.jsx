@@ -651,6 +651,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
                             const sceneI18nLabel = isCustomActive
                                 ? customInput.trim()
                                 : t(`${sceneI18nPrefix}.${selectedScene.id}`);
+                            const sceneIcon = isCustomActive ? '💬' : (selectedScene?.icon || '💬');
                             onFreeTalkStart?.({
                                 scene: sceneText,
                                 sceneId,
@@ -661,6 +662,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
                                 difficulty,
                                 speechStyle,
                                 sceneI18nLabel,
+                                sceneIcon,
                             });
                         }}
                         disabled={!canRequest}

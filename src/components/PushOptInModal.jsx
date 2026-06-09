@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Capacitor } from '@capacitor/core';
+import { X } from 'lucide-react';
 import { getT } from '../utils/i18n';
 import { setSubscriptionAlertPref } from '../utils/pushNotifications';
 
@@ -71,35 +72,23 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
 
     const handleClose = () => finish('dismissed');
 
+    // 2026-06-09 모달 통일 Phase 1: 공통 클래스/토큰 적용.
+    //   - 오버레이/카드/버튼 → .modal-overlay / .modal-card / .modal-btn-primary
+    //   - 닫기 아이콘 '×' 문자 → lucide <X> + .modal-close (표준 닫기 UX)
+    //   - Allow 버튼 색 #7B2D8E(보라) → --brand-primary(teal) (1차 액션 규칙)
+    //   - z-index: 권한 프롬프트라 최상위 유지 → var(--z-critical)
     return (
-        <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 10001, padding: '20px',
-        }}>
-            <div style={{
-                position: 'relative',
-                background: 'white', borderRadius: '20px', padding: '28px 24px',
-                maxWidth: '360px', width: '100%', textAlign: 'center',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            }}>
+        <div className="modal-overlay" style={{ zIndex: 'var(--z-critical)' }}>
+            <div className="modal-card" style={{ textAlign: 'center' }}>
                 {/* X 닫기 아이콘 — escape hatch (시각적 우선순위 낮춤) */}
                 <button
+                    type="button"
+                    className="modal-close"
                     onClick={handleClose}
                     disabled={busy}
                     aria-label={t('common.close') || 'Close'}
-                    style={{
-                        position: 'absolute',
-                        top: 10, right: 12,
-                        background: 'none', border: 'none',
-                        color: '#94a3b8',
-                        fontSize: '1.5rem',
-                        lineHeight: 1,
-                        cursor: busy ? 'wait' : 'pointer',
-                        padding: 6,
-                    }}
                 >
-                    ×
+                    <X size={20} />
                 </button>
 
                 <div style={{ fontSize: '3rem', marginBottom: '12px' }}>🔔</div>
@@ -110,16 +99,10 @@ export default function PushOptInModal({ sourceLang, uid, onClose }) {
                     {t('pushOptIn.body') || "We'll send daily learning reminders and subscription/payment updates. No ads."}
                 </p>
                 <button
+                    type="button"
+                    className="modal-btn-primary"
                     onClick={handleAccept}
                     disabled={busy}
-                    style={{
-                        width: '100%',
-                        padding: '13px',
-                        borderRadius: '12px',
-                        border: 'none', background: '#7B2D8E', color: 'white',
-                        fontWeight: 700, fontSize: '0.95rem',
-                        cursor: busy ? 'wait' : 'pointer',
-                    }}
                 >
                     {busy ? '...' : (t('pushOptIn.allow') || 'Allow')}
                 </button>

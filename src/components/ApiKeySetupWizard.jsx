@@ -94,24 +94,21 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
         <div
             style={{
                 position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-                background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center',
-                alignItems: 'center', zIndex: 2100, padding: '20px'
+                background: 'var(--modal-overlay-bg)', display: 'flex', justifyContent: 'center',
+                alignItems: 'center', zIndex: 'var(--z-modal)', padding: '20px'
             }}
             onClick={onClose}
         >
             <div
                 onClick={e => e.stopPropagation()}
                 style={{
-                    background: 'white', borderRadius: '24px', padding: '28px 24px',
-                    width: '100%', maxWidth: '420px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                    background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '28px 24px',
+                    width: '100%', maxWidth: '420px', boxShadow: 'var(--modal-shadow)',
                     position: 'relative', maxHeight: '90vh', overflowY: 'auto'
                 }}
             >
-                <button
-                    onClick={onClose}
-                    style={{ position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' }}
-                >
-                    <X size={22} />
+                <button className="modal-close" onClick={onClose} aria-label="Close">
+                    <X size={20} />
                 </button>
 
                 <h2 style={{ margin: '0 0 20px', fontSize: '1.2rem', color: '#1e293b', fontWeight: '800', textAlign: 'center' }}>
@@ -138,7 +135,7 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
                             onClick={testGemini}
                             disabled={!geminiKey.trim() || geminiStatus === 'testing'}
                             style={{
-                                padding: '8px 16px', background: geminiStatus === 'ok' ? '#059669' : '#6366f1',
+                                padding: '8px 16px', background: geminiStatus === 'ok' ? '#059669' : 'var(--brand-accent)',
                                 color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold',
                                 cursor: 'pointer', fontSize: '0.85rem', opacity: !geminiKey.trim() ? 0.5 : 1
                             }}
@@ -184,7 +181,7 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
                             onClick={testAzure}
                             disabled={!azureKey.trim() || !azureRegion.trim() || azureStatus === 'testing'}
                             style={{
-                                padding: '8px 16px', background: azureStatus === 'ok' ? '#059669' : '#6366f1',
+                                padding: '8px 16px', background: azureStatus === 'ok' ? '#059669' : 'var(--brand-accent)',
                                 color: 'white', border: 'none', borderRadius: '8px', fontWeight: 'bold',
                                 cursor: 'pointer', fontSize: '0.85rem', opacity: (!azureKey.trim() || !azureRegion.trim()) ? 0.5 : 1
                             }}
@@ -205,8 +202,8 @@ const ApiKeySetupWizard = ({ sourceLang, onClose, onComplete }) => {
                     onClick={handleComplete}
                     disabled={!geminiKey.trim() || !azureKey.trim() || !azureRegion.trim() || isSaving}
                     style={{
-                        width: '100%', padding: '14px', background: '#059669', color: 'white',
-                        border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer',
+                        width: '100%', padding: '14px', background: 'var(--brand-primary)', color: 'white',
+                        border: 'none', borderRadius: 'var(--modal-btn-radius)', fontWeight: 'bold', cursor: 'pointer',
                         fontSize: '1rem', opacity: (!geminiKey.trim() || !azureKey.trim() || !azureRegion.trim()) ? 0.5 : 1
                     }}
                 >

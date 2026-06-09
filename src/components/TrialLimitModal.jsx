@@ -21,16 +21,15 @@ const TrialLimitModal = ({
 
     const overlay = {
         position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-        background: 'rgba(0,0,0,0.55)', display: 'flex', justifyContent: 'center',
-        alignItems: 'center', zIndex: 2000,
+        background: 'var(--modal-overlay-bg)', display: 'flex', justifyContent: 'center',
+        alignItems: 'center', zIndex: 'var(--z-modal)',
         padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
     };
     const card = {
-        background: 'white', borderRadius: '24px', padding: '22px 24px',
-        width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+        background: 'white', borderRadius: 'var(--modal-radius)', padding: '22px 24px',
+        width: '100%', maxWidth: '400px', boxShadow: 'var(--modal-shadow)',
         position: 'relative', maxHeight: '90vh', overflowY: 'auto'
     };
-    const closeBtn = { position: 'absolute', top: '16px', right: '16px', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af' };
 
     // ── Pro 월 한도 도달 모달 ──────────────────────────────────────────
     if (reason === 'proMonthly') {
@@ -42,7 +41,7 @@ const TrialLimitModal = ({
         return (
             <div style={overlay} onClick={onClose}>
                 <div onClick={e => e.stopPropagation()} style={card}>
-                    <button onClick={onClose} style={closeBtn}><X size={22} /></button>
+                    <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
                     <div style={{ textAlign: 'center', marginBottom: '12px' }}>
                         <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>📅</div>
                         <h2 style={{ margin: '0 0 4px', fontSize: '1.12rem', color: '#1e293b', fontWeight: 800, lineHeight: 1.3 }}>
@@ -68,7 +67,7 @@ const TrialLimitModal = ({
                     <button
                         onClick={onUpgrade}
                         style={{
-                            width: '100%', padding: '13px', background: '#7c3aed', color: 'white',
+                            width: '100%', padding: '13px', background: 'var(--brand-primary)', color: 'white',
                             border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem',
                         }}
                     >
@@ -90,7 +89,7 @@ const TrialLimitModal = ({
         return (
             <div style={overlay} onClick={onClose}>
                 <div onClick={e => e.stopPropagation()} style={card}>
-                    <button onClick={onClose} style={closeBtn}><X size={22} /></button>
+                    <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
 
                     {/* 헤더 */}
                     <div style={{ textAlign: 'center', marginBottom: '12px' }}>
@@ -114,7 +113,7 @@ const TrialLimitModal = ({
                         <button
                             onClick={onUpgrade}
                             style={{
-                                width: '100%', padding: '12px', background: '#4338ca', color: 'white',
+                                width: '100%', padding: '12px', background: 'var(--brand-primary)', color: 'white',
                                 border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '0.95rem',
                             }}
                         >
@@ -211,7 +210,7 @@ const TrialLimitModal = ({
                 <button
                     onClick={onUpgrade}
                     style={{
-                        width: '100%', marginTop: '16px', padding: '13px', background: '#4338ca', color: 'white',
+                        width: '100%', marginTop: '16px', padding: '13px', background: 'var(--brand-primary)', color: 'white',
                         border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem'
                     }}
                 >

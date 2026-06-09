@@ -4,7 +4,7 @@
     inset: 0;
     background: rgba(15, 23, 42, 0.65);
     backdrop-filter: blur(8px);
-    z-index: 9998;
+    z-index: var(--z-modal);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -20,29 +20,22 @@
     max-width: 440px;
     max-height: 100%;
     overflow-y: auto;
-    box-shadow: 0 24px 60px rgba(139, 92, 246, 0.35);
+    /* 톤다운: 보라 그림자 약화 */
+    box-shadow: 0 18px 44px rgba(100, 100, 160, 0.22);
     -webkit-overflow-scrolling: touch;
 }
 
 /* ── 헤더 (Hero) ───────────────────────────────────────── */
 .streak-intro-hero {
     position: relative;
-    background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #fdf4ff 100%);
+    /* 단색 톤다운: 3-stop 파스텔 그라데이션 → 옅은 동계열 단색 */
+    background: var(--streak-intro-solid-tint);
     padding: 18px 20px 14px;
     border-radius: 24px 24px 0 0;
     text-align: center;
     overflow: hidden;
 }
-.streak-intro-hero::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 70%);
-    pointer-events: none;
-}
+/* radial glow(그라데이션) 제거 — 단색 방침 */
 
 .streak-intro-confetti {
     position: absolute;
@@ -67,7 +60,7 @@
     font-size: 2.6rem;
     line-height: 1;
     margin-bottom: 4px;
-    filter: drop-shadow(0 4px 8px rgba(139, 92, 246, 0.35));
+    filter: drop-shadow(0 4px 8px rgba(124, 127, 224, 0.25));
     animation: streak-intro-pulse 2s ease-in-out infinite;
     position: relative;
     z-index: 1;
@@ -81,8 +74,9 @@
     display: inline-block;
     font-size: 0.65rem;
     font-weight: 800;
-    color: #ffffff;
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    color: var(--text-on-brand);
+    /* 단색 톤다운 */
+    background: var(--streak-intro-solid);
     padding: 3px 10px;
     border-radius: 99px;
     letter-spacing: 0.05em;
@@ -90,17 +84,15 @@
     margin-bottom: 6px;
     position: relative;
     z-index: 1;
-    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 1px 4px rgba(124, 127, 224, 0.22);
 }
 
 .streak-intro-title {
     font-size: 1.25rem;
     font-weight: 800;
     line-height: 1.2;
-    background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 50%, #d946ef 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    /* 단색 톤다운: 그라데이션 텍스트 → 어두운 단색 */
+    color: var(--streak-intro-ink);
     margin: 0 0 4px;
     position: relative;
     z-index: 1;
@@ -252,7 +244,8 @@
     gap: 6px;
 }
 .streak-intro-milestone {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    /* 단색 톤다운: 골드 그라데이션 → 옅은 골드 단색 (골드 정체성 유지) */
+    background: #FBEBB6;
     border: 1.5px solid #fbbf24;
     border-radius: 10px;
     padding: 7px 6px;
@@ -337,9 +330,10 @@
 }
 .streak-intro-btn-secondary:active { transform: scale(0.97); }
 .streak-intro-btn-primary {
-    background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #d946ef 100%);
-    color: #ffffff;
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+    /* 단색 톤다운 — teal 대신 차분한 muted indigo 단색 1차 CTA */
+    background: var(--streak-intro-solid);
+    color: var(--text-on-brand);
+    box-shadow: 0 3px 10px rgba(124, 127, 224, 0.28);
 }
 .streak-intro-btn-primary:active { transform: scale(0.97); }
 

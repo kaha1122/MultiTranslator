@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
+import ConfirmModal from './ConfirmModal';
 import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getLangInfo } from '../config/languages';
@@ -647,23 +648,16 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 </div>
             )}
 
-            {/* 삭제 확인 모달 */}
+            {/* 삭제 확인 모달 — 공통 ConfirmModal(danger) 사용 */}
             {deleteConfirmId && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div className="modal-content" style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                        <p style={{ margin: '0 0 24px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', lineHeight: '1.5' }}>
-                            {t('library.deleteConfirm')}
-                        </p>
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                            <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer' }}>
-                                {t('library.deleteCancel')}
-                            </button>
-                            <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
-                                {t('library.deleteOk')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConfirmModal
+                    message={t('library.deleteConfirm')}
+                    confirmText={t('library.deleteOk')}
+                    cancelText={t('library.deleteCancel')}
+                    onConfirm={confirmDelete}
+                    onCancel={cancelDelete}
+                    danger
+                />
             )}
         </div>
     );

@@ -62,13 +62,20 @@
     "openSettings": "설정 열기",
     "micError": "녹음에 문제가 있었어요",
     "saveError": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
-    "guideTitle": "Free-Talking 사용법",
-    "guideStep1": "먼저 상황 설명과 예시 대화를 듣고 다음 대화를 상상해 보세요",
-    "guideStep2": "[말하기] 버튼을 눌러 자유롭게 상상한 대화를 이어가세요",
-    "guideStep3": "주고 받은 메시지를 탭 하여 카드를 열고 학습하세요",
     "heardMessage": "들린 메시지",
     "correctedMessage": "수정한 메시지",
-    "guideDismiss": "시작하기"
+    "preGuide": {
+      "welcome": "FreeTalking은 자유 대화 연습이에요. 당신이 먼저 말을 시작하면 AI가 응답해요.",
+      "role1": "당신이 먼저 말해요",
+      "role2": "AI가 당신의 대화 상대가 됩니다",
+      "role3": "AI의 답을 잘 듣고 자연스럽게 이어가세요",
+      "missionTitle": "이 대화에서 이런 걸 해보세요",
+      "mission1": "시나리오 상황에 맞게 첫 인사·요청 건네기",
+      "mission2": "AI의 답에서 핵심 표현 한 가지 골라 기억하기",
+      "mission3": "다음 한 마디를 자연스럽게 이어가기",
+      "tip": "메시지를 탭하면 카드를 열어 발음 연습·저장이 가능해요",
+      "cta": "시작하기"
+    }
   },
   "pushOptIn": {
     "title": "학습 알림을 받아보시겠어요?",

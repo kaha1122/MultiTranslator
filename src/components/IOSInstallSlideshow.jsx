@@ -44,8 +44,8 @@ export default function IOSInstallSlideshow({ open, onClose, sourceLang }) {
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     style={{
                         position: 'fixed', inset: 0,
-                        background: 'white',
-                        zIndex: 10000,
+                        background: 'white', /* 풀스크린 화이트 슬라이드쇼 — dim 오버레이 아님 */
+                        zIndex: 'var(--z-modal)',
                         display: 'flex', flexDirection: 'column',
                         paddingTop: 'env(safe-area-inset-top, 0px)',
                         paddingBottom: 'env(safe-area-inset-bottom, 0px)',

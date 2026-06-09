@@ -62,13 +62,20 @@
     "openSettings": "Mở Cài đặt",
     "micError": "Có vấn đề khi ghi âm",
     "saveError": "Lưu thất bại. Vui lòng thử lại sau.",
-    "guideTitle": "Cách dùng Free-Talking",
-    "guideStep1": "Hãy nghe phần giới thiệu tình huống và hội thoại mẫu, rồi tưởng tượng câu tiếp theo",
-    "guideStep2": "Nhấn nút [Nói] để tự do tiếp tục cuộc trò chuyện bạn đã hình dung",
-    "guideStep3": "Chạm vào các tin nhắn đã trao đổi để mở thẻ và học",
     "heardMessage": "Nội dung nghe được",
     "correctedMessage": "Câu đã sửa",
-    "guideDismiss": "Bắt đầu"
+    "preGuide": {
+      "welcome": "Free-Talking là luyện hội thoại tự do. Bạn nói trước, AI sẽ đáp lại.",
+      "role1": "Bạn nói trước",
+      "role2": "AI trở thành người trò chuyện cùng bạn",
+      "role3": "Lắng nghe câu trả lời của AI và tiếp tục cuộc trò chuyện",
+      "missionTitle": "Hãy thử những điều này trong cuộc trò chuyện",
+      "mission1": "Mở đầu bằng lời chào hoặc yêu cầu phù hợp với tình huống",
+      "mission2": "Chọn một cụm từ then chốt từ câu trả lời của AI để ghi nhớ",
+      "mission3": "Tiếp lời một cách tự nhiên ở câu tiếp theo",
+      "tip": "Chạm vào tin nhắn để mở thẻ luyện phát âm và lưu lại",
+      "cta": "Bắt đầu"
+    }
   },
   "pushOptIn": {
     "title": "Nhận thông báo học tập?",

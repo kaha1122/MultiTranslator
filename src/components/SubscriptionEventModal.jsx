@@ -1,4 +1,5 @@
 import React from 'react';
+import { X } from 'lucide-react';
 import { getT } from '../utils/i18n';
 
 // 구독 이벤트 팝업 — 4가지 type 통합
@@ -49,25 +50,15 @@ export default function SubscriptionEventModal({ type, sourceLang, onClose, onAc
         onAction?.(actionName);
     };
 
-    // type별 색상 — primary 버튼 색
-    const primaryBg = {
-        renewal: '#16a34a',
-        expiration: '#7B2D8E',
-        billingIssue: '#dc2626',
-        cancellation: '#64748b',
-    }[type] || '#7B2D8E';
+    // type별 primary 버튼 클래스 — billingIssue(결제실패)는 danger, 그 외는 brand-primary(teal)
+    const primaryClass = type === 'billingIssue' ? 'modal-btn-danger' : 'modal-btn-primary';
 
     return (
-        <div style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            zIndex: 10002, padding: '20px',
-        }}>
-            <div style={{
-                background: 'white', borderRadius: '20px', padding: '28px 24px',
-                maxWidth: '360px', width: '100%', textAlign: 'center',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
-            }}>
+        <div className="modal-overlay">
+            <div className="modal-card" style={{ textAlign: 'center' }}>
+                <button className="modal-close" onClick={() => onClose?.()} aria-label="Close">
+                    <X size={20} />
+                </button>
                 <div style={{ fontSize: '3rem', marginBottom: '12px' }}>{cfg.icon}</div>
                 <h2 style={{ fontSize: '1.15rem', fontWeight: 700, color: '#1e293b', margin: '0 0 8px' }}>
                     {cfg.title}
@@ -77,19 +68,19 @@ export default function SubscriptionEventModal({ type, sourceLang, onClose, onAc
                 </p>
                 <div style={{ display: 'flex', gap: '8px' }}>
                     {cfg.secondary && (
-                        <button onClick={() => handleClick(cfg.secondary.action)} style={{
-                            flex: 1, padding: '13px', borderRadius: '12px',
-                            border: '1px solid #e2e8f0', background: 'white',
-                            fontWeight: 600, fontSize: '0.92rem', cursor: 'pointer',
-                        }}>
+                        <button
+                            className="modal-btn-secondary"
+                            onClick={() => handleClick(cfg.secondary.action)}
+                            style={{ flex: 1 }}
+                        >
                             {cfg.secondary.label}
                         </button>
                     )}
-                    <button onClick={() => handleClick(cfg.primary.action)} style={{
-                        flex: 1, padding: '13px', borderRadius: '12px',
-                        border: 'none', background: primaryBg, color: 'white',
-                        fontWeight: 700, fontSize: '0.92rem', cursor: 'pointer',
-                    }}>
+                    <button
+                        className={primaryClass}
+                        onClick={() => handleClick(cfg.primary.action)}
+                        style={{ flex: 1 }}
+                    >
                         {cfg.primary.label}
                     </button>
                 </div>

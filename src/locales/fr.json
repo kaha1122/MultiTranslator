@@ -62,13 +62,20 @@
     "openSettings": "Ouvrir les Réglages",
     "micError": "Problème d'enregistrement",
     "saveError": "Échec de l'enregistrement. Veuillez réessayer plus tard.",
-    "guideTitle": "Comment utiliser Free-Talking",
-    "guideStep1": "Écoutez d'abord la situation et le dialogue exemple, puis imaginez la suite",
-    "guideStep2": "Appuyez sur [Parler] pour continuer librement la conversation que vous avez imaginée",
-    "guideStep3": "Touchez les messages échangés pour ouvrir des cartes et les étudier",
     "heardMessage": "Message entendu",
     "correctedMessage": "Message corrigé",
-    "guideDismiss": "Commencer"
+    "preGuide": {
+      "welcome": "Free-Talking, c'est de la conversation libre. Vous parlez en premier, et l'IA répond.",
+      "role1": "Vous parlez en premier",
+      "role2": "L'IA devient votre partenaire de conversation",
+      "role3": "Écoutez la réponse de l'IA et poursuivez la conversation",
+      "missionTitle": "Essayez ceci dans cette conversation",
+      "mission1": "Commencez par une salutation ou une demande adaptée à la situation",
+      "mission2": "Choisissez une expression clé de la réponse de l'IA à retenir",
+      "mission3": "Enchaînez naturellement avec votre phrase suivante",
+      "tip": "Touchez un message pour ouvrir une carte et vous entraîner à la prononciation et l'enregistrer",
+      "cta": "Commencer"
+    }
   },
   "pushOptIn": {
     "title": "Recevoir les rappels d'apprentissage ?",
