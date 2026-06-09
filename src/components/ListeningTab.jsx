@@ -340,9 +340,9 @@ export default function ListeningTab({
                 }
             }
         }
-        // 폴백/에세이: 기존 onSpeak
+        // 폴백/에세이: 기존 onSpeak (에세이 문장 = native 시도, 소스 태그 listening.sentence)
         const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
-        onSpeak?.(ttsText, selectedLang);
+        onSpeak?.(ttsText, selectedLang, undefined, { source: 'listening.sentence' });
     }, [passageType, passage, selectedLang, onSpeak, onTtsGate]);
 
     const avoidTitlesRef = useRef([]);
@@ -757,6 +757,7 @@ export default function ListeningTab({
                                         selectedLang={selectedLang}
                                         sourceLang={sourceLang}
                                         onSpeak={onSpeak}
+                                        ttsSource="listening"
                                         isSaved={savedWords.has(i)}
                                         onSave={(score) => handleSave(w, i, score)}
                                         onTrialLimitReached={onTrialLimitReached}

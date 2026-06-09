@@ -196,4 +196,21 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
     }
 });
 
+// [TTS 라우팅 텔레메트리 2026-06-09] 클라가 매 TTS 재생마다 fire-and-forget 비콘 → Render 로그.
+//   native(기기/네트워크 음성, 비용 0) vs azure-fallback(비용 발생) portion + 소스·언어·플랫폼 식별용.
+//   응답 본문 불요(204). optionalAuth로 uid 있으면 기록(없어도 통과).
+router.post('/api/tts/route-log', optionalAuth, (req, res) => {
+    try {
+        const { source, engine, lang, platform, voice, localService, reason } = req.body || {};
+        const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
+        const tail = engine === 'native'
+            ? `voice="${voice || '?'}" localService=${localService}`
+            : `reason=${reason || '?'}`;
+        console.log(`[TTSRoute] uid=${uid} source=${source || '?'} engine=${engine || '?'} lang=${lang || '?'} platform=${platform || '?'} ${tail}`);
+    } catch (e) {
+        // 텔레메트리 실패는 무시 (재생 흐름에 영향 없음)
+    }
+    res.status(204).end();
+});
+
 module.exports = router;

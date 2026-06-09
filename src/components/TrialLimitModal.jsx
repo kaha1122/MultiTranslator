@@ -134,7 +134,7 @@ const TrialLimitModal = ({
                                     cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                                     fontWeight: 700, color: '#166534', fontSize: '0.9rem',
                                 }}>
-                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +5'}
+                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +10'}
                             </button>
                         )}
                         {/* 보너스포인트 구매 (+200, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}

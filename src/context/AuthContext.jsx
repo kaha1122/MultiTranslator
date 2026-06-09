@@ -408,7 +408,8 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
+    // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +15점(reset 아닌 누적).
+    //   (2026-06-09: native TTS 항상-차감 보정으로 +10→+15 상향)
     //   날짜-키 트랜잭션 가드(markActiveDay 패턴)로 멀티기기 이중충전 차단. Trial 전용.
     const claimDailyTopUp = async () => {
         if (!user?.uid) return;
@@ -420,7 +421,7 @@ export const AuthProvider = ({ children }) => {
                 const snap = await tx.get(ref);
                 const d = snap.data() || {};
                 if (d.lastTopUpDate === today) return; // race 가드
-                const amount = d.firstTopUpDone ? 10 : 30;
+                const amount = d.firstTopUpDone ? 15 : 30;
                 tx.update(ref, {
                     bonusPoints: increment(amount),
                     lastTopUpDate: today,

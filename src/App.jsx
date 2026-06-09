@@ -2963,35 +2963,120 @@ function App() {
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
 
-  // [TTS 비용 실험 2026-06-09] Vocab 단어·예문 듣기 — Azure 대신 기기 내장(Web Speech API) 음성으로 재생.
-  // Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감 가능성 평가용. 영향도 최저 지점(Vocab)에서만
-  // A/B 테스트. 발음 평가 결과 재생은 음소 정확도가 중요해 Azure(onSpeak→handleSpeak) 유지.
-  // 서버 호출·포인트 차감 없음($0). 웹 전용 — 네이티브 앱(Capacitor)은 Capgo 별도 배포 전까지 Azure 유지.
-  // 품질 합격 시 Listening 등 고비용처로 단계 확대 검토.
-  const handleSpeakNative = (text, langCode) => {
+  // [TTS 비용 절감 2026-06-09] 절충안 라우팅 — Web Speech(기기 내장/네트워크) 우선, "진짜 실패"만 Azure 폴백.
+  //   목적: Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감.
+  //   적용 범위(native 시도): Vocab 단어·예문·발음해부도, Listening 핵심단어·에세이 문장.
+  //     (Listening 지문·대화 문장 = Azure 멀티보이스 유지 / Translation·Scene·Library·FreeTalking = Azure 유지)
+  //   음성 선택: 해당 언어 매칭 중 네트워크(localService===false, 보통 Google/Apple 고품질) 우선 → 기본 → 첫 매칭.
+  //   Azure 폴백 트리거(진짜 실패): 엔진 없음 / 해당 언어 음성 0개 / onerror. ("나쁘지만 재생되는" 음성은
+  //     폴백 불가 — 저가폰 잔존 리스크는 target 제외로 합의 2026-06-09)
+  //   차감: 엔진 무관 항상 1점(Trial, tryConsumeTtsPoint). onerror→Azure 폴백은 이미 차감됨 → _skipGate.
+  //   웹 전용 — 네이티브 앱(Capacitor)은 Capgo 별도 배포 전까지 전부 Azure.
+  const pickNativeVoice = (ttsLang) => {
+    let voices = [];
+    try { voices = window.speechSynthesis?.getVoices?.() || []; } catch { return null; }
+    if (!voices.length) return undefined; // 아직 미로드 — 호출부가 voiceschanged 대기
+    const want = String(ttsLang || '').toLowerCase();
+    const prefix = want.slice(0, 2);
+    const matches = voices.filter(v => {
+      const l = v.lang?.toLowerCase() || '';
+      return l === want || (prefix && l.startsWith(prefix));
+    });
+    if (!matches.length) return null; // 해당 언어 음성 없음 → Azure
+    return matches.find(v => v.localService === false) // 네트워크(고품질) 우선
+        || matches.find(v => v.default)
+        || matches[0];
+  };
+
+  // TTS 라우팅 텔레메트리 비콘 (fire-and-forget) — native/azure-fallback portion 측정용 (서버 [TTSRoute] 로그)
+  const beaconTtsRoute = (source, engine, langCode, extra = {}) => {
+    try {
+      const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      authFetch(`${SERVER_URL}/api/tts/route-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          source: source || 'tts',
+          engine,
+          lang: langCode,
+          platform: (typeof window !== 'undefined' && window.Capacitor?.getPlatform?.()) || 'web',
+          ...extra,
+        }),
+      }).catch(() => {});
+    } catch { /* 텔레메트리 실패 무시 */ }
+  };
+
+  const handleSpeakSmart = (text, langCode, emotion, opts = {}) => {
     if (!text) return;
-    // 진행 중인 Azure 요청/재생 즉시 중단 (gen 토큰 bump로 stale 콜백 무효화 — handleSpeak와 동일 패턴)
+    // 진행 중 Azure 요청/재생 + 네이티브 음성 즉시 중단 (handleSpeak와 동일 race 패턴)
     ttsGenRef.current++;
     if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
     if (ttsAudioRef.current) {
       try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
       ttsAudioRef.current = null;
     }
-    try { window.speechSynthesis.cancel(); } catch {}
+    try { window.speechSynthesis?.cancel?.(); } catch {}
+
     const langInfo = getLangInfo(langCode);
     const ttsLang = langInfo?.tts || langCode;
-    const utterance = new SpeechSynthesisUtterance(text);
-    if (ttsLang) utterance.lang = ttsLang;
-    // 언어 일치 voice 우선 선택 (정확 일치 → 접두사 일치 → 브라우저 기본값)
-    try {
-      const voices = window.speechSynthesis.getVoices() || [];
-      const want = String(ttsLang).toLowerCase();
-      const prefix = want.slice(0, 2);
-      const match = voices.find(v => v.lang?.toLowerCase() === want)
-                 || voices.find(v => v.lang?.toLowerCase().startsWith(prefix));
-      if (match) utterance.voice = match;
-    } catch { /* getVoices 미지원/빈 배열 → lang 속성만으로 재생 */ }
-    window.speechSynthesis.speak(utterance);
+    const src = opts.source;
+
+    // 엔진 미지원 → Azure
+    if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+      beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-engine' });
+      handleSpeak(text, langCode, emotion, opts);
+      return;
+    }
+
+    const speakWith = (voice) => {
+      // 항상 1점 차감 (Trial만 실제 차감, 부족 시 차단+팝업). BYOK·Pro/Premium 무료 통과.
+      if (!byokAzureKey && !tryConsumeTtsPoint()) return;
+      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
+      const u = new SpeechSynthesisUtterance(text);
+      if (ttsLang) u.lang = ttsLang;
+      if (voice) u.voice = voice;
+      // 네이티브 합성 에러 → Azure 폴백 (차감은 이미 됨 → _skipGate)
+      u.onerror = () => {
+        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'onerror' });
+        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
+      };
+      try { window.speechSynthesis.speak(u); }
+      catch {
+        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'speak-throw' });
+        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
+      }
+    };
+
+    const v = pickNativeVoice(ttsLang);
+    if (v) { speakWith(v); return; }                                      // 가용 voice 있음 → native
+    if (v === null) {                                                     // 언어 음성 없음 → Azure
+      beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-voice' });
+      handleSpeak(text, langCode, emotion, opts);
+      return;
+    }
+
+    // v === undefined: voices 아직 미로드 → 1회 대기 후 재시도 (안전망 타임아웃 포함)
+    let settled = false;
+    const finish = () => {
+      if (settled) return;
+      const v2 = pickNativeVoice(ttsLang);
+      if (v2 === undefined) return; // 아직 미로드 — 계속 대기 (타임아웃이 최종 처리)
+      settled = true;
+      try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
+      if (v2) { speakWith(v2); }
+      else { beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-voice' }); handleSpeak(text, langCode, emotion, opts); }
+    };
+    try { window.speechSynthesis.addEventListener('voiceschanged', finish); } catch {}
+    // voiceschanged가 안 오는 브라우저 대비 (setTimeout은 Date 미사용 → 허용)
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
+      const v3 = pickNativeVoice(ttsLang);
+      if (v3) { speakWith(v3); }
+      else { beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'voices-unloaded' }); handleSpeak(text, langCode, emotion, opts); } // Azure 안전
+    }, 600);
   };
 
   const handleSpeak = async (text, langCode, emotion, opts = {}) => {
@@ -3050,7 +3135,8 @@ function App() {
 
     // 2026-06-07: 신규 합성(서버 fetch) 전 포인트 게이트 — 캐시 hit은 위에서 이미 return(무료).
     //   Trial 0점이면 차단 + 포인트부족 팝업. BYOK는 자기 키라 통과. Pro/Premium 무료 통과.
-    if (!byokAzureKey && !tryConsumeTtsPoint()) return;
+    //   2026-06-09: _skipGate = handleSpeakSmart의 native→Azure onerror 폴백 (이미 native에서 1점 차감됨).
+    if (!opts._skipGate && !byokAzureKey && !tryConsumeTtsPoint()) return;
 
     const ac = new AbortController();
     ttsAbortRef.current = ac;
@@ -3729,10 +3815,10 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +5'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +10'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +5'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +10'}
                       </div>
                     </div>
                   </button>
@@ -4322,8 +4408,7 @@ function App() {
             onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
-            onSpeak={handleSpeakNative}
-            onSpeakAssessment={handleSpeak}
+            onSpeak={handleSpeakSmart}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
@@ -4350,7 +4435,7 @@ function App() {
             onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
-            onSpeak={handleSpeak}
+            onSpeak={handleSpeakSmart}
             onTtsGate={tryConsumeTtsPoint}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}

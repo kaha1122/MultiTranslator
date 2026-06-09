@@ -10,7 +10,7 @@ const HINT_COUNT_KEY = 'pronAssessHintCount';
 // 🎤 발음 평가 결과를 시각적으로 매력적이게 보여주는 전담 컴포넌트입니다.
 // 이 컴포넌트는 Azure Speech API가 반환한 상세한 5가지 데이터를 해석하여
 // 사용자에게 3가지 영역(게이지, 단어 신호등, 음소 현미경)으로 보여줍니다.
-const PronunciationAssessment = ({ data, sourceLangCode, langCode, onSpeak }) => {
+const PronunciationAssessment = ({ data, sourceLangCode, langCode, onSpeak, ttsSource }) => {
     const [selectedWord, setSelectedWord] = useState(null);
     const [showTapHint, setShowTapHint] = useState(false);
     const lastDataRef = useRef(null);
@@ -159,7 +159,7 @@ const PronunciationAssessment = ({ data, sourceLangCode, langCode, onSpeak }) =>
                                 {onSpeak && langCode && (
                                     <button
                                         className="phoneme-speak-btn"
-                                        onClick={() => onSpeak(selectedWord.word, langCode)}
+                                        onClick={() => onSpeak(selectedWord.word, langCode, undefined, ttsSource ? { source: `${ttsSource}.assess` } : undefined)}
                                         title="Listen"
                                         aria-label="Listen to word"
                                     >
