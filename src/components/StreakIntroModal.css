@@ -82,8 +82,8 @@
     font-size: 0.65rem;
     font-weight: 800;
     color: var(--text-on-brand);
-    /* 셀러브레이션 전용 그라데이션 토큰 (streak "특별한 순간") */
-    background: var(--brand-celebration-grad);
+    /* StreakIntro 전용 muted 그라데이션 (톤다운) */
+    background: var(--streak-intro-grad);
     padding: 3px 10px;
     border-radius: 99px;
     letter-spacing: 0.05em;
@@ -338,9 +338,8 @@
 }
 .streak-intro-btn-secondary:active { transform: scale(0.97); }
 .streak-intro-btn-primary {
-    /* 셀러브레이션 전용 그라데이션 토큰 — 이 모달은 streak "특별한 순간"이라
-       teal(.modal-btn-primary) 대신 축하 그라데이션을 1차 CTA에 적용 */
-    background: var(--brand-celebration-grad);
+    /* StreakIntro 전용 muted 그라데이션 — teal 대신 차분한 라벤더 1차 CTA */
+    background: var(--streak-intro-grad);
     color: var(--text-on-brand);
     box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
 }

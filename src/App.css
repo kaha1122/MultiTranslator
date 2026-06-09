@@ -49,6 +49,11 @@
   /* 셀러브레이션 전용 그라데이션 — streak/축하 "특별한 순간"에만 사용 (격리) */
   --brand-celebration-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
 
+  /* StreakIntro 안내 모달 전용 muted 그라데이션 (2026-06-09 톤다운)
+   * celebration보다 채도 ~25%↓ 차분한 라벤더 — "번쩍거림" 부담 완화.
+   * 진짜 축하 모달은 위 vivid celebration-grad 유지 (격리). */
+  --streak-intro-grad: linear-gradient(135deg, #7C7FE0 0%, #A799D4 100%);
+
   /* 모달 표준 형태 */
   --modal-overlay-bg: rgba(15, 23, 42, 0.55);
   --modal-radius: 20px;
