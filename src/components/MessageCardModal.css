@@ -2,7 +2,7 @@
 .mcm-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9100;  /* FreeTalkingChat(9000) 위 — var(--z-modal)=2010는 9000 미만이라 유지 */
+    z-index: var(--z-chat-popup);  /* 채팅 오버레이 위 */
     background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;

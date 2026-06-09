@@ -8,10 +8,8 @@
     bottom: 0;
     width: 100vw;
     height: 100vh;
-    /* z: var(--z-toast)(3000)보다 높게 유지 — Portal로 document.body에 mount되며
-       FreeTalkingChat .ftc-overlay(9000) 위에 떠야 함. 토큰화 시 9000 아래로
-       내려가 tip이 FreeTalk 오버레이 뒤에 가려짐. */
-    z-index: 9500; /* FreeTalkingChat .ftc-overlay (9000) 위 */
+    /* Portal로 document.body에 mount되며 FreeTalkingChat .ftc-overlay 위에 떠야 함. */
+    z-index: var(--z-chat-popup-high); /* 채팅 오버레이 위 */
     background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;

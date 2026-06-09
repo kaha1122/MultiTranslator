@@ -71,6 +71,11 @@
   --z-modal-backdrop: 2000;
   --z-modal: 2010;
   --z-toast: 3000;
+  /* FreeTalk 대화 오버레이 레이어 — 표준 토스트(3000)와 critical(9000) 사이.
+   * 채팅 풀스크린 오버레이 위에 뜨는 모달/팁 전용. */
+  --z-chat-overlay: 5000;      /* FreeTalkingChat .ftc-overlay (채팅 자체) */
+  --z-chat-popup: 5100;        /* 채팅 위 모달 (MessageCardModal) */
+  --z-chat-popup-high: 5200;   /* 채팅 위 상위 모달/팁 (ConversationSummary, AITipPopup) */
   --z-critical: 9000; /* 시스템 권한 프롬프트 등 최상위 (PushOptIn 등) */
 }
 

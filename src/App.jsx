@@ -4999,7 +4999,7 @@ function App() {
           gap: '12px',
           boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
           border: '1px solid #e2e8f0',
-          zIndex: 999,
+          zIndex: 'var(--z-dropdown)',
         }}>
           {/* 앱 아이콘 미리보기 */}
           <img src="/icon-192.png" alt="PronunFit" style={{ width: 40, height: 40, borderRadius: '10px' }} />
@@ -5495,7 +5495,7 @@ function App() {
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            zIndex: 3100, padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
+            zIndex: 'var(--z-modal)', padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
           }}
         >
           <div
@@ -5556,7 +5556,7 @@ function App() {
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            zIndex: 3000, padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
+            zIndex: 'var(--z-modal)', padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
           }}
         >
           <div
@@ -5743,7 +5743,7 @@ function App() {
           position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)',
           background: '#64748b',
           color: 'white', padding: '12px 24px', borderRadius: '20px',
-          fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
+          fontWeight: '700', fontSize: '0.9rem', zIndex: 'var(--z-toast)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
         }}>
           {getT(sourceLang, 'upgrade.toastFail')}
