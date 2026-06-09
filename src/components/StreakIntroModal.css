@@ -20,7 +20,8 @@
     max-width: 440px;
     max-height: 100%;
     overflow-y: auto;
-    box-shadow: 0 24px 60px rgba(139, 92, 246, 0.35);
+    /* 톤다운: 보라 그림자 약화 */
+    box-shadow: 0 18px 44px rgba(100, 100, 160, 0.22);
     -webkit-overflow-scrolling: touch;
 }
 
@@ -40,7 +41,7 @@
     right: -60px;
     width: 220px;
     height: 220px;
-    background: radial-gradient(circle, rgba(139, 92, 246, 0.18) 0%, transparent 70%);
+    background: radial-gradient(circle, rgba(124, 127, 224, 0.12) 0%, transparent 70%);
     pointer-events: none;
 }
 
@@ -67,7 +68,7 @@
     font-size: 2.6rem;
     line-height: 1;
     margin-bottom: 4px;
-    filter: drop-shadow(0 4px 8px rgba(139, 92, 246, 0.35));
+    filter: drop-shadow(0 4px 8px rgba(124, 127, 224, 0.25));
     animation: streak-intro-pulse 2s ease-in-out infinite;
     position: relative;
     z-index: 1;
@@ -91,14 +92,15 @@
     margin-bottom: 6px;
     position: relative;
     z-index: 1;
-    box-shadow: 0 2px 6px rgba(99, 102, 241, 0.3);
+    box-shadow: 0 1px 4px rgba(124, 127, 224, 0.22);
 }
 
 .streak-intro-title {
     font-size: 1.25rem;
     font-weight: 800;
     line-height: 1.2;
-    background: linear-gradient(135deg, #4f46e5 0%, #8b5cf6 50%, #d946ef 100%);
+    /* 톤다운: fuchsia(#d946ef) 제거 + 채도 낮춘 라벤더 (번쩍임 완화) */
+    background: linear-gradient(135deg, #6F72CC 0%, #8E86C6 55%, #A993C6 100%);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
@@ -341,7 +343,7 @@
     /* StreakIntro 전용 muted 그라데이션 — teal 대신 차분한 라벤더 1차 CTA */
     background: var(--streak-intro-grad);
     color: var(--text-on-brand);
-    box-shadow: 0 4px 14px rgba(139, 92, 246, 0.4);
+    box-shadow: 0 3px 10px rgba(124, 127, 224, 0.28);
 }
 .streak-intro-btn-primary:active { transform: scale(0.97); }
 
