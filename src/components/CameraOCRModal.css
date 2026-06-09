@@ -7,9 +7,9 @@
 .camera-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--modal-overlay-bg);
     backdrop-filter: blur(4px);
-    z-index: 9000;
+    z-index: var(--z-modal);
     display: flex;
     align-items: flex-end;
     justify-content: center;

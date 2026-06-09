@@ -2,8 +2,8 @@
 .mcm-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9100;  /* FreeTalkingChat(9000) 위 */
-    background: rgba(0, 0, 0, 0.55);
+    z-index: 9100;  /* FreeTalkingChat(9000) 위 — var(--z-modal)=2010는 9000 미만이라 유지 */
+    background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -13,14 +13,14 @@
     animation: mcm-overlay-in 160ms ease-out;
 }
 @keyframes mcm-overlay-in {
-    from { background: rgba(0, 0, 0, 0); }
-    to   { background: rgba(0, 0, 0, 0.55); }
+    from { background: rgba(15, 23, 42, 0); }
+    to   { background: var(--modal-overlay-bg); }
 }
 
 .mcm-window {
     position: relative;
-    background: #fff;
-    border-radius: 16px;
+    background: var(--modal-card-bg);
+    border-radius: var(--modal-radius);
     width: 100%;
     max-width: 460px;
     max-height: 92vh;

@@ -3124,14 +3124,14 @@ function App() {
   // ── 네이티브 앱 업데이트 필요 팝업 ──────────────────────────────────────────
   const nativeUpdatePopup = showNativeUpdate && (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+      position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, padding: 20,
+      zIndex: 'var(--z-modal)', padding: 20,
     }}>
       <div style={{
-        background: 'white', borderRadius: 20, padding: '28px 24px',
+        background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '28px 24px',
         maxWidth: 340, width: '100%', textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        boxShadow: 'var(--modal-shadow)',
       }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔄</div>
         <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
@@ -3150,8 +3150,8 @@ function App() {
             setShowNativeUpdate(false);
           }}
           style={{
-            width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
-            background: '#00a884', color: 'white', fontSize: '0.95rem',
+            width: '100%', padding: '13px 0', border: 'none', borderRadius: 'var(--modal-btn-radius)',
+            background: 'var(--brand-primary)', color: 'var(--text-on-brand)', fontSize: '0.95rem',
             fontWeight: 700, cursor: 'pointer',
           }}
         >
@@ -3437,13 +3437,13 @@ function App() {
       {/* 익명 사용자 → 가입 안내 모달 */}
       {showAnonGateModal && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
+          background: 'var(--modal-overlay-bg)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px',
         }} onClick={() => setShowAnonGateModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'white', borderRadius: '16px', padding: '24px',
-            maxWidth: '380px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '24px',
+            maxWidth: '380px', width: '100%', boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 700, color: '#1d4ed8' }}>
               {getT(sourceLang, 'bonus.referral.needLoginTitle') || 'Sign-up required'}
@@ -3464,8 +3464,8 @@ function App() {
                 setShowAccountUpgrade(true);
               }} style={{
                 flex: 1, padding: '10px', borderRadius: '8px',
-                background: '#2563eb', border: 'none',
-                color: 'white', fontWeight: 700, cursor: 'pointer',
+                background: 'var(--brand-primary)', border: 'none',
+                color: 'var(--text-on-brand)', fontWeight: 700, cursor: 'pointer',
               }}>
                 {getT(sourceLang, 'bonus.referral.signupBtn') || 'Create free account'}
               </button>
@@ -3477,10 +3477,10 @@ function App() {
       {/* 기존 계정 로그인 모달 (이메일/구글 모두 지원) */}
       {showLoginModal && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.45)', display: 'flex',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
+          background: 'var(--modal-overlay-bg)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))',
+          padding: 'var(--modal-overlay-padding)',
         }} onClick={() => setShowLoginModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '460px', margin: '0 16px' }}>
             <Login
@@ -3495,16 +3495,16 @@ function App() {
       {/* anonymous 가입 유도 팝업 (날짜 바뀐 첫 방문 시 자동 표시) */}
       {showAnonSignupPrompt && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 10000,
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.45)',
-          padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))',
+          background: 'var(--modal-overlay-bg)',
+          padding: 'var(--modal-overlay-padding)',
         }} onClick={() => setShowAnonSignupPrompt(false)}>
           <div style={{
             width: 'calc(100% - 48px)', maxWidth: '360px',
-            background: '#fff', borderRadius: '24px',
+            background: 'var(--modal-card-bg)', borderRadius: '24px',
             padding: '28px 24px 24px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+            boxShadow: 'var(--modal-shadow)',
             animation: 'fadeInScale 0.25s ease',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ position: 'relative' }}>
@@ -5187,11 +5187,6 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeProfileModal}
-            style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-              padding: '20px'
-            }}
           >
             <motion.div
               className="auth-card"
@@ -5637,7 +5632,7 @@ function App() {
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 28px',
           borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
-          zIndex: 9999, whiteSpace: 'pre-line', textAlign: 'center',
+          zIndex: 'var(--z-toast)', whiteSpace: 'pre-line', textAlign: 'center',
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
           maxWidth: '85vw', width: 'max-content',
           animation: 'fadeInUp 0.25s ease-out',
@@ -5649,14 +5644,14 @@ function App() {
       {/* 결제 성공 팝업 모달 */}
       {paymentSuccessModal && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, padding: '20px',
+          zIndex: 'var(--z-modal)', padding: '20px',
         }}>
           <div style={{
-            background: '#fff', borderRadius: '20px', padding: '32px 24px',
+            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '32px 24px',
             maxWidth: '340px', width: '100%', textAlign: 'center',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            boxShadow: 'var(--modal-shadow)',
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
               {paymentSuccessModal.tier === 'premium' ? '👑' : '🌟'}
@@ -5673,9 +5668,9 @@ function App() {
                 window.location.reload();
               }}
               style={{
-                width: '100%', padding: '14px', borderRadius: '12px',
-                background: paymentSuccessModal.tier === 'premium' ? '#b45309' : '#4338ca',
-                color: '#fff', border: 'none', cursor: 'pointer',
+                width: '100%', padding: '14px', borderRadius: 'var(--modal-btn-radius)',
+                background: 'var(--brand-primary)',
+                color: 'var(--text-on-brand)', border: 'none', cursor: 'pointer',
                 fontWeight: 700, fontSize: '1rem',
               }}
             >
