@@ -76,6 +76,7 @@ export default function MessageCardModal({
                         onBookmarkPrompt={onBookmarkPrompt}
                         activeRecIdx={null}        /* 모달은 단일 카드 — 다른 카드 녹음 잠금 불필요 */
                         onRecordingStart={() => {}}
+                        headlineBlock           /* 문장 카드: 🔊·⭐ 윗줄 / 문장 아래 전체폭 */
                         t={t}
                     />
                 </div>

@@ -36,6 +36,7 @@ export function VocabWordCard({
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
     t,
+    headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
@@ -93,33 +94,42 @@ export function VocabWordCard({
 
     const tips = w.learningTip || [];
 
+    // 본문(단어/문장·발음·뜻) + 액션(🔊·⭐) — headlineBlock(문장 카드)이면 액션을 윗줄, 본문을 아래 전체폭으로 배치
+    const mainBlock = (
+        <div className="vocab-word-main">
+            <p className="vocab-word-text">{w.word}</p>
+            {w.pronunciation && (
+                <p className="vocab-word-pronunciation">{w.pronunciation}</p>
+            )}
+            <p className="vocab-word-meaning">{w.meaning}</p>
+        </div>
+    );
+    const actionsBlock = (
+        <div className="vocab-word-actions">
+            <button
+                className="vocab-action-btn"
+                onClick={() => onSpeak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
+                title="TTS"
+            >
+                <Volume2 size={16} />
+            </button>
+            <button
+                className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
+                onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
+                title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
+            >
+                <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
+            </button>
+        </div>
+    );
+
     return (
         <div className="vocab-word-card">
-            {/* 상단: 단어 + 발음 + 뜻 + 액션 */}
-            <div className="vocab-word-top">
-                <div className="vocab-word-main">
-                    <p className="vocab-word-text">{w.word}</p>
-                    {w.pronunciation && (
-                        <p className="vocab-word-pronunciation">{w.pronunciation}</p>
-                    )}
-                    <p className="vocab-word-meaning">{w.meaning}</p>
-                </div>
-                <div className="vocab-word-actions">
-                    <button
-                        className="vocab-action-btn"
-                        onClick={() => onSpeak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
-                        title="TTS"
-                    >
-                        <Volume2 size={16} />
-                    </button>
-                    <button
-                        className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
-                        onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
-                        title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
-                    >
-                        <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
-                    </button>
-                </div>
+            {/* 상단: 단어/문장 + 발음 + 뜻 + 액션 */}
+            <div className={`vocab-word-top ${headlineBlock ? 'vocab-word-top-block' : ''}`}>
+                {headlineBlock
+                    ? <>{actionsBlock}{mainBlock}</>
+                    : <>{mainBlock}{actionsBlock}</>}
             </div>
 
             {/* 예문 */}

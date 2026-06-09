@@ -293,18 +293,15 @@ html.platform-android .ftc-window {
 .ftc-bubble {
     text-align: left;
     border: none;
-    cursor: pointer;
+    cursor: default; /* 2026-06-09: 메시지 탭→카드 제거 → 비클릭 */
     padding: 9px 12px;
     border-radius: 14px;
     font-size: 14px;
     line-height: 1.45;
     word-break: break-word;
     white-space: pre-wrap;
-    transition: filter 0.12s;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
 }
-.ftc-bubble:hover { filter: brightness(0.97); }
-.ftc-bubble:active { filter: brightness(0.92); }
 
 .ftc-bubble-ai {
     background: #ffffff;

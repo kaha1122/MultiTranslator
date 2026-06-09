@@ -2,7 +2,6 @@ import { useEffect, useRef, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { X, Mic, MicOff, RotateCcw } from 'lucide-react';
 import ChatBubble from './ChatBubble';
-import MessageCardModal from './MessageCardModal';
 import AITipPopup from './AITipPopup';
 import { useConversation } from '../hooks/useConversation';
 import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
@@ -22,7 +21,7 @@ const BluetoothAudio = registerPlugin('BluetoothAudio');
  * Sprint 2 흐름:
  *   - 시작: 3개 메시지 자동 streaming + TTS 직렬 재생
  *   - 자유 발화: 하단 [말하기] 버튼 → 녹음 → STT → /api/converse-reply (intent 보정 + AI 응답)
- *   - 메시지 클릭 → 카드 팝업 (MessageCardModal + ScenePracticeCard 재사용)
+ *   - (2026-06-09 제거) 메시지 클릭→카드 팝업 — 저장 가치 낮음 + 포인트0 시 팝업이 카드 뒤로 가림. 비클릭 버블로 전환.
  *   - 마지막 user_free: [💡 Learning Tip] [듣기] 버튼 (Learning Tip 은 서버에서 매 턴
  *       동봉된 모국어 코칭 텍스트를 narration voice 로 재생. 카드 저장 시 동일 텍스트가
  *       learning_tip 필드로 매핑됨.)
@@ -32,9 +31,8 @@ const BluetoothAudio = registerPlugin('BluetoothAudio');
 export default function FreeTalkingChat({
     open, setupArgs, onClose, sourceLang,
     tier = 'trial',
-    // 카드 팝업 마운트용 (App.jsx가 ScenePracticeCard 컴포넌트 + 콜백 주입)
-    ScenePracticeCardComp,
-    onSaveConversationMessage,
+    // 2026-06-09: 메시지 클릭→카드 팝업 제거 (저장 가치 낮음 + 포인트0 시 팝업이 카드 뒤로 가림).
+    //   onSaveConversationMessage(메시지 단건 저장)은 미사용이 됐으나 세션요약 저장은 유지.
     onSaveConversationSummary,
     onTrialLimitReached,
     onPronSuccess,
@@ -69,8 +67,6 @@ export default function FreeTalkingChat({
     //   freeTurnCount 가 처음 ≥1 될 때 onFirstUserTurn 1회 호출. 편집 재생성(1→0→1)에도 재차감 X.
     const firstTurnChargedRef = useRef(false);
     const messagesEndRef = useRef(null);
-    const [cardOpenMessage, setCardOpenMessage] = useState(null);
-    const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
     // Learning Tip 코칭 TTS 로딩 중인 user_free 메시지 id (스피너 노출용)
     const [learningTipLoadingId, setLearningTipLoadingId] = useState(null);
     // [v1.5.74+ thermal-ios] handleClose에서 endAudioSession이 fire되기 전에 진행 중인
@@ -118,8 +114,6 @@ export default function FreeTalkingChat({
             startedRef.current = false;
             setPlaybackIdx(-1);
             setPlaybackQueueDone(false);
-            setCardOpenMessage(null);
-            setCardSavedIds({});
             setAiTipPopup({ open: false, text: '' });
             resetSession();
             // [v1.5.73 thermal-ios Pattern 4] iOS 한정 AVAudioSession 완전 해제.
@@ -282,38 +276,6 @@ export default function FreeTalkingChat({
         }
     };
 
-    const handleCardOpen = (msg) => {
-        if (!msg) return;
-        if (msg.role === 'narration') return;
-        setCardOpenMessage(msg);
-    };
-    const handleCardClose = () => setCardOpenMessage(null);
-    const handleCardSave = async (pronunciationScore = null) => {
-        if (!cardOpenMessage) return;
-        if (cardSavedIds[cardOpenMessage.id]) return;
-        if (!onSaveConversationMessage) { setCardSavedIds(p => ({ ...p, [cardOpenMessage.id]: true })); return; }
-        try {
-            const cardId = await onSaveConversationMessage({
-                message: cardOpenMessage,
-                langCode: setupArgs?.targetLang,
-                sourceLang,
-                scene: setupArgs?.sceneId || setupArgs?.scene,
-                category: setupArgs?.category,
-                difficulty: setupArgs?.difficulty,
-                speechStyle: setupArgs?.speechStyle,
-                scenarioMeta,
-                pronunciationScore,
-            });
-            // 저장 성공 시 별표 사운드 (cardId truthy 또는 undefined — 중복은 null 반환이므로 not null)
-            if (cardId !== null) {
-                try { playStarSound(); } catch (e) { /* sound is best-effort */ }
-            }
-            setCardSavedIds(p => ({ ...p, [cardOpenMessage.id]: true }));
-        } catch (e) {
-            console.error('[FreeTalkingChat] save failed:', e?.message);
-        }
-    };
-
     if (!open) return null;
 
     const personaName = scenarioMeta?.responder_role || t('freeTalk.aiName') || 'AI';
@@ -339,11 +301,6 @@ export default function FreeTalkingChat({
                         </button>
                     </div>
                 </header>
-
-                {/* 항상 노출되는 컴팩트 안내 — 메시지 탭 시 카드 오픈 */}
-                <div className="ftc-tap-hint" role="note">
-                    💡 {t('freeTalk.tapHint') || '메시지를 탭하면 카드가 열려요 · 발음 연습 + 저장으로 Streak 유지'}
-                </div>
 
                 <div className="ftc-messages">
                     {isStarting && (
@@ -401,7 +358,6 @@ export default function FreeTalkingChat({
                             personaName={m.role === 'ai' ? personaName : null}
                             shouldAutoplay={idx === playbackIdx}
                             onPlaybackDone={handleBubbleDone(idx)}
-                            onCardOpen={handleCardOpen}
                             onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
                             onLearningTipUserFree={handleLearningTip}
                             isLearningTipLoading={learningTipLoadingId === m.id}
@@ -484,23 +440,6 @@ export default function FreeTalkingChat({
                     </div>
                 </footer>
             </div>
-
-            <MessageCardModal
-                open={!!cardOpenMessage}
-                message={cardOpenMessage}
-                langCode={setupArgs?.targetLang}
-                sourceLang={sourceLang}
-                onClose={handleCardClose}
-                onSpeak={onSpeak}
-                onSave={handleCardSave}
-                isSaved={cardOpenMessage ? !!cardSavedIds[cardOpenMessage.id] : false}
-                onTrialLimitReached={onTrialLimitReached}
-                onPronSuccess={onPronSuccess}
-                onBookmarkPrompt={onBookmarkPrompt}
-                targetGoal={targetGoal}
-                t={t}
-                ttsSource="freetalk"
-            />
 
             <AITipPopup
                 open={aiTipPopup.open}
