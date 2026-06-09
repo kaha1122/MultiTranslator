@@ -23,7 +23,9 @@
     "title": "Free-Talking",
     "aiName": "대화 상대",
     "preparing": "대화를 준비하고 있어요...",
-    "startError": "대화를 시작하지 못했습니다.",
+    "startError": "대화를 시작하지 못했어요. 잠시 후 다시 시도해주세요.",
+    "retry": "다시 시도",
+    "cancel": "닫기",
     "userAutoHint": "이렇게 시작해볼 수 있어요",
     "tapForCard": "카드 열기",
     "heardAs": "들린 결과",
@@ -60,11 +62,20 @@
     "openSettings": "설정 열기",
     "micError": "녹음에 문제가 있었어요",
     "saveError": "저장에 실패했어요. 잠시 후 다시 시도해주세요.",
-    "guideTitle": "Free-Talking 사용법",
-    "guideStep1": "먼저 상황 설명과 예시 대화를 듣고 따라 해보세요",
-    "guideStep2": "[말하기] 버튼을 눌러 자유롭게 대화하세요",
-    "guideStep3": "대화 중 [💎 카드 만들기]로 핵심 표현을 저장하세요",
-    "guideDismiss": "시작하기"
+    "heardMessage": "들린 메시지",
+    "correctedMessage": "수정한 메시지",
+    "preGuide": {
+      "welcome": "FreeTalking은 AI와의 자유 대화 연습이에요. 먼저 예시 대화를 듣고, 차근히 생각해서 이어가는 방식이에요.",
+      "role1": "먼저 상황과 예시 대화를 들려드려요",
+      "role2": "그 대화를 차근히 듣고, 무엇을 말할지 정해요",
+      "role3": "준비되면 [말하기]로 대화를 이어가세요",
+      "missionTitle": "이 대화에서 이런 걸 해보세요",
+      "mission1": "예시 대화의 흐름과 표현 파악하기",
+      "mission2": "AI의 답에서 핵심 표현 한 가지 골라 기억하기",
+      "mission3": "다음 한 마디를 자연스럽게 이어가기",
+      "tip": "메시지를 탭하면 카드를 열어 발음 연습·저장이 가능해요",
+      "cta": "시작하기"
+    }
   },
   "pushOptIn": {
     "title": "학습 알림을 받아보시겠어요?",
@@ -183,9 +194,20 @@
   },
   "trial": {
     "limitTitle": "오늘의 무료 체험 한도에 도달했습니다!",
-    "limitDesc": "하루 카드 10장, 발음 10회, 또는 Free-Talking 2회 한도에 도달했습니다.",
+    "limitDesc": "발음 10회, Free-Talking 2회, Listening 3회 한도에 도달했습니다.",
     "seeYouTomorrow": "내일 다시 만나요!",
-    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +5 발음 버튼을 활용하세요",
+    "seeSidebarReward": "더 학습을 원하시면, 사이드바의 +2 Free-Talking / +5 발음 / +3 Listening 버튼을 활용하세요",
+    "pointsTitle": "포인트가 부족합니다",
+    "pointsDesc": "포인트를 충전하시거나, 구독하여 주십시오",
+    "pointsUpgradeHint": "구독하면 광고·한도·포인트 없이 무제한으로 사용 가능합니다",
+    "costOther": "기타",
+    "costGuideTitle": "사용 시 차감 포인트",
+    "costPlay": "듣기·재생",
+    "costGenerate": "생성",
+    "proLimitTitle": "이번 달 한도에 도달했어요",
+    "proLimitDesc": "다음 달 1일에 초기화됩니다",
+    "proUpgradeHint": "Premium은 한도 없이 무제한",
+    "proUpgradeBtn": "Premium 업그레이드",
     "upgradeBtn": "플랜 업그레이드하기"
   },
   "apiSetup": {
@@ -228,6 +250,7 @@
     "noTarget": "먼저 위에서 학습 언어를 선택하세요.",
     "saveReturn": "설정 저장 & 돌아가기",
     "defaultLevel": "기본 학습 난이도",
+    "defaultLevelDesc": "언어별 기본 학습 난이도를 설정하세요.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "계정",
     "groupLanguage": "언어",
@@ -260,7 +283,8 @@
     "loginRequired": "로그인이 필요합니다.",
     "customLabelTop": "직접 입력",
     "customLabelBottom": "자유롭게 입력",
-    "customPlaceholder": "장소나 상황을 직접 입력하세요"
+    "customPlaceholder": "장소나 상황을 직접 입력하세요",
+    "customPlaceholderFreetalk": "예) Taxi로 이동하기 / 친구와 AI주제로 토론하기"
   },
   "vocab": {
     "generate": "단어 생성",
@@ -282,6 +306,8 @@
     "office": "회사 & 사무실",
     "bank": "은행",
     "gym": "피트니스 센터",
+    "home": "집 & 이웃",
+    "cinema": "영화관 & 공연장",
     "custom": "직접입력"
   },
   "sceneSit": {
@@ -295,6 +321,8 @@
     "compliment": "칭찬 & 감사 표현",
     "decline": "거절하기",
     "advice": "조언 구하기",
+    "debate": "토론 & 의견 나누기",
+    "phonecall": "전화 통화",
     "custom": "직접입력"
   },
   "vocabCat": {
@@ -462,8 +490,8 @@
     "thankYou": "구독해 주셔서 감사합니다.",
     "toastFail": "결제에 실패하거나 취소되었습니다.",
     "duplicateSubscription": "이미 앱스토어에서 활성 구독이 있습니다. 먼저 기존 구독을 취소해 주세요.",
-    "proFeature1": "발음 평가 월 1,500회",
-    "proFeature3": "모든 탭 무제한 이용",
+    "proFeature1": "발음 평가 월 1,000회",
+    "proFeature3": "Free-Talking 100 · Listening 200회/월",
     "premiumFeature1": "발음 평가 무제한",
     "premiumFeature2": "Free-Talking 무제한",
     "premiumFeature3": "모든 탭 무제한 이용",
@@ -577,12 +605,15 @@
     "counterUnit": "장",
     "bookmarkPromptTitle": "목표 점수 달성!",
     "bookmarkPromptDesc": "⭐ 버튼을 눌러 이 문장을 라이브러리에 저장하세요. 오늘의 학습 카드로 기록됩니다.",
-    "starGuideTitle": "단어장을 활용해보세요!",
-    "starGuideDesc": "학습 중 ⭐ 별표를 누르면 단어장에 저장됩니다. 저장된 카드는 라이브러리에서 언제든 복습할 수 있어요.",
+    "starGuideTitle": "⭐ 별표 → 발음 통과 → Streak!",
     "bookmarkConfirm": "확인",
     "dontShowAgain": "다시 알리지 않음",
     "bookmarkNow": "북마크하기",
-    "bookmarkLater": "나중에"
+    "bookmarkLater": "나중에",
+    "starGuideStep1": "학습하고자 하는 카드를 ⭐ 별표로 저장하세요.",
+    "starGuideStep2": "발음 점수를 통과하면 카드가 합격(qualified)이 돼요.",
+    "starGuideStep3": "매일 합격 카드 3장을 모으면, 오늘의 Streak 달성! 보너스 💎가 쏟아져요.",
+    "starGuideCta": "좋아요, 시작!"
   },
   "tabTag": {
     "home": "학습 현황과 메뉴를 한눈에 확인하세요",
@@ -946,10 +977,18 @@
     "watchForCards": "+5 카드",
     "watchAd": "광고 시청 후 카드 5개 추가",
     "watchForProns": "+5 발음",
-    "watchAdPron": "광고 시청 후 발음 10회 추가 (영구 보관)",
+    "watchAdPron": "광고 시청 후 발음 5회 추가",
     "loading": "광고 로딩 중...",
+    "topUpBonus": "보너스포인트 (광고) +5",
+    "topUpBonusDesc": "광고 시청 후 포인트 +5",
+    "buyBonus": "보너스포인트 (구매) +200",
+    "buying": "구매 처리 중...",
+    "buySuccess": "구매 완료! 곧 200포인트가 반영됩니다.",
+    "buyFail": "구매에 실패했어요. 잠시 후 다시 시도해주세요.",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가 (영구 보관)"
+    "watchAdFreeTalk": "광고 시청 후 Free Talking 2회 추가",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "광고 시청 후 Listening 3회 추가"
   },
   "renewal": {
     "title": "구독 만료 예정",
@@ -1198,7 +1237,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "카드 무제한 · 발음 1,500회/월",
+    "proDesc": "F.Talking 100 · Listening 200 · 발음 1000/월",
     "premium": "👑 Premium",
     "premiumDesc": "카드 · 발음 무제한",
     "noAds": "광고 없음"
@@ -1277,11 +1316,10 @@
     "label": "보너스",
     "noInterstitialAd": "전면광고 제거",
     "referralBtn": "🤝 친구 추천",
-    "referralSubtitle": "친구도 100pt 받아요",
     "reviewSubtitle": "한 번만 가능",
     "referral": {
-      "title": "친구 추천 코드 입력 → 100pt 받기",
-      "desc": "친구 코드를 입력하면 둘 다 100 보너스 포인트를 받아요.",
+      "title": "친구 추천 코드 입력",
+      "desc": "친구가 알려준 추천 코드를 입력해주세요.",
       "codeLabel": "친구가 알려준 추천 코드",
       "submit": "확인",
       "invalid": "유효하지 않은 코드입니다",
@@ -1293,8 +1331,8 @@
       "copy": "복사",
       "copied": "복사되었어요!",
       "share": "친구에게 공유",
-      "success": "🎉 100 보너스 포인트 받았어요!",
-      "shareMessage": "PronunFit 같이 써요! 이 추천 코드를 입력하면 우리 둘 다 100 보너스 포인트를 받아요!\n\n{code}\n\n앱 받기: {url}",
+      "success": "🎉 친구 추천이 완료되었어요!",
+      "shareMessage": "PronunFit 같이 써요! 이 추천 코드를 입력해주세요!\n\n{code}\n\n앱 받기: {url}",
       "shareTitle": "PronunFit 친구 추천",
       "shareHint": "메시지를 복사했어요. 카톡·메신저에 붙여넣어 친구에게 보내주세요.",
       "shareIosWeb": "iPhone / 웹",
@@ -1322,7 +1360,7 @@
     "campaign": {
       "title": "🎁 보너스 포인트 출시 기념 이벤트",
       "desc": "친구를 추천하거나 구글플레이 후기를 남기시면 100 보너스 포인트를 드려요. 보너스 보유 시 전면광고 면제 + 일일 한도 해제!",
-      "feature1": "🤝 친구 추천 — 양쪽 100pt",
+      "feature1": "🤝 친구 추천 — 100pt",
       "feature2": "🌟 구글플레이 후기 — 100pt",
       "feature3": "🎯 보너스 활성 시 광고 면제 + 한도 해제",
       "cta": "지금 시작하기",

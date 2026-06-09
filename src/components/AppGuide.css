@@ -16,7 +16,7 @@
   border-bottom: 1px solid #f1f5f9;
   position: sticky;
   top: 0;
-  z-index: 100;
+  z-index: var(--z-sticky);
   box-shadow: 0 2px 8px rgba(0,0,0,0.05);
 }
 
@@ -178,7 +178,7 @@
   display: block;
   margin: 8px auto 0;
   padding: 10px 32px;
-  background: #00a884;
+  background: var(--brand-primary);
   color: white;
   border: none;
   border-radius: 14px;
@@ -188,4 +188,4 @@
   box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
   transition: background 0.2s;
 }
-.guide-close-btn:hover { background: #008f72; }
+.guide-close-btn:hover { background: var(--brand-primary-hover); }

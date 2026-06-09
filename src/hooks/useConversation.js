@@ -1,8 +1,15 @@
+/* global __APP_VERSION__ */
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, serverTimestamp, Timestamp } from 'firebase/firestore';
+import { App as CapacitorApp } from '@capacitor/app';
+import { Capacitor } from '@capacitor/core';
 import { authFetch } from '../utils/authFetch';
 import { db } from '../firebase/config';
 import { useAuth } from '../context/AuthContext';
+
+// Phase 1: turn 마다 incremental Firestore update 의 debounce 간격 (ms).
+// 빠른 연속 응답을 묶어 write 비용 최소화. 강제 종료 시 최대 3초 분의 turn 만 손실.
+const INCREMENTAL_WRITE_DEBOUNCE_MS = 3000;
 
 const getServerUrl = () => {
     try {
@@ -64,6 +71,33 @@ function pickVoices() {
 const makeFreeTalkHistoryKey = (sceneId, difficulty, style, lang) =>
     `${sceneId}--${difficulty}--${style}--${lang}`;
 
+// ── 대화 로그(운영/버그추적용) ────────────────────────────────────────────────
+// freeTalkTranscripts/{sessionId} 에 저장할 slim turn 배열로 직렬화.
+// text만 보존 — audio(base64) / words 타이밍 / id / ttsReady 등 무거운 필드는 전부 제외.
+// 재질문 회귀 추적이 목적이라 AI 턴엔 establishedFacts 스냅샷(f), user 턴엔 STT 원본(raw)을 같이 남긴다.
+const TRANSCRIPT_ROLE = { narration: 'n', user_auto: 'ua', user_free: 'u', ai: 'a' };
+const TRANSCRIPT_TTL_MS = 30 * 24 * 60 * 60 * 1000;  // 30일 (Firestore TTL: expiresAt — 기존 컬렉션 컨벤션 일치)
+const TRANSCRIPT_TEXT_CAP = 2000;                     // 방어적 길이 제한 (문서 비대화 방지)
+
+function serializeTranscriptTurns(msgs) {
+    return (msgs || []).map(m => {
+        const text = (m.fullText || m.text || '').slice(0, TRANSCRIPT_TEXT_CAP);
+        const turn = { r: TRANSCRIPT_ROLE[m.role] || m.role || '?', t: text };
+        if (m.role === 'user_free') {
+            const raw = m.sttRaw || '';
+            if (raw && raw !== (m.fullText || m.text)) turn.raw = raw.slice(0, TRANSCRIPT_TEXT_CAP);
+            if (m.intentWasCorrected) turn.c = true;
+            // AI Tip 기록(운영/분석용) — SHORT(tip) + SPOKEN(tipN) 둘 다
+            if (m.learning_tip) turn.tip = String(m.learning_tip).slice(0, TRANSCRIPT_TEXT_CAP);
+            if (m.learning_tip_narration) turn.tipN = String(m.learning_tip_narration).slice(0, TRANSCRIPT_TEXT_CAP);
+        }
+        if (m.role === 'ai' && Array.isArray(m.establishedFacts) && m.establishedFacts.length) {
+            turn.f = m.establishedFacts;
+        }
+        return turn;
+    }).filter(t => t.t || t.raw);
+}
+
 export function useConversation({ tier = 'trial' } = {}) {
     const { user } = useAuth();
     const [sessionId, setSessionId] = useState(null);
@@ -89,11 +123,18 @@ export function useConversation({ tier = 'trial' } = {}) {
     // freeTalkHistory Firestore 캐시 — key → situations[] 배열 (ScenePractice 의 historyCacheRef 패턴 차용).
     // ref 라 렌더 트리거 없음. 같은 키 재진입 시 Firestore 재호출 회피.
     const historyCacheRef = useRef({});
+    // 대화 로그용 refs — sessionId 는 write 클로저에서 즉시 참조해야 해서 ref 병행
+    // (state 동기화 effect 가 돌기 전에 첫 turn write 가 발생하는 race 회피).
+    const sessionIdRef = useRef(null);
+    const sessionStartedAtRef = useRef(null);
+    const lastTranscriptSigRef = useRef(null);     // 동일 write 중복 방지(lifecycle 다중 발화 등)
+    const terminalReasonWrittenRef = useRef(false); // 첫 종료 사유 확정 후 후행 write(특히 in_progress) clobber 방지
 
     useEffect(() => { tierRef.current = tier; }, [tier]);
     useEffect(() => { messagesRef.current = messages; }, [messages]);
     useEffect(() => { setupRef.current = setup; }, [setup]);
     useEffect(() => { scenarioMetaRef.current = scenarioMeta; }, [scenarioMeta]);
+    useEffect(() => { sessionIdRef.current = sessionId; }, [sessionId]);
 
     const turnLimit = TURN_LIMITS[tier] || TURN_LIMITS.trial;
 
@@ -150,6 +191,200 @@ export function useConversation({ tier = 'trial' } = {}) {
         }
     }, [user]);
 
+    // 2026-05-22: 세션 시작 시 historyKey 기억 → 종료 시 같은 key 의 마지막 situation 에
+    // endedAt / durationMs / freeTurnCount / turnLimit / endedReason 추가 update.
+    // freeTurnCountRef 는 latest 값 캡처 (useEffect closure 회피).
+    const lastHistoryKeyRef = useRef(null);
+    const freeTurnCountRef = useRef(0);
+    useEffect(() => { freeTurnCountRef.current = freeTurnCount; }, [freeTurnCount]);
+
+    // 대화 로그(운영/버그추적용) 쓰기 — users/{uid}/freeTalkTranscripts/{sessionId}.
+    // text only(audio 미저장), AI 턴 establishedFacts 스냅샷 포함, 30일 TTL(expiresAt).
+    // 턴마다(in_progress) + 종료/lifecycle 시(endedReason 확정) merge 저장.
+    // reason+turn+msgCount 시그니처로 동일 write 중복(lifecycle 다중 발화) 방어.
+    const writeTranscript = useCallback((reason) => {
+        if (!user) return;
+        const sid = sessionIdRef.current;
+        if (!sid) return;
+        // 첫 종료 사유(terminal)가 기록되면 이후 write 모두 skip — 특히 debounced flush 가
+        // 종료 후 발화해 endedReason 을 'in_progress' 로 되돌리는 clobber 방지. (first terminal wins)
+        if (terminalReasonWrittenRef.current) return;
+        const msgs = messagesRef.current || [];
+        const turns = serializeTranscriptTurns(msgs);
+        if (turns.length === 0) return;
+        const sig = `${sid}|${reason}|${freeTurnCountRef.current || 0}|${turns.length}`;
+        if (lastTranscriptSigRef.current === sig) return;  // 중복 skip
+        lastTranscriptSigRef.current = sig;
+        if (reason && reason !== 'in_progress') terminalReasonWrittenRef.current = true;
+
+        const setupNow = setupRef.current || {};
+        const tier = tierRef.current || 'trial';
+        const startedAt = sessionStartedAtRef.current || null;
+        const endedAt = Date.now();
+        let platform = 'web';
+        try { platform = Capacitor?.getPlatform?.() || 'web'; } catch { /* noop */ }
+
+        setDoc(doc(db, `users/${user.uid}/freeTalkTranscripts`, sid), {
+            sessionId: sid,
+            key: lastHistoryKeyRef.current || null,
+            scene: setupNow.scene || null,
+            category: setupNow.category || null,
+            targetLang: setupNow.targetLang || null,
+            sourceLang: setupNow.sourceLang || null,
+            difficulty: setupNow.difficulty || null,
+            speechStyle: setupNow.speechStyle || null,
+            tier,
+            platform,
+            appVersion: (typeof __APP_VERSION__ !== 'undefined' ? __APP_VERSION__ : null),
+            startedAt,
+            endedAt,
+            durationMs: startedAt ? endedAt - startedAt : null,
+            freeTurnCount: freeTurnCountRef.current || 0,
+            turnLimit: TURN_LIMITS[tier] || TURN_LIMITS.trial,
+            endedReason: reason || 'unknown',
+            turns,
+            updatedAt: serverTimestamp(),
+            expiresAt: Timestamp.fromMillis(endedAt + TRANSCRIPT_TTL_MS),
+        }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkTranscript write failed:', e?.message));
+    }, [user]);
+
+    // Phase 1: turn 마다 incremental Firestore update 용 debounce timer.
+    // 매 turn 직후 scheduleIncrementalTurnWrite() 호출 → 3초 뒤 단 1회 write.
+    // 강제 종료 / 앱 kill / 크래시 시 최대 3초 분 turn 만 손실 (vs 종료 시 한 번에 쓰던 기존).
+    const incrementalWriteTimerRef = useRef(null);
+
+    const flushIncrementalTurnWrite = useCallback(() => {
+        // 대화 로그(운영/버그추적) — freeTalkHistory key 유무와 무관하게 턴마다 저장.
+        writeTranscript('in_progress');
+        const key = lastHistoryKeyRef.current;
+        if (!key) return;
+        const existing = historyCacheRef.current[key] || [];
+        if (existing.length === 0) return;
+        const lastIdx = existing.length - 1;
+        const last = existing[lastIdx];
+        // 이미 종료 update 가 들어간 situation 은 덮어쓰지 않음 (race-safe)
+        if (last.endedAt) return;
+        const turn = freeTurnCountRef.current || 0;
+        // 같은 turn 값이면 write skip (idempotent — Firestore 비용 절감)
+        if (last.freeTurnCount === turn && last.lastTurnAt) return;
+        const updated = [...existing];
+        updated[lastIdx] = {
+            ...last,
+            freeTurnCount: turn,
+            lastTurnAt: Date.now(),
+        };
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key), {
+                situations: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory incremental write failed:', e?.message));
+        }
+    }, [user, writeTranscript]);
+
+    const scheduleIncrementalTurnWrite = useCallback(() => {
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+        }
+        incrementalWriteTimerRef.current = setTimeout(() => {
+            incrementalWriteTimerRef.current = null;
+            flushIncrementalTurnWrite();
+        }, INCREMENTAL_WRITE_DEBOUNCE_MS);
+    }, [flushIncrementalTurnWrite]);
+
+    /**
+     * 마지막 freeTalkHistory situation 에 종료 데이터 추가 (idempotent: 이미 endedAt 있으면 skip).
+     * sessionEnded 가 true 로 바뀌면 자동 호출됨 (아래 useEffect).
+     */
+    const updateLastFreeTalkHistoryEnd = useCallback((reason) => {
+        const key = lastHistoryKeyRef.current;
+        if (!key) return;
+        const existing = historyCacheRef.current[key] || [];
+        if (existing.length === 0) return;
+        const lastIdx = existing.length - 1;
+        const last = existing[lastIdx];
+        if (last.endedAt) return;  // 중복 호출 보호
+        // Phase 1: 펜딩 debounced write 가 endedAt 덮어쓰지 않도록 취소
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+            incrementalWriteTimerRef.current = null;
+        }
+        const startedAt = last.startedAt || last.createdAt || Date.now();
+        const endedAt = Date.now();
+        const updated = [...existing];
+        updated[lastIdx] = {
+            ...last,
+            endedAt,
+            durationMs: endedAt - startedAt,
+            freeTurnCount: freeTurnCountRef.current || 0,
+            turnLimit: TURN_LIMITS[tierRef.current] || TURN_LIMITS.trial,
+            endedReason: reason || 'unknown',
+        };
+        historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
+        if (user) {
+            setDoc(doc(db, `users/${user.uid}/freeTalkHistory`, key), {
+                situations: updated,
+                updatedAt: serverTimestamp(),
+            }, { merge: true }).catch(e => console.warn('[useConversation] freeTalkHistory end update failed:', e?.message));
+        }
+    }, [user]);
+
+    // Phase 2: lifecycle 이벤트 후크 — 사용자가 X 안 눌러도 종료 데이터 캡처.
+    // visibilitychange='hidden' / pagehide / Capacitor appStateChange(isActive:false) 셋 모두 등록.
+    // 강제종료(앱 kill / 홈버튼 / 디바이스 OFF) 시점 직전에 OS 가 거의 항상 한 번은 발화.
+    // updateLastFreeTalkHistoryEnd 는 idempotent — 중복 발화돼도 안전.
+    useEffect(() => {
+        const handleLifecycleHidden = (source) => {
+            if (!sessionIdRef.current) return;  // 진행 중 세션 없음 → noop
+            // 대화 로그 — 백그라운드/이탈 시점 캡처 (강제종료 직전 사유 보존)
+            writeTranscript(`lifecycle_${source}`);
+            if (lastHistoryKeyRef.current) {
+                updateLastFreeTalkHistoryEnd(`lifecycle_${source}`);
+            }
+        };
+        const onVisibilityChange = () => {
+            if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+                handleLifecycleHidden('visibility');
+            }
+        };
+        const onPageHide = () => handleLifecycleHidden('pagehide');
+
+        if (typeof document !== 'undefined') {
+            document.addEventListener('visibilitychange', onVisibilityChange);
+        }
+        if (typeof window !== 'undefined') {
+            window.addEventListener('pagehide', onPageHide);
+        }
+
+        // Capacitor 네이티브 — 앱 백그라운드 진입 / 종료 직전 발화
+        let capListenerHandle = null;
+        if (Capacitor?.isNativePlatform?.()) {
+            try {
+                const p = CapacitorApp.addListener('appStateChange', ({ isActive }) => {
+                    if (!isActive) handleLifecycleHidden('appstate');
+                });
+                // Capacitor 8: addListener 가 Promise<PluginListenerHandle> 반환
+                if (p && typeof p.then === 'function') {
+                    p.then(h => { capListenerHandle = h; }).catch(() => {});
+                } else {
+                    capListenerHandle = p;
+                }
+            } catch (e) { /* noop — listener 등록 실패해도 web 이벤트로 fallback */ }
+        }
+
+        return () => {
+            if (typeof document !== 'undefined') {
+                document.removeEventListener('visibilitychange', onVisibilityChange);
+            }
+            if (typeof window !== 'undefined') {
+                window.removeEventListener('pagehide', onPageHide);
+            }
+            if (capListenerHandle?.remove) {
+                try { capListenerHandle.remove(); } catch (e) { /* noop */ }
+            }
+        };
+    }, [updateLastFreeTalkHistoryEnd, writeTranscript]);
+
     const startSession = useCallback(async (setupArgs) => {
         setIsStarting(true);
         setStartError(null);
@@ -181,6 +416,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                 body: JSON.stringify({
                     scene: setupArgs.scene,
                     category: setupArgs.category,
+                    isCustom: setupArgs.isCustom === true,
                     targetLang: setupArgs.targetLang,
                     sourceLang: setupArgs.sourceLang,
                     difficulty: setupArgs.difficulty,
@@ -195,16 +431,27 @@ export function useConversation({ tier = 'trial' } = {}) {
             const data = await res.json();
             setSetup(setupArgs);
             setScenarioMeta(data.scenarioMeta || null);
-            setSessionId(`s-${Date.now()}`);
+            // 대화 로그용: sessionId/startedAt 을 ref 에 즉시 반영 (state sync 전 첫 write race 방지)
+            const startTs = Date.now();
+            const newSessionId = `s-${startTs}`;
+            sessionIdRef.current = newSessionId;
+            sessionStartedAtRef.current = startTs;
+            lastTranscriptSigRef.current = null;
+            terminalReasonWrittenRef.current = false;
+            setSessionId(newSessionId);
 
             // freeTalkHistory append — situationSummary + dimensions 가 응답에 있으면 저장.
             // 두 필드 중 하나라도 비어있으면 skip (이전 빌드 호환). serverTimestamp 는 setDoc 호출 시 attach.
+            // 2026-05-22: startedAt 추가 + lastHistoryKeyRef 기록 → 세션 종료 시 같은 situation
+            // 에 endedAt/durationMs/freeTurnCount/turnLimit 추가됨 (updateLastFreeTalkHistoryEnd).
             if (data.situationSummary || data.dimensions) {
                 appendFreeTalkHistory(historyKey, {
                     summary: data.situationSummary || '',
                     dimensions: data.dimensions || {},
                     createdAt: Date.now(),  // 클라이언트 epoch — Firestore 정렬엔 updatedAt 사용
+                    startedAt: Date.now(),  // 세션 시작 시각 (분석/추적용)
                 });
+                lastHistoryKeyRef.current = historyKey;
             }
 
             // 3개 메시지 골격을 즉시 마운트 (text는 빈 채로 — TTS reveal로 채워짐)
@@ -284,13 +531,28 @@ export function useConversation({ tier = 'trial' } = {}) {
                 });
                 applyTTS(aiMsg.id, aiTTS);
             })();
+            // 호출자(FreeTalkingChat)가 성공/실패 분기 — 성공 시 onSessionStarted 콜백으로 카운트 차감.
+            // 실패하면 사용자에게 [다시 시도] 버튼 노출하고 카운트는 보존(2026-05-21 UX 보호).
+            return true;
         } catch (e) {
             console.error('[useConversation] start failed:', e?.message || e);
             setStartError(e?.message || 'Failed to start');
+            return false;
         } finally {
             setIsStarting(false);
         }
     }, [fetchTTS, loadAvoidSituations, appendFreeTalkHistory]);
+
+    // 세션 종료 자동 감지 — endSession/idle/limit 어느 경로든 sessionEnded=true 되면
+    // freeTalkHistory 마지막 situation 에 종료 데이터 update (idempotent).
+    useEffect(() => {
+        if (!sessionEnded) return;
+        // 대화 로그 — 종료 사유 확정 기록 (freeTalkHistory key 유무 무관)
+        writeTranscript(endedReason || 'unknown');
+        if (lastHistoryKeyRef.current) {
+            updateLastFreeTalkHistoryEnd(endedReason || 'unknown');
+        }
+    }, [sessionEnded, endedReason, updateLastFreeTalkHistoryEnd, writeTranscript]);
 
     const endSession = useCallback((reason = 'user') => {
         setSessionEnded(true);
@@ -302,6 +564,24 @@ export function useConversation({ tier = 'trial' } = {}) {
     }, []);
 
     const resetSession = useCallback(() => {
+        // 사용자가 endSession 안 거치고 모달 즉시 닫는 경로 보호 — 진행 중 세션이면 종료 데이터 기록.
+        // updateLastFreeTalkHistoryEnd 는 idempotent (이미 endedAt 있으면 skip).
+        // 대화 로그 — 미종료 reset 이면 'closed' 가 종료 사유 (이미 terminal 기록 시 writeTranscript 내부에서 skip).
+        writeTranscript('closed');
+        if (lastHistoryKeyRef.current) {
+            updateLastFreeTalkHistoryEnd('closed');
+        }
+        // Phase 1: 펜딩 debounced write 취소 (resetSession 후엔 마지막 turn 가 의미 없음)
+        if (incrementalWriteTimerRef.current) {
+            clearTimeout(incrementalWriteTimerRef.current);
+            incrementalWriteTimerRef.current = null;
+        }
+        lastHistoryKeyRef.current = null;
+        // 대화 로그 refs 정리 (다음 세션 startSession 에서 재초기화)
+        sessionIdRef.current = null;
+        sessionStartedAtRef.current = null;
+        lastTranscriptSigRef.current = null;
+        terminalReasonWrittenRef.current = false;
         setSessionId(null);
         setMessages([]);
         setSetup(null);
@@ -319,7 +599,7 @@ export function useConversation({ tier = 'trial' } = {}) {
             clearTimeout(idleTimerRef.current);
             idleTimerRef.current = null;
         }
-    }, []);
+    }, [updateLastFreeTalkHistoryEnd, writeTranscript]);
 
     /**
      * 사용자가 SummaryModal을 [Skip]/[Save]/[X] 로 닫을 때 호출.
@@ -448,6 +728,18 @@ export function useConversation({ tier = 'trial' } = {}) {
                     return entry;
                 });
 
+            // B안(slot memory): 직전 턴까지 누적된 establishedFacts 를 carry.
+            // 마지막 ai 메시지에 저장돼 있고, 서버가 cumulative 로 다시 반환하므로
+            // 가장 최근 것 하나만 넘기면 됨. 없으면 [] (세션 첫 자유발화).
+            // edit/remove 로 메시지가 trim 되면 자연스럽게 그 시점 facts 로 롤백됨.
+            let priorFacts = [];
+            for (let i = historyNow.length - 1; i >= 0; i--) {
+                if (historyNow[i].role === 'ai' && Array.isArray(historyNow[i].establishedFacts)) {
+                    priorFacts = historyNow[i].establishedFacts;
+                    break;
+                }
+            }
+
             const res = await authFetch(`${SERVER_URL}/api/converse-reply`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -459,6 +751,7 @@ export function useConversation({ tier = 'trial' } = {}) {
                     sourceLang: setupNow.sourceLang,
                     difficulty: setupNow.difficulty,
                     speechStyle: setupNow.speechStyle,
+                    establishedFacts: priorFacts,
                 }),
             });
             if (!res.ok) {
@@ -504,6 +797,9 @@ export function useConversation({ tier = 'trial' } = {}) {
                         learning_tip: a.learning_tip || '',
                         selected_emotion: a.selected_emotion || '',
                         interaction_type: a.interaction_type || '',
+                        // B안(slot memory): 누적 facts 저장 → 다음 턴 carry.
+                        // 모델 누락 시 priorFacts 유지(메모리 유실 방지).
+                        establishedFacts: Array.isArray(a.establishedFacts) ? a.establishedFacts : priorFacts,
                     };
                 }
                 return m;
@@ -531,6 +827,9 @@ export function useConversation({ tier = 'trial' } = {}) {
             // AI 응답 실패 시 카운트 안 올라감 → 사용자 재시도 가능 (의도된 동작).
             // 한도 도달은 별도 useEffect 가 freeTurnCount 변화를 보고 처리.
             setFreeTurnCount(prev => prev + 1);
+            // Phase 1: turn 증가 직후 3초 debounce 로 Firestore 에 incremental 저장.
+            // 강제 종료 / 앱 kill 등으로 종료 update 가 안 들어가도 마지막 turn 기록 보존.
+            scheduleIncrementalTurnWrite();
         } catch (e) {
             console.error('[useConversation] reply failed:', e?.message || e);
             setReplyError(e?.message || 'Reply failed');
@@ -541,7 +840,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         } finally {
             setIsReplying(false);
         }
-    }, [fetchTTS, sessionEnded, resetIdleTimer]);
+    }, [fetchTTS, sessionEnded, resetIdleTimer, scheduleIncrementalTurnWrite]);
 
     /**
      * ChatBubble의 onPlaybackDone에서 호출 — 메시지를 played=true 로 마킹.
@@ -550,6 +849,37 @@ export function useConversation({ tier = 'trial' } = {}) {
     const markMessagePlayed = useCallback((messageId) => {
         setMessages(prev => prev.map(m => m.id === messageId ? { ...m, played: true } : m));
     }, []);
+
+    /**
+     * reply 실패한 직후 호출 — 마지막 user_free 메시지의 sttRaw 로 submitFreeUtterance 재호출.
+     * 실패한 ai placeholder + user_free 를 제거하고 정상 흐름으로 재시작.
+     * 2026-05-22: Gemini 503 같은 transient 외부 장애 후 사용자 1턴 손실 방지.
+     */
+    const retryLastReply = useCallback(async () => {
+        const msgs = messagesRef.current;
+        let lastUserFreeIdx = -1;
+        for (let i = msgs.length - 1; i >= 0; i--) {
+            if (msgs[i].role === 'user_free') { lastUserFreeIdx = i; break; }
+        }
+        if (lastUserFreeIdx === -1) return;
+        const userMsg = msgs[lastUserFreeIdx];
+        const sttRaw = userMsg.sttRaw || userMsg.fullText || userMsg.text;
+        if (!sttRaw) return;
+
+        // 실패한 user_free + 그 뒤 ai placeholder(replyError) 제거. 다른 메시지는 보존.
+        setMessages(prev => {
+            const next = [...prev];
+            const aiNext = next[lastUserFreeIdx + 1];
+            if (aiNext?.role === 'ai' && aiNext?.replyError) {
+                next.splice(lastUserFreeIdx, 2);
+            } else {
+                next.splice(lastUserFreeIdx, 1);
+            }
+            return next;
+        });
+        setReplyError(null);
+        await submitFreeUtterance(sttRaw);
+    }, [submitFreeUtterance]);
 
     /**
      * 마지막 user_free 메시지의 텍스트를 사용자가 직접 수정하고, 직후 AI 응답을 재생성한다.
@@ -624,6 +954,7 @@ export function useConversation({ tier = 'trial' } = {}) {
         summary, isSummarizing, summaryError,
         startSession, endSession, resetSession,
         submitFreeUtterance, editLastUserFree, removeLastUserFreePair,
+        retryLastReply,
         markMessagePlayed,
         requestSummary,
         clearSummary,

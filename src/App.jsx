@@ -48,6 +48,7 @@ import ListeningTab from './components/ListeningTab';
 import ScenePractice, { ScenePracticeCard } from './components/ScenePractice';
 import FreeTalkingChat from './components/FreeTalkingChat';
 import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
+import FreeTalkingPreGuideModal, { FREETALK_PREGUIDE_KEY } from './components/FreeTalkingPreGuideModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
 import StreakIntroModal from './components/StreakIntroModal';
@@ -61,20 +62,20 @@ import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
-import { adsReady, showInterstitial } from './lib/adProvider';
 import AppGuide from './components/AppGuide';
-import TabTutorial, { TAB_TUTORIALS } from './components/TabTutorial';
 import LandingPage from './components/LandingPage';
 import AdBanner from './components/AdBanner';
 import CameraOCRModal from './components/CameraOCRModal'; // [신규] 카메라 OCR 모달
 import NotificationSettings from './components/NotificationSettings';
 import PushOptInModal from './components/PushOptInModal';
+import StarGuideModal from './components/StarGuideModal';
 import SubscriptionEventModal from './components/SubscriptionEventModal';
 import { useFeatureSeen, supportsFeature } from './utils/featureSeen';
 import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/phoneFormat';
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
 import { assignNextCardSerial } from './utils/cardSerial';
+import { getCachedAudio, putCachedAudio } from './utils/ttsAudioCache';
 import { stripAnnotations } from './utils/stripAnnotations';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -114,13 +115,16 @@ function App() {
     user, profile, updateUserProfile,
     tier, trialCardCount, savedCardCount, trialPronCount,
     proPronCount, PRO_PRON_LIMIT,
-    TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-    isTrialPronLimitReached, isTrialFreeTalkLimitReached,
-    setDailyTrialPronReached, setDailyTrialFreeTalkReached,
+    proFreeTalkCount, proListenCount, PRO_FREETALK_LIMIT, PRO_LISTEN_LIMIT,
+    isProFreeTalkLimitReached, isProListenLimitReached, isProPronLimitReached,
+    incrementProFreeTalk, incrementProListen,
+    TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+    isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
+    setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
     incrementTrialCard, incrementSavedCard, incrementTotalFreeTalk,
     incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
     bonusPoints, hasBonusActive, consumeBonusPoints,
-    freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
+    freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
     reviewBonusClaimed,
     byokGeminiKey, byokAzureKey, byokAzureRegion,
     ensureAnonymousUser,
@@ -223,9 +227,15 @@ function App() {
           if (['renewal', 'expiration', 'billingIssue', 'cancellation'].includes(pushType)) {
             tryShowSubscriptionEvent(pushType);
           }
-          // Re-engagement 푸시 → 홈 탭으로 이동
-          if (typeof pushType === 'string' && pushType.startsWith('reengagement_')) {
+          // 학습 재참여 유도 push (streak_reminder / streak_risk / reengagement_starter / reengagement_engaged)
+          // → 홈 + StarGuide 환영 팝업. 네 종류 모두 "다시 학습 시작" 동기 부여 메시지라 동일 동선.
+          // 2026-05-23: 기존엔 streak_* 만 StarGuide 트리거하고 reengagement_* 는 홈 이동만 했는데
+          // 두 카테고리 본질적으로 같은 의도라 통합 (단일 prefix-or 조건).
+          if (typeof pushType === 'string' &&
+              (pushType.startsWith('streak_') || pushType.startsWith('reengagement_'))) {
+            console.log('[Push] learning re-entry push → setForceStarGuideFromPush(true)', { pushType });
             setViewMode('home');
+            setForceStarGuideFromPush(true);
           }
         });
         removers.push(hAction);
@@ -430,11 +440,14 @@ function App() {
   // Free Talking (Sprint 1) — 카카오톡 스타일 풀스크린 채팅 모달
   const [freeTalkOpen, setFreeTalkOpen] = useState(false);
   const [freeTalkSetup, setFreeTalkSetup] = useState(null);
+  const [freeTalkPreGuide, setFreeTalkPreGuide] = useState(null); // 채팅 진입 전 사전 안내 게이트(시나리오 args 보관)
   // Free Talking 신기능 안내 (Sprint 3-3) — 기존 사용자 한정 1회
   const [freeTalkAnnounceOpen, setFreeTalkAnnounceOpen] = useState(false);
 
   // Trial 한도 도달 모달 / BYOK API 키 설정 마법사
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
+  // 2026-06-07: 한도 모달 사유 — 'cap'(하드캡 도달, 충전 무의미) / 'points'(포인트 부족, 충전 가능)
+  const [trialLimitReason, setTrialLimitReason] = useState('cap');
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   // 2026-05-07 v1.5.0: 카드 한도 폐기 — trialCardCurrentCount state 제거됨 (사용처 없음).
 
@@ -538,6 +551,17 @@ function App() {
     }
   });
 
+  // [신규] 언어별 기본 학습 난이도 맵 ({ en:'advanced', ja:'basic', ... }).
+  // languageGoals와 동일하게 localStorage 전용. 미설정 언어는 || userLevel || 'basic' 폴백.
+  const [languageLevels, setLanguageLevels] = useState(() => {
+    try {
+      const saved = localStorage.getItem('languageLevels');
+      return saved ? JSON.parse(saved) : {};
+    } catch (e) {
+      return {};
+    }
+  });
+
   // 하루 학습 목표 카드 수 (기본 3장 — 2026-05-05 retention 정책 변경: 10장 → 3장)
   // 1회성 강제 마이그레이션: 기존 유저의 localStorage 값(10장 default 또는 본인 설정값)도
   // 새 default(3장)로 reset. dailyGoalMigrated_v3 플래그로 1회만 실행 — 이후 사용자가
@@ -626,6 +650,11 @@ function App() {
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
         console.log('[RevenueCat] Configured for', user.uid);
+        // 포인트 상품(소비성) 가격 조회 — 사이드바 구매 버튼 가격 표시용
+        try {
+          const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
+          if (products?.[0]?.priceString) setPointsPriceString(products[0].priceString);
+        } catch (pe) { console.warn('[RevenueCat] points product fetch failed:', pe?.message); }
         // Google Play 구매 내역 복원 + Firestore 직접 동기화
         try {
           const { customerInfo } = await Purchases.restorePurchases();
@@ -691,77 +720,14 @@ function App() {
     })();
   }, [user?.uid]);
 
-  // 액션별 점수 누적 → 임계치 도달 시 전면광고 (Trial 전용, 플랫폼 공통)
-  //   카드 저장 2점 / Generate(Vocab·Listening·Scene/Translation) 1점 / 발음 1점
-  //   2026-05-04 변경: 발음도 인터스티셜 카운터에 누적 (이전엔 bonusOnly:true 였음)
-  //     이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조
-  //     보너스 활성 사용자는 보너스 점수에서 우선 차감 (cascade), 부족분만 인터스티셜 누적
-  //   localStorage 영속 누적 → 앱/탭 닫아도 유지 (Web/Android/iOS 동일)
-  //   추가: React state로도 동기화 → 헤더에 "광고까지 N점" 카운터 실시간 표시
-  const AD_POINT_THRESHOLD = 15;
-  const AD_POINT_KEY = 'interstitialPoints';
-  const AD_COOLDOWN_MS = 60_000;
-  const lastAdAtRef = useRef(0);
-
-  // 헤더 카운터용 React state — localStorage와 동기화
-  const [adPointsState, setAdPointsState] = useState(() => {
-    try { return parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10); } catch { return 0; }
-  });
-  const setAdPoints = useCallback((value) => {
-    try { localStorage.setItem(AD_POINT_KEY, String(value)); } catch {}
-    setAdPointsState(value);
-  }, []);
-
-  // 2026-05-08: adPoints 와 bonusPoints 분리 — 두 풀 독립 차감.
-  //   options.bonusCost 미지정 시 기본 = adsCost (= points 인자) 으로 호환성 유지.
-  //   액션별 권고치: Free Talking 10, Listening 5, Pronunciation 2, 그 외 1.
-  //   adsCost(=points) 는 항상 1로 유지해야 함 — 광고 본 직후 0 리셋 상태에서 큰 값 차감 시
-  //   즉시 음수→재광고 무한루프 위험. 보너스 풀만 액션 가치에 비례해 빠르게 소진하는 패턴.
+  // 2026-06-07 개편: 통합 포인트 풀(bonusPoints) 차감. 전면광고/AdPoint(localStorage) 시스템 제거.
+  //   addAdPoints(points, {bonusCost}) → bonusCost(없으면 points)만큼 풀에서 차감(best-effort, Trial 전용).
+  //   차단(게이팅)은 AuthContext isTrialXLimitReached(하드캡 OR 포인트 부족)가 담당 — 여기선 차감만.
+  //   액션 비용: FreeTalk 10 / Listening 5 / Pron 2 / Vocab·Scene 1 / TTS 1 (호출처의 bonusCost 그대로).
   const addAdPoints = async (points, options = {}) => {
     if (tier !== 'trial') return;
-    const bonusCost = options.bonusCost ?? points;
-
-    // 보너스 활성 시: bonusCost 만큼 차감 시도. 1점이라도 차감되면 광고 면제 (adPoints 누적 skip).
-    // 보너스 잔여가 bonusCost 보다 적어도 무료 — 다음 액션에서 0 도달 시 fall-through 로 정상 누적.
-    if (hasBonusActive && bonusCost > 0) {
-      const consumed = await consumeBonusPoints(bonusCost);
-      if (consumed > 0) return;
-    }
-
-    // bonusOnly 모드 (예: 발음 평가) — 남은 점수가 있어도 인터스티셜 누적 X
-    if (options.bonusOnly) return;
-
-    // 점수는 항상 누적 (웹·광고미준비 환경에서도 헤더 카운터 표시 위해)
-    const prev = parseInt(localStorage.getItem(AD_POINT_KEY) || '0', 10);
-    const next = prev + points;
-
-    if (next < AD_POINT_THRESHOLD) {
-      setAdPoints(next);
-      return;
-    }
-
-    // 임계 도달 — 광고 표시 가능한 경우만 인터스티셜 시도
-    if (!adsReady()) {
-      // 웹/광고 미준비: 누적값 유지 (다음 액션 시 재시도, 카운터는 0으로 보임)
-      setAdPoints(next);
-      return;
-    }
-
-    const now = Date.now();
-    if (now - lastAdAtRef.current < AD_COOLDOWN_MS) {
-      // 임계 도달했지만 쿨다운 중 — 점수는 유지해 다음 액션에서 재시도
-      setAdPoints(next);
-      return;
-    }
-
-    lastAdAtRef.current = now;
-    setAdPoints(0);
-    const ok = await showInterstitial();
-    if (!ok) {
-      // 광고 로드/표시 실패 — 점수 롤백
-      setAdPoints(next);
-      lastAdAtRef.current = 0;
-    }
+    const cost = options.bonusCost ?? points;
+    if (cost > 0) await consumeBonusPoints(cost);
   };
 
   // 구버전 키 정리 (1회)
@@ -769,28 +735,41 @@ function App() {
     try { localStorage.removeItem('interstitialSaveCount'); } catch {}
   }, []);
 
-  // 발음 평가 성공 통합 핸들러 — 일일 카운터 증가 + 인터스티셜 점수 +1
-  // 2026-05-04 변경: bonusOnly:true 제거 → 발음도 일반 trial 인터스티셜 카운터에 누적.
-  //   이유: 발음 20회 한도 시 Azure Speech 비용 발생하지만 광고 0번 = 적자 구조 차단.
-  //   addAdPoints 내부 cascade: 보너스 활성 시 보너스 점수 우선 차감 → 부족분 인터스티셜 누적.
-  // 발음 평가 성공 핸들러 — daily 한도 미사용 분 우선 차감, 초과분은 pronCredits(영구) 소비.
-  // addAdPoints(1)은 점수 시스템(15점)에 별도 차감 — Daily 한도와는 독립된 게이트.
+  // 발음 평가 성공 핸들러 — 2026-06-07 개편: 하드캡 카운터 +1 + 통합 풀 2점 차감.
+  //   진입 게이트(isTrialPronLimitReached = 하드캡 OR 포인트<2)가 useAudioRecorder 에서 사전 차단하므로
+  //   여기 도달 = 허용된 발음. 항상 일일 카운터 증가(하드캡 집계) + 풀 차감(addAdPoints가 trial 가드).
   const onPronSuccess = useCallback(async () => {
-    // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가 보너스 차감 +
-    // 광고 카운터 누적 여부를 내부에서 모두 처리 — 잔여 보너스 부족 시 광고 카운터로 자연 fallback.
-    if (hasBonusActive) {
-      addAdPoints(1, { bonusCost: 2 });
-      return;
-    }
-    if (tier === 'trial' && todayPronCount >= TRIAL_DAILY_PRON_LIMIT && pronCredits > 0) {
-      // daily 20회 초과 → 광고 적립 credits 소비
-      await consumePronCredits(1);
-    } else {
-      incrementDailyPron();
-    }
-    // adsCost=1, bonusCost=2 — Pron 은 Azure Speech 비용 발생 액션이라 보너스 풀에서 가중치 부여
-    addAdPoints(1, { bonusCost: 2 });
-  }, [incrementDailyPron, hasBonusActive, tier, todayPronCount, TRIAL_DAILY_PRON_LIMIT, pronCredits, consumePronCredits]);
+    incrementDailyPron();
+    addAdPoints(1, { bonusCost: 2 }); // 풀 -2 (Pron 비용)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [incrementDailyPron]);
+
+  // 2026-06-07: 한도 모달 호출 — feature별 하드캡 도달 여부로 사유 판정.
+  //   하드캡 도달 → 'cap'(충전 무의미, 업그레이드만) / 그 외(=포인트 부족) → 'points'(충전 가능).
+  const requestLimitModal = useCallback((feature) => {
+    const capReached =
+      feature === 'pron' ? todayPronCount >= TRIAL_DAILY_PRON_LIMIT :
+      feature === 'freeTalk' ? todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT :
+      feature === 'listen' ? todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT : false;
+    setTrialLimitReason(capReached ? 'cap' : 'points');
+    setShowTrialLimitModal(true);
+  }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
+
+  // 2026-06-07: Pro 월별 한도 도달 모달 — "다음 달 리셋 + Premium 업셀"(Trial 'cap'/'points'와 별개).
+  const requestProLimitModal = useCallback(() => {
+    setTrialLimitReason('proMonthly');
+    setShowTrialLimitModal(true);
+  }, []);
+
+  // 2026-06-07: TTS 신규 합성 1점 게이트 — true=허용(차감 완료/무료), false=차단(포인트부족 팝업).
+  //   캐시 hit(메모리/IndexedDB/보존오디오)은 호출 전에 이미 return → 재청취는 무료.
+  //   신규 합성(서버 fetch)에만 적용. Trial 0점 → 차단+팝업. Pro/Premium은 무료 통과.
+  const tryConsumeTtsPoint = useCallback(() => {
+    if (tier !== 'trial') return true;
+    if (bonusPoints < 1) { requestLimitModal('tts'); return false; }
+    consumeBonusPoints(1);
+    return true;
+  }, [tier, bonusPoints, consumeBonusPoints, requestLimitModal]);
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
@@ -798,27 +777,60 @@ function App() {
   //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
   //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
+  // 2026-06-07: 인앱 포인트 구매(소비성, +200) — 가격 표시 + 구매 진행 상태
+  const POINTS_PRODUCT_ID = 'pronunfit_points_200';
+  const [pointsPriceString, setPointsPriceString] = useState('');
+  const [buyingPoints, setBuyingPoints] = useState(false);
 
-  const handleRewardedAd = async (type) => {
+  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +200 적립(멱등).
+  //   클라는 결제 dialog만 띄우고, 적립은 webhook → Firestore onSnapshot 으로 자동 반영.
+  const handleBuyPoints = async () => {
+    if (!window.Capacitor?.isNativePlatform?.() || !user || buyingPoints) return;
+    setBuyingPoints(true);
+    try {
+      const { Purchases } = await import('@revenuecat/purchases-capacitor');
+      const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
+      const product = products?.[0];
+      if (!product) throw new Error('point product not found');
+      await Purchases.purchaseStoreProduct({ product });
+      // 성공 — 적립은 webhook(async). 안내만.
+      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 200포인트가 반영됩니다.');
+    } catch (e) {
+      if (!e?.userCancelled) {
+        console.error('[BuyPoints] 실패:', e);
+        alert(getT(sourceLang, 'reward.buyFail') || '구매에 실패했어요. 잠시 후 다시 시도해주세요.');
+      }
+    } finally {
+      setBuyingPoints(false);
+    }
+  };
+
+  // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
+  //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
+  const handleRewardedAd = async () => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
-      const adId = type === 'freeTalks' ? AD_UNITS.rewardedCards : AD_UNITS.rewardedProns;
+      const adId = AD_UNITS.rewardedCards;
 
       await new Promise(async (resolve, reject) => {
         // 리스너를 prepare 전에 먼저 등록
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          const amount = type === 'freeTalks' ? 2 : 5;
-          const field = type === 'freeTalks' ? 'freeTalkCredits' : 'pronCredits';
+          // 서버 검증 엔드포인트 경유 +5 충전 (쿨다운/일일상한 가드). 클라 직접 increment 금지(위변조).
           try {
-            await updateDoc(doc(db, 'users', user.uid), { [field]: increment(amount) });
-          } catch (e) { console.error(`[RewardedAd] ${field} 적립 실패:`, e); }
+            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            await authFetch(`${SERVER_URL}/api/bonus/ad-reward`, { method: 'POST' });
+          } catch (e) { console.error('[RewardedAd] 충전 실패:', e); }
           resolve();
         }));
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
+          // 보상광고 dismiss 시 별도 처리 없음. (과거 v1.5.82 triggerForcedIdle 강제
+          // idle 호출은 진입 애니메이션을 멈춰 UX 회귀를 일으켜 폐기됐고, idle 로직 제거됨.)
+          resolve();
+        }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>
           reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) =>
@@ -845,11 +857,13 @@ function App() {
     if (tier === 'trial') {
       setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
       setDailyTrialFreeTalkReached(todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT);
+      setDailyTrialListenReached(todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT);
     } else {
       setDailyTrialPronReached(false);
       setDailyTrialFreeTalkReached(false);
+      setDailyTrialListenReached(false);
     }
-  }, [tier, todayPronCount, todayFreeTalkCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached]);
+  }, [tier, todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -859,6 +873,11 @@ function App() {
 
   // 별표 안내 팝업 (첫 카드 생성 시 1회)
   const [showStarGuide, setShowStarGuide] = useState(false);
+  // 학습 재참여 push (streak_* + reengagement_*) 진입 시 StarGuide 강제 발화
+  // (count/session/dismissedV2 가드 우회).
+  // 2026-05-23: streak_reminder + streak_risk + reengagement_starter + reengagement_engaged
+  // 네 종류 모두 학습 동기 부여 메시지라 분기 없이 통합.
+  const [forceStarGuideFromPush, setForceStarGuideFromPush] = useState(false);
 
   // Translation 탭 — 저장 완료된 카드의 docId (langCode → docId)
   const [savedCardIds, setSavedCardIds] = useState({});
@@ -889,6 +908,15 @@ function App() {
     if (path === '/contact') return 'contact';
     return 'home';
   });
+
+  // [v1.5.86+ thermal] 탭 lazy-mount 추적 — 한번 방문한 탭만 마운트, 방문 후엔 계속 유지.
+  //   미방문 탭의 useEffect/YouTube iframe/오디오/이벤트 리스너가 아예 실행되지 않아
+  //   Home/Translation만 쓰는 유저의 idle 발열 contributor를 원천 제거.
+  //   방문 후 유지하므로 생성 콘텐츠(VocabTab.words / ListeningTab.passage / Scene.generated) 손실 없음.
+  //   (Library는 onSnapshot 재구독 의도로 별도 조건부 마운트 — 이 패턴과 무관.)
+  //   render마다 idempotent하게 현재 탭 등록 (Set.add는 부수효과 없음, lazy-init 패턴).
+  const visitedTabsRef = useRef(new Set(['home']));
+  visitedTabsRef.current.add(viewMode);
 
   // 새로고침 시 /privacy, /terms, /contact URL로 직접 진입한 로그인 사용자만 홈으로 리다이렉트
   const [initialRedirectDone, setInitialRedirectDone] = useState(false);
@@ -1100,47 +1128,6 @@ function App() {
   React.useEffect(() => {
     if (user) setSidebarOpen(false);
   }, [user]);
-
-  // 첫 방문 탭 튜토리얼 상태
-  const [tutorialTab, setTutorialTab] = useState(null);
-  const [tutorialStep, setTutorialStep] = useState(0);
-
-  // 튜토리얼 콘텐츠 버전 — 컨텐츠 변경 시 키 suffix를 올리면 기존 사용자도 1회 재노출
-  // (vocab: 슬라이더+모달+생성 흐름으로 문구 변경 → v2)
-  const TUTORIAL_VERSION = { vocab: 'v2' };
-  const tutorialKey = (tab) => {
-    const v = TUTORIAL_VERSION[tab];
-    return v ? `pronunfit_tutorial_${tab}_${v}` : `pronunfit_tutorial_${tab}`;
-  };
-
-  // viewMode 변경 시 첫 방문이면 튜토리얼 표시
-  React.useEffect(() => {
-    if (!TAB_TUTORIALS[viewMode]) return;
-    if (!localStorage.getItem(tutorialKey(viewMode))) {
-      const timer = setTimeout(() => {
-        setTutorialTab(viewMode);
-        setTutorialStep(0);
-      }, 700);
-      return () => clearTimeout(timer);
-    }
-  }, [viewMode]);
-
-  const handleTutorialNext = () => {
-    const total = TAB_TUTORIALS[tutorialTab]?.length || 2;
-    if (tutorialStep < total - 1) {
-      setTutorialStep(tutorialStep + 1);
-    } else {
-      localStorage.setItem(tutorialKey(tutorialTab), 'seen');
-      setTutorialTab(null);
-      setTutorialStep(0);
-    }
-  };
-
-  const handleTutorialSkip = () => {
-    localStorage.setItem(tutorialKey(tutorialTab), 'seen');
-    setTutorialTab(null);
-    setTutorialStep(0);
-  };
 
   // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
   const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
@@ -1480,11 +1467,12 @@ function App() {
       localStorage.setItem('learningTips', JSON.stringify(learningTips));
       localStorage.setItem('pronunciations', JSON.stringify(pronunciations));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals)); // [신규] 언어 목표 점수 자동 저장
+      localStorage.setItem('languageLevels', JSON.stringify(languageLevels)); // [신규] 언어별 난이도 자동 저장
       localStorage.setItem('dailyGoal', String(dailyGoal)); // [신규] 일일 학습 목표 자동 저장
     } catch (e) {
       console.warn("데이터를 저장하지 못했습니다:", e);
     }
-  }, [inputText, sourceLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, dailyGoal]);
+  }, [inputText, sourceLang, inputType, targetLangs, translations, learningTips, pronunciations, languageGoals, languageLevels, dailyGoal]);
 
   // Translation 탭을 벗어나면 inputText를 비워줍니다 (카드 내역은 유지)
   useEffect(() => {
@@ -1611,16 +1599,7 @@ function App() {
     }
   }, [!!profile]);
 
-  // Streak 출시 안내 — BonusCampaign과 동일한 "옵션 D" 게이트 + 영구 dismiss 미체크 시 매 세션 노출
-  useEffect(() => {
-    if (!user?.uid || !profile) return;
-    if (!profile.lifecycleStage) return;
-    if (profile.streakIntroDismissed === true) return;
-    // 온보딩 세션엔 노출 안 함 (BonusCampaign과 동일)
-    if (!initialLifecycleStageRef.current) return;
-    const timer = setTimeout(() => setShowStreakIntro(true), 1200);
-    return () => clearTimeout(timer);
-  }, [user?.uid, profile?.lifecycleStage, profile?.streakIntroDismissed]);
+  // Streak 출시 안내 effect 는 showOnboarding 선언 이후로 이동됨 — TDZ 회피 + 신규 유저 Step 6 직후 발화 (아래 참조)
 
   useEffect(() => {
     if (!user?.uid || !profile) return;
@@ -1735,19 +1714,70 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid, !!profile]);
 
-  // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
-  // showOnboarding이 위에서 선언된 뒤로 위치해야 TDZ 회피
+  // Streak 출시 안내 — 신규 유저는 Step 6 (PushOptIn) 닫힌 직후 마지막 팝업으로, 기존 유저는 다음 세션 진입 시 노출
+  // "다시 보지 않음" 영구 dismiss 전까진 매 세션 재노출 (StreakIntroModal 내부 동작)
+  // showOnboarding 등 선행 모달 deps 사용 → TDZ 회피를 위해 showOnboarding 선언 이후에 위치
+  // 2026-05-23 fix: profile.aiConsentAt Timestamp 객체가 매 snapshot 마다 새 reference 라
+  //   effect 가 generate 마다 재실행 → 세션 가드 + boolean 안정화로 1회만 발화 보장.
   useEffect(() => {
     if (!user?.uid || !profile) return;
+    // 2026-06-07: Trial 가드 제거 — Streak 마일스톤(7/14/30/100)이 보너스포인트를 지급하므로
+    //   Trial 유저에게도 Streak 안내를 노출해 streak 유지(=리텐션) 동기 부여.
+    if (profile.streakIntroDismissed === true) return;
+    // 온보딩 미통과면 보류 (PushOptIn 이후로 순차 흐름 유지)
+    if (!profile.hasCompletedOnboarding) return;
+    // AI Consent 미완료면 보류 (AI Consent 모달이 먼저)
+    if (!profile.aiConsentAt && localStorage.getItem('aiConsentAccepted') !== '1') return;
+    // 선행 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
+    if (showOnboarding || showAiConsent || showSubscriptionPrompt || showPushOptIn) return;
+    // 세션당 1회 가드 — 닫은 뒤 generate 등으로 profile snapshot 이 바뀌어도 재발화 차단.
+    // 다음 세션(브라우저 탭 새로 열기 / 앱 재시작) 에선 sessionStorage 비어있어 정상 재노출.
+    if (sessionStorage.getItem('streakIntroShownThisSession') === '1') return;
+    const timer = setTimeout(() => {
+      // 타이머 콜백 내부에서 마킹 — effect cleanup 으로 timer 가 취소되면 sessionStorage 도
+      // 설정되지 않아 다음 dep settle 에서 정상 재시도 가능.
+      sessionStorage.setItem('streakIntroShownThisSession', '1');
+      setShowStreakIntro(true);
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [
+    user?.uid,
+    profile?.hasCompletedOnboarding,
+    !!profile?.aiConsentAt,        // Timestamp 객체 → boolean 안정화 (snapshot 마다 새 instance 회피)
+    profile?.streakIntroDismissed,
+    tier,
+    showOnboarding,
+    showAiConsent,
+    showSubscriptionPrompt,
+    showPushOptIn,
+  ]);
+
+  // 일일 Streak 상태 안내 — 다른 모든 자동 팝업이 닫힌 뒤 마지막으로 1.5초 지연 후 표시 (하루 1회)
+  // showOnboarding이 위에서 선언된 뒤로 위치해야 TDZ 회피
+  // 2026-05-23 fix: dismissStreakStatus 의 updateDoc 이 async 라 Firestore 반영 전
+  //   다른 dep 변경(다른 onSnapshot delivery 등) 으로 effect 가 재실행되면 게이트가 통과해
+  //   1.5초 후 재발화하던 회귀 — StreakIntro 와 동일 패턴 sessionStorage 세션 가드로 차단.
+  //   다음 세션(앱 재시작/브라우저 탭 재오픈) 에선 sessionStorage 비어있고, 같은 날이면
+  //   Firestore lastStreakStatusPopupAt === today 게이트가 매일 1회 정책을 cross-session 보장.
+  useEffect(() => {
+    if (!user?.uid || !profile) return;
+    // 2026-06-07: Trial 가드 제거 — Streak 보너스포인트 동기로 Trial도 일수 안내 노출.
     if (profile.streakIntroDismissed !== true) return;
     if (!initialLifecycleStageRef.current) return;
     // 다른 자동 팝업 표시 중이면 대기 — 닫히면 이 effect 재실행
     if (showOnboarding || showStreakIntro || showBonusCampaign) return;
     const today = getToday();
-    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨
-    const timer = setTimeout(() => setShowStreakStatus(true), 1500);
+    if (profile.lastStreakStatusPopupAt === today) return; // 오늘 이미 노출됨 (cross-session)
+    // 같은 세션 안에서는 한 번 열린 적 있으면 재발화 차단 (Firestore async race 회피)
+    if (sessionStorage.getItem('streakStatusShownThisSession') === '1') return;
+    const timer = setTimeout(() => {
+      // 타이머 콜백 내부에서 마킹 — effect cleanup 으로 timer 가 취소되면 sessionStorage 도
+      // 설정 안 됨 → 다음 dep settle 에서 정상 재시도 가능.
+      sessionStorage.setItem('streakStatusShownThisSession', '1');
+      setShowStreakStatus(true);
+    }, 1500);
     return () => clearTimeout(timer);
-  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, showOnboarding, showStreakIntro, showBonusCampaign]);
+  }, [user?.uid, profile?.streakIntroDismissed, profile?.lastStreakStatusPopupAt, tier, showOnboarding, showStreakIntro, showBonusCampaign]);
 
   // Free Talking 신기능 안내 — 이미 온보딩 통과한 기존 사용자에게만 1회 표시
   // 조건: deviceOnboardingDone='1' (기존 유저) AND announce_seen 미존재 AND 온보딩 모달 미진행
@@ -1786,7 +1816,7 @@ function App() {
     localStorage.setItem('sourceLang', src);
     localStorage.setItem('targetLangs', JSON.stringify(tgts));
     localStorage.setItem('deviceOnboardingDone', '1'); // 이 기기에서 온보딩 완료 표시
-    // 신규 사용자: TabTutorial 의 Scene step 으로 Free-Talking 안내 받음 → announce 모달 skip
+    // 신규 사용자는 처음부터 Free-Talking을 정상 동선으로 만남 → 기존 사용자 대상 announce 모달 skip
     localStorage.setItem('pronunfit_freetalk_announce_seen', '1');
     // AI Consent를 온보딩 마지막 step에 통합 — 별도 모달 안 뜨도록 즉시 캐시
     if (aiConsented) {
@@ -1804,14 +1834,41 @@ function App() {
     }).catch(() => { });
   };
 
-  // 별표 안내 팝업 — 첫 카드 생성 시 (totalGenerateCount 0→1) 1회만
+  // 별표 안내 팝업 — 두 발화 경로:
+  //   (1) Streak Reminder push 진입 강제 발화 — count/session/dismissedV2 가드 모두 우회, 선행 모달 닫힐 때까지만 대기.
+  //   (2) 첫 generate 이후 매 세션 1회 노출 — "다시 보지 않음" 체크 시 영구 차단(starGuideDismissedV2).
+  // localStorage 키 starGuideDismissedV2 사용 (기존 starGuideDone 은 dead key — 기존 사용자에게도 1회 자동 재노출)
+  // 세션 폭주 방지: sessionStorage 가드로 같은 세션 안에서는 1회만
   useEffect(() => {
     if (!profile) return;
+    // 2026-06-07: Trial 가드 제거 — Streak 보너스포인트 동기로 Trial도 StarGuide(별표→발음→Streak 안내) 노출.
+
+    // (1) Streak Reminder push 강제 발화 — 선행 모달이 차있으면 대기 (닫히면 effect 재실행)
+    if (forceStarGuideFromPush) {
+      if (showOnboarding || showAiConsent || showSubscriptionPrompt || showPushOptIn || showStreakIntro) return;
+      setForceStarGuideFromPush(false);
+      sessionStorage.setItem('starGuideShownThisSession', '1');
+      setShowStarGuide(true);
+      return;
+    }
+
+    // (2) 기본 트리거 — 첫 generate 후 매 세션 1회
     const count = profile.totalGenerateCount || 0;
-    if (count !== 1) return; // 정확히 1일 때만
-    if (localStorage.getItem('starGuideDone') === '1') return;
+    if (count < 1) return;
+    if (localStorage.getItem('starGuideDismissedV2') === '1') return;
+    if (sessionStorage.getItem('starGuideShownThisSession') === '1') return;
+    sessionStorage.setItem('starGuideShownThisSession', '1');
     setShowStarGuide(true);
-  }, [profile?.totalGenerateCount]);
+  }, [
+    profile?.totalGenerateCount,
+    tier,
+    forceStarGuideFromPush,
+    showOnboarding,
+    showAiConsent,
+    showSubscriptionPrompt,
+    showPushOptIn,
+    showStreakIntro,
+  ]);
 
   // Profile 자가치유(self-heal): 익명→실계정 전환 과정의 race condition 등으로
   // profile에 sourceLang/targetLangs/tier/deviceLang/platform이 누락된 기존 사용자를 발견 즉시 복원.
@@ -2223,10 +2280,26 @@ function App() {
       localStorage.setItem('sourceLang', sourceLang);
       localStorage.setItem('targetLangs', JSON.stringify(targetLangs));
       localStorage.setItem('languageGoals', JSON.stringify(languageGoals));
+      localStorage.setItem('languageLevels', JSON.stringify(languageLevels));
     } catch (err) {
       console.warn('언어 설정 로컬 저장 실패:', err);
     }
-  }, [sourceLang, targetLangs, languageGoals]);
+  }, [sourceLang, targetLangs, languageGoals, languageLevels]);
+
+  // [신규] 기존 유저 시드: languageLevels에 없는 targetLang은 현재 defaultLevel(userLevel)로 채움.
+  // (언어별 난이도 도입 전 유저가 설정 화면에서 '현재 난이도'를 그대로 보고 조정할 수 있게)
+  useEffect(() => {
+    if (!Array.isArray(targetLangs) || targetLangs.length === 0) return;
+    const base = userLevel || 'basic';
+    setLanguageLevels(prev => {
+      let changed = false;
+      const next = { ...prev };
+      for (const code of targetLangs) {
+        if (!next[code]) { next[code] = base; changed = true; }
+      }
+      return changed ? next : prev;
+    });
+  }, [targetLangs, userLevel]);
 
   // --- 3. 비즈니스 로직 (핵심 기능) ---
 
@@ -2519,7 +2592,7 @@ function App() {
       const serialNumber = await assignNextCardSerial(u.uid);
       const docRef = await addDoc(collection(db, "savedCards"), { ...cardData, serialNumber });
       incrementSavedCard(); // 저장 누적 카운터 증가 (Trial 한도 산정용)
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       return { status: "success", id: docRef.id };
     } catch (error) {
       console.error("저장 중 오류 발생:", error);
@@ -2584,7 +2657,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2639,7 +2712,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2700,7 +2773,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2789,7 +2862,7 @@ function App() {
         saved += 1;
         incrementSavedCard();
         incrementDailySave();
-        addAdPoints(1);
+        // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       } catch (e) {
         console.error('[SaveSummary] save FAILED for phrase:', phrase, 'error:', e?.code, e?.message, e);
         skipped += 1;
@@ -2855,7 +2928,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      addAdPoints(1);
+      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
       const goal = languageGoals[langCode] || 80;
       if (pronunciationScore != null && pronunciationScore >= goal) {
         const wasNew = await incrementAchievement(`library-${docRef.id}`);
@@ -2890,7 +2963,7 @@ function App() {
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
 
-  const handleSpeak = async (text, langCode, emotion) => {
+  const handleSpeak = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
 
     // ⭐ 이전 요청/재생 즉시 중단 — "돌림노래" 방지
@@ -2918,6 +2991,35 @@ function App() {
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
+
+    // 영속 캐시(IndexedDB) 조회 — 저장 카드(opts.saved)만 대상. 앱 재시작·날짜 변경 후에도 유지.
+    // 단어장에 저장한 카드를 매일 다시 들어도 같은 오디오면 Azure 호출 0. (BYOK·일반 생성 카드는 제외)
+    if (opts.saved && !byokAzureKey) {
+      try {
+        const idbBlob = await getCachedAudio(cacheKey);
+        if (idbBlob && !isStale()) {
+          const url = URL.createObjectURL(idbBlob);
+          // 세션 메모리에도 승격 (LRU 상한 유지)
+          if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
+            const oldestKey = ttsCacheRef.current.keys().next().value;
+            URL.revokeObjectURL(ttsCacheRef.current.get(oldestKey));
+            ttsCacheRef.current.delete(oldestKey);
+          }
+          ttsCacheRef.current.set(cacheKey, url);
+          const audio = new Audio(url);
+          ttsAudioRef.current = audio;
+          audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+          audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
+          const p = audio.play();
+          if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+          return;
+        }
+      } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
+    }
+
+    // 2026-06-07: 신규 합성(서버 fetch) 전 포인트 게이트 — 캐시 hit은 위에서 이미 return(무료).
+    //   Trial 0점이면 차단 + 포인트부족 팝업. BYOK는 자기 키라 통과. Pro/Premium 무료 통과.
+    if (!byokAzureKey && !tryConsumeTtsPoint()) return;
 
     const ac = new AbortController();
     ttsAbortRef.current = ac;
@@ -2948,6 +3050,9 @@ function App() {
         ttsCacheRef.current.delete(oldestKey);
       }
       ttsCacheRef.current.set(cacheKey, url);
+
+      // 영속 캐시(IndexedDB)에도 저장 — 저장 카드만. 재시작·날짜 변경 후 재청취 시 Azure 0. fire-and-forget.
+      if (opts.saved && !byokAzureKey) putCachedAudio(cacheKey, blob);
 
       // ⭐ 응답 도착 시점에 stale이면 재생 skip (사용자가 그동안 다른 버튼 눌렀음)
       if (isStale()) return;
@@ -3021,14 +3126,14 @@ function App() {
   // ── 네이티브 앱 업데이트 필요 팝업 ──────────────────────────────────────────
   const nativeUpdatePopup = showNativeUpdate && (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
+      position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      zIndex: 9999, padding: 20,
+      zIndex: 'var(--z-modal)', padding: 20,
     }}>
       <div style={{
-        background: 'white', borderRadius: 20, padding: '28px 24px',
+        background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '28px 24px',
         maxWidth: 340, width: '100%', textAlign: 'center',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+        boxShadow: 'var(--modal-shadow)',
       }}>
         <div style={{ fontSize: '2.5rem', marginBottom: 12 }}>🔄</div>
         <h3 style={{ margin: '0 0 8px', fontSize: '1.1rem', fontWeight: 800, color: '#1e293b' }}>
@@ -3047,8 +3152,8 @@ function App() {
             setShowNativeUpdate(false);
           }}
           style={{
-            width: '100%', padding: '13px 0', border: 'none', borderRadius: 12,
-            background: '#00a884', color: 'white', fontSize: '0.95rem',
+            width: '100%', padding: '13px 0', border: 'none', borderRadius: 'var(--modal-btn-radius)',
+            background: 'var(--brand-primary)', color: 'var(--text-on-brand)', fontSize: '0.95rem',
             fontWeight: 700, cursor: 'pointer',
           }}
         >
@@ -3334,13 +3439,13 @@ function App() {
       {/* 익명 사용자 → 가입 안내 모달 */}
       {showAnonGateModal && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.5)', display: 'flex',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
+          background: 'var(--modal-overlay-bg)', display: 'flex',
           alignItems: 'center', justifyContent: 'center', padding: '16px',
         }} onClick={() => setShowAnonGateModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{
-            background: 'white', borderRadius: '16px', padding: '24px',
-            maxWidth: '380px', width: '100%', boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '24px',
+            maxWidth: '380px', width: '100%', boxShadow: 'var(--modal-shadow)',
           }}>
             <h3 style={{ margin: '0 0 8px', fontSize: '1.05rem', fontWeight: 700, color: '#1d4ed8' }}>
               {getT(sourceLang, 'bonus.referral.needLoginTitle') || 'Sign-up required'}
@@ -3361,8 +3466,8 @@ function App() {
                 setShowAccountUpgrade(true);
               }} style={{
                 flex: 1, padding: '10px', borderRadius: '8px',
-                background: '#2563eb', border: 'none',
-                color: 'white', fontWeight: 700, cursor: 'pointer',
+                background: 'var(--brand-primary)', border: 'none',
+                color: 'var(--text-on-brand)', fontWeight: 700, cursor: 'pointer',
               }}>
                 {getT(sourceLang, 'bonus.referral.signupBtn') || 'Create free account'}
               </button>
@@ -3374,10 +3479,10 @@ function App() {
       {/* 기존 계정 로그인 모달 (이메일/구글 모두 지원) */}
       {showLoginModal && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 9999,
-          background: 'rgba(0,0,0,0.45)', display: 'flex',
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
+          background: 'var(--modal-overlay-bg)', display: 'flex',
           alignItems: 'center', justifyContent: 'center',
-          padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))',
+          padding: 'var(--modal-overlay-padding)',
         }} onClick={() => setShowLoginModal(false)}>
           <div onClick={e => e.stopPropagation()} style={{ width: '100%', maxWidth: '460px', margin: '0 16px' }}>
             <Login
@@ -3392,16 +3497,16 @@ function App() {
       {/* anonymous 가입 유도 팝업 (날짜 바뀐 첫 방문 시 자동 표시) */}
       {showAnonSignupPrompt && (
         <div style={{
-          position: 'fixed', inset: 0, zIndex: 10000,
+          position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          background: 'rgba(0,0,0,0.45)',
-          padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))',
+          background: 'var(--modal-overlay-bg)',
+          padding: 'var(--modal-overlay-padding)',
         }} onClick={() => setShowAnonSignupPrompt(false)}>
           <div style={{
             width: 'calc(100% - 48px)', maxWidth: '360px',
-            background: '#fff', borderRadius: '24px',
+            background: 'var(--modal-card-bg)', borderRadius: '24px',
             padding: '28px 24px 24px',
-            boxShadow: '0 8px 40px rgba(0,0,0,0.22)',
+            boxShadow: 'var(--modal-shadow)',
             animation: 'fadeInScale 0.25s ease',
           }} onClick={e => e.stopPropagation()}>
             <div style={{ position: 'relative' }}>
@@ -3575,56 +3680,58 @@ function App() {
                 {getT(sourceLang, 'nav.stats')}
               </button>
 
-              {/* 추가 학습 (Trial 전용 + 네이티브) — 보일 때만 위/아래 divider 노출 */}
+              {/* 보너스포인트 충전 (Trial 전용 + 네이티브) — 2026-06-07 개편: 단일 충전 버튼 */}
               {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
-                  {/* Free Talking +2 (영구 적립) — 2026-05-07 v1.5.0 */}
                   <button
-                    onClick={() => handleRewardedAd('freeTalks')}
+                    onClick={() => handleRewardedAd()}
                     disabled={rewardAdLoading}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                       border: '1px solid #bbf7d0', cursor: 'pointer', textAlign: 'left',
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.watchForFreeTalk') || '+2 Free Talking'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +5'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.watchAdFreeTalk') || '광고 시청 후 Free Talking 2회 추가 (영구 보관)'}
-                      </div>
-                    </div>
-                  </button>
-                  {/* 발음 +10 */}
-                  <button
-                    onClick={() => handleRewardedAd('prons')}
-                    disabled={rewardAdLoading}
-                    style={{
-                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
-                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
-                      background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
-                      border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
-                    }}>
-                    <span style={{ fontSize: '1.2rem' }}>🎬</span>
-                    <div>
-                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                        {getT(sourceLang, 'reward.watchForProns') || '+10 발음'}
-                      </div>
-                      <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
-                        {getT(sourceLang, 'reward.watchAdPron') || '광고 시청 후 발음 10회 추가 (영구 보관)'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +5'}
                       </div>
                     </div>
                   </button>
                   {rewardAdLoading && (
-                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 0' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 4px' }}>
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
+                  )}
+                  {/* 보너스포인트 구매 (+200, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
+                  {pointsPriceString && (
+                    <button
+                      onClick={handleBuyPoints}
+                      disabled={buyingPoints}
+                      style={{
+                        width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                        padding: '10px 12px', borderRadius: '12px',
+                        background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                        border: '1px solid #bfdbfe', cursor: buyingPoints ? 'default' : 'pointer',
+                        opacity: buyingPoints ? 0.6 : 1, textAlign: 'left',
+                      }}>
+                      <span style={{ fontSize: '1.2rem' }}>🪙</span>
+                      <div>
+                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
+                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +200'}
+                        </div>
+                        <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
+                          {buyingPoints ? (getT(sourceLang, 'reward.buying') || '구매 처리 중...') : pointsPriceString}
+                        </div>
+                      </div>
+                    </button>
                   )}
                 </div>
               )}
@@ -3724,9 +3831,6 @@ function App() {
                     }}>
                       +100pt
                     </span>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: '#be185d' }}>
-                    {getT(sourceLang, 'bonus.referralSubtitle') || 'Friend also gets 100pt'}
                   </div>
                 </button>
 
@@ -3841,7 +3945,7 @@ function App() {
                 color: '#dc2626', fontWeight: 700, fontSize: '0.75rem',
                 textAlign: 'center', userSelect: 'none',
               }}>
-                {Math.max(0, AD_POINT_THRESHOLD - adPointsState) + bonusPoints}
+                🎁 {bonusPoints}
               </span>
             )}
           </div>
@@ -3890,22 +3994,23 @@ function App() {
           const dayLabels = getT(sourceLang, 'daily.daysShort').split(',');
           const isTrialTier = tier === 'trial';
           const isProTier = tier === 'pro';
-          const showPronGauge = isTrialTier || isProTier;
 
-          const ftLimit = isTrialTier ? TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits : dailyGoal;
-          const ftCount = isTrialTier ? todayFreeTalkCount : todayCount;
-          const ftFull = ftCount >= ftLimit;
-          const ftRatio = Math.min((ftCount / ftLimit) * 100, 100);
-          const ftFillClass = ftFull
-            ? (isTrialTier ? 'is-full' : 'is-success')
-            : (isTrialTier ? 'is-success' : '');
-
-          const pronCurrent = isTrialTier ? todayPronCount : (isProTier ? proPronCount : 0);
-          const pronLimit = isTrialTier ? TRIAL_DAILY_PRON_LIMIT + pronCredits : (isProTier ? PRO_PRON_LIMIT : 999);
-          const pronFull = pronCurrent >= pronLimit;
-          const pronRatio = Math.min((pronCurrent / pronLimit) * 100, 100);
-          const pronFillClass = pronFull ? 'is-full' : (isProTier ? 'is-success' : 'is-warn');
-          const pronLabel = isTrialTier ? `${pronCurrent}/${pronLimit}` : `${pronCurrent}`;
+          // 2026-06-07: 상단바 게이지 = Trial(일일 하드캡 3종) / Pro(월 한도 3종) / Premium 등(무제한→없음).
+          //   목표달성(Target) 게이지는 홈 "오늘의 진도"에 있으므로 상단바에서 제거.
+          //   순서: 💬 FreeTalk / 🎤 발음 / 🎧 Listening (Pro도 동일 아이콘, 월 카운트/캡).
+          const gauges = isTrialTier
+            ? [
+                { icon: MessageCircleMore, cur: todayFreeTalkCount, lim: TRIAL_FREETALK_DAILY_LIMIT },
+                { icon: Mic,               cur: todayPronCount,     lim: TRIAL_DAILY_PRON_LIMIT },
+                { icon: Headphones,        cur: todayListenCount,   lim: TRIAL_DAILY_LISTEN_LIMIT },
+              ]
+            : isProTier
+            ? [
+                { icon: MessageCircleMore, cur: proFreeTalkCount, lim: PRO_FREETALK_LIMIT },
+                { icon: Mic,               cur: proPronCount,     lim: PRO_PRON_LIMIT },
+                { icon: Headphones,        cur: proListenCount,   lim: PRO_LISTEN_LIMIT },
+              ]
+            : []; // Premium 등 무제한 → 게이지 없음
 
           const streakZero = streakCurrent === 0;
           const daysUnit = getT(sourceLang, 'streak.daysUnit') || '일';
@@ -3917,25 +4022,25 @@ function App() {
               {/* TODAY */}
               <div className="tsb-col">
                 <div className="tsb-label">{getT(sourceLang, 'topbar.today') || '오늘'}</div>
-                <div className="tsb-gauge">
-                  <span className="tsb-gauge-icon" aria-hidden>
-                    {isTrialTier
-                      ? <MessageCircleMore size={12} strokeWidth={2.25} />
-                      : <Target size={12} strokeWidth={2.25} />}
-                  </span>
-                  <div className="tsb-gauge-bar">
-                    <div className={`tsb-gauge-fill ${ftFillClass}`} style={{ width: `${ftRatio}%` }} />
+                {gauges.length > 0 ? (
+                  <div className="tsb-gauges">
+                    {gauges.map((g, i) => {
+                      const full = g.cur >= g.lim;
+                      const ratio = Math.min((g.cur / g.lim) * 100, 100);
+                      const Icon = g.icon;
+                      return (
+                        <div className="tsb-gauge" key={i}>
+                          <span className="tsb-gauge-icon" aria-hidden><Icon size={11} strokeWidth={2.25} /></span>
+                          <div className="tsb-gauge-bar">
+                            <div className={`tsb-gauge-fill ${full ? 'is-full' : 'is-warn'}`} style={{ width: `${ratio}%` }} />
+                          </div>
+                          <span className="tsb-gauge-text">{g.cur}/{g.lim}</span>
+                        </div>
+                      );
+                    })}
                   </div>
-                  <span className="tsb-gauge-text">{ftCount}/{ftLimit}</span>
-                </div>
-                {showPronGauge && (
-                  <div className="tsb-gauge">
-                    <span className="tsb-gauge-icon" aria-hidden><Mic size={12} strokeWidth={2.25} /></span>
-                    <div className="tsb-gauge-bar">
-                      <div className={`tsb-gauge-fill ${pronFillClass}`} style={{ width: `${pronRatio}%` }} />
-                    </div>
-                    <span className="tsb-gauge-text">{pronLabel}</span>
-                  </div>
+                ) : (
+                  <div className="tsb-unlimited" aria-hidden>∞ Premium</div>
                 )}
               </div>
 
@@ -4004,9 +4109,9 @@ function App() {
             todayListenCount={todayListenCount}
             todayFreeTalkCount={todayFreeTalkCount}
             dailyGoal={dailyGoal}
-            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT + pronCredits}
-            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}
-            dailyListenLimit={10}
+            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT}
+            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT}
+            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT}
             sourceLang={sourceLang}
             onNavigate={(tab) => setViewMode(tab)}
             isActive={viewMode === 'home'}
@@ -4130,7 +4235,7 @@ function App() {
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
                       onPracticeResult={handlePracticeResult}
-                      onTrialLimitReached={() => setShowTrialLimitModal(true)}
+                      onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
                       onPronSuccess={onPronSuccess}
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
@@ -4176,12 +4281,14 @@ function App() {
 
         {/* Vocab 탭 — AI 단어 학습 */}
         <div style={{ display: viewMode === 'vocab' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('vocab') && (
           <VocabTab
             isActive={viewMode === 'vocab'}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            languageLevels={languageLevels}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
             onSpeak={handleSpeak}
@@ -4194,37 +4301,52 @@ function App() {
               setViewMode('library');
             }}
           />
+          )}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Listening 탭 — 듣기 학습 */}
         <div style={{ display: viewMode === 'listening' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('listening') && (
           <ListeningTab
             isActive={viewMode === 'listening'}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            languageLevels={languageLevels}
+            isTrialListenLimitReached={isTrialListenLimitReached || isProListenLimitReached}
+            onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeak}
+            onTtsGate={tryConsumeTtsPoint}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
-            onGenerate={() => { incrementListenGenerate(); incrementDailyListen(); addAdPoints(1, { bonusCost: 5 }); }}
+            onGenerate={() => {
+              // 2026-06-07 개편: 진입 게이트(isTrialListenLimitReached = 하드캡 OR 포인트<5)가 사전 차단.
+              //   여기 도달 = 허용된 생성. 항상 일일 카운터 +1(하드캡 집계) + 풀 5점 차감.
+              incrementListenGenerate();
+              incrementDailyListen();
+              incrementProListen(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
+              addAdPoints(5); // 풀 -5 (Listening 생성 비용, trial만)
+            }}
+            onFirstPlay={() => {}}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
               setViewMode('library');
             }}
           />
+          )}
         </div>
 
         {/* Video 탭 — 다국어 YouTube 동영상 학습 */}
         <div style={{ display: viewMode === 'video' ? 'block' : 'none', width: '100%', height: '100%' }}>
+          {visitedTabsRef.current.has('video') && (
           <VideoReader
             ref={videoReaderRef}
             sourceLang={sourceLang}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVideoCard}
             onDetailChange={setVideoDetailOpen}
@@ -4237,15 +4359,18 @@ function App() {
               setViewMode('translation');
             }}
           />
+          )}
         </div>
 
         {/* Scene 탭 */}
         <div style={{ display: viewMode === 'scene' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('scene') && (
           <ScenePractice
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
+            languageLevels={languageLevels}
+            onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveSceneCard}
             onSpeak={handleSpeak}
@@ -4258,60 +4383,74 @@ function App() {
               setViewMode('library');
             }}
             onFreeTalkStart={async (args) => {
-              if (isTrialFreeTalkLimitReached) {
-                setShowTrialLimitModal(true);
+              if (isProFreeTalkLimitReached) {
+                requestProLimitModal();
                 return;
               }
-              // 2026-05-13: 보너스 활성 시 daily 한도 차감 X (사용자 의도 일치). addAdPoints가
-              // bonusCost=10 차감 + 광고 카운터 누적 여부를 내부에서 모두 처리.
-              if (hasBonusActive) {
-                addAdPoints(1, { bonusCost: 10 });
-              } else {
-                // 2026-05-07 v1.5.0: daily 한도 미사용 분 우선 차감, 초과분은 freeTalkCredits(영구) 소비.
-                if (tier === 'trial' && todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT && freeTalkCredits > 0) {
-                  await consumeFreeTalkCredits(1);
-                } else {
-                  incrementDailyFreeTalk();
-                }
-                // 점수 시스템 차감 (Daily 한도와 독립된 게이트)
-                // adsCost=1 (광고 트리거 무한루프 방지), bonusCost=10 (FT는 비싼 액션 — 보너스 빠르게 소진)
-                addAdPoints(1, { bonusCost: 10 });
+              if (isTrialFreeTalkLimitReached) {
+                requestLimitModal('freeTalk');
+                return;
               }
-              // 분석용 평생 누적 카운터
-              incrementTotalFreeTalk();
+              // 2026-05-21: 카운트/credits/점수 차감은 FreeTalkingChat의 onSessionStarted
+              // 콜백에서 처리(서버 200 응답 받은 직후). 503/500 등으로 startSession 실패 시
+              // 카운트가 보존되어 사용자가 [다시 시도] 버튼으로 같은 1회를 재사용 가능.
+              // 2026-06-06: Free Talking 화면 default 난이도는 선택 언어의 languageLevels 값을
+              //   따름 (ScenePractice difficulty 가 languageLevels[selectedLang] 로 초기화/동기화).
+              //   사용자가 화면에서 명시적으로 변경한 args.difficulty 는 그대로 존중.
+              // 사전 안내 게이트 — 영구 dismiss 전이면 PreGuide 먼저, onStart 후 채팅 진입.
+              let preGuideDismissed = false;
+              try { preGuideDismissed = !!localStorage.getItem(FREETALK_PREGUIDE_KEY); } catch (e) { /* noop */ }
+              if (!preGuideDismissed) {
+                setFreeTalkPreGuide(args);
+                return;
+              }
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
           />
+          )}
           {/* 광고: Scene 탭 하단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '8px 0 4px' }} />
         </div>
 
         {/* Library 탭 */}
+        {/* [v1.5.77+ thermal-ios] Library만 조건부 마운트로 전환.
+         * 이전엔 display:none으로 항시 마운트되어 savedCards onSnapshot이 다른 탭에서도
+         * Firestore long-polling keepalive 유지 → iOS 네트워크 subsystem이 깨어 있어
+         * 5분 idle 발열의 잔존 contributor로 의심됨.
+         * unmount 시 onSnapshot useEffect cleanup이 자동 호출 → Firestore 구독 해제.
+         * focusCardId 흐름: 별표 저장 → setFocusCardId + setViewMode('library') React batch →
+         *   Library 새 마운트 시점에 prop으로 전달, [focusCardId] effect 정상 fire,
+         *   onSnapshot 첫 snapshot 도착 후 scroll 시도 (race 보호 ref 유지).
+         * Trade-off: 다른 탭 갔다 돌아오면 filter/search/limitCount(무한 스크롤 위치)
+         *   state 초기화 — 발열 회복 우선이라 수용.
+         * AdBanner는 display:none div 안에 그대로 두어 광고 재요청 회피. */}
         <div style={{ display: viewMode === 'library' ? 'block' : 'none', width: '100%' }}>
           {/* 광고: 라이브러리 목록 상단 — slot은 AdSense 심사 통과 후 채우세요 */}
           <AdBanner slot="TODO" style={{ margin: '0 0 8px' }} />
-          <Library
-            user={user}
-            sourceLang={sourceLang}
-            onSpeak={handleSpeak}
-            languageGoals={languageGoals}
-            todayCount={todayCount}
-            dailyGoal={dailyGoal}
-            onTargetAchieved={handleTargetAchieved}
-            onCardDeleted={handleCardDeleted}
-            focusCardId={focusCardId}
-            onFocusCardHandled={() => setFocusCardId(null)}
-            progressPopupOpen={showProgressPopup}
-            libraryBackTo={libraryBackTo}
-            onBack={() => {
-              const target = libraryBackTo || 'vocab';
-              setLibraryBackTo(null);
-              setViewMode(target);
-            }}
-            onTrialLimitReached={() => setShowTrialLimitModal(true)}
-            onPronSuccess={onPronSuccess}
-          />
+          {viewMode === 'library' && (
+            <Library
+              user={user}
+              sourceLang={sourceLang}
+              onSpeak={(t, l, e) => handleSpeak(t, l, e, { saved: true })}
+              languageGoals={languageGoals}
+              todayCount={todayCount}
+              dailyGoal={dailyGoal}
+              onTargetAchieved={handleTargetAchieved}
+              onCardDeleted={handleCardDeleted}
+              focusCardId={focusCardId}
+              onFocusCardHandled={() => setFocusCardId(null)}
+              progressPopupOpen={showProgressPopup}
+              libraryBackTo={libraryBackTo}
+              onBack={() => {
+                const target = libraryBackTo || 'vocab';
+                setLibraryBackTo(null);
+                setViewMode(target);
+              }}
+              onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
+              onPronSuccess={onPronSuccess}
+            />
+          )}
         </div>
 
         {/* Settings 탭 */}
@@ -4469,6 +4608,9 @@ function App() {
                     {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                     <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                     {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
+                    {targetLangs.includes(lang.code) && (
+                      <span className="lang-order-badge">{targetLangs.indexOf(lang.code) + 1}</span>
+                    )}
                   </div>
                 ))}
               </div>
@@ -4503,6 +4645,9 @@ function App() {
                       {targetLangs.includes(lang.code) && <CheckCircle2 size={16} />}
                       <span className="lang-flag">{resolveFlag(lang.code, userCountry, lang.flag)}</span>
                       {getT(sourceLang, `langNames.${lang.code}`) || lang.name}
+                      {targetLangs.includes(lang.code) && (
+                        <span className="lang-order-badge">{targetLangs.indexOf(lang.code) + 1}</span>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -4579,24 +4724,34 @@ function App() {
               </div>
             </div>
 
-            {/* 기본 학습 난이도 */}
+            {/* 기본 학습 난이도 — 언어별 설정 (목표 점수 UI와 동일 레이아웃) */}
             <div className="settings-group">
               <label className="settings-label">{t('settings.defaultLevel')} 📊</label>
-              <div style={{ display: 'flex', gap: '8px' }}>
-                {['basic', 'intermediate', 'advanced'].map(lv => (
-                  <button
-                    key={lv}
-                    className={`vocab-level-btn ${userLevel === lv ? 'active' : ''}`}
-                    onClick={() => {
-                      setUserLevel(lv);
-                      localStorage.setItem('userLevel', lv);
-                      updateUserProfile({ defaultLevel: lv }).catch(() => {});
-                    }}
-                    style={{ flex: 1 }}
-                  >
-                    {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
-                  </button>
-                ))}
+              <p className="target-limit-msg" style={{ marginBottom: '0.4rem', color: 'var(--text-secondary)' }}>
+                {getT(sourceLang, 'settings.defaultLevelDesc')}
+              </p>
+              <div className="goal-sliders">
+                {targetLangs.map(code => {
+                  const lang = getLangInfo(code);
+                  const lvl = languageLevels[code] || userLevel || 'basic';
+                  return (
+                    <div key={code} className="lang-level-row" style={{ display: 'flex', alignItems: 'center', marginBottom: '0.5rem', background: '#f8fafc', padding: '8px 12px', borderRadius: '12px', gap: '8px' }}>
+                      <span style={{ width: '72px', fontWeight: 'bold', color: 'var(--text-primary)', fontSize: '0.85rem', flexShrink: 0 }}>{lang?.name}</span>
+                      <div style={{ display: 'flex', gap: '6px', flex: 1 }}>
+                        {['basic', 'intermediate', 'advanced'].map(lv => (
+                          <button
+                            key={lv}
+                            className={`vocab-level-btn ${lvl === lv ? 'active' : ''}`}
+                            onClick={() => setLanguageLevels({ ...languageLevels, [code]: lv })}
+                            style={{ flex: 1, padding: '6px 4px', fontSize: '0.76rem' }}
+                          >
+                            {t(`scene.diff${lv.charAt(0).toUpperCase() + lv.slice(1)}`)}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
 
@@ -4726,8 +4881,8 @@ function App() {
                   {/* 일일 사용량 (Trial) — 2026-05-07 v1.5.0: 카드 한도 폐기, FT/발음만 표시 */}
                   {tier === 'trial' && (
                     <span style={{ fontSize: '0.75rem', color: '#64748b' }}>
-                      🗣️ {getT(sourceLang, 'settings.usageFreeTalk') || 'Free Talking'}: {todayFreeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT + freeTalkCredits}/day<br />
-                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT + pronCredits}/day
+                      🗣️ {getT(sourceLang, 'settings.usageFreeTalk') || 'Free Talking'}: {todayFreeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT}/day<br />
+                      🎤 {getT(sourceLang, 'settings.usagePron')}: {todayPronCount}/{TRIAL_DAILY_PRON_LIMIT}/day
                     </span>
                   )}
                 </div>
@@ -4822,9 +4977,11 @@ function App() {
 
         {/* Stats 탭 (메인 탭) */}
         <div style={{ display: viewMode === 'stats' ? 'block' : 'none', width: '100%' }}>
+          {visitedTabsRef.current.has('stats') && (
           <StatsPage user={user} dailyGoal={dailyGoal} sourceLang={sourceLang} isActive={viewMode === 'stats'}
             streakCurrent={streakCurrent} streakLongest={streakLongest} totalAchievedDays={totalAchievedDays}
             nextMilestone={nextMilestone} nextReward={nextReward} daysToNext={daysToNext} earnedMilestones={earnedMilestones} />
+          )}
         </div>
       </main>
 
@@ -4851,7 +5008,7 @@ function App() {
           gap: '12px',
           boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
           border: '1px solid #e2e8f0',
-          zIndex: 999,
+          zIndex: 'var(--z-dropdown)',
         }}>
           {/* 앱 아이콘 미리보기 */}
           <img src="/icon-192.png" alt="PronunFit" style={{ width: 40, height: 40, borderRadius: '10px' }} />
@@ -4907,35 +5064,18 @@ function App() {
         />
       )}
 
-      {/* 별표 안내 팝업 — 첫 카드 생성 시 1회 */}
-      {showStarGuide && (
-        <div className="bpm-overlay" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
-          <div className="bpm-card" onClick={e => e.stopPropagation()}>
-            <div style={{ fontSize: '2.2rem', marginBottom: 12 }}>⭐</div>
-            <h3 className="bpm-title">{t('daily.starGuideTitle')}</h3>
-            <p className="bpm-desc">{t('daily.starGuideDesc')}</p>
-            <div className="bpm-actions">
-              <button className="bpm-btn-later" onClick={() => { localStorage.setItem('starGuideDone', '1'); setShowStarGuide(false); }}>
-                {t('daily.bookmarkConfirm')}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 별표 안내 팝업 — 첫 generate 이후 매 세션 1회 (다시 보지 않음 미체크 시) */}
+      <StarGuideModal
+        open={showStarGuide}
+        sourceLang={sourceLang}
+        onClose={() => setShowStarGuide(false)}
+        onPermanentDismiss={() => {
+          localStorage.setItem('starGuideDismissedV2', '1');
+          setShowStarGuide(false);
+        }}
+      />
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
-
-      {/* 첫 방문 탭 튜토리얼 */}
-      {tutorialTab && TAB_TUTORIALS[tutorialTab] && (
-        <TabTutorial
-          tab={tutorialTab}
-          step={tutorialStep}
-          total={TAB_TUTORIALS[tutorialTab].length}
-          onNext={handleTutorialNext}
-          onSkip={handleTutorialSkip}
-          sourceLang={sourceLang}
-        />
-      )}
 
       {/* 하단 탭 바로가기 nav (도트 인디케이터 대체) */}
       {TAB_ORDER.includes(viewMode) && (
@@ -4970,8 +5110,16 @@ function App() {
           sourceLang={sourceLang}
           pronCount={todayPronCount}
           freeTalkCount={todayFreeTalkCount}
+          listenCount={todayListenCount}
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
+          reason={trialLimitReason}
+          bonusPoints={bonusPoints}
+          onCharge={handleRewardedAd}
+          rewardAdLoading={rewardAdLoading}
+          onBuyPoints={handleBuyPoints}
+          buyingPoints={buyingPoints}
+          pointsPriceString={pointsPriceString}
         />
       )}
 
@@ -4993,11 +5141,41 @@ function App() {
         onSaveConversationMessage={saveConversationMessage}
         onSaveConversationSummary={saveConversationSummaryPhrases}
         onSpeak={handleSpeak}
-        onTrialLimitReached={() => setShowTrialLimitModal(true)}
+        onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
         onPronSuccess={onPronSuccess}
         onBookmarkPrompt={handleBookmarkPrompt}
         languageGoals={languageGoals}
-        onClose={() => { setFreeTalkOpen(false); setFreeTalkSetup(null); }}
+        onSessionStarted={() => { /* 2026-06-07 레이어1: opener 표시 신호만. 차감·카운트는 첫 발화(onFirstUserTurn)로 이동 — 열고 안 쓰고 닫으면 0점. */ }}
+        onFirstUserTurn={() => {
+          // 2026-06-07 레이어1: 첫 free turn(실제 발화 1회 성공) 시점에만 차감·카운트.
+          //   오프너만 보고 닫으면(freeTurnCount 0) 차감 0 — 신규 유저 포인트 낭비 방지.
+          //   게이트(onFreeTalkStart의 isTrial/ProFreeTalkLimitReached)는 열기 시점에 이미 검사됨.
+          incrementDailyFreeTalk();
+          incrementProFreeTalk(); // Pro 월 카운트(+1) — tier==='pro' 가드, 그 외 no-op
+          addAdPoints(10); // 풀 -10 (FreeTalk 세션 비용, trial만)
+          incrementTotalFreeTalk(); // 분석용 평생 누적(engaged 기준)
+        }}
+        onClose={() => {
+          setFreeTalkOpen(false);
+          setFreeTalkSetup(null);
+        }}
+      />
+
+      {/* FreeTalking 사전 안내 — 채팅 진입 전 게이트 (기존 .ftc-first-guide 대체) */}
+      <FreeTalkingPreGuideModal
+        open={!!freeTalkPreGuide}
+        scenarioName={freeTalkPreGuide?.scene}
+        scenarioCategory={freeTalkPreGuide?.sceneI18nLabel}
+        scenarioIcon={freeTalkPreGuide?.sceneIcon}
+        sourceLang={sourceLang}
+        onStart={() => {
+          const args = freeTalkPreGuide;
+          setFreeTalkPreGuide(null);
+          if (!args) return;
+          setFreeTalkSetup(args);
+          setFreeTalkOpen(true);
+        }}
+        onClose={() => setFreeTalkPreGuide(null)}
       />
 
 
@@ -5035,11 +5213,6 @@ function App() {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={closeProfileModal}
-            style={{
-              position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-              background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000,
-              padding: '20px'
-            }}
           >
             <motion.div
               className="auth-card"
@@ -5348,7 +5521,7 @@ function App() {
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            zIndex: 3100, padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
+            zIndex: 'var(--z-modal)', padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
           }}
         >
           <div
@@ -5409,7 +5582,7 @@ function App() {
           style={{
             position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
             background: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center',
-            zIndex: 3000, padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
+            zIndex: 'var(--z-modal)', padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))'
           }}
         >
           <div
@@ -5485,7 +5658,7 @@ function App() {
           position: 'fixed', bottom: '80px', left: '50%', transform: 'translateX(-50%)',
           background: 'rgba(30,41,59,0.9)', color: 'white', padding: '12px 28px',
           borderRadius: '12px', fontSize: '0.85rem', fontWeight: 600,
-          zIndex: 9999, whiteSpace: 'pre-line', textAlign: 'center',
+          zIndex: 'var(--z-toast)', whiteSpace: 'pre-line', textAlign: 'center',
           boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
           maxWidth: '85vw', width: 'max-content',
           animation: 'fadeInUp 0.25s ease-out',
@@ -5497,14 +5670,14 @@ function App() {
       {/* 결제 성공 팝업 모달 */}
       {paymentSuccessModal && (
         <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 9999, padding: '20px',
+          zIndex: 'var(--z-modal)', padding: '20px',
         }}>
           <div style={{
-            background: '#fff', borderRadius: '20px', padding: '32px 24px',
+            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '32px 24px',
             maxWidth: '340px', width: '100%', textAlign: 'center',
-            boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+            boxShadow: 'var(--modal-shadow)',
           }}>
             <div style={{ fontSize: '3rem', marginBottom: '16px' }}>
               {paymentSuccessModal.tier === 'premium' ? '👑' : '🌟'}
@@ -5521,9 +5694,9 @@ function App() {
                 window.location.reload();
               }}
               style={{
-                width: '100%', padding: '14px', borderRadius: '12px',
-                background: paymentSuccessModal.tier === 'premium' ? '#b45309' : '#4338ca',
-                color: '#fff', border: 'none', cursor: 'pointer',
+                width: '100%', padding: '14px', borderRadius: 'var(--modal-btn-radius)',
+                background: 'var(--brand-primary)',
+                color: 'var(--text-on-brand)', border: 'none', cursor: 'pointer',
                 fontWeight: 700, fontSize: '1rem',
               }}
             >
@@ -5596,7 +5769,7 @@ function App() {
           position: 'fixed', bottom: '90px', left: '50%', transform: 'translateX(-50%)',
           background: '#64748b',
           color: 'white', padding: '12px 24px', borderRadius: '20px',
-          fontWeight: '700', fontSize: '0.9rem', zIndex: 3000,
+          fontWeight: '700', fontSize: '0.9rem', zIndex: 'var(--z-toast)',
           boxShadow: '0 4px 20px rgba(0,0,0,0.2)', whiteSpace: 'nowrap'
         }}>
           {getT(sourceLang, 'upgrade.toastFail')}

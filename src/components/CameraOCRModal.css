@@ -7,9 +7,9 @@
 .camera-modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--modal-overlay-bg);
     backdrop-filter: blur(4px);
-    z-index: 9000;
+    z-index: var(--z-modal);
     display: flex;
     align-items: flex-end;
     justify-content: center;
@@ -547,4 +547,14 @@
 
 .camera-ocr-btn-inline:active {
     transform: scale(0.94);
+}
+
+/* [v1.5.76+ thermal-ios] backdrop-filter:blur 가드 — overlay/뷰파인더 mode
+ * toggle/close 버튼에 blur 다중 적용.
+ * [v1.5.81+] Safari 포함 universal로 확장 */
+.camera-modal-overlay,
+.vf-mode-toggle,
+.vf-close-btn {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
 }

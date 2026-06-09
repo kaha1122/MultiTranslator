@@ -2,8 +2,8 @@
 .ftam-overlay {
     position: fixed;
     inset: 0;
-    z-index: 8500;     /* OnboardingModal(보통 9000+) 보다 낮게, AdMob 영향 없게 */
-    background: rgba(15, 23, 42, 0.55);
+    z-index: var(--z-modal);     /* 표준 모달 레이어 (Onboarding과 상호배타적으로 표시됨) */
+    background: var(--modal-overlay-bg);
     backdrop-filter: blur(2px);
     display: flex;
     align-items: center;
@@ -22,10 +22,10 @@
     position: relative;
     width: 100%;
     max-width: 420px;
-    background: #ffffff;
-    border-radius: 22px;
+    background: var(--modal-card-bg);
+    border-radius: var(--modal-radius);
     padding: 28px 22px 22px;
-    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    box-shadow: var(--modal-shadow);
     animation: ftam-pop 240ms cubic-bezier(0.2, 0.9, 0.3, 1.1);
 }
 @keyframes ftam-pop {
@@ -140,9 +140,17 @@
 }
 .ftam-later-btn:hover { background: rgba(15, 23, 42, 0.12); }
 .ftam-start-btn {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--brand-primary);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(99, 102, 241, 0.35);
+    box-shadow: 0 2px 8px rgba(0, 168, 132, 0.35);
 }
 .ftam-start-btn:hover { filter: brightness(1.06); }
 .ftam-start-btn:active { transform: translateY(1px); }
+
+/* [v1.5.76+ thermal-ios] backdrop-filter:blur(2px) 가드
+ * [v1.5.81+] Safari 포함 universal로 확장 */
+.ftam-overlay {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(15, 23, 42, 0.78) !important;
+}

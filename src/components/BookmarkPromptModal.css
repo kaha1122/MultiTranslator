@@ -1,11 +1,11 @@
 .bpm-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 1100;
+    z-index: var(--z-modal);
     padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
     animation: bpm-fade-in 0.2s ease;
 }
@@ -17,12 +17,12 @@
 
 .bpm-card {
     background: #fff;
-    border-radius: 20px;
+    border-radius: var(--modal-radius);
     padding: 28px 24px 24px;
     max-width: 320px;
     width: 90%;
     text-align: center;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--modal-shadow);
     animation: bpm-slide-up 0.25s ease;
 }
 
@@ -33,7 +33,7 @@
 
 .bpm-score-badge {
     display: inline-block;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--brand-primary);
     color: #fff;
     font-size: 1.3rem;
     font-weight: 700;
@@ -70,7 +70,7 @@
 .bpm-dont-show input[type="checkbox"] {
     width: 16px;
     height: 16px;
-    accent-color: #6366f1;
+    accent-color: var(--brand-primary);
     cursor: pointer;
 }
 
@@ -81,7 +81,7 @@
 }
 
 .bpm-btn-bookmark {
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+    background: var(--brand-primary);
     color: #fff;
     border: none;
     border-radius: 12px;

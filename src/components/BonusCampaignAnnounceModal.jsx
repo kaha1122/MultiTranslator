@@ -14,8 +14,8 @@ export default function BonusCampaignAnnounceModal({ open, onClose, onCta, sourc
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     onClick={onClose}
                     style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
-                        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
+                        zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: '16px',
                     }}
                 >
@@ -25,18 +25,15 @@ export default function BonusCampaignAnnounceModal({ open, onClose, onCta, sourc
                         exit={{ scale: 0.92, opacity: 0, y: 10 }}
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                            background: 'white', borderRadius: '20px', padding: '24px',
+                            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '24px',
                             maxWidth: '420px', width: '100%', maxHeight: '90vh', overflow: 'auto',
-                            boxShadow: '0 20px 60px rgba(29, 78, 216, 0.25)',
+                            boxShadow: '0 20px 60px rgba(29, 78, 216, 0.25)', /* 축하 톤 블루 섀도 보존 */
                             position: 'relative',
                         }}
                     >
-                        {/* 닫기 X */}
-                        <button onClick={onClose} style={{
-                            position: 'absolute', top: '12px', right: '12px',
-                            background: 'none', border: 'none', cursor: 'pointer', padding: 4,
-                        }}>
-                            <X size={20} color="#94a3b8" />
+                        {/* 표준 닫기 X (우상단) */}
+                        <button className="modal-close" onClick={onClose} aria-label="Close">
+                            <X size={20} />
                         </button>
 
                         {/* 타이틀 */}
@@ -84,7 +81,7 @@ export default function BonusCampaignAnnounceModal({ open, onClose, onCta, sourc
                             </button>
                             <button onClick={onCta} style={{
                                 flex: 1, padding: '12px', borderRadius: '10px',
-                                background: '#2563eb', border: 'none',
+                                background: 'var(--brand-primary)', border: 'none',
                                 color: 'white', fontWeight: 700, fontSize: '0.9rem',
                                 cursor: 'pointer',
                             }}>

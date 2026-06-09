@@ -14,7 +14,7 @@ import './AITipPopup.css';
  * 카드 모달의 learning_tip 박스(SHORT, m.learning_tip)와는 별개 — 이건 풍부한
  * SPOKEN expansion(m.learning_tip_narration)을 텍스트로 표시.
  */
-export default function AITipPopup({ open, text, onClose, t }) {
+export default function AITipPopup({ open, text, heard, corrected, onClose, t }) {
     useEffect(() => {
         if (!open) return;
         const onKey = (e) => { if (e.key === 'Escape') onClose?.(); };
@@ -39,7 +39,24 @@ export default function AITipPopup({ open, text, onClose, t }) {
                     </button>
                 </div>
                 <div className="aitp-body">
-                    {text}
+                    {/* 들린 메시지(STT 원본) — 보정이 일어난 경우(heard≠corrected)에만 노출 */}
+                    {corrected && heard && heard !== corrected && (
+                        <div className="aitp-section">
+                            <div className="aitp-section-label">{t?.('freeTalk.heardMessage') || '들린 메시지'}</div>
+                            <div className="aitp-section-text">{heard}</div>
+                        </div>
+                    )}
+                    {/* 수정한 메시지(intent 보정 결과) — 항상 노출 */}
+                    {corrected && (
+                        <div className="aitp-section">
+                            <div className="aitp-section-label">{t?.('freeTalk.correctedMessage') || '수정한 메시지'}</div>
+                            <div className="aitp-section-text">{corrected}</div>
+                        </div>
+                    )}
+                    {/* 설명(AI-Tip narration) */}
+                    <div className="aitp-tip-text">
+                        {text}
+                    </div>
                 </div>
             </div>
         </div>,

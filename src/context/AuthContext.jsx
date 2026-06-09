@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
@@ -7,6 +7,7 @@ import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
 import { authFetch } from '../utils/authFetch';
 import { detectGeoInfo } from '../utils/detectCountry';
+import { getToday } from '../hooks/useDailyProgress';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
@@ -91,11 +92,30 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // 앱 재실행 시 updatedAt 갱신 (방금 문서를 생성한 경우는 제외)
+                // [v1.5.84+ thermal-ios] 앱 재실행 시 updatedAt 갱신 — 5분 가드 추가
+                // Why: updatedAt write → onSnapshot 발화 → setProfile → AuthProvider 재렌더
+                //   cascade가 매 앱 실행마다 발생. v1.5.83 useMemo로 consumer 재렌더는
+                //   차단됐지만 profile reference 자체가 새로워져 useMemo deps 비교 실패 →
+                //   value 재생성 → consumer 재렌더. 따라서 write 빈도 자체를 줄이는 게
+                //   효과적. 4차 mobile-production-guardian Fix 3.
+                // localStorage 가드: 디바이스별 추적, 5분 이내 재실행 시 write skip.
+                // 다른 디바이스에서 동일 계정 사용 시는 가드 무시되지만 영향 미미
+                // (re-engagement push의 lastActiveAt 별도 추적).
                 if (!docJustCreated) {
-                    updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
-                        console.error('[AuthContext] updatedAt refresh failed:', e)
-                    );
+                    try {
+                        const lastUpdatedKey = `pronunfit_lastUpdatedAt_${authenticatedUser.uid}`;
+                        const lastUpdatedMs = parseInt(localStorage.getItem(lastUpdatedKey) || '0', 10);
+                        const FIVE_MIN_MS = 5 * 60 * 1000;
+                        if (Date.now() - lastUpdatedMs >= FIVE_MIN_MS) {
+                            updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
+                                console.error('[AuthContext] updatedAt refresh failed:', e)
+                            );
+                            localStorage.setItem(lastUpdatedKey, String(Date.now()));
+                        }
+                    } catch (e) {
+                        // localStorage 접근 실패 시 fallback — 가드 없이 write (이전 동작)
+                        updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(() => {});
+                    }
                 }
 
                 // Push 토큰 재등록은 App.jsx mount에서 전역 리스너가 처리
@@ -262,14 +282,23 @@ export const AuthProvider = ({ children }) => {
     //   - 실패 시 null 반환 → 호출 측에서 alert 등 처리
     const ensureAnonymousUser = async () => {
         if (auth.currentUser) return auth.currentUser;
-        // 진행 중 — onAuthStateChanged가 user를 채울 때까지 대기
+        // 진행 중 — onAuthStateChanged listener로 완료 대기 (최대 10초)
+        // Why: 50ms setInterval 폴링은 iOS 26 WKWebView에서 P-코어 wake 빈도가 높아 발열 유발
         if (anonSignInInProgress) {
             return new Promise((resolve) => {
-                const start = Date.now();
-                const tick = setInterval(() => {
-                    if (auth.currentUser) { clearInterval(tick); resolve(auth.currentUser); }
-                    else if (Date.now() - start > 10000) { clearInterval(tick); resolve(null); }
-                }, 50);
+                let settled = false;
+                let timer;
+                const finish = (val) => {
+                    if (settled) return;
+                    settled = true;
+                    clearTimeout(timer);
+                    unsubscribe();
+                    resolve(val);
+                };
+                const unsubscribe = onAuthStateChanged(auth, (u) => {
+                    if (u) finish(u);
+                });
+                timer = setTimeout(() => finish(auth.currentUser || null), 10000);
             });
         }
         anonSignInInProgress = true;
@@ -316,14 +345,19 @@ export const AuthProvider = ({ children }) => {
     //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
     const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
-    const PRO_PRON_LIMIT = 1500;              // Pro: 월 1500회
+    const TRIAL_DAILY_LISTEN_LIMIT = 3;       // Free Trial: 하루 Listening passage 3회 (2026-05-23 신설) — Gemini + Azure TTS 비용 가드
+    const PRO_PRON_LIMIT = 1000;              // Pro: 월 발음 1000회 (2026-06-07 1500→1000)
+    const PRO_FREETALK_LIMIT = 100;           // Pro: 월 Free-Talking 100회 (2026-06-07 신설 — 무제한→월캡, Azure 꼬리위험 차단)
+    const PRO_LISTEN_LIMIT = 200;             // Pro: 월 Listening 생성 200회 (2026-06-07 신설). Premium은 무제한.
 
     // 하위호환: 기존 필드 유지 (분석용)
     const trialCardCount = profile?.trialCardCount || 0;
     const savedCardCount = profile?.savedCardCount || 0;
     const trialPronCount = profile?.trialPronCount || 0;
-    // Pro 발음 평가 월별 횟수
+    // Pro 월별 횟수 — proPronResetMonth 를 공통 월 앵커로 3종 동시 리셋
     const proPronCount = profile?.proPronCount || 0;
+    const proFreeTalkCount = profile?.proFreeTalkCount || 0;
+    const proListenCount = profile?.proListenCount || 0;
     const proPronResetMonth = profile?.proPronResetMonth || '';
     // Free Talking 평생 누적 세션 시작 횟수 (분석용 — 사용자별 generate 빈도 측정)
     const totalFreeTalkCount = profile?.totalFreeTalkCount || 0;
@@ -338,34 +372,63 @@ export const AuthProvider = ({ children }) => {
     //   기존 rewardBonus_{date} localStorage 시스템 폐기 (당일 리셋이라 미사용분 손실)
     const freeTalkCredits = profile?.freeTalkCredits || 0;
     const pronCredits = profile?.pronCredits || 0;
+    const listenCredits = profile?.listenCredits || 0;  // 2026-05-23: Listening 광고 보상권 (영구 적립)
 
-    // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount는 App.jsx에서 주입
+    // ⚠ Trial 일간 제한 동기화 — todayPronCount/todayFreeTalkCount/todayListenCount는 App.jsx에서 주입
     const [dailyTrialPronReached, setDailyTrialPronReached] = useState(false);
     const [dailyTrialFreeTalkReached, setDailyTrialFreeTalkReached] = useState(false);
+    const [dailyTrialListenReached, setDailyTrialListenReached] = useState(false);
 
-    // 보너스 활성 시 일일 한도 우회. 광고 credits 보유 시도 우회 (광고로 한도 확장 효과).
-    const isTrialPronLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialPronReached && pronCredits === 0;
-    const isTrialFreeTalkLimitReached = tier === 'trial' && !hasBonusActive && dailyTrialFreeTalkReached && freeTalkCredits === 0;
+    // 2026-06-07 개편: 하드캡 절대(일일 한도 초과 불가) + 통합 포인트 풀(bonusPoints) 게이트.
+    //   "한도 도달(하드캡)" 또는 "포인트 부족(< 액션 비용)" 중 하나라도면 차단. credits/bonus 우회 제거.
+    //   포인트 부족이면 사이드바 보상광고 충전(+5)으로 회복, 하드캡이면 Tier 변경만.
+    const POINT_COST = { freeTalk: 10, listen: 5, pron: 2 };
+    const isTrialPronLimitReached = tier === 'trial' && (dailyTrialPronReached || bonusPoints < POINT_COST.pron);
+    const isTrialFreeTalkLimitReached = tier === 'trial' && (dailyTrialFreeTalkReached || bonusPoints < POINT_COST.freeTalk);
+    const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);
     const isProPronLimitReached = tier === 'pro' && proPronCount >= PRO_PRON_LIMIT;
+    const isProFreeTalkLimitReached = tier === 'pro' && proFreeTalkCount >= PRO_FREETALK_LIMIT;
+    const isProListenLimitReached = tier === 'pro' && proListenCount >= PRO_LISTEN_LIMIT;
 
-    // 보너스 포인트 차감 — 트랜잭션으로 멀티 디바이스 race 방지
-    // 가능한 만큼 차감하고 실제 차감량을 number로 반환 (부족하면 잔여만큼만)
+    // 보너스 포인트 차감 — 2026-06-07: 트랜잭션 → updateDoc(increment) 으로 단순화.
+    //   트랜잭션은 같은 user 문서 동시 쓰기(markActiveDay 등)와 낙관적 락 충돌(failed-precondition)
+    //   을 일으켜 콘솔 폭주 + 재시도 낭비 → increment 는 서버 원자 연산이라 경합해도 실패 없음.
+    //   음수 방지: 클라 보유분(profile.bonusPoints)으로 clamp. 게이트가 사전에 pool>=cost 보장하므로
+    //   gated 액션은 음수 불가, best-effort(TTS/Vocab 등)도 clamp 로 0 미만 차감 안 함.
     const consumeBonusPoints = async (amount) => {
         if (!user?.uid || amount <= 0) return 0;
+        const current = profile?.bonusPoints || 0;
+        const consumed = Math.min(current, amount);
+        if (consumed <= 0) return 0;
         try {
-            let consumed = 0;
-            await runTransaction(db, async (tx) => {
-                const ref = doc(db, 'users', user.uid);
-                const snap = await tx.get(ref);
-                const current = snap.data()?.bonusPoints || 0;
-                consumed = Math.min(current, amount);
-                if (consumed > 0) {
-                    tx.update(ref, { bonusPoints: increment(-consumed) });
-                }
-            });
+            await updateDoc(doc(db, 'users', user.uid), { bonusPoints: increment(-consumed) });
             return consumed;
         } catch (e) {
             return 0;
+        }
+    };
+
+    // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
+    //   날짜-키 트랜잭션 가드(markActiveDay 패턴)로 멀티기기 이중충전 차단. Trial 전용.
+    const claimDailyTopUp = async () => {
+        if (!user?.uid) return;
+        const today = getToday();
+        if (profile?.lastTopUpDate === today) return; // 빠른 우회
+        try {
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const d = snap.data() || {};
+                if (d.lastTopUpDate === today) return; // race 가드
+                const amount = d.firstTopUpDone ? 10 : 30;
+                tx.update(ref, {
+                    bonusPoints: increment(amount),
+                    lastTopUpDate: today,
+                    firstTopUpDone: true,
+                });
+            });
+        } catch (e) {
+            // 충전 실패는 다음 진입에서 재시도 (날짜 게이트 유지)
         }
     };
 
@@ -409,6 +472,26 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
+    // listenCredits 차감 — 광고로 적립한 영구 Listening 추가권 1회 소비 (2026-05-23 신설)
+    const consumeListenCredits = async (amount) => {
+        if (!user?.uid || amount <= 0) return 0;
+        try {
+            let consumed = 0;
+            await runTransaction(db, async (tx) => {
+                const ref = doc(db, 'users', user.uid);
+                const snap = await tx.get(ref);
+                const current = snap.data()?.listenCredits || 0;
+                consumed = Math.min(current, amount);
+                if (consumed > 0) {
+                    tx.update(ref, { listenCredits: increment(-consumed) });
+                }
+            });
+            return consumed;
+        } catch (e) {
+            return 0;
+        }
+    };
+
     // phoneCountry 자동 보완 — 기존 null 유저(~96%) 대응
     // 결제 통화 판정은 phoneCountry === 'KR' 기준이므로 null이면 USD로 오탐
     // 다음 로그인 시 geoCountry/sourceLang 기반 추론해서 자동 세팅 (사용자는 이후에도 수정 가능)
@@ -428,11 +511,26 @@ export const AuthProvider = ({ children }) => {
         const _now = new Date();
         const currentMonth = `${_now.getFullYear()}-${String(_now.getMonth() + 1).padStart(2, '0')}`;
         if (proPronResetMonth && proPronResetMonth === currentMonth) return;
+        // 2026-06-07: 월 바뀌면 Pro 3종 카운트(발음/FreeTalk/Listening) 동시 리셋. proPronResetMonth가 공통 앵커.
         updateDoc(doc(db, 'users', user.uid), {
             proPronCount: 0,
+            proFreeTalkCount: 0,
+            proListenCount: 0,
             proPronResetMonth: currentMonth,
-        }).catch(e => console.error("Pro pron reset failed:", e));
+        }).catch(e => console.error("Pro monthly reset failed:", e));
     }, [user, tier, proPronResetMonth]);
+
+    // 2026-06-07 개편: Trial 일일 포인트 충전 (1일차 30 / 2일차+ +10). 날짜 바뀌면 1회 실행.
+    //   게이팅(isTrialXLimitReached)이 평가되기 전에 잔액이 채워지도록 profile 로드 직후 실행.
+    useEffect(() => {
+        if (!user?.uid || !profile || tier !== 'trial') return;
+        if (profile.lastTopUpDate === getToday()) return;
+        claimDailyTopUp();
+        // deps: !!profile(로드 시점 1회 트리거) + lastTopUpDate(충전 후 가드 재평가).
+        //   profile 객체 전체를 deps로 두면 매 snapshot마다 재실행돼 동시 트랜잭션 충돌(failed-precondition)
+        //   폭주 → !!profile 로 "로드 1회"만 트리거. 트랜잭션 가드로 이중충전 차단.
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.uid, !!profile, profile?.lastTopUpDate, tier]);
 
     // 구독 만료 체크
     useEffect(() => {
@@ -611,6 +709,20 @@ export const AuthProvider = ({ children }) => {
         } catch (e) { console.error("incrementPronCount failed:", e); }
     };
 
+    // 2026-06-07: Pro 월별 FreeTalk/Listening 카운터 (Premium은 무제한이라 미증가)
+    const incrementProFreeTalk = async () => {
+        if (!user || tier !== 'pro') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { proFreeTalkCount: increment(1) });
+        } catch (e) { console.error("incrementProFreeTalk failed:", e); }
+    };
+    const incrementProListen = async () => {
+        if (!user || tier !== 'pro') return;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { proListenCount: increment(1) });
+        } catch (e) { console.error("incrementProListen failed:", e); }
+    };
+
     // Scene 생성 카운터
     const incrementSceneGenerate = async () => {
         if (!user) return;
@@ -662,26 +774,46 @@ export const AuthProvider = ({ children }) => {
     const byokAzureKey   = profile?.byokAzureKey   || null;
     const byokAzureRegion = profile?.byokAzureRegion || '';
 
+    // [v1.5.83+ thermal-ios] Context value useMemo wrap — render storm 차단.
+    // mobile-production-guardian 4차 분석에서 식별된 진짜 root cause.
+    // 이전엔 매 렌더마다 새 value 객체 생성 → 모든 consumer(App.jsx 5728라인 +
+    // 50+ 자식 컴포넌트, React.memo 사용 0) 통째로 재렌더 → iOS WKWebView
+    // 발열 임계점 누적 돌파. useMemo로 value reference를 안정시켜 차단.
+    //
+    // Deps 전략: user/profile/loading + 별도 useState 3개만 포함. 함수들(17개)은
+    // 매번 새 reference로 만들어지지만 deps 비교에서 제외(eslint-disable).
+    // Stale closure 위험: 모든 함수가 closure로 참조하는 state(user/profile/
+    // dailyTrial*Reached)는 deps에 포함됨 → state 변경 시 value 재생성 → 새 함수
+    // closure 사용. 함수가 의존하지 않는 외부 reference(db/auth/setProfile 등)는
+    // React 보장 stable. 따라서 stale closure 0%.
+    //
+    // 파생값(tier/counts/credits/bonusPoints/byok*)은 profile 기반이라 profile
+    // deps만으로 자동 재계산됨.
+    const contextValue = useMemo(() => ({
+        user, profile, loading, updateUserProfile,
+        tier,
+        trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
+        proPronCount, PRO_PRON_LIMIT,
+        proFreeTalkCount, proListenCount, PRO_FREETALK_LIMIT, PRO_LISTEN_LIMIT,
+        TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT,
+        isTrialPronLimitReached, isTrialFreeTalkLimitReached, isTrialListenLimitReached,
+        setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached,
+        isProPronLimitReached, isProFreeTalkLimitReached, isProListenLimitReached,
+        incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
+        incrementProFreeTalk, incrementProListen,
+        incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
+        bonusPoints, hasBonusActive, consumeBonusPoints, POINT_COST,
+        freeTalkCredits, pronCredits, listenCredits, consumeFreeTalkCredits, consumePronCredits, consumeListenCredits,
+        reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
+        saveByokKeys,
+        byokGeminiKey, byokAzureKey, byokAzureRegion,
+        upgradeAnonymous,
+        ensureAnonymousUser,
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), [user, profile, loading, dailyTrialPronReached, dailyTrialFreeTalkReached, dailyTrialListenReached]);
+
     return (
-        <AuthContext.Provider value={{
-            user, profile, loading, updateUserProfile,
-            tier,
-            trialCardCount, savedCardCount, trialPronCount, totalFreeTalkCount,
-            proPronCount, PRO_PRON_LIMIT,
-            TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT,
-            isTrialPronLimitReached, isTrialFreeTalkLimitReached,
-            setDailyTrialPronReached, setDailyTrialFreeTalkReached,
-            isProPronLimitReached,
-            incrementTrialCard, incrementSavedCard, incrementPronCount, incrementTotalFreeTalk,
-            incrementSceneGenerate, incrementVocabGenerate, incrementListenGenerate,
-            bonusPoints, hasBonusActive, consumeBonusPoints,
-            freeTalkCredits, pronCredits, consumeFreeTalkCredits, consumePronCredits,
-            reviewBonusClaimed: !!profile?.reviewBonusClaimedAt,
-            saveByokKeys,
-            byokGeminiKey, byokAzureKey, byokAzureRegion,
-            upgradeAnonymous,
-            ensureAnonymousUser,
-        }}>
+        <AuthContext.Provider value={contextValue}>
             {loading ? (
                 <div style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'center',

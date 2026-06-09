@@ -28,8 +28,8 @@ const { STYLE_DESC } = require('../routes/scene');
  * @returns {string} prompt 블록
  */
 function languageComplianceBlock(sourceLangName, fields) {
-    const fieldList = fields.map(f => `  - "${f}"`).join('\n');
-    return `### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
+  const fieldList = fields.map(f => `  - "${f}"`).join('\n');
+  return `### [Language Compliance — CRITICAL, OVERRIDES ANY OTHER INSTRUCTION]
 This rule is MANDATORY. The following fields MUST be written in ${sourceLangName}:
 ${fieldList}
 
@@ -53,51 +53,52 @@ Vietnamese) makes the output unusable.`;
 
 /**
  * @param {object} args
- * @param {string} args.scene             — i18n scene 키 또는 customInput (예: 'hotel', 'airport')
- * @param {string} args.category          — 'locations' | 'situations'
- * @param {string} args.targetLang        — 학습 대상 언어 코드
- * @param {string} args.sourceLang        — 학습자 모국어 코드
- * @param {string} args.difficulty        — 'basic' | 'intermediate' | 'advanced'
- * @param {string} args.speechStyle       — 'casual' | 'formal'
- * @param {Array}  args.avoidSituations   — 같은 (scene,difficulty,style,lang) 키로 이전 세션에서 누적된
+ * @param {string}  args.scene            — i18n scene 키 또는 customInput (예: 'hotel', 'airport')
+ * @param {string}  args.category         — 'locations' | 'situations' (i18n 카드 선택 시 의미; isCustom=true 면 단순 hint)
+ * @param {boolean} args.isCustom         — true면 사용자가 customInput을 입력한 경우. category 강제 매핑 우회.
+ * @param {string}  args.targetLang       — 학습 대상 언어 코드
+ * @param {string}  args.sourceLang       — 학습자 모국어 코드
+ * @param {string}  args.difficulty       — 'basic' | 'intermediate' | 'advanced'
+ * @param {string}  args.speechStyle      — 'casual' | 'formal'
+ * @param {Array}   args.avoidSituations  — 같은 (scene,difficulty,style,lang) 키로 이전 세션에서 누적된
  *                                          상황 메타. shape: [{ summary, dimensions: {emotion, action_type,
  *                                          responder_role, topic_focus}, createdAt? }]. 최근 30개까지 권고.
  */
-function buildStartPrompt({ scene, category, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
-    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
+function buildStartPrompt({ scene, category, isCustom = false, targetLang, sourceLang, difficulty, speechStyle, avoidSituations = [] }) {
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    // ── Anti-Duplication 블록 — 차원 회전(Dimension Rotation) + 구조화 JSON 방식 ──
-    // 단순 문장 나열 대신 차원별 set 으로 압축해 LLM 의 lost-in-the-middle 한계 우회.
-    // 같은 카테고리(scene+difficulty+style+lang) 키 안에서만 누적되므로 카테고리 간섭 없음.
-    let avoidBlock = '';
-    if (Array.isArray(avoidSituations) && avoidSituations.length > 0) {
-        const recent = avoidSituations.slice(-30);
-        const olderCount = avoidSituations.length - recent.length;
-        const dims = {
-            emotions: new Set(),
-            action_types: new Set(),
-            responder_roles: new Set(),
-            topic_focuses: new Set(),
-        };
-        const lines = recent.map((s, i) => {
-            const d = s.dimensions || {};
-            if (d.emotion)         dims.emotions.add(d.emotion);
-            if (d.action_type)     dims.action_types.add(d.action_type);
-            if (d.responder_role)  dims.responder_roles.add(d.responder_role);
-            if (d.topic_focus)     dims.topic_focuses.add(d.topic_focus);
-            const summary = (s.summary || '').replace(/"/g, "'").slice(0, 120);
-            return `  ${String(i + 1).padStart(2, ' ')}. "${summary}" — ${d.emotion || '?'}/${d.action_type || '?'}/${d.responder_role || '?'}`;
-        }).join('\n');
-        const dimSummary = JSON.stringify({
-            emotions: [...dims.emotions],
-            action_types: [...dims.action_types],
-            responder_roles: [...dims.responder_roles],
-            topic_focuses: [...dims.topic_focuses],
-        });
-        avoidBlock = `
+  // ── Anti-Duplication 블록 — 차원 회전(Dimension Rotation) + 구조화 JSON 방식 ──
+  // 단순 문장 나열 대신 차원별 set 으로 압축해 LLM 의 lost-in-the-middle 한계 우회.
+  // 같은 카테고리(scene+difficulty+style+lang) 키 안에서만 누적되므로 카테고리 간섭 없음.
+  let avoidBlock = '';
+  if (Array.isArray(avoidSituations) && avoidSituations.length > 0) {
+    const recent = avoidSituations.slice(-30);
+    const olderCount = avoidSituations.length - recent.length;
+    const dims = {
+      emotions: new Set(),
+      action_types: new Set(),
+      responder_roles: new Set(),
+      topic_focuses: new Set(),
+    };
+    const lines = recent.map((s, i) => {
+      const d = s.dimensions || {};
+      if (d.emotion) dims.emotions.add(d.emotion);
+      if (d.action_type) dims.action_types.add(d.action_type);
+      if (d.responder_role) dims.responder_roles.add(d.responder_role);
+      if (d.topic_focus) dims.topic_focuses.add(d.topic_focus);
+      const summary = (s.summary || '').replace(/"/g, "'").slice(0, 120);
+      return `  ${String(i + 1).padStart(2, ' ')}. "${summary}" — ${d.emotion || '?'}/${d.action_type || '?'}/${d.responder_role || '?'}`;
+    }).join('\n');
+    const dimSummary = JSON.stringify({
+      emotions: [...dims.emotions],
+      action_types: [...dims.action_types],
+      responder_roles: [...dims.responder_roles],
+      topic_focuses: [...dims.topic_focuses],
+    });
+    avoidBlock = `
 
 ---
 
@@ -116,9 +117,9 @@ Rotation rules — apply ALL:
 4. Pick a **topic_focus** (the specific sub-situation: "seat change", "lost luggage", "menu recommendation", etc.) that is NOT in covered.topic_focuses.
 5. If ALL of the above dimensions are exhausted in a single dimension, prioritize topic_focus novelty + responder_role rotation over emotion/action repeat.
 6. The resulting situation MUST feel meaningfully different from each of the recent ${recent.length} listed above — not a paraphrase.`;
-    }
+  }
 
-    return `### [Role]
+  return `### [Role]
 You are a Language Learning Content Architect generating a SCRIPTED 3-MESSAGE conversation OPENER for a learner about to enter "${scene}".
 
 **CRITICAL framing — read first:** These 3 messages play out automatically BEFORE
@@ -136,11 +137,90 @@ The 3 messages should feel like the first ~20 seconds of a real interaction:
 
 ---
 
+### [Pedagogical Frame — this is a LANGUAGE-LEARNING session, not just role-play — READ FIRST]
+The learner is actively PRACTICING SPEAKING ${targetLangName} at **${difficulty || 'basic'}** level.
+Realism exists to SERVE learning, never the reverse. Binding on EVERY field below:
+- Pick a situation whose CORE VOCABULARY is high-frequency and REUSABLE at this level — choose the scene so the words the learner meets are COMMON, not exotic/technical.
+- EVERY sentence you generate (the learner's lines AND the responder's lines) MUST stay inside the ${difficulty || 'basic'} vocabulary + length budget defined in [Phase 2: Difficulty Guidelines] below — even when a "more realistic" version would be harder.
+- When realism conflicts with comprehensibility at basic/intermediate, **COMPREHENSIBILITY WINS**: a simpler fully-usable exchange beats an authentic-but-too-hard one.
+- The multi-turn ARC (handing the floor, leaving attributes open) stays — but make each individual utterance SHORT and EASY for the level. Many easy turns, not few hard ones.
+
+---
+
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before classifying), and carry that native
+meaning into Phase 0's WHERE/WHO/WHY reasoning below. This governs INPUT
+INTERPRETATION only — output field languages still follow the rules later.
+
+---
+
 ### [Phase 0: Scene Coherence — MANDATORY FIRST STEP, BEFORE any other phase]
 Before drafting any field, internally plan ONE specific micro-situation that ties
 intro, firstUserTurn, and firstAiReply into a SINGLE coherent moment.
 
 **🔴 Category-aware interpretation — APPLY BEFORE step ① below**:
+${isCustom ? `
+⚠️ **CUSTOM INPUT MODE (isCustom=true) — IGNORE the stated category="${category}"**:
+The learner typed "${scene}" as FREE-FORM custom input. The category value above
+is just a UI default and may NOT match the actual input. **Trust the scene TEXT
+itself**, interpreted per Step 0 in its native language, and classify it into
+ONE of the 4 branches below. Each branch defines BOTH the setting choice AND
+how the dialogue's TOPIC connects to the input text — these are different per
+branch and MUST be followed precisely.
+
+  ─── BRANCH A — PLACE (입력이 명백한 장소) ───
+  Examples: "Starbucks", "공항 라운지", "사우나", "kafe gần nhà", "은행 창구"
+  - setting = 입력 장소 그 자체 (사용)
+  - 발화 topic = 그 장소에서 일어나는 자연 transaction (주문/문의/요청/예약)
+  - ✅ Good: "Starbucks" → "라떼 톨 사이즈 주세요, 휘핑은 빼주시고요"
+  - ❌ Bad: "Starbucks" → 보험 청구, 자기소개 같은 그 장소와 무관한 transaction
+  - 💡 Topic 연결: 장소 자체가 topic. 직접 단어 인용은 불필요.
+
+  ─── BRANCH B — SITUATION (입력이 명확한 대화 행위/액션) ───
+  Examples: "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу",
+            "complain about delivery", "환불 요청", "길 묻기"
+  - setting = 그 행위가 자연스러운 장소 모델 선택 (사무실 첫날 / 병원 접수 / 거리)
+  - 발화 topic = 입력 행위 자체를 수행 (행위 = topic)
+  - ✅ Good: "자기소개" → "처음 뵙겠습니다, 신입사원 김민수입니다, 잘 부탁드립니다"
+  - ❌ Bad: "자기소개" → 카페에서 커피 주문 (행위로 도망 → topic 위반)
+  - 💡 Topic 연결: 행위를 직접 수행. "지금 자기소개를 하겠습니다" 같은 메타 발언 ❌.
+
+  ─── BRANCH C — TOPIC (입력이 대화 주제 — 명사/주제어) ───
+  Examples: "하루 일과", "Lịch trình hàng ngày", "어제 본 영화", "주말 계획",
+            "취미", "여행 추억", "최근 읽은 책", "운동"
+  - setting = 그 주제를 자연스럽게 다룰 친밀한 장소 (친구 카페 / 가족 식탁 /
+              동료 점심 / 운동 후 휴게실) — transaction 장소(은행/공항) 회피
+  - 발화 topic = 입력 주제를 직접 대화 주제로 다룸 (주제 = topic)
+  - ✅ Good: "하루 일과" → "오늘 어땠어? 아침엔 뭐 하고?", "회사 가기 전에
+            보통 뭐 해?"
+  - ✅ Good: "주말 계획" → "이번 주말에 뭐 할 거야? 나는 한강 가려고"
+  - ❌ Bad: "하루 일과" → 카페에서 "주스 한 잔 주세요" (transaction 도망 →
+            입력 주제 사라짐. 직전 사용자 사고 사례 정확히 이 패턴)
+  - ❌ Bad: "하루 일과" → 자기소개 (다른 행위로 도망)
+  - 💡 Topic 연결: 입력 주제를 firstUserTurn 의 의미 중심으로. 그 주제를 묻거나
+                  공유하거나 비교하는 발화여야 함.
+
+  ─── BRANCH D — ABSTRACT (입력이 추상/판타지/은유적) ───
+  Examples: "dưới biển" / "under the sea", "in a dream", "우주에서",
+            "구름 위에서", "옛날옛적에"
+  - setting = 입력을 plausible 현실 adaptation (스노클링 가이드 + 베트남 해변 /
+              명상 수업 + 요가원 / 별보기 모임 + 천문대)
+  - 발화 topic = adaptation 시나리오의 자연 transaction
+  - ✅ Good: "dưới biển" → 스노클링 가이드 + "물이 차갑지 않을까요?"
+  - ❌ Bad: "dưới biển" → "바닷속이네요" (입력 단어 직접 인용 = adaptation 깨짐)
+  - 💡 Topic 연결: adaptation 자체가 topic. 입력 단어 직접 인용은 어색해서 X.
+
+  ─── 분류 모호 시 (애매한 경계 케이스) ───
+  - PLACE vs TOPIC: 입력이 "카페에서 데이트" → BRANCH B/C 혼합 — 둘 다 가능, TOPIC 우선 (주제 보존)
+  - SITUATION vs TOPIC: 입력이 "여행 이야기" → 행위(이야기)인가 주제(여행)인가?
+    동사형/-기/-함 끝 → SITUATION, 명사/주제어 단독 → TOPIC
+  - 정말 모호하면 학습자 모국어 ("${sourceLangName}") 일상 대화에서 가장 자연스러운 해석으로
+
+분류 결정 후 step ① 진행. (i18n-key locations/situations subsections 는 custom 모드에서 미적용)
+` : `
 The string "${scene}" means different things depending on category="${category}":
 
   • category = "locations" → "${scene}" IS the physical place itself
@@ -176,6 +256,7 @@ The string "${scene}" means different things depending on category="${category}"
       - "advice"       → friend's home over tea / mentor's office hours /
                          older sibling chat / pharmacist consult
     The chosen setting determines responder_role for step ②.
+`}
 
 Now fill in your private mental scratchpad (using the location decided above):
 
@@ -208,6 +289,32 @@ Now fill in your private mental scratchpad (using the location decided above):
        will surface. The remaining 2~4 attributes are deliberately left
        UNADDRESSED so the learner has clear, concrete things to say next
        during Free Talking. firstAiReply must NOT resolve ③ in a single move.
+
+  ⑤-bis CONCRETE-VALUE COMMIT (NO placeholders — binds Rule 8, MANDATORY):
+       Even when the scene is INHERENTLY about an unknown/undecided value —
+       e.g. "not sure which platform / which train", "looking for a destination",
+       "which gate?", "lost, don't know the way" — you MUST still COMMIT to ONE
+       specific, real value for that slot and use it CONSISTENTLY across intro,
+       firstUserTurn, and firstAiReply. The learner's UNCERTAINTY is about which
+       option is correct, NOT a reason to leave the word itself blank.
+       The single most common failure this prevents: a "destination unknown"
+       scene producing "${targetLang === 'ja' ? '〇〇行き' : targetLang === 'zh-CN' || targetLang === 'zh' ? '去某地' : '[destination]'}" or "${targetLang === 'ja' ? '〇〇公園' : '___'}".
+       That is BANNED — the learner cannot speak "〇〇" out loud, and TTS reads
+       the placeholder literally.
+         ✗ Bad (ja): "この電車は〇〇行きですか？" / "〇〇公園行きですね"
+         ✓ Good (ja): "この電車は新宿行きですか？" → "いいえ、新宿行きは3番線です"
+       Concretely: if the slot is a DESTINATION, pick a real place name
+       (Shinjuku / Tokyo / Busan / Boston…). If a TRAIN/FLIGHT/SEAT number,
+       pick a real one. Bake that ONE value into ALL 3 messages so later Free
+       Talking turns inherit a concrete fact, never a placeholder to echo.
+
+  ⑥ TARGET VOCABULARY (learning lens — this GOVERNS word choice): name 3~5
+       high-frequency, ${difficulty || 'basic'}-appropriate ${targetLangName}
+       words/phrases this micro-situation will naturally let the learner
+       practice. Choose the scene so these stay COMMON and reusable — never a
+       scene that forces rare/technical terms. At basic, restrict to top-800
+       everyday words. These chosen words DRIVE the vocabulary of firstUserTurn
+       and firstAiReply (don't reach for harder synonyms in the name of realism).
 
 Then ALL three fields MUST reflect this exact plan:
   - intro.text         → describes ① and the situation that creates ③.
@@ -243,12 +350,12 @@ If any check fails, redesign before writing JSON.
 
 ### [Phase 1A: User Initiation Design] — applies to firstUserTurn
 The learner's level is **${difficulty || 'basic'}**. Design the initiation complexity accordingly:
-- **Basic**: Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.
+- **Basic**: ${difficulty === 'basic' ? 'Do NOT apply any strong emotion. Keep the tone completely neutral, predictable, and straightforward (e.g., checking in, ordering food). Prefer action types: Greeting, Inquiry, Request, Social.' : 'Pick from simpler emotions (Grateful, Curious, Excited, Relieved, Surprised). Design predictable, routine situations (e.g., checking in, ordering food, asking for directions). Prefer action types: Greeting, Inquiry, Request, Social.'}
 - **Intermediate**: Use the full emotion range. Introduce mild complications or unexpected elements. All action types are available.
 - **Advanced**: Favor nuanced emotions (Hesitant, Frustrated, Dissatisfied, Apologetic, Nervous). Design layered situations with social tension or cultural sensitivity. Prefer action types: Problem, Complaint, Opinion, Observation.
 
 Then for firstUserTurn:
-1. Select ONE emotion for the learner from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous.
+1. Select ONE emotion for the learner ${difficulty === 'basic' ? '(for Basic, just use "Neutral" or "Calm")' : 'from: Grateful, Frustrated, Confused, Excited, Hesitant, Urgent, Curious, Dissatisfied, Relieved, Apologetic, Surprised, Nervous.'}
 2. Design a specific, realistic micro-situation for "${scene}" — avoid generic phrases like "Where is the restroom?".
 3. Choose ONE Action Type: Inquiry / Request / Observation / Opinion / Problem / Complaint / Social / Greeting.
 4. **Opener shape — CRITICAL**: firstUserTurn is a CONVERSATION OPENER. State
@@ -300,7 +407,7 @@ Then for firstUserTurn:
   unaddressed after firstAiReply, so the learner has concrete material to talk
   about during Free Talking.
 
-- **Length**: 1~2 sentences. Real-time conversation pacing, not a paragraph.
+- **Length**: ${difficulty === 'basic' ? 'EXACTLY 1 sentence, maximum 8 words. Use the simplest possible response pattern (e.g., "Sure! What size?"). Immediate understanding is the goal.' : '1~2 SHORT sentences, within the Phase 2 word budget (intermediate ≤12, advanced ≤20 words per sentence). Real-time pacing, not a paragraph.'}
 
 ---
 
@@ -328,9 +435,21 @@ ${avoidBlock}
 ---
 
 ### [Strict Rules]
-1. **Speaker Identity**: firstUserTurn = the LEARNER speaking (initiation). firstAiReply = the OTHER PERSON answering. Never swap.
+${isCustom ? `0. **CUSTOM INPUT topic preservation — CRITICAL self-check (BRANCH 룰 준수)**:
+   firstUserTurn draft 후 다음 self-check 통과 필수 (위반 시 redraft):
+   - Phase 0 CUSTOM INPUT MODE 에서 어떤 BRANCH (A=PLACE / B=SITUATION / C=TOPIC /
+     D=ABSTRACT) 로 분류했는지 mentally state.
+   - 그 BRANCH 의 "Topic 연결" 룰을 firstUserTurn 이 정확히 따르는가?
+     · BRANCH A (PLACE): 발화가 그 장소의 자연 transaction 인가?
+     · BRANCH B (SITUATION): 발화가 그 행위 자체를 수행하는가?
+     · BRANCH C (TOPIC): 발화의 의미 중심이 입력 주제를 직접 다루는가?
+              (transaction 으로 도망 X. 예: "하루 일과" 입력에 "주스 주문" = 위반)
+     · BRANCH D (ABSTRACT): 발화가 adaptation 시나리오의 transaction 인가?
+   - 위반 사례: BRANCH C 인데 transaction 발화 / BRANCH B 인데 무관 주제 /
+     BRANCH A 인데 그 장소와 무관한 행위 → 모두 redraft.
+` : ''}1. **Speaker Identity**: firstUserTurn = the LEARNER speaking (initiation). firstAiReply = the OTHER PERSON answering. Never swap.
 2. **Coherence**: firstAiReply MUST logically and naturally respond to firstUserTurn (same micro-situation, same emotional register, direct answer/follow-up).
-3. **Variety**: Avoid generic textbook phrases. Reflect 2026 native everyday speech.
+3. **Variety**: ${difficulty === 'basic' ? 'Textbook-style standard phrases are PREFERRED. The learner needs predictable, recognizable patterns. Do NOT use slang or colloquialisms.' : 'Avoid generic textbook phrases. Reflect 2026 native everyday speech.'}
 4. **Grammar & Length**: Strictly follow the Difficulty Guidelines for both turns.
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no tone marks inline. Violations make the output unusable.
 6. **Intro consistency — CRITICAL**: intro.text MUST set up the EXACT micro-situation
@@ -364,6 +483,9 @@ ${avoidBlock}
    This rule binds Phase 0 (Scene Coherence) — when choosing the
    micro-situation, COMMIT to one concrete destination/number/name/time
    and use it consistently across all 3 messages.
+   At **basic** level the concrete value itself MUST be a common, short,
+   everyday word (e.g. "coffee", "2 o'clock", "Seoul", "Flight 7") — never a
+   rare flight code or technical term that adds vocabulary load.
 9. **Opener, not full exchange — CRITICAL**: firstAiReply MUST end with an OPEN
    prompt (question / offered choice / info request) and MUST leave ≥2 attributes
    from Phase 0 ④ unresolved. The 3 messages are the starting point for Free
@@ -437,39 +559,66 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
  *   - Phase 1: "Established facts 재질문 금지" + "다음 단계로 advance" 강제
  */
 function buildReplyPrompt({
-    rawSttText,
-    history = [],
-    scenarioMeta = {},
-    targetLang,
-    sourceLang,
-    difficulty,
-    speechStyle,
+  rawSttText,
+  history = [],
+  scenarioMeta = {},
+  targetLang,
+  sourceLang,
+  difficulty,
+  speechStyle,
+  establishedFacts = [],
 }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
-    const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const styleDesc = STYLE_DESC[speechStyle] || STYLE_DESC.formal;
 
-    // history → 텍스트 블록 (최근 12턴까지 보존 — 컨텍스트 일관성용)
-    // user turn에 coachingTip(이전 턴에서 튜터가 학습자에게 준 모국어 코칭)이 있으면
-    // 별도 라인으로 inject — AI가 학습자의 누적 학습 맥락을 인지하며 자연스럽게 상호작용.
-    const recent = history.slice(-12);
-    const historyBlock = recent.length > 0
-        ? recent.map(h => {
-            const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
-            let line = `${speaker}: ${h.text || ''}`;
-            if (h.role !== 'ai' && h.coachingTip) {
-                line += `\n    [tutor's prior note to learner in ${sourceLangName}: "${h.coachingTip}"]`;
-            }
-            return line;
-        }).join('\n')
-        : '(no prior turns — this is the first free utterance)';
+  // history → 텍스트 블록 (세션 전체 보존 — 컨텍스트 일관성용)
+  // 2026-06-03: slice(-8) → slice(-30) 으로 복원. 과거 12→8 감축(2026-05-21)은
+  // "31KB→28KB(-10%)" 명목이었으나, 그 28KB 대부분은 정적 규칙(Phase 4 코칭 등)이고
+  // history block 은 턴당 ~100~200자에 불과 → 토큰 절감은 미미한데 기억력만 깎였다.
+  // 게다가 TURN_LIMITS=5(전 tier)라 세션의 유효 history 는 최대 ~12엔트리(opener 2 +
+  // 자유발화 4턴×2)뿐. slice(-8)이면 후반 턴에서 opener(시나리오 전체 맥락)와 초반
+  // 사실(예: 사용자가 말한 생일)이 잘려나가 AI 가 "이미 받은 정보 재질문" 회귀 발생.
+  // 30 cap 이면 5턴 세션 전체를 항상 포함하면서도 만일의 폭주를 방어. (32K input 여유 충분)
+  // user turn에 coachingTip(이전 턴에서 튜터가 학습자에게 준 모국어 코칭)이 있으면
+  // 별도 라인으로 inject — AI가 학습자의 누적 학습 맥락을 인지하며 자연스럽게 상호작용.
+  const recent = history.slice(-30);
+  const historyBlock = recent.length > 0
+    ? recent.map(h => {
+      const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
+      let line = `${speaker}: ${h.text || ''}`;
+      if (h.role !== 'ai' && h.coachingTip) {
+        line += `\n    [tutor's prior note to learner in ${sourceLangName}: "${h.coachingTip}"]`;
+      }
+      return line;
+    }).join('\n')
+    : '(no prior turns — this is the first free utterance)';
 
-    const responderRole = scenarioMeta.responder_role || 'the other person';
-    const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+  const responderRole = scenarioMeta.responder_role || 'the other person';
+  const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
 
-    return `### [Role]
+  // B안(slot memory): 이전 턴까지 누적된 established facts 를 명시적 체크리스트로 주입.
+  // 작은 모델(Flash-Lite)이 raw history 만으로 "이미 받은 정보"를 재추론하다 놓치는
+  // 문제(특히 한 답변에 여러 속성이 동시에 들어오는 composite)를 차단. cumulative list 라
+  // 매 턴 carry + append 되며, 윈도우(slice -30)가 잘려도 facts state 는 생존.
+  const priorFacts = Array.isArray(establishedFacts)
+    ? establishedFacts.filter(f => typeof f === 'string' && f.trim())
+    : [];
+  const factsBlock = priorFacts.length > 0
+    ? priorFacts.map(f => `  ✓ ${f}`).join('\n')
+    : '  (none yet — no attributes settled so far)';
+
+  return `### [Role]
 You are running a real-time language-learning conversation. The learner just spoke; speech-to-text returned a possibly imperfect transcript. You will (A) recover the learner's INTENDED sentence, (B) generate a natural reply that ADVANCES the conversation, and (C) produce a private tutor coaching note for the learner.
+
+---
+
+### [Pedagogical Frame — this is a LANGUAGE-LEARNING conversation — READ FIRST]
+You play ${responderRole}, but you are ALSO a tutor: the learner is PRACTICING SPEAKING ${targetLangName} at **${difficulty || 'basic'}** level, and your reply is comprehensible INPUT for them. Therefore:
+- Keep aiReply.sentence inside the ${difficulty || 'basic'} vocabulary + length budget ([Phase 2] below) — use COMMON, reusable words the learner can actually pick up; avoid rare/technical terms unless the learner introduced them first.
+- When natural-but-hard conflicts with simple-and-usable at basic/intermediate, choose simple-and-usable.
+- Keep the turn SHORT (see length rule) — short, easy turns give the learner room to speak and practice.
 
 ---
 
@@ -542,10 +691,25 @@ What the learner just spoke (may contain mishears from speech recognition):
 this label or words like "STT", "transcript", "intent recovery", "the system"
 in any user-facing field — see Strict Rules.)
 
-**Established facts** — Before generating any field, mentally extract what the
-learner has ALREADY stated/chosen in the turns above (e.g., account type chosen,
-name given, dates set, preferences expressed, items requested). These facts MUST
-NOT be re-asked in aiReply.
+**Established facts (RUNNING STATE — authoritative, NEVER re-ask)** — the
+attributes below are ALREADY settled earlier in this conversation (the learner
+provided them, OR you already asked about them). You MUST NOT ask about ANY of
+these again, even with different wording:
+${factsBlock}
+
+In ADDITION to the list above, scan the turns for any attribute not yet listed
+(account type, name, date of birth, dates/times, preferences, items, quantities,
+prices…) and treat those as settled too. If the learner's NEWEST utterance adds a
+new attribute, it becomes settled the instant they say it — do not re-ask it next
+turn. **A single utterance can settle MULTIPLE attributes at once** (e.g. "April
+14th is my birthday" settles birth-month AND birth-day together). If EVERY
+attribute a ${responderRole} normally needs is now settled, STOP gathering and
+ADVANCE: confirm the collected info, then move to the closing step (payment /
+confirmation / hand-off). Re-asking a settled fact is the #1 conversation-breaking
+failure — avoid it absolutely. Likewise, once a slot holds a CONCRETE value
+(e.g. "party_size: 8"), NEVER revert it to "asked, awaiting answer" in your
+establishedFacts output, and never ask that slot again — a concrete value, once
+set, stays set for the rest of the conversation.
 
 ---
 
@@ -586,11 +750,35 @@ Then list:
    even with different wording ("style or color?", "any specific style?", etc.).
    Once learner has answered an attribute OR you've asked it once and they
    responded — that attribute is **closed**.
+   **Composite answers settle MULTIPLE attributes at once — CRITICAL**: one
+   utterance can close several slots simultaneously. e.g. "April 14th is my
+   birthday" closes BOTH birth-month AND birth-day → only birth-YEAR is left;
+   the moment the learner then says "1971", the FULL date of birth is complete.
+   Do NOT re-ask the month/day or the year, and do NOT alternate back and forth
+   between them. Confirm the whole value ("Got it — April 14th, 1971.") and
+   advance to the next step. (This exact alternating-re-ask loop is a real
+   reported failure — it is strictly forbidden.)
+   Worked example (Japanese, a real reported failure): learner says
+   "八名になりますが" → party_size is now 8 (concrete). You MUST NOT later ask
+   "何名様ですか？" again, and MUST NOT output "party_size: asked, awaiting answer"
+   — it is permanently "party_size: 8". Acknowledge and move to the next attribute.
 
-2. **Acknowledge the learner's latest answer** in your reply (one short clause)
-   if their answer addressed any attribute, then move on.
-   Example: User says "small and cheap one" → "Got it, something compact and
-   affordable. Would red work, or do you prefer a neutral color?"
+2. **REACT FIRST, then advance — a natural human reaction BEFORE the next question**.
+   A good reply is NOT "bare answer + next question". Open with a SHORT, natural
+   reaction to what the learner just said or requested — show you actually
+   registered it (light empathy, a contextual remark, or a brief confirm of their
+   answer) — THEN fulfill / answer, THEN ask the ONE next question. Three beats:
+   (a) react → (b) fulfill/answer → (c) advance.
+   Worked example (English template — produce in ${targetLangName}):
+     Learner: "Can I borrow an umbrella?"
+     ✗ Bad (robotic, no reaction): "Here is an umbrella. When will you return?"
+     ✓ Good (reacts first): "Oh, is it raining outside? Of course, here's an
+        umbrella — when do you think you'll be back?"
+   Another: Learner: "small and cheap one" → "Got it, something compact and
+   affordable then. Would red work, or do you prefer a neutral color?"
+   The reaction MUST connect directly to the learner's actual utterance (no generic
+   "I understand." / "Got it." stock openers used every time, no non-sequitur).
+   VARY the reaction by context — do not begin every reply with the same phrase.
 
 3. **Pick ONE different attribute from list ② OR advance to ③**.
    If list ② is empty (everything is covered), advance to step ③:
@@ -604,7 +792,7 @@ Then list:
 6. Select a Response Emotion that complements the learner's tone.
 7. Be Specific & Informative: not "Sure!" or "Yes" — give a response with USEFUL INFO.
 8. Stay in character as ${responderRole}.
-9. Keep it short: 1~2 sentences. This is real-time conversation practice, not a monologue.
+9. Keep it short: ${difficulty === 'basic' ? 'Keep it simple for a beginner: 1~2 SHORT sentences total — a brief natural reaction plus the reply/question. Use easy words and simple patterns; avoid long or complex sentences. A short lead-in reaction (e.g. "Oh, is it raining?") is encouraged, but keep the whole turn compact and immediately understandable.' : '1~2 SHORT sentences total (brief reaction + answer/one question), within the Phase 2 word budget (intermediate ≤12, advanced ≤20 words per sentence). Real-time pacing, not a monologue.'}
 
 ---
 
@@ -859,7 +1047,7 @@ produced.
 1. Speaker Identity: aiReply = ${responderRole} speaking. Never speak as the learner.
 2. Relevance: aiReply.sentence MUST directly address intentText.
 3. Grammar & Length: Strictly follow Difficulty Guidelines for aiReply.
-4. Modern & Realistic: 2026 native everyday speech, not stiff textbook phrases.
+4. Modern & Realistic: ${difficulty === 'basic' ? 'Textbook-style standard phrases are PREFERRED for predictability. Do NOT use slang or complex 2026 native colloquialisms.' : '2026 native everyday speech, not stiff textbook phrases.'}
 5. **No reading aids — CRITICAL**: NEVER insert parenthetical readings such as 脚（あし）, 筋肉（きんにく）, 鍛（きた）える for Japanese, or pinyin annotations for Chinese. Plain script only — no glosses, no furigana, no ruby text, no inline tone marks. Violations make the output unusable.
 6. **No emoji AND no verbatim emoji descriptions** in sentence/intentText/
    userCoachingTip/userCoachingNarration fields. This means:
@@ -960,7 +1148,8 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
     "translation": "Natural translation in ${sourceLangName}.",
     "pronunciation": "For zh-CN/zh: pinyin with tone marks (REQUIRED, non-empty). For ja: hiragana reading (REQUIRED, non-empty). For ru: full sentence with stress accents (´) on stressed vowels of multi-syllable words (REQUIRED, non-empty). For all others: empty string ''. **CRITICAL: an empty string for zh-CN/zh/ja/ru makes the response invalid.**",
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
-    "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply."
+    "learning_tip": "In ${sourceLangName}: vocab/grammar/expression tip about this reply.",
+    "establishedFacts": ["CUMULATIVE English list of EVERY attribute settled so far in this WHOLE conversation. Carry forward ALL items from the running-state list shown in Conversation Context above, ADD every attribute already visible in the turns, AND append any NEW attribute settled by the learner's current utterance or asked in THIS reply. Format each item as 'attribute: value' (e.g. 'birth_date: April 14 1971', 'seat: window', 'party_size: 4', 'payment: credit card'). If you are asking an attribute that has no value yet, write 'attribute: asked, awaiting answer'. A composite answer fills several items at once — list them separately. NEVER drop a previously-settled item; this array IS the conversation's memory and anything in it will never be re-asked. **NEVER downgrade a slot that already has a concrete value back to 'asked, awaiting answer' (e.g. once 'party_size: 8' is set, it must STAY 'party_size: 8' on every later turn — never write 'party_size: asked, awaiting answer' again).** Empty array [] ONLY on the very first turn when nothing is settled yet."]
   }
 }`;
 }
@@ -975,26 +1164,26 @@ ${languageComplianceBlock(sourceLangName, ['intentTranslation', 'aiReply.transla
  *   - 사용자(user_auto / user_free)와 상대(ai) 양쪽에서 모두 추출 가능
  */
 function buildSummarizePrompt({
-    history = [],
-    scenarioMeta = {},
-    targetLang,
-    sourceLang,
-    difficulty,
+  history = [],
+  scenarioMeta = {},
+  targetLang,
+  sourceLang,
+  difficulty,
 }) {
-    const targetLangName = LANG_NAMES[targetLang] || 'English';
-    const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
-    const responderRole = scenarioMeta.responder_role || 'the other person';
-    const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
-    const diffDesc = getDifficultyDesc(difficulty, targetLang);
+  const targetLangName = LANG_NAMES[targetLang] || 'English';
+  const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
+  const responderRole = scenarioMeta.responder_role || 'the other person';
+  const sceneSummary = scenarioMeta.scene_summary_en || '(unspecified scene)';
+  const diffDesc = getDifficultyDesc(difficulty, targetLang);
 
-    const historyBlock = history.length > 0
-        ? history.map(h => {
-            const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
-            return `${speaker}: ${h.text || ''}`;
-        }).join('\n')
-        : '(empty conversation)';
+  const historyBlock = history.length > 0
+    ? history.map(h => {
+      const speaker = h.role === 'ai' ? 'PARTNER' : 'LEARNER';
+      return `${speaker}: ${h.text || ''}`;
+    }).join('\n')
+    : '(empty conversation)';
 
-    return `### [Role]
+  return `### [Role]
 You are a Language Learning Curator. After a learner finished a Free Talking
 practice session, your job is to extract 3~5 key expressions worth saving to
 the learner's Library — phrases that gave concrete learning value in this

@@ -737,3 +737,11 @@
         transform: rotate(360deg);
     }
 }
+
+/* [v1.5.76+ thermal-ios] NEW 뱃지 pulse 가드 — 첫 진입 시 짧게만 노출되지만
+ * Apple HIG 준수 차원에서 가드. 네이티브 GPU 부하도 동시 감소.
+ *
+ * [v1.5.81+ thermal-ios] Web/Safari universal 확장 — Safari에서는 platform-native
+ * 가드 무효 + ScenePractice 탭이 display:none 항시 마운트 → pulse infinite가
+ * 백그라운드에서도 계속 실행됨(3차 mobile-production-guardian 분석). universal 가드. */
+.scene-freetalk-btn.has-new-badge::after { animation: none !important; }

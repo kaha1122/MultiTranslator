@@ -1,8 +1,7 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth } = require('../middleware/auth');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 
 const router = express.Router();
@@ -14,7 +13,7 @@ const LISTENING_ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultu
 
 router.post('/api/listening-passage', requireAuth, async (req, res) => {
     const {
-        topic, topicLabel, category, level, type, targetLang, sourceLang,
+        topic, topicLabel, category, isCustom, level, type, targetLang, sourceLang,
         byokGeminiKey, avoidTitles, passagesMeta,
     } = req.body;
     if (!topic || !targetLang) {
@@ -89,6 +88,20 @@ Rotation rules — ALL mandatory:
 
     const prompt = `You are a listening comprehension teacher creating ${contentType} materials for language learners.
 
+[Step 0: Detect Topic Input Language — DO THIS SILENTLY FIRST]
+"${topicLabel || topic}" is free-form text that may be in ANY language
+(vi/ru/ko/ja/zh-CN/es/fr/de/pt-BR/en). Internally detect its language
+(hint: sourceLang is "${sourceLangName}"), interpret it NATIVELY in that
+language, and reflect that culture/context in the passage you write. NOTE:
+passageKeywords (rule 14) must still stay English for cross-session dedup
+keys — this Step 0 only governs how you UNDERSTAND the input topic.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: the learner typed
+"${topicLabel || topic}" freely. Trust the text verbatim — if it names a
+specific place ("Đà Nẵng"), local custom, or situation, build the passage
+around THAT exact subject, not a generic version. Do not substitute a
+generic topic just because the text isn't a pre-defined category.` : ''}
+
 Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})
 - Target language: ${targetLangName}
@@ -158,42 +171,36 @@ Return ONLY valid JSON (no markdown):
   ]
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
-        parsed.passage = stripAnnotations(parsed.passage, targetLang);
-        if (Array.isArray(parsed.words)) {
-            parsed.words.forEach(w => {
-                w.word = stripAnnotations(w.word, targetLang);
-                w.example = stripAnnotations(w.example, targetLang);
-            });
-        }
-        // angle 화이트리스트 검증 + keywords 정규화 (LLM 가 임의 값 줄 가능성 차단)
-        if (!LISTENING_ANGLES.includes(parsed.angle)) {
-            parsed.angle = (contentType === 'dialogue') ? 'dialogue' : 'first-person narrative';
-        }
-        if (!Array.isArray(parsed.passageKeywords)) {
-            parsed.passageKeywords = [];
-        } else {
-            parsed.passageKeywords = parsed.passageKeywords
-                .filter(k => typeof k === 'string' && k.trim().length > 0)
-                .map(k => k.trim().slice(0, 40))
-                .slice(0, 3);
-        }
-        res.json(parsed);
-    } catch (e) {
-        console.error('[ListeningPassage] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate listening passage' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => typeof p?.passage === 'string' && p.passage.length > 0,
+        label: 'ListeningPassage',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate listening passage' });
     }
+    const parsed = result.parsed;
+    // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+    parsed.passage = stripAnnotations(parsed.passage, targetLang);
+    if (Array.isArray(parsed.words)) {
+        parsed.words.forEach(w => {
+            w.word = stripAnnotations(w.word, targetLang);
+            w.example = stripAnnotations(w.example, targetLang);
+        });
+    }
+    // angle 화이트리스트 검증 + keywords 정규화 (LLM 가 임의 값 줄 가능성 차단)
+    if (!LISTENING_ANGLES.includes(parsed.angle)) {
+        parsed.angle = (contentType === 'dialogue') ? 'dialogue' : 'first-person narrative';
+    }
+    if (!Array.isArray(parsed.passageKeywords)) {
+        parsed.passageKeywords = [];
+    } else {
+        parsed.passageKeywords = parsed.passageKeywords
+            .filter(k => typeof k === 'string' && k.trim().length > 0)
+            .map(k => k.trim().slice(0, 40))
+            .slice(0, 3);
+    }
+    res.json(parsed);
 });
 
 module.exports = router;

@@ -82,6 +82,10 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             return;
         }
 
+        // catch 경로에서도 cleanup 가능하도록 try 밖으로 호이스트
+        // Why: AudioContext / 100ms setInterval / mic stream 미정리 시 iOS AVAudioSession 잠금 → 발열
+        let stream = null;
+
         try {
             // 네이티브 환경: 마이크 하드웨어 권한 확보
             if (Capacitor.isNativePlatform()) {
@@ -144,7 +148,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             // 네이티브: 위에서 BluetoothAudio 플러그인이 이미 BT 라우팅을 설정했으므로
             //           getUserMedia({ audio: true })만으로 충분
             let isBtConnected = btScoActiveRef.current; // 네이티브 BT 상태
-            let stream;
+            // stream은 startRecording 상단에서 호이스트됨 (catch 경로 cleanup용)
             if (!Capacitor.isNativePlatform()) {
                 try {
                     // 1단계: 기본 마이크로 stream 열기 (권한 팝업 + 라벨 접근 확보)
@@ -287,6 +291,20 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
                     BluetoothAudio.stopBluetoothSco().catch(e => console.warn('BT SCO 종료 실패:', e));
                     btScoActiveRef.current = false;
                 }
+                // [iOS v1.5.74 thermal-ios Pattern 1] 10s idle debounce.
+                // 즉시 카테고리만 .playback 전환(input subsystem 휴면) + 10s 후 setActive(false)
+                // 예약 → mediaserverd 완전 해제(발열 origin 차단). 10s 내 재녹음 시 activate가
+                // 예약 cancel → BT(에어팟) 라우트 보존.
+                //
+                // 적용 컨텍스트: 발음 카드(TranslationCard/ScenePractice/VocabTab) 전용.
+                // Why 10s — TTS 듣고 STT 발음 연습 반복 흐름에서 10초 침묵은 "잠시 사용 중단"의
+                // 명확한 신호. Free Talking 모달은 한 세션 내 10초+ 침묵이 자연스러우므로
+                // 본 메소드 미사용, 모달 닫힘에 endAudioSession(Pattern 4) 호출.
+                //
+                // 옵셔널 체이닝: 구 IPA(scheduleEndAudioSession 미존재) + 신 JS 콤보 silent fail.
+                if (Capacitor.getPlatform() === 'ios') {
+                    BluetoothAudio.scheduleEndAudioSession?.({ delayMs: 10000 }).catch(() => {});
+                }
                 // --- [신규 끝] ---
             };
 
@@ -296,10 +314,28 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setIsRecording(true);
         } catch (err) {
             console.error("Mic access error:", err);
+            // [발열 수정] 에러 경로에서 onstop이 발화하지 않으므로 직접 cleanup
+            // 침묵 감지 setInterval(100ms) / AudioContext / mic stream 미정리 시
+            // iOS WKWebView의 AVAudioSession이 playAndRecord로 잠긴 채 유지 → 발열
+            if (silenceAnimationFrameRef.current) {
+                clearInterval(silenceAnimationFrameRef.current);
+                silenceAnimationFrameRef.current = null;
+            }
+            if (audioContextRef.current && audioContextRef.current.state !== 'closed') {
+                audioContextRef.current.close().catch(() => {});
+                audioContextRef.current = null;
+            }
+            if (stream) {
+                try { stream.getTracks().forEach(t => t.stop()); } catch { /* noop */ }
+            }
             // 블루투스 SCO가 열린 상태에서 에러 발생 시 정리
             if (btScoActiveRef.current) {
                 BluetoothAudio.stopBluetoothSco().catch(() => {});
                 btScoActiveRef.current = false;
+            }
+            // [iOS v1.5.74 Pattern 1] 에러 경로에서도 idle debounce 적용 (onstop 동일 이유)
+            if (Capacitor.getPlatform() === 'ios') {
+                BluetoothAudio.scheduleEndAudioSession?.({ delayMs: 10000 }).catch(() => {});
             }
             // 네이티브: 설정에서 마이크 허용 안내 / 웹: 브라우저 설정 안내
             if (Capacitor.isNativePlatform()) {

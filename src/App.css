@@ -19,7 +19,149 @@
   --badge-ja-text: #b91c1c;
   --badge-zh-bg: #fff7ed;
   --badge-zh-text: #9a3412;
+
+  /* ──────────────────────────────────────────────────────────────
+   * 모달 통일 디자인 토큰 (Phase 1 — 2026-06-09)
+   * 규칙 요약은 docs/design-tokens.md 참조.
+   *   1차 액션  = brand-primary (teal)
+   *   선택/강조 = brand-accent  (인디고)
+   *   파괴적    = danger
+   *   셀러브레이션 그라데이션 = brand-celebration-grad (streak 계열 전용)
+   * ────────────────────────────────────────────────────────────── */
+
+  /* 브랜드 — 1차 CTA / 로고 / 토글 ON / 활성 칩 / 성공 (teal) */
+  --brand-primary: #00a884;
+  --brand-primary-hover: #00997a;
+  --brand-primary-pressed: #008264;
+
+  /* 액센트 — 선택 상태 / 진행·streak·통계 강조 / 인디케이터 / nav 활성 / 정보성 헤더 아이콘 (인디고) */
+  --brand-accent: #6366f1;
+  --brand-accent-hover: #4f52e8;
+  --brand-accent-pressed: #4338ca;
+
+  /* 파괴적 액션 */
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+
+  /* 브랜드 위 텍스트 */
+  --text-on-brand: #ffffff;
+
+  /* 셀러브레이션 전용 그라데이션 — streak/축하 "특별한 순간"에만 사용 (격리) */
+  --brand-celebration-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+
+  /* StreakIntro 안내 모달 전용 단색 (2026-06-09 단색 톤다운)
+   * 그라데이션 전면 제거 → muted indigo 단색. 인디고 hue 유지, 채도만 낮춤.
+   * 진짜 축하 모달은 vivid celebration-grad 유지 (격리, 이 변수는 StreakIntro 전용). */
+  --streak-intro-solid: #7C7FE0;       /* 배지·CTA 채움 (흰색 텍스트) */
+  --streak-intro-ink: #5E62A8;         /* 타이틀 텍스트용 어두운 단색 (밝은 hero 위) */
+  --streak-intro-solid-tint: #EEF0F7;  /* hero 배경용 아주 옅은 동계열 단색 */
+
+  /* 모달 표준 형태 */
+  --modal-overlay-bg: rgba(15, 23, 42, 0.55);
+  --modal-radius: 20px;
+  --modal-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  --modal-overlay-padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
+  --modal-card-bg: #ffffff;
+  --modal-btn-radius: 12px;
+
+  /* z-index 레이어 체계 — 모든 신규/리팩토링 코드는 이 토큰만 사용 */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-modal-backdrop: 2000;
+  --z-modal: 2010;
+  --z-toast: 3000;
+  /* FreeTalk 대화 오버레이 레이어 — 표준 토스트(3000)와 critical(9000) 사이.
+   * 채팅 풀스크린 오버레이 위에 뜨는 모달/팁 전용. */
+  --z-chat-overlay: 5000;      /* FreeTalkingChat .ftc-overlay (채팅 자체) */
+  --z-chat-popup: 5100;        /* 채팅 위 모달 (MessageCardModal) */
+  --z-chat-popup-high: 5200;   /* 채팅 위 상위 모달/팁 (ConversationSummary, AITipPopup) */
+  --z-critical: 9000; /* 시스템 권한 프롬프트 등 최상위 (PushOptIn 등) */
 }
+
+/* ════════════════════════════════════════════════════════════════
+ * 공통 모달 클래스 (Phase 1) — 다음 단계에서 35개 모달이 이 클래스로 수렴.
+ * NOTE: 기존에 className="modal-overlay" + 인라인 style을 함께 쓰던
+ *       곳(App.jsx 프로필 / Library)은 인라인 style이 우선하므로
+ *       이 정의로 렌더링이 바뀌지 않음 (Phase 2에서 인라인 제거 예정).
+ * ════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--modal-overlay-padding);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--modal-card-bg);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  padding: 28px 24px;
+}
+
+/* 닫기 버튼 표준 — 우상단 lucide <X> 아이콘을 감싸는 버튼 */
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.modal-close:hover { background: rgba(15, 23, 42, 0.06); color: #475569; }
+.modal-close:disabled { cursor: wait; opacity: 0.6; }
+
+/* 모달 버튼 — 공통 형태 + 의미별 변형 */
+.modal-btn-primary,
+.modal-btn-secondary,
+.modal-btn-danger {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--modal-btn-radius);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.modal-btn-primary:disabled,
+.modal-btn-secondary:disabled,
+.modal-btn-danger:disabled { cursor: wait; opacity: 0.6; }
+
+.modal-btn-primary {
+  border: none;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+}
+.modal-btn-primary:not(:disabled):hover { background: var(--brand-primary-hover); }
+.modal-btn-primary:not(:disabled):active { background: var(--brand-primary-pressed); }
+
+.modal-btn-secondary {
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+}
+.modal-btn-secondary:not(:disabled):hover { background: #f8fafc; }
+
+.modal-btn-danger {
+  border: none;
+  background: var(--danger);
+  color: var(--text-on-brand);
+}
+.modal-btn-danger:not(:disabled):hover { background: var(--danger-hover); }
 
 body {
   margin: 0;
@@ -261,6 +403,21 @@ html.admob-active.platform-native::after {
 }
 
 /* 좌측: 게이지 ──────────────────────────────────── */
+/* 3개 게이지(FreeTalk/발음/Listening)를 박스 크기 유지하며 압축 — 행 간격·바 두께 슬림 */
+.tsb-gauges {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+/* Premium(무제한) — 게이지 대신 표시 */
+.tsb-unlimited {
+  font-size: 0.8rem;
+  font-weight: 800;
+  color: #7c3aed;
+  letter-spacing: 0.02em;
+  padding: 4px 0;
+}
 .tsb-gauge {
   display: flex;
   align-items: center;
@@ -276,7 +433,7 @@ html.admob-active.platform-native::after {
 }
 .tsb-gauge-bar {
   flex: 1 1 auto;
-  height: 5px;
+  height: 4px;
   background: var(--tsb-track);
   border-radius: var(--tsb-radius-pill);
   overflow: hidden;
@@ -293,7 +450,7 @@ html.admob-active.platform-native::after {
 .tsb-gauge-fill.is-full { background: var(--tsb-danger); }
 .tsb-gauge-text {
   flex-shrink: 0;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   color: var(--tsb-accent);
   font-variant-numeric: tabular-nums;
@@ -666,7 +823,11 @@ html.admob-active.platform-native::after {
   border-radius: 50%;
   background: #ef4444;
   box-shadow: 0 0 0 2px white;
-  animation: nav-new-dot-pulse 2s ease-in-out infinite;
+  /* [v1.5.72 idle 발열 절감] infinite → 5회로 제한.
+   * Why: box-shadow 변경은 paint를 트리거해 사이드바 열린 동안 지속 GPU+CPU 가동.
+   *   5회 pulse(~10s)면 사용자가 알아채기 충분, 이후 정지로 idle paint 차단.
+   *   forwards로 마지막 frame(평상시 box-shadow) 유지. */
+  animation: nav-new-dot-pulse 2s ease-in-out 5 forwards;
 }
 
 @keyframes nav-new-dot-pulse {
@@ -685,7 +846,8 @@ html.admob-active.platform-native::after {
   background: linear-gradient(135deg, #ef4444, #f97316);
   border-radius: 999px;
   letter-spacing: 0.5px;
-  animation: feature-new-pulse 2.2s ease-in-out infinite;
+  /* [v1.5.72 idle 발열 절감] infinite → 5회로 제한. nav-new-dot 동일 사유. */
+  animation: feature-new-pulse 2.2s ease-in-out 5 forwards;
 }
 
 @keyframes feature-new-pulse {
@@ -826,6 +988,7 @@ html.admob-active.platform-native::after {
   gap: 0.5rem;
   background: rgba(255, 255, 255, 0.9);
   backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   padding: 4px;
   border-radius: 20px;
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
@@ -842,6 +1005,20 @@ html.admob-active.platform-native::after {
 /* 광고 있을 때: 배너 위에 배치 */
 .admob-active .app-nav {
   bottom: calc(var(--admob-bottom, 0px) + 2px);
+}
+/* [v1.5.72 idle 발열 절감] 네이티브(iOS/Android)에서는 backdrop-filter 비활성화.
+ * Why: blur 합성은 GPU compositor를 매 frame 가동시켜 iOS WKWebView idle 발열의
+ *   주요 origin. 항상 보이는 fixed 탭바라 누적 영향이 큼. rgba(255,255,255,0.9)
+ *   배경만으로도 시각적 반투명 효과는 충분히 유지됨.
+ *
+ * [v1.5.81+ thermal-ios] Web/Safari universal 확장 — Safari에서는 platform-native
+ * 클래스가 없어서 blur가 항시 활성. 사용자 보고 Safari에서도 OS 오디오 차단까지
+ * 가는 발열 → universal 가드로 변경. .app-nav는 fixed로 항상 화면에 보이는 탭바
+ * 라서 사용 중에도 GPU compositor 매 frame 가동시킴(3차 mobile-production-guardian
+ * 분석에서 핵심 contributor로 지목). */
+.app-nav {
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
 }
 
 .nav-item {
@@ -1490,6 +1667,24 @@ html.admob-active.platform-native::after {
   font-size: 1.2rem;
   line-height: 1;
   flex-shrink: 0;
+}
+
+/* 학습 언어 선택 순서(1/2/3) 배지 — flex 흐름의 마지막 자식 + margin-left:auto로
+   텍스트 길이와 무관하게 항상 카드 우측·세로중앙 정렬 (절대좌표 미사용) */
+.lang-order-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  background: var(--primary-color);
+  color: #fff;
+  font-size: 0.7rem;
+  font-weight: 800;
+  line-height: 1;
 }
 
 .lang-option:not(.selected):hover {

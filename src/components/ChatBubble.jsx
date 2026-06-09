@@ -25,8 +25,8 @@ export default function ChatBubble({
     onCardOpen,
     onReplay,
     onLearningTipUserFree,
-    isLastUserFree,
     isLearningTipLoading,
+    onRetryReply,
     t,
 }) {
     const { revealedText, isPlaying, isDone } = useTTSSyncedReveal({
@@ -109,8 +109,9 @@ export default function ChatBubble({
                     </span>
                 </button>
 
-                {/* user_free 액션 바 — 마지막 user_free 만 노출 (AI-Tip 단일, 우측 정렬) */}
-                {message.role === 'user_free' && isLastUserFree && !message.isLoading && (
+                {/* user_free 액션 바 — 모든 user_free 에 노출 (지난 턴 피드백 다시보기 유지, AI-Tip 단일, 우측 정렬).
+                    팁 데이터(learning_tip/narration)는 메시지 객체에 보존되므로 대화창 닫힐 때까지 동작. */}
+                {message.role === 'user_free' && !message.isLoading && (
                     <div className="ftc-user-actions">
                         <button
                             className="ftc-user-action-btn"
@@ -132,8 +133,29 @@ export default function ChatBubble({
                     </div>
                 )}
                 {message.replyError && (
-                    <div className="ftc-reply-error">
-                        ⚠️ {t?.('freeTalk.replyError') || '응답 생성 실패'} <small>{message.replyError}</small>
+                    <div className="ftc-reply-error" style={{ display: 'flex', flexDirection: 'column', gap: 8, alignItems: 'flex-start' }}>
+                        <div>⚠️ {t?.('freeTalk.replyError') || '응답 생성을 잠시 후 다시 시도해주세요.'}</div>
+                        {onRetryReply && (
+                            <button
+                                type="button"
+                                onClick={onRetryReply}
+                                style={{
+                                    padding: '5px 12px',
+                                    background: '#7c3aed',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: 6,
+                                    cursor: 'pointer',
+                                    fontSize: '0.85rem',
+                                    fontWeight: 600,
+                                    display: 'inline-flex',
+                                    alignItems: 'center',
+                                    gap: 4,
+                                }}
+                            >
+                                <RotateCcw size={12} /> {t?.('freeTalk.retry') || '다시 시도'}
+                            </button>
+                        )}
                     </div>
                 )}
             </div>

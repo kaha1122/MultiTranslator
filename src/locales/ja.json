@@ -23,7 +23,9 @@
     "title": "Free-Talking",
     "aiName": "会話相手",
     "preparing": "会話を準備しています...",
-    "startError": "会話を開始できませんでした。",
+    "startError": "会話を開始できませんでした。しばらくしてからもう一度お試しください。",
+    "retry": "再試行",
+    "cancel": "閉じる",
     "userAutoHint": "こう始められます",
     "tapForCard": "カードを開く",
     "heardAs": "認識結果",
@@ -60,11 +62,20 @@
     "openSettings": "設定を開く",
     "micError": "録音に問題が発生しました",
     "saveError": "保存に失敗しました。しばらくしてからもう一度お試しください。",
-    "guideTitle": "Free-Talkingの使い方",
-    "guideStep1": "まず状況説明とサンプル会話を聞いて真似してみましょう",
-    "guideStep2": "[話す]ボタンを押して自由に会話しましょう",
-    "guideStep3": "会話中に[カード作成]で重要表現を保存しましょう",
-    "guideDismiss": "始める"
+    "heardMessage": "聞き取った内容",
+    "correctedMessage": "修正後の文",
+    "preGuide": {
+      "welcome": "FreeTalkingはAIとの自由な会話練習です。まずお手本の会話を聞いて、じっくり考えてから続けていく方式です。",
+      "role1": "まず場面とお手本の会話を聞かせます",
+      "role2": "その会話をじっくり聞いて、何を話すか決めます",
+      "role3": "準備できたら [話す] で会話を続けましょう",
+      "missionTitle": "この会話でこんなことをしてみましょう",
+      "mission1": "お手本の会話の流れと表現をつかむ",
+      "mission2": "AIの返事から覚えたい表現を一つ選ぶ",
+      "mission3": "次のひと言を自然に続ける",
+      "tip": "メッセージをタップするとカードが開き、発音練習や保存ができます",
+      "cta": "始める"
+    }
   },
   "pushOptIn": {
     "title": "学習通知を受け取りますか？",
@@ -183,9 +194,20 @@
   },
   "trial": {
     "limitTitle": "本日の無料体験の上限に達しました！",
-    "limitDesc": "1日カード10枚、発音10回、またはFree-Talking2回の上限に達しました。",
+    "limitDesc": "本日の上限に達しました: 発音10回、Free-Talking 2回、Listening 3回。",
     "seeYouTomorrow": "また明日お会いしましょう！",
-    "seeSidebarReward": "もっと学習したい方は、サイドバーの +2 Free-Talking / +5発音 ボタンをご利用ください",
+    "seeSidebarReward": "もっと学習したい？サイドバーの +2 Free-Talking / +5 発音 / +3 Listening ボタンをご利用ください。",
+    "pointsTitle": "ポイントが不足しています",
+    "pointsDesc": "ポイントを充電するか、ご購読ください",
+    "pointsUpgradeHint": "購読すると広告・制限・ポイントなしで無制限に使えます",
+    "costOther": "その他",
+    "costGuideTitle": "利用時の消費ポイント",
+    "costPlay": "再生",
+    "costGenerate": "生成",
+    "proLimitTitle": "今月の上限に達しました",
+    "proLimitDesc": "来月1日にリセットされます",
+    "proUpgradeHint": "Premiumは上限なしで無制限",
+    "proUpgradeBtn": "Premiumにアップグレード",
     "upgradeBtn": "プランをアップグレード"
   },
   "apiSetup": {
@@ -228,6 +250,7 @@
     "noTarget": "まず上で学習言語を選択してください。",
     "saveReturn": "設定を保存して戻る",
     "defaultLevel": "デフォルト学習レベル",
+    "defaultLevelDesc": "言語ごとのデフォルト学習レベルを設定してください。",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "アカウント",
     "groupLanguage": "言語",
@@ -260,7 +283,8 @@
     "loginRequired": "ログインしてください。",
     "customLabelTop": "直接入力",
     "customLabelBottom": "自由に入力",
-    "customPlaceholder": "場所や状況を直接入力してください"
+    "customPlaceholder": "場所や状況を直接入力してください",
+    "customPlaceholderFreetalk": "例) タクシーで移動する / 友達とAIについて議論する"
   },
   "vocab": {
     "generate": "単語を生成",
@@ -282,6 +306,8 @@
     "office": "オフィス・職場",
     "bank": "銀行",
     "gym": "ジム",
+    "home": "家 & ご近所",
+    "cinema": "映画館 & 劇場",
     "custom": "直接入力"
   },
   "sceneSit": {
@@ -295,6 +321,8 @@
     "compliment": "感謝・褒め言葉",
     "decline": "断り方",
     "advice": "アドバイス",
+    "debate": "議論 & 意見交換",
+    "phonecall": "電話",
     "custom": "直接入力"
   },
   "vocabCat": {
@@ -456,8 +484,8 @@
     "thankYou": "ご登録ありがとうございます。",
     "toastFail": "支払いに失敗またはキャンセルされました。",
     "duplicateSubscription": "アプリストアで有効なサブスクリプションがあります。先にそちらを解約してください。",
-    "proFeature1": "発音評価 月1,500回",
-    "proFeature3": "すべてのタブ無制限",
+    "proFeature1": "発音評価 月1,000回",
+    "proFeature3": "Free-Talking 100 · Listening 200回/月",
     "premiumFeature1": "発音評価無制限",
     "premiumFeature2": "Free-Talking 無制限",
     "premiumFeature3": "すべてのタブ無制限",
@@ -571,12 +599,15 @@
     "counterUnit": "枚",
     "bookmarkPromptTitle": "目標スコア達成！",
     "bookmarkPromptDesc": "⭐ ボタンを押してこのフレーズをライブラリに保存してください。今日の学習カードとして記録されます。",
-    "starGuideTitle": "単語帳を活用しましょう！",
-    "starGuideDesc": "学習中に ⭐ をタップするとライブラリに保存できます。保存したカードはいつでも復習できます。",
+    "starGuideTitle": "⭐ 星 → 発音通過 → Streak！",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "今後表示しない",
     "bookmarkNow": "ブックマークする",
-    "bookmarkLater": "あとで"
+    "bookmarkLater": "あとで",
+    "starGuideStep1": "学びたいカードを ⭐ 星でブックマーク。",
+    "starGuideStep2": "発音スコアを通過するとカードが合格(qualified)に。",
+    "starGuideStep3": "1日3枚の合格カードでStreak達成！ボーナス 💎 を獲得。",
+    "starGuideCta": "了解、始めよう！"
   },
   "tabTag": {
     "home": "学習状況とメニューを一目で確認しましょう",
@@ -940,10 +971,18 @@
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
     "watchForProns": "+5 発音",
-    "watchAdPron": "広告視聴で発音 10回追加（永続保管）",
+    "watchAdPron": "広告視聴で発音5回追加",
     "loading": "広告読み込み中...",
+    "topUpBonus": "ボーナスポイント (広告) +5",
+    "topUpBonusDesc": "広告視聴で +5 ポイント",
+    "buyBonus": "ボーナスポイント (購入) +200",
+    "buying": "購入処理中...",
+    "buySuccess": "購入完了！まもなく200ポイントが反映されます。",
+    "buyFail": "購入に失敗しました。後でもう一度お試しください。",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "広告視聴で Free Talking 2回追加（永続保管）"
+    "watchAdFreeTalk": "広告視聴で Free Talking 2回追加",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "広告視聴で Listening 3回追加"
   },
   "renewal": {
     "title": "サブスクリプション期限間近",
@@ -1192,7 +1231,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "カード無制限 · 発音1,500回/月",
+    "proDesc": "F.Talking 100 · Listening 200 · 発音 1000/月",
     "premium": "👑 Premium",
     "premiumDesc": "カード・発音 無制限",
     "noAds": "広告なし"
@@ -1271,11 +1310,10 @@
     "label": "ボーナス",
     "noInterstitialAd": "全画面広告なし",
     "referralBtn": "🤝 友達紹介",
-    "referralSubtitle": "友達も100ptもらえる",
     "reviewSubtitle": "一度のみ",
     "referral": {
-      "title": "コード入力 → 100pt獲得",
-      "desc": "友達のコードを入力すると、二人とも100ボーナスポイントを獲得します。",
+      "title": "コード入力",
+      "desc": "友達が教えてくれた紹介コードを入力してください。",
       "codeLabel": "友達からの紹介コード",
       "submit": "適用",
       "invalid": "無効なコードです",
@@ -1287,8 +1325,8 @@
       "copy": "コピー",
       "copied": "コピーしました！",
       "share": "友達と共有",
-      "success": "🎉 100ボーナスポイントを獲得しました！",
-      "shareMessage": "PronunFitを一緒に使いませんか！このコードを入力すれば二人とも100ボーナスポイント獲得！\n\n{code}\n\nアプリ取得: {url}",
+      "success": "🎉 友達紹介が完了しました！",
+      "shareMessage": "PronunFitを一緒に使いませんか！このコードを入力してください！\n\n{code}\n\nアプリ取得: {url}",
       "shareTitle": "PronunFit 紹介",
       "shareHint": "メッセージをコピーしました。チャットアプリに貼り付けて友達に送ってください。",
       "shareIosWeb": "iPhone / Web",
@@ -1316,7 +1354,7 @@
     "campaign": {
       "title": "🎁 ボーナスポイント開始イベント",
       "desc": "友達紹介やGoogle Playレビューで100ボーナスポイント！ボーナス保有中は全画面広告なし + 日次上限解除！",
-      "feature1": "🤝 友達紹介 — 二人とも100pt",
+      "feature1": "🤝 友達紹介 — 100pt",
       "feature2": "🌟 Google Playレビュー — 100pt",
       "feature3": "🎯 ボーナス活性: 広告なし + 上限なし",
       "cta": "今すぐ始める",

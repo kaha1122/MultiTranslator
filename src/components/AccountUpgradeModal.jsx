@@ -284,23 +284,20 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
     return (
         <div
             style={{
-                position: 'fixed', inset: 0, zIndex: 9999,
-                background: 'rgba(0,0,0,0.55)', backdropFilter: 'blur(4px)',
+                position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
+                background: 'var(--modal-overlay-bg)', backdropFilter: 'blur(4px)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
                 padding: '20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)))',
             }}
             onClick={(e) => { if (e.target === e.currentTarget) onClose(); }}
         >
             <div style={{
-                background: '#fff', borderRadius: '20px',
+                background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)',
                 width: '100%', maxWidth: '380px',
                 padding: '28px 24px', position: 'relative',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.2)',
+                boxShadow: 'var(--modal-shadow)',
             }}>
-                <button onClick={onClose} style={{
-                    position: 'absolute', top: '16px', right: '16px',
-                    background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8',
-                }}>
+                <button className="modal-close" onClick={onClose} aria-label="Close">
                     <X size={20} />
                 </button>
 
@@ -476,7 +473,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                                     disabled={loading || !email || !password}
                                     style={{
                                         padding: '13px', borderRadius: '12px',
-                                        background: loading ? '#94a3b8' : '#00a884',
+                                        background: loading ? '#94a3b8' : 'var(--brand-primary)',
                                         border: 'none', color: '#fff',
                                         cursor: loading ? 'not-allowed' : 'pointer',
                                         fontWeight: 700, fontSize: '0.95rem',

@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { X, Mic, MicOff, RotateCcw } from 'lucide-react';
 import ChatBubble from './ChatBubble';
 import MessageCardModal from './MessageCardModal';
@@ -8,6 +9,12 @@ import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
 import { playStarSound } from '../utils/soundEffects';
 import './FreeTalkingChat.css';
+
+// [v1.5.73 thermal-ios Pattern 4] 모달 닫힘 시점에 AVAudioSession 완전 해제용.
+// useFreeTalkRecorder의 deactivateAudioSession은 매 녹음 stop마다 카테고리만
+// 전환하지만, setActive(true)가 영구 잔류해 mediaserverd가 계속 awake → 발열 누적.
+// 모달 닫힘 시 endAudioSession 호출로 setActive(false) → mediaserverd 해제.
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 /**
  * 카카오톡 스타일 풀스크린 Free Talking 모달.
@@ -33,6 +40,11 @@ export default function FreeTalkingChat({
     onPronSuccess,
     onSpeak,
     onBookmarkPrompt,
+    // 세션이 성공적으로 시작됐을 때(서버 200 응답 받고 scenarioMeta/3 messages 마운트 직후)
+    // onSessionStarted: opener 표시 신호(차감 X). 2026-06-07 레이어1부터 차감/카운트는 onFirstUserTurn로 이동.
+    // onFirstUserTurn: 첫 free turn(실제 발화 1회 성공) 시 1회 호출 — App에서 차감·카운트 수행.
+    onSessionStarted,
+    onFirstUserTurn,
     languageGoals = {},
 }) {
     const t = (key) => getT(sourceLang, key);
@@ -44,20 +56,28 @@ export default function FreeTalkingChat({
         sessionEnded, endedReason,
         startSession, endSession, resetSession,
         submitFreeUtterance,
+        retryLastReply,
         markMessagePlayed,
     } = useConversation({ tier });
 
-    // 첫 진입 안내 — localStorage 'pronunfit_freetalk_guide_seen' 미존재 시 모달 진입 직후 1회 표시
-    const [showFirstGuide, setShowFirstGuide] = useState(false);
+    // 첫 진입 안내는 FreeTalkingPreGuideModal(채팅 진입 전 게이트)로 이관됨 — 인라인 가이드 제거
 
     const [playbackIdx, setPlaybackIdx] = useState(-1);
     const [playbackQueueDone, setPlaybackQueueDone] = useState(false);
     const startedRef = useRef(false);
+    // 2026-06-07 레이어1: 세션당 첫 발화 차감 1회 가드. 세션 시작 시 false 로 리셋,
+    //   freeTurnCount 가 처음 ≥1 될 때 onFirstUserTurn 1회 호출. 편집 재생성(1→0→1)에도 재차감 X.
+    const firstTurnChargedRef = useRef(false);
     const messagesEndRef = useRef(null);
     const [cardOpenMessage, setCardOpenMessage] = useState(null);
     const [cardSavedIds, setCardSavedIds] = useState({});  // {messageId: true}
     // Learning Tip 코칭 TTS 로딩 중인 user_free 메시지 id (스피너 노출용)
     const [learningTipLoadingId, setLearningTipLoadingId] = useState(null);
+    // [v1.5.74+ thermal-ios] handleClose에서 endAudioSession이 fire되기 전에 진행 중인
+    // Learning Tip audio를 명시적으로 정지하기 위한 ref. ChatBubble의 TTS는 setPlaybackIdx(-1)
+    // → useTTSSyncedReveal effect cleanup으로 자동 정지되지만, Learning Tip의 new Audio()는
+    // hook 외부 로컬 변수라 외부에서 접근할 수단이 없어 ref로 추적한다.
+    const learningTipAudioRef = useRef(null);
     // 음성 미지원 (sourceLang, targetLang) 조합 시 텍스트만 보여주는 popup
     const [aiTipPopup, setAiTipPopup] = useState({ open: false, text: '' });
 
@@ -71,15 +91,28 @@ export default function FreeTalkingChat({
         sourceLang,
     });
 
-    // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정
+    // 2026-06-07 레이어1: 첫 free turn(AI 응답 정상 도착 → freeTurnCount ≥1) 도달 시 1회만 차감·카운트.
+    //   세션 시작/오프너만 보고 닫으면 freeTurnCount 0 → onFirstUserTurn 미호출 → 차감 0.
+    //   firstTurnChargedRef 는 세션 시작 시에만 리셋되므로 편집 재생성(1→0→1)에도 재차감 안 됨.
+    useEffect(() => {
+        if (freeTurnCount >= 1 && !firstTurnChargedRef.current) {
+            firstTurnChargedRef.current = true;
+            onFirstUserTurn?.();
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [freeTurnCount]);
+
+    // 모달 open 시 1회 startSession 호출 + 첫 진입 안내 표시 여부 결정.
+    // 성공 시(true 반환)에만 onSessionStarted 호출 — 실패 시에는 카운트 보존하고
+    // 사용자에게 [다시 시도] 버튼 노출(아래 startError 블록).
     useEffect(() => {
         if (open && setupArgs && !startedRef.current) {
             startedRef.current = true;
-            startSession(setupArgs);
-            try {
-                const seen = localStorage.getItem('pronunfit_freetalk_guide_seen');
-                if (!seen) setShowFirstGuide(true);
-            } catch (e) { /* noop */ }
+            firstTurnChargedRef.current = false; // 새 세션 시작 — 첫 발화 차감 가드 리셋
+            (async () => {
+                const ok = await startSession(setupArgs);
+                if (ok) onSessionStarted?.();
+            })();
         }
         if (!open && startedRef.current) {
             startedRef.current = false;
@@ -89,9 +122,32 @@ export default function FreeTalkingChat({
             setCardSavedIds({});
             setAiTipPopup({ open: false, text: '' });
             resetSession();
+            // [v1.5.73 thermal-ios Pattern 4] iOS 한정 AVAudioSession 완전 해제.
+            // Free Talking 한 세션 동안 녹음 수십 회 반복 → 매 stop 후 deactivateAudioSession
+            // 으로 카테고리만 .playback 전환했지만 setActive(true) 영구 잔류해 mediaserverd
+            // 가 계속 awake. 모달 닫힘 시점에 setActive(false) 호출해서 mediaserverd 해제 →
+            // 발열 누적 차단 → iOS thermal throttling 방지 → 마이크 silent capture 회복.
+            //
+            // Trade-off: 다음 활성화 시 BT(에어팟) 라우트 재선택 — iOS 17/26에서 .allowBluetoothA2DP
+            // 옵션 + 사용자가 컨트롤센터에서 명시 선택한 경우 보존되는 것으로 알려져 있으나
+            // 1차 IPA 검증 필요. 회귀 발생 시 라우트 캐시 복원(패턴 2) 추가 검토.
+            //
+            // 옵셔널 체이닝: 구 IPA(endAudioSession 미존재) + 신 JS 콤보에서 silent fail.
+            if (Capacitor.getPlatform() === 'ios') {
+                BluetoothAudio.endAudioSession?.().catch(() => {});
+            }
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
+
+    // 시작 실패 시 [다시 시도] 핸들러 — 같은 setupArgs로 startSession 재호출.
+    // 성공하면 onSessionStarted 호출(첫 시도 실패→재시도 성공도 1회 차감으로 카운트).
+    // 무한 재시도는 사용자 발등의 불을 최소화하기 위해 의도된 동작(503 transient 회복 시도).
+    const handleRetry = async () => {
+        if (!setupArgs) return;
+        const ok = await startSession(setupArgs);
+        if (ok) onSessionStarted?.();
+    };
 
     // 시작 메시지 3개 모두 ttsReady=true 가 되면 자동재생 시작
     useEffect(() => {
@@ -146,6 +202,17 @@ export default function FreeTalkingChat({
     };
 
     const handleClose = () => {
+        // [v1.5.74+ thermal-ios] endAudioSession(useEffect [open]의 닫힘 분기에서 fire)이
+        // setActive(false)를 호출하기 전에 진행 중인 TTS를 명시적으로 정지한다.
+        // iOS에서 재생 중인 new Audio()가 setActive(false)와 겹치면 갑작스러운 끊김 /
+        // error 이벤트가 발생할 수 있어, 모달 닫힘 흐름을 매끄럽게 만들고 race를 차단.
+        //
+        // ChatBubble TTS: setPlaybackIdx(-1) → shouldAutoplay=false →
+        //   useTTSSyncedReveal의 effect cleanup(stop()) 자동 호출 (useTTSSyncedReveal.js:160-162).
+        // Learning Tip audio: hook 외부의 new Audio()라 learningTipAudioRef로 직접 pause.
+        setPlaybackIdx(-1);
+        try { learningTipAudioRef.current?.pause(); } catch (e) { /* noop */ }
+        learningTipAudioRef.current = null;
         endSession('user');
         onClose?.();
     };
@@ -158,12 +225,6 @@ export default function FreeTalkingChat({
             await recorder.startRecording();
         }
     };
-
-    // 마지막 user_free 메시지 인덱스
-    let lastUserFreeIdx = -1;
-    for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === 'user_free') { lastUserFreeIdx = i; break; }
-    }
 
     // AI-Tip 버튼 — 옵션 A 보수 매트릭스:
     //   m.learning_tip           : SHORT 카드 표시용 (UI에 보이는 노란 박스, 변경 X)
@@ -193,22 +254,28 @@ export default function FreeTalkingChat({
             });
             if (res.status === 204) {
                 // 매트릭스 미지원 (sourceLang, targetLang) — narration 텍스트 popup
-                setAiTipPopup({ open: true, text: ttsText });
+                setAiTipPopup({ open: true, text: ttsText, heard: msg?.sttRaw || '', corrected: msg?.fullText || msg?.text || '' });
                 return;
             }
             if (!res.ok) throw new Error(`coach-tts ${res.status}`);
             const blob = await res.blob();
             url = URL.createObjectURL(blob);
             const audio = new Audio(url);
+            // [v1.5.74+ thermal-ios] handleClose에서 정지할 수 있도록 ref로 추적.
+            learningTipAudioRef.current = audio;
             await new Promise((resolve) => {
                 audio.onended = resolve;
                 audio.onerror = resolve;  // graceful — finally 에서 cleanup
                 audio.play().catch(resolve);
             });
+            // 정상 종료 — ref가 이 audio를 가리키고 있을 때만 해제 (다음 호출로 교체된 경우 보호)
+            if (learningTipAudioRef.current === audio) {
+                learningTipAudioRef.current = null;
+            }
         } catch (e) {
             console.warn('[FreeTalkingChat] coach-tts failed, falling back to text popup:', e?.message);
             // 네트워크 에러 등 → 텍스트 popup fallback
-            setAiTipPopup({ open: true, text: ttsText });
+            setAiTipPopup({ open: true, text: ttsText, heard: msg?.sttRaw || '', corrected: msg?.fullText || msg?.text || '' });
         } finally {
             if (url) { try { URL.revokeObjectURL(url); } catch (e) { /* noop */ } }
             setLearningTipLoadingId(null);
@@ -279,28 +346,6 @@ export default function FreeTalkingChat({
                 </div>
 
                 <div className="ftc-messages">
-                    {showFirstGuide && (
-                        <div className="ftc-first-guide">
-                            <div className="ftc-first-guide-title">
-                                ✨ {t('freeTalk.guideTitle') || 'Free-Talking 사용법'}
-                            </div>
-                            <ol className="ftc-first-guide-list">
-                                <li>👂 {t('freeTalk.guideStep1') || '먼저 상황 설명과 예시 대화를 듣고 따라 해보세요'}</li>
-                                <li>🎤 {t('freeTalk.guideStep2') || '[말하기] 버튼을 눌러 자유롭게 대화하세요'}</li>
-                                <li>💎 {t('freeTalk.guideStep3') || '대화 중 [카드 만들기]로 핵심 표현을 저장하세요'}</li>
-                            </ol>
-                            <button
-                                type="button"
-                                className="ftc-first-guide-btn"
-                                onClick={() => {
-                                    try { localStorage.setItem('pronunfit_freetalk_guide_seen', '1'); } catch (e) { /* noop */ }
-                                    setShowFirstGuide(false);
-                                }}
-                            >
-                                {t('freeTalk.guideDismiss') || '시작하기'}
-                            </button>
-                        </div>
-                    )}
                     {isStarting && (
                         <div className="ftc-loading">
                             <RotateCcw className="spin" size={18} /> {t('freeTalk.preparing') || '대화를 준비하고 있어요...'}
@@ -308,8 +353,44 @@ export default function FreeTalkingChat({
                     )}
                     {startError && !isStarting && (
                         <div className="ftc-error">
-                            {t('freeTalk.startError') || '대화를 시작하지 못했습니다.'} <br />
-                            <small>{startError}</small>
+                            {/* 메시지 라인 — 영어 raw startError detail 은 노출하지 않음(console.error 디버그). */}
+                            <div style={{ lineHeight: 1.5 }}>
+                                {t('freeTalk.startError') || '대화를 시작하지 못했어요. 잠시 후 다시 시도해주세요.'}
+                            </div>
+                            {/* 버튼 라인 (다음 줄, 가운데 정렬) */}
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'center' }}>
+                                <button
+                                    type="button"
+                                    onClick={handleRetry}
+                                    style={{
+                                        padding: '8px 20px',
+                                        background: '#7c3aed',
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                        fontWeight: 600,
+                                    }}
+                                >
+                                    {t('freeTalk.retry') || '다시 시도'}
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={onClose}
+                                    style={{
+                                        padding: '8px 20px',
+                                        background: 'transparent',
+                                        color: '#6b7280',
+                                        border: '1px solid #d1d5db',
+                                        borderRadius: 6,
+                                        cursor: 'pointer',
+                                        fontSize: '0.95rem',
+                                    }}
+                                >
+                                    {t('freeTalk.cancel') || '닫기'}
+                                </button>
+                            </div>
                         </div>
                     )}
 
@@ -323,8 +404,8 @@ export default function FreeTalkingChat({
                             onCardOpen={handleCardOpen}
                             onReplay={() => { /* 개별 재생: Sprint 3 보강 가능 */ }}
                             onLearningTipUserFree={handleLearningTip}
-                            isLastUserFree={idx === lastUserFreeIdx}
                             isLearningTipLoading={learningTipLoadingId === m.id}
+                            onRetryReply={m.replyError ? retryLastReply : undefined}
                             t={t}
                         />
                     ))}
@@ -424,6 +505,8 @@ export default function FreeTalkingChat({
             <AITipPopup
                 open={aiTipPopup.open}
                 text={aiTipPopup.text}
+                heard={aiTipPopup.heard}
+                corrected={aiTipPopup.corrected}
                 onClose={() => setAiTipPopup({ open: false, text: '' })}
                 t={t}
             />

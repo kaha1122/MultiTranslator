@@ -1,5 +1,5 @@
 const express = require('express');
-const axios = require('axios');
+const axios = require('axios');  // Azure TTS/STT 등 비-Gemini 호출에 사용
 const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
@@ -7,7 +7,7 @@ const sdk = require('microsoft-cognitiveservices-speech-sdk');
 const { optionalAuth } = require('../middleware/auth');
 const { buildStartPrompt, buildReplyPrompt, buildSummarizePrompt } = require('../utils/conversationPrompt');
 const { stripAnnotations } = require('../utils/stripAnnotations');
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const router = express.Router();
 
@@ -25,45 +25,45 @@ const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
 // scene/listening/scene-answer와 동일한 voice 모음을 활용하기 위해 tts.js와 동일 정의를
 // 미러링한다. (tts.js export 시 하위 변경 위험이 있어 보수적으로 별도 정의)
 const AZURE_TTS_VOICE_MAP = {
-    'en':    { voiceFemale: 'en-US-JennyNeural',      voiceMale: 'en-US-GuyNeural',        styles: ['chat','cheerful','sad','angry','excited','friendly','hopeful','empathetic'] },
-    'ja':    { voiceFemale: 'ja-JP-NanamiNeural',      voiceMale: 'ja-JP-KeitaNeural',      styles: ['chat'] },
-    'zh-CN': { voiceFemale: 'zh-CN-XiaoxiaoNeural',    voiceMale: 'zh-CN-YunxiNeural',      styles: ['chat','cheerful','sad','angry','fearful','gentle','serious','friendly','empathetic','calm'] },
-    'vi':    { voiceFemale: 'vi-VN-HoaiMyNeural',       voiceMale: 'vi-VN-NamMinhNeural',    styles: [] },
-    'fr':    { voiceFemale: 'fr-FR-DeniseNeural',       voiceMale: 'fr-FR-HenriNeural',      styles: [] },
-    'de':    { voiceFemale: 'de-DE-KatjaNeural',        voiceMale: 'de-DE-ConradNeural',     styles: [] },
-    'es':    { voiceFemale: 'es-ES-ElviraNeural',       voiceMale: 'es-ES-AlvaroNeural',     styles: [] },
-    'ko':    { voiceFemale: 'ko-KR-SunHiNeural',        voiceMale: 'ko-KR-InJoonNeural',     styles: ['chat','cheerful','sad','angry','friendly'] },
-    'ru':    { voiceFemale: 'ru-RU-SvetlanaNeural',     voiceMale: 'ru-RU-DmitryNeural',     styles: [] },
-    'pt-BR': { voiceFemale: 'pt-BR-FranciscaNeural',    voiceMale: 'pt-BR-AntonioNeural',    styles: [] },
-    'ar':    { voiceFemale: 'ar-SA-ZariyahNeural',      voiceMale: 'ar-SA-HamedNeural',      styles: [] },
-    'bn':    { voiceFemale: 'bn-IN-TanishaaNeural',     voiceMale: 'bn-IN-BashkarNeural',    styles: [] },
-    'bg':    { voiceFemale: 'bg-BG-KalinaNeural',       voiceMale: 'bg-BG-BorislavNeural',   styles: [] },
-    'zh-TW': { voiceFemale: 'zh-TW-HsiaoChenNeural',    voiceMale: 'zh-TW-YunJheNeural',     styles: [] },
-    'hr':    { voiceFemale: 'hr-HR-GabrijelaNeural',    voiceMale: 'hr-HR-SreckoNeural',     styles: [] },
-    'cs':    { voiceFemale: 'cs-CZ-VlastaNeural',       voiceMale: 'cs-CZ-AntoninNeural',    styles: [] },
-    'da':    { voiceFemale: 'da-DK-ChristelNeural',     voiceMale: 'da-DK-JeppeNeural',      styles: [] },
-    'nl':    { voiceFemale: 'nl-NL-ColetteNeural',      voiceMale: 'nl-NL-MaartenNeural',    styles: [] },
-    'et':    { voiceFemale: 'et-EE-AnuNeural',          voiceMale: 'et-EE-KertNeural',       styles: [] },
-    'fi':    { voiceFemale: 'fi-FI-NooraNeural',        voiceMale: 'fi-FI-HarriNeural',      styles: [] },
-    'el':    { voiceFemale: 'el-GR-AthinaNeural',       voiceMale: 'el-GR-NestorasNeural',   styles: [] },
-    'he':    { voiceFemale: 'he-IL-HilaNeural',         voiceMale: 'he-IL-AvriNeural',       styles: [] },
-    'hi':    { voiceFemale: 'hi-IN-SwaraNeural',        voiceMale: 'hi-IN-ArjunNeural',      styles: [] },
-    'hu':    { voiceFemale: 'hu-HU-NoemiNeural',        voiceMale: 'hu-HU-TamasNeural',      styles: [] },
-    'id':    { voiceFemale: 'id-ID-GadisNeural',        voiceMale: 'id-ID-ArdiNeural',       styles: [] },
-    'it':    { voiceFemale: 'it-IT-ElsaNeural',         voiceMale: 'it-IT-DiegoNeural',      styles: [] },
-    'lv':    { voiceFemale: 'lv-LV-EveritaNeural',     voiceMale: 'lv-LV-NilsNeural',       styles: [] },
-    'lt':    { voiceFemale: 'lt-LT-OnaNeural',          voiceMale: 'lt-LT-LeonasNeural',     styles: [] },
-    'no':    { voiceFemale: 'nb-NO-PernilleNeural',     voiceMale: 'nb-NO-FinnNeural',       styles: [] },
-    'pl':    { voiceFemale: 'pl-PL-AgnieszkaNeural',    voiceMale: 'pl-PL-MarekNeural',      styles: [] },
-    'ro':    { voiceFemale: 'ro-RO-AlinaNeural',        voiceMale: 'ro-RO-EmilNeural',       styles: [] },
-    'sr':    { voiceFemale: 'sr-RS-SophieNeural',       voiceMale: 'sr-RS-NicholasNeural',   styles: [] },
-    'sk':    { voiceFemale: 'sk-SK-ViktoriaNeural',     voiceMale: 'sk-SK-LukasNeural',      styles: [] },
-    'sl':    { voiceFemale: 'sl-SI-PetraNeural',        voiceMale: 'sl-SI-RokNeural',        styles: [] },
-    'sw':    { voiceFemale: 'sw-KE-ZuriNeural',         voiceMale: 'sw-KE-RafikiNeural',     styles: [] },
-    'sv':    { voiceFemale: 'sv-SE-SofieNeural',        voiceMale: 'sv-SE-MattiasNeural',    styles: [] },
-    'th':    { voiceFemale: 'th-TH-PremwadeeNeural',    voiceMale: 'th-TH-NiwatNeural',      styles: [] },
-    'tr':    { voiceFemale: 'tr-TR-EmelNeural',         voiceMale: 'tr-TR-AhmetNeural',      styles: [] },
-    'uk':    { voiceFemale: 'uk-UA-PolinaNeural',       voiceMale: 'uk-UA-OstapNeural',      styles: [] },
+    'en': { voiceFemale: 'en-US-JennyNeural', voiceMale: 'en-US-GuyNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'excited', 'friendly', 'hopeful', 'empathetic'] },
+    'ja': { voiceFemale: 'ja-JP-NanamiNeural', voiceMale: 'ja-JP-KeitaNeural', styles: ['chat'] },
+    'zh-CN': { voiceFemale: 'zh-CN-XiaoxiaoNeural', voiceMale: 'zh-CN-YunxiNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'fearful', 'gentle', 'serious', 'friendly', 'empathetic', 'calm'] },
+    'vi': { voiceFemale: 'vi-VN-HoaiMyNeural', voiceMale: 'vi-VN-NamMinhNeural', styles: [] },
+    'fr': { voiceFemale: 'fr-FR-DeniseNeural', voiceMale: 'fr-FR-HenriNeural', styles: [] },
+    'de': { voiceFemale: 'de-DE-KatjaNeural', voiceMale: 'de-DE-ConradNeural', styles: [] },
+    'es': { voiceFemale: 'es-ES-ElviraNeural', voiceMale: 'es-ES-AlvaroNeural', styles: [] },
+    'ko': { voiceFemale: 'ko-KR-SunHiNeural', voiceMale: 'ko-KR-InJoonNeural', styles: ['chat', 'cheerful', 'sad', 'angry', 'friendly'] },
+    'ru': { voiceFemale: 'ru-RU-SvetlanaNeural', voiceMale: 'ru-RU-DmitryNeural', styles: [] },
+    'pt-BR': { voiceFemale: 'pt-BR-FranciscaNeural', voiceMale: 'pt-BR-AntonioNeural', styles: [] },
+    'ar': { voiceFemale: 'ar-SA-ZariyahNeural', voiceMale: 'ar-SA-HamedNeural', styles: [] },
+    'bn': { voiceFemale: 'bn-IN-TanishaaNeural', voiceMale: 'bn-IN-BashkarNeural', styles: [] },
+    'bg': { voiceFemale: 'bg-BG-KalinaNeural', voiceMale: 'bg-BG-BorislavNeural', styles: [] },
+    'zh-TW': { voiceFemale: 'zh-TW-HsiaoChenNeural', voiceMale: 'zh-TW-YunJheNeural', styles: [] },
+    'hr': { voiceFemale: 'hr-HR-GabrijelaNeural', voiceMale: 'hr-HR-SreckoNeural', styles: [] },
+    'cs': { voiceFemale: 'cs-CZ-VlastaNeural', voiceMale: 'cs-CZ-AntoninNeural', styles: [] },
+    'da': { voiceFemale: 'da-DK-ChristelNeural', voiceMale: 'da-DK-JeppeNeural', styles: [] },
+    'nl': { voiceFemale: 'nl-NL-ColetteNeural', voiceMale: 'nl-NL-MaartenNeural', styles: [] },
+    'et': { voiceFemale: 'et-EE-AnuNeural', voiceMale: 'et-EE-KertNeural', styles: [] },
+    'fi': { voiceFemale: 'fi-FI-NooraNeural', voiceMale: 'fi-FI-HarriNeural', styles: [] },
+    'el': { voiceFemale: 'el-GR-AthinaNeural', voiceMale: 'el-GR-NestorasNeural', styles: [] },
+    'he': { voiceFemale: 'he-IL-HilaNeural', voiceMale: 'he-IL-AvriNeural', styles: [] },
+    'hi': { voiceFemale: 'hi-IN-SwaraNeural', voiceMale: 'hi-IN-ArjunNeural', styles: [] },
+    'hu': { voiceFemale: 'hu-HU-NoemiNeural', voiceMale: 'hu-HU-TamasNeural', styles: [] },
+    'id': { voiceFemale: 'id-ID-GadisNeural', voiceMale: 'id-ID-ArdiNeural', styles: [] },
+    'it': { voiceFemale: 'it-IT-ElsaNeural', voiceMale: 'it-IT-DiegoNeural', styles: [] },
+    'lv': { voiceFemale: 'lv-LV-EveritaNeural', voiceMale: 'lv-LV-NilsNeural', styles: [] },
+    'lt': { voiceFemale: 'lt-LT-OnaNeural', voiceMale: 'lt-LT-LeonasNeural', styles: [] },
+    'no': { voiceFemale: 'nb-NO-PernilleNeural', voiceMale: 'nb-NO-FinnNeural', styles: [] },
+    'pl': { voiceFemale: 'pl-PL-AgnieszkaNeural', voiceMale: 'pl-PL-MarekNeural', styles: [] },
+    'ro': { voiceFemale: 'ro-RO-AlinaNeural', voiceMale: 'ro-RO-EmilNeural', styles: [] },
+    'sr': { voiceFemale: 'sr-RS-SophieNeural', voiceMale: 'sr-RS-NicholasNeural', styles: [] },
+    'sk': { voiceFemale: 'sk-SK-ViktoriaNeural', voiceMale: 'sk-SK-LukasNeural', styles: [] },
+    'sl': { voiceFemale: 'sl-SI-PetraNeural', voiceMale: 'sl-SI-RokNeural', styles: [] },
+    'sw': { voiceFemale: 'sw-KE-ZuriNeural', voiceMale: 'sw-KE-RafikiNeural', styles: [] },
+    'sv': { voiceFemale: 'sv-SE-SofieNeural', voiceMale: 'sv-SE-MattiasNeural', styles: [] },
+    'th': { voiceFemale: 'th-TH-PremwadeeNeural', voiceMale: 'th-TH-NiwatNeural', styles: [] },
+    'tr': { voiceFemale: 'tr-TR-EmelNeural', voiceMale: 'tr-TR-AhmetNeural', styles: [] },
+    'uk': { voiceFemale: 'uk-UA-PolinaNeural', voiceMale: 'uk-UA-OstapNeural', styles: [] },
 };
 
 // emotion → Azure style 매핑 (tts.js와 동일 — 의도적으로 미러)
@@ -86,41 +86,55 @@ const escapeXml = (s) => String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;').replace(/'/g, '&apos;');
 
-// ── 코칭 나레이션 전용 Multilingual Neural Voice 매트릭스 ──────────────────
-// Microsoft 공식 (speech-synthesis-markup-voice 문서):
-//   - en-US-AvaMultilingualNeural 등 4 개 영어 base voice 만 **77 locale 지원**
-//     명시 — ko/zh-CN/ja/vi/ru/pt-BR/fr/de/es 모두 포함.
-//   - 그 외 multilingual voice (Hyunsu/Xiaoxiao/Masaru/Vivienne/Seraphina/
-//     Isidora/Macerio) 는 secondary locale 미명시 → "default locale (자체 base)
-//     + 영어" 만 안전 추정 (Hyunsu 가 zh-CN 한자를 한국식으로 발음한 사용자
-//     보고와 일치).
-//
-// 보수 매트릭스 (Option A): (sourceLang, targetLang) 조합이 정확히 지원되는
-// 경우만 음성 합성. 미지원이면 204 No Content → 클라가 AI-Tip Popup 으로
-// 텍스트만 표시.
-//   - sourceLang='en' + 어떤 targetLang 이든 → en-US-Ava (77 locale)
-//   - sourceLang ∈ {ko, ja, zh-CN, fr, de, es, pt-BR} + targetLang='en' →
-//     자체 base multilingual voice
-//   - 그 외 (예: ko 사용자가 zh-CN 학습) → null → 204
-//
-// 비용은 일반 Neural 과 동일 ($16/1M chars, S0 tier). HD voice 별도 tier 미사용.
-function getNarrationVoice(sourceLang, targetLang) {
-    // en 사용자 — Ava 가 77 locale 지원 → 모든 targetLang OK
-    if (sourceLang === 'en') return 'en-US-AvaMultilingualNeural';
+// ── B안(slot memory): establishedFacts key 기반 병합 (순수 in-memory, DB I/O 없음) ──
+// prior(클라가 carry 한 이전 누적) + next(모델이 이번 턴 반환)를 'attribute' key 로 병합.
+// 핵심 방어: 구체값이 있는 슬롯을 모델이 'asked, awaiting answer' 로 되돌려도(강등)
+// 무시하고 구체값 유지 → party_size: 8 같은 사실이 재질문/퇴행으로 사라지지 않음.
+// 새 구체값은 갱신(사용자 정정 허용), 새 key 는 누적. prior 순서 유지 후 신규 key append.
+function mergeEstablishedFacts(prior, next) {
+    const parse = (f) => {
+        const s = String(f);
+        const idx = s.indexOf(':');
+        if (idx === -1) return { key: s.trim().toLowerCase(), value: '', raw: s.trim() };
+        return { key: s.slice(0, idx).trim().toLowerCase(), value: s.slice(idx + 1).trim(), raw: s.trim() };
+    };
+    const isPending = (v) => !v || /^asked\b/i.test(v) || /awaiting/i.test(v);
+    const map = new Map();   // key -> raw string
+    const order = [];
+    const put = (f) => {
+        if (typeof f !== 'string' || !f.trim()) return;
+        const { key, value, raw } = parse(f);
+        if (!key) return;
+        if (!map.has(key)) { map.set(key, raw); order.push(key); return; }
+        const existing = parse(map.get(key));
+        const existingConcrete = !isPending(existing.value);
+        const incomingConcrete = !isPending(value);
+        if (incomingConcrete) map.set(key, raw);              // 새 구체값 → 갱신(정정 허용)
+        else if (!existingConcrete) map.set(key, raw);        // 둘 다 pending → 최신 표현 유지
+        // existingConcrete && !incomingConcrete → 강등 시도 → 무시(구체값 유지)
+    };
+    (Array.isArray(prior) ? prior : []).forEach(put);
+    (Array.isArray(next) ? next : []).forEach(put);
+    return order.map(k => map.get(k));
+}
 
-    // 그 외 sourceLang — 영어 학습 (targetLang='en') 만 안전 지원
-    if (targetLang !== 'en') return null;
-
-    return {
-        'ko':    'ko-KR-HyunsuMultilingualNeural',
-        'ja':    'ja-JP-MasaruMultilingualNeural',
-        'zh-CN': 'zh-CN-XiaoxiaoMultilingualNeural',
-        'fr':    'fr-FR-VivienneMultilingualNeural',
-        'de':    'de-DE-SeraphinaMultilingualNeural',
-        'es':    'es-ES-IsidoraMultilingualNeural',
-        'pt-BR': 'pt-BR-MacerioMultilingualNeural',
-        // 'vi', 'ru': multilingual variant 없음 — 미지원
-    }[sourceLang] || null;
+// ── 코칭 나레이션 음성 합성: 전면 비활성화 (2026-05-22) ───────────────────
+// 사용자 검증 결과 ko-KR-HyunsuMultilingualNeural / en-US-AvaMultilingualNeural
+// 두 케이스 모두 인용부호 안 학습언어 발음 품질이 떨어진다는 보고. 다른
+// multilingual voice (Masaru/Xiaoxiao/Vivienne/Seraphina/Isidora/Macerio) 는
+// 애초에 secondary locale 미명시 voice 였음.
+//
+// 잘못된 발음을 듣게 하는 것보다 popup 으로 텍스트만 보여주는 편이 학습상
+// 안전. 학습언어 발음은 카드 모달의 본문 turn TTS (정통 Neural voice) 로 별도
+// 청취 가능 — 보조 경로 존재.
+//
+// 모든 (sourceLang, targetLang) 조합 → null → 204 → 클라가 AITipPopup 으로
+// userCoachingNarration 텍스트만 표시. userCoachingNarration 은 prompt 에서
+// sourceLang 모국어로 강제 출력되므로 10 개 locale 모두 자연스럽게 표시.
+//
+// 부수: Azure TTS coach-tts 호출 비용 0 ($16/1M chars 절감, 비중은 작음).
+function getNarrationVoice(_sourceLang, _targetLang) {
+    return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────
@@ -129,7 +143,7 @@ function getNarrationVoice(sourceLang, targetLang) {
 //   기존 /api/scene-sentence + /api/scene-answer 의 Phase/Rules/스키마를 재활용.
 // ─────────────────────────────────────────────────────────────────────────
 router.post('/api/converse-start', optionalAuth, async (req, res) => {
-    const { scene, category, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSituations } = req.body || {};
+    const { scene, category, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSituations } = req.body || {};
     if (!scene || !targetLang || !sourceLang) {
         return res.status(400).json({ error: 'Missing scene, targetLang, or sourceLang' });
     }
@@ -137,28 +151,32 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
     const prompt = buildStartPrompt({
-        scene, category, targetLang, sourceLang, difficulty, speechStyle,
+        scene, category, isCustom: isCustom === true,
+        targetLang, sourceLang, difficulty, speechStyle,
         avoidSituations: Array.isArray(avoidSituations) ? avoidSituations : [],
     });
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            console.error('[ConverseStart] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
-        }
+    // prompt size monitoring — Gemini Flash-Lite input limit 32K tokens.
+    // 50KB chars ≈ 14K tokens 임계값. 추세 모니터링용 (실제 차단 X).
+    if (prompt.length > 50000) {
+        console.warn(`[ConverseStart] prompt size large: ${prompt.length} chars (~${Math.round(prompt.length / 3.5)} tokens) — approaching 32K input limit`);
+    }
 
+    // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
+    // 기존 attemptOnce inline 로직은 shared helper 로 이전됨.
+    // temperature 1.3 → 1.0 (사용자 결정): BRANCH 룰(특히 BRANCH C TOPIC) 준수 ↑
+    // + placeholder/언어 swap 위반 ↓. 시나리오 다양성은 Anti-Duplication 의
+    // dimensions rotation 이 보완.
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.0, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => p?.intro?.text && p?.firstUserTurn?.sentence && p?.firstAiReply?.sentence,
+        label: 'ConverseStart',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate conversation start' });
+    }
+    try {
+        const parsed = result.parsed;
         // 후처리: 두 turn 의 sentence 에 stripAnnotations 적용 (보험)
         if (parsed?.firstUserTurn?.sentence) {
             parsed.firstUserTurn.sentence = stripAnnotations(parsed.firstUserTurn.sentence, targetLang);
@@ -166,16 +184,9 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         if (parsed?.firstAiReply?.sentence) {
             parsed.firstAiReply.sentence = stripAnnotations(parsed.firstAiReply.sentence, targetLang);
         }
-
-        // 최소 필드 검증
-        if (!parsed?.intro?.text || !parsed?.firstUserTurn?.sentence || !parsed?.firstAiReply?.sentence) {
-            console.error('[ConverseStart] Missing required fields in response:', Object.keys(parsed || {}));
-            return res.status(502).json({ error: 'AI response missing required fields' });
-        }
-
         res.json(parsed);
     } catch (e) {
-        console.error('[ConverseStart] Error:', e.response?.data || e.message);
+        console.error('[ConverseStart] Unexpected:', e.message);
         res.status(500).json({ error: 'Failed to generate conversation start' });
     }
 });
@@ -201,19 +212,12 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
     const supportedStyles = voiceInfo.styles || [];
     const locale = voiceName.split('-').slice(0, 2).join('-');
 
-    let voiceStyle = null;
-    if (supportedStyles.length > 0) {
-        const mapped = emotion ? EMOTION_TO_STYLE[String(emotion).toLowerCase()] : null;
-        voiceStyle = (mapped && supportedStyles.includes(mapped))
-            ? mapped
-            : (supportedStyles.includes('chat') ? 'chat' : supportedStyles[0]);
-    }
-
+    // 2026-06-07: express-as(emotion 마크업) 제거 — Azure TTS는 SSML 마크업도 과금(<speak>/<voice>만 제외).
+    //   짧은 FreeTalk 메시지에서 express-as 태그(~48자)가 billable 글자의 ~40%를 차지 → 중립 톤으로
+    //   전환해 세션 TTS 원가 ~24% 절감. 대부분 이미 style="chat" 기본값이라 톤 체감 차이 작음.
+    //   (supportedStyles/EMOTION_TO_STYLE 매핑은 추후 선택적 재도입 대비 보존)
     const escaped = escapeXml(text);
-    const inner = voiceStyle
-        ? `<mstts:express-as style="${voiceStyle}"><prosody rate="0%" pitch="0%">${escaped}</prosody></mstts:express-as>`
-        : `<prosody rate="0%" pitch="0%">${escaped}</prosody>`;
-    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xmlns:mstts='http://www.w3.org/2001/mstts' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${inner}</voice></speak>`;
+    const ssml = `<speak version='1.0' xmlns='http://www.w3.org/2001/10/synthesis' xml:lang='${locale}'><voice xml:lang='${locale}' name='${voiceName}'>${escaped}</voice></speak>`;
 
     try {
         const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
@@ -410,9 +414,9 @@ function recognizeFromWav(wavPath, azureLocale, azureKey, azureRegion) {
             const speechConfig = sdk.SpeechConfig.fromSubscription(azureKey, azureRegion);
             speechConfig.speechRecognitionLanguage = azureLocale;
             // 긴 발화 안정성을 위한 silence timeout 조정
-            //   - EndSilence: phrase 종료 판단 침묵 길이 (default 500ms → 1500ms)
+            //   - EndSilence: phrase 종료 판단 침묵 길이 (기존 1500ms → 5000ms 로 대폭 연장)
             //   - InitialSilence: 시작 전 침묵 허용 (default 5000ms 유지)
-            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '1500');
+            speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_EndSilenceTimeoutMs, '5000');
             speechConfig.setProperty(sdk.PropertyId.SpeechServiceConnection_InitialSilenceTimeoutMs, '5000');
 
             recognizer = new sdk.SpeechRecognizer(speechConfig, audioConfig);
@@ -508,6 +512,7 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     const {
         rawSttText, history, scenarioMeta,
         targetLang, sourceLang, difficulty, speechStyle,
+        establishedFacts,
         byokGeminiKey,
     } = req.body || {};
     if (!rawSttText || !targetLang || !sourceLang) {
@@ -516,32 +521,29 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
+    // B안(slot memory): 클라가 carry 한 누적 facts. 배열 아닌 입력은 [] 로 정규화.
+    const priorFacts = Array.isArray(establishedFacts)
+        ? establishedFacts.filter(f => typeof f === 'string' && f.trim())
+        : [];
+
     const prompt = buildReplyPrompt({
         rawSttText, history: history || [], scenarioMeta: scenarioMeta || {},
         targetLang, sourceLang, difficulty, speechStyle,
+        establishedFacts: priorFacts,
     });
 
+    // 2026-05-22 — callGeminiJson (3 retry + Flash fallback) 으로 교체.
+    const result = await callGeminiJson(prompt, geminiKey, {
+        // 0.95 — instruction following 우선 (no-redundant-ask 등 룰 준수)
+        genConfig: { temperature: 0.95, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => p?.intentText && p?.aiReply?.sentence,
+        label: 'ConverseReply',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate reply' });
+    }
     try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                // 1.1 → 0.95 로 낮춤 — 다양성보다 instruction following (no-redundant-ask
-                // + attribute classification 룰 준수) 우선. 동일 시나리오에서 같은 질문이
-                // 반복되던 문제 완화.
-                generationConfig: { temperature: 0.95, topK: 40, topP: 0.95 },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            console.error('[ConverseReply] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
-        }
-
+        const parsed = result.parsed;
         // 후처리
         if (parsed?.intentText) {
             parsed.intentText = stripAnnotations(parsed.intentText, targetLang);
@@ -549,16 +551,14 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
         if (parsed?.aiReply?.sentence) {
             parsed.aiReply.sentence = stripAnnotations(parsed.aiReply.sentence, targetLang);
         }
-
-        // 최소 필드 검증
-        if (!parsed?.intentText || !parsed?.aiReply?.sentence) {
-            console.error('[ConverseReply] Missing required fields:', Object.keys(parsed || {}));
-            return res.status(502).json({ error: 'AI response missing required fields' });
+        // B안(slot memory): establishedFacts key 기반 병합 — 구체값 강등 차단 +
+        // prior 누적 보존 + 새 구체값 갱신/추가. 모델이 누락/강등/드롭해도 서버가 방어.
+        if (parsed?.aiReply) {
+            parsed.aiReply.establishedFacts = mergeEstablishedFacts(priorFacts, parsed.aiReply.establishedFacts);
         }
-
         res.json(parsed);
     } catch (e) {
-        console.error('[ConverseReply] Error:', e.response?.data || e.message);
+        console.error('[ConverseReply] Unexpected:', e.message);
         res.status(500).json({ error: 'Failed to generate reply' });
     }
 });
@@ -588,46 +588,32 @@ router.post('/api/converse-summarize', optionalAuth, async (req, res) => {
         targetLang, sourceLang, difficulty,
     });
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 0.7, topK: 40, topP: 0.95 },
-            },
-            { timeout: 30000 }
-        );
-        const raw = response.data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        let parsed;
-        try { parsed = JSON.parse(jsonStr); }
-        catch (parseErr) {
-            console.error('[ConverseSummarize] JSON parse failed:', parseErr.message, 'raw:', raw.slice(0, 200));
-            return res.status(502).json({ error: 'AI returned invalid JSON' });
-        }
-
-        // 후처리: 각 phrase에 stripAnnotations 적용
-        if (Array.isArray(parsed?.keyPhrases)) {
-            parsed.keyPhrases = parsed.keyPhrases
-                .filter(p => p && typeof p.phrase === 'string' && p.phrase.trim().length > 0)
-                .map(p => ({
-                    phrase: stripAnnotations(p.phrase, targetLang),
-                    translation: p.translation || '',
-                    why_useful: p.why_useful || '',
-                    source_role: p.source_role === 'partner' ? 'partner' : 'learner',
-                    pronunciation: p.pronunciation || '',
-                }));
-        }
-
-        if (!Array.isArray(parsed?.keyPhrases) || parsed.keyPhrases.length === 0) {
-            return res.status(502).json({ error: 'No key phrases extracted' });
-        }
-
-        res.json(parsed);
-    } catch (e) {
-        console.error('[ConverseSummarize] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to summarize' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 0.7, topK: 40, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => Array.isArray(p?.keyPhrases) && p.keyPhrases.length > 0,
+        label: 'ConverseSummarize',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to summarize' });
     }
+    const parsed = result.parsed;
+
+    // 후처리: 각 phrase에 stripAnnotations 적용
+    parsed.keyPhrases = parsed.keyPhrases
+        .filter(p => p && typeof p.phrase === 'string' && p.phrase.trim().length > 0)
+        .map(p => ({
+            phrase: stripAnnotations(p.phrase, targetLang),
+            translation: p.translation || '',
+            why_useful: p.why_useful || '',
+            source_role: p.source_role === 'partner' ? 'partner' : 'learner',
+            pronunciation: p.pronunciation || '',
+        }));
+
+    if (parsed.keyPhrases.length === 0) {
+        return res.status(502).json({ error: 'No key phrases extracted' });
+    }
+
+    res.json(parsed);
 });
 
 module.exports = router;

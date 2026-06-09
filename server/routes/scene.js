@@ -1,11 +1,10 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE, getDifficultyDesc } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
@@ -23,7 +22,7 @@ const STYLE_DESC = {
 };
 
 router.post('/api/scene-sentence', optionalAuth, async (req, res) => {
-    const { scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
+    const { scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
     }
@@ -48,6 +47,23 @@ ${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
 
     const prompt = `### [Role]
 You are a highly creative Language Learning Content Architect. Your mission is to generate a realistic sentence (Question, Statement, or Request) that a learner uses to **INITIATE** a conversation in a specific micro-situation.
+
+---
+
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before designing the scenario), and reflect
+that native cultural context in the Phase 1 micro-situation below. Output
+field languages still follow the rules later.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: "${scene}" was typed FREELY by
+the learner. Trust the TEXT itself — if it describes a SITUATION/ACTION
+(e.g. "자기소개", "Giới thiệu với người bạn mới", "Запись к врачу"), build
+the scenario around that exact intent in a realistic setting; do NOT
+force-fit it into an unrelated location (airport/hotel/etc.) just because
+the text isn't a place name.` : ''}
 
 ---
 
@@ -113,28 +129,22 @@ ${avoidBlock}
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or pronunciation tip. Explain how the chosen emotion and ${styleDesc.split('\\n')[0].trim()} style shape this expression."
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
-        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
-        res.json(parsed);
-    } catch (e) {
-        console.error('[SceneSentence] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate sentence' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => typeof p?.sentence === 'string' && p.sentence.length > 0,
+        label: 'SceneSentence',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate sentence' });
     }
+    const parsed = result.parsed;
+    // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+    parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
+    res.json(parsed);
 });
 
 router.post('/api/scene-answer', requireAuth, async (req, res) => {
-    const { question, scene, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
+    const { question, scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
         return res.status(400).json({ error: 'Missing initiation sentence or targetLang' });
     }
@@ -159,6 +169,23 @@ ${recent.map((s, i) => `${i + 1}. "${s}"`).join('\n')}\n`;
 
     const prompt = `### [Role]
 You are a highly creative Language Learning Content Architect. The learner just practiced saying an opening sentence (a question, statement, request, or observation). Now generate the most natural, context-appropriate RESPONSE that the other person would give.
+
+---
+
+### [Step 0: Detect Scene Input Language — DO THIS SILENTLY FIRST]
+"${scene}" is free-form text that may be in ANY language (vi/ru/ko/ja/zh-CN/
+es/fr/de/pt-BR/en). Internally detect its language (hint: learner's native
+is "${sourceLangName}"), interpret it NATIVELY in that language (do NOT
+mentally translate to English before designing the responder), and reflect
+that native cultural context (who the responder typically is, how they
+phrase the reply) in Phase 1 below. The learner's question ("${question}")
+is already in ${targetLangName} — no language detection needed for that.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: "${scene}" was typed FREELY by
+the learner. The responder should fit the scenario implied by that exact
+text (a SITUATION like "자기소개" → a fitting partner such as a coworker
+on the first day; not a barista at an airport just because the text isn't
+a place name). Trust the text, then pick the natural responder.` : ''}
 
 ---
 
@@ -223,23 +250,17 @@ ${avoidBlock}
   "learning_tip": "In ${sourceLangName}: a vocabulary, grammar, or expression tip from this response. Explain how the responder's emotion and role shape this expression."
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.3, topK: 64, topP: 0.95 },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
-        res.json(parsed);
-    } catch (e) {
-        console.error('[SceneAnswer] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate answer' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.3, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => typeof p?.sentence === 'string' && p.sentence.length > 0,
+        label: 'SceneAnswer',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate answer' });
     }
+    const parsed = result.parsed;
+    parsed.sentence = stripAnnotations(parsed.sentence, targetLang);
+    res.json(parsed);
 });
 
 module.exports = router;

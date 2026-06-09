@@ -257,6 +257,7 @@ export default function VocabTab({
     onGenerate,
     onNavigateToLibrary,
     userLevel,
+    languageLevels = {},
     isActive = true,
 }) {
     const { byokGeminiKey, user } = useAuth();
@@ -273,8 +274,13 @@ export default function VocabTab({
     const initialTopic = pickRandomTopic();
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
+    // 난이도는 "선택 언어"의 설정값을 따름 (languageLevels[selectedLang]).
+    // 언어 전환 또는 해당 언어 설정 변경 시 자동 반영. 같은 언어 내 수동 변경은 deps가
+    // 안 바뀌어 보존됨(setLevel은 level만 바꾸므로 effect 재실행 트리거 아님).
+    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setLevel(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [pickerCatId, setPickerCatId] = useState(null);
     const [selectedTopic, setSelectedTopic] = useState(initialTopic);
     const [customInput, setCustomInput] = useState('');
@@ -286,6 +292,9 @@ export default function VocabTab({
     const historyCacheRef = useRef({});
     const generateBtnRef = useRef(null);
     const didInitialScrollRef = useRef(false);
+    // 커스텀 입력 진입 직전의 토픽 보관 — 입력을 비우면 이 토픽으로 복구해
+    // "한 번 커스텀 입력 → 이후 모든 생성이 custom으로 잠기는" 문제를 방지.
+    const prevTopicRef = useRef(initialTopic);
 
     // 탭이 처음으로 보여질 때 Generate 버튼으로 스크롤
     //   - VocabTab 은 display:none 상태로 선마운트되므로 마운트 시점엔 요소가 숨겨져 측정 불가
@@ -373,6 +382,11 @@ export default function VocabTab({
         avoidWordsRef.current = [];
     }, [selectedTopic, selectedLang, level]);
 
+    // 마지막으로 선택된 "실제 토픽"을 보관 (custom 진입으로 null이 된 동안에도 유지)
+    useEffect(() => {
+        if (selectedTopic) prevTopicRef.current = selectedTopic;
+    }, [selectedTopic]);
+
     // ── Generate Words ───────────────────────────────────────────────
     const handleGenerate = async () => {
         if (!selectedTopic && !customInput.trim()) return;
@@ -398,6 +412,7 @@ export default function VocabTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
+                    isCustom: !selectedTopic,
                     level,
                     targetLang: selectedLang,
                     sourceLang,
@@ -525,7 +540,11 @@ export default function VocabTab({
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);
+                        // 입력이 있으면 custom 모드(토픽 해제), 비우면 직전 토픽으로 복구.
+                        // 복구가 없으면 한 번 입력한 뒤 selectedTopic이 null로 굳어
+                        // 이후 언어/난이도 전환·재생성이 전부 custom으로 기록됨.
                         if (v.trim()) setSelectedTopic(null);
+                        else setSelectedTopic(prevTopicRef.current);
                     }}
                 />
             </div>

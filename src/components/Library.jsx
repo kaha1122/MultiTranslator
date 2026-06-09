@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
+import ConfirmModal from './ConfirmModal';
 import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { getLangInfo } from '../config/languages';
@@ -26,24 +27,20 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     const t = useT(sourceLang);
     const [savedCards, setSavedCards] = useState([]);
 
-    // ── 필터 상태 (localStorage 복원) ──
-    const [filterLang, setFilterLang] = useState(() => localStorage.getItem('library_filterLang') || 'all');
-    const [filterTypes, setFilterTypes] = useState(() => {
-        const saved = localStorage.getItem('library_filterTypes');
-        const parsed = saved ? JSON.parse(saved) : null;
-        return (parsed && parsed.length > 0) ? new Set(parsed) : new Set(['W', 'S']);
-    });
-    const [filterTargetMissed, setFilterTargetMissed] = useState(() => localStorage.getItem('library_filterTargetMissed') === 'true');
-    const [filterSource, setFilterSource] = useState(() => localStorage.getItem('library_filterSource') || 'all');
-    const [filterCategory, setFilterCategory] = useState(() => localStorage.getItem('library_filterCategory') || 'all');
-    const [filterDifficulty, setFilterDifficulty] = useState(() => localStorage.getItem('library_filterDifficulty') || 'all');
-    const [filterStarred, setFilterStarred] = useState(() => localStorage.getItem('library_filterStarred') === 'true');
-    const [filterThisWeek, setFilterThisWeek] = useState(() => {
-        const saved = localStorage.getItem('library_filterThisWeek');
-        return saved === null ? true : saved === 'true'; // 기본 ON
-    });
-    const [dateFrom, setDateFrom] = useState(() => localStorage.getItem('library_dateFrom') || '');
-    const [dateTo, setDateTo] = useState(() => localStorage.getItem('library_dateTo') || '');
+    // ── 필터 상태 ──
+    // 정책: 앱 cold start(페이지 로드) 시 무조건 default — 이번주만 ON, 나머지 전체.
+    //   동일 세션 내 사용자 변경은 React state로만 보존(다른 탭 다녀와도 display 토글뿐이라 유지),
+    //   localStorage 영구 보존은 하지 않음.
+    const [filterLang, setFilterLang] = useState('all');
+    const [filterTypes, setFilterTypes] = useState(() => new Set(['W', 'S']));
+    const [filterTargetMissed, setFilterTargetMissed] = useState(false);
+    const [filterSource, setFilterSource] = useState('all');
+    const [filterCategory, setFilterCategory] = useState('all');
+    const [filterDifficulty, setFilterDifficulty] = useState('all');
+    const [filterStarred, setFilterStarred] = useState(false);
+    const [filterThisWeek, setFilterThisWeek] = useState(true);
+    const [dateFrom, setDateFrom] = useState('');
+    const [dateTo, setDateTo] = useState('');
 
     const [isLoading, setIsLoading] = useState(true);
     const [errorMsg, setErrorMsg] = useState(null);
@@ -57,26 +54,23 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     // ── 바텀시트 상태 ──
     const [bottomSheet, setBottomSheet] = useState(null); // null | 'lang' | 'ws' | 'source' | 'difficulty'
 
-    // ── localStorage 동기화 ──
-    useEffect(() => {
-        localStorage.setItem('library_filterLang', filterLang);
-        localStorage.setItem('library_filterTypes', JSON.stringify(Array.from(filterTypes)));
-        localStorage.setItem('library_filterTargetMissed', filterTargetMissed.toString());
-        localStorage.setItem('library_filterSource', filterSource);
-        localStorage.setItem('library_filterCategory', filterCategory);
-        localStorage.setItem('library_filterDifficulty', filterDifficulty);
-        localStorage.setItem('library_filterStarred', filterStarred.toString());
-        localStorage.setItem('library_filterThisWeek', filterThisWeek.toString());
-        localStorage.setItem('library_dateFrom', dateFrom);
-        localStorage.setItem('library_dateTo', dateTo);
-    }, [filterLang, filterTypes, filterTargetMissed, filterSource, filterCategory, filterDifficulty, filterStarred, filterThisWeek, dateFrom, dateTo]);
-
     // ── Firebase 실시간 구독 ──
-    // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 모든 savedCards를
+    // 필터/검색 결과의 정확한 카운트(예: "15/21")를 표시하기 위해 user의 savedCards를
     // 한 번에 로드. 표시는 아래 visibleCards에서 limitCount만큼만 slice (화면 페이지네이션).
+    //
+    // [v1.5.72 idle 발열 절감] limit(500) 추가.
+    // Why: limit 없는 onSnapshot은 카드 수백~수천 장 유저에게 idle 상태에서도 long-polling
+    //   keepalive + 갱신 시 전체 배열 재매핑 부담을 누적시킴. 500장 cap은 절대 다수 유저
+    //   (95%+)에게 무영향이며, 초과 유저는 "최근 500장"만 노출 + 카운트가 "X/500" 으로
+    //   상한됨 (trade-off 수용). 향후 정확 카운트 필요 시 getCountFromServer 분리 고려.
     useEffect(() => {
         if (!user) return;
-        const q = query(collection(db, "savedCards"), where("userId", "==", user.uid), orderBy("createdAt", "desc"));
+        const q = query(
+            collection(db, "savedCards"),
+            where("userId", "==", user.uid),
+            orderBy("createdAt", "desc"),
+            limit(500)
+        );
         const unsubscribe = onSnapshot(q, (snapshot) => {
             const cards = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })).filter(card => !card.isDeleted);
             setSavedCards(cards);
@@ -90,32 +84,58 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         return () => unsubscribe();
     }, [user]);
 
-    // ── Vocab에서 넘어온 카드 포커스: 필터 초기화 + 스크롤 ──
+    // ── 다른 탭에서 별표 저장 후 자동 진입 시: 새 카드로 스크롤 포커스 ──
+    // 정책: 동일 세션 내 필터 자동 reset 없음 — 사용자가 건 필터는 그대로 보존.
+    //   새 카드가 사용자 필터에 안 걸리면 DOM 미생성 → 스크롤 SKIP (의도된 동작).
     const focusCardPending = useRef(null);
+    const scrollAttemptedFor = useRef(null); // 같은 cardId에 시도가 이미 시작됐는지 추적
     useEffect(() => {
         if (!focusCardId) return;
-        // 필터를 초기화하여 방금 생성된 카드가 반드시 보이도록
         focusCardPending.current = focusCardId;
-        setFilterSource('all');
-        setFilterDifficulty('all');
-        setFilterLang('all');
-        setFilterStarred(false);
-        setFilterTargetMissed(false);
-        setSearchTerm('');
+        scrollAttemptedFor.current = null; // 새 cardId 진입 시 시도 자격 회복
     }, [focusCardId]);
 
     useEffect(() => {
         if (!focusCardPending.current || savedCards.length === 0) return;
         if (progressPopupOpen) return; // 팝업이 열려 있으면 스크롤 대기
-        const el = document.getElementById(`library-card-${focusCardPending.current}`);
-        if (el) {
-            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-            el.classList.add('library-card-highlight');
-            setTimeout(() => el.classList.remove('library-card-highlight'), 2000);
-            focusCardPending.current = null;
-            if (onFocusCardHandled) onFocusCardHandled();
-        }
-    }, [savedCards, progressPopupOpen]);
+        const targetId = focusCardPending.current;
+        if (scrollAttemptedFor.current === targetId) return; // 이미 시도 시작 — 중복 등록 방지
+        scrollAttemptedFor.current = targetId;
+
+        // cleanup으로 timer cancel하지 않음. effect 재발화(예: Firestore serverTimestamp confirm
+        // 콜백으로 setSavedCards 재호출)가 진행 중인 timer를 끊어버리는 race를 차단.
+        // 대신 stale 가드 + 중복 시도 차단 ref + DOM retry로 멱등성 확보.
+        const HEADER_OFFSET = 100; // sticky 헤더(.app-header + 보조 영역) 추정 높이
+        let attempt = 0;
+        const tryScroll = () => {
+            if (focusCardPending.current !== targetId) return; // 새 별표 들어와 cardId 바뀐 경우
+            const el = document.getElementById(`library-card-${targetId}`);
+            if (el && el.offsetParent !== null) {
+                // 1차: smooth scroll 시도 (데스크톱/일부 모바일에선 자연스러움)
+                el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                el.classList.add('library-card-highlight');
+                setTimeout(() => el.classList.remove('library-card-highlight'), 2500);
+
+                // 2차: 350ms 후 위치 검증 — Capacitor WebView가 smooth 무시했거나
+                // sticky 헤더에 가려진 경우 instant scrollTo + offset 보정 fallback.
+                setTimeout(() => {
+                    const el2 = document.getElementById(`library-card-${targetId}`);
+                    if (!el2) return;
+                    const r = el2.getBoundingClientRect();
+                    if (r.top < HEADER_OFFSET - 20 || r.top > window.innerHeight * 0.5) {
+                        const absTop = r.top + window.scrollY - HEADER_OFFSET;
+                        window.scrollTo({ top: Math.max(0, absTop), behavior: 'auto' });
+                    }
+                }, 350);
+
+                focusCardPending.current = null;
+                if (onFocusCardHandled) onFocusCardHandled();
+                return;
+            }
+            if (attempt++ < 10) setTimeout(tryScroll, 100); // 최대 ~1.1초 retry
+        };
+        setTimeout(tryScroll, 120); // 팝업 closing layout shift 안정화 대기
+    }, [savedCards, progressPopupOpen, focusCardId]);
 
     // (Back키는 App.jsx에서 전역 관리 — header Back 버튼으로 복귀)
 
@@ -628,23 +648,16 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 </div>
             )}
 
-            {/* 삭제 확인 모달 */}
+            {/* 삭제 확인 모달 — 공통 ConfirmModal(danger) 사용 */}
             {deleteConfirmId && (
-                <div className="modal-overlay" style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.5)', display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 1000 }}>
-                    <div className="modal-content" style={{ backgroundColor: 'white', padding: '24px', borderRadius: '16px', maxWidth: '320px', width: '90%', textAlign: 'center', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}>
-                        <p style={{ margin: '0 0 24px 0', fontSize: '1.05rem', color: '#1f2937', fontWeight: '600', lineHeight: '1.5' }}>
-                            {t('library.deleteConfirm')}
-                        </p>
-                        <div style={{ display: 'flex', gap: '12px', justifyContent: 'center' }}>
-                            <button onClick={cancelDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: '1px solid #e5e7eb', backgroundColor: 'white', color: '#4b5563', fontWeight: 'bold', cursor: 'pointer' }}>
-                                {t('library.deleteCancel')}
-                            </button>
-                            <button onClick={confirmDelete} style={{ flex: 1, padding: '12px 0', borderRadius: '10px', border: 'none', backgroundColor: '#ef4444', color: 'white', fontWeight: 'bold', cursor: 'pointer', boxShadow: '0 2px 4px rgba(239,68,68,0.3)' }}>
-                                {t('library.deleteOk')}
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                <ConfirmModal
+                    message={t('library.deleteConfirm')}
+                    confirmText={t('library.deleteOk')}
+                    cancelText={t('library.deleteCancel')}
+                    onConfirm={confirmDelete}
+                    onCancel={cancelDelete}
+                    danger
+                />
             )}
         </div>
     );

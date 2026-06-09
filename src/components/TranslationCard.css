@@ -1059,3 +1059,11 @@
     line-height: 1.4;
     text-align: center;
 }
+
+/* [v1.5.76+ thermal-ios] 무한 pulse 애니메이션 가드 — Apple HIG 준수.
+ * .recording-status / .record-button.recording / .memo-loading-dot 세 곳에서
+ * 녹음 진행 중/메모 로딩 중 무한 pulse.
+ * [v1.5.81+] Safari 포함 universal — 사용 중 GPU 부하 감소. */
+.recording-status,
+.record-button.recording,
+.memo-loading-dot { animation: none !important; }

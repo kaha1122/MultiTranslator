@@ -182,3 +182,16 @@
     color: #d97706;
     line-height: 1;
 }
+
+/* [v1.5.76+ thermal-ios] backdrop-filter 가드 — StatsPage가 display:none
+ * 으로 항시 마운트되는 구조이므로 본 요소도 마운트 시점에 GPU 레이어가
+ * 생성될 수 있음. 네이티브에서 backdrop-filter:blur(8px)을 제거.
+ *
+ * [v1.5.81+ thermal-ios] Web/Safari universal 확장 — Safari에서는 platform-native
+ * 클래스가 없어서 blur가 항시 활성. StatsPage가 display:none이어도 마운트되어
+ * GPU 레이어 유지(3차 mobile-production-guardian 분석). universal로 변경. */
+.streak-hero-stats {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    background: rgba(255, 255, 255, 0.92);
+}

@@ -1,17 +1,16 @@
 const express = require('express');
-const axios = require('axios');
 const { requireAuth } = require('../middleware/auth');
 
 const router = express.Router();
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
-const { geminiUrl } = require('../config/gemini');
+const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 
 router.post('/api/vocab-words', requireAuth, async (req, res) => {
-    const { topic, topicLabel, category, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
+    const { topic, topicLabel, category, isCustom, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
     }
@@ -76,6 +75,17 @@ Only after all 5 candidates pass (a)(b)(c) do you output the JSON. If you cannot
 
     const prompt = `You are a vocabulary teacher for language learners.
 
+[Step 0: Detect Topic Input Language — DO THIS SILENTLY FIRST]
+"${topicLabel || topic}" may be in ANY language (vi/ru/ko/ja/zh-CN/es/fr/
+de/pt-BR/en). Internally detect its language (hint: sourceLang is
+"${sourceLangName}"), interpret it NATIVELY in that language, and let the
+vocabulary you generate reflect that specific cultural register.${isCustom ? `
+
+⚠️ **CUSTOM INPUT MODE (isCustom=true)**: trust the topic text verbatim —
+if the learner typed "Đi du lịch Đà Nẵng", generate Da Nang-specific
+vocabulary (not generic "travel" words). If they typed "병원 방문", generate
+Korean clinic vocabulary (접수/진료/처방전), not generic medical English.` : ''}
+
 Context:
 - Topic: ${topicLabel || topic} (Category: ${category || ''})
 - Target language: ${targetLangName}
@@ -117,29 +127,23 @@ Return ONLY valid JSON (no markdown):
   ]
 }`;
 
-    try {
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            {
-                contents: [{ parts: [{ text: prompt }] }],
-                generationConfig: { temperature: 1.5, topK: 64, topP: 0.95 },
-            }
-        );
-        const raw = response.data.candidates[0].content.parts[0].text;
-        const jsonStr = raw.replace(/^```json\s*/i, '').replace(/^```\s*/i, '').replace(/```\s*$/i, '').trim();
-        const parsed = JSON.parse(jsonStr);
-        // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
-        if (Array.isArray(parsed.words)) {
-            parsed.words.forEach(w => {
-                w.word = stripAnnotations(w.word, targetLang);
-                w.example = stripAnnotations(w.example, targetLang);
-            });
-        }
-        res.json(parsed);
-    } catch (e) {
-        console.error('[VocabWords] Error:', e.response?.data || e.message);
-        res.status(500).json({ error: 'Failed to generate vocabulary' });
+    const result = await callGeminiJson(prompt, geminiKey, {
+        genConfig: { temperature: 1.5, topK: 64, topP: 0.95, responseMimeType: 'application/json' },
+        validate: (p) => Array.isArray(p?.words) && p.words.length > 0,
+        label: 'VocabWords',
+    });
+    if (result.error) {
+        return res.status(result.status).json({ error: result.userMsg || 'Failed to generate vocabulary' });
     }
+    const parsed = result.parsed;
+    // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
+    if (Array.isArray(parsed.words)) {
+        parsed.words.forEach(w => {
+            w.word = stripAnnotations(w.word, targetLang);
+            w.example = stripAnnotations(w.example, targetLang);
+        });
+    }
+    res.json(parsed);
 });
 
 module.exports = router;

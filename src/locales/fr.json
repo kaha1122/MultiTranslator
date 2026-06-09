@@ -23,7 +23,9 @@
     "title": "Free-Talking",
     "aiName": "Partenaire",
     "preparing": "Préparation de la conversation...",
-    "startError": "Impossible de démarrer la conversation.",
+    "startError": "Impossible de démarrer la conversation. Veuillez réessayer dans un instant.",
+    "retry": "Réessayer",
+    "cancel": "Fermer",
     "userAutoHint": "Vous pouvez commencer ainsi",
     "tapForCard": "Ouvrir la carte",
     "heardAs": "Entendu comme",
@@ -60,11 +62,20 @@
     "openSettings": "Ouvrir les Réglages",
     "micError": "Problème d'enregistrement",
     "saveError": "Échec de l'enregistrement. Veuillez réessayer plus tard.",
-    "guideTitle": "Comment utiliser Free-Talking",
-    "guideStep1": "Écoutez d'abord la situation et le dialogue exemple",
-    "guideStep2": "Appuyez sur [Parler] pour converser librement",
-    "guideStep3": "Pendant la conversation, [Créer cartes] pour enregistrer",
-    "guideDismiss": "Commencer"
+    "heardMessage": "Message entendu",
+    "correctedMessage": "Message corrigé",
+    "preGuide": {
+      "welcome": "Free-Talking, c'est de la conversation libre avec l'IA. Vous écoutez d'abord un dialogue d'exemple, puis prenez le temps de le poursuivre.",
+      "role1": "D'abord, on lance la scène et un dialogue d'exemple",
+      "role2": "Écoutez attentivement et décidez ce que vous allez dire",
+      "role3": "Quand vous êtes prêt, appuyez sur [Parler] pour poursuivre la conversation",
+      "missionTitle": "Essayez ceci dans cette conversation",
+      "mission1": "Saisir le déroulé et les expressions clés du dialogue d'exemple",
+      "mission2": "Choisissez une expression clé de la réponse de l'IA à retenir",
+      "mission3": "Enchaînez naturellement avec votre phrase suivante",
+      "tip": "Touchez un message pour ouvrir une carte et vous entraîner à la prononciation et l'enregistrer",
+      "cta": "Commencer"
+    }
   },
   "pushOptIn": {
     "title": "Recevoir les rappels d'apprentissage ?",
@@ -183,9 +194,20 @@
   },
   "trial": {
     "limitTitle": "Limite quotidienne d'essai atteinte !",
-    "limitDesc": "Vous avez atteint la limite quotidienne : 10 cartes, 10 tests de prononciation ou 2 sessions Free-Talking.",
+    "limitDesc": "Limite atteinte aujourd'hui : 10 Prononciation, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "À demain !",
-    "seeSidebarReward": "Envie d'en apprendre plus ? Utilisez les boutons +2 Free-Talking / +5 prononciations de la barre latérale",
+    "seeSidebarReward": "Envie de plus ? Utilisez les boutons +2 Free-Talking / +5 Prononciation / +3 Listening dans la barre latérale.",
+    "pointsTitle": "Plus de points",
+    "pointsDesc": "Rechargez des points ou abonnez-vous",
+    "pointsUpgradeHint": "Abonnez-vous pour un accès illimité — sans pub, limites ni points",
+    "costOther": "Autres",
+    "costGuideTitle": "Points par action",
+    "costPlay": "Écouter",
+    "costGenerate": "Générer",
+    "proLimitTitle": "Vous avez atteint la limite du mois",
+    "proLimitDesc": "Réinitialisation le 1er du mois prochain",
+    "proUpgradeHint": "Premium est illimité, sans plafond",
+    "proUpgradeBtn": "Passer à Premium",
     "upgradeBtn": "Passer à un forfait supérieur"
   },
   "apiSetup": {
@@ -228,6 +250,7 @@
     "noTarget": "Veuillez d'abord sélectionner une langue cible ci-dessus.",
     "saveReturn": "Enregistrer & Retour",
     "defaultLevel": "Niveau par défaut",
+    "defaultLevelDesc": "Définissez le niveau d'apprentissage par défaut pour chaque langue.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Compte",
     "groupLanguage": "Langue",
@@ -260,7 +283,8 @@
     "loginRequired": "Veuillez vous connecter.",
     "customLabelTop": "Saisie personnalisée",
     "customLabelBottom": "Saisie libre",
-    "customPlaceholder": "Entrez votre propre lieu ou situation"
+    "customPlaceholder": "Entrez votre propre lieu ou situation",
+    "customPlaceholderFreetalk": "ex) Prendre un taxi / Débattre de l'IA avec un ami"
   },
   "vocab": {
     "generate": "Générer des mots",
@@ -282,6 +306,8 @@
     "office": "Bureau & Travail",
     "bank": "Banque",
     "gym": "Salle de sport",
+    "home": "Maison & Voisins",
+    "cinema": "Cinéma & Spectacle",
     "custom": "Personnalisé"
   },
   "sceneSit": {
@@ -295,6 +321,8 @@
     "compliment": "Compliments",
     "decline": "Refuser poliment",
     "advice": "Demander conseil",
+    "debate": "Débat & Opinions",
+    "phonecall": "Appel téléphonique",
     "custom": "Personnalisé"
   },
   "vocabCat": {
@@ -456,8 +484,8 @@
     "thankYou": "Merci pour votre abonnement !",
     "toastFail": "Paiement échoué ou annulé.",
     "duplicateSubscription": "Vous avez déjà un abonnement actif sur l'App Store. Veuillez d'abord l'annuler.",
-    "proFeature1": "1 500 évaluations de prononciation/mois",
-    "proFeature3": "Accès illimité à tous les onglets",
+    "proFeature1": "1 000 évaluations de prononciation/mois",
+    "proFeature3": "Free-Talking 100 · Listening 200/mois",
     "premiumFeature1": "Évaluations de prononciation illimitées",
     "premiumFeature2": "Free-Talking illimité",
     "premiumFeature3": "Accès illimité à tous les onglets",
@@ -571,12 +599,15 @@
     "counterUnit": "fiche",
     "bookmarkPromptTitle": "Objectif atteint !",
     "bookmarkPromptDesc": "Appuyez sur le bouton ⭐ pour enregistrer cette phrase dans votre bibliothèque. Elle comptera dans votre objectif du jour.",
-    "starGuideTitle": "Sauvegardez dans votre bibliothèque !",
-    "starGuideDesc": "Appuyez sur ⭐ pendant l'apprentissage pour enregistrer la carte. Révisez vos cartes à tout moment.",
+    "starGuideTitle": "⭐ Étoile → Prononciation → Streak !",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Ne plus afficher",
     "bookmarkNow": "Mettre en favori",
-    "bookmarkLater": "Plus tard"
+    "bookmarkLater": "Plus tard",
+    "starGuideStep1": "Appuyez sur ⭐ pour sauvegarder la carte à apprendre.",
+    "starGuideStep2": "Réussissez le score de prononciation — la carte est qualifiée.",
+    "starGuideStep3": "Réunissez 3 cartes qualifiées par jour pour valider votre Streak ! Bonus 💎 vous attend.",
+    "starGuideCta": "Compris, c'est parti !"
   },
   "tabTag": {
     "home": "Consultez vos progrès et les menus d'apprentissage",
@@ -939,11 +970,19 @@
   "reward": {
     "watchForCards": "+5 cartes",
     "watchAd": "Regardez une pub pour 5 cartes",
-    "watchForProns": "+5 prononc.",
-    "watchAdPron": "Regardez une pub pour 10 prononciations supplémentaires (conservées)",
+    "watchForProns": "+5 Prononciation",
+    "watchAdPron": "Regarder une pub → +5 tentatives de prononciation",
     "loading": "Chargement...",
+    "topUpBonus": "Points bonus (Pub) +5",
+    "topUpBonusDesc": "Regardez une pub pour +5 points",
+    "buyBonus": "Points bonus (Achat) +200",
+    "buying": "Traitement...",
+    "buySuccess": "Achat terminé ! 200 points seront ajoutés sous peu.",
+    "buyFail": "Échec de l'achat. Réessayez plus tard.",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Regardez une pub pour 2 sessions Free Talking en plus (conservées)"
+    "watchAdFreeTalk": "Regarder une pub → +2 sessions Free Talking",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Regarder une pub → +3 passages Listening"
   },
   "renewal": {
     "title": "Abonnement bientôt expiré",
@@ -1192,7 +1231,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "Cartes illimitées · 1 500 prononciations/mois",
+    "proDesc": "F.Talking 100 · Listening 200 · Pron 1000/mois",
     "premium": "👑 Premium",
     "premiumDesc": "Cartes & prononciations illimitées",
     "noAds": "Sans pub"
@@ -1271,11 +1310,10 @@
     "label": "Bonus",
     "noInterstitialAd": "Pas de pub interstitielle",
     "referralBtn": "🤝 Parrainer un ami",
-    "referralSubtitle": "Votre ami reçoit aussi 100pt",
     "reviewSubtitle": "Une seule fois",
     "referral": {
-      "title": "Entrez le code → Recevez 100pt",
-      "desc": "Entrez le code d'un ami et vous recevrez tous les deux 100 points bonus.",
+      "title": "Entrez le code",
+      "desc": "Entrez le code de parrainage que votre ami vous a partagé.",
       "codeLabel": "Code de parrainage de votre ami",
       "submit": "Appliquer",
       "invalid": "Code invalide",
@@ -1287,8 +1325,8 @@
       "copy": "Copier",
       "copied": "Copié !",
       "share": "Partager avec un ami",
-      "success": "🎉 Vous avez reçu 100 points bonus !",
-      "shareMessage": "Utilisons PronunFit ensemble ! Entrez ce code et nous recevons tous les deux 100 points bonus !\n\n{code}\n\nTélécharger l'app : {url}",
+      "success": "🎉 Parrainage terminé !",
+      "shareMessage": "Utilisons PronunFit ensemble ! Entrez ce code !\n\n{code}\n\nTélécharger l'app : {url}",
       "shareTitle": "Parrainage PronunFit",
       "shareHint": "Message copié. Collez-le dans une appli de messagerie pour le partager avec un ami.",
       "shareIosWeb": "iPhone / Web",
@@ -1316,7 +1354,7 @@
     "campaign": {
       "title": "🎁 Lancement des Points Bonus",
       "desc": "Parrainez un ami ou laissez un avis Google Play pour gagner 100 points bonus. Avec bonus actif : pas de pub + limite quotidienne levée !",
-      "feature1": "🤝 Parrainer ami — 100pt chacun",
+      "feature1": "🤝 Parrainer ami — 100pt",
       "feature2": "🌟 Avis Google Play — 100pt",
       "feature3": "🎯 Bonus actif : pas de pub + sans limite",
       "cta": "Commencer",

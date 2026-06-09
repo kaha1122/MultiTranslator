@@ -5,7 +5,7 @@ import { useT } from '../utils/i18n';
 import { getToday } from '../hooks/useDailyProgress';
 import './HomePage.css';
 
-const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 10, sourceLang, onNavigate, isActive }) => {
+const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronCount = 0, todayListenCount = 0, todayFreeTalkCount = 0, dailyGoal, dailyPronLimit = 20, dailyFreeTalkLimit = 2, dailyListenLimit = 3, sourceLang, onNavigate, isActive }) => {
     const t = useT(sourceLang);
     const today = getToday();
     const dayLabels = t('daily.days').split(',');
@@ -133,7 +133,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                                 <motion.span
                                                     className="home-folder-emoji"
                                                     animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
-                                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                                    transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
                                                 </motion.span>
@@ -199,7 +199,7 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                                                 <motion.span
                                                     className="home-folder-emoji"
                                                     animate={{ scale: [1, 1.15, 1], y: [0, -6, 0] }}
-                                                    transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+                                                    transition={{ duration: 2, ease: 'easeInOut' }}
                                                 >
                                                     {folder.emoji}
                                                 </motion.span>
@@ -257,14 +257,19 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <span className="home-gauge-title">{t('home.todayProgress')}</span>
 
                 {/* 카드 달성 */}
+                {/* [v1.5.84+ thermal-ios] motion.div → div + CSS transition. Framer Motion
+                 * MotionValue 상시 구독 4개 제거 (JS RAF 부하 0). CSS transition은 브라우저
+                 * compositor thread에서 처리되어 main thread 무관 — 4차 mobile-production-
+                 * guardian Fix 2. */}
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎯</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className={`home-gauge-fill ${isComplete ? 'complete' : ''}`}
-                            initial={{ width: 0 }}
-                            animate={{ width: `${gaugePercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${gaugePercent}%`,
+                                transition: 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className={`home-gauge-count ${isComplete ? 'complete' : ''}`}>{todayCount}/{dailyGoal}</span>
@@ -274,11 +279,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎙</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill pron"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${pronPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${pronPercent}%`,
+                                transition: 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count pron">{todayPronCount}/{dailyPronLimit}</span>
@@ -288,11 +294,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">🎧</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill listen"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${listenPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${listenPercent}%`,
+                                transition: 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count listen">{todayListenCount}/{dailyListenLimit}</span>
@@ -302,11 +309,12 @@ const HomePage = ({ user, weeklyData, todayCount, todaySaveCount = 0, todayPronC
                 <div className="home-gauge-row">
                     <span className="home-gauge-row-label">💬</span>
                     <div className="home-gauge-track">
-                        <motion.div
+                        <div
                             className="home-gauge-fill freetalk"
-                            initial={{ width: 0 }}
-                            animate={{ width: `${freeTalkPercent}%` }}
-                            transition={{ duration: 0.8, ease: 'easeOut' }}
+                            style={{
+                                width: `${freeTalkPercent}%`,
+                                transition: 'width 0.8s ease-out',
+                            }}
                         />
                     </div>
                     <span className="home-gauge-count freetalk">{todayFreeTalkCount}/{dailyFreeTalkLimit}</span>

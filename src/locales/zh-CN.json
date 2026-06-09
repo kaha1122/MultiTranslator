@@ -23,7 +23,9 @@
     "title": "Free-Talking",
     "aiName": "对话伙伴",
     "preparing": "正在准备对话...",
-    "startError": "无法开始对话。",
+    "startError": "无法开始对话。请稍后再试。",
+    "retry": "重试",
+    "cancel": "关闭",
     "userAutoHint": "可以这样开始",
     "tapForCard": "打开卡片",
     "heardAs": "识别结果",
@@ -60,11 +62,20 @@
     "openSettings": "打开设置",
     "micError": "录音出现问题",
     "saveError": "保存失败,请稍后再试。",
-    "guideTitle": "Free-Talking 使用方法",
-    "guideStep1": "先听情境说明和示例对话并模仿",
-    "guideStep2": "按[说话]按钮自由对话",
-    "guideStep3": "对话中按[生成卡片]保存关键表达",
-    "guideDismiss": "开始"
+    "heardMessage": "识别到的内容",
+    "correctedMessage": "修正后的句子",
+    "preGuide": {
+      "welcome": "Free-Talking 是与 AI 的自由对话练习。先听一段示例对话，再慢慢想好怎么接着说。",
+      "role1": "先为你播放情境和示例对话",
+      "role2": "认真听这段对话，想好你要说什么",
+      "role3": "准备好后，点击 [说话] 把对话继续下去",
+      "missionTitle": "在这次对话中试试这些",
+      "mission1": "把握示例对话的脉络和关键表达",
+      "mission2": "从 AI 的回复中挑一个想记住的关键表达",
+      "mission3": "自然地接上你的下一句",
+      "tip": "点击消息可打开卡片进行发音练习和保存",
+      "cta": "开始"
+    }
   },
   "pushOptIn": {
     "title": "接收学习通知吗？",
@@ -183,9 +194,20 @@
   },
   "trial": {
     "limitTitle": "今日免费体验额度已用完！",
-    "limitDesc": "每日10张卡片、10次发音练习或2次Free-Talking的额度已用完。",
+    "limitDesc": "已达今日上限: 发音 10 次、Free-Talking 2 次、Listening 3 次。",
     "seeYouTomorrow": "明天再见！",
-    "seeSidebarReward": "想继续学习？请使用侧边栏的 +2 Free-Talking / +5 发音 按钮",
+    "seeSidebarReward": "想继续学习吗?请使用侧边栏的 +2 Free-Talking / +5 发音 / +3 Listening 按钮。",
+    "pointsTitle": "积分不足",
+    "pointsDesc": "请充值积分或订阅",
+    "pointsUpgradeHint": "订阅后无广告·无限制·无需积分，无限使用",
+    "costOther": "其他",
+    "costGuideTitle": "各功能消耗积分",
+    "costPlay": "播放",
+    "costGenerate": "生成",
+    "proLimitTitle": "已达本月上限",
+    "proLimitDesc": "下月1日重置",
+    "proUpgradeHint": "Premium 无限制使用",
+    "proUpgradeBtn": "升级到 Premium",
     "upgradeBtn": "升级套餐"
   },
   "apiSetup": {
@@ -228,6 +250,7 @@
     "noTarget": "请先在上方选择学习语言。",
     "saveReturn": "保存设置并返回",
     "defaultLevel": "默认学习难度",
+    "defaultLevelDesc": "为每种语言设置默认学习难度。",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "账户",
     "groupLanguage": "语言",
@@ -260,7 +283,8 @@
     "loginRequired": "请先登录。",
     "customLabelTop": "自定义输入",
     "customLabelBottom": "自由输入",
-    "customPlaceholder": "请输入您的场景或情境"
+    "customPlaceholder": "请输入您的场景或情境",
+    "customPlaceholderFreetalk": "例如：打车出行 / 和朋友讨论AI"
   },
   "vocab": {
     "generate": "生成词汇",
@@ -282,6 +306,8 @@
     "office": "办公室 & 职场",
     "bank": "银行",
     "gym": "健身房",
+    "home": "家 & 邻里",
+    "cinema": "电影院 & 剧场",
     "custom": "自定义"
   },
   "sceneSit": {
@@ -295,6 +321,8 @@
     "compliment": "称赞 & 感谢",
     "decline": "礼貌拒绝",
     "advice": "寻求建议",
+    "debate": "讨论 & 交流意见",
+    "phonecall": "打电话",
     "custom": "自定义"
   },
   "vocabCat": {
@@ -456,8 +484,8 @@
     "thankYou": "感谢您的订阅！",
     "toastFail": "支付失败或已取消。",
     "duplicateSubscription": "您已在应用商店有活跃订阅，请先取消后再操作。",
-    "proFeature1": "每月1,500次发音评估",
-    "proFeature3": "所有标签页无限使用",
+    "proFeature1": "发音评估 每月1,000次",
+    "proFeature3": "Free-Talking 100 · Listening 200次/月",
     "premiumFeature1": "无限发音评估",
     "premiumFeature2": "Free-Talking 无限",
     "premiumFeature3": "所有标签页无限使用",
@@ -571,12 +599,15 @@
     "counterUnit": "张",
     "bookmarkPromptTitle": "达到目标分数！",
     "bookmarkPromptDesc": "点击 ⭐ 按钮将这个句子保存到库中，即可记录为今天的学习卡片。",
-    "starGuideTitle": "保存到词库！",
-    "starGuideDesc": "学习时点击 ⭐ 即可将卡片保存到词库。保存的卡片可以随时复习。",
+    "starGuideTitle": "⭐ 收藏 → 发音通过 → 连击!",
     "bookmarkConfirm": "确认",
     "dontShowAgain": "不再提示",
     "bookmarkNow": "立即收藏",
-    "bookmarkLater": "稍后再说"
+    "bookmarkLater": "稍后再说",
+    "starGuideStep1": "点击 ⭐ 收藏你想学习的卡片。",
+    "starGuideStep2": "发音得分通过后,卡片即视为合格(qualified)。",
+    "starGuideStep3": "每日集齐 3 张合格卡片即达成今日 Streak!💎 奖励到手。",
+    "starGuideCta": "好的,开始吧!"
   },
   "tabTag": {
     "home": "一目了然查看学习进度和菜单",
@@ -939,11 +970,19 @@
   "reward": {
     "watchForCards": "+5 张卡片",
     "watchAd": "看广告获得5张卡片",
-    "watchForProns": "+5 次发音",
-    "watchAdPron": "观看广告获得 10 次发音机会（永久保存）",
+    "watchForProns": "+5 发音",
+    "watchAdPron": "观看广告 → 发音 +5 次",
     "loading": "广告加载中...",
+    "topUpBonus": "奖励积分 (广告) +5",
+    "topUpBonusDesc": "观看广告获得 +5 积分",
+    "buyBonus": "奖励积分 (购买) +200",
+    "buying": "购买处理中...",
+    "buySuccess": "购买完成！200积分即将到账。",
+    "buyFail": "购买失败，请稍后再试。",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "观看广告获得 2 次 Free Talking（永久保存）"
+    "watchAdFreeTalk": "观看广告 → Free Talking +2 次",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "观看广告 → Listening +3 次"
   },
   "renewal": {
     "title": "订阅即将到期",
@@ -1192,7 +1231,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "卡片无限 · 发音1,500次/月",
+    "proDesc": "F.Talking 100 · Listening 200 · 发音 1000/月",
     "premium": "👑 Premium",
     "premiumDesc": "卡片 · 发音 无限",
     "noAds": "无广告"
@@ -1271,11 +1310,10 @@
     "label": "奖励",
     "noInterstitialAd": "无插屏广告",
     "referralBtn": "🤝 推荐朋友",
-    "referralSubtitle": "朋友也获得100pt",
     "reviewSubtitle": "仅一次",
     "referral": {
-      "title": "输入推荐码 → 获得100pt",
-      "desc": "输入朋友的推荐码,你们都将获得100奖励积分。",
+      "title": "输入推荐码",
+      "desc": "请输入朋友分享给你的推荐码。",
       "codeLabel": "朋友的推荐码",
       "submit": "确认",
       "invalid": "无效的推荐码",
@@ -1287,8 +1325,8 @@
       "copy": "复制",
       "copied": "已复制！",
       "share": "分享给朋友",
-      "success": "🎉 您获得了100奖励积分！",
-      "shareMessage": "一起使用PronunFit吧！输入此推荐码,我们都将获得100奖励积分!\n\n{code}\n\n下载应用: {url}",
+      "success": "🎉 推荐完成！",
+      "shareMessage": "一起使用PronunFit吧！请输入此推荐码!\n\n{code}\n\n下载应用: {url}",
       "shareTitle": "PronunFit 推荐",
       "shareHint": "消息已复制，粘贴到聊天应用发送给好友吧。",
       "shareIosWeb": "iPhone / 网页",
@@ -1316,7 +1354,7 @@
     "campaign": {
       "title": "🎁 奖励积分启动活动",
       "desc": "推荐朋友或留下 Google Play 评价即可获得 100 奖励积分。奖励激活期间：无插屏广告 + 解除每日限制！",
-      "feature1": "🤝 推荐朋友 — 双方各100pt",
+      "feature1": "🤝 推荐朋友 — 100pt",
       "feature2": "🌟 Google Play 评价 — 100pt",
       "feature3": "🎯 奖励激活：无广告 + 无限制",
       "cta": "立即开始",

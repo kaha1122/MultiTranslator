@@ -3,7 +3,7 @@
 .ftc-overlay {
     position: fixed;
     inset: 0;
-    z-index: 9000;
+    z-index: var(--z-chat-overlay);
     background: rgba(0, 0, 0, 0.5);
     display: flex;
     align-items: stretch;
@@ -11,11 +11,13 @@
     animation: ftc-overlay-in 180ms ease-out;
 }
 /* iOS 전용: AdMob 배너가 WKWebView 위에 native overlay 로 그려져 모달 footer 와
-   겹치는 회귀 (안드로이드는 WebView 외부 영역이라 무관). 모달 자체를 admob-bottom
-   만큼 위에서 끝나게 해서 광고를 모달 밖으로 분리. Pro/Premium (광고 없음) 은
-   --admob-bottom=0 이라 영향 없음. */
+   겹치는 회귀 (안드로이드는 WebView 외부 영역이라 무관). 모달 자체를 광고 위에서
+   끝나게 해서 광고를 모달 밖으로 분리.
+   2026-05-22 (v1.5.55): Pro/Premium (광고 없음) 케이스에 safe-area-inset-bottom 도
+   max 로 포함 — overlay 가 화면 끝까지 가서 홈 인디케이터 침범하던 잠재 이슈 차단.
+   광고 있으면 admob-bottom(이미 safe-area 합산값) 사용, 없으면 safe-area 만. */
 html.platform-ios .ftc-overlay {
-    bottom: var(--admob-bottom, 0px);
+    bottom: max(var(--admob-bottom, 0px), env(safe-area-inset-bottom, 0px));
 }
 @keyframes ftc-overlay-in {
     from { background: rgba(0, 0, 0, 0); }
@@ -37,10 +39,19 @@ html.platform-ios .ftc-overlay {
        PWA standalone / iOS Capacitor / Android Capacitor 환경에서는 env() 가 적절한
        safe-area 값을 반환해 status bar 침범 방지. */
     padding-top: env(safe-area-inset-top, 0px);
-    /* 하단: AdMob 네이티브 배너가 webview 위에 그려질 때 [말하기] 버튼이 가려지지 않도록
-       --admob-bottom (useAdMob.js setOffset()에서 set)을 padding-bottom에 합산.
-       Web/Pro/Premium에서는 --admob-bottom = 0px 이라 영향 없음. */
-    padding-bottom: max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px));
+    /* 2026-05-22 (v1.5.56) — Android 도 광고가 webview overlay 임이 확인됨 (사용자
+       v1.5.54 "반쯤 가림" 보고). 이전 주석 ("Android 는 webview 외부") 정정.
+       플랫폼별 처리:
+       - iOS: .ftc-overlay 가 광고 + safe-area 위까지 분리 → padding 0 (아래)
+       - Web: 광고 없음 → padding 0 (아래)
+       - Android: html.platform-android 분기에서 광고 height 만큼 padding (아래 추가) */
+    padding-bottom: 0;
+}
+/* Android: 광고가 WebView 안 overlay → 콘텐츠 가리지 않게 광고 height + 안전 마진.
+   admob-floor 100px 는 useAdMob setOffset 이 set 한 값 (Android 만, ADAPTIVE 미스리포트
+   보호용). 실제 admob-bottom 보고값이 더 크면 그 값 사용. */
+html.platform-android .ftc-window {
+    padding-bottom: max(var(--admob-bottom, 0px), var(--admob-floor, 100px));
 }
 
 /* ── Header ───────────────────────────────────── */
@@ -179,55 +190,13 @@ html.platform-ios .ftc-overlay {
 .ftc-messages::-webkit-scrollbar { width: 6px; }
 .ftc-messages::-webkit-scrollbar-thumb { background: rgba(0, 0, 0, 0.2); border-radius: 3px; }
 
-/* 첫 진입 안내 카드 — localStorage 'pronunfit_freetalk_guide_seen' 미존재 시 1회 표시 */
-.ftc-first-guide {
-    align-self: stretch;
-    background: #fff;
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-    border: 1px solid rgba(99, 102, 241, 0.18);
-    animation: ftc-guide-in 220ms ease-out;
-}
-@keyframes ftc-guide-in {
-    from { opacity: 0; transform: translateY(-8px); }
-    to   { opacity: 1; transform: translateY(0); }
-}
-.ftc-first-guide-title {
-    font-size: 14px;
-    font-weight: 700;
-    color: #4f46e5;
-    margin-bottom: 8px;
-}
-.ftc-first-guide-list {
-    margin: 0 0 10px;
-    padding-left: 4px;
-    list-style: none;
-    color: #1a1a1a;
-    font-size: 13px;
-    line-height: 1.6;
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-.ftc-first-guide-btn {
-    width: 100%;
-    height: 36px;
-    border: none;
-    border-radius: 18px;
-    background: linear-gradient(135deg, #6366f1, #8b5cf6);
-    color: #fff;
-    font-size: 13px;
-    font-weight: 600;
-    cursor: pointer;
-}
-.ftc-first-guide-btn:hover { filter: brightness(1.05); }
+/* (.ftc-first-guide 제거 — FreeTalkingPreGuideModal로 이관) */
 
 /* loading / error */
 .ftc-loading,
 .ftc-error {
     align-self: center;
-    padding: 10px 14px;
+    padding: 12px 16px;
     background: rgba(255, 255, 255, 0.85);
     border-radius: 14px;
     font-size: 13px;
@@ -236,7 +205,15 @@ html.platform-ios .ftc-overlay {
     align-items: center;
     gap: 8px;
 }
-.ftc-error { color: #c62828; }
+/* error 는 메시지/버튼을 위·아래 두 줄로 분리. 2026-05-22 UX 개선. */
+.ftc-error {
+    color: #c62828;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 12px;
+    max-width: 360px;
+    text-align: center;
+}
 .spin { animation: spin 1s linear infinite; }
 @keyframes spin { from { transform: rotate(0); } to { transform: rotate(360deg); } }
 

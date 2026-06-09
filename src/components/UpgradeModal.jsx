@@ -484,7 +484,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
     const modalContent = (
         <div className="upgrade-overlay" onClick={onClose}>
             <div className="upgrade-modal" onClick={e => e.stopPropagation()}>
-                <button className="upgrade-close-btn" onClick={onClose}>
+                <button className="modal-close" onClick={onClose} aria-label="Close">
                     <X size={22} />
                 </button>
 
@@ -659,7 +659,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                     <button
                                         className="upgrade-plan-btn"
                                         style={{
-                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            background: isCurrentPlan ? '#e2e8f0' : 'var(--brand-primary)',
                                             color: isCurrentPlan ? '#94a3b8' : 'white',
                                             cursor: isCurrentPlan ? 'default' : 'pointer',
                                         }}
@@ -734,7 +734,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                                     <button
                                         className="upgrade-plan-btn"
                                         style={{
-                                            background: isCurrentPlan ? '#e2e8f0' : plan.color,
+                                            background: isCurrentPlan ? '#e2e8f0' : 'var(--brand-primary)',
                                             color: isCurrentPlan ? '#94a3b8' : 'white',
                                             cursor: isCurrentPlan ? 'default' : 'pointer',
                                         }}
@@ -837,15 +837,16 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                     {modalContent}
                     {/* PayPal 결제 전용 팝업 */}
                     {selectedPayPalPlan && (
-                        <div className="upgrade-overlay" style={{ zIndex: 10001 }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
+                        <div className="upgrade-overlay" style={{ zIndex: 'var(--z-critical)' }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
                             <div
                                 className="upgrade-modal"
                                 style={{ maxWidth: '360px', padding: '28px 24px' }}
                                 onClick={e => e.stopPropagation()}
                             >
                                 <button
-                                    className="upgrade-close-btn"
+                                    className="modal-close"
                                     onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}
+                                    aria-label="Close"
                                 >
                                     <X size={20} />
                                 </button>

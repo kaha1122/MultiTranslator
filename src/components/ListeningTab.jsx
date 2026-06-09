@@ -87,12 +87,16 @@ export default function ListeningTab({
     onPronSuccess,
     onSaveToLibrary,
     onSpeak,
+    onTtsGate,                            // 2026-06-07: 신규 합성 전 포인트 게이트 — true=허용(차감)/false=차단(0점 팝업). 캐시 hit 제외.
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
+    onFirstPlay,                          // 2026-06-07: no-op (TTS 차감은 onTtsGate로 일원화)
     onNavigateToLibrary,
     userLevel,
+    languageLevels = {},
     isActive = true,
+    isTrialListenLimitReached = false,  // 2026-05-23: Trial 일일 3회 한도 enforcement
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -107,8 +111,12 @@ export default function ListeningTab({
     };
 
     const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
-    const [level, setLevel] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setLevel(userLevel); }, [userLevel]);
+    // 난이도는 "선택 언어"의 설정값(languageLevels[selectedLang])을 따름. 언어 전환/해당 언어
+    // 설정 변경 시 자동 반영, 같은 언어 내 수동 변경은 보존(deps 미변경).
+    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setLevel(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
     const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);
@@ -132,6 +140,8 @@ export default function ListeningTab({
     const loopModeRef = useRef(false); // useCallback 내에서 최신 값 접근용
     const playGenRef = useRef(0); // 재생 세대 토큰 (stale fetch 응답 무효화)
     const ttsAbortRef = useRef(null); // 진행 중 TTS fetch 취소용
+    const sentenceCacheRef = useRef(new Map()); // 문장별 TTS objectURL 캐시 (key → blob URL) — 반복 재생 시 서버 재요청 0
+    const SENT_CACHE_MAX = 40; // 문장 캐시 상한 (passage 변경 시 stopPassageAudio 에서 전체 정리)
 
     // loopMode 최신 값 동기화
     useEffect(() => { loopModeRef.current = loopMode; }, [loopMode]);
@@ -153,6 +163,13 @@ export default function ListeningTab({
             try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
             passageAudioUrlRef.current = null;
         }
+        // 문장별 캐시 일괄 정리 — 다른 passage 의 문장 오디오는 무효이므로 revoke + clear
+        if (sentenceCacheRef.current.size > 0) {
+            for (const url of sentenceCacheRef.current.values()) {
+                try { URL.revokeObjectURL(url); } catch {}
+            }
+            sentenceCacheRef.current.clear();
+        }
         setPassagePlaying(false);
         setPassageLoading(false);
     }, []);
@@ -168,12 +185,42 @@ export default function ListeningTab({
             return;
         }
 
-        // 일시정지 상태에서 재개
-        if (passageAudioRef.current && passageAudioRef.current.paused && passageAudioRef.current.currentTime > 0) {
-            passageAudioRef.current.play().catch(() => {});
+        // 보존된 오디오 재사용 — 일시정지 재개(중간 위치부터) 또는 재생완료 후 재청취(처음부터).
+        // 서버 재요청 없이 로컬에서 즉시 재생 → Azure 재합성 비용 0 + 로딩 스피너 없음.
+        // (오디오는 같은 passage 가 유지되는 동안만 보존 — stopPassageAudio 에서 정리)
+        if (passageAudioRef.current && passageAudioRef.current.paused) {
+            const a = passageAudioRef.current;
+            // 재생이 끝난 상태면 처음으로 되감기 (ended 시 currentTime=duration 이라 그냥 play 하면 안 들림)
+            if (a.ended || (a.duration && a.currentTime >= a.duration)) {
+                try { a.currentTime = 0; } catch {}
+            }
+            a.play().catch(() => {});
             setPassagePlaying(true);
             return;
         }
+
+        // 2026-05-23: 첫 재생 dedup safety net (daily 3-limit) — 정상 흐름에선 거의 안 타지만 fallback 유지.
+        //   passage.counted=false 인 경우 (향후 "저장된 passage 재진입" 등) handleGenerate 의 onGenerate 누락 보완.
+        if (passage && !passage.counted) {
+            if (isTrialListenLimitReached) {
+                onTrialLimitReached?.();
+                return;
+            }
+            onGenerate?.();
+            setPassage(p => p ? { ...p, counted: true } : p);
+        }
+
+        // 2026-05-23: 첫 재생 시 추가 AdsPoint(15) 차감 — Azure TTS 가 실제로 호출되는 시점 비용 반영.
+        //   같은 passage 의 반복 재생(pause/resume/loop, Stop→Play 다시): 서버 텍스트 해시 캐시로 Azure 비용 0
+        //   이므로 AdsPoint 추가 차감 안 함. 새 passage 가 생성될 때마다 adsCharged=false 로 리셋.
+        if (passage && !passage.adsCharged) {
+            onFirstPlay?.();
+            setPassage(p => p ? { ...p, adsCharged: true } : p);
+        }
+
+        // 2026-06-07: 신규 합성 전 포인트 게이트 — 보존 오디오 재청취는 위에서 이미 return(무료).
+        //   Trial 0점이면 차단 + 포인트부족 팝업(onTtsGate 내부), 새 TTS 합성 안 함.
+        if (onTtsGate && !onTtsGate()) return;
 
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const isDialogue = passageType === 'dialogue';
@@ -215,11 +262,8 @@ export default function ListeningTab({
                     audio.play().catch(() => {});
                 } else {
                     setPassagePlaying(false);
-                    if (passageAudioUrlRef.current) {
-                        try { URL.revokeObjectURL(passageAudioUrlRef.current); } catch {}
-                        passageAudioUrlRef.current = null;
-                    }
-                    passageAudioRef.current = null;
+                    // 오디오/blob URL 보존 — 재청취 시 서버 재요청 없이 로컬 재생(Azure 비용 0).
+                    // 정리는 stopPassageAudio(새 passage·조건변경·탭이탈·언마운트)에서 일괄 수행.
                 }
             };
 
@@ -241,7 +285,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, stopPassageAudio]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
 
     // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
     const playSentence = useCallback(async (sentence) => {
@@ -251,6 +295,20 @@ export default function ListeningTab({
             if (speaker && text) {
                 const SERVER_URL = getServerUrl();
                 const dialogueSeed = simpleHashString(passage?.text || '');
+                const cacheKey = `${selectedLang}:${dialogueSeed}:${speaker}:${text}`;
+
+                // 캐시 히트 — 서버 재요청 없이 즉시 재생 (Azure 비용 0)
+                const cachedUrl = sentenceCacheRef.current.get(cacheKey);
+                if (cachedUrl) {
+                    try {
+                        await new Audio(cachedUrl).play();
+                        return;
+                    } catch { /* 재생 실패 시 아래 재요청으로 진행 */ }
+                }
+
+                // 신규 합성 전 포인트 게이트 — 캐시 hit은 위에서 return(무료). 0점이면 차단+팝업.
+                if (onTtsGate && !onTtsGate()) return;
+
                 let objectUrl = null;
                 try {
                     const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
@@ -261,10 +319,18 @@ export default function ListeningTab({
                     if (!res.ok) throw new Error(`TTS ${res.status}`);
                     const blob = await res.blob();
                     objectUrl = URL.createObjectURL(blob);
+
+                    // LRU 캐시 저장 — 초과 시 가장 오래된 항목 revoke + 제거.
+                    // 캐시본은 onended 에서 revoke 하지 않음(재사용). 정리는 eviction/stopPassageAudio 가 담당.
+                    if (sentenceCacheRef.current.size >= SENT_CACHE_MAX) {
+                        const oldestKey = sentenceCacheRef.current.keys().next().value;
+                        try { URL.revokeObjectURL(sentenceCacheRef.current.get(oldestKey)); } catch {}
+                        sentenceCacheRef.current.delete(oldestKey);
+                    }
+                    sentenceCacheRef.current.set(cacheKey, objectUrl);
+
                     const audio = new Audio(objectUrl);
-                    const localUrl = objectUrl;
-                    audio.onended = () => { try { URL.revokeObjectURL(localUrl); } catch {} };
-                    objectUrl = null; // revoke 책임 onended로 이전
+                    objectUrl = null; // 캐시가 소유 — finally/onended 에서 revoke 안 함
                     await audio.play();
                     return;
                 } catch (e) {
@@ -277,7 +343,7 @@ export default function ListeningTab({
         // 폴백/에세이: 기존 onSpeak
         const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
         onSpeak?.(ttsText, selectedLang);
-    }, [passageType, passage, selectedLang, onSpeak]);
+    }, [passageType, passage, selectedLang, onSpeak, onTtsGate]);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
@@ -358,6 +424,11 @@ export default function ListeningTab({
     const handleGenerate = async () => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
+        if (isTrialListenLimitReached) {
+            onTrialLimitReached?.();
+            return;
+        }
         stopPassageAudio();
         setIsLoading(true);
         setActiveRecIdx(null);
@@ -385,6 +456,7 @@ export default function ListeningTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
+                    isCustom: hasCustom,
                     level,
                     type: passageType,
                     targetLang: selectedLang,
@@ -405,6 +477,8 @@ export default function ListeningTab({
                     text: data.passage || '',
                     pronunciation: data.passagePronunciation || '',
                     translation: data.passageTranslation || '',
+                    counted: true,       // daily 3-limit: handleGenerate 에서 onGenerate 호출 → 첫 재생 dedup safety net
+                    adsCharged: false,   // AdsPoint(15): 첫 재생 시 onFirstPlay 로 1회 더 차감 (Azure TTS 비용 반영)
                 });
                 setKeywords(data.words || []);
                 setSavedWords(new Set());

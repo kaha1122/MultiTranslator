@@ -69,6 +69,11 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
     const achievedSetRef = useRef(new Set());
     const lastPersistedRef = useRef({ current: -1, longest: -1 });
     const claimingRef = useRef(false);
+    // 전체 dailyProgress 로드가 한 번이라도 성공했는지. false면 persist 금지 —
+    // 콜드스타트 Firestore 읽기 실패(특히 Android WebChannel) 시 streakCurrent가 초기값 0에
+    // 머물고, 그 0이 기존의 올바른 streak을 덮어쓰는 클로버 사고 방지 (gUCviv... 사례, 2026-05-31).
+    // ref가 아닌 state — 로드 완료 시 persist effect를 재발화시켜 값이 동일해도 1회 persist 보장.
+    const [streakLoaded, setStreakLoaded] = useState(false);
 
     // 초기 로드 — 전체 dailyProgress 1회 fetch + user 문서 메타
     useEffect(() => {
@@ -80,6 +85,7 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
             setEarnedMilestones([]);
             achievedSetRef.current = new Set();
             lastPersistedRef.current = { current: -1, longest: -1 };
+            setStreakLoaded(false);
             return;
         }
 
@@ -108,7 +114,10 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
 
                 const userData = userSnap.data() || {};
                 setEarnedMilestones(Array.isArray(userData.earnedMilestones) ? userData.earnedMilestones : []);
+                // 전체 로드 성공 — 이 시점 이후의 streak 값만 신뢰하고 persist 허용.
+                setStreakLoaded(true);
             } catch (e) {
+                // 읽기 실패 시 streakLoaded는 false 유지 → persist effect가 0을 덮어쓰지 않음.
                 console.error('[useStreak] load failed:', e);
             }
         };
@@ -147,14 +156,20 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
         // 영구 누락됨 (HBr7nyrvj4SkLxsiDDHM415FsWK2 사례, 2026-05-13 Google Ads 트래픽 첫날 다수 검출).
         // AuthContext가 완료되면 dep 변경으로 effect 재발화 → streak=0/0이어도 정상 persist됨.
         if (!profile?.createdAt) return;
+        // 전체 dailyProgress 로드가 성공하기 전엔 persist 금지. 로드 실패/미완 상태의
+        // streakCurrent=0(초기값)이 Firestore의 올바른 streak을 덮어쓰는 것을 차단.
+        if (!streakLoaded) return;
         if (streakCurrent === lastPersistedRef.current.current && streakLongest === lastPersistedRef.current.longest) return;
-        lastPersistedRef.current = { current: streakCurrent, longest: streakLongest };
+        const persisting = { current: streakCurrent, longest: streakLongest };
         setDoc(doc(db, 'users', uid), {
             streakCurrent,
             streakLongest,
             streakUpdatedAt: serverTimestamp(),
-        }, { merge: true }).catch(e => console.error('[useStreak] persist failed:', e));
-    }, [streakCurrent, streakLongest, user?.uid, profile?.createdAt]);
+        }, { merge: true })
+            // 쓰기 성공 후에만 lastPersisted 전진 — 실패 시 다음 변경에서 재시도되도록.
+            .then(() => { lastPersistedRef.current = persisting; })
+            .catch(e => console.error('[useStreak] persist failed:', e));
+    }, [streakCurrent, streakLongest, user?.uid, profile?.createdAt, streakLoaded]);
 
     // 마일스톤 도달 시 자동 claim (Option B)
     useEffect(() => {

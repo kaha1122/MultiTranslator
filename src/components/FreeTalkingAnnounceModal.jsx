@@ -8,7 +8,7 @@ import './FreeTalkingAnnounceModal.css';
  *   - localStorage 'pronunfit_freetalk_announce_seen' 미존재
  *   - localStorage 'deviceOnboardingDone' === '1' (이미 온보딩 통과한 기존 사용자)
  *   → 신규 사용자는 OnboardingModal 통과 시점에 announce_seen='1' 자동 set 되어
- *     이 모달을 보지 않음 (TabTutorial 의 Scene step 으로 Free-Talking 안내 받음)
+ *     이 모달을 보지 않음 (이 모달은 기존 사용자 대상 1회 안내용)
  */
 export default function FreeTalkingAnnounceModal({ open, onStart, onLater, t }) {
     if (!open) return null;

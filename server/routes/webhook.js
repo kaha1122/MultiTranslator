@@ -3,8 +3,13 @@ const crypto = require('crypto');
 const axios = require('axios');
 const { admin, adminDb } = require('../config/firebase');
 const { sendSubscriptionPush } = require('../utils/sendPush');
+const { grantBonusPoints } = require('../utils/bonusPoints');
 
 const router = express.Router();
+
+// 2026-06-07: 인앱 포인트 상품 (소비성) — 구매 시 +200 적립
+const POINTS_PRODUCT_ID = 'pronunfit_points_200';
+const POINTS_AMOUNT = 200;
 
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
 const TOSS_WEBHOOK_SECRET = process.env.TOSS_WEBHOOK_SECRET;
@@ -41,6 +46,31 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
 
         if (!eventType || !appUserId) {
             return res.status(400).json({ error: 'Missing event type or app_user_id' });
+        }
+
+        // ── 인앱 포인트 구매 (소비성) — sandbox 가드보다 먼저 처리 ──────────────
+        //   포인트는 trial용 저가치 통화라 sandbox/production 모두 적립 허용(TestFlight 검증 위해).
+        //   멱등성: pointPurchases/{transactionId} .create()가 중복 webhook 재전송을 원자적으로 차단.
+        //   tier 무관 항상 적립(grantBonusPoints가 pointPurchase는 Pro skip 예외 처리).
+        if (eventType === 'NON_RENEWING_PURCHASE' && (event?.event?.product_id || '') === POINTS_PRODUCT_ID) {
+            const txId = String(event?.event?.transaction_id || event?.event?.id || `${appUserId}-${event?.event?.purchased_at_ms || ''}`);
+            const purchaseRef = adminDb.collection('pointPurchases').doc(txId);
+            try {
+                await purchaseRef.create({
+                    uid: appUserId,
+                    productId: POINTS_PRODUCT_ID,
+                    amount: POINTS_AMOUNT,
+                    environment: event?.event?.environment || 'unknown',
+                    createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                });
+            } catch (dupErr) {
+                // 이미 처리된 transaction (중복 webhook) → 멱등 skip
+                console.log(`[Webhook] point purchase DUP skip tx=${txId}`);
+                return res.status(200).json({ success: true, duplicate: true });
+            }
+            await grantBonusPoints({ uid: appUserId, amount: POINTS_AMOUNT, source: 'pointPurchase', meta: { txId, productId: POINTS_PRODUCT_ID } });
+            console.log(`[Webhook] +${POINTS_AMOUNT}pt to ${appUserId} (pointPurchase tx=${txId})`);
+            return res.status(200).json({ success: true, granted: POINTS_AMOUNT });
         }
 
         // ⚠ Sandbox 이벤트 차단 — TestFlight / Apple 리뷰어 / 베타 테스터의 sandbox 결제가
@@ -136,10 +166,11 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
                 break;
             }
 
-            // ── 환불 → 즉시 다운그레이드 ──
+            // ── 기타 무시 이벤트 ──
+            //   NON_RENEWING_PURCHASE는 포인트 상품이면 위에서 이미 처리·return됨.
+            //   여기 도달 = 포인트 외 소비성(현재 없음) → 무시.
             case 'NON_RENEWING_PURCHASE':
             case 'SUBSCRIBER_ALIAS':
-                // 무시해도 되는 이벤트
                 break;
 
             default:

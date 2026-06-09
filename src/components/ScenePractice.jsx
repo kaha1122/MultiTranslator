@@ -30,6 +30,7 @@ const getServerUrl = () => {
 };
 
 const SCENES = {
+    // 직접입력은 그리드에서 제외(항상 노출되는 customInput으로 대체) → 12개로 4×3 그리드 유지
     locations: [
         { id: 'airport', icon: '✈️' },
         { id: 'hotel', icon: '🏨' },
@@ -41,7 +42,8 @@ const SCENES = {
         { id: 'office', icon: '💼' },
         { id: 'bank', icon: '🏦' },
         { id: 'gym', icon: '💪' },
-        { id: 'custom', icon: '✏️' },
+        { id: 'home', icon: '🏠' },
+        { id: 'cinema', icon: '🎬' },
     ],
     situations: [
         { id: 'smalltalk', icon: '💬' },
@@ -54,7 +56,8 @@ const SCENES = {
         { id: 'compliment', icon: '🙏' },
         { id: 'decline', icon: '🚫' },
         { id: 'advice', icon: '💡' },
-        { id: 'custom', icon: '✏️' },
+        { id: 'debate', icon: '🗣️' },
+        { id: 'phonecall', icon: '📞' },
     ],
 };
 
@@ -227,7 +230,7 @@ export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimi
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
+const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
     // 랜덤 초기 장소 선택 (custom 제외)
     const pickRandomScene = (cat = 'locations') => {
         const list = SCENES[cat].filter(s => s.id !== 'custom');
@@ -253,8 +256,14 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
             setIsSaved(false);
         }
     }, [targetLangs, selectedLang]);
-    const [difficulty, setDifficulty] = useState(userLevel || 'basic');
-    useEffect(() => { if (userLevel) setDifficulty(userLevel); }, [userLevel]);
+    // 2026-06-06: 언어별 난이도(languageLevels) 도입 — Scene/FreeTalk 도 "선택 언어"의 설정
+    //   난이도를 따름. 언어 전환/해당 언어 설정 변경 시 자동 반영, 같은 언어 내 화면에서 수동
+    //   변경한 값은 deps 미변경으로 보존(setDifficulty는 difficulty만 바꿈).
+    //   (구 2026-05-23 'basic 고정' 규칙 대체 — 사용자가 설정에서 언어별 default 를 직접 정함)
+    const [difficulty, setDifficulty] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    useEffect(() => {
+        setDifficulty(languageLevels[selectedLang] || userLevel || 'basic');
+    }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [speechStyle, setSpeechStyle] = useState('formal');
     const [generated, setGenerated] = useState(null);
     const [generatedAnswer, setGeneratedAnswer] = useState(null);
@@ -359,6 +368,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
 
     const selectScene = (scene) => {
         setSelectedScene(scene);
+        setCustomInput(''); // 씬 선택 시 직접입력 텍스트 클리어 (둘 중 하나만 활성)
         setGenerated(null);
         setGeneratedAnswer(null);
         setError(null);
@@ -366,8 +376,9 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
         setIsAnswerSaved(false);
     };
 
-    const isCustomSelected = selectedScene?.id === 'custom';
-    const canRequest = selectedScene && (!isCustomSelected || customInput.trim().length > 0);
+    // 직접입력란이 항상 노출됨: 텍스트가 있으면 custom 모드가 우선(선택된 씬보다)
+    const isCustomActive = customInput.trim().length > 0;
+    const canRequest = isCustomActive || !!selectedScene;
 
     const handleRequest = async () => {
         if (!canRequest) return;
@@ -379,8 +390,8 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
         setIsAnswerSaved(false);
         try {
             // Custom 씬은 입력 텍스트를 키에 포함 → 씬별 이력 분리
-            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
-            const sceneText = isCustomSelected ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
+            const sceneId = isCustomActive ? makeCustomSceneId(customInput) : selectedScene.id;
+            const sceneText = isCustomActive ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
             const historyKey = makeHistoryKey(sceneId, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
             // Gemini에는 최근 200개만 전송 (토큰/속도 최적화, Firestore에는 전체 보관)
@@ -392,6 +403,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 body: JSON.stringify({
                     scene: sceneText,
                     category,
+                    isCustom: isCustomActive,
                     targetLang: selectedLang,
                     sourceLang,
                     difficulty,
@@ -428,8 +440,8 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
         setGeneratedAnswer(null);
         setIsAnswerSaved(false);
         try {
-            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
-            const sceneText = isCustomSelected ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
+            const sceneId = isCustomActive ? makeCustomSceneId(customInput) : selectedScene.id;
+            const sceneText = isCustomActive ? customInput.trim() : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
             // 답변은 별도 키 (scene--difficulty--style--lang--answer)
             const historyKey = makeHistoryKey(`${sceneId}-answer`, difficulty, speechStyle, selectedLang);
             const avoidSentences = await loadHistory(historyKey);
@@ -441,6 +453,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                 body: JSON.stringify({
                     question: generated.sentence,
                     scene: sceneText,
+                    isCustom: isCustomActive,
                     targetLang: selectedLang,
                     sourceLang,
                     difficulty,
@@ -581,27 +594,28 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
 
             {/* 언어 선택 + Request 버튼 — 탭 진입 시 항상 표시 */}
             <div className="scene-controls">
-                {/* 직접입력 선택 시 — 2줄 label 버튼 + 2줄 textarea */}
-                {isCustomSelected && (
-                    <div className="scene-custom-block">
-                        <div className="scene-custom-label" role="presentation">
-                            <span className="scene-custom-label__icon" aria-hidden="true">
-                                <Pencil size={11} strokeWidth={2.25} />
-                            </span>
-                            <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
-                        </div>
-                        <textarea
-                            className="scene-custom-input"
-                            rows={2}
-                            placeholder={t('scene.customPlaceholder')}
-                            value={customInput}
-                            onChange={evt => setCustomInput(evt.target.value)}
-                            autoFocus
-                        />
+                {/* 직접입력 — Listening/Vocab 탭과 동일 UI, 항상 노출(버튼 없이 바로 보임) */}
+                <div className="scene-custom-block">
+                    <div className="scene-custom-label" role="presentation">
+                        <span className="scene-custom-label__icon" aria-hidden="true">
+                            <Pencil size={11} strokeWidth={2.25} />
+                        </span>
+                        <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                     </div>
-                )}
+                    <textarea
+                        className="scene-custom-input"
+                        rows={2}
+                        placeholder={t('scene.customPlaceholderFreetalk')}
+                        value={customInput}
+                        onChange={evt => {
+                            const v = evt.target.value;
+                            setCustomInput(v);
+                            if (v.trim()) setSelectedScene(null); // 직접입력 시 씬 선택 해제 (둘 중 하나만 활성)
+                        }}
+                    />
+                </div>
 
-                {!selectedScene && (
+                {!selectedScene && !isCustomActive && (
                     <p className="scene-prompt-inline">{t('scene.selectScene')}</p>
                 )}
 
@@ -630,22 +644,25 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, onTrialLimitReached
                         onClick={() => {
                             if (!canRequest) return;
                             try { localStorage.setItem('pronunfit_freetalk_seen', '1'); } catch (e) { /* noop */ }
-                            const sceneId = isCustomSelected ? makeCustomSceneId(customInput) : selectedScene.id;
-                            const sceneText = isCustomSelected
+                            const sceneId = isCustomActive ? makeCustomSceneId(customInput) : selectedScene.id;
+                            const sceneText = isCustomActive
                                 ? customInput.trim()
                                 : getT('en', `scene${category === 'locations' ? 'Loc' : 'Sit'}.${selectedScene.id}`);
-                            const sceneI18nLabel = isCustomSelected
+                            const sceneI18nLabel = isCustomActive
                                 ? customInput.trim()
                                 : t(`${sceneI18nPrefix}.${selectedScene.id}`);
+                            const sceneIcon = isCustomActive ? '💬' : (selectedScene?.icon || '💬');
                             onFreeTalkStart?.({
                                 scene: sceneText,
                                 sceneId,
                                 category,
+                                isCustom: isCustomActive,
                                 targetLang: selectedLang,
                                 sourceLang,
                                 difficulty,
                                 speechStyle,
                                 sceneI18nLabel,
+                                sceneIcon,
                             });
                         }}
                         disabled={!canRequest}

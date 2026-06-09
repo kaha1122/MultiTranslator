@@ -50,7 +50,11 @@ export async function showInterstitialAd() {
             const cleanup = () => handles.forEach(h => h?.remove?.());
 
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.Dismissed, () => {
-                cleanup(); resolve(shown);
+                cleanup();
+                // 인터스티셜 dismiss 시 별도 처리 없음. (과거 v1.5.82 triggerForcedIdle
+                // 강제 idle 호출은 진입 애니메이션까지 멈춰 UX 회귀를 일으켜 폐기됐고,
+                // idle/forced-idle 로직 자체가 제거됨.)
+                resolve(shown);
             }));
             handles.push(await _adMob.addListener(InterstitialAdPluginEvents.FailedToLoad, (e) => {
                 console.error('[AdMob Interstitial] FailedToLoad:', JSON.stringify(e));
@@ -109,6 +113,20 @@ let _admobInitialized = false;
 let _bannerShowing = false;
 let _bannerSetupInFlight = false;
 
+// [v1.5.98] FailedToLoad threshold —
+// AdMob auto-refresh 1회 일시 실패에도 setOffset(false)를 즉시 호출하면
+// CSS admob-active class가 제거되어 하단 탭바가 화면 맨 아래로 튀어 올라가고
+// 광고 자리가 사라져 사용자에게 "광고가 갑자기 사라짐"으로 인지됨.
+// 다음 60-120s 후 자동 갱신 성공 시 Loaded 이벤트로 복귀하지만, 그 사이 60초+
+// 동안 layout 무너짐. 2026-06-06 사용자 보고 + Android logcat 분석으로 확정
+// (23:43:34 요청 → creative 렌더 실패 → 66s 후 자동 재시도 성공).
+//
+// 해결: 3회 연속 실패까지는 CSS 유지(layout 보존) → 다음 Loaded/SizeChanged
+// 성공 시 자동 reset + setOffset(DEFAULT) 복원. 일시 실패는 사용자에게 안 보임.
+// 3회 연속 = 약 6분 (auto-refresh 120s × 3) 진짜 장애 상황 — 그때만 layout 정리.
+let _consecutiveFailures = 0;
+const FAIL_THRESHOLD = 3;
+
 async function loadAdMob() {
     if (_adMob) return;
     if (!isNativePlatform()) return;
@@ -142,7 +160,9 @@ function setOffset(height) {
 }
 
 export const useAdMob = (tier) => {
-    const isPaid = tier === 'pro' || tier === 'premium';
+    // [v1.5.70] admin tier도 광고 hide. 운영 룰 "admin = no ads"가 코드에 누락되어 있던 것 보완.
+    // Why: admin은 결제 안 했지만 광고 노출 안 시키는 게 의도된 운영 (Pro/Premium과 동일 ad-free 그룹).
+    const isPaid = tier === 'pro' || tier === 'premium' || tier === 'admin';
     // ⚠ 콜드스타트 미동기화 가드: tier가 null/undefined면 profile 미로드 상태로 간주.
     //   profile이 null일 때 AuthContext가 'trial' 폴백을 주면 Pro 유저에게 ATT 프롬프트 +
     //   배너 깜빡임이 발생함. App.jsx에서 `useAdMob(profile ? tier : null)` 로 호출.
@@ -214,17 +234,27 @@ export const useAdMob = (tier) => {
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.SizeChanged, (info) => {
                     const h = info?.height || DEFAULT_BANNER_HEIGHT;
                     console.log('[AdMob Banner] SizeChanged, height:', h);
+                    // [v1.5.98] 성공 신호 — 실패 카운터 리셋
+                    _consecutiveFailures = 0;
                     setOffset(h);
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.Loaded, () => {
                     console.log('[AdMob Banner] Loaded OK');
+                    // [v1.5.98] 성공 신호 — 실패 카운터 리셋 + offset 복원
+                    _consecutiveFailures = 0;
                     setOffset(DEFAULT_BANNER_HEIGHT); // SizeChanged가 아직 안 왔을 때 폴백
                 }));
                 listenerHandles.push(await _adMob.addListener(BannerAdPluginEvents.FailedToLoad, (e) => {
-                    console.error('[AdMob Banner] FailedToLoad:', JSON.stringify(e));
-                    // no-fill 시 예약된 100px 공간 회수 — 빈 영역이 콘텐츠 아래 표시되는 결함 방지
-                    // (iOS 출시 전 AdMob no-fill / 인터넷 끊김 / 광고 차단기 사용 시 발생)
-                    setOffset(false);
+                    _consecutiveFailures++;
+                    console.error(`[AdMob Banner] FailedToLoad (${_consecutiveFailures}/${FAIL_THRESHOLD}):`, JSON.stringify(e));
+                    // [v1.5.98] 3회 연속 실패 시에만 CSS 정리 — 일시 실패는 layout 유지하여
+                    // 사용자에게 "광고 갑자기 사라짐"으로 안 보이게 함. 다음 자동 갱신
+                    // 성공 시 SizeChanged/Loaded handler가 자동 복귀.
+                    // 3회 연속 실패 = ~6분 (auto-refresh 120s × 3) 진짜 장애 상황 신호.
+                    if (_consecutiveFailures >= FAIL_THRESHOLD) {
+                        console.warn(`[AdMob Banner] ${FAIL_THRESHOLD}회 연속 실패 — layout 정리`);
+                        setOffset(false);
+                    }
                 }));
 
                 // NPE(BannerExecutor.java:230) 방어는 위쪽 모듈 락(_bannerShowing,
@@ -289,4 +319,13 @@ export const useAdMob = (tier) => {
             }
         };
     }, [isPaid, isReady]);
+
+    // [제거 — 광고 복귀 안 됨 fix] 과거 v1.5.66은 백그라운드 진입 시 hideBanner(GONE +
+    // mAdView.pause())로 배너를 숨기고 복귀 시 resumeBanner로 되살렸음. 그런데
+    // resumeBanner는 setVisibility(VISIBLE) + mAdView.resume()만 하고 loadAd를 하지
+    // 않아, 백그라운드 동안 만료된(또는 refresh 타이머가 멈춘) AdView가 복귀 후 빈 채로
+    // 남아 "광고 자리는 있는데 광고가 안 나옴" 증상을 유발했다.
+    // → 백그라운드 hide/resume 토글을 제거. AdMob SDK는 배너가 화면 밖(window 비가시)일
+    //   때 auto-refresh를 자체적으로 멈추므로 thermal 영향은 사실상 중립이고, 복귀 시
+    //   배너가 안정적으로 유지/갱신된다. (Pro/Premium은 애초에 배너 미표시 — 무관)
 };

@@ -8,8 +8,9 @@
     bottom: 0;
     width: 100vw;
     height: 100vh;
-    z-index: 9500; /* FreeTalkingChat .ftc-overlay (9000) 위 */
-    background: rgba(0, 0, 0, 0.45);
+    /* Portal로 document.body에 mount되며 FreeTalkingChat .ftc-overlay 위에 떠야 함. */
+    z-index: var(--z-chat-popup-high); /* 채팅 오버레이 위 */
+    background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -19,15 +20,15 @@
 }
 @keyframes aitp-overlay-in {
     from { background: rgba(0, 0, 0, 0); }
-    to   { background: rgba(0, 0, 0, 0.45); }
+    to   { background: var(--modal-overlay-bg); }
 }
 
 .aitp-window {
     width: 100%;
     max-width: 360px;
     background: #fffef9;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border-radius: var(--modal-radius);
+    box-shadow: var(--modal-shadow);
     overflow: hidden;
     animation: aitp-window-in 200ms ease-out;
     border: 2px solid rgba(99, 102, 241, 0.25);
@@ -71,6 +72,29 @@
     color: #1f2937;
     font-size: 14.5px;
     line-height: 1.6;
+}
+
+/* 들린 메시지 / 수정한 메시지 섹션 */
+.aitp-section {
+    margin-bottom: 12px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.07);
+}
+.aitp-section-label {
+    color: #9ca3af;
+    font-size: 11.5px;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+.aitp-section-text {
+    color: #111827;
+    font-size: 15px;
+    line-height: 1.5;
+    word-break: keep-all;
+}
+
+/* 설명(AI-Tip narration) */
+.aitp-tip-text {
     white-space: pre-wrap;
     word-break: keep-all;
 }

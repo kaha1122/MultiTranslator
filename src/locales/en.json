@@ -23,7 +23,9 @@
     "title": "Free-Talking",
     "aiName": "Partner",
     "preparing": "Preparing your conversation...",
-    "startError": "Failed to start the conversation.",
+    "startError": "Couldn't start the conversation. Please try again in a moment.",
+    "retry": "Try again",
+    "cancel": "Close",
     "userAutoHint": "You could start like this",
     "tapForCard": "Open card",
     "heardAs": "Heard as",
@@ -60,11 +62,20 @@
     "openSettings": "Open Settings",
     "micError": "Recording had a problem",
     "saveError": "Save failed. Please try again later.",
-    "guideTitle": "How to use Free-Talking",
-    "guideStep1": "First, listen to the scene intro and the sample dialogue, then try repeating",
-    "guideStep2": "Press [Talk] to chat freely with the AI",
-    "guideStep3": "During the chat, tap [💎 Make Cards] to save key expressions",
-    "guideDismiss": "Start"
+    "heardMessage": "What was heard",
+    "correctedMessage": "Corrected message",
+    "preGuide": {
+      "welcome": "Free-Talking is open conversation practice with AI. First you listen to a sample dialogue, then take your time and continue it.",
+      "role1": "First, we play the scene and a sample dialogue",
+      "role2": "Listen carefully and decide what you'll say",
+      "role3": "When ready, tap [Talk] to continue the conversation",
+      "missionTitle": "Try these in this conversation",
+      "mission1": "Grasp the flow and key expressions of the sample dialogue",
+      "mission2": "Pick one key phrase from the AI's reply to remember",
+      "mission3": "Naturally continue with your next line",
+      "tip": "Tap a message to open a card for pronunciation practice and saving",
+      "cta": "Start"
+    }
   },
   "pushOptIn": {
     "title": "Get learning reminders?",
@@ -183,9 +194,20 @@
   },
   "trial": {
     "limitTitle": "Daily Trial Limit Reached!",
-    "limitDesc": "You've reached the daily limit: 10 cards, 10 pronunciation tests, or 2 Free-Talking sessions.",
+    "limitDesc": "Reached today's limit: 10 Pronunciation, 2 Free-Talking, 3 Listening.",
     "seeYouTomorrow": "See you tomorrow!",
-    "seeSidebarReward": "Want to keep learning? Use the +2 Free-Talking / +5 pronunciations buttons in the sidebar",
+    "seeSidebarReward": "Want more practice? Try the +2 Free-Talking / +5 Pronunciation / +3 Listening buttons in the sidebar.",
+    "pointsTitle": "Out of points",
+    "pointsDesc": "Top up points or subscribe to continue",
+    "pointsUpgradeHint": "Subscribe for unlimited use — no ads, limits, or points",
+    "costOther": "Other",
+    "costGuideTitle": "Points used per action",
+    "costPlay": "Play",
+    "costGenerate": "Generate",
+    "proLimitTitle": "You've reached this month's limit",
+    "proLimitDesc": "Resets on the 1st of next month",
+    "proUpgradeHint": "Premium is unlimited — no caps",
+    "proUpgradeBtn": "Upgrade to Premium",
     "upgradeBtn": "Upgrade Your Plan"
   },
   "apiSetup": {
@@ -228,6 +250,7 @@
     "noTarget": "Please select a target language above first.",
     "saveReturn": "Save Settings & Return",
     "defaultLevel": "Default Learning Level",
+    "defaultLevelDesc": "Set the default learning level for each language.",
     "usageFreeTalk": "Free Talking",
     "groupAccount": "Account",
     "groupLanguage": "Language",
@@ -260,7 +283,8 @@
     "loginRequired": "Please log in.",
     "customLabelTop": "Custom Input",
     "customLabelBottom": "Type freely",
-    "customPlaceholder": "Enter your own location or situation"
+    "customPlaceholder": "Enter your own location or situation",
+    "customPlaceholderFreetalk": "e.g. Taking a taxi / Debating AI with a friend"
   },
   "vocab": {
     "generate": "Generate Words",
@@ -282,6 +306,8 @@
     "office": "Office & Work",
     "bank": "Bank",
     "gym": "Gym",
+    "home": "Home & Neighbors",
+    "cinema": "Cinema & Theater",
     "custom": "Custom"
   },
   "sceneSit": {
@@ -295,6 +321,8 @@
     "compliment": "Compliments",
     "decline": "Declining Politely",
     "advice": "Asking for Advice",
+    "debate": "Debate & Opinions",
+    "phonecall": "Phone Call",
     "custom": "Custom"
   },
   "vocabCat": {
@@ -462,8 +490,8 @@
     "thankYou": "Thank you for subscribing!",
     "toastFail": "Payment failed or was cancelled.",
     "duplicateSubscription": "You already have an active subscription on the app store. Please cancel it first.",
-    "proFeature1": "1,500 pronunciation assessments/mo",
-    "proFeature3": "Unlimited access to all tabs",
+    "proFeature1": "1,000 pronunciation assessments/mo",
+    "proFeature3": "Free-Talking 100 · Listening 200/mo",
     "premiumFeature1": "Unlimited pronunciation assessments",
     "premiumFeature2": "Unlimited Free-Talking",
     "premiumFeature3": "Unlimited access to all tabs",
@@ -577,12 +605,15 @@
     "counterUnit": "Card",
     "bookmarkPromptTitle": "Goal Reached!",
     "bookmarkPromptDesc": "Tap the ⭐ button to save this sentence to your library. It will count toward today's learning goal.",
-    "starGuideTitle": "Save to Your Library!",
-    "starGuideDesc": "Tap the ⭐ star during practice to save cards to your library. Review saved cards anytime from the Library tab.",
+    "starGuideTitle": "⭐ Star → Pass → Streak!",
     "bookmarkConfirm": "OK",
     "dontShowAgain": "Don't show again",
     "bookmarkNow": "Bookmark Now",
-    "bookmarkLater": "Later"
+    "bookmarkLater": "Later",
+    "starGuideStep1": "Tap the ⭐ star to save the card you want to learn.",
+    "starGuideStep2": "Pass the pronunciation score — your card becomes qualified.",
+    "starGuideStep3": "Collect 3 qualified cards a day to hit today's Streak! Bonus 💎 awaits.",
+    "starGuideCta": "Got it, let's go!"
   },
   "tabTag": {
     "home": "Check your progress and navigate learning menus",
@@ -946,10 +977,18 @@
     "watchForCards": "+5 Cards",
     "watchAd": "Watch ad for 5 extra cards",
     "watchForProns": "+5 Pronunciation",
-    "watchAdPron": "Watch ad for 10 extra pronunciations (saved permanently)",
+    "watchAdPron": "Watch ad → +5 Pronunciation attempts",
     "loading": "Loading ad...",
+    "topUpBonus": "Bonus Points (Ad) +5",
+    "topUpBonusDesc": "Watch an ad for +5 points",
+    "buyBonus": "Bonus Points (Buy) +200",
+    "buying": "Processing...",
+    "buySuccess": "Purchase complete! 200 points will be added shortly.",
+    "buyFail": "Purchase failed. Please try again later.",
     "watchForFreeTalk": "+2 Free Talking",
-    "watchAdFreeTalk": "Watch ad for 2 extra Free Talking sessions (saved permanently)"
+    "watchAdFreeTalk": "Watch ad → +2 Free Talking sessions",
+    "watchForListen": "+3 Listening",
+    "watchAdListen": "Watch ad → +3 Listening passages"
   },
   "renewal": {
     "title": "Subscription Expiring Soon",
@@ -1198,7 +1237,7 @@
   },
   "subscription": {
     "pro": "🌟 Pro",
-    "proDesc": "Unlimited cards · 1,500 prons/mo",
+    "proDesc": "F.Talking 100 · Listening 200 · Pron 1000/mo",
     "premium": "👑 Premium",
     "premiumDesc": "Unlimited cards & prons",
     "noAds": "No Ads"
@@ -1277,11 +1316,10 @@
     "label": "Bonus",
     "noInterstitialAd": "No interstitial ad",
     "referralBtn": "🤝 Refer a friend",
-    "referralSubtitle": "Friend also gets 100pt",
     "reviewSubtitle": "One-time only",
     "referral": {
-      "title": "Enter referral code → Get 100pt",
-      "desc": "Enter a friend's code and you both get 100 bonus points.",
+      "title": "Enter referral code",
+      "desc": "Enter the referral code your friend shared with you.",
       "codeLabel": "Referral code from your friend",
       "submit": "Apply",
       "invalid": "Invalid code",
@@ -1293,8 +1331,8 @@
       "copy": "Copy",
       "copied": "Copied!",
       "share": "Share with a friend",
-      "success": "🎉 You got 100 bonus points!",
-      "shareMessage": "Let's use PronunFit together! Enter this referral code and we both get 100 bonus points!\n\n{code}\n\nGet the app: {url}",
+      "success": "🎉 Referral complete!",
+      "shareMessage": "Let's use PronunFit together! Enter this referral code!\n\n{code}\n\nGet the app: {url}",
       "shareTitle": "PronunFit Referral",
       "shareHint": "Message copied. Paste it into a chat app to share with your friend.",
       "shareIosWeb": "iPhone / Web",
@@ -1322,7 +1360,7 @@
     "campaign": {
       "title": "🎁 Bonus Points Launch Event",
       "desc": "Refer a friend or leave a Google Play review to earn 100 bonus points. With bonus active: no interstitial ads + daily limit lifted!",
-      "feature1": "🤝 Refer a friend — 100pt for both",
+      "feature1": "🤝 Refer a friend — 100pt",
       "feature2": "🌟 Google Play review — 100pt",
       "feature3": "🎯 Bonus active: no ads + limit lifted",
       "cta": "Start now",

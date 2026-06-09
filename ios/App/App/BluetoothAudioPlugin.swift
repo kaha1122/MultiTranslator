@@ -15,7 +15,24 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
         CAPPluginMethod(name: "startBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "stopBluetoothSco", returnType: CAPPluginReturnPromise),
         CAPPluginMethod(name: "activateAudioSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "deactivateAudioSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "endAudioSession", returnType: CAPPluginReturnPromise),
+        CAPPluginMethod(name: "scheduleEndAudioSession", returnType: CAPPluginReturnPromise),
     ]
+
+    /// [v1.5.74 thermal-ios Pattern 1] Idle-debounced deactivate 용 work item.
+    /// scheduleEndAudioSession이 새로 호출되거나, activateAudioSession/startBluetoothSco/
+    /// endAudioSession 호출 시 cancel됨. 모든 plugin 메소드는 Capacitor의 serial queue에서
+    /// 호출되므로 단순 인스턴스 변수 접근으로 동시성 안전.
+    private var pendingDeactivateWorkItem: DispatchWorkItem?
+
+    private func cancelPendingDeactivate() {
+        if pendingDeactivateWorkItem != nil {
+            pendingDeactivateWorkItem?.cancel()
+            pendingDeactivateWorkItem = nil
+            print("[BluetoothAudio] pending deactivate cancelled (user re-entered recording)")
+        }
+    }
 
     /// 블루투스 오디오 장치가 연결되어 있는지 확인
     @objc func isBluetoothHeadsetConnected(_ call: CAPPluginCall) {
@@ -26,6 +43,8 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
 
     /// AVAudioSession을 블루투스 허용 모드로 설정 (녹음 전 호출)
     @objc func startBluetoothSco(_ call: CAPPluginCall) {
+        // [v1.5.74] 새 녹음 진입 — 예약된 deactivate 취소 (BT 라우트 보존)
+        cancelPendingDeactivate()
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(
@@ -86,6 +105,9 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
     /// iOS에서 최초 마이크 권한 승인 후 세션을 갱신해야 getUserMedia가 정상 동작함.
     /// AppDelegate에서 설정한 카테고리가 권한 없이 불완전 초기화되었을 수 있으므로 재설정.
     @objc func activateAudioSession(_ call: CAPPluginCall) {
+        // [v1.5.74] 새 녹음 진입 — 예약된 deactivate 취소.
+        // Pattern 1 핵심: 10s idle debounce 내 재녹음 시 setActive(false) 차단 → BT 라우트 보존.
+        cancelPendingDeactivate()
         let session = AVAudioSession.sharedInstance()
         do {
             try session.setCategory(
@@ -100,6 +122,144 @@ public class BluetoothAudioPlugin: CAPPlugin, CAPBridgedPlugin {
             print("[BluetoothAudio] Failed to activate AVAudioSession: \(error)")
             call.resolve(["success": false])
         }
+    }
+
+    /// [v1.5.67 idle 발열 절감] 녹음 종료 후 AVAudioSession을 .playback으로 복귀.
+    /// stopBluetoothSco는 BT 사용자(btScoActiveRef=true)일 때만 호출되어 내장 마이크
+    /// 사용자에겐 .playAndRecord 카테고리가 잔류 → idle 시 mediaserverd input subsystem
+    /// 지속 가동 → 발열. 이 메소드는 BT 무관 항상 호출되어 .playback으로 강제 복귀.
+    ///
+    /// 주의: setActive(false)는 호출하지 않음.
+    ///   - 과거 사례(BluetoothAudioPlugin.swift:62-63 주석): setActive(false)로 세션을
+    ///     완전히 끄면 에어팟 출력 라우트가 리셋되어 TTS가 스피커로 튀는 회귀 발생.
+    ///   - 카테고리만 .playback으로 전환해도 mediaserverd가 input subsystem을 깨우지 않아
+    ///     idle 발열 해소 효과는 동일.
+    @objc func deactivateAudioSession(_ call: CAPPluginCall) {
+        let session = AVAudioSession.sharedInstance()
+        do {
+            // preferredInput 초기화 — BT 마이크 강제 선택 해제 (BT 사용자가 끊고 내장으로
+            // 전환한 경우에도 잔류 선호도 제거)
+            try session.setPreferredInput(nil)
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+            print("[BluetoothAudio] AVAudioSession switched to .playback (idle thermal mode)")
+            call.resolve(["success": true])
+        } catch {
+            print("[BluetoothAudio] Failed to deactivate AVAudioSession: \(error)")
+            // 실패해도 치명적이지 않으므로 resolve (호출 측에서 무시)
+            call.resolve(["success": false])
+        }
+    }
+
+    /// [v1.5.73 thermal-ios Pattern 4] 세션 단위 완전 해제 — Free Talking 모달 닫힘 등
+    /// "사용자가 녹음 컨텍스트에서 완전히 빠져나간 시점"에만 호출.
+    ///
+    /// 배경:
+    ///   deactivateAudioSession은 매 녹음 stop마다 호출되어 카테고리만 .playback 으로
+    ///   전환하지만, setActive(false)는 호출하지 않음. 이유는 BT(에어팟 등) 사용자에게
+    ///   라우트 리셋 회귀가 발생하기 때문(역사적 관찰, 0322 commit).
+    ///   결과적으로 mediaserverd가 계속 awake 상태 → 발열 누적 → iOS thermal throttling
+    ///   → 마이크 silent capture → "발음 인식 안 됨" 증상 (사용자 보고 2026-05-28).
+    ///
+    /// 본 메소드는 모달 닫힘 등 명확한 종료 시점에만 호출되므로:
+    ///   - Free Talking 대화 내 녹음 반복(stop→start): deactivateAudioSession만 호출
+    ///     → 세션 활성 유지 → BT 라우트 보존
+    ///   - 모달 닫힘: endAudioSession 호출 → setActive(false) → mediaserverd 해제
+    ///     → BT 라우트는 다음 세션 활성화 시 재선택됨(라우트 끊김 회귀 가능, 1차 IPA 검증 대상)
+    ///
+    /// 옵션 .notifyOthersOnDeactivation: 다른 오디오 앱(음악 등)에 알림 → 자연스러운 재개
+    @objc func endAudioSession(_ call: CAPPluginCall) {
+        // [v1.5.74] 즉시 end는 우선순위 최상 — 예약된 deactivate는 더 이상 의미 없으므로 cancel.
+        cancelPendingDeactivate()
+        let session = AVAudioSession.sharedInstance()
+        do {
+            // 카테고리는 .playback으로 유지 — 다음 활성화 시 BT A2DP 우선순위 보존
+            try session.setPreferredInput(nil)
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+            // 핵심: setActive(false) — mediaserverd가 audio HW context를 release할 수 있게 함
+            try session.setActive(false, options: .notifyOthersOnDeactivation)
+            print("[BluetoothAudio] AVAudioSession FULLY ended (setActive=false, thermal mode)")
+            call.resolve(["success": true])
+        } catch {
+            print("[BluetoothAudio] Failed to end AVAudioSession: \(error)")
+            // 실패해도 치명적이지 않음 — 호출 측은 best-effort 처리
+            call.resolve(["success": false])
+        }
+    }
+
+    /// [v1.5.74 thermal-ios Pattern 1] Idle-debounced 세션 해제 —
+    /// TranslationCard / ScenePractice / VocabTab 발음 녹음 컨텍스트 전용.
+    ///
+    /// 동작:
+    ///   1. 즉시: setCategory(.playback) — deactivateAudioSession 동일 (input subsystem 휴면)
+    ///   2. delayMs(default 10000ms) 후: setActive(false, .notifyOthersOnDeactivation)
+    ///      → mediaserverd 완전 해제 → 발열 origin 차단
+    ///   3. delayMs 안에 activateAudioSession/startBluetoothSco/endAudioSession 호출되면
+    ///      예약된 setActive(false) 자동 cancel → BT 라우트 보존
+    ///
+    /// Why 10s — TranslationCard/Scene/Vocab 시나리오: TTS 듣고 STT 발음 연습이 반복되는 흐름.
+    /// 10초 idle은 사용자가 "잠시 사용을 멈춘" 명확한 신호 → 세션 해제해도 라우트 손실 영향 최소.
+    /// Free Talking 모달은 한 세션 내 10초+ 침묵(AI 응답 대기 등)이 자연스러우므로 본 메소드
+    /// 사용 X, 모달 닫힘 시점에만 endAudioSession(Pattern 4) 호출.
+    @objc func scheduleEndAudioSession(_ call: CAPPluginCall) {
+        let delayMs = call.getInt("delayMs") ?? 10000
+        let session = AVAudioSession.sharedInstance()
+
+        // 1. 즉시: 카테고리 .playback 전환 (deactivateAudioSession 동일 효과 — input subsystem 휴면)
+        do {
+            try session.setPreferredInput(nil)
+            try session.setCategory(
+                .playback,
+                mode: .default,
+                options: [.allowBluetoothA2DP]
+            )
+        } catch {
+            print("[BluetoothAudio] scheduleEndAudioSession setCategory failed: \(error)")
+            // 카테고리 전환 실패해도 예약은 진행 — best-effort
+        }
+
+        // 2. 기존 예약이 있으면 cancel (debounce reset) + 새 timer 등록.
+        //
+        // [v1.5.74+] DispatchWorkItem cancel race 방어:
+        //   cancelPendingDeactivate()는 Capacitor serial queue에서 호출되지만, 실제 work
+        //   클로저는 global(.background) 큐에서 실행된다. cancel()이 호출된 시점에 이미
+        //   background 큐가 work 디스패치를 시작했다면 cancel은 무효가 되어 setActive(false)
+        //   가 새 activateAudioSession 직후에 fire되는 race window가 존재한다.
+        //   증상: setActive(true) 완료 → 본 work이 곧바로 setActive(false)로 덮어씀 →
+        //   세션이 비활성으로 굳어 다음 녹음에서 오디오 캡처 실패("발음 인식 안 됨").
+        //
+        //   해결: work 클로저 내부에서 자기 자신의 isCancelled를 weak 캡처로 확인.
+        //   var로 선언 후 할당 → 클로저가 [weak work]로 자기 참조. work가 이미 cancel된
+        //   상태로 실행 시작되면 즉시 return.
+        cancelPendingDeactivate()
+        var work: DispatchWorkItem!
+        work = DispatchWorkItem { [weak work] in
+            guard let w = work, !w.isCancelled else {
+                print("[BluetoothAudio] scheduled deactivate cancelled mid-flight — race avoided")
+                return
+            }
+            do {
+                try AVAudioSession.sharedInstance().setActive(false, options: .notifyOthersOnDeactivation)
+                print("[BluetoothAudio] scheduled deactivate FIRED (Active=false) after \(delayMs)ms idle")
+            } catch {
+                print("[BluetoothAudio] scheduled deactivate failed: \(error)")
+            }
+        }
+        pendingDeactivateWorkItem = work
+        DispatchQueue.global(qos: .background).asyncAfter(
+            deadline: .now() + .milliseconds(delayMs),
+            execute: work
+        )
+
+        print("[BluetoothAudio] scheduleEndAudioSession: setActive(false) scheduled in \(delayMs)ms")
+        call.resolve(["success": true, "delayMs": delayMs])
     }
 
     /// 현재 오디오 입력 중 블루투스 장치가 있는지 확인
