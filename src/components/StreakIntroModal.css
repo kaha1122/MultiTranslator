@@ -28,22 +28,14 @@
 /* ── 헤더 (Hero) ───────────────────────────────────────── */
 .streak-intro-hero {
     position: relative;
-    background: linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #fdf4ff 100%);
+    /* 단색 톤다운: 3-stop 파스텔 그라데이션 → 옅은 동계열 단색 */
+    background: var(--streak-intro-solid-tint);
     padding: 18px 20px 14px;
     border-radius: 24px 24px 0 0;
     text-align: center;
     overflow: hidden;
 }
-.streak-intro-hero::before {
-    content: '';
-    position: absolute;
-    top: -60px;
-    right: -60px;
-    width: 220px;
-    height: 220px;
-    background: radial-gradient(circle, rgba(124, 127, 224, 0.12) 0%, transparent 70%);
-    pointer-events: none;
-}
+/* radial glow(그라데이션) 제거 — 단색 방침 */
 
 .streak-intro-confetti {
     position: absolute;
@@ -252,7 +244,8 @@
     gap: 6px;
 }
 .streak-intro-milestone {
-    background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
+    /* 단색 톤다운: 골드 그라데이션 → 옅은 골드 단색 (골드 정체성 유지) */
+    background: #FBEBB6;
     border: 1.5px solid #fbbf24;
     border-radius: 10px;
     padding: 7px 6px;
