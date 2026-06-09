@@ -62,13 +62,20 @@
     "openSettings": "Abrir Ajustes",
     "micError": "Problema na gravação",
     "saveError": "Falha ao salvar. Por favor, tente novamente mais tarde.",
-    "guideTitle": "Como usar Free-Talking",
-    "guideStep1": "Primeiro ouça a situação e o diálogo de exemplo e imagine sua resposta",
-    "guideStep2": "Toque em [Falar] para continuar livremente a conversa que você imaginou",
-    "guideStep3": "Toque nas mensagens trocadas para abrir cartões e estudar",
     "heardMessage": "Mensagem ouvida",
     "correctedMessage": "Mensagem corrigida",
-    "guideDismiss": "Começar"
+    "preGuide": {
+      "welcome": "Free-Talking é prática de conversa livre. Você fala primeiro e a IA responde.",
+      "role1": "Você fala primeiro",
+      "role2": "A IA se torna seu parceiro de conversa",
+      "role3": "Ouça a resposta da IA e mantenha a conversa em andamento",
+      "missionTitle": "Tente isto nesta conversa",
+      "mission1": "Comece com uma saudação ou um pedido que combine com a situação",
+      "mission2": "Escolha uma expressão-chave da resposta da IA para lembrar",
+      "mission3": "Continue naturalmente com a sua próxima fala",
+      "tip": "Toque em uma mensagem para abrir um cartão e praticar a pronúncia e salvá-lo",
+      "cta": "Começar"
+    }
   },
   "pushOptIn": {
     "title": "Receber lembretes de estudo?",

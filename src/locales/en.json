@@ -62,13 +62,20 @@
     "openSettings": "Open Settings",
     "micError": "Recording had a problem",
     "saveError": "Save failed. Please try again later.",
-    "guideTitle": "How to use Free-Talking",
-    "guideStep1": "First, listen to the scene intro and sample dialogue, then imagine what you'll say next",
-    "guideStep2": "Press [Talk] to freely continue the conversation you imagined",
-    "guideStep3": "Tap the messages you exchanged to open cards and study them",
     "heardMessage": "What was heard",
     "correctedMessage": "Corrected message",
-    "guideDismiss": "Start"
+    "preGuide": {
+      "welcome": "Free-Talking is open conversation practice. You speak first, and the AI responds.",
+      "role1": "You speak first",
+      "role2": "The AI becomes your conversation partner",
+      "role3": "Listen to the AI's reply and keep the conversation going",
+      "missionTitle": "Try these in this conversation",
+      "mission1": "Open with a greeting or request that fits the scene",
+      "mission2": "Pick one key phrase from the AI's reply to remember",
+      "mission3": "Naturally continue with your next line",
+      "tip": "Tap a message to open a card for pronunciation practice and saving",
+      "cta": "Start"
+    }
   },
   "pushOptIn": {
     "title": "Get learning reminders?",

@@ -48,6 +48,7 @@ import ListeningTab from './components/ListeningTab';
 import ScenePractice, { ScenePracticeCard } from './components/ScenePractice';
 import FreeTalkingChat from './components/FreeTalkingChat';
 import FreeTalkingAnnounceModal from './components/FreeTalkingAnnounceModal';
+import FreeTalkingPreGuideModal, { FREETALK_PREGUIDE_KEY } from './components/FreeTalkingPreGuideModal';
 import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
 import StreakIntroModal from './components/StreakIntroModal';
@@ -439,6 +440,7 @@ function App() {
   // Free Talking (Sprint 1) — 카카오톡 스타일 풀스크린 채팅 모달
   const [freeTalkOpen, setFreeTalkOpen] = useState(false);
   const [freeTalkSetup, setFreeTalkSetup] = useState(null);
+  const [freeTalkPreGuide, setFreeTalkPreGuide] = useState(null); // 채팅 진입 전 사전 안내 게이트(시나리오 args 보관)
   // Free Talking 신기능 안내 (Sprint 3-3) — 기존 사용자 한정 1회
   const [freeTalkAnnounceOpen, setFreeTalkAnnounceOpen] = useState(false);
 
@@ -4395,6 +4397,13 @@ function App() {
               // 2026-06-06: Free Talking 화면 default 난이도는 선택 언어의 languageLevels 값을
               //   따름 (ScenePractice difficulty 가 languageLevels[selectedLang] 로 초기화/동기화).
               //   사용자가 화면에서 명시적으로 변경한 args.difficulty 는 그대로 존중.
+              // 사전 안내 게이트 — 영구 dismiss 전이면 PreGuide 먼저, onStart 후 채팅 진입.
+              let preGuideDismissed = false;
+              try { preGuideDismissed = !!localStorage.getItem(FREETALK_PREGUIDE_KEY); } catch (e) { /* noop */ }
+              if (!preGuideDismissed) {
+                setFreeTalkPreGuide(args);
+                return;
+              }
               setFreeTalkSetup(args);
               setFreeTalkOpen(true);
             }}
@@ -5150,6 +5159,23 @@ function App() {
           setFreeTalkOpen(false);
           setFreeTalkSetup(null);
         }}
+      />
+
+      {/* FreeTalking 사전 안내 — 채팅 진입 전 게이트 (기존 .ftc-first-guide 대체) */}
+      <FreeTalkingPreGuideModal
+        open={!!freeTalkPreGuide}
+        scenarioName={freeTalkPreGuide?.scene}
+        scenarioCategory={freeTalkPreGuide?.sceneI18nLabel}
+        scenarioIcon={freeTalkPreGuide?.sceneIcon}
+        sourceLang={sourceLang}
+        onStart={() => {
+          const args = freeTalkPreGuide;
+          setFreeTalkPreGuide(null);
+          if (!args) return;
+          setFreeTalkSetup(args);
+          setFreeTalkOpen(true);
+        }}
+        onClose={() => setFreeTalkPreGuide(null)}
       />
 
 
