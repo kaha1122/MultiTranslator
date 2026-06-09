@@ -23,19 +23,7 @@
     -webkit-overflow-scrolling: touch;  /* 모바일 스크롤 부드럽게 */
 }
 
-.upgrade-close-btn {
-    position: absolute;
-    top: 16px;
-    right: 16px;
-    background: none;
-    border: none;
-    padding: 4px;
-    cursor: pointer;
-    color: #9ca3af;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
+/* .upgrade-close-btn 제거 — 닫기 X는 공통 .modal-close로 표준화됨 (dead rule) */
 
 .upgrade-header {
     text-align: center;

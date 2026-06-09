@@ -540,12 +540,12 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
             {/* Pre-prompt 모달 — Apple 심사 안전 패턴 */}
             {prePrompt && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+                    position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    zIndex: 10000, padding: '20px',
+                    zIndex: 'var(--z-critical)', padding: '20px',
                 }}>
                     <div style={{
-                        background: 'white', borderRadius: '16px', padding: '24px',
+                        background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '24px',
                         maxWidth: '360px', width: '100%',
                     }}>
                         <div style={{ fontSize: '2rem', textAlign: 'center', marginBottom: '12px' }}>🔔</div>
@@ -569,7 +569,7 @@ export default function NotificationSettings({ sourceLang, uid, profile, active,
                             </button>
                             <button onClick={prePrompt === 'local' ? confirmLocalPermission : confirmPushPermission} style={{
                                 flex: 1, padding: '10px', borderRadius: '10px',
-                                border: 'none', background: '#7B2D8E', color: 'white',
+                                border: 'none', background: 'var(--brand-primary)', color: 'var(--text-on-brand)',
                                 fontSize: '0.9rem', fontWeight: 700, cursor: 'pointer',
                             }}>
                                 {t('common.continue') || 'Continue'}
