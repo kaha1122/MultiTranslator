@@ -19,7 +19,137 @@
   --badge-ja-text: #b91c1c;
   --badge-zh-bg: #fff7ed;
   --badge-zh-text: #9a3412;
+
+  /* ──────────────────────────────────────────────────────────────
+   * 모달 통일 디자인 토큰 (Phase 1 — 2026-06-09)
+   * 규칙 요약은 docs/design-tokens.md 참조.
+   *   1차 액션  = brand-primary (teal)
+   *   선택/강조 = brand-accent  (인디고)
+   *   파괴적    = danger
+   *   셀러브레이션 그라데이션 = brand-celebration-grad (streak 계열 전용)
+   * ────────────────────────────────────────────────────────────── */
+
+  /* 브랜드 — 1차 CTA / 로고 / 토글 ON / 활성 칩 / 성공 (teal) */
+  --brand-primary: #00a884;
+  --brand-primary-hover: #00997a;
+  --brand-primary-pressed: #008264;
+
+  /* 액센트 — 선택 상태 / 진행·streak·통계 강조 / 인디케이터 / nav 활성 / 정보성 헤더 아이콘 (인디고) */
+  --brand-accent: #6366f1;
+  --brand-accent-hover: #4f52e8;
+  --brand-accent-pressed: #4338ca;
+
+  /* 파괴적 액션 */
+  --danger: #ef4444;
+  --danger-hover: #dc2626;
+
+  /* 브랜드 위 텍스트 */
+  --text-on-brand: #ffffff;
+
+  /* 셀러브레이션 전용 그라데이션 — streak/축하 "특별한 순간"에만 사용 (격리) */
+  --brand-celebration-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
+
+  /* 모달 표준 형태 */
+  --modal-overlay-bg: rgba(15, 23, 42, 0.55);
+  --modal-radius: 20px;
+  --modal-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+  --modal-overlay-padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
+  --modal-card-bg: #ffffff;
+  --modal-btn-radius: 12px;
+
+  /* z-index 레이어 체계 — 모든 신규/리팩토링 코드는 이 토큰만 사용 */
+  --z-base: 0;
+  --z-sticky: 100;
+  --z-dropdown: 1000;
+  --z-modal-backdrop: 2000;
+  --z-modal: 2010;
+  --z-toast: 3000;
+  --z-critical: 9000; /* 시스템 권한 프롬프트 등 최상위 (PushOptIn 등) */
 }
+
+/* ════════════════════════════════════════════════════════════════
+ * 공통 모달 클래스 (Phase 1) — 다음 단계에서 35개 모달이 이 클래스로 수렴.
+ * NOTE: 기존에 className="modal-overlay" + 인라인 style을 함께 쓰던
+ *       곳(App.jsx 프로필 / Library)은 인라인 style이 우선하므로
+ *       이 정의로 렌더링이 바뀌지 않음 (Phase 2에서 인라인 제거 예정).
+ * ════════════════════════════════════════════════════════════════ */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: var(--modal-overlay-bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: var(--modal-overlay-padding);
+}
+
+.modal-card {
+  position: relative;
+  width: 100%;
+  max-width: 360px;
+  background: var(--modal-card-bg);
+  border-radius: var(--modal-radius);
+  box-shadow: var(--modal-shadow);
+  padding: 28px 24px;
+}
+
+/* 닫기 버튼 표준 — 우상단 lucide <X> 아이콘을 감싸는 버튼 */
+.modal-close {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 6px;
+  border-radius: 50%;
+  color: #94a3b8;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.modal-close:hover { background: rgba(15, 23, 42, 0.06); color: #475569; }
+.modal-close:disabled { cursor: wait; opacity: 0.6; }
+
+/* 모달 버튼 — 공통 형태 + 의미별 변형 */
+.modal-btn-primary,
+.modal-btn-secondary,
+.modal-btn-danger {
+  width: 100%;
+  padding: 13px;
+  border-radius: var(--modal-btn-radius);
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease, opacity 0.15s ease;
+}
+.modal-btn-primary:disabled,
+.modal-btn-secondary:disabled,
+.modal-btn-danger:disabled { cursor: wait; opacity: 0.6; }
+
+.modal-btn-primary {
+  border: none;
+  background: var(--brand-primary);
+  color: var(--text-on-brand);
+}
+.modal-btn-primary:not(:disabled):hover { background: var(--brand-primary-hover); }
+.modal-btn-primary:not(:disabled):active { background: var(--brand-primary-pressed); }
+
+.modal-btn-secondary {
+  border: 1.5px solid #e2e8f0;
+  background: #ffffff;
+  color: #64748b;
+}
+.modal-btn-secondary:not(:disabled):hover { background: #f8fafc; }
+
+.modal-btn-danger {
+  border: none;
+  background: var(--danger);
+  color: var(--text-on-brand);
+}
+.modal-btn-danger:not(:disabled):hover { background: var(--danger-hover); }
 
 body {
   margin: 0;
