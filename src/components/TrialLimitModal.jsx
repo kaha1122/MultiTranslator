@@ -178,7 +178,7 @@ const TrialLimitModal = ({
     return (
         <div style={overlay} onClick={onClose}>
             <div onClick={e => e.stopPropagation()} style={card}>
-                <button onClick={onClose} style={closeBtn}><X size={22} /></button>
+                <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
 
                 <div style={{ textAlign: 'center', marginBottom: '14px' }}>
                     <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>🎯</div>
