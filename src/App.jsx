@@ -2669,7 +2669,7 @@ function App() {
   };
 
   // 6. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '' }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '', sourceType = 'scene' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     // 중복 체크: 같은 문장이 이미 저장되어 있으면 기존 ID 반환
@@ -2678,7 +2678,7 @@ function App() {
         collection(db, "savedCards"),
         where("userId", "==", u.uid),
         where("translatedText", "==", sentence),
-        where("sourceType", "==", "scene")
+        where("sourceType", "==", sourceType)
       );
       const dupSnap = await getDocs(dupQ);
       const active = dupSnap.docs.find(d => !d.data().isDeleted);
@@ -2698,7 +2698,7 @@ function App() {
         inputLang: langCode,
         inputType: 'S',
         sourceLang,
-        sourceType: 'scene',
+        sourceType,
         difficulty,
         scene,
         category,
@@ -4446,6 +4446,9 @@ function App() {
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeakSmart}
             onTtsGate={tryConsumeTtsPoint}
+            ScenePracticeCardComp={ScenePracticeCard}
+            onSaveSentence={({ sentence, translation, learningTip, langCode, scene, pronunciationScore }) =>
+              saveSceneCard({ sentence, translation, learningTip, langCode, scene, sceneHint: scene, pronunciationScore, sourceType: 'listening' })}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => {

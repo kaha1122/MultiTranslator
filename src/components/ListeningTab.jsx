@@ -8,6 +8,7 @@ import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
 import CategorySlider from './CategorySlider';
 import TopicPickerModal from './TopicPickerModal';
+import MessageCardModal from './MessageCardModal';
 import { authFetch } from '../utils/authFetch';
 import { playStarSound } from '../utils/soundEffects';
 import { getLangName } from '../config/languages';
@@ -88,6 +89,8 @@ export default function ListeningTab({
     onSaveToLibrary,
     onSpeak,
     onTtsGate,                            // 2026-06-07: 신규 합성 전 포인트 게이트 — true=허용(차감)/false=차단(0점 팝업). 캐시 hit 제외.
+    ScenePracticeCardComp,                // 2026-06-09: 문장 클릭 → 카드 팝업(번역·발음·팁·TTS·발음연습·저장). App.jsx가 ScenePracticeCard 주입.
+    onSaveSentence,                       // 2026-06-09: 문장 카드 라이브러리 저장(saveSceneCard sourceType=listening)
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
@@ -129,7 +132,11 @@ export default function ListeningTab({
     const [showPronunciation, setShowPronunciation] = useState(false);
     const [savedWords, setSavedWords] = useState(new Set());
     const [activeRecIdx, setActiveRecIdx] = useState(null);
-    const [playingSentenceIdx, setPlayingSentenceIdx] = useState(null);
+    // 2026-06-09: 문장 클릭 → 카드 팝업 (개별 문장 즉시재생 대체)
+    const [cardMessage, setCardMessage] = useState(null);   // annotate 결과 {fullText, translation, pronunciation, learning_tip} — null이면 닫힘
+    const [cardLoading, setCardLoading] = useState(false);  // annotate 진행 중
+    const [savedSentences, setSavedSentences] = useState(new Set()); // 카드 저장된 문장 텍스트
+    const annotateCacheRef = useRef(new Map());             // sentence → annotate 결과 (세션 캐시, 재오픈 무료)
 
     // 장문 TTS 재생 관리
     const [passagePlaying, setPassagePlaying] = useState(false); // 재생 중 여부
@@ -287,63 +294,67 @@ export default function ListeningTab({
         }
     }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
 
-    // 개별 문장 재생 — 대화 모드에서는 turns 단일 턴으로 speaker별 voice 사용 (전체 재생과 동일한 배치 유지)
-    const playSentence = useCallback(async (sentence) => {
+    // 2026-06-09: 문장 클릭 → 카드 팝업 (개별 즉시재생 대체). 번역·발음·팁을 AI로 annotate 후
+    //   MessageCardModal + ScenePracticeCard로 TTS(네이티브)·발음연습·저장 제공.
+    //   annotate = 클릭당 Gemini 1회 + 1점 차감(onTtsGate), 세션 캐시 → 재오픈/같은 문장 무료.
+    const openSentenceCard = useCallback(async (sentence) => {
         const isDialogue = passageType === 'dialogue';
-        if (isDialogue) {
-            const { speaker, text } = extractSpeaker(sentence);
-            if (speaker && text) {
-                const SERVER_URL = getServerUrl();
-                const dialogueSeed = simpleHashString(passage?.text || '');
-                const cacheKey = `${selectedLang}:${dialogueSeed}:${speaker}:${text}`;
+        const cleanText = (isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : String(sentence)).trim();
+        if (!cleanText) return;
+        stopPassageAudio(); // 지문 재생 중이면 정지
 
-                // 캐시 히트 — 서버 재요청 없이 즉시 재생 (Azure 비용 0)
-                const cachedUrl = sentenceCacheRef.current.get(cacheKey);
-                if (cachedUrl) {
-                    try {
-                        await new Audio(cachedUrl).play();
-                        return;
-                    } catch { /* 재생 실패 시 아래 재요청으로 진행 */ }
-                }
+        const key = `${selectedLang}:${cleanText}`;
+        const cached = annotateCacheRef.current.get(key);
+        if (cached) { setCardMessage(cached); return; } // 재오픈 무료
 
-                // 신규 합성 전 포인트 게이트 — 캐시 hit은 위에서 return(무료). 0점이면 차단+팝업.
-                if (onTtsGate && !onTtsGate()) return;
+        // 신규 annotate → 1점 차감(Trial). 0점이면 차단+팝업. (Gemini 호출 비용 반영)
+        if (onTtsGate && !onTtsGate()) return;
 
-                let objectUrl = null;
-                try {
-                    const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ turns: [{ speaker, text }], dialogueSeed, langCode: selectedLang }),
-                    });
-                    if (!res.ok) throw new Error(`TTS ${res.status}`);
-                    const blob = await res.blob();
-                    objectUrl = URL.createObjectURL(blob);
-
-                    // LRU 캐시 저장 — 초과 시 가장 오래된 항목 revoke + 제거.
-                    // 캐시본은 onended 에서 revoke 하지 않음(재사용). 정리는 eviction/stopPassageAudio 가 담당.
-                    if (sentenceCacheRef.current.size >= SENT_CACHE_MAX) {
-                        const oldestKey = sentenceCacheRef.current.keys().next().value;
-                        try { URL.revokeObjectURL(sentenceCacheRef.current.get(oldestKey)); } catch {}
-                        sentenceCacheRef.current.delete(oldestKey);
-                    }
-                    sentenceCacheRef.current.set(cacheKey, objectUrl);
-
-                    const audio = new Audio(objectUrl);
-                    objectUrl = null; // 캐시가 소유 — finally/onended 에서 revoke 안 함
-                    await audio.play();
-                    return;
-                } catch (e) {
-                    console.warn('[ListeningTab] sentence TTS error, falling back:', e);
-                    if (objectUrl) { try { URL.revokeObjectURL(objectUrl); } catch {} }
-                    // fallback → 아래 단일 voice onSpeak
-                }
+        setCardLoading(true);
+        let generated = { fullText: cleanText, translation: '', pronunciation: '', learning_tip: '' };
+        try {
+            const SERVER_URL = getServerUrl();
+            const res = await authFetch(`${SERVER_URL}/api/listening/annotate-sentence`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ sentence: cleanText, langCode: selectedLang, sourceLang, byokGeminiKey }),
+            });
+            if (res.ok) {
+                const data = await res.json();
+                generated = {
+                    fullText: cleanText,
+                    translation: data.translation || '',
+                    pronunciation: data.pronunciation || '',
+                    learning_tip: data.learning_tip || '',
+                };
             }
+        } catch (e) {
+            console.warn('[ListeningTab] annotate failed, opening minimal card:', e?.message);
+        } finally {
+            annotateCacheRef.current.set(key, generated); // 실패해도 캐시(재오픈 시 재과금 방지)
+            setCardMessage(generated);
+            setCardLoading(false);
         }
-        // 폴백/에세이: 기존 onSpeak (에세이 문장 = native 시도, 소스 태그 listening.sentence)
-        const ttsText = isDialogue ? String(sentence).replace(/^[A-Z]:\s*/, '') : sentence;
-        onSpeak?.(ttsText, selectedLang, undefined, { source: 'listening.sentence' });
-    }, [passageType, passage, selectedLang, onSpeak, onTtsGate]);
+    }, [passageType, selectedLang, sourceLang, byokGeminiKey, onTtsGate, stopPassageAudio]);
+
+    const handleSentenceCardSave = useCallback(async (pronunciationScore = null) => {
+        if (!cardMessage) return;
+        const sentenceText = cardMessage.fullText;
+        try {
+            const cardId = await onSaveSentence?.({
+                sentence: sentenceText,
+                translation: cardMessage.translation,
+                learningTip: cardMessage.learning_tip,
+                langCode: selectedLang,
+                scene: passage?.title || '',
+                pronunciationScore,
+            });
+            if (cardId !== null) { try { playStarSound(); } catch {} } // null=중복, 그 외=저장 성공
+            setSavedSentences(prev => new Set(prev).add(sentenceText));
+        } catch (e) {
+            console.error('[ListeningTab] sentence save failed:', e?.message);
+        }
+    }, [cardMessage, onSaveSentence, selectedLang, passage]);
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
@@ -702,11 +713,8 @@ export default function ListeningTab({
                             {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => (
                                 <span
                                     key={idx}
-                                    className={`listening-sentence ${playingSentenceIdx === idx ? 'playing' : ''}`}
-                                    onClick={() => {
-                                        setPlayingSentenceIdx(idx);
-                                        playSentence(sentence);
-                                    }}
+                                    className="listening-sentence"
+                                    onClick={() => openSentenceCard(sentence)}
                                 >
                                     {sentence}
                                     {passageType === 'dialogue' ? '\n' : ' '}
@@ -795,6 +803,33 @@ export default function ListeningTab({
                     onClose={() => setPickerCatId(null)}
                 />
             )}
+
+            {/* 문장 카드 annotate 로딩 — 잠깐의 Gemini 호출 동안 스피너 */}
+            {cardLoading && (
+                <div className="listening-card-loading" role="status" aria-live="polite">
+                    <div className="listening-card-loading-box">
+                        <Loader2 size={22} className="spin" />
+                    </div>
+                </div>
+            )}
+
+            {/* 문장 클릭 카드 — TTS(네이티브) + 발음연습 + 저장 (ScenePracticeCard 재사용) */}
+            <MessageCardModal
+                open={!!cardMessage}
+                message={cardMessage}
+                langCode={selectedLang}
+                sourceLang={sourceLang}
+                onClose={() => setCardMessage(null)}
+                onSpeak={onSpeak}
+                onSave={handleSentenceCardSave}
+                isSaved={cardMessage ? savedSentences.has(cardMessage.fullText) : false}
+                onTrialLimitReached={onTrialLimitReached}
+                onPronSuccess={onPronSuccess}
+                onBookmarkPrompt={onBookmarkPrompt}
+                targetGoal={languageGoals[selectedLang] || 80}
+                t={t}
+                ScenePracticeCardComp={ScenePracticeCardComp}
+            />
         </div>
     );
 }
