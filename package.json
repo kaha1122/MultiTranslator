@@ -1,7 +1,7 @@
 {
   "name": "translator",
   "private": true,
-  "version": "2.0.15",
+  "version": "2.0.16",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@capacitor-community/admob": "^8.0.0",
+    "@capacitor-community/text-to-speech": "^8.0.1",
     "@capacitor-firebase/analytics": "^8.2.0",
     "@capacitor-firebase/authentication": "^8.1.0",
     "@capacitor-firebase/crashlytics": "^8.2.0",

@@ -12,6 +12,7 @@ import TranslationCard from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
@@ -3024,7 +3025,27 @@ function App() {
     const ttsLang = langInfo?.tts || langCode;
     const src = opts.source;
 
-    // 엔진 미지원 → Azure
+    // [2026-06-10] Android: System WebView가 Web Speech(speechSynthesis) 미노출(Chromium #487255)
+    //   → 네이티브 TTS 플러그인(@capacitor-community/text-to-speech, Android TextToSpeech 엔진) 사용.
+    //   iOS WKWebView·웹은 Web Speech 정상이라 아래 기존 경로 유지.
+    //   플러그인 실패 시 Azure 폴백(=현재 동작 = 리스크 하한). 차감은 텍스트당 1회(Web 경로와 동일 규칙).
+    if (Capacitor.getPlatform() === 'android') {
+      const chargeKey = `${ttsLang}:${text}`;
+      if (!ttsChargedRef.current.has(chargeKey)) {
+        if (!byokAzureKey && !tryConsumeTtsPoint()) return; // 신규 텍스트 0점이면 차단+팝업
+        ttsChargedRef.current.add(chargeKey);
+        beaconTtsRoute(src, 'native', langCode, { voice: 'android-plugin', localService: true });
+      }
+      try { TextToSpeech.stop(); } catch { /* 진행 중 재생 없음 */ }
+      TextToSpeech.speak({ text, lang: ttsLang || 'en' }).catch(() => {
+        // 플러그인 실패 → Azure 폴백 (이미 차감됨 → _skipGate 로 재과금 방지)
+        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'plugin-error' });
+        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
+      });
+      return;
+    }
+
+    // 엔진 미지원 → Azure (Android는 위에서 처리됨 — 이 경로는 주로 web/iOS의 비정상 케이스)
     if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
       beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-engine' });
       handleSpeak(text, langCode, emotion, opts);
