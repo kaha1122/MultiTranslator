@@ -4,6 +4,7 @@
 // - "다시 보지 않음" 체크 시에만 streakIntroDismissed=true 영구 종료, 미체크 닫기는 다음 세션 재노출
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { X } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import { MILESTONES, MILESTONE_REWARDS } from '../hooks/useStreak';
 import './StreakIntroModal.css';
@@ -41,6 +42,17 @@ const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang
                     >
                         {/* 헤더 영역 — 큰 💎 + 타이틀 */}
                         <div className="streak-intro-hero">
+                            {/* 표준 닫기 버튼 — 우상단 lucide <X> (.modal-close 공통 클래스).
+                                hero가 position:relative라 카드 기준으로 anchor됨 */}
+                            <button
+                                type="button"
+                                className="modal-close"
+                                onClick={handleClose}
+                                aria-label={t('streak.intro.later') || 'Close'}
+                                style={{ zIndex: 2 }}
+                            >
+                                <X size={20} />
+                            </button>
                             <div className="streak-intro-confetti">
                                 {Array.from({ length: 12 }, (_, i) => (
                                     <span
