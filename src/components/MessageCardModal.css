@@ -5,9 +5,13 @@
     z-index: var(--z-chat-popup);  /* 채팅 오버레이 위 */
     background: var(--modal-overlay-bg);
     display: flex;
-    align-items: center;
+    /* 상단 고정 — 녹음 후 콘텐츠가 길어지면 "아래로만" 커지게.
+       (centered면 중앙 기준으로 위아래로 커져 상단 닫기버튼/카드 윗부분이 화면 위로 이탈) */
+    align-items: flex-start;
     justify-content: center;
     padding: 16px;
+    /* 상단: 상태바/노치 안전영역 확보 (상단 고정이라 status bar에 안 가리게) */
+    padding-top: max(16px, calc(16px + env(safe-area-inset-top, 0px)));
     /* AdMob 네이티브 배너 영역 침범 방지 (모달 하단이 광고에 가려지지 않게) */
     padding-bottom: max(16px, calc(16px + var(--admob-bottom, 0px)));
     animation: mcm-overlay-in 160ms ease-out;
