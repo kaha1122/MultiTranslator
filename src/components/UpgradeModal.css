@@ -1,22 +1,22 @@
 .upgrade-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.55);
+    background: var(--modal-overlay-bg);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2000;
+    z-index: var(--z-modal);
     padding: 20px;
     padding-bottom: calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
 }
 
 .upgrade-modal {
-    background: white;
-    border-radius: 20px;
+    background: var(--modal-card-bg);
+    border-radius: var(--modal-radius);
     padding: 14px 14px 12px;
     width: 100%;
     max-width: 420px;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.2);
+    box-shadow: var(--modal-shadow);
     position: relative;
     max-height: 92vh;
     overflow-y: auto;

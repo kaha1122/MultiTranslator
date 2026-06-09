@@ -2,7 +2,7 @@
 // "다시 보지 않음" 미체크 시 다음 세션 재노출 (영구 dismiss는 localStorage starGuideDismissedV2='1')
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star } from 'lucide-react';
+import { Star, X } from 'lucide-react';
 import { useT } from '../utils/i18n';
 import './StarGuideModal.css';
 
@@ -33,6 +33,10 @@ const StarGuideModal = ({ open, onClose, onPermanentDismiss, sourceLang }) => {
                         exit={{ scale: 0.94, opacity: 0, y: 12 }}
                         transition={{ type: 'spring', damping: 22, stiffness: 240 }}
                     >
+                        <button className="modal-close" onClick={finalize} aria-label="Close">
+                            <X size={20} />
+                        </button>
+
                         <div className="star-guide-hero">
                             <div className="star-guide-badge">
                                 <Star size={36} strokeWidth={2.4} />
