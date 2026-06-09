@@ -3036,12 +3036,12 @@ function App() {
       //   (Azure 캐시 무료-반복과 동일 / 네이티브는 우리 비용 $0지만 신규 텍스트 사용량 게이트는 유지)
       //   (2026-06-09: "누를 때마다 매번 차감" → "텍스트당 1회만 차감"으로 수정)
       const chargeKey = `${ttsLang}:${text}`;
-      const alreadyCharged = ttsChargedRef.current.has(chargeKey);
-      if (!alreadyCharged) {
+      if (!ttsChargedRef.current.has(chargeKey)) {
         if (!byokAzureKey && !tryConsumeTtsPoint()) return; // 신규 텍스트 0점이면 차단+팝업
         ttsChargedRef.current.add(chargeKey);
+        // 텔레메트리 비콘은 과금(첫 재생) 시 1회만 — 반복 재생은 로그 생략(portion 노이즈 제거)
+        beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
       }
-      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService, charged: !alreadyCharged });
       const u = new SpeechSynthesisUtterance(text);
       if (ttsLang) u.lang = ttsLang;
       if (voice) u.voice = voice;
