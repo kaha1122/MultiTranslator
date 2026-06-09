@@ -1,24 +1,24 @@
 .renewal-overlay {
     position: fixed;
     top: 0; left: 0; right: 0; bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--modal-overlay-bg);
     display: flex;
     justify-content: center;
     align-items: center;
-    z-index: 2100;
+    z-index: var(--z-toast);
     padding: 20px;
     padding-bottom: calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
 }
 
 .renewal-popup {
-    background: white;
-    border-radius: 20px;
+    background: var(--modal-card-bg);
+    border-radius: var(--modal-radius);
     padding: 28px 24px 20px;
     width: 100%;
     max-width: 340px;
     text-align: center;
     position: relative;
-    box-shadow: 0 16px 48px rgba(0, 0, 0, 0.18);
+    box-shadow: var(--modal-shadow);
 }
 
 .renewal-close {
@@ -39,8 +39,8 @@
 .renewal-warning .renewal-icon { color: #f59e0b; }
 .renewal-warning .renewal-btn { background: #f59e0b; }
 
-.renewal-urgent .renewal-icon { color: #ef4444; }
-.renewal-urgent .renewal-btn { background: #ef4444; }
+.renewal-urgent .renewal-icon { color: var(--danger); }
+.renewal-urgent .renewal-btn { background: var(--danger); }
 
 .renewal-icon {
     margin-bottom: 12px;
@@ -70,8 +70,8 @@
     width: 100%;
     padding: 12px;
     border: none;
-    border-radius: 12px;
-    color: white;
+    border-radius: var(--modal-btn-radius);
+    color: var(--text-on-brand);
     font-weight: 700;
     font-size: 0.92rem;
     cursor: pointer;

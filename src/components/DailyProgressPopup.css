@@ -3,11 +3,11 @@
 .dpop-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--modal-overlay-bg);
     display: flex;
     align-items: flex-end;
     justify-content: center;
-    z-index: 9000;
+    z-index: var(--z-toast);
     padding-bottom: calc(90px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px))); /* nav bar + 광고/safe-area 위에 표시 */
     animation: dpop-fade-in 0.2s ease;
 }
@@ -19,8 +19,8 @@
 
 .dpop-card {
     position: relative;
-    background: #ffffff;
-    border-radius: 20px 20px 20px 20px;
+    background: var(--modal-card-bg);
+    border-radius: var(--modal-radius);
     padding: 20px 20px 16px;
     width: calc(100% - 32px);
     max-width: 400px;

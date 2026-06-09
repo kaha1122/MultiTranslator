@@ -2,9 +2,9 @@
 .streak-status-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(15, 23, 42, 0.62);
+    background: var(--modal-overlay-bg);
     backdrop-filter: blur(6px);
-    z-index: 9997;
+    z-index: var(--z-toast);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -33,7 +33,7 @@
 .streak-status-card {
     position: relative;
     background: linear-gradient(160deg, #ffffff 0%, #faf5ff 60%, #fdf4ff 100%);
-    border-radius: 22px;
+    border-radius: var(--modal-radius);
     padding: 28px 24px 20px;
     width: min(90%, 340px);
     text-align: center;

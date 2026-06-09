@@ -8,8 +8,11 @@
     bottom: 0;
     width: 100vw;
     height: 100vh;
+    /* z: var(--z-toast)(3000)보다 높게 유지 — Portal로 document.body에 mount되며
+       FreeTalkingChat .ftc-overlay(9000) 위에 떠야 함. 토큰화 시 9000 아래로
+       내려가 tip이 FreeTalk 오버레이 뒤에 가려짐. */
     z-index: 9500; /* FreeTalkingChat .ftc-overlay (9000) 위 */
-    background: rgba(0, 0, 0, 0.45);
+    background: var(--modal-overlay-bg);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -19,15 +22,15 @@
 }
 @keyframes aitp-overlay-in {
     from { background: rgba(0, 0, 0, 0); }
-    to   { background: rgba(0, 0, 0, 0.45); }
+    to   { background: var(--modal-overlay-bg); }
 }
 
 .aitp-window {
     width: 100%;
     max-width: 360px;
     background: #fffef9;
-    border-radius: 16px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.25);
+    border-radius: var(--modal-radius);
+    box-shadow: var(--modal-shadow);
     overflow: hidden;
     animation: aitp-window-in 200ms ease-out;
     border: 2px solid rgba(99, 102, 241, 0.25);
