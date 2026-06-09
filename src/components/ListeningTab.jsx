@@ -828,7 +828,7 @@ export default function ListeningTab({
                 onBookmarkPrompt={onBookmarkPrompt}
                 targetGoal={languageGoals[selectedLang] || 80}
                 t={t}
-                ScenePracticeCardComp={ScenePracticeCardComp}
+                ttsSource="listening"
             />
         </div>
     );

@@ -499,7 +499,7 @@ export default function FreeTalkingChat({
                 onBookmarkPrompt={onBookmarkPrompt}
                 targetGoal={targetGoal}
                 t={t}
-                ScenePracticeCardComp={ScenePracticeCardComp}
+                ttsSource="freetalk"
             />
 
             <AITipPopup
