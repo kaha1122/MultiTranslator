@@ -49,10 +49,12 @@
   /* 셀러브레이션 전용 그라데이션 — streak/축하 "특별한 순간"에만 사용 (격리) */
   --brand-celebration-grad: linear-gradient(135deg, #6366f1, #8b5cf6);
 
-  /* StreakIntro 안내 모달 전용 muted 그라데이션 (2026-06-09 톤다운)
-   * celebration보다 채도 ~25%↓ 차분한 라벤더 — "번쩍거림" 부담 완화.
-   * 진짜 축하 모달은 위 vivid celebration-grad 유지 (격리). */
-  --streak-intro-grad: linear-gradient(135deg, #7C7FE0 0%, #A799D4 100%);
+  /* StreakIntro 안내 모달 전용 단색 (2026-06-09 단색 톤다운)
+   * 그라데이션 전면 제거 → muted indigo 단색. 인디고 hue 유지, 채도만 낮춤.
+   * 진짜 축하 모달은 vivid celebration-grad 유지 (격리, 이 변수는 StreakIntro 전용). */
+  --streak-intro-solid: #7C7FE0;       /* 배지·CTA 채움 (흰색 텍스트) */
+  --streak-intro-ink: #5E62A8;         /* 타이틀 텍스트용 어두운 단색 (밝은 hero 위) */
+  --streak-intro-solid-tint: #EEF0F7;  /* hero 배경용 아주 옅은 동계열 단색 */
 
   /* 모달 표준 형태 */
   --modal-overlay-bg: rgba(15, 23, 42, 0.55);

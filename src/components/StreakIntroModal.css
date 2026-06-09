@@ -83,8 +83,8 @@
     font-size: 0.65rem;
     font-weight: 800;
     color: var(--text-on-brand);
-    /* StreakIntro 전용 muted 그라데이션 (톤다운) */
-    background: var(--streak-intro-grad);
+    /* 단색 톤다운 */
+    background: var(--streak-intro-solid);
     padding: 3px 10px;
     border-radius: 99px;
     letter-spacing: 0.05em;
@@ -99,11 +99,8 @@
     font-size: 1.25rem;
     font-weight: 800;
     line-height: 1.2;
-    /* 톤다운: fuchsia(#d946ef) 제거 + 채도 낮춘 라벤더 (번쩍임 완화) */
-    background: linear-gradient(135deg, #6F72CC 0%, #8E86C6 55%, #A993C6 100%);
-    -webkit-background-clip: text;
-    background-clip: text;
-    color: transparent;
+    /* 단색 톤다운: 그라데이션 텍스트 → 어두운 단색 */
+    color: var(--streak-intro-ink);
     margin: 0 0 4px;
     position: relative;
     z-index: 1;
@@ -340,8 +337,8 @@
 }
 .streak-intro-btn-secondary:active { transform: scale(0.97); }
 .streak-intro-btn-primary {
-    /* StreakIntro 전용 muted 그라데이션 — teal 대신 차분한 라벤더 1차 CTA */
-    background: var(--streak-intro-grad);
+    /* 단색 톤다운 — teal 대신 차분한 muted indigo 단색 1차 CTA */
+    background: var(--streak-intro-solid);
     color: var(--text-on-brand);
     box-shadow: 0 3px 10px rgba(124, 127, 224, 0.28);
 }
