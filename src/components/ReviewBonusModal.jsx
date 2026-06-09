@@ -56,8 +56,8 @@ export default function ReviewBonusModal({ open, onClose, sourceLang, alreadyCla
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     onClick={onClose}
                     style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-                        zIndex: 9999, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
+                        zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: '16px',
                     }}
                 >
@@ -65,19 +65,21 @@ export default function ReviewBonusModal({ open, onClose, sourceLang, alreadyCla
                         initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.95, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                            background: 'white', borderRadius: '16px', padding: '20px',
+                            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '20px',
                             maxWidth: '420px', width: '100%', maxHeight: '90vh', overflow: 'auto',
-                            boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                            boxShadow: 'var(--modal-shadow)', position: 'relative',
                         }}
                     >
+                        {/* 표준 닫기 X (우상단) */}
+                        <button className="modal-close" onClick={onClose} aria-label="Close">
+                            <X size={20} />
+                        </button>
+
                         {/* 헤더 */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                        <div style={{ marginBottom: '12px', paddingRight: '28px' }}>
                             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1d4ed8' }}>
                                 {t('bonus.review.title')}
                             </h3>
-                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                                <X size={20} color="#64748b" />
-                            </button>
                         </div>
 
                         {/* 이미 받은 경우 */}
@@ -118,7 +120,7 @@ export default function ReviewBonusModal({ open, onClose, sourceLang, alreadyCla
                                     disabled={submitting || !hasOpenedStore}
                                     style={{
                                         width: '100%', padding: '14px', borderRadius: '10px',
-                                        background: (submitting || !hasOpenedStore) ? '#cbd5e1' : '#2563eb',
+                                        background: (submitting || !hasOpenedStore) ? '#cbd5e1' : 'var(--brand-primary)',
                                         border: 'none', color: 'white', fontSize: '0.95rem',
                                         fontWeight: 700,
                                         cursor: (submitting || !hasOpenedStore) ? 'not-allowed' : 'pointer',

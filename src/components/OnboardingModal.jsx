@@ -178,7 +178,7 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
                   href="https://pronunfit.com/privacy"
                   target="_blank"
                   rel="noopener noreferrer"
-                  style={{ fontSize: '0.78rem', color: '#6366f1', display: 'block', marginBottom: '16px' }}
+                  style={{ fontSize: '0.78rem', color: 'var(--brand-accent)', display: 'block', marginBottom: '16px' }}
                 >
                   {t('aiConsent.privacyLink')}
                 </a>

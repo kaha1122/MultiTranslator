@@ -70,7 +70,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
 
     return (
         <div style={{
-            position: 'fixed', inset: 0, zIndex: 9999,
+            position: 'fixed', inset: 0, zIndex: 'var(--z-modal)',
             background: 'linear-gradient(135deg, #00a884 0%, #059669 100%)',
             display: 'flex', flexDirection: 'column',
             alignItems: 'center', justifyContent: 'center',
@@ -87,17 +87,17 @@ const LanguageSetupPopup = ({ onComplete }) => {
 
             {/* 카드 */}
             <div style={{
-                background: '#fff', borderRadius: '24px',
+                background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)',
                 width: '100%', maxWidth: '400px',
                 padding: '28px 24px',
-                boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                boxShadow: 'var(--modal-shadow)',
             }}>
                 {/* 단계 표시 */}
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '20px' }}>
                     {[1, 2].map(s => (
                         <div key={s} style={{
                             flex: 1, height: '4px', borderRadius: '2px',
-                            background: s <= step ? '#00a884' : '#e2e8f0',
+                            background: s <= step ? 'var(--brand-primary)' : '#e2e8f0',
                             transition: 'background 0.3s',
                         }} />
                     ))}
@@ -123,7 +123,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
                                         display: 'flex', alignItems: 'center', gap: '8px',
                                         padding: '11px 12px', borderRadius: '12px',
                                         border: '2px solid',
-                                        borderColor: sourceLang === l.code ? '#00a884' : '#e2e8f0',
+                                        borderColor: sourceLang === l.code ? 'var(--brand-primary)' : '#e2e8f0',
                                         background: sourceLang === l.code ? '#f0fdf4' : '#fff',
                                         cursor: 'pointer', textAlign: 'left',
                                         fontSize: '0.88rem', fontWeight: 600, color: '#1e293b',
@@ -158,7 +158,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
                                         display: 'flex', alignItems: 'center', gap: '8px',
                                         padding: '11px 12px', borderRadius: '12px',
                                         border: '2px solid',
-                                        borderColor: targetLang === l.code ? '#00a884' : '#e2e8f0',
+                                        borderColor: targetLang === l.code ? 'var(--brand-primary)' : '#e2e8f0',
                                         background: targetLang === l.code ? '#f0fdf4' : '#fff',
                                         cursor: 'pointer', textAlign: 'left',
                                         fontSize: '0.88rem', fontWeight: 600, color: '#1e293b',
@@ -187,7 +187,7 @@ const LanguageSetupPopup = ({ onComplete }) => {
                                 disabled={!targetLang || saving}
                                 style={{
                                     flex: 2, padding: '12px', borderRadius: '12px',
-                                    background: targetLang ? '#00a884' : '#94a3b8',
+                                    background: targetLang ? 'var(--brand-primary)' : '#94a3b8',
                                     border: 'none', color: '#fff',
                                     cursor: targetLang ? 'pointer' : 'not-allowed',
                                     fontWeight: 700, fontSize: '0.95rem',

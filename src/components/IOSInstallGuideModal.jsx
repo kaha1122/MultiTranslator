@@ -37,8 +37,8 @@ export default function IOSInstallGuideModal({ open, onClose, sourceLang }) {
                     initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
                     onClick={onClose}
                     style={{
-                        position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)',
-                        zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        position: 'fixed', inset: 0, background: 'var(--modal-overlay-bg)',
+                        zIndex: 'var(--z-modal)', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         padding: '16px',
                     }}
                 >
@@ -46,19 +46,21 @@ export default function IOSInstallGuideModal({ open, onClose, sourceLang }) {
                         initial={{ scale: 0.94, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.94, opacity: 0 }}
                         onClick={(e) => e.stopPropagation()}
                         style={{
-                            background: 'white', borderRadius: '18px', padding: '20px',
+                            background: 'var(--modal-card-bg)', borderRadius: 'var(--modal-radius)', padding: '20px',
                             maxWidth: '420px', width: '100%', maxHeight: '90vh', overflow: 'auto',
-                            boxShadow: '0 12px 48px rgba(0,0,0,0.25)',
+                            boxShadow: 'var(--modal-shadow)', position: 'relative',
                         }}
                     >
+                        {/* 표준 닫기 X (우상단) */}
+                        <button className="modal-close" onClick={onClose} aria-label="Close">
+                            <X size={20} />
+                        </button>
+
                         {/* 헤더 */}
-                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                        <div style={{ marginBottom: '14px', paddingRight: '28px' }}>
                             <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700, color: '#1d4ed8' }}>
                                 {t('install.iosGuideTitle')}
                             </h3>
-                            <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 4 }}>
-                                <X size={22} color="#64748b" />
-                            </button>
                         </div>
 
                         {/* 인트로 */}
@@ -126,7 +128,7 @@ export default function IOSInstallGuideModal({ open, onClose, sourceLang }) {
                                 onClick={onClose}
                                 style={{
                                     flex: 1, padding: '11px', borderRadius: '10px',
-                                    background: '#1d4ed8', border: 'none',
+                                    background: 'var(--brand-primary)', border: 'none',
                                     color: 'white', fontSize: '0.85rem', fontWeight: 700,
                                     cursor: 'pointer',
                                 }}

@@ -178,7 +178,7 @@
   display: block;
   margin: 8px auto 0;
   padding: 10px 32px;
-  background: #00a884;
+  background: var(--brand-primary);
   color: white;
   border: none;
   border-radius: 14px;
@@ -188,4 +188,4 @@
   box-shadow: 0 4px 12px rgba(0, 168, 132, 0.3);
   transition: background 0.2s;
 }
-.guide-close-btn:hover { background: #008f72; }
+.guide-close-btn:hover { background: var(--brand-primary-hover); }
