@@ -837,7 +837,7 @@ const UpgradeModal = ({ onClose, sourceLang, onRequestPhoneVerify, initialTier }
                     {modalContent}
                     {/* PayPal 결제 전용 팝업 */}
                     {selectedPayPalPlan && (
-                        <div className="upgrade-overlay" style={{ zIndex: 10001 }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
+                        <div className="upgrade-overlay" style={{ zIndex: 'var(--z-critical)' }} onClick={() => { setPaypalPlanId(null); setLoadingPlan(null); }}>
                             <div
                                 className="upgrade-modal"
                                 style={{ maxWidth: '360px', padding: '28px 24px' }}
