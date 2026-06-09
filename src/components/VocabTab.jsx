@@ -31,7 +31,7 @@ const getServerUrl = () => {
 // ── VocabWordCard 서브 컴포넌트 ─────────────────────────────────────
 // 각 단어별 독립적인 useAudioRecorder + 발음 연습 + Learning Tip
 export function VocabWordCard({
-    w, index, selectedLang, sourceLang, onSpeak,
+    w, index, selectedLang, sourceLang, onSpeak, onSpeakAssessment,
     isSaved, onSave, onTrialLimitReached, onPronSuccess,
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
@@ -205,7 +205,7 @@ export function VocabWordCard({
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeakAssessment || onSpeak} />
 
                     {/* 녹음 버튼 */}
                     <div className="practice-actions">
@@ -252,6 +252,7 @@ export default function VocabTab({
     onPronSuccess,
     onSaveToLibrary,
     onSpeak,
+    onSpeakAssessment,
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
@@ -590,6 +591,7 @@ export default function VocabTab({
                             selectedLang={selectedLang}
                             sourceLang={sourceLang}
                             onSpeak={onSpeak}
+                            onSpeakAssessment={onSpeakAssessment}
                             isSaved={savedWords.has(i)}
                             onSave={(score) => handleSave(w, i, score)}
                             onTrialLimitReached={onTrialLimitReached}

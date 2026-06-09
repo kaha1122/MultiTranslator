@@ -2963,6 +2963,37 @@ function App() {
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
 
+  // [TTS 비용 실험 2026-06-09] Vocab 단어·예문 듣기 — Azure 대신 기기 내장(Web Speech API) 음성으로 재생.
+  // Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감 가능성 평가용. 영향도 최저 지점(Vocab)에서만
+  // A/B 테스트. 발음 평가 결과 재생은 음소 정확도가 중요해 Azure(onSpeak→handleSpeak) 유지.
+  // 서버 호출·포인트 차감 없음($0). 웹 전용 — 네이티브 앱(Capacitor)은 Capgo 별도 배포 전까지 Azure 유지.
+  // 품질 합격 시 Listening 등 고비용처로 단계 확대 검토.
+  const handleSpeakNative = (text, langCode) => {
+    if (!text) return;
+    // 진행 중인 Azure 요청/재생 즉시 중단 (gen 토큰 bump로 stale 콜백 무효화 — handleSpeak와 동일 패턴)
+    ttsGenRef.current++;
+    if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
+    if (ttsAudioRef.current) {
+      try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
+      ttsAudioRef.current = null;
+    }
+    try { window.speechSynthesis.cancel(); } catch {}
+    const langInfo = getLangInfo(langCode);
+    const ttsLang = langInfo?.tts || langCode;
+    const utterance = new SpeechSynthesisUtterance(text);
+    if (ttsLang) utterance.lang = ttsLang;
+    // 언어 일치 voice 우선 선택 (정확 일치 → 접두사 일치 → 브라우저 기본값)
+    try {
+      const voices = window.speechSynthesis.getVoices() || [];
+      const want = String(ttsLang).toLowerCase();
+      const prefix = want.slice(0, 2);
+      const match = voices.find(v => v.lang?.toLowerCase() === want)
+                 || voices.find(v => v.lang?.toLowerCase().startsWith(prefix));
+      if (match) utterance.voice = match;
+    } catch { /* getVoices 미지원/빈 배열 → lang 속성만으로 재생 */ }
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleSpeak = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
 
@@ -4291,7 +4322,8 @@ function App() {
             onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
-            onSpeak={handleSpeak}
+            onSpeak={handleSpeakNative}
+            onSpeakAssessment={handleSpeak}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
