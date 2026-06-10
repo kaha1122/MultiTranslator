@@ -3018,102 +3018,108 @@ function App() {
     } catch { /* 텔레메트리 실패 무시 */ }
   };
 
-  const handleSpeakSmart = (text, langCode, emotion, opts = {}) => {
+  // [2026-06-10] 통합 TTS 재생 우선순위: ① 캐시(메모리/IndexedDB) → ② 네이티브 TTS → ③ Azure.
+  //   ① 이미 Azure로 합성된 오디오가 있으면 그걸 재생 (무료, 과금 0).
+  //   ② 없으면 네이티브 TTS(Web Speech / Android 플러그인) — 무료, **무차감**(학습 카드 복습 과금 부적절).
+  //   ③ 네이티브도 안 되면 handleSpeak(Azure) — 포인트 1점 차감 + 합성 + IndexedDB 영속 저장.
+  //      (③ 도달 = 저장 후 한 번도 연습/듣기 안 한 신규 합성 → 자연스러운 과금 시점)
+  //   Vocab 단어·예문 / Listening / Translation / Library 카드 모두 공통 적용.
+  const handleSpeakSmart = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
-    // 진행 중 Azure 요청/재생 + 네이티브 음성 즉시 중단 (handleSpeak와 동일 race 패턴)
-    ttsGenRef.current++;
+    // 진행 중 재생/요청 즉시 중단 (race) — handleSpeak와 동일 패턴
+    const myGen = ++ttsGenRef.current;
+    const isStale = () => myGen !== ttsGenRef.current;
     if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
     if (ttsAudioRef.current) {
       try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
       ttsAudioRef.current = null;
     }
     try { window.speechSynthesis?.cancel?.(); } catch {}
+    try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop(); } catch {}
 
     const langInfo = getLangInfo(langCode);
     const ttsLang = langInfo?.tts || langCode;
     const src = opts.source;
+    const cacheKey = `${langCode}:${emotion || ''}:${text}`; // handleSpeak와 동일 키
 
-    // [2026-06-10] Android: System WebView가 Web Speech(speechSynthesis) 미노출(Chromium #487255)
-    //   → 네이티브 TTS 플러그인(@capacitor-community/text-to-speech, Android TextToSpeech 엔진) 사용.
-    //   iOS WKWebView·웹은 Web Speech 정상이라 아래 기존 경로 유지.
-    //   플러그인 실패 시 Azure 폴백(=현재 동작 = 리스크 하한). 차감은 텍스트당 1회(Web 경로와 동일 규칙).
+    const playCachedUrl = (url) => {
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+      const p = audio.play();
+      if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+    };
+
+    // ── ① 캐시 우선 (무료) ── 메모리 → IndexedDB
+    if (ttsCacheRef.current.has(cacheKey)) { playCachedUrl(ttsCacheRef.current.get(cacheKey)); return; }
+    if (!byokAzureKey) {
+      try {
+        const idbBlob = await getCachedAudio(cacheKey);
+        if (idbBlob && !isStale()) {
+          const url = URL.createObjectURL(idbBlob);
+          if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
+            const oldestKey = ttsCacheRef.current.keys().next().value;
+            try { URL.revokeObjectURL(ttsCacheRef.current.get(oldestKey)); } catch {}
+            ttsCacheRef.current.delete(oldestKey);
+          }
+          ttsCacheRef.current.set(cacheKey, url);
+          playCachedUrl(url);
+          return;
+        }
+      } catch { /* IndexedDB 실패 → 네이티브로 진행 */ }
+    }
+    if (isStale()) return; // 대기 중 사용자가 다른 재생 시작
+
+    // ── ③ Azure 폴백 헬퍼 (네이티브 실패 시) — handleSpeak가 차감 + IndexedDB 저장 담당 ──
+    const azureFallback = (reason) => {
+      beaconTtsRoute(src, 'azure-fallback', langCode, { reason });
+      handleSpeak(text, langCode, emotion, opts); // _skipGate 없음 → 정상 차감
+    };
+
+    // ── ② 네이티브 TTS (무료·무차감) ──
+    // Android: System WebView가 speechSynthesis 미노출(Chromium #487255) → 플러그인
     if (Capacitor.getPlatform() === 'android') {
-      const chargeKey = `${ttsLang}:${text}`;
-      if (!ttsChargedRef.current.has(chargeKey)) {
-        if (!byokAzureKey && !tryConsumeTtsPoint()) return; // 신규 텍스트 0점이면 차단+팝업
-        ttsChargedRef.current.add(chargeKey);
-        beaconTtsRoute(src, 'native', langCode, { voice: 'android-plugin', localService: true });
-      }
-      try { TextToSpeech.stop(); } catch { /* 진행 중 재생 없음 */ }
-      TextToSpeech.speak({ text, lang: ttsLang || 'en' }).catch(() => {
-        // 플러그인 실패 → Azure 폴백 (이미 차감됨 → _skipGate 로 재과금 방지)
-        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'plugin-error' });
-        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
-      });
+      beaconTtsRoute(src, 'native', langCode, { voice: 'android-plugin', localService: true });
+      try { TextToSpeech.stop(); } catch {}
+      TextToSpeech.speak({ text, lang: ttsLang || 'en' }).catch(() => { if (!isStale()) azureFallback('plugin-error'); });
       return;
     }
-
-    // 엔진 미지원 → Azure (Android는 위에서 처리됨 — 이 경로는 주로 web/iOS의 비정상 케이스)
+    // web/iOS: Web Speech
     if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
-      beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-engine' });
-      handleSpeak(text, langCode, emotion, opts);
+      azureFallback('no-engine');
       return;
     }
-
     const speakWith = (voice) => {
-      // 텍스트당 1회만 차감 — 같은 text+lang 첫 재생만 1점(Trial), 이후 반복 재생은 무료.
-      //   (Azure 캐시 무료-반복과 동일 / 네이티브는 우리 비용 $0지만 신규 텍스트 사용량 게이트는 유지)
-      //   (2026-06-09: "누를 때마다 매번 차감" → "텍스트당 1회만 차감"으로 수정)
-      const chargeKey = `${ttsLang}:${text}`;
-      if (!ttsChargedRef.current.has(chargeKey)) {
-        if (!byokAzureKey && !tryConsumeTtsPoint()) return; // 신규 텍스트 0점이면 차단+팝업
-        ttsChargedRef.current.add(chargeKey);
-        // 텔레메트리 비콘은 과금(첫 재생) 시 1회만 — 반복 재생은 로그 생략(portion 노이즈 제거)
-        beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
-      }
+      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
       const u = new SpeechSynthesisUtterance(text);
       if (ttsLang) u.lang = ttsLang;
       if (voice) u.voice = voice;
-      // 네이티브 합성 에러 → Azure 폴백 (차감은 이미 됨 → _skipGate)
-      u.onerror = () => {
-        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'onerror' });
-        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
-      };
-      try { window.speechSynthesis.speak(u); }
-      catch {
-        beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'speak-throw' });
-        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
-      }
+      u.onerror = () => { if (!isStale()) azureFallback('onerror'); };
+      try { window.speechSynthesis.speak(u); } catch { azureFallback('speak-throw'); }
     };
 
     const v = pickNativeVoice(ttsLang);
-    if (v) { speakWith(v); return; }                                      // 가용 voice 있음 → native
-    if (v === null) {                                                     // 언어 음성 없음 → Azure
-      beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-voice' });
-      handleSpeak(text, langCode, emotion, opts);
-      return;
-    }
+    if (v) { speakWith(v); return; }                 // 가용 voice 있음 → native
+    if (v === null) { azureFallback('no-voice'); return; } // 언어 음성 없음 → Azure
 
     // v === undefined: voices 아직 미로드 → 1회 대기 후 재시도 (안전망 타임아웃 포함)
     let settled = false;
     const finish = () => {
-      if (settled) return;
+      if (settled || isStale()) return;
       const v2 = pickNativeVoice(ttsLang);
-      if (v2 === undefined) return; // 아직 미로드 — 계속 대기 (타임아웃이 최종 처리)
+      if (v2 === undefined) return; // 아직 미로드 — 타임아웃이 최종 처리
       settled = true;
       try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
-      if (v2) { speakWith(v2); }
-      else { beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'no-voice' }); handleSpeak(text, langCode, emotion, opts); }
+      if (v2) speakWith(v2); else azureFallback('no-voice');
     };
     try { window.speechSynthesis.addEventListener('voiceschanged', finish); } catch {}
-    // voiceschanged가 안 오는 브라우저 대비 (setTimeout은 Date 미사용 → 허용)
     setTimeout(() => {
       if (settled) return;
       settled = true;
       try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
+      if (isStale()) return;
       const v3 = pickNativeVoice(ttsLang);
-      if (v3) { speakWith(v3); }
-      else { beaconTtsRoute(src, 'azure-fallback', langCode, { reason: 'voices-unloaded' }); handleSpeak(text, langCode, emotion, opts); } // Azure 안전
+      if (v3) speakWith(v3); else azureFallback('voices-unloaded');
     }, 600);
   };
 
@@ -4596,7 +4602,7 @@ function App() {
             <Library
               user={user}
               sourceLang={sourceLang}
-              onSpeak={(t, l, e) => handleSpeak(t, l, e, { saved: true })}
+              onSpeak={(t, l, e) => handleSpeakSmart(t, l, e, { source: 'library' })}
               languageGoals={languageGoals}
               todayCount={todayCount}
               dailyGoal={dailyGoal}
