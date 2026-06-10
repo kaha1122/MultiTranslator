@@ -2309,6 +2309,13 @@ function App() {
   const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
 
+    // 2026-06-10: 번역 생성도 1점 차감 (Vocab/Scene 생성과 동일). Trial 0점이면 차단 + 충전 팝업.
+    //   하드캡 없음 → requestLimitModal이 'points'(충전 가능) 사유로 표시. retryCount>0(내부 재시도)은 재게이트 안 함.
+    if (retryCount === 0 && tier === 'trial' && bonusPoints < 1) {
+      requestLimitModal('translation');
+      return;
+    }
+
     setIsTranslating(true);
     setIsGeneratingTips(true);
     setLearningTips({});
@@ -2516,6 +2523,7 @@ function App() {
       setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
       incrementDailyGenerate('translation'); // 일일 분석용
+      addAdPoints(1); // 풀 -1 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과)
 
     } catch (error) {
       console.error("번역 실패:", error);
