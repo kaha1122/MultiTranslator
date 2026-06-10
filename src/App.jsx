@@ -3146,9 +3146,10 @@ function App() {
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
 
-    // 영속 캐시(IndexedDB) 조회 — 저장 카드(opts.saved)만 대상. 앱 재시작·날짜 변경 후에도 유지.
-    // 단어장에 저장한 카드를 매일 다시 들어도 같은 오디오면 Azure 호출 0. (BYOK·일반 생성 카드는 제외)
-    if (opts.saved && !byokAzureKey) {
+    // 영속 캐시(IndexedDB) 조회 — 2026-06-10: opts.saved 게이트 제거 → 모든 Azure 합성 대상.
+    //   앱 재시작·세션 종료·날짜 변경 후에도 유지. 같은 텍스트 재생 시 Azure 호출 0(기기당 1회만 과금).
+    //   (네이티브 폴백으로 Azure에 온 미저장 카드·반복청취 비용 누수 차단. BYOK는 자기 키라 제외. LRU500 용량관리)
+    if (!byokAzureKey) {
       try {
         const idbBlob = await getCachedAudio(cacheKey);
         if (idbBlob && !isStale()) {
@@ -3206,8 +3207,9 @@ function App() {
       }
       ttsCacheRef.current.set(cacheKey, url);
 
-      // 영속 캐시(IndexedDB)에도 저장 — 저장 카드만. 재시작·날짜 변경 후 재청취 시 Azure 0. fire-and-forget.
-      if (opts.saved && !byokAzureKey) putCachedAudio(cacheKey, blob);
+      // 영속 캐시(IndexedDB)에도 저장 — 2026-06-10: 모든 Azure 합성 저장(opts.saved 게이트 제거).
+      //   재시작·세션종료·날짜변경 후 재청취 시 Azure 0. fire-and-forget. (BYOK 제외, LRU500 용량관리)
+      if (!byokAzureKey) putCachedAudio(cacheKey, blob);
 
       // ⭐ 응답 도착 시점에 stale이면 재생 skip (사용자가 그동안 다른 버튼 눌렀음)
       if (isStale()) return;
