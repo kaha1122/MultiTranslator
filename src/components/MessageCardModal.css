@@ -48,6 +48,9 @@
     overscroll-behavior: contain;
     padding: 12px;
     padding-top: 44px;
+    /* 하단: 확장된 발음결과 카드(LEARNING TIP 등)가 모바일 하단 광고/홈인디케이터에
+       가리지 않도록 스크롤 여유 확보 (상단 sticky 처리와 대칭) */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 @keyframes mcm-window-in {
     from { transform: translateY(12px) scale(0.98); opacity: 0; }

@@ -5,7 +5,10 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: var(--z-modal);
+    /* 목표달성 셀러브레이션은 SaveCard(MessageCardModal, --z-chat-popup 5100) 위에서
+       발화되므로 그보다 위 레이어 필요. --z-modal(2010)이면 SaveCard 뒤에 가림.
+       셀러브레이션 최상위로 --z-critical(9000) 재사용 (토스트 3000도 5100 미만이라 부족) */
+    z-index: var(--z-critical);
     padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
     animation: bpm-fade-in 0.2s ease;
 }
