@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
+import React, { createContext, useContext, useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
@@ -25,6 +25,12 @@ export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [profile, setProfile] = useState(null);
     const [loading, setLoading] = useState(true);
+
+    // 포인트 차감 등에서 항상 "최신" profile을 읽기 위한 미러 ref.
+    //   consumeBonusPoints가 stale 클로저(예: useCallback deps 누락된 onPronSuccess)에 갇혀도
+    //   차감 시점의 실제 잔액을 보장 — 2026-06-10 신규유저 발음 9회 0차감 누수 사고 대응.
+    const profileRef = useRef(profile);
+    useEffect(() => { profileRef.current = profile; }, [profile]);
 
     // 최종 안전장치: 어떤 코드 경로에서든 loading이 10초 이상 지속되면 강제 해제
     // (Strategy A 적용 후엔 onAuthStateChanged의 정상 경로에서 loading=false가 즉시 풀리므로
@@ -71,6 +77,13 @@ export const AuthProvider = ({ children }) => {
                                 deviceLang,
                                 createdAt: serverTimestamp(),
                                 updatedAt: serverTimestamp(),
+                                // 첫날 일일충전(+30)을 문서 생성과 동시에 동기 부여.
+                                //   비동기 claimDailyTopUp이 도착하기 전 첫 액션이 bonusPoints=0을
+                                //   읽어 차감이 통째로 누락되던 race 창 제거. lastTopUpDate=오늘로
+                                //   당일 재충전은 claimDailyTopUp 가드가 자동 skip(이중충전 없음).
+                                bonusPoints: 30,
+                                firstTopUpDone: true,
+                                lastTopUpDate: getToday(),
                             });
                             docJustCreated = true;
                             // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
@@ -154,6 +167,11 @@ export const AuthProvider = ({ children }) => {
                         tier: 'trial',
                         createdAt: serverTimestamp(),
                         updatedAt: serverTimestamp(),
+                        // 첫날 일일충전(+30) 동기 부여 — 메인 생성 경로와 동일(차감 누락 race 차단).
+                        //   merge:true라도 신규 문서(verifySnap 부재 확인 후 도달)이므로 안전.
+                        bonusPoints: 30,
+                        firstTopUpDone: true,
+                        lastTopUpDate: getToday(),
                     };
                     if (authenticatedUser.email) newDoc.email = authenticatedUser.email;
                     if (authenticatedUser.displayName) newDoc.displayName = authenticatedUser.displayName;
@@ -395,9 +413,11 @@ export const AuthProvider = ({ children }) => {
     //   을 일으켜 콘솔 폭주 + 재시도 낭비 → increment 는 서버 원자 연산이라 경합해도 실패 없음.
     //   음수 방지: 클라 보유분(profile.bonusPoints)으로 clamp. 게이트가 사전에 pool>=cost 보장하므로
     //   gated 액션은 음수 불가, best-effort(TTS/Vocab 등)도 clamp 로 0 미만 차감 안 함.
-    const consumeBonusPoints = async (amount) => {
+    const consumeBonusPoints = useCallback(async (amount) => {
         if (!user?.uid || amount <= 0) return 0;
-        const current = profile?.bonusPoints || 0;
+        // profileRef로 "차감 시점"의 최신 잔액을 읽음 — render 클로저의 stale profile 회피.
+        //   (메모이즈된 핸들러가 옛 bonusPoints=0 스냅샷에 갇혀 조용히 0차감하던 누수 차단)
+        const current = profileRef.current?.bonusPoints || 0;
         const consumed = Math.min(current, amount);
         if (consumed <= 0) return 0;
         try {
@@ -406,7 +426,7 @@ export const AuthProvider = ({ children }) => {
         } catch (e) {
             return 0;
         }
-    };
+    }, [user?.uid]);
 
     // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
     //   (2026-06-09 +15 상향했다가 차감을 "텍스트당 1회"로 완화 → 2026-06-10 +10 원복)
