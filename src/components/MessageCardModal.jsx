@@ -1,15 +1,17 @@
 import { useEffect } from 'react';
 import { X } from 'lucide-react';
+import { VocabWordCard } from './VocabTab';
 import './MessageCardModal.css';
 
 /**
- * Free Talking 채팅 메시지 클릭 시 뜨는 카드 팝업.
+ * 문장 클릭 시 뜨는 카드 팝업 — Free Talking 메시지 / Listening 문장 공용.
  *
- * 기존 ScenePracticeCard의 props 시그니처와 호환되는 generated 객체를 만들어 그대로 마운트한다:
- *   {sentence, translation, pronunciation, learning_tip, scene_hint, selected_emotion, interaction_type}
+ * 2026-06-09 단계 A: ScenePracticeCard → VocabWordCard 단일 카드로 통일.
+ *   문장을 word(헤드라인)·번역을 meaning에 매핑하고 example을 비워두면 VocabWordCard가
+ *   예문 박스 + 단어/예문 토글을 자동으로 숨겨 "문장 발음연습 카드"로 동작한다.
+ *   (단어냐 문장이냐 + 예문 유무 차이뿐 — 발음연습/녹음/평가/저장/TTS 로직은 VocabWordCard가 이미 보유)
  *
- * 부모(FreeTalkingChat)는 ScenePracticeCardComp prop으로 ScenePracticeCard 컴포넌트를 주입한다
- * (순환 import 방지 + Sprint 2에서 ScenePracticeCard를 그대로 재사용).
+ * message 스키마(둘 다 호환): {fullText|text, translation, pronunciation, learning_tip|learningTip}
  */
 export default function MessageCardModal({
     open,
@@ -25,7 +27,7 @@ export default function MessageCardModal({
     onBookmarkPrompt,
     targetGoal,
     t,
-    ScenePracticeCardComp,
+    ttsSource = 'card',
 }) {
     // ESC 닫기
     useEffect(() => {
@@ -37,15 +39,19 @@ export default function MessageCardModal({
 
     if (!open || !message) return null;
 
-    // ChatBubble 메시지 스키마 → ScenePracticeCard generated 형태 매핑
-    const generated = {
-        sentence: message.fullText || message.text || '',
-        translation: message.translation || '',
+    // 메시지/문장 → VocabWordCard `w` 매핑
+    //   word=문장, meaning=번역, example='' → 예문 박스·토글 숨김(문장 자체를 발음연습 대상으로)
+    const rawTip = message.learning_tip ?? message.learningTip ?? '';
+    const w = {
+        word: message.fullText || message.text || '',
         pronunciation: message.pronunciation || '',
-        learning_tip: message.learning_tip || '',
-        scene_hint: message.scene_hint || '',
-        selected_emotion: message.selected_emotion || '',
-        interaction_type: message.interaction_type || '',
+        meaning: message.translation || '',
+        example: '',
+        examplePronunciation: '',
+        exampleTranslation: '',
+        learningTip: Array.isArray(rawTip)
+            ? rawTip
+            : (rawTip ? [{ type: 'tip', content: rawTip }] : []),
     };
 
     return (
@@ -55,27 +61,24 @@ export default function MessageCardModal({
                     <X size={20} />
                 </button>
                 <div className="mcm-body">
-                    {ScenePracticeCardComp ? (
-                        <ScenePracticeCardComp
-                            generated={generated}
-                            langCode={langCode}
-                            sourceLang={sourceLang}
-                            onTrialLimitReached={onTrialLimitReached}
-                            onPronSuccess={onPronSuccess}
-                            onSave={onSave}
-                            isSaved={isSaved}
-                            onSpeak={onSpeak}
-                            t={t}
-                            targetGoal={targetGoal}
-                            onBookmarkPrompt={onBookmarkPrompt}
-                        />
-                    ) : (
-                        <div className="mcm-fallback">
-                            <p>{generated.sentence}</p>
-                            {generated.translation && <p className="mcm-translation">{generated.translation}</p>}
-                            {generated.learning_tip && <p className="mcm-tip">💡 {generated.learning_tip}</p>}
-                        </div>
-                    )}
+                    <VocabWordCard
+                        w={w}
+                        index={0}
+                        selectedLang={langCode}
+                        sourceLang={sourceLang}
+                        onSpeak={onSpeak}
+                        ttsSource={ttsSource}
+                        isSaved={isSaved}
+                        onSave={onSave}
+                        onTrialLimitReached={onTrialLimitReached}
+                        onPronSuccess={onPronSuccess}
+                        targetGoal={targetGoal}
+                        onBookmarkPrompt={onBookmarkPrompt}
+                        activeRecIdx={null}        /* 모달은 단일 카드 — 다른 카드 녹음 잠금 불필요 */
+                        onRecordingStart={() => {}}
+                        headlineBlock           /* 문장 카드: 🔊·⭐ 윗줄 / 문장 아래 전체폭 */
+                        t={t}
+                    />
                 </div>
             </div>
         </div>

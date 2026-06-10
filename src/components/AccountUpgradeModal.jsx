@@ -99,8 +99,7 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                     }, { merge: true });
                 } catch (linkErr) {
                     if (linkErr.code === 'auth/credential-already-in-use') {
-                        const credential = FirebaseGoogleAuthProvider.credentialFromError(linkErr)
-                            || GoogleAuthProvider.credentialFromError(linkErr);
+                        const credential = FirebaseGoogleAuthProvider.credentialFromError(linkErr);
                         if (credential) {
                             await migrateAndSignIn(credential);
                         } else {

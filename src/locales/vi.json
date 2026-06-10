@@ -73,7 +73,6 @@
       "mission1": "Nắm bắt mạch hội thoại và các cụm từ chính trong đoạn mẫu",
       "mission2": "Chọn một cụm từ then chốt từ câu trả lời của AI để ghi nhớ",
       "mission3": "Tiếp lời một cách tự nhiên ở câu tiếp theo",
-      "tip": "Chạm vào tin nhắn để mở thẻ luyện phát âm và lưu lại",
       "cta": "Bắt đầu"
     }
   },
@@ -141,7 +140,8 @@
   "card": {
     "practicePrompt": "Nhấn nút để bắt đầu luyện phát âm!",
     "recording": "Hãy nói... 🎙️",
-    "analyzing": "AI Coach đang phân tích... ✨"
+    "analyzing": "AI Coach đang phân tích... ✨",
+    "ttsTooLong": "Câu quá dài nên không hỗ trợ phát âm thanh và luyện phát âm"
   },
   "scores": {
     "accuracy": "🎯 Độ chính xác",
@@ -973,8 +973,8 @@
     "watchForProns": "+5 Phát âm",
     "watchAdPron": "Xem quảng cáo → +5 lần phát âm",
     "loading": "Đang tải quảng cáo...",
-    "topUpBonus": "Điểm thưởng (Quảng cáo) +5",
-    "topUpBonusDesc": "Xem quảng cáo để +5 điểm",
+    "topUpBonus": "Điểm thưởng (Quảng cáo) +10",
+    "topUpBonusDesc": "Xem quảng cáo để +10 điểm",
     "buyBonus": "Điểm thưởng (Mua) +200",
     "buying": "Đang xử lý...",
     "buySuccess": "Mua thành công! 200 điểm sẽ sớm được cộng.",

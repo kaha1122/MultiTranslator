@@ -73,7 +73,6 @@
       "mission1": "Captar el hilo y las expresiones clave del diálogo de ejemplo",
       "mission2": "Elige una expresión clave de la respuesta de la IA para recordar",
       "mission3": "Continúa de forma natural con tu siguiente frase",
-      "tip": "Toca un mensaje para abrir una tarjeta y practicar la pronunciación y guardarla",
       "cta": "Empezar"
     }
   },
@@ -141,7 +140,8 @@
   "card": {
     "practicePrompt": "¡Presiona el botón para practicar la pronunciación!",
     "recording": "Habla ahora... 🎙️",
-    "analyzing": "El coach de IA está analizando... ✨"
+    "analyzing": "El coach de IA está analizando... ✨",
+    "ttsTooLong": "La frase es demasiado larga para audio y práctica de pronunciación"
   },
   "scores": {
     "accuracy": "🎯 Precisión",
@@ -973,8 +973,8 @@
     "watchForProns": "+5 Pronunciación",
     "watchAdPron": "Ver anuncio → +5 intentos de pronunciación",
     "loading": "Cargando anuncio...",
-    "topUpBonus": "Puntos bonus (Anuncio) +5",
-    "topUpBonusDesc": "Mira un anuncio por +5 puntos",
+    "topUpBonus": "Puntos bonus (Anuncio) +10",
+    "topUpBonusDesc": "Mira un anuncio por +10 puntos",
     "buyBonus": "Puntos bonus (Comprar) +200",
     "buying": "Procesando...",
     "buySuccess": "¡Compra completada! Se añadirán 200 puntos en breve.",

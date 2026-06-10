@@ -73,7 +73,6 @@
       "mission1": "把握示例对话的脉络和关键表达",
       "mission2": "从 AI 的回复中挑一个想记住的关键表达",
       "mission3": "自然地接上你的下一句",
-      "tip": "点击消息可打开卡片进行发音练习和保存",
       "cta": "开始"
     }
   },
@@ -141,7 +140,8 @@
   "card": {
     "practicePrompt": "按下按钮开始发音练习！",
     "recording": "请说话... 🎙️",
-    "analyzing": "AI教练正在分析... ✨"
+    "analyzing": "AI教练正在分析... ✨",
+    "ttsTooLong": "句子过长，不支持语音播放和发音练习"
   },
   "scores": {
     "accuracy": "🎯 准确度",
@@ -973,8 +973,8 @@
     "watchForProns": "+5 发音",
     "watchAdPron": "观看广告 → 发音 +5 次",
     "loading": "广告加载中...",
-    "topUpBonus": "奖励积分 (广告) +5",
-    "topUpBonusDesc": "观看广告获得 +5 积分",
+    "topUpBonus": "奖励积分 (广告) +10",
+    "topUpBonusDesc": "观看广告获得 +10 积分",
     "buyBonus": "奖励积分 (购买) +200",
     "buying": "购买处理中...",
     "buySuccess": "购买完成！200积分即将到账。",

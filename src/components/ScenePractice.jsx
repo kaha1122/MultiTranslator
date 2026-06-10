@@ -110,10 +110,12 @@ export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimi
                                 )}
                             </div>
                         )}
-                        <div className="scene-card-hint-body">
-                            <span className="scene-card-hint-icon">🎬</span>
-                            <p>{generated.scene_hint}</p>
-                        </div>
+                        {generated.scene_hint && (
+                            <div className="scene-card-hint-body">
+                                <span className="scene-card-hint-icon">🎬</span>
+                                <p>{generated.scene_hint}</p>
+                            </div>
+                        )}
                     </div>
                     <button
                         className="speak-button"

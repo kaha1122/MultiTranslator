@@ -31,11 +31,12 @@ const getServerUrl = () => {
 // ── VocabWordCard 서브 컴포넌트 ─────────────────────────────────────
 // 각 단어별 독립적인 useAudioRecorder + 발음 연습 + Learning Tip
 export function VocabWordCard({
-    w, index, selectedLang, sourceLang, onSpeak,
+    w, index, selectedLang, sourceLang, onSpeak, ttsSource = 'vocab',
     isSaved, onSave, onTrialLimitReached, onPronSuccess,
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
     t,
+    headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
@@ -93,33 +94,42 @@ export function VocabWordCard({
 
     const tips = w.learningTip || [];
 
+    // 본문(단어/문장·발음·뜻) + 액션(🔊·⭐) — headlineBlock(문장 카드)이면 액션을 윗줄, 본문을 아래 전체폭으로 배치
+    const mainBlock = (
+        <div className="vocab-word-main">
+            <p className="vocab-word-text">{w.word}</p>
+            {w.pronunciation && (
+                <p className="vocab-word-pronunciation">{w.pronunciation}</p>
+            )}
+            <p className="vocab-word-meaning">{w.meaning}</p>
+        </div>
+    );
+    const actionsBlock = (
+        <div className="vocab-word-actions">
+            <button
+                className="vocab-action-btn"
+                onClick={() => onSpeak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
+                title="TTS"
+            >
+                <Volume2 size={16} />
+            </button>
+            <button
+                className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
+                onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
+                title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
+            >
+                <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
+            </button>
+        </div>
+    );
+
     return (
         <div className="vocab-word-card">
-            {/* 상단: 단어 + 발음 + 뜻 + 액션 */}
-            <div className="vocab-word-top">
-                <div className="vocab-word-main">
-                    <p className="vocab-word-text">{w.word}</p>
-                    {w.pronunciation && (
-                        <p className="vocab-word-pronunciation">{w.pronunciation}</p>
-                    )}
-                    <p className="vocab-word-meaning">{w.meaning}</p>
-                </div>
-                <div className="vocab-word-actions">
-                    <button
-                        className="vocab-action-btn"
-                        onClick={() => onSpeak?.(w.word, selectedLang)}
-                        title="TTS"
-                    >
-                        <Volume2 size={16} />
-                    </button>
-                    <button
-                        className={`vocab-action-btn ${isSaved ? 'saved' : ''}`}
-                        onClick={() => onSave(assessmentResult?.pronunciationScore ?? null)}
-                        title={isSaved ? t('scene.savedToLibrary') : t('scene.saveToLibrary')}
-                    >
-                        <Star size={16} fill={isSaved ? '#f59e0b' : 'none'} />
-                    </button>
-                </div>
+            {/* 상단: 단어/문장 + 발음 + 뜻 + 액션 */}
+            <div className={`vocab-word-top ${headlineBlock ? 'vocab-word-top-block' : ''}`}>
+                {headlineBlock
+                    ? <>{actionsBlock}{mainBlock}</>
+                    : <>{mainBlock}{actionsBlock}</>}
             </div>
 
             {/* 예문 */}
@@ -132,7 +142,7 @@ export function VocabWordCard({
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
                             }}
-                            onClick={() => onSpeak?.(w.example, selectedLang)}
+                            onClick={() => onSpeak?.(w.example, selectedLang, undefined, { source: `${ttsSource}.example` })}
                         >
                             <Volume2 size={14} />
                         </button>
@@ -205,7 +215,7 @@ export function VocabWordCard({
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} ttsSource={ttsSource} />
 
                     {/* 녹음 버튼 */}
                     <div className="practice-actions">

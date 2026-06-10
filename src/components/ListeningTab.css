@@ -464,3 +464,24 @@
   color: #94a3b8;
   font-size: 0;
 }
+
+/* 문장 카드 annotate 로딩 오버레이 (Gemini 호출 동안) */
+.listening-card-loading {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.28);
+}
+.listening-card-loading-box {
+  background: #fff;
+  border-radius: 14px;
+  padding: 18px 20px;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.18);
+  color: #10b981;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}

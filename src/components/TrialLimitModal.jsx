@@ -134,7 +134,7 @@ const TrialLimitModal = ({
                                     cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                                     fontWeight: 700, color: '#166534', fontSize: '0.9rem',
                                 }}>
-                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +5'}
+                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +10'}
                             </button>
                         )}
                         {/* 보너스포인트 구매 (+200, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
@@ -178,7 +178,7 @@ const TrialLimitModal = ({
     return (
         <div style={overlay} onClick={onClose}>
             <div onClick={e => e.stopPropagation()} style={card}>
-                <button onClick={onClose} style={closeBtn}><X size={22} /></button>
+                <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
 
                 <div style={{ textAlign: 'center', marginBottom: '14px' }}>
                     <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>🎯</div>

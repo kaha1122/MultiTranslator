@@ -487,6 +487,10 @@ export function useConversation({ tier = 'trial' } = {}) {
                 learning_tip: data.firstAiReply?.learning_tip,
                 selected_emotion: data.firstAiReply?.selected_emotion,
                 interaction_type: data.firstAiReply?.interaction_type,
+                // B안(slot memory) seed — opener 가 commit 한 구체값(목적지/번호/이름 등)을
+                // 첫 자유발화의 priorFacts 출발점으로 심어, AI 가 opener 에서 이미 나온
+                // 사실을 재질문하던 회귀(2026-06-10 "Where are you going?" after "Seoul Station") 차단.
+                establishedFacts: Array.isArray(data.establishedFacts) ? data.establishedFacts : [],
                 played: false,
             };
             setMessages([introMsg, userAutoMsg, aiMsg]);

@@ -229,6 +229,16 @@
   gap: 10px;
 }
 
+/* 문장 카드: 액션(🔊·⭐)을 윗줄 우측에, 문장 본문을 그 아래 전체폭으로 (단어 카드는 미적용) */
+.vocab-word-top-block {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+}
+.vocab-word-top-block .vocab-word-actions {
+  align-self: flex-end;
+}
+
 .vocab-word-main {
   flex: 1;
 }

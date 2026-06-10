@@ -8,10 +8,11 @@ import ReviewBonusModal from './components/ReviewBonusModal';
 import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
 import EmailVerifyChangeModal from './components/EmailVerifyChangeModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import TranslationCard from './components/TranslationCard';
+import TranslationCard, { getTtsCharLimit } from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
+import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
@@ -2308,6 +2309,13 @@ function App() {
   const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
 
+    // 2026-06-10: 번역 생성도 1점 차감 (Vocab/Scene 생성과 동일). Trial 0점이면 차단 + 충전 팝업.
+    //   하드캡 없음 → requestLimitModal이 'points'(충전 가능) 사유로 표시. retryCount>0(내부 재시도)은 재게이트 안 함.
+    if (retryCount === 0 && tier === 'trial' && bonusPoints < 1) {
+      requestLimitModal('translation');
+      return;
+    }
+
     setIsTranslating(true);
     setIsGeneratingTips(true);
     setLearningTips({});
@@ -2515,6 +2523,7 @@ function App() {
       setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
       incrementDailyGenerate('translation'); // 일일 분석용
+      addAdPoints(1); // 풀 -1 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과)
 
     } catch (error) {
       console.error("번역 실패:", error);
@@ -2669,7 +2678,7 @@ function App() {
   };
 
   // 6. Scene 카드를 Library에 저장하는 함수
-  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '' }) => {
+  const saveSceneCard = async ({ sentence, translation, langCode, scene, category = 'locations', sceneHint, learningTip, pronunciationScore = null, difficulty = 'basic', selectedEmotion = '', interactionType = '', sourceType = 'scene' }) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return; }
     // 중복 체크: 같은 문장이 이미 저장되어 있으면 기존 ID 반환
@@ -2678,7 +2687,7 @@ function App() {
         collection(db, "savedCards"),
         where("userId", "==", u.uid),
         where("translatedText", "==", sentence),
-        where("sourceType", "==", "scene")
+        where("sourceType", "==", sourceType)
       );
       const dupSnap = await getDocs(dupQ);
       const active = dupSnap.docs.find(d => !d.data().isDeleted);
@@ -2698,7 +2707,7 @@ function App() {
         inputLang: langCode,
         inputType: 'S',
         sourceLang,
-        sourceType: 'scene',
+        sourceType,
         difficulty,
         scene,
         category,
@@ -2962,6 +2971,157 @@ function App() {
   const ttsAbortRef = useRef(null); // 진행 중인 fetch 중단용
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
+  // 네이티브 TTS "텍스트당 1회만 차감" — 이미 차감한 text+lang 키 집합(세션 내, Azure 캐시 무료-반복 동작과 동일)
+  const ttsChargedRef = useRef(new Set());
+
+  // [TTS 비용 절감 2026-06-09] 절충안 라우팅 — Web Speech(기기 내장/네트워크) 우선, "진짜 실패"만 Azure 폴백.
+  //   목적: Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감.
+  //   적용 범위(native 시도): Vocab 단어·예문·발음해부도, Listening 핵심단어·에세이 문장.
+  //     (Listening 지문·대화 문장 = Azure 멀티보이스 유지 / Translation·Scene·Library·FreeTalking = Azure 유지)
+  //   음성 선택: 해당 언어 매칭 중 네트워크(localService===false, 보통 Google/Apple 고품질) 우선 → 기본 → 첫 매칭.
+  //   Azure 폴백 트리거(진짜 실패): 엔진 없음 / 해당 언어 음성 0개 / onerror. ("나쁘지만 재생되는" 음성은
+  //     폴백 불가 — 저가폰 잔존 리스크는 target 제외로 합의 2026-06-09)
+  //   차감: 엔진 무관 항상 1점(Trial, tryConsumeTtsPoint). onerror→Azure 폴백은 이미 차감됨 → _skipGate.
+  //   웹 전용 — 네이티브 앱(Capacitor)은 Capgo 별도 배포 전까지 전부 Azure.
+  const pickNativeVoice = (ttsLang) => {
+    let voices = [];
+    try { voices = window.speechSynthesis?.getVoices?.() || []; } catch { return null; }
+    if (!voices.length) return undefined; // 아직 미로드 — 호출부가 voiceschanged 대기
+    const want = String(ttsLang || '').toLowerCase();
+    const prefix = want.slice(0, 2);
+    const matches = voices.filter(v => {
+      const l = v.lang?.toLowerCase() || '';
+      return l === want || (prefix && l.startsWith(prefix));
+    });
+    if (!matches.length) return null; // 해당 언어 음성 없음 → Azure
+    return matches.find(v => v.localService === false) // 네트워크(고품질) 우선
+        || matches.find(v => v.default)
+        || matches[0];
+  };
+
+  // TTS 라우팅 텔레메트리 비콘 (fire-and-forget) — native/azure-fallback portion 측정용 (서버 [TTSRoute] 로그)
+  const beaconTtsRoute = (source, engine, langCode, extra = {}) => {
+    try {
+      const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+      authFetch(`${SERVER_URL}/api/tts/route-log`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        keepalive: true,
+        body: JSON.stringify({
+          source: source || 'tts',
+          engine,
+          lang: langCode,
+          platform: (typeof window !== 'undefined' && window.Capacitor?.getPlatform?.()) || 'web',
+          ...extra,
+        }),
+      }).catch(() => {});
+    } catch { /* 텔레메트리 실패 무시 */ }
+  };
+
+  // [2026-06-10] 통합 TTS 재생 우선순위: ① 캐시(메모리/IndexedDB) → ② 네이티브 TTS → ③ Azure.
+  //   ① 이미 Azure로 합성된 오디오가 있으면 그걸 재생 (무료, 과금 0).
+  //   ② 없으면 네이티브 TTS(Web Speech / Android 플러그인) — 무료, **무차감**(학습 카드 복습 과금 부적절).
+  //   ③ 네이티브도 안 되면 handleSpeak(Azure) — 포인트 1점 차감 + 합성 + IndexedDB 영속 저장.
+  //      (③ 도달 = 저장 후 한 번도 연습/듣기 안 한 신규 합성 → 자연스러운 과금 시점)
+  //   Vocab 단어·예문 / Listening / Translation / Library 카드 모두 공통 적용.
+  const handleSpeakSmart = async (text, langCode, emotion, opts = {}) => {
+    if (!text) return;
+    // 진행 중 재생/요청 즉시 중단 (race) — handleSpeak와 동일 패턴
+    const myGen = ++ttsGenRef.current;
+    const isStale = () => myGen !== ttsGenRef.current;
+    if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
+    if (ttsAudioRef.current) {
+      try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
+      ttsAudioRef.current = null;
+    }
+    try { window.speechSynthesis?.cancel?.(); } catch {}
+    try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop(); } catch {}
+
+    const langInfo = getLangInfo(langCode);
+    const ttsLang = langInfo?.tts || langCode;
+    const src = opts.source;
+    const cacheKey = `${langCode}:${emotion || ''}:${text}`; // handleSpeak와 동일 키
+
+    const playCachedUrl = (url) => {
+      const audio = new Audio(url);
+      ttsAudioRef.current = audio;
+      audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+      const p = audio.play();
+      if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+    };
+
+    // ── ① 캐시 우선 (무료) ── 메모리 → IndexedDB
+    if (ttsCacheRef.current.has(cacheKey)) { playCachedUrl(ttsCacheRef.current.get(cacheKey)); return; }
+    if (!byokAzureKey) {
+      try {
+        const idbBlob = await getCachedAudio(cacheKey);
+        if (idbBlob && !isStale()) {
+          const url = URL.createObjectURL(idbBlob);
+          if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
+            const oldestKey = ttsCacheRef.current.keys().next().value;
+            try { URL.revokeObjectURL(ttsCacheRef.current.get(oldestKey)); } catch {}
+            ttsCacheRef.current.delete(oldestKey);
+          }
+          ttsCacheRef.current.set(cacheKey, url);
+          playCachedUrl(url);
+          return;
+        }
+      } catch { /* IndexedDB 실패 → 네이티브로 진행 */ }
+    }
+    if (isStale()) return; // 대기 중 사용자가 다른 재생 시작
+
+    // ── ③ Azure 폴백 헬퍼 (네이티브 실패 시) — handleSpeak가 차감 + IndexedDB 저장 담당 ──
+    const azureFallback = (reason) => {
+      beaconTtsRoute(src, 'azure-fallback', langCode, { reason });
+      handleSpeak(text, langCode, emotion, opts); // _skipGate 없음 → 정상 차감
+    };
+
+    // ── ② 네이티브 TTS (무료·무차감) ──
+    // Android: System WebView가 speechSynthesis 미노출(Chromium #487255) → 플러그인
+    if (Capacitor.getPlatform() === 'android') {
+      beaconTtsRoute(src, 'native', langCode, { voice: 'android-plugin', localService: true });
+      try { TextToSpeech.stop(); } catch {}
+      TextToSpeech.speak({ text, lang: ttsLang || 'en' }).catch(() => { if (!isStale()) azureFallback('plugin-error'); });
+      return;
+    }
+    // web/iOS: Web Speech
+    if (typeof window === 'undefined' || !window.speechSynthesis || typeof SpeechSynthesisUtterance === 'undefined') {
+      azureFallback('no-engine');
+      return;
+    }
+    const speakWith = (voice) => {
+      beaconTtsRoute(src, 'native', langCode, { voice: voice?.name, localService: voice?.localService });
+      const u = new SpeechSynthesisUtterance(text);
+      if (ttsLang) u.lang = ttsLang;
+      if (voice) u.voice = voice;
+      u.onerror = () => { if (!isStale()) azureFallback('onerror'); };
+      try { window.speechSynthesis.speak(u); } catch { azureFallback('speak-throw'); }
+    };
+
+    const v = pickNativeVoice(ttsLang);
+    if (v) { speakWith(v); return; }                 // 가용 voice 있음 → native
+    if (v === null) { azureFallback('no-voice'); return; } // 언어 음성 없음 → Azure
+
+    // v === undefined: voices 아직 미로드 → 1회 대기 후 재시도 (안전망 타임아웃 포함)
+    let settled = false;
+    const finish = () => {
+      if (settled || isStale()) return;
+      const v2 = pickNativeVoice(ttsLang);
+      if (v2 === undefined) return; // 아직 미로드 — 타임아웃이 최종 처리
+      settled = true;
+      try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
+      if (v2) speakWith(v2); else azureFallback('no-voice');
+    };
+    try { window.speechSynthesis.addEventListener('voiceschanged', finish); } catch {}
+    setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try { window.speechSynthesis.removeEventListener('voiceschanged', finish); } catch {}
+      if (isStale()) return;
+      const v3 = pickNativeVoice(ttsLang);
+      if (v3) speakWith(v3); else azureFallback('voices-unloaded');
+    }, 600);
+  };
 
   const handleSpeak = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
@@ -2992,9 +3152,10 @@ function App() {
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
 
-    // 영속 캐시(IndexedDB) 조회 — 저장 카드(opts.saved)만 대상. 앱 재시작·날짜 변경 후에도 유지.
-    // 단어장에 저장한 카드를 매일 다시 들어도 같은 오디오면 Azure 호출 0. (BYOK·일반 생성 카드는 제외)
-    if (opts.saved && !byokAzureKey) {
+    // 영속 캐시(IndexedDB) 조회 — 2026-06-10: opts.saved 게이트 제거 → 모든 Azure 합성 대상.
+    //   앱 재시작·세션 종료·날짜 변경 후에도 유지. 같은 텍스트 재생 시 Azure 호출 0(기기당 1회만 과금).
+    //   (네이티브 폴백으로 Azure에 온 미저장 카드·반복청취 비용 누수 차단. BYOK는 자기 키라 제외. LRU500 용량관리)
+    if (!byokAzureKey) {
       try {
         const idbBlob = await getCachedAudio(cacheKey);
         if (idbBlob && !isStale()) {
@@ -3019,7 +3180,8 @@ function App() {
 
     // 2026-06-07: 신규 합성(서버 fetch) 전 포인트 게이트 — 캐시 hit은 위에서 이미 return(무료).
     //   Trial 0점이면 차단 + 포인트부족 팝업. BYOK는 자기 키라 통과. Pro/Premium 무료 통과.
-    if (!byokAzureKey && !tryConsumeTtsPoint()) return;
+    //   2026-06-09: _skipGate = handleSpeakSmart의 native→Azure onerror 폴백 (이미 native에서 1점 차감됨).
+    if (!opts._skipGate && !byokAzureKey && !tryConsumeTtsPoint()) return;
 
     const ac = new AbortController();
     ttsAbortRef.current = ac;
@@ -3051,8 +3213,9 @@ function App() {
       }
       ttsCacheRef.current.set(cacheKey, url);
 
-      // 영속 캐시(IndexedDB)에도 저장 — 저장 카드만. 재시작·날짜 변경 후 재청취 시 Azure 0. fire-and-forget.
-      if (opts.saved && !byokAzureKey) putCachedAudio(cacheKey, blob);
+      // 영속 캐시(IndexedDB)에도 저장 — 2026-06-10: 모든 Azure 합성 저장(opts.saved 게이트 제거).
+      //   재시작·세션종료·날짜변경 후 재청취 시 Azure 0. fire-and-forget. (BYOK 제외, LRU500 용량관리)
+      if (!byokAzureKey) putCachedAudio(cacheKey, blob);
 
       // ⭐ 응답 도착 시점에 stale이면 재생 skip (사용자가 그동안 다른 버튼 눌렀음)
       if (isStale()) return;
@@ -3698,10 +3861,10 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +5'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +10'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +5'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +10'}
                       </div>
                     </div>
                   </button>
@@ -4208,6 +4371,9 @@ function App() {
                 const displayLangs = (detectedLang && !targetLangs.includes(detectedLang))
                   ? [detectedLang, ...targetLangs]
                   : targetLangs;
+                // 다중언어 번역 묶음: 어느 한 언어라도 길이 한도 초과면 전체 카드의 듣기·발음연습을 함께 막는다.
+                //   (같은 내용이라도 CJK는 글자수가 적어 개별 한도엔 안 걸리므로 그룹 단위로 판정)
+                const groupTtsTooLong = displayLangs.some(lc => (translations[lc] || '').length > getTtsCharLimit(lc));
                 return displayLangs.map((langCode) => {
                 const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
@@ -4229,8 +4395,8 @@ function App() {
                       sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
-                      onSpeak={() => handleSpeak(translations[langCode], langCode)}
-                      onSpeakText={handleSpeak}
+                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card' })}
+                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example' })}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
@@ -4240,6 +4406,7 @@ function App() {
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
+                      groupTooLong={groupTtsTooLong}
                     />
                     {/* 하단 액션바 — Library와 동일한 구조 */}
                     <div className="card-action-bar">
@@ -4291,7 +4458,7 @@ function App() {
             onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
-            onSpeak={handleSpeak}
+            onSpeak={handleSpeakSmart}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
@@ -4318,8 +4485,11 @@ function App() {
             onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
-            onSpeak={handleSpeak}
+            onSpeak={handleSpeakSmart}
             onTtsGate={tryConsumeTtsPoint}
+            ScenePracticeCardComp={ScenePracticeCard}
+            onSaveSentence={({ sentence, translation, learningTip, langCode, scene, pronunciationScore }) =>
+              saveSceneCard({ sentence, translation, learningTip, langCode, scene, sceneHint: scene, pronunciationScore, sourceType: 'listening' })}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => {
@@ -4432,7 +4602,7 @@ function App() {
             <Library
               user={user}
               sourceLang={sourceLang}
-              onSpeak={(t, l, e) => handleSpeak(t, l, e, { saved: true })}
+              onSpeak={(t, l, e) => handleSpeakSmart(t, l, e, { source: 'library' })}
               languageGoals={languageGoals}
               todayCount={todayCount}
               dailyGoal={dailyGoal}

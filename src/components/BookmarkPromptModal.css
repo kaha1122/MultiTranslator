@@ -5,6 +5,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
+    /* SaveCard를 --z-modal로 낮춘 후(MessageCardModal) 표준 모달 레이어로 일관화.
+       목표달성은 SaveCard와 같은 --z-modal이지만 App 루트에서 뒤에 렌더돼 위로 뜸. */
     z-index: var(--z-modal);
     padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
     animation: bpm-fade-in 0.2s ease;

@@ -96,11 +96,6 @@ export default function FreeTalkingPreGuideModal({
                     ))}
                 </div>
 
-                {/* 5. 팁 */}
-                <p style={{ margin: '0 0 14px', fontSize: '0.8rem', color: '#94a3b8', lineHeight: 1.45 }}>
-                    💡 {t('freeTalk.preGuide.tip') || '메시지를 탭하면 카드를 열어 발음 연습·저장이 가능해요'}
-                </p>
-
                 {/* 6. 다시 보지 않음 */}
                 <label style={{ display: 'flex', alignItems: 'center', gap: 7, marginBottom: 14, fontSize: '0.82rem', color: '#64748b', cursor: 'pointer', userSelect: 'none' }}>
                     <input

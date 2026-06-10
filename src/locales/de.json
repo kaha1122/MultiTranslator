@@ -73,7 +73,6 @@
       "mission1": "Den Ablauf und die wichtigen Wendungen des Beispieldialogs erfassen",
       "mission2": "Wähle eine wichtige Wendung aus der Antwort der KI zum Merken aus",
       "mission3": "Setze mit deinem nächsten Satz ganz natürlich fort",
-      "tip": "Tippe auf eine Nachricht, um eine Karte zum Aussprachetraining und Speichern zu öffnen",
       "cta": "Starten"
     }
   },
@@ -141,7 +140,8 @@
   "card": {
     "practicePrompt": "Drücken Sie den Knopf, um die Aussprache zu üben!",
     "recording": "Sprechen Sie jetzt... 🎙️",
-    "analyzing": "KI-Coach analysiert... ✨"
+    "analyzing": "KI-Coach analysiert... ✨",
+    "ttsTooLong": "Der Satz ist zu lang für Audio und Aussprachetraining"
   },
   "scores": {
     "accuracy": "🎯 Genauigkeit",
@@ -973,8 +973,8 @@
     "watchForProns": "+5 Aussprache",
     "watchAdPron": "Werbung ansehen → +5 Ausspracheversuche",
     "loading": "Werbung lädt...",
-    "topUpBonus": "Bonuspunkte (Werbung) +5",
-    "topUpBonusDesc": "Werbung ansehen für +5 Punkte",
+    "topUpBonus": "Bonuspunkte (Werbung) +10",
+    "topUpBonusDesc": "Werbung ansehen für +10 Punkte",
     "buyBonus": "Bonuspunkte (Kauf) +200",
     "buying": "Wird verarbeitet...",
     "buySuccess": "Kauf abgeschlossen! 200 Punkte werden in Kürze gutgeschrieben.",

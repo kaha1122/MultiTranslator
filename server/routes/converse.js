@@ -184,6 +184,12 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
         if (parsed?.firstAiReply?.sentence) {
             parsed.firstAiReply.sentence = stripAnnotations(parsed.firstAiReply.sentence, targetLang);
         }
+        // opener 가 commit 한 구체값을 슬롯 메모리 seed 로 정규화 (string[] 보장).
+        // 첫 자유발화 응답이 빈 establishedFacts 로 출발해 opener 의 목적지/번호를
+        // 재질문하던 회귀(2026-06-10) 차단. 모델 누락/형식오류 시 [] fallback → 현행 동작과 동일.
+        parsed.establishedFacts = Array.isArray(parsed.establishedFacts)
+            ? parsed.establishedFacts.filter(f => typeof f === 'string' && f.trim()).map(f => f.trim())
+            : [];
         res.json(parsed);
     } catch (e) {
         console.error('[ConverseStart] Unexpected:', e.message);

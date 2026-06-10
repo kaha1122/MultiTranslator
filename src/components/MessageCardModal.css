@@ -2,12 +2,20 @@
 .mcm-overlay {
     position: fixed;
     inset: 0;
-    z-index: var(--z-chat-popup);  /* 채팅 오버레이 위 */
+    /* SaveCard는 현재 Listening 탭 전용 (FreeTalking은 be02ec3에서 메시지 카드 제거)이라
+       --z-chat-popup(5100, "채팅 위") 근거가 잔재. --z-dropdown(1000)으로 내려서 모든
+       모달/토스트/critical 레이어보다 확실히 아래 → 한도/업그레이드/구독/목표달성 등이
+       DOM 순서에 의존하지 않고 항상 SaveCard 위로 뜸. */
+    z-index: var(--z-dropdown);
     background: var(--modal-overlay-bg);
     display: flex;
-    align-items: center;
+    /* 상단 고정 — 녹음 후 콘텐츠가 길어지면 "아래로만" 커지게.
+       (centered면 중앙 기준으로 위아래로 커져 상단 닫기버튼/카드 윗부분이 화면 위로 이탈) */
+    align-items: flex-start;
     justify-content: center;
     padding: 16px;
+    /* 상단: 상태바/노치 안전영역 확보 (상단 고정이라 status bar에 안 가리게) */
+    padding-top: max(16px, calc(16px + env(safe-area-inset-top, 0px)));
     /* AdMob 네이티브 배너 영역 침범 방지 (모달 하단이 광고에 가려지지 않게) */
     padding-bottom: max(16px, calc(16px + var(--admob-bottom, 0px)));
     animation: mcm-overlay-in 160ms ease-out;
@@ -44,6 +52,9 @@
     overscroll-behavior: contain;
     padding: 12px;
     padding-top: 44px;
+    /* 하단: 확장된 발음결과 카드(LEARNING TIP 등)가 모바일 하단 광고/홈인디케이터에
+       가리지 않도록 스크롤 여유 확보 (상단 sticky 처리와 대칭) */
+    padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
 }
 @keyframes mcm-window-in {
     from { transform: translateY(12px) scale(0.98); opacity: 0; }

@@ -39,6 +39,11 @@ function AnnotatedText({ text, annotations }) {
     );
 }
 
+// ── TTS·발음연습 길이 한도 (언어별) — App.jsx가 "번역 묶음 그룹 판정"에 재사용 ──
+// 글자당 정보량이 큰 CJK(한·일·중)는 100자, 그 외(영어 등 Latin/Cyrillic)는 150자.
+export const CJK_TTS_LANGS = new Set(['ko', 'ja', 'zh-CN', 'zh-TW']);
+export const getTtsCharLimit = (langCode) => (CJK_TTS_LANGS.has(langCode) ? 100 : 150);
+
 const TranslationCard = ({
     language,
     langCode,
@@ -85,6 +90,8 @@ const TranslationCard = ({
     interactionType = '',
     // 감지 카드에만 표시되는 sourceLang 부가 번역 (Translate 탭 B·C 케이스)
     sourceTranslation = '',
+    // 같은 번역 묶음(다중언어) 중 어느 하나라도 길이 초과면 true → 이 카드도 함께 막음
+    groupTooLong = false,
 }) => {
     const t = useT(sourceLangCode);
     const { byokGeminiKey, currentUser } = useAuth();
@@ -121,6 +128,14 @@ const TranslationCard = ({
     // ── 단어 ↔ 예문 발음 연습 토글 (example이 있는 카드만) ──
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = (practiceMode === 'example' && example) ? example : text;
+
+    // ── TTS·발음연습 길이 가드 (언어별 + 그룹) ──
+    // 카드 목적상 긴 문장은 듣기·발음 연습 모두 부적합 + Azure 합성 비용↑.
+    // 자신이 한도 초과거나, 같은 번역 묶음에서 어느 하나라도 초과(groupTooLong)면 함께 막는다.
+    //   (다중언어: 같은 내용이라도 CJK는 글자수가 적어 한도 안에 들 수 있어, 그룹 판정으로 일괄 차단)
+    const ttsCharLimit = getTtsCharLimit(langCode);
+    const ttsTooLong = groupTooLong || (text || '').length > ttsCharLimit;              // 헤더 재생(본문 합성)
+    const practiceTooLong = groupTooLong || (practiceText || '').length > ttsCharLimit; // 발음 연습(연습 대상)
 
     const {
         isRecording,
@@ -316,8 +331,11 @@ Return only these 2 lines.`;
                     )}
                     <button
                         className="speak-button"
-                        onClick={(e) => { e.stopPropagation(); onSpeak(); }}
-                        title="Listen"
+                        onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
+                        disabled={ttsTooLong}
+                        title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                        aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                        style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                     >
                         <Play size={22} fill="white" stroke="white" />
                     </button>
@@ -416,7 +434,7 @@ Return only these 2 lines.`;
                     </p>
 
                     {!assessmentResult && !isAnalyzing && !isRecording && (
-                        <p className="practice-placeholder">{t('card.practicePrompt')}</p>
+                        <p className="practice-placeholder">{practiceTooLong ? t('card.ttsTooLong') : t('card.practicePrompt')}</p>
                     )}
                     {isRecording && <p className="recording-status">{t('card.recording')}</p>}
                     {isAnalyzing && <p className="analyzing-status">{t('card.analyzing')}</p>}
@@ -447,9 +465,10 @@ Return only these 2 lines.`;
                     <div className="practice-actions">
                         <button
                             className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-                            onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
-                            disabled={isAnalyzing}
-                            title="Practice pronunciation"
+                            onClick={(e) => { e.stopPropagation(); if (practiceTooLong) return; isRecording ? stopRecording() : startRecording(); }}
+                            disabled={isAnalyzing || practiceTooLong}
+                            title={practiceTooLong ? t('card.ttsTooLong') : 'Practice pronunciation'}
+                            style={practiceTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                         >
                             {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>

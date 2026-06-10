@@ -73,7 +73,6 @@
       "mission1": "Grasp the flow and key expressions of the sample dialogue",
       "mission2": "Pick one key phrase from the AI's reply to remember",
       "mission3": "Naturally continue with your next line",
-      "tip": "Tap a message to open a card for pronunciation practice and saving",
       "cta": "Start"
     }
   },
@@ -141,7 +140,8 @@
   "card": {
     "practicePrompt": "Press the button to practice pronunciation!",
     "recording": "Speak now... 🎙️",
-    "analyzing": "AI Coach is analyzing... ✨"
+    "analyzing": "AI Coach is analyzing... ✨",
+    "ttsTooLong": "Sentence is too long for audio and pronunciation practice"
   },
   "scores": {
     "accuracy": "🎯 Accuracy",
@@ -979,8 +979,8 @@
     "watchForProns": "+5 Pronunciation",
     "watchAdPron": "Watch ad → +5 Pronunciation attempts",
     "loading": "Loading ad...",
-    "topUpBonus": "Bonus Points (Ad) +5",
-    "topUpBonusDesc": "Watch an ad for +5 points",
+    "topUpBonus": "Bonus Points (Ad) +10",
+    "topUpBonusDesc": "Watch an ad for +10 points",
     "buyBonus": "Bonus Points (Buy) +200",
     "buying": "Processing...",
     "buySuccess": "Purchase complete! 200 points will be added shortly.",

@@ -22,7 +22,6 @@ export default function ChatBubble({
     personaName,
     shouldAutoplay,
     onPlaybackDone,
-    onCardOpen,
     onReplay,
     onLearningTipUserFree,
     isLearningTipLoading,
@@ -95,19 +94,16 @@ export default function ChatBubble({
                     <div className="ftc-persona-name">{personaName}</div>
                 )}
 
-                <button
-                    type="button"
+                {/* 2026-06-09: 메시지 탭→카드 기능 제거 → 비클릭 표시(div) */}
+                <div
                     className={`ftc-bubble ${isUser ? 'ftc-bubble-user' : 'ftc-bubble-ai'} ${message.isLoading ? 'ftc-bubble-loading' : ''}`}
-                    onClick={() => !message.isLoading && onCardOpen?.(message)}
-                    title={t?.('freeTalk.tapForCard') || '카드 열기'}
-                    disabled={!!message.isLoading}
                 >
                     <span className="ftc-bubble-text">
                         {message.isLoading
                             ? <RotateCcw className="spin" size={14} />
                             : (displayText || ' ')}
                     </span>
-                </button>
+                </div>
 
                 {/* user_free 액션 바 — 모든 user_free 에 노출 (지난 턴 피드백 다시보기 유지, AI-Tip 단일, 우측 정렬).
                     팁 데이터(learning_tip/narration)는 메시지 객체에 보존되므로 대화창 닫힐 때까지 동작. */}
