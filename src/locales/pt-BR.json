@@ -140,7 +140,8 @@
   "card": {
     "practicePrompt": "Pressione o botão para praticar a pronúncia!",
     "recording": "Fale agora... 🎙️",
-    "analyzing": "O Coach de IA está analisando... ✨"
+    "analyzing": "O Coach de IA está analisando... ✨",
+    "ttsTooLong": "O texto é muito longo para reprodução de áudio"
   },
   "scores": {
     "accuracy": "🎯 Precisão",

@@ -140,7 +140,8 @@
   "card": {
     "practicePrompt": "ボタンを押して発音練習を始めましょう！",
     "recording": "話してください... 🎙️",
-    "analyzing": "AIコーチが分析中です... ✨"
+    "analyzing": "AIコーチが分析中です... ✨",
+    "ttsTooLong": "テキストが長すぎるため音声再生はサポートされていません"
   },
   "scores": {
     "accuracy": "🎯 正確さ",

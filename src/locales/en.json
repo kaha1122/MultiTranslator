@@ -140,7 +140,8 @@
   "card": {
     "practicePrompt": "Press the button to practice pronunciation!",
     "recording": "Speak now... 🎙️",
-    "analyzing": "AI Coach is analyzing... ✨"
+    "analyzing": "AI Coach is analyzing... ✨",
+    "ttsTooLong": "Text is too long for audio playback"
   },
   "scores": {
     "accuracy": "🎯 Accuracy",

@@ -122,6 +122,12 @@ const TranslationCard = ({
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = (practiceMode === 'example' && example) ? example : text;
 
+    // ── TTS 길이 가드 ──
+    // 헤더 재생 버튼은 본문 text(번역 결과)를 합성한다. 500자를 넘으면 음성 재생이
+    // 사실상 무의미(긴 통문장)하고 Azure 합성 비용만 커지므로 버튼을 비활성화한다.
+    const TTS_MAX_CHARS = 500;
+    const ttsTooLong = (text || '').length > TTS_MAX_CHARS;
+
     const {
         isRecording,
         isAnalyzing,
@@ -316,8 +322,11 @@ Return only these 2 lines.`;
                     )}
                     <button
                         className="speak-button"
-                        onClick={(e) => { e.stopPropagation(); onSpeak(); }}
-                        title="Listen"
+                        onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
+                        disabled={ttsTooLong}
+                        title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                        aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                        style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                     >
                         <Play size={22} fill="white" stroke="white" />
                     </button>

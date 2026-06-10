@@ -140,7 +140,8 @@
   "card": {
     "practicePrompt": "버튼을 눌러 발음 연습을 시작하세요!",
     "recording": "말씀하세요... 🎙️",
-    "analyzing": "AI 코치가 분석 중입니다... ✨"
+    "analyzing": "AI 코치가 분석 중입니다... ✨",
+    "ttsTooLong": "텍스트가 너무 길어 음성 재생을 지원하지 않아요"
   },
   "scores": {
     "accuracy": "🎯 정확도",
