@@ -141,7 +141,7 @@
     "practicePrompt": "按下按钮开始发音练习！",
     "recording": "请说话... 🎙️",
     "analyzing": "AI教练正在分析... ✨",
-    "ttsTooLong": "文本过长，不支持语音播放"
+    "ttsTooLong": "句子过长，不支持语音播放和发音练习"
   },
   "scores": {
     "accuracy": "🎯 准确度",

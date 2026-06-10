@@ -141,7 +141,7 @@
     "practicePrompt": "Nhấn nút để bắt đầu luyện phát âm!",
     "recording": "Hãy nói... 🎙️",
     "analyzing": "AI Coach đang phân tích... ✨",
-    "ttsTooLong": "Văn bản quá dài nên không hỗ trợ phát âm thanh"
+    "ttsTooLong": "Câu quá dài nên không hỗ trợ phát âm thanh và luyện phát âm"
   },
   "scores": {
     "accuracy": "🎯 Độ chính xác",

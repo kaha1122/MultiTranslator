@@ -141,7 +141,7 @@
     "practicePrompt": "Appuyez sur le bouton pour pratiquer la prononciation !",
     "recording": "Parlez maintenant... 🎙️",
     "analyzing": "Le coach IA analyse... ✨",
-    "ttsTooLong": "Le texte est trop long pour la lecture audio"
+    "ttsTooLong": "La phrase est trop longue pour la lecture audio et la prononciation"
   },
   "scores": {
     "accuracy": "🎯 Précision",

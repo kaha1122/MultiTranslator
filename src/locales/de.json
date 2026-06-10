@@ -141,7 +141,7 @@
     "practicePrompt": "Drücken Sie den Knopf, um die Aussprache zu üben!",
     "recording": "Sprechen Sie jetzt... 🎙️",
     "analyzing": "KI-Coach analysiert... ✨",
-    "ttsTooLong": "Text ist zu lang für die Audiowiedergabe"
+    "ttsTooLong": "Der Satz ist zu lang für Audio und Aussprachetraining"
   },
   "scores": {
     "accuracy": "🎯 Genauigkeit",

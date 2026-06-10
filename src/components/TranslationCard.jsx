@@ -122,11 +122,13 @@ const TranslationCard = ({
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = (practiceMode === 'example' && example) ? example : text;
 
-    // ── TTS 길이 가드 ──
-    // 헤더 재생 버튼은 본문 text(번역 결과)를 합성한다. 500자를 넘으면 음성 재생이
-    // 사실상 무의미(긴 통문장)하고 Azure 합성 비용만 커지므로 버튼을 비활성화한다.
-    const TTS_MAX_CHARS = 500;
-    const ttsTooLong = (text || '').length > TTS_MAX_CHARS;
+    // ── TTS·발음연습 길이 가드 (언어별) ──
+    // 카드 목적상 긴 문장은 듣기·발음 연습 모두 부적합 + Azure 합성 비용↑.
+    // 글자당 정보량이 큰 CJK(한·일·중)는 100자, 그 외(영어 등 Latin/Cyrillic)는 150자 한도.
+    const CJK_TTS_LANGS = new Set(['ko', 'ja', 'zh-CN', 'zh-TW']);
+    const ttsCharLimit = CJK_TTS_LANGS.has(langCode) ? 100 : 150;
+    const ttsTooLong = (text || '').length > ttsCharLimit;              // 헤더 재생(본문 합성)
+    const practiceTooLong = (practiceText || '').length > ttsCharLimit; // 발음 연습(연습 대상)
 
     const {
         isRecording,
@@ -425,7 +427,7 @@ Return only these 2 lines.`;
                     </p>
 
                     {!assessmentResult && !isAnalyzing && !isRecording && (
-                        <p className="practice-placeholder">{t('card.practicePrompt')}</p>
+                        <p className="practice-placeholder">{practiceTooLong ? t('card.ttsTooLong') : t('card.practicePrompt')}</p>
                     )}
                     {isRecording && <p className="recording-status">{t('card.recording')}</p>}
                     {isAnalyzing && <p className="analyzing-status">{t('card.analyzing')}</p>}
@@ -456,9 +458,10 @@ Return only these 2 lines.`;
                     <div className="practice-actions">
                         <button
                             className={`record-button circle ${isRecording ? 'recording' : ''} ${isAnalyzing ? 'analyzing' : ''}`}
-                            onClick={(e) => { e.stopPropagation(); isRecording ? stopRecording() : startRecording(); }}
-                            disabled={isAnalyzing}
-                            title="Practice pronunciation"
+                            onClick={(e) => { e.stopPropagation(); if (practiceTooLong) return; isRecording ? stopRecording() : startRecording(); }}
+                            disabled={isAnalyzing || practiceTooLong}
+                            title={practiceTooLong ? t('card.ttsTooLong') : 'Practice pronunciation'}
+                            style={practiceTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
                         >
                             {isAnalyzing ? <RotateCcw size={20} className="spin" /> : isRecording ? <MicOff size={20} /> : <Mic size={20} />}
                         </button>
