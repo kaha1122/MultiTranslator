@@ -5,10 +5,9 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    /* 목표달성 셀러브레이션은 SaveCard(MessageCardModal, --z-chat-popup 5100) 위에서
-       발화되므로 그보다 위 레이어 필요. --z-modal(2010)이면 SaveCard 뒤에 가림.
-       셀러브레이션 최상위로 --z-critical(9000) 재사용 (토스트 3000도 5100 미만이라 부족) */
-    z-index: var(--z-critical);
+    /* SaveCard를 --z-modal로 낮춘 후(MessageCardModal) 표준 모달 레이어로 일관화.
+       목표달성은 SaveCard와 같은 --z-modal이지만 App 루트에서 뒤에 렌더돼 위로 뜸. */
+    z-index: var(--z-modal);
     padding: 20px 20px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
     animation: bpm-fade-in 0.2s ease;
 }

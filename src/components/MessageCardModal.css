@@ -2,7 +2,11 @@
 .mcm-overlay {
     position: fixed;
     inset: 0;
-    z-index: var(--z-chat-popup);  /* 채팅 오버레이 위 */
+    /* SaveCard는 현재 Listening 탭 전용 (FreeTalking은 be02ec3에서 메시지 카드 제거)이라
+       --z-chat-popup(5100, "채팅 위") 근거가 잔재. --z-dropdown(1000)으로 내려서 모든
+       모달/토스트/critical 레이어보다 확실히 아래 → 한도/업그레이드/구독/목표달성 등이
+       DOM 순서에 의존하지 않고 항상 SaveCard 위로 뜸. */
+    z-index: var(--z-dropdown);
     background: var(--modal-overlay-bg);
     display: flex;
     /* 상단 고정 — 녹음 후 콘텐츠가 길어지면 "아래로만" 커지게.
