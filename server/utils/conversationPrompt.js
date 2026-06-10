@@ -308,6 +308,23 @@ Now fill in your private mental scratchpad (using the location decided above):
        pick a real one. Bake that ONE value into ALL 3 messages so later Free
        Talking turns inherit a concrete fact, never a placeholder to echo.
 
+  ⑤-ter SEED THE RUNNING STATE (establishedFacts — binds Free-Talking memory, MANDATORY):
+       List every CONCRETE attribute value that is ALREADY settled by the end of
+       these 3 opener messages, as "attribute_key: value" strings (lowercase
+       snake_case key). This SEEDS the conversation's running memory so the
+       responder NEVER re-asks something the opener already established. Include:
+         - Any concrete value the LEARNER stated in firstUserTurn
+           (destination, item, name, date, quantity, place…).
+         - The concrete value you committed in ⑤-bis (the destination / number /
+           name baked into all 3 messages).
+       Do NOT include an attribute that firstAiReply merely ASKED about but the
+       learner has not answered yet — that one is still OPEN.
+       Format examples: "destination: Seoul Station", "item: birthday gift",
+       "party_size: 4". If genuinely nothing concrete is settled yet, return [].
+       ⚠️ This directly prevents the #1 reported failure: the responder re-asking
+       the destination/number the learner already gave in the opener (e.g. asking
+       "Where are you going?" after the learner already said "Seoul Station").
+
   ⑥ TARGET VOCABULARY (learning lens — this GOVERNS word choice): name 3~5
        high-frequency, ${difficulty || 'basic'}-appropriate ${targetLangName}
        words/phrases this micro-situation will naturally let the learner
@@ -524,6 +541,9 @@ ${languageComplianceBlock(sourceLangName, ['intro.text', 'firstUserTurn.translat
     "scene_hint": "In ${sourceLangName}: who is speaking (role) and what they say, WITHOUT emotion tags.",
     "learning_tip": "In ${sourceLangName}: tip about the response — vocab/grammar/expression and how emotion + role shape this."
   },
+  "establishedFacts": [
+    "Array of \"attribute_key: value\" strings (lowercase snake_case key) capturing the CONCRETE facts already settled by the 3 opener messages — see Phase 0 ⑤-ter. Seeds the Free-Talking running memory so settled attributes are NEVER re-asked. Include values the learner stated in firstUserTurn and the concrete value committed in ⑤-bis; EXCLUDE attributes firstAiReply only asked about but the learner has not answered. Example: [\"destination: Seoul Station\"]. Return [] if nothing concrete is settled yet."
+  ],
   "scenarioMeta": {
     "responder_role": "e.g., 'hotel receptionist', 'flight attendant', 'waiter', 'taxi driver', 'pharmacist'.",
     "scene_summary_en": "One-line English summary of the whole scene for downstream prompts."
