@@ -39,6 +39,11 @@ function AnnotatedText({ text, annotations }) {
     );
 }
 
+// ── TTS·발음연습 길이 한도 (언어별) — App.jsx가 "번역 묶음 그룹 판정"에 재사용 ──
+// 글자당 정보량이 큰 CJK(한·일·중)는 100자, 그 외(영어 등 Latin/Cyrillic)는 150자.
+export const CJK_TTS_LANGS = new Set(['ko', 'ja', 'zh-CN', 'zh-TW']);
+export const getTtsCharLimit = (langCode) => (CJK_TTS_LANGS.has(langCode) ? 100 : 150);
+
 const TranslationCard = ({
     language,
     langCode,
@@ -85,6 +90,8 @@ const TranslationCard = ({
     interactionType = '',
     // 감지 카드에만 표시되는 sourceLang 부가 번역 (Translate 탭 B·C 케이스)
     sourceTranslation = '',
+    // 같은 번역 묶음(다중언어) 중 어느 하나라도 길이 초과면 true → 이 카드도 함께 막음
+    groupTooLong = false,
 }) => {
     const t = useT(sourceLangCode);
     const { byokGeminiKey, currentUser } = useAuth();
@@ -122,13 +129,13 @@ const TranslationCard = ({
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = (practiceMode === 'example' && example) ? example : text;
 
-    // ── TTS·발음연습 길이 가드 (언어별) ──
+    // ── TTS·발음연습 길이 가드 (언어별 + 그룹) ──
     // 카드 목적상 긴 문장은 듣기·발음 연습 모두 부적합 + Azure 합성 비용↑.
-    // 글자당 정보량이 큰 CJK(한·일·중)는 100자, 그 외(영어 등 Latin/Cyrillic)는 150자 한도.
-    const CJK_TTS_LANGS = new Set(['ko', 'ja', 'zh-CN', 'zh-TW']);
-    const ttsCharLimit = CJK_TTS_LANGS.has(langCode) ? 100 : 150;
-    const ttsTooLong = (text || '').length > ttsCharLimit;              // 헤더 재생(본문 합성)
-    const practiceTooLong = (practiceText || '').length > ttsCharLimit; // 발음 연습(연습 대상)
+    // 자신이 한도 초과거나, 같은 번역 묶음에서 어느 하나라도 초과(groupTooLong)면 함께 막는다.
+    //   (다중언어: 같은 내용이라도 CJK는 글자수가 적어 한도 안에 들 수 있어, 그룹 판정으로 일괄 차단)
+    const ttsCharLimit = getTtsCharLimit(langCode);
+    const ttsTooLong = groupTooLong || (text || '').length > ttsCharLimit;              // 헤더 재생(본문 합성)
+    const practiceTooLong = groupTooLong || (practiceText || '').length > ttsCharLimit; // 발음 연습(연습 대상)
 
     const {
         isRecording,

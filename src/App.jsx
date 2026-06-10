@@ -8,7 +8,7 @@ import ReviewBonusModal from './components/ReviewBonusModal';
 import BonusCampaignAnnounceModal from './components/BonusCampaignAnnounceModal';
 import EmailVerifyChangeModal from './components/EmailVerifyChangeModal';
 import { motion, AnimatePresence } from 'framer-motion';
-import TranslationCard from './components/TranslationCard';
+import TranslationCard, { getTtsCharLimit } from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
 import { Capacitor } from '@capacitor/core';
@@ -4355,6 +4355,9 @@ function App() {
                 const displayLangs = (detectedLang && !targetLangs.includes(detectedLang))
                   ? [detectedLang, ...targetLangs]
                   : targetLangs;
+                // 다중언어 번역 묶음: 어느 한 언어라도 길이 한도 초과면 전체 카드의 듣기·발음연습을 함께 막는다.
+                //   (같은 내용이라도 CJK는 글자수가 적어 개별 한도엔 안 걸리므로 그룹 단위로 판정)
+                const groupTtsTooLong = displayLangs.some(lc => (translations[lc] || '').length > getTtsCharLimit(lc));
                 return displayLangs.map((langCode) => {
                 const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
@@ -4387,6 +4390,7 @@ function App() {
                       onBookmarkPrompt={handleBookmarkPrompt}
                       onTargetAchieved={handleTargetAchieved}
                       targetGoal={goal}
+                      groupTooLong={groupTtsTooLong}
                     />
                     {/* 하단 액션바 — Library와 동일한 구조 */}
                     <div className="card-action-bar">
