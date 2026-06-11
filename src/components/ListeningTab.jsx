@@ -283,8 +283,9 @@ export default function ListeningTab({
         } catch (e) {
             if (e?.name === 'AbortError') return; // 정상 취소
             console.warn('[ListeningTab] TTS error:', e);
-            // fallback: 기존 onSpeak 사용
-            if (myGen === playGenRef.current) onSpeak(ttsText, selectedLang);
+            // fallback: 기존 onSpeak 사용 — 230행 onTtsGate에서 이미 1점 차감됨 →
+            // Azure 폴백 도달 시 재차감 방지(_skipGate). 이전엔 실패 1회에 2점 차감됐음.
+            if (myGen === playGenRef.current) onSpeak(ttsText, selectedLang, undefined, { source: 'listening.fallback', _skipGate: true });
         } finally {
             if (objectUrl) {
                 try { URL.revokeObjectURL(objectUrl); } catch {}

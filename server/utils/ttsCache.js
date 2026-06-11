@@ -17,9 +17,13 @@ const crypto = require('crypto');
 
 // 핫 엔트리 상한. 192kbit mp3 평균 수십~수백KB → 300개면 대략 수십MB 내.
 const MEM_MAX = Number(process.env.TTS_CACHE_MAX || 300);
+// 2026-06-11 바이트 상한 추가 — Listening 장문 지문은 개당 1~1.7MB(40~70초)라 항목 수
+// 상한만으로는 최악 400MB+ 가능 → Render 인스턴스 메모리 위험. 총 바이트로도 퇴출.
+const MEM_MAX_BYTES = Number(process.env.TTS_CACHE_MAX_BYTES || 50 * 1024 * 1024);
 
 /** @type {Map<string, Buffer>} sha256(ssml) → mp3 Buffer (삽입순=LRU) */
 const mem = new Map();
+let memBytes = 0;
 
 const stats = { hit: 0, miss: 0, set: 0, evict: 0 };
 
@@ -52,10 +56,15 @@ function get(ssml) {
 function set(ssml, buf) {
     if (!buf || !buf.length) return;
     const k = keyFor(ssml);
+    const prev = mem.get(k);
+    if (prev) memBytes -= prev.length;
     mem.set(k, buf);
+    memBytes += buf.length;
     stats.set++;
-    while (mem.size > MEM_MAX) {
-        mem.delete(mem.keys().next().value);
+    while (mem.size > MEM_MAX || (memBytes > MEM_MAX_BYTES && mem.size > 1)) {
+        const oldestKey = mem.keys().next().value;
+        memBytes -= mem.get(oldestKey).length;
+        mem.delete(oldestKey);
         stats.evict++;
     }
 }
@@ -64,7 +73,7 @@ function set(ssml, buf) {
 function snapshot() {
     const total = stats.hit + stats.miss;
     const hitRate = total > 0 ? ((stats.hit / total) * 100).toFixed(1) : '0.0';
-    return { size: mem.size, max: MEM_MAX, hitRate: `${hitRate}%`, ...stats };
+    return { size: mem.size, max: MEM_MAX, bytes: memBytes, maxBytes: MEM_MAX_BYTES, hitRate: `${hitRate}%`, ...stats };
 }
 
 // 10분마다 적중률 로깅(활동 있을 때만). unref로 프로세스 종료를 막지 않음.

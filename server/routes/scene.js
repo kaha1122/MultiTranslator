@@ -1,5 +1,6 @@
 const express = require('express');
-const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -21,10 +22,13 @@ const STYLE_DESC = {
   - Reflect the chosen emotion **gracefully and indirectly**. Ensure the tone remains professional or respectful toward strangers or service staff.`,
 };
 
-router.post('/api/scene-sentence', optionalAuth, async (req, res) => {
+router.post('/api/scene-sentence', requireAuth, rateLimit('scene-sentence', { perMinute: 20, perHour: 200 }), async (req, res) => {
     const { scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!scene || !targetLang) {
         return res.status(400).json({ error: 'Missing scene or targetLang' });
+    }
+    if (typeof scene === 'string' && scene.length > 500) {
+        return res.status(413).json({ error: 'Scene text too long (max 500 chars)' });
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
@@ -143,10 +147,13 @@ ${avoidBlock}
     res.json(parsed);
 });
 
-router.post('/api/scene-answer', requireAuth, async (req, res) => {
+router.post('/api/scene-answer', requireAuth, rateLimit('scene-answer', { perMinute: 20, perHour: 200 }), async (req, res) => {
     const { question, scene, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSentences } = req.body;
     if (!question || !targetLang) {
         return res.status(400).json({ error: 'Missing initiation sentence or targetLang' });
+    }
+    if ((typeof question === 'string' && question.length > 1000) || (typeof scene === 'string' && scene.length > 500)) {
+        return res.status(413).json({ error: 'Input too long' });
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;

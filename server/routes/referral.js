@@ -3,6 +3,7 @@ const express = require('express');
 const { admin, adminDb } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { grantBonusPoints } = require('../utils/bonusPoints');
+const { acquireClaim } = require('../utils/claimOnce');
 
 const router = express.Router();
 
@@ -110,6 +111,12 @@ router.post('/api/referral/apply', requireAuth, async (req, res) => {
                 error: 'referrer_limit_reached',
                 message: '추천인의 한도가 가득 찼습니다',
             });
+        }
+
+        // 2026-06-11 동시성: referredBy read 검사만으론 병렬 apply가 모두 통과(TOCTOU)
+        // → 추천인 이중 적립 + totalReferred 부풀림. 원자 마커로 1회만 진행.
+        if (!(await acquireClaim(`${uid}_referredBy`, { uid, code: rawCode, referrerUid }))) {
+            return res.status(409).json({ error: 'already_redeemed', message: '이미 추천받으셨어요' });
         }
 
         // ── 처리 ───────────────────────────────────────────────────────────

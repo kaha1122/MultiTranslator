@@ -84,19 +84,35 @@ router.post('/api/delete-account', requireAuth, async (req, res) => {
         if (adminDb) {
             try {
                 const userRef = adminDb.collection('users').doc(uid);
-                // 서브컬렉션 재귀 삭제
+                // 서브컬렉션 재귀 삭제 — Firestore batch 한도(500) 초과 시 commit이 통째로
+                // 실패해 문서가 잔존하므로(장기 유저 dailyProgress 1일 1문서) 450개 청크 분할
                 const subcollections = await userRef.listCollections();
                 for (const sub of subcollections) {
                     const docs = await sub.listDocuments();
-                    const batch = adminDb.batch();
-                    docs.forEach(doc => batch.delete(doc));
-                    if (docs.length > 0) await batch.commit();
+                    for (let i = 0; i < docs.length; i += 450) {
+                        const batch = adminDb.batch();
+                        docs.slice(i, i + 450).forEach(doc => batch.delete(doc));
+                        await batch.commit();
+                    }
                     console.log(`[DeleteAccount] subcollection '${sub.id}' deleted (${docs.length} docs): ${uid}`);
                 }
-                // savedCards 컬렉션의 해당 유저 문서도 삭제
+                // savedCards는 uid 키 단일 문서가 아니라 카드별 문서 + userId 필드 구조
+                // (마이그레이션의 where('userId'...) 쿼리와 동일) — 쿼리로 전량 삭제
                 try {
-                    await adminDb.collection('savedCards').doc(uid).delete();
-                } catch {}
+                    let deletedCards = 0;
+                    for (;;) {
+                        const cardSnap = await adminDb.collection('savedCards')
+                            .where('userId', '==', uid).limit(450).get();
+                        if (cardSnap.empty) break;
+                        const batch = adminDb.batch();
+                        cardSnap.docs.forEach(d => batch.delete(d.ref));
+                        await batch.commit();
+                        deletedCards += cardSnap.size;
+                    }
+                    console.log(`[DeleteAccount] savedCards deleted (${deletedCards} docs): ${uid}`);
+                } catch (cardErr) {
+                    errors.push(`savedCards: ${cardErr.message}`);
+                }
                 // 메인 문서 삭제
                 await userRef.delete();
                 console.log(`[DeleteAccount] Firestore user doc deleted: ${uid}`);
@@ -174,6 +190,24 @@ router.post('/api/migrate-anonymous', requireAuth, async (req, res) => {
     if (!anonymousUid) return res.status(400).json({ error: 'anonymousUid required' });
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
     if (targetUid === anonymousUid) return res.status(400).json({ error: 'same uid' });
+
+    // 2026-06-11 보안: anonymousUid가 실제 "익명" Auth 계정인지 서버에서 검증.
+    // 이전엔 임의 UID를 넣으면 그 계정의 카드 탈취 + 문서/Auth 영구 삭제가 가능했음.
+    // 익명 계정은 providerData가 비어 있음 — 실계정(google/apple/facebook/password/phone)은 차단.
+    // (Auth 계정이 이미 없는 경우는 Firestore 잔존 데이터 마이그레이션 허용 — 기존 정상 시나리오)
+    try {
+        const anonUser = await admin.auth().getUser(anonymousUid);
+        if (anonUser.providerData && anonUser.providerData.length > 0) {
+            console.warn(`[Migrate] BLOCKED non-anonymous source: ${anonymousUid} (providers: ${anonUser.providerData.map(p => p.providerId).join(',')}) caller=${targetUid}`);
+            return res.status(403).json({ error: 'anonymousUid is not an anonymous account' });
+        }
+    } catch (lookupErr) {
+        if (lookupErr.code !== 'auth/user-not-found') {
+            console.error('[Migrate] anon lookup failed:', lookupErr.message);
+            return res.status(500).json({ error: 'Failed to verify anonymous account' });
+        }
+        // user-not-found: Auth는 이미 정리됐고 Firestore 데이터만 남은 케이스 — 진행 허용
+    }
 
     const migrated = { savedCards: 0, subcollections: {} };
 

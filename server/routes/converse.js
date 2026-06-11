@@ -4,7 +4,8 @@ const fs = require('fs');
 const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
 const sdk = require('microsoft-cognitiveservices-speech-sdk');
-const { optionalAuth } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 const { buildStartPrompt, buildReplyPrompt, buildSummarizePrompt } = require('../utils/conversationPrompt');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 const { callGeminiJson } = require('../utils/geminiCall');
@@ -15,7 +16,8 @@ const UPLOADS_DIR = 'uploads/';
 if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
-const upload = multer({ dest: UPLOADS_DIR });
+// fileSize 상한 — 무제한 업로드(디스크/ffmpeg DoS) 차단. 자유발화 1분 webm ≈ 1~2MB
+const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
@@ -142,8 +144,11 @@ function getNarrationVoice(_sourceLang, _targetLang) {
 //   3-메시지(intro / firstUserTurn / firstAiReply)를 단일 LLM 호출로 생성.
 //   기존 /api/scene-sentence + /api/scene-answer 의 Phase/Rules/스키마를 재활용.
 // ─────────────────────────────────────────────────────────────────────────
-router.post('/api/converse-start', optionalAuth, async (req, res) => {
+router.post('/api/converse-start', requireAuth, rateLimit('converse-start', { perMinute: 10, perHour: 60 }), async (req, res) => {
     const { scene, category, isCustom, targetLang, sourceLang, difficulty, speechStyle, byokGeminiKey, avoidSituations } = req.body || {};
+    if (typeof scene === 'string' && scene.length > 500) {
+        return res.status(413).json({ error: 'Scene text too long (max 500 chars)' });
+    }
     if (!scene || !targetLang || !sourceLang) {
         return res.status(400).json({ error: 'Missing scene, targetLang, or sourceLang' });
     }
@@ -203,8 +208,11 @@ router.post('/api/converse-start', optionalAuth, async (req, res) => {
 //   응답: { audio: <base64 mp3>, words: [{word, offsetMs, durationMs}, ...] }
 //   클라이언트 useTTSSyncedReveal에서 audio.currentTime과 비교하여 단어별 reveal.
 // ─────────────────────────────────────────────────────────────────────────
-router.post('/api/converse-tts', optionalAuth, async (req, res) => {
+router.post('/api/converse-tts', requireAuth, rateLimit('converse-tts', { perMinute: 60, perHour: 600 }), async (req, res) => {
     const { text, langCode, emotion, speaker, byokAzureKey, byokAzureRegion } = req.body || {};
+    if (typeof text === 'string' && text.length > 600) {
+        return res.status(413).json({ error: 'Text too long (max 600 chars)' });
+    }
     if (!text || !langCode) return res.status(400).json({ error: 'Missing text or langCode' });
 
     const azureKey = byokAzureKey || AZURE_KEY;
@@ -283,8 +291,11 @@ router.post('/api/converse-tts', optionalAuth, async (req, res) => {
 //     - sourceLang 이 NARRATION_MULTILINGUAL_VOICE_BY_LANG 에 있음 → audio/mpeg blob
 //     - 없음 (vi, ru 등) → 204 No Content (클라가 카드 모달로 fallback)
 // ─────────────────────────────────────────────────────────────────────────
-router.post('/api/converse-coach-tts', optionalAuth, async (req, res) => {
+router.post('/api/converse-coach-tts', requireAuth, rateLimit('coach-tts', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const { tipText, sourceLang, targetLang, byokAzureKey, byokAzureRegion } = req.body || {};
+    if (typeof tipText === 'string' && tipText.length > 800) {
+        return res.status(413).json({ error: 'Tip text too long (max 800 chars)' });
+    }
     if (!tipText || !sourceLang || !targetLang) {
         return res.status(400).json({ error: 'Missing tipText, sourceLang, or targetLang' });
     }
@@ -465,7 +476,7 @@ function recognizeFromWav(wavPath, azureLocale, azureKey, azureRegion) {
     });
 }
 
-router.post('/api/converse-stt', optionalAuth, upload.single('audio'), async (req, res) => {
+router.post('/api/converse-stt', requireAuth, rateLimit('converse-stt', { perMinute: 30, perHour: 300 }), upload.single('audio'), async (req, res) => {
     const langCode = req.body?.langCode;
     const azureKey = req.body?.byokAzureKey || AZURE_KEY;
     const azureRegion = req.body?.byokAzureRegion || AZURE_REGION;
@@ -514,7 +525,7 @@ router.post('/api/converse-stt', optionalAuth, upload.single('audio'), async (re
 //   요청: { rawSttText, history, scenarioMeta, targetLang, sourceLang, difficulty, speechStyle }
 //   응답: { intentText, intentWasCorrected, intentTranslation, aiReply: {...} }
 // ─────────────────────────────────────────────────────────────────────────
-router.post('/api/converse-reply', optionalAuth, async (req, res) => {
+router.post('/api/converse-reply', requireAuth, rateLimit('converse-reply', { perMinute: 20, perHour: 200 }), async (req, res) => {
     const {
         rawSttText, history, scenarioMeta,
         targetLang, sourceLang, difficulty, speechStyle,
@@ -523,6 +534,9 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
     } = req.body || {};
     if (!rawSttText || !targetLang || !sourceLang) {
         return res.status(400).json({ error: 'Missing rawSttText, targetLang, or sourceLang' });
+    }
+    if (rawSttText.length > 1000) {
+        return res.status(413).json({ error: 'Utterance too long (max 1000 chars)' });
     }
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
@@ -574,7 +588,7 @@ router.post('/api/converse-reply', optionalAuth, async (req, res) => {
 //   세션 종료 시 1회 호출. 전체 history에서 핵심 표현 3~5개 추출.
 //   응답: { keyPhrases: [{phrase, translation, why_useful, source_role, pronunciation}] }
 // ─────────────────────────────────────────────────────────────────────────
-router.post('/api/converse-summarize', optionalAuth, async (req, res) => {
+router.post('/api/converse-summarize', requireAuth, rateLimit('converse-summarize', { perMinute: 6, perHour: 60 }), async (req, res) => {
     const {
         history, scenarioMeta,
         targetLang, sourceLang, difficulty,

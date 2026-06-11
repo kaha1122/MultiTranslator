@@ -1,3 +1,4 @@
+const crypto = require('crypto');
 const { admin } = require('../config/firebase');
 
 const CRON_SECRET = process.env.CRON_SECRET || '';
@@ -44,12 +45,19 @@ async function optionalAuth(req, res, next) {
     next();
 }
 
-// cron 전용 인증 (Bearer 토큰 또는 CRON_SECRET 헤더)
+// cron 전용 인증 (CRON_SECRET 헤더)
+// 2026-06-11 fail-closed: 미설정 시 통과하던 하위호환 제거 — 대량 이메일 발송·PII 덤프·
+// 카드 청구 cron이 env 누락 한 번에 공개되던 설계 반전. 로컬 개발은 .env에 CRON_SECRET 설정.
 function requireCronAuth(req, res, next) {
-    const cronKey = req.headers['x-cron-secret'];
-    if (CRON_SECRET && cronKey === CRON_SECRET) return next();
-    // cron secret 미설정 시 통과 (하위 호환)
-    if (!CRON_SECRET) return next();
+    if (!CRON_SECRET) {
+        console.error('[CronAuth] CRON_SECRET not set — rejecting (fail-closed)');
+        return res.status(503).json({ error: 'Cron auth not configured' });
+    }
+    const cronKey = req.headers['x-cron-secret'] || '';
+    // timing-safe 비교 (길이 불일치는 즉시 거부)
+    const a = Buffer.from(cronKey);
+    const b = Buffer.from(CRON_SECRET);
+    if (a.length === b.length && crypto.timingSafeEqual(a, b)) return next();
     return res.status(401).json({ error: 'Unauthorized cron request' });
 }
 

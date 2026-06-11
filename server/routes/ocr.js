@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const { geminiUrl } = require('../config/gemini');
+const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 /**
  * POST /api/ocr
@@ -8,11 +10,16 @@ const { geminiUrl } = require('../config/gemini');
  * Body: { imageBase64: string, mimeType: string }
  * Response: { text: string }
  */
-router.post('/api/ocr', async (req, res) => {
+// 2026-06-11 서버 권위 확립: 무인증 Gemini 멀티모달 프록시였던 구멍 차단
+router.post('/api/ocr', requireAuth, rateLimit('ocr', { perMinute: 10, perHour: 60 }), async (req, res) => {
     const { imageBase64, mimeType = 'image/jpeg' } = req.body;
 
     if (!imageBase64) {
         return res.status(400).json({ error: '이미지 데이터가 없습니다.' });
+    }
+    // base64 8MB ≈ 원본 6MB — express json limit(10mb) 이하에서 한 번 더 명시 상한
+    if (imageBase64.length > 8 * 1024 * 1024) {
+        return res.status(413).json({ error: 'Image too large (max ~6MB)' });
     }
 
     const GEMINI_KEY = process.env.GEMINI_API_KEY;

@@ -2,8 +2,13 @@ const express = require('express');
 const crypto = require('crypto');
 const axios = require('axios');
 const { admin, adminDb } = require('../config/firebase');
+const { requireAuth } = require('../middleware/auth');
 const { sendSubscriptionPush } = require('../utils/sendPush');
 const { grantBonusPoints } = require('../utils/bonusPoints');
+
+// 2026-06-11 fail-closed: 웹훅/외부 비밀이 미설정이면 prod에서 조용히 무방비가 되던
+// 설계 반전 — 비밀 없으면 503 거부. 로컬 개발은 ALLOW_INSECURE_WEBHOOKS=1 로만 우회.
+const ALLOW_INSECURE = process.env.ALLOW_INSECURE_WEBHOOKS === '1';
 
 const router = express.Router();
 
@@ -20,9 +25,13 @@ const REVENUECAT_WEBHOOK_AUTH = process.env.REVENUECAT_WEBHOOK_AUTH;
 
 const verifyWebhook = (req, res, next) => {
     if (!REVENUECAT_WEBHOOK_AUTH) {
-        // 인증키 미설정 시 경고하고 통과 (개발 편의)
-        console.warn('[Webhook] REVENUECAT_WEBHOOK_AUTH not set — skipping auth');
-        return next();
+        if (ALLOW_INSECURE) {
+            console.warn('[Webhook] REVENUECAT_WEBHOOK_AUTH not set — skipping auth (ALLOW_INSECURE_WEBHOOKS)');
+            return next();
+        }
+        // fail-closed: 비밀 미설정 = 거부. 가짜 INITIAL_PURCHASE로 tier/포인트 자가 부여 차단.
+        console.error('[Webhook] REVENUECAT_WEBHOOK_AUTH not set — rejecting webhook (fail-closed)');
+        return res.status(503).json({ error: 'Webhook auth not configured' });
     }
     const authHeader = req.headers['authorization'] || '';
     // RevenueCat이 "Bearer xxx" 또는 "xxx" 형식으로 보낼 수 있으므로 둘 다 허용
@@ -193,8 +202,12 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
 
 const verifyTossWebhook = (req, res, next) => {
     if (!TOSS_WEBHOOK_SECRET) {
-        console.warn('[TossWebhook] TOSS_WEBHOOK_SECRET not set — skipping signature verification');
-        return next();
+        if (ALLOW_INSECURE) {
+            console.warn('[TossWebhook] TOSS_WEBHOOK_SECRET not set — skipping signature verification (ALLOW_INSECURE_WEBHOOKS)');
+            return next();
+        }
+        console.error('[TossWebhook] TOSS_WEBHOOK_SECRET not set — rejecting webhook (fail-closed)');
+        return res.status(503).json({ error: 'Webhook auth not configured' });
     }
     // 토스 서명 검증: HMAC-SHA256(시크릿, timestamp + body)
     const timestamp = req.headers['toss-timestamp'];
@@ -418,7 +431,11 @@ async function getPayPalAccessToken() {
 
 // PayPal Webhook 서명 검증
 async function verifyPayPalWebhook(req) {
-    if (!PAYPAL_WEBHOOK_ID) return true; // 개발 중에는 스킵
+    if (!PAYPAL_WEBHOOK_ID) {
+        if (ALLOW_INSECURE) return true; // 로컬 개발 한정 우회
+        console.error('[PayPalWebhook] PAYPAL_WEBHOOK_ID not set — rejecting webhook (fail-closed)');
+        return false;
+    }
     try {
         const token = await getPayPalAccessToken();
         const res = await axios.post(`${PAYPAL_API}/v1/notifications/verify-webhook-signature`, {
@@ -586,10 +603,13 @@ router.post('/api/paypal-webhook', async (req, res) => {
 });
 
 // ── PayPal 구독 활성화 확인 (클라이언트에서 onApprove 후 호출) ──────────────
-router.post('/api/paypal-activate', async (req, res) => {
-    const { subscriptionId, userId, planId } = req.body;
-    if (!subscriptionId || !userId || !planId) {
-        return res.status(400).json({ error: 'subscriptionId, userId, planId required' });
+// 2026-06-11 보안: 무인증 + body userId 신뢰 → 임의 계정 tier 부여 가능하던 구멍 차단.
+// requireAuth + 대상은 항상 본인(req.uid) + 구독 custom_id(생성 시 uid 기록)와 대조.
+router.post('/api/paypal-activate', requireAuth, async (req, res) => {
+    const { subscriptionId, planId } = req.body;
+    const userId = req.uid;
+    if (!subscriptionId || !planId) {
+        return res.status(400).json({ error: 'subscriptionId, planId required' });
     }
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
@@ -602,6 +622,11 @@ router.post('/api/paypal-activate', async (req, res) => {
 
         if (sub.status !== 'ACTIVE' && sub.status !== 'APPROVED') {
             return res.status(400).json({ error: `Subscription not active: ${sub.status}` });
+        }
+        // 구독 생성 시 custom_id=구매자 uid (UpgradeModal) — 본인 구독만 활성화 가능
+        if (sub.custom_id && sub.custom_id !== userId) {
+            console.warn(`[PayPal] custom_id mismatch: sub=${sub.custom_id} caller=${userId}`);
+            return res.status(403).json({ error: 'Subscription does not belong to this user' });
         }
 
         const planInfo = PAYPAL_PLAN_MAP[sub.plan_id];

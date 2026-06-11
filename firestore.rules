@@ -1,0 +1,101 @@
+rules_version = '2';
+// PronunFit Firestore Security Rules — 2026-06-11 전면 개정
+//
+// 🚨 배포 순서 주의 (절대 규칙):
+//   1) 이 rules는 클라이언트 rules-prep 변경(아래)과 함께 배포해야 함.
+//      - claimDailyTopUp → 서버 /api/bonus/daily-topup (bonusPoints 클라 증가 제거)
+//      - RC tier sync / restore sync → 서버 /api/check-subscription (tier 승격 클라 쓰기 제거)
+//      - saveByokKeys의 tier:'admin' 쓰기 제거
+//   2) 해당 클라 변경이 Capgo OTA로 충분히 보급된 후 배포할 것 — 구버전 클라는
+//      일일 충전/RC 즉시 동기화 쓰기가 permission-denied로 실패함 (모두 try/catch라
+//      크래시는 없고, 서버 webhook/check-subscription이 tier를 후속 동기화함.
+//      단, 구버전 클라의 일일 +10 충전은 OTA 수신 전까지 실패).
+//   3) 배포: firebase deploy --only firestore:rules (또는 콘솔에 본문 붙여넣기)
+//
+// 개정 배경: 기존 rules는 users/{uid} 전체 필드 owner 쓰기 허용 →
+//   콘솔에서 tier:'premium'/bonusPoints 자가 조작으로 결제 우회 가능했음.
+//   verifiedPhones는 전체 로그인 유저 read/write → 타인 전화번호 열람/선점 가능했음.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isOwner(userId) {
+      return request.auth != null && request.auth.uid == userId;
+    }
+
+    // ── 저장 카드 (top-level, userId 필드 소유) ─────────────────────────────
+    match /savedCards/{cardId} {
+      allow read, delete: if request.auth != null
+                          && request.auth.uid == resource.data.userId;
+      allow create: if request.auth != null
+                    && request.auth.uid == request.resource.data.userId;
+      // update 시 userId 변경(소유권 이전) 차단 — 이전은 서버 migrate만 수행
+      allow update: if request.auth != null
+                    && request.auth.uid == resource.data.userId
+                    && request.resource.data.userId == resource.data.userId;
+    }
+
+    // ── 유저 문서 ──────────────────────────────────────────────────────────
+    match /users/{userId} {
+      // tier: 변경 없음 또는 'trial'로의 다운그레이드만 클라 허용.
+      //   pro/premium/admin 승격은 서버(Admin SDK: webhook/check-subscription/
+      //   toss-confirm-billing/paypal-activate)만 수행.
+      function tierSafe() {
+        return !('tier' in request.resource.data)
+            || request.resource.data.tier == resource.data.get('tier', 'trial')
+            || request.resource.data.tier == 'trial';
+      }
+      // 포인트/크레딧: 클라는 차감만 가능 (적립은 전부 서버 — daily-topup/adReward/
+      //   webhook/referral/streak/reviewBonus가 Admin SDK로 기록)
+      function pointsSafe() {
+        return (!('bonusPoints' in request.resource.data)
+                || request.resource.data.bonusPoints <= resource.data.get('bonusPoints', 0))
+            && (!('freeTalkCredits' in request.resource.data)
+                || request.resource.data.freeTalkCredits <= resource.data.get('freeTalkCredits', 0))
+            && (!('listenCredits' in request.resource.data)
+                || request.resource.data.listenCredits <= resource.data.get('listenCredits', 0))
+            && (!('pronCredits' in request.resource.data)
+                || request.resource.data.pronCredits <= resource.data.get('pronCredits', 0));
+      }
+      // 구독 만료일: 클라 변경 금지 (보존만). 설정/연장은 서버만.
+      function expirySafe() {
+        return !('subscriptionExpiresAt' in request.resource.data)
+            || ('subscriptionExpiresAt' in resource.data
+                && request.resource.data.subscriptionExpiresAt == resource.data.subscriptionExpiresAt);
+      }
+
+      allow read: if isOwner(userId);
+      allow create: if isOwner(userId)
+                    && (!('tier' in request.resource.data) || request.resource.data.tier == 'trial')
+                    && (!('bonusPoints' in request.resource.data) || request.resource.data.bonusPoints <= 30)
+                    && !('subscriptionExpiresAt' in request.resource.data);
+      allow update: if isOwner(userId) && tierSafe() && pointsSafe() && expirySafe();
+      allow delete: if false; // 삭제는 서버 /api/delete-account만
+
+      // 서브컬렉션 (dailyProgress, pronunciation_records, freeTalkTranscripts,
+      // bonusEvents 등 현재+미래 전부) — 본인 read/write
+      match /{document=**} {
+        allow read, write: if isOwner(userId);
+      }
+    }
+
+    // ── 전화번호 중복확인 (doc id = E.164 번호) ─────────────────────────────
+    // 기존: 전체 로그인 유저 read/write — 타인 번호 열람(PII)·선점 가능했음.
+    // get(단건 중복확인)만 허용, list 금지, 생성은 본인 userId로만, 수정/삭제는 서버만.
+    match /verifiedPhones/{phoneNumber} {
+      allow get: if request.auth != null;
+      allow list: if false;
+      allow create: if request.auth != null
+                    && request.resource.data.userId == request.auth.uid;
+      allow update, delete: if false;
+    }
+
+    // ── 앱 설정 (최신 네이티브 버전 등) — 읽기만, 쓰기는 Admin SDK ───────────
+    match /config/{docId} {
+      allow read: if request.auth != null;
+    }
+
+    // 그 외 컬렉션(orders, pointPurchases, bonusClaims, migrationArchive,
+    // reengagementLogs 등)은 match 없음 = 클라이언트 접근 전면 거부 (서버 전용)
+  }
+}

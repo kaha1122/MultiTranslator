@@ -5,6 +5,7 @@ const express = require('express');
 const { admin, adminDb } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { grantBonusPoints } = require('../utils/bonusPoints');
+const { acquireClaim, releaseClaim } = require('../utils/claimOnce');
 
 const router = express.Router();
 
@@ -31,6 +32,13 @@ router.post('/api/review-bonus/claim', requireAuth, async (req, res) => {
             return res.status(409).json({ error: 'already_claimed', message: '이미 받으셨어요' });
         }
 
+        // 2026-06-11 동시성: 위 read 검사만으론 병렬 요청이 모두 통과(TOCTOU) →
+        // 원자적 클레임 마커로 한쪽만 진행
+        const claimId = `${uid}_reviewBonus`;
+        if (!(await acquireClaim(claimId, { uid, source: 'reviewBonus' }))) {
+            return res.status(409).json({ error: 'already_claimed', message: '이미 받으셨어요' });
+        }
+
         // 보너스 부여 — grantBonusPoints가 Pro/Premium 자동 skip
         const result = await grantBonusPoints({
             uid,
@@ -41,6 +49,7 @@ router.post('/api/review-bonus/claim', requireAuth, async (req, res) => {
 
         // Pro/Premium skip된 경우는 claimedAt 기록 안 함 (tier 변경 시 재시도 가능)
         if (result.skipped) {
+            await releaseClaim(claimId); // 재시도 허용 의미 보존
             return res.json({
                 success: false,
                 skipped: true,

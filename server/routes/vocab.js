@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -9,10 +10,13 @@ const { callGeminiJson } = require('../utils/geminiCall');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 
-router.post('/api/vocab-words', requireAuth, async (req, res) => {
+router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const { topic, topicLabel, category, isCustom, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
+    }
+    if (typeof topic === 'string' && topic.length > 300) {
+        return res.status(413).json({ error: 'Topic too long (max 300 chars)' });
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
