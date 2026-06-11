@@ -65,6 +65,12 @@ npm run cap:ios          # Xcode 열기
 - `t?.(key) || 'fallback'`의 fallback은 보험일 뿐 — 키가 없으면 t()가 키 자체 문자열을 반환해서 fallback 발화 안 함
 - 작업 후 **`npm run check-i18n` 필수** (en.json reference, exit 1 on missing)
 
+### 6. iOS 발열 검토 의무 — 매 commit마다 ios-heat-guard 호출
+- **모든 commit 전에 [ios-heat-guard](.claude/agents/ios-heat-guard.md) 에이전트로 staged diff 발열 점검 필수** (Agent tool, `subagent_type: ios-heat-guard`). 신규 기능 설계 단계에서도 발열 영향 의심 시 호출.
+- 판정 `HEAT-GUARD: PASS` 확인 후 → `.claude/.heat-guard-pass` 플래그 파일 생성(touch) → commit. pre-commit 훅이 플래그 없으면 commit을 차단한다. FAIL이면 수정 후 재점검.
+- 배경(2026-06-12 발열 분석 확정): iOS 발열의 주 경로는 ① `users/{uid}` 본문 write(서버 admin SDK 포함) → AuthContext onSnapshot → App 전체 재렌더 폭주 ② 무한 CSS 애니메이션/backdrop-filter 네이티브 가드 누락(인라인 style 포함) ③ 탭 lazy-mount(visitedTabsRef) 우회 ④ 폴링/리스너 cleanup 누락. **통계·로그류 필드는 users 본문 금지, `users/{uid}/analytics/*` 서브컬렉션에 기록.**
+- 발열 → iOS thermal throttling → 음성 재생 차단 → 마이크/Azure STT 평가 실패로 직결되는 실유저 피해 이슈다.
+
 ## 플랫폼별 트리거 규칙
 
 ### Xcode Cloud (iOS)

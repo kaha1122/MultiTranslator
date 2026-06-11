@@ -20,6 +20,25 @@ export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
 // 익명 로그인 중복 실행 방지 플래그
 let anonSignInInProgress = false;
 
+// [thermal P0-2 2026-06-12] 휘발성 필드만 바뀐 snapshot은 profile 레퍼런스를 유지해
+// 전체 재렌더를 차단. updatedAt(접속시각)·ttsUsage(서버 통계 레거시 필드)는 UI 미사용인데
+// write마다 setProfile(새 객체) → useMemo deps 불일치 → App 전체 재렌더(iOS 발열 C1~C3 증폭기)였음.
+// 클라 어디에서도 profile.updatedAt / profile.ttsUsage를 읽지 않음을 확인하고 제외(grep 2026-06-12).
+const PROFILE_VOLATILE_FIELDS = ['updatedAt', 'ttsUsage'];
+const profileEssence = (data) => {
+    if (!data) return null;
+    const copy = { ...data };
+    for (const k of PROFILE_VOLATILE_FIELDS) delete copy[k];
+    try {
+        // Firestore Timestamp는 toMillis로 정규화 — toJSON 유무/내부 표현 차이에 비교가 흔들리지 않게
+        return JSON.stringify(copy, (key, val) =>
+            (val && typeof val.toMillis === 'function') ? `__ts:${val.toMillis()}` : val
+        );
+    } catch {
+        return null; // 직렬화 실패 시 비교 포기 → 항상 갱신(이전 동작과 동일)
+    }
+};
+
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -136,7 +155,14 @@ export const AuthProvider = ({ children }) => {
 
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
-                        setProfile(docSnap.data());
+                        const data = docSnap.data();
+                        // [thermal P0-2] 휘발성 필드 외 변화 없으면 이전 레퍼런스 유지 →
+                        // React가 동일 state로 판단해 재렌더 자체를 생략 (발열 가드)
+                        setProfile(prev => {
+                            const prevEssence = profileEssence(prev);
+                            if (prev && prevEssence !== null && prevEssence === profileEssence(data)) return prev;
+                            return data;
+                        });
                         setLoading(false);
                         return;
                     }

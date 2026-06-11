@@ -47,9 +47,24 @@ service cloud.firestore {
       }
       // 포인트/크레딧: 클라는 차감만 가능 (적립은 전부 서버 — daily-topup/adReward/
       //   webhook/referral/streak/reviewBonus가 Admin SDK로 기록)
+      //
+      // ⏳ [한시 예외 — OTA 2.0.28 보급 후 제거할 것] 구버전(≤2.0.27) 클라의
+      //   claimDailyTopUp은 Firestore 직접 쓰기(bonusPoints +10/+30 + lastTopUpDate 갱신).
+      //   이 예외가 없으면 구버전 Trial 유저의 일일 충전이 업데이트 적용 전 1세션 동안 실패.
+      //   조건을 정확히 그 쓰기 모양으로 제한: 증가폭 ≤30 + lastTopUpDate 단조 증가 동반.
+      //   (남용해도 소액 + 실비용은 서버 rate limit이 차단. 제거 시 dailyTopUpLegacy()를
+      //   false로 바꾸고 재배포: cd server && node _deploy-firestore-rules.js --release)
+      function dailyTopUpLegacy() {
+        return ('bonusPoints' in request.resource.data)
+            && request.resource.data.bonusPoints > resource.data.get('bonusPoints', 0)
+            && request.resource.data.bonusPoints <= resource.data.get('bonusPoints', 0) + 30
+            && ('lastTopUpDate' in request.resource.data)
+            && request.resource.data.lastTopUpDate > resource.data.get('lastTopUpDate', '');
+      }
       function pointsSafe() {
         return (!('bonusPoints' in request.resource.data)
-                || request.resource.data.bonusPoints <= resource.data.get('bonusPoints', 0))
+                || request.resource.data.bonusPoints <= resource.data.get('bonusPoints', 0)
+                || dailyTopUpLegacy())
             && (!('freeTalkCredits' in request.resource.data)
                 || request.resource.data.freeTalkCredits <= resource.data.get('freeTalkCredits', 0))
             && (!('listenCredits' in request.resource.data)
