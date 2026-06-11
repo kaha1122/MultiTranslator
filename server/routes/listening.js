@@ -1,5 +1,6 @@
 const express = require('express');
 const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
@@ -11,13 +12,16 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // 응답의 angle 필드는 반드시 이 5종 중 하나여야 함 (서버에서 화이트리스트 검증).
 const LISTENING_ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultural-explanation', 'opinion'];
 
-router.post('/api/listening-passage', requireAuth, async (req, res) => {
+router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const {
         topic, topicLabel, category, isCustom, level, type, targetLang, sourceLang,
         byokGeminiKey, avoidTitles, passagesMeta,
     } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
+    }
+    if (typeof topic === 'string' && topic.length > 300) {
+        return res.status(413).json({ error: 'Topic too long (max 300 chars)' });
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
@@ -205,10 +209,13 @@ Return ONLY valid JSON (no markdown):
 
 // [2026-06-09] Listening 문장 카드용 — 기존 문장 1개를 annotate(번역·발음기호·학습팁).
 //   ListeningTab 문장 클릭 시 온디맨드 호출(클라 세션 캐시 + 1점 차감). ScenePracticeCard generated 스키마 호환.
-router.post('/api/listening/annotate-sentence', requireAuth, async (req, res) => {
+router.post('/api/listening/annotate-sentence', requireAuth, rateLimit('annotate-sentence', { perMinute: 20, perHour: 200 }), async (req, res) => {
     const { sentence, langCode, sourceLang, byokGeminiKey } = req.body;
     if (!sentence || !langCode) {
         return res.status(400).json({ error: 'Missing sentence or langCode' });
+    }
+    if (typeof sentence === 'string' && sentence.length > 600) {
+        return res.status(413).json({ error: 'Sentence too long (max 600 chars)' });
     }
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });

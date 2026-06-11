@@ -674,22 +674,16 @@ function App() {
             if (currentData.tierSource === 'toss' && currentData.autoRenew === true && tossExpires && tossExpires > new Date()) {
               console.log('[RevenueCat] SKIP sync — active Toss subscription');
             } else {
-              const rcEnt = active['Premium'] || active['Pro'];
-              const syncData = {
-                tier: rcTier,
-                tierSource: 'revenuecat',
-                autoRenew: rcEnt?.willRenew || false,
-                updatedAt: serverTimestamp(),
-              };
-              if (rcEnt?.expirationDate) {
-                syncData.subscriptionExpiresAt = new Date(rcEnt.expirationDate);
+              // 2026-06-11 rules-prep: tier 승격 클라 직접 쓰기 제거 — 서버가 RC REST로
+              // 재검증 후 Admin SDK 기록(/api/check-subscription, 필드 동일). Firestore rules가
+              // tier 자가 승격을 차단해도 이 경로는 영향 없음.
+              try {
+                const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+                await authFetch(`${SERVER_URL}/api/check-subscription`, { method: 'POST' });
+                console.log(`[RevenueCat] restore sync delegated to server: ${rcTier}`);
+              } catch (syncErr) {
+                console.warn('[RevenueCat] restore server sync failed (webhook이 후속 처리):', syncErr?.message);
               }
-              if (rcEnt?.productIdentifier) {
-                syncData.planId = rcEnt.productIdentifier;
-                syncData.subscriptionMonths = rcEnt.productIdentifier.includes('_3') ? 3 : 1;
-              }
-              await setDoc(doc(db, 'users', user.uid), syncData, { merge: true });
-              console.log(`[RevenueCat] Synced to Firestore: ${rcTier}`, syncData);
             }
           } else {
             // 활성 구독 없음 → 현재 pro/premium이면 다운그레이드
@@ -2950,11 +2944,17 @@ function App() {
     }
   };
 
-  // 문장을 소리로 읽어주는 함수 (브라우저 내장 기능 활용)
-  // Web Speech API fallback (오프라인 / Azure 실패 시)
+  // 문장을 소리로 읽어주는 함수 (기기 내장 TTS) — Azure 실패/오프라인 폴백
+  // 2026-06-11: Android System WebView는 SpeechSynthesisUtterance 미노출(Chromium #487255)이라
+  // 기존 코드는 throw → "포인트 차감 후 무음"이었음. Android는 플러그인으로 분기.
   const handleSpeakFallback = (text, langCode) => {
     if (!text) return;
     const langInfo = getLangInfo(langCode);
+    if (Capacitor.getPlatform() === 'android') {
+      try { TextToSpeech.speak({ text, lang: langInfo?.tts || langCode || 'en' }).catch(() => {}); } catch { /* noop */ }
+      return;
+    }
+    if (typeof SpeechSynthesisUtterance === 'undefined' || !window.speechSynthesis) return;
     const utterance = new SpeechSynthesisUtterance(text);
     if (langInfo) utterance.lang = langInfo.tts;
     window.speechSynthesis.speak(utterance);
@@ -2971,8 +2971,9 @@ function App() {
   const ttsAbortRef = useRef(null); // 진행 중인 fetch 중단용
   const ttsAudioRef = useRef(null); // 현재 재생 중인 Audio (새 요청 시 중지)
   const ttsGenRef = useRef(0);      // 세대 토큰 — 응답 도착 시점에 stale 검출
-  // 네이티브 TTS "텍스트당 1회만 차감" — 이미 차감한 text+lang 키 집합(세션 내, Azure 캐시 무료-반복 동작과 동일)
-  const ttsChargedRef = useRef(new Set());
+  // 2026-06-11: 동일 cacheKey의 진행 중 Azure fetch 공유 — 같은 텍스트 연타 시
+  // 이중 차감 + 이중 Azure 합성(둘 다 MISS 과금) 차단. cacheKey → Promise<Blob>
+  const ttsInflightRef = useRef(new Map());
 
   // [TTS 비용 절감 2026-06-09] 절충안 라우팅 — Web Speech(기기 내장/네트워크) 우선, "진짜 실패"만 Azure 폴백.
   //   목적: Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감.
@@ -3035,7 +3036,7 @@ function App() {
       ttsAudioRef.current = null;
     }
     try { window.speechSynthesis?.cancel?.(); } catch {}
-    try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop(); } catch {}
+    try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop().catch(() => {}); } catch {}
 
     const langInfo = getLangInfo(langCode);
     const ttsLang = langInfo?.tts || langCode;
@@ -3080,7 +3081,7 @@ function App() {
     // Android: System WebView가 speechSynthesis 미노출(Chromium #487255) → 플러그인
     if (Capacitor.getPlatform() === 'android') {
       beaconTtsRoute(src, 'native', langCode, { voice: 'android-plugin', localService: true });
-      try { TextToSpeech.stop(); } catch {}
+      try { TextToSpeech.stop().catch(() => {}); } catch {}
       TextToSpeech.speak({ text, lang: ttsLang || 'en' }).catch(() => { if (!isStale()) azureFallback('plugin-error'); });
       return;
     }
@@ -3126,6 +3127,33 @@ function App() {
   const handleSpeak = async (text, langCode, emotion, opts = {}) => {
     if (!text) return;
 
+    const cacheKey = `${langCode}:${emotion || ''}:${text}`;
+
+    // 2026-06-11: 동일 텍스트 연타 — 진행 중인 같은 키의 합성을 공유 (이중 차감/이중 Azure 차단).
+    // 기존 재생만 멈추고, in-flight fetch는 abort하지 않고 결과를 기다렸다가 캐시에서 재생.
+    if (ttsInflightRef.current.has(cacheKey)) {
+      const myGen = ++ttsGenRef.current;
+      const isStale = () => myGen !== ttsGenRef.current;
+      if (ttsAudioRef.current) {
+        try { ttsAudioRef.current.pause(); ttsAudioRef.current.currentTime = 0; } catch {}
+        ttsAudioRef.current = null;
+      }
+      try { window.speechSynthesis?.cancel(); } catch {}
+      try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop().catch(() => {}); } catch {}
+      try { await ttsInflightRef.current.get(cacheKey); } catch { return; /* 원요청 실패 — 그쪽 폴백이 처리 */ }
+      if (isStale()) return;
+      // 원요청 continuation이 먼저 실행되어 메모리 캐시를 채움 (microtask 등록 순서)
+      const sharedUrl = ttsCacheRef.current.get(cacheKey);
+      if (!sharedUrl) return;
+      const audio = new Audio(sharedUrl);
+      ttsAudioRef.current = audio;
+      audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+      audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
+      const p = audio.play();
+      if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+      return;
+    }
+
     // ⭐ 이전 요청/재생 즉시 중단 — "돌림노래" 방지
     if (ttsAbortRef.current) { try { ttsAbortRef.current.abort(); } catch {} ttsAbortRef.current = null; }
     if (ttsAudioRef.current) {
@@ -3133,10 +3161,11 @@ function App() {
       ttsAudioRef.current = null;
     }
     try { window.speechSynthesis?.cancel(); } catch {}
+    // Android 플러그인 발화도 정지 — handleSpeakSmart(native)와 교차 사용 시 이중 재생 방지
+    try { if (Capacitor.getPlatform() === 'android') TextToSpeech.stop().catch(() => {}); } catch {}
 
     const myGen = ++ttsGenRef.current;
     const isStale = () => myGen !== ttsGenRef.current;
-    const cacheKey = `${langCode}:${emotion || ''}:${text}`;
 
     // 캐시 히트 — 서버 호출 없이 즉시 재생
     if (ttsCacheRef.current.has(cacheKey)) {
@@ -3177,17 +3206,21 @@ function App() {
         }
       } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
     }
+    // 2026-06-11: IDB await 동안 다른 재생이 시작됐으면 여기서 중단 —
+    // 이 가드가 없으면 stale 요청이 포인트 차감 + Azure fetch까지 진행했음
+    if (isStale()) return;
 
     // 2026-06-07: 신규 합성(서버 fetch) 전 포인트 게이트 — 캐시 hit은 위에서 이미 return(무료).
     //   Trial 0점이면 차단 + 포인트부족 팝업. BYOK는 자기 키라 통과. Pro/Premium 무료 통과.
-    //   2026-06-09: _skipGate = handleSpeakSmart의 native→Azure onerror 폴백 (이미 native에서 1점 차감됨).
+    //   _skipGate = 호출측에서 이미 차감된 폴백 경로 (예: Listening onTtsGate 차감 후 실패 폴백).
     if (!opts._skipGate && !byokAzureKey && !tryConsumeTtsPoint()) return;
 
     const ac = new AbortController();
     ttsAbortRef.current = ac;
 
     const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-    try {
+    // in-flight 등록 — 같은 키 연타가 이 fetch를 공유
+    const fetchPromise = (async () => {
       const res = await authFetch(`${SERVER_URL}/api/azure-tts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3201,7 +3234,11 @@ function App() {
         signal: ac.signal,
       });
       if (!res.ok) throw new Error(`Azure TTS ${res.status}`);
-      const blob = await res.blob();
+      return res.blob();
+    })();
+    if (!byokAzureKey) ttsInflightRef.current.set(cacheKey, fetchPromise);
+    try {
+      const blob = await fetchPromise;
       const url = URL.createObjectURL(blob);
 
       // 캐시에 저장 (LRU: 오래된 항목 제거) — stale이어도 캐시는 저장(다음 호출에서 재사용)
@@ -3240,6 +3277,7 @@ function App() {
       console.warn('[TTS] Azure failed:', e.message);
       handleSpeakFallback(text, langCode);
     } finally {
+      ttsInflightRef.current.delete(cacheKey);
       if (ttsAbortRef.current === ac) ttsAbortRef.current = null;
     }
   };

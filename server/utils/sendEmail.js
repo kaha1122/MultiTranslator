@@ -62,8 +62,11 @@ function makeUnsubToken(uid) {
 
 function verifyUnsubToken(uid, token) {
     const expected = makeUnsubToken(uid);
-    if (!expected) return true; // secret 없으면 통과 (개발 모드)
-    return token === expected;
+    // 2026-06-11 fail-closed: secret 미설정 시 누구나 임의 uid를 opt-out시킬 수 있던
+    // 우회 모드 제거 — 미설정이면 거부 (수신거부 링크는 secret 설정 후에만 유효)
+    if (!expected) return false;
+    if (typeof token !== 'string' || token.length !== expected.length) return false;
+    return crypto.timingSafeEqual(Buffer.from(token), Buffer.from(expected));
 }
 
 function unsubscribeUrl(uid, baseUrl) {

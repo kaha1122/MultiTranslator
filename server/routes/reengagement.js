@@ -42,6 +42,20 @@ const MAX_PER_WINDOW = 500;
 //   reengagement D1~D6는 lastActiveAt window 매칭으로 모수 작아 500 유지 → 다른 분기 영향 0.
 const STREAK_REMINDER_MAX_PER_COUNTRY = 2000;
 
+// 2026-06-11 신선도 컷 — 영구 이탈 유저에게 토큰이 죽을 때까지 매일 발송되던 구조 차단.
+//   risk(22시): streakCurrent는 앱을 열어야만 갱신되는 박제 값이라, 이틀 넘게 미접속이면
+//     streak는 이미 끊긴 상태 → "끊길 수 있어요" 메시지가 거짓 + 무한 스팸. 2일 컷.
+//   reminder(13시): 이탈 유저 재유치는 D1/D3/D5 re-engagement가 전담 — 역할 중복 제거. 30일 컷.
+const STREAK_RISK_ACTIVE_WINDOW_MS = 2 * 24 * 60 * 60 * 1000;
+const STREAK_REMINDER_ACTIVE_WINDOW_MS = 30 * 24 * 60 * 60 * 1000;
+
+// lastActiveAt(markActiveDayIfFirst가 기록)이 windowMs 이내인지 — 필드 없으면 stale 취급
+function isActiveWithin(userData, now, windowMs) {
+    const last = userData.lastActiveAt;
+    const ms = typeof last?.toMillis === 'function' ? last.toMillis() : null;
+    return ms !== null && (now.getTime() - ms) <= windowMs;
+}
+
 // 기 발송 여부 — 같은 윈도우 필드가 이미 채워져 있으면 skip
 function alreadySent(userData, windowName) {
     const field = FIELD_BY_WINDOW[windowName];
@@ -368,6 +382,13 @@ async function processStreakRiskForCountry(country, now, opts) {
             continue;
         }
 
+        // 2026-06-11: 2일 넘게 미접속이면 streak는 이미 끊김 — 박제된 streakCurrent로
+        // 영구 발송되던 거짓 경고 차단 (이탈 유저 재유치는 re-engagement D1~D6 담당)
+        if (!isActiveWithin(data, now, STREAK_RISK_ACTIVE_WINDOW_MS)) {
+            skipReasons['stale-inactive'] = (skipReasons['stale-inactive'] || 0) + 1;
+            continue;
+        }
+
         // 하루 1회 제한 — lastStreakRiskPush가 오늘이면 skip
         const lastSentDate = data.lastStreakRiskPushDate;
         if (lastSentDate === todayStr) {
@@ -481,6 +502,14 @@ async function processStreakReminderForCountry(country, now, opts) {
         // streakReminderOptOut — 13시 정기 리마인더 전용 플래그 (streak risk와 별개)
         if (data.streakReminderOptOut === true) {
             skipReasons['opted-out'] = (skipReasons['opted-out'] || 0) + 1;
+            continue;
+        }
+
+        // 2026-06-11: 30일 넘게 미접속 유저는 제외 — 기한 없는 무한 발송 차단
+        // (가입 직후라 lastActiveAt이 아직 없는 D0 신규는 createdAt으로 구제)
+        if (!isActiveWithin(data, now, STREAK_REMINDER_ACTIVE_WINDOW_MS)
+            && !isActiveWithin({ lastActiveAt: data.createdAt }, now, STREAK_REMINDER_ACTIVE_WINDOW_MS)) {
+            skipReasons['stale-inactive'] = (skipReasons['stale-inactive'] || 0) + 1;
             continue;
         }
 
@@ -1885,9 +1914,10 @@ router.post('/api/cron/send-free-talk-email', requireCronAuth, async (req, res) 
 });
 
 // ─────────────────────────────────────────────────────────────────────────
-// 이메일 수신거부 (Unsubscribe) — GET 호출로 emailOptOut: true 마킹
-// HMAC 토큰 검증 (UNSUBSCRIBE_SECRET 설정 시). 결과는 베트남어 사과 페이지 표시
-router.get('/api/unsubscribe-email', async (req, res) => {
+// 이메일 수신거부 (Unsubscribe) — GET(브라우저 링크) + POST(RFC 8058 One-Click) 동일 처리
+// HMAC 토큰 검증 (UNSUBSCRIBE_SECRET). Gmail/Yahoo One-Click은 List-Unsubscribe-Post
+// 헤더의 URL로 POST를 보냄 — 2026-06-11 이전엔 GET만 있어 404 → 수신거부 미반영이었음.
+const handleUnsubscribe = async (req, res) => {
     const uid = (req.query.uid || '').trim();
     const token = (req.query.t || '').trim();
 
@@ -1939,6 +1969,8 @@ router.get('/api/unsubscribe-email', async (req, res) => {
         console.error('[Unsubscribe] failed:', e);
         return res.status(500).type('html').send('<h1>Error</h1><p>Something went wrong. Please try again later.</p>');
     }
-});
+};
+router.get('/api/unsubscribe-email', handleUnsubscribe);
+router.post('/api/unsubscribe-email', handleUnsubscribe);
 
 module.exports = router;

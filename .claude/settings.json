@@ -1,0 +1,18 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node .claude/hooks/heat-guard-gate.cjs",
+            "if": "Bash(git *)",
+            "timeout": 10,
+            "statusMessage": "iOS 발열 점검 게이트 확인 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

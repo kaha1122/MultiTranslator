@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
-const { optionalAuth } = require('../middleware/auth');
+const { requireAuth, optionalAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 const ttsCache = require('../utils/ttsCache');
 const { recordTtsUsage } = require('../utils/ttsUsage');
 
@@ -111,11 +112,19 @@ const EMOTION_TO_STYLE = {
     'panicked':      'fearful',
 };
 
-router.post('/api/azure-tts', optionalAuth, async (req, res) => {
+// 2026-06-11 서버 권위 확립: optionalAuth → requireAuth (모든 실유저는 익명 포함 토큰 보유)
+//   + rate limit + 글자수 상한. 무토큰 스크립트가 Azure 과금을 무한 유발하던 구멍 차단.
+const MAX_TTS_CHARS = 1200; // Listening 장문 지문(~500자) + 대화 turns 합산 여유 포함
+router.post('/api/azure-tts', requireAuth, rateLimit('azure-tts', { perMinute: 30, perHour: 400 }), async (req, res) => {
     const { text, langCode, emotion, byokAzureKey, byokAzureRegion, turns, dialogueSeed } = req.body;
     // text 또는 turns 둘 중 하나는 필수
     if (!text && !(Array.isArray(turns) && turns.length > 0)) {
         return res.status(400).json({ error: 'Missing text or turns' });
+    }
+    const totalChars = (typeof text === 'string' ? text.length : 0)
+        + (Array.isArray(turns) ? turns.reduce((s, t) => s + (typeof t?.text === 'string' ? t.text.length : 0), 0) : 0);
+    if (totalChars > MAX_TTS_CHARS) {
+        return res.status(413).json({ error: `Text too long (max ${MAX_TTS_CHARS} chars)` });
     }
 
     const azureKey    = byokAzureKey    || AZURE_KEY;
@@ -199,7 +208,7 @@ router.post('/api/azure-tts', optionalAuth, async (req, res) => {
 // [TTS 라우팅 텔레메트리 2026-06-09] 클라가 매 TTS 재생마다 fire-and-forget 비콘 → Render 로그.
 //   native(기기/네트워크 음성, 비용 0) vs azure-fallback(비용 발생) portion + 소스·언어·플랫폼 식별용.
 //   응답 본문 불요(204). optionalAuth로 uid 있으면 기록(없어도 통과).
-router.post('/api/tts/route-log', optionalAuth, (req, res) => {
+router.post('/api/tts/route-log', optionalAuth, rateLimit('route-log', { perMinute: 60 }), (req, res) => {
     try {
         const { source, engine, lang, platform, voice, localService, reason } = req.body || {};
         const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';

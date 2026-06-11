@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom';
 import { Camera, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useT } from '../utils/i18n';
+import { authFetch } from '../utils/authFetch';
 import './CameraOCRModal.css';
 import { geminiUrl } from '../config/gemini';
 
@@ -103,7 +104,7 @@ const CameraOCRModal = ({ onClose, onTextExtracted, sourceLang }) => {
         setIsLoading(true);
         setError('');
         try {
-            const res = await fetch(`${SERVER_URL}/api/ocr`, {
+            const res = await authFetch(`${SERVER_URL}/api/ocr`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ imageBase64: base64Data, mimeType }),

@@ -4,7 +4,8 @@ const fs = require('fs');
 const axios = require('axios');
 const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
-const { optionalAuth } = require('../middleware/auth');
+const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -12,7 +13,8 @@ const UPLOADS_DIR = 'uploads/';
 if (!fs.existsSync(UPLOADS_DIR)) {
     fs.mkdirSync(UPLOADS_DIR, { recursive: true });
 }
-const upload = multer({ dest: UPLOADS_DIR });
+// fileSize 상한 — 무제한 업로드(디스크/ffmpeg DoS) 차단. 발음 녹음은 수십 초 = 1~2MB 수준
+const upload = multer({ dest: UPLOADS_DIR, limits: { fileSize: 10 * 1024 * 1024 } });
 
 const AZURE_KEY = process.env.AZURE_SPEECH_KEY;
 const AZURE_REGION = process.env.AZURE_SPEECH_REGION;
@@ -233,13 +235,19 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
 /**
  * Main Analysis Endpoint
  */
-router.post('/analyze', upload.single('audio'), optionalAuth, async (req, res) => {
+// 2026-06-11 서버 권위 확립: 인증을 multer 앞에 배치 — 무토큰 요청이 디스크에 파일을
+// 쓰기 전에 차단. 발음평가는 최고가 경로(STT+Enhanced)라 rate limit 필수.
+router.post('/analyze', requireAuth, rateLimit('analyze', { perMinute: 20, perHour: 200 }), upload.single('audio'), async (req, res) => {
     const originalAudioPath = req.file?.path;
     const referenceText = req.body.text;
     const langCode = req.body.lang || 'en';
 
     if (!originalAudioPath || !referenceText) {
         return res.status(400).json({ error: "Missing audio or text" });
+    }
+    if (referenceText.length > 1000) {
+        try { fs.unlinkSync(originalAudioPath); } catch (_) { /* noop */ }
+        return res.status(413).json({ error: 'Reference text too long (max 1000 chars)' });
     }
 
     const audioPath = `${originalAudioPath}.wav`;

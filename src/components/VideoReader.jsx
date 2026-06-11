@@ -3,6 +3,7 @@ import { Capacitor } from '@capacitor/core';
 import { ChevronLeft, RotateCcw, AlertCircle, ExternalLink, Send } from 'lucide-react';
 import { useT, getT } from '../utils/i18n';
 import { ALL_LANGUAGES, SUPPORTED_LANGUAGES, EXTRA_LANGUAGES } from '../config/languages';
+import { authFetch } from '../utils/authFetch';
 import './VideoReader.css';
 import AdBanner from './AdBanner';
 
@@ -90,7 +91,7 @@ function VideoReader({
         selectedRef.current = null;
         onDetailChange?.(false);
         try {
-            const res = await fetch(`${SERVER_URL}/api/video-feed?lang=${lang}&category=${cat}`);
+            const res = await authFetch(`${SERVER_URL}/api/video-feed?lang=${lang}&category=${cat}`);
             if (!res.ok) throw new Error(`HTTP ${res.status}`);
             const data = await res.json();
             setVideos(data.videos || []);

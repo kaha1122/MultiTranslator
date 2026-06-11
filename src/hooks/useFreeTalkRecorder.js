@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { Capacitor, registerPlugin } from '@capacitor/core';
 import { VoiceRecorder } from 'capacitor-voice-recorder';
 import { authFetch, getAuthHeaders } from '../utils/authFetch';
@@ -41,6 +41,11 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
     const isNativeRef = useRef(false);
+    // abort 중단 시 onstop에서 STT 발사를 건너뛰기 위한 플래그 (트랙/세션 정리는 그대로 수행)
+    const abortedRef = useRef(false);
+    // startRecording 비동기 구간(getUserMedia 등) 중복 진입 가드 — 연타 시 첫 stream이
+    // 고아가 되어 마이크가 영구 점유되는 누수 차단
+    const isStartingRef = useRef(false);
 
     const openAppSettings = useCallback(async () => {
         try {
@@ -92,6 +97,8 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
     }, [langCode, onTranscript]);
 
     const startRecording = useCallback(async () => {
+        if (isStartingRef.current || mediaRecorderRef.current?.state === 'recording') return;
+        isStartingRef.current = true;
         setLastError(null);
         setMicDenied(false);
 
@@ -154,9 +161,15 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
                 if (Capacitor.getPlatform() === 'ios') {
                     BluetoothAudio.deactivateAudioSession?.().catch(() => {});
                 }
+                // abort(백그라운드 이탈/모달 닫기) 중단 — 트랙·세션 정리만 하고 STT 미발사
+                if (abortedRef.current) {
+                    abortedRef.current = false;
+                    return;
+                }
                 const blob = new Blob(audioChunksRef.current, { type: mr.mimeType || 'audio/webm' });
                 await sendToSTT(blob);
             };
+            abortedRef.current = false;
             mr.start();
             mediaRecorderRef.current = mr;
             setIsRecording(true);
@@ -176,8 +189,36 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
                 setMicDenied(true);
             }
             setLastError(msg);
+        } finally {
+            isStartingRef.current = false;
         }
     }, [sendToSTT]);
+
+    // 녹음 폐기 중단 — STT를 발사하지 않고 트랙/오디오 세션만 정리.
+    // 백그라운드 이탈·모달 닫기용: 사용자가 자리에 없는데 부분 녹음을 Azure STT로
+    // 보내는 비용·오동작을 막고, 마이크 점유(발열/인디케이터)를 즉시 해제한다.
+    const abortRecording = useCallback(() => {
+        const mr = mediaRecorderRef.current;
+        if (mr && mr.state === 'recording') {
+            abortedRef.current = true;
+            try { mr.stop(); } catch (_) { /* noop — onstop에서 트랙 정리 */ }
+        }
+        setIsRecording(false);
+    }, []);
+
+    // 앱 백그라운드 진입 시 녹음 자동 폐기 — useAudioRecorder와 동일한 app-background
+    // 커스텀 이벤트(App.jsx appStateChange에서 dispatch) 구독. 이 가드가 없으면 녹음 중
+    // 홈 버튼 이탈 시 MediaRecorder+stream이 계속 살아 마이크 인디케이터/발열 지속.
+    useEffect(() => {
+        const handleBackground = () => {
+            if (mediaRecorderRef.current?.state === 'recording') {
+                console.log('[useFreeTalkRecorder] 앱 백그라운드 → 녹음 자동 폐기');
+                abortRecording();
+            }
+        };
+        window.addEventListener('app-background', handleBackground);
+        return () => window.removeEventListener('app-background', handleBackground);
+    }, [abortRecording]);
 
     const stopRecording = useCallback(async () => {
         try {
@@ -212,7 +253,7 @@ export function useFreeTalkRecorder({ langCode, onTranscript, sourceLang }) {
     return {
         isRecording, isProcessing,
         lastTranscript, lastError, micDenied,
-        startRecording, stopRecording,
+        startRecording, stopRecording, abortRecording,
         openAppSettings,
     };
 }

@@ -1,5 +1,7 @@
 const express = require('express');
 const axios = require('axios');
+const { requireAuth } = require('../middleware/auth');
+const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
 
@@ -84,7 +86,7 @@ function getVideoCached(key) {
 }
 
 // GET /api/video-feed?lang=en&category=news
-router.get('/api/video-feed', async (req, res) => {
+router.get('/api/video-feed', requireAuth, rateLimit('video-feed', { perMinute: 30, perHour: 200 }), async (req, res) => {
     const lang = req.query.lang || 'en';
     const category = req.query.category || 'news';
 

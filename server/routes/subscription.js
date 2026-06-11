@@ -12,30 +12,45 @@ const REVENUECAT_API = 'https://api.revenuecat.com/v1';
 
 // ── TossPayments 빌링키 발급 + 첫 결제 ──────────────────────────────────────
 router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
-    const { authKey, customerKey, tier, planId, months = 1, userEmail, currency = 'KRW' } = req.body;
+    const { authKey, customerKey, tier, planId, userEmail, currency = 'KRW' } = req.body;
     if (!authKey || !customerKey || !tier) {
         return res.status(400).json({ error: 'authKey, customerKey, tier are required' });
     }
+    // 2026-06-11 보안: customerKey는 반드시 호출자 본인 — 타인 계정에 구독 상태를 쓰는 경로 차단.
+    // (정상 클라 흐름에서 customerKey === uid 이므로 하위호환 영향 없음)
+    if (customerKey !== req.uid) {
+        return res.status(403).json({ error: 'customerKey must match authenticated user' });
+    }
 
-    const AMOUNTS = {
-        pro_1: 4990, pro_3: 13990,
-        premium_1: 16990, premium_3: 35000,
-        pro: 4990, premium: 16990,
-        pro_1_usd: 349, pro_3_usd: 899,
-        premium_1_usd: 1099, premium_3_usd: 2499,
-    };
-    const ORDER_NAMES = {
-        pro_1: 'PronunFit Pro 1개월', pro_3: 'PronunFit Pro 3개월',
-        premium_1: 'PronunFit Premium 1개월', premium_3: 'PronunFit Premium 3개월',
-        pro: 'PronunFit Pro', premium: 'PronunFit Premium',
-        pro_1_usd: 'PronunFit Pro 1 Month', pro_3_usd: 'PronunFit Pro 3 Months',
-        premium_1_usd: 'PronunFit Premium 1 Month', premium_3_usd: 'PronunFit Premium 3 Months',
+    // 2026-06-11 보안: planId 하나에서 tier/months/amount를 전부 도출하는 단일 권위 테이블.
+    // 이전엔 결제금액은 planId, 부여 tier/months는 body 값을 그대로 써서
+    // "pro 가격으로 premium 3개월" 조작이 가능했음.
+    const PLAN_CONFIG = {
+        pro_1:         { tier: 'pro',     months: 1, amount: 4990,  orderName: 'PronunFit Pro 1개월' },
+        pro_3:         { tier: 'pro',     months: 3, amount: 13990, orderName: 'PronunFit Pro 3개월' },
+        premium_1:     { tier: 'premium', months: 1, amount: 16990, orderName: 'PronunFit Premium 1개월' },
+        premium_3:     { tier: 'premium', months: 3, amount: 35000, orderName: 'PronunFit Premium 3개월' },
+        pro:           { tier: 'pro',     months: 1, amount: 4990,  orderName: 'PronunFit Pro' },
+        premium:       { tier: 'premium', months: 1, amount: 16990, orderName: 'PronunFit Premium' },
+        pro_1_usd:     { tier: 'pro',     months: 1, amount: 349,  orderName: 'PronunFit Pro 1 Month' },
+        pro_3_usd:     { tier: 'pro',     months: 3, amount: 899,  orderName: 'PronunFit Pro 3 Months' },
+        premium_1_usd: { tier: 'premium', months: 1, amount: 1099, orderName: 'PronunFit Premium 1 Month' },
+        premium_3_usd: { tier: 'premium', months: 3, amount: 2499, orderName: 'PronunFit Premium 3 Months' },
     };
     const resolvedPlanId = planId || tier;
-    const amountRaw = AMOUNTS[resolvedPlanId];
+    const plan = PLAN_CONFIG[resolvedPlanId];
+    if (!plan) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
+    if (tier !== plan.tier) {
+        console.warn(`[TossBilling] tier mismatch: body=${tier} plan=${plan.tier} (${resolvedPlanId}) uid=${req.uid}`);
+        return res.status(400).json({ error: 'tier does not match planId' });
+    }
     const isUSD = currency === 'USD';
-    const amount = isUSD ? amountRaw / 100 : amountRaw;
-    if (!amount) return res.status(400).json({ error: `Unknown plan: ${resolvedPlanId}` });
+    // USD 플랜은 cents 단위로 테이블 정의 → 달러 변환. KRW 플랜에 currency=USD를 보내는
+    // 조작(금액 1/100)을 차단하기 위해 planId-통화 일치 강제.
+    if (isUSD !== resolvedPlanId.endsWith('_usd')) {
+        return res.status(400).json({ error: 'currency does not match planId' });
+    }
+    const amount = isUSD ? plan.amount / 100 : plan.amount;
 
     // 이메일 인증 확인 (서버 측 이중 체크)
     if (admin.apps.length) {
@@ -88,7 +103,7 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
 
         // 2단계: 빌링키로 결제
         const orderId = `order_${Date.now()}_${customerKey.slice(0, 8)}`;
-        const orderName = ORDER_NAMES[resolvedPlanId] || `PronunFit ${tier}`;
+        const orderName = plan.orderName;
         const paymentRes = await axios.post(
             `https://api.tosspayments.com/v1/billing/${billingKey}`,
             {
@@ -130,8 +145,8 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
             });
         }
 
-        // 4단계: Firestore 유저 업데이트
-        const resolvedMonths = parseInt(months) || 1;
+        // 4단계: Firestore 유저 업데이트 — tier/months는 PLAN_CONFIG 도출값만 사용
+        const resolvedMonths = plan.months;
 
         let baseDate = new Date();
         if (adminDb) {
@@ -140,7 +155,7 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
             const existingTier = userData.tier;
             const existingExpiry = userData.subscriptionExpiresAt;
             // 동일 tier 내 재결제: 잔여기간 합산 / 다른 tier로 업그레이드: 즉시 리셋
-            if (existingExpiry && existingTier === tier) {
+            if (existingExpiry && existingTier === plan.tier) {
                 const existingDate = existingExpiry.toDate ? existingExpiry.toDate() : new Date(existingExpiry);
                 if (existingDate > baseDate) baseDate = existingDate;
             }
@@ -150,7 +165,7 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
 
         if (adminDb) {
             const updateData = {
-                tier,
+                tier: plan.tier,
                 planId: resolvedPlanId,
                 subscriptionMonths: resolvedMonths,
                 subscriptionCurrency: isUSD ? 'USD' : 'KRW',
@@ -182,8 +197,9 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
 
 // ── 구독 취소 (Toss + PayPal 통합) ──────────────────────────────────────────
 router.post('/api/cancel-subscription', requireAuth, async (req, res) => {
-    const { userId } = req.body;
-    if (!userId) return res.status(400).json({ error: 'userId required' });
+    // 2026-06-11 보안(IDOR fix): 취소 대상은 항상 인증된 본인 — body userId는 무시.
+    // (정상 클라는 본인 uid를 보내므로 하위호환 영향 없음)
+    const userId = req.uid;
 
     try {
         if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });

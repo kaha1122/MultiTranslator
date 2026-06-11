@@ -20,6 +20,25 @@ export const setAccountDeletionFlag = (v) => { accountDeletionInProgress = v; };
 // 익명 로그인 중복 실행 방지 플래그
 let anonSignInInProgress = false;
 
+// [thermal P0-2 2026-06-12] 휘발성 필드만 바뀐 snapshot은 profile 레퍼런스를 유지해
+// 전체 재렌더를 차단. updatedAt(접속시각)·ttsUsage(서버 통계 레거시 필드)는 UI 미사용인데
+// write마다 setProfile(새 객체) → useMemo deps 불일치 → App 전체 재렌더(iOS 발열 C1~C3 증폭기)였음.
+// 클라 어디에서도 profile.updatedAt / profile.ttsUsage를 읽지 않음을 확인하고 제외(grep 2026-06-12).
+const PROFILE_VOLATILE_FIELDS = ['updatedAt', 'ttsUsage'];
+const profileEssence = (data) => {
+    if (!data) return null;
+    const copy = { ...data };
+    for (const k of PROFILE_VOLATILE_FIELDS) delete copy[k];
+    try {
+        // Firestore Timestamp는 toMillis로 정규화 — toJSON 유무/내부 표현 차이에 비교가 흔들리지 않게
+        return JSON.stringify(copy, (key, val) =>
+            (val && typeof val.toMillis === 'function') ? `__ts:${val.toMillis()}` : val
+        );
+    } catch {
+        return null; // 직렬화 실패 시 비교 포기 → 항상 갱신(이전 동작과 동일)
+    }
+};
+
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
@@ -136,7 +155,14 @@ export const AuthProvider = ({ children }) => {
 
                 unsubscribeProfile = onSnapshot(docRef, async (docSnap) => {
                     if (docSnap.exists()) {
-                        setProfile(docSnap.data());
+                        const data = docSnap.data();
+                        // [thermal P0-2] 휘발성 필드 외 변화 없으면 이전 레퍼런스 유지 →
+                        // React가 동일 state로 판단해 재렌더 자체를 생략 (발열 가드)
+                        setProfile(prev => {
+                            const prevEssence = profileEssence(prev);
+                            if (prev && prevEssence !== null && prevEssence === profileEssence(data)) return prev;
+                            return data;
+                        });
                         setLoading(false);
                         return;
                     }
@@ -429,24 +455,19 @@ export const AuthProvider = ({ children }) => {
     }, [user?.uid]);
 
     // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
-    //   (2026-06-09 +15 상향했다가 차감을 "텍스트당 1회"로 완화 → 2026-06-10 +10 원복)
-    //   날짜-키 트랜잭션 가드(markActiveDay 패턴)로 멀티기기 이중충전 차단. Trial 전용.
+    //   2026-06-11: 클라 트랜잭션 → 서버 endpoint(/api/bonus/daily-topup)로 이전.
+    //   ① rules-prep: Firestore rules가 bonusPoints 클라 증가를 차단할 예정
+    //   ② 서버가 날짜 범위(±48h)·단조 증가를 검증 → 디바이스 시계 조작 무력화
+    //   서버 트랜잭션이 멀티기기 이중충전도 차단. Trial 전용(서버에서 tier 검사).
     const claimDailyTopUp = async () => {
         if (!user?.uid) return;
         const today = getToday();
-        if (profile?.lastTopUpDate === today) return; // 빠른 우회
+        if (profile?.lastTopUpDate === today) return; // 빠른 우회 (서버가 최종 판정)
         try {
-            await runTransaction(db, async (tx) => {
-                const ref = doc(db, 'users', user.uid);
-                const snap = await tx.get(ref);
-                const d = snap.data() || {};
-                if (d.lastTopUpDate === today) return; // race 가드
-                const amount = d.firstTopUpDone ? 10 : 30;
-                tx.update(ref, {
-                    bonusPoints: increment(amount),
-                    lastTopUpDate: today,
-                    firstTopUpDone: true,
-                });
+            await authFetch(`${API_URL}/api/bonus/daily-topup`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ date: today }),
             });
         } catch (e) {
             // 충전 실패는 다음 진입에서 재시도 (날짜 게이트 유지)
@@ -600,26 +621,16 @@ export const AuthProvider = ({ children }) => {
                 const currentTier = profile?.tier || 'trial';
                 const needsExpirySync = rcTier && !profile?.subscriptionExpiresAt;
                 if (rcTier && (rcTier !== currentTier || needsExpirySync)) {
-                    const syncData = {
-                        tier: rcTier,
-                        tierUpdatedAt: serverTimestamp(),
-                        tierSource: 'revenuecat',
-                    };
-                    if (rcProductId) {
-                        syncData.planId = rcProductId;
-                        syncData.subscriptionMonths = rcProductId.includes('_3') ? 3 : 1;
+                    // 2026-06-11 rules-prep: tier 승격은 클라 직접 쓰기 금지(Firestore rules 예정) —
+                    // 서버가 RC REST로 entitlement를 재검증 후 Admin SDK로 기록 (필드 동일:
+                    // tier/tierSource/planId/subscriptionMonths/subscriptionExpiresAt/autoRenew).
+                    // 클라 위조 customerInfo로 자가 승격하는 경로도 함께 차단됨.
+                    try {
+                        await authFetch(`${API_URL}/api/check-subscription`, { method: 'POST' });
+                        console.log(`[RevenueCat] tier sync delegated to server: ${currentTier} → ${rcTier} (${rcProductId})`);
+                    } catch (syncErr) {
+                        console.warn('[RevenueCat] server tier sync failed (webhook이 후속 처리):', syncErr?.message);
                     }
-                    // 만기일 + 자동갱신 동기화
-                    const expiresDateStr = rcEntitlement?.expirationDate;
-                    if (expiresDateStr) {
-                        syncData.subscriptionExpiresAt = new Date(expiresDateStr);
-                    }
-                    const willRenew = rcEntitlement?.willRenew;
-                    if (willRenew !== undefined) {
-                        syncData.autoRenew = willRenew;
-                    }
-                    await updateDoc(doc(db, 'users', user.uid), syncData);
-                    console.log(`[RevenueCat] tier synced: ${currentTier} → ${rcTier} (${rcProductId}), expires: ${expiresDateStr}`);
                 } else if (!rcTier && (currentTier === 'pro' || currentTier === 'premium') && profile?.tierSource === 'revenuecat') {
                     // Firestore subscriptionExpiresAt이 아직 유효하면 RC 일시 miss / promo 미반영일 수 있으므로 다운그레이드 보류
                     // 실제 만기는 line 308 '구독 만료 체크' useEffect이 처리
@@ -781,13 +792,14 @@ export const AuthProvider = ({ children }) => {
     };
 
     // Admin 전용: BYOK 키 저장
+    // 2026-06-11 rules-prep: tier:'admin' 클라 쓰기 제거 — rules가 tier 자가 승격을 차단하면
+    // 이 한 줄 때문에 BYOK 키 저장 전체가 거부됨. admin tier는 Firestore 콘솔/Admin SDK로 수동 설정.
     const saveByokKeys = async (geminiKey, azureKey, azureRegion) => {
         if (!user) return;
         await updateUserProfile({
             byokGeminiKey: geminiKey,
             byokAzureKey: azureKey,
             byokAzureRegion: azureRegion || '',
-            tier: 'admin',
         });
     };
 

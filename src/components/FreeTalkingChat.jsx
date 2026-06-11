@@ -6,6 +6,7 @@ import AITipPopup from './AITipPopup';
 import { useConversation } from '../hooks/useConversation';
 import { useFreeTalkRecorder } from '../hooks/useFreeTalkRecorder';
 import { getT } from '../utils/i18n';
+import { authFetch } from '../utils/authFetch';
 import { playStarSound } from '../utils/soundEffects';
 import './FreeTalkingChat.css';
 
@@ -112,6 +113,8 @@ export default function FreeTalkingChat({
         }
         if (!open && startedRef.current) {
             startedRef.current = false;
+            // 녹음 중 닫힘 — STT 미발사 폐기로 마이크 점유 즉시 해제 (endAudioSession 이전에 수행)
+            recorder.abortRecording?.();
             setPlaybackIdx(-1);
             setPlaybackQueueDone(false);
             setAiTipPopup({ open: false, text: '' });
@@ -207,6 +210,9 @@ export default function FreeTalkingChat({
         setPlaybackIdx(-1);
         try { learningTipAudioRef.current?.pause(); } catch (e) { /* noop */ }
         learningTipAudioRef.current = null;
+        // 녹음 중 X 버튼 — MediaRecorder/stream을 폐기하지 않으면 모달이 닫혀도
+        // 마이크가 계속 점유됨 (FreeTalkingChat은 unmount되지 않고 null 렌더라 cleanup 부재)
+        recorder.abortRecording?.();
         endSession('user');
         onClose?.();
     };
@@ -237,7 +243,7 @@ export default function FreeTalkingChat({
         let url = null;
         try {
             const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const res = await fetch(`${SERVER_URL}/api/converse-coach-tts`, {
+            const res = await authFetch(`${SERVER_URL}/api/converse-coach-tts`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
