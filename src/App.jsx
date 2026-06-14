@@ -590,7 +590,6 @@ function App() {
   const [hubTopic, setHubTopic] = useState(null);          // TopicHub 오버레이: { topicId, activeLang } | null
   const [learningPreset, setLearningPreset] = useState(null); // { tab, catId, subId, topicId, level, lang } | null
   const [showStreakEarned, setShowStreakEarned] = useState(false); // 학습 종료 시 streak 달성 팝업
-  const [showLearnIntro, setShowLearnIntro] = useState(false);     // 온보딩 후 홈 첫 진입 안내 팝업
   const streakEarnedPendingRef = useRef(false);                    // 이번 세션 그날 첫 진척 발생 → 나갈 때 팝업
   const startTopicLearning = (tab, p) => { setLearningPreset({ tab, ...p }); setHubTopic(null); setViewMode(tab); };
   const exitTopicLearning = () => {
@@ -598,11 +597,7 @@ function App() {
     setLearningPreset(null);
     setViewMode('home');
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
-    // 발음은 피드백 시점에 streak 올라가지만, 인지를 위해 '학습 종료(뒤로)' 시점에 팝업
-    if (streakEarnedPendingRef.current) {
-      streakEarnedPendingRef.current = false;
-      setShowStreakEarned(true);
-    }
+    // streak 달성 팝업은 viewMode 전환 effect가 일괄 처리 (back 헤더/헤더 홈버튼/안드로이드 back 모두 커버)
   };
   // 토픽 진척(단어/지문 통과) 기록 + 그날 첫 진척이면 streak 달성 pending
   const handleTopicPass = async (args) => {
@@ -1852,8 +1847,7 @@ function App() {
     }
     setShowOnboarding(false);
     setViewMode('home');
-    // 온보딩 직후 홈 진입 안내 팝업 1회
-    try { if (!localStorage.getItem('lphIntroSeen')) setShowLearnIntro(true); } catch { setShowLearnIntro(true); }
+    // 학습 안내는 StreakIntro 팝업으로 통합됨 (별도 홈 안내 팝업 제거)
     updateUserProfile({
       hasCompletedOnboarding: true,
       sourceLang: src,
@@ -1864,16 +1858,19 @@ function App() {
     }).catch(() => { });
   };
 
-  // 기존(이미 온보딩 완료) 유저도 홈 학습경로 안내 팝업 1회 노출
-  const didCheckLearnIntroRef = useRef(false);
+  // 단계학습(vocab/listening)에서 나가는 모든 경로(back 헤더/헤더 홈/안드로이드 back)에서
+  // 그날 첫 토픽 진척이 있었으면 Streak 달성 팝업 — 발음 카운트는 피드백 시점, 팝업은 '나갈 때'
+  const prevViewModeRef = useRef(viewMode);
   useEffect(() => {
-    if (didCheckLearnIntroRef.current) return;
-    if (!user || showOnboarding || viewMode !== 'home') return;
-    let seen = false;
-    try { seen = !!localStorage.getItem('lphIntroSeen'); } catch { /* ignore */ }
-    didCheckLearnIntroRef.current = true;
-    if (!seen) setShowLearnIntro(true); // eslint-disable-line react-hooks/set-state-in-effect
-  }, [user, showOnboarding, viewMode]);
+    const prev = prevViewModeRef.current;
+    prevViewModeRef.current = viewMode;
+    if ((prev === 'vocab' || prev === 'listening') && viewMode !== 'vocab' && viewMode !== 'listening') {
+      if (streakEarnedPendingRef.current) {
+        streakEarnedPendingRef.current = false;
+        setShowStreakEarned(true); // eslint-disable-line react-hooks/set-state-in-effect
+      }
+    }
+  }, [viewMode]);
 
   // 별표 안내 팝업 — 두 발화 경로:
   //   (1) Streak Reminder push 진입 강제 발화 — count/session/dismissedV2 가드 모두 우회, 선행 모달 닫힐 때까지만 대기.
@@ -3887,11 +3884,12 @@ function App() {
                 {getT(sourceLang, 'nav.home')}
               </button>
 
-              {/* Phase 1: Vocab·Listening은 단계학습(홈)으로만 진입, Video 잠정삭제 → 사이드바에서 제거 */}
-              <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
-                {getT(sourceLang, 'nav.scene')}
+              {/* Phase 1: 하단 네비와 동일 순서 — 홈 > 단어장 > 번역기 > Free Talking
+                  (Vocab·Listening은 단계학습 진입, Video 삭제, Free Talking은 Phase3 Pro 전용 예정) */}
+              <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
+                onClick={() => { setViewMode('library'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
+                {getT(sourceLang, 'nav.library')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
@@ -3900,10 +3898,11 @@ function App() {
                 {getT(sourceLang, 'nav.translation')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
-                onClick={() => { setViewMode('library'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><Sparkles size={16} /></span>
-                {getT(sourceLang, 'nav.library')}
+              <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
+                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
+                {getT(sourceLang, 'nav.scene')}
+                <span style={{ marginLeft: 'auto', fontSize: '0.62rem', fontWeight: 800, color: '#dc2626', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '999px', padding: '1px 7px' }}>Pro ↑</span>
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'stats' ? 'active' : ''}`}
@@ -5301,9 +5300,9 @@ function App() {
         />
       )}
 
-      {/* 별표 안내 팝업 — 첫 generate 이후 매 세션 1회 (다시 보지 않음 미체크 시) */}
+      {/* 2026-06-14: StarGuide(별표→발음통과→3장→Streak) 안내는 신 Streak 모델과 불일치 → 비활성화 */}
       <StarGuideModal
-        open={showStarGuide}
+        open={false}
         sourceLang={sourceLang}
         onClose={() => setShowStarGuide(false)}
         onPermanentDismiss={() => {
@@ -5756,21 +5755,6 @@ function App() {
           onStartWord={(p) => startTopicLearning('vocab', p)}
           onStartPassage={(p) => startTopicLearning('listening', p)}
         />
-      )}
-
-      {/* 온보딩 후 홈 첫 진입 — 학습 안내 팝업 */}
-      {showLearnIntro && (
-        <div className="hub-overlay" style={{ zIndex: 1300, alignItems: 'center' }}
-          onClick={() => { try { localStorage.setItem('lphIntroSeen', '1'); } catch { /* ignore */ } setShowLearnIntro(false); }}>
-          <div className="hub-sheet" style={{ maxWidth: '380px', borderRadius: '20px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '34px', margin: '4px 0 10px' }}>🎓</div>
-            <h2 className="hub-title" style={{ flex: 'none', marginBottom: '10px' }}>{getT(sourceLang, 'learnIntro.title')}</h2>
-            <p style={{ fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, margin: '0 0 18px' }}>{getT(sourceLang, 'learnIntro.body')}</p>
-            <button className="onb-next-btn" onClick={() => { try { localStorage.setItem('lphIntroSeen', '1'); } catch { /* ignore */ } setShowLearnIntro(false); }}>
-              {getT(sourceLang, 'learnIntro.start')}
-            </button>
-          </div>
-        </div>
       )}
 
       {/* 학습 종료(뒤로) 시 — 오늘 Streak 달성 팝업 */}

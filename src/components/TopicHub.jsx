@@ -45,7 +45,7 @@ export default function TopicHub({
           <span className="hub-icon">{icon}</span>
           <h2 className="hub-title">{t(`vocabTopic.${topicId}`)}</h2>
           <span className={`hub-badge ${mastered ? 'done' : ''}`}>
-            {wm + pm}/{W_TARGET + P_TARGET} {t('learningPath.masteredLabel')}
+            {t('learningPath.word')} {wm}/{W_TARGET} · {t('learningPath.passage')} {pm}/{P_TARGET}
           </span>
         </div>
 
