@@ -426,7 +426,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setIsAnalyzing(false);
 
             // 3. Firestore 점수 기록 (로그인한 경우만, 오디오는 메모리에만 보관)
-            if (user) {
+            //    skipCount(온보딩 첫발음 등)는 점수 레코드도 저장 안 함 — 일회성, 재청취 없음
+            if (!skipCount && user) {
                 try {
                     const textHash = text ? hashCode(text) : 'unknown';
                     const recordRef = doc(db, `users/${user.uid}/pronunciation_records`, textHash);

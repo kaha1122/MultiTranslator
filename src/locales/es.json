@@ -565,6 +565,16 @@
     "dialogue": "Diálogo",
     "word": "Vocabulario"
   },
+  "learnIntro": {
+    "title": "Empecemos a aprender 🎓",
+    "body": "7 categorías, cada una con 10 contenidos, te esperan. Toca cada paso para empezar a aprender.",
+    "start": "Entendido"
+  },
+  "streakEarned": {
+    "title": "¡Aprendizaje de hoy hecho! 🔥",
+    "body": "Hoy seguiste aprendiendo. ¡Tu racha quedó registrada!",
+    "ok": "Genial"
+  },
   "learningPath": {
     "here": "Estás aquí",
     "unit": "Unidad",
@@ -714,7 +724,7 @@
     "intro": {
       "badge": "NUEVO",
       "title": "Construye tu racha, gana grandes recompensas",
-      "subtitle": "Alcanza tu objetivo diario para hacer crecer tu racha — desbloquea puntos extra en cada hito.",
+      "subtitle": "Sigue aprendiendo cada día para hacer crecer tu racha — desbloquea puntos extra en cada hito.",
       "dailyGoalTitle": "Objetivo diario",
       "dailyGoalHeadline": "Guarda 3 tarjetas al día que pasaron tu puntaje objetivo de pronunciación",
       "dailyGoalStepPron": "Pronunciación OK",

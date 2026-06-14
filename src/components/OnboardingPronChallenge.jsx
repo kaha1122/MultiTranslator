@@ -8,8 +8,9 @@ import { resetIOSViewport } from '../utils/resetIOSViewport';
 
 // ── 온보딩 첫 발음 챌린지 (무과금) ────────────────────────────────────────
 // 흐름: 5-A 먼저 들어보기 → 5-B 따라 말하기 → 5-C 결과(+따뜻한 카피)
-// useAudioRecorder({ skipCount:true })로 한도/일일 카운트 무차감.
-// TTS도 onSpeak(..., { _skipGate:true })로 무과금. "나중에 할게요" 항상 노출.
+// useAudioRecorder({ skipCount:true })로 한도/일일 카운트 무차감 + 점수 레코드도 저장 안 함.
+// TTS도 onSpeak(..., { _skipGate:true, durable:true })로 무과금. 온보딩은 1회성이라 스킵 버튼 없음
+// (마이크 거부 시에만 막힘 방지 탈출구 노출).
 export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpeak, onSkip, onContinue }) {
   const t = (k) => getT(sourceLang, k);
   const phrase = getOnboardingPhrase(targetLang);
@@ -56,9 +57,14 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
           onSpeak={speakFree}
           ttsSource="onboarding"
         />
-        <p style={{ margin: '14px 0', fontSize: '0.9rem', color: '#475569', textAlign: 'center', lineHeight: 1.6 }}>
-          {t('onboarding.firstPron.resultDesc')}
-        </p>
+        <div style={{
+          background: '#f0fdfa', border: '1.5px solid #5eead4', borderRadius: '14px',
+          padding: '16px 14px', margin: '16px 0', textAlign: 'center',
+        }}>
+          <span style={{ fontSize: '1.1rem', fontWeight: 800, color: '#0f766e', lineHeight: 1.5 }}>
+            {t('onboarding.firstPron.resultDesc')}
+          </span>
+        </div>
         <button className="onb-next-btn" onClick={onContinue}>
           {t('onboarding.firstPron.continue')}
         </button>
@@ -69,26 +75,22 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
     );
   }
 
-  // 0단계: 앱 의미/목적 안내 — 발음 연습이 무엇인지 먼저 설명
+  // 0단계: 앱 의미/목적 안내 — 발음 연습이 무엇인지 먼저 설명 (제목 없이 본문을 크게)
   if (phase === 'intro') {
     return (
       <div className="onb-pron">
         <div style={{
           width: '56px', height: '56px', borderRadius: '50%', background: '#f0fdfa',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: '28px',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', fontSize: '28px',
         }}>🎤</div>
-        <h2 className="onb-title">{t('onboarding.firstPron.introTitle')}</h2>
-        <p style={{ margin: '0 0 10px', fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, textAlign: 'center' }}>
+        <p style={{ margin: '0 0 12px', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.5, textAlign: 'center' }}>
           {t('onboarding.firstPron.introLine1')}
         </p>
-        <p style={{ margin: '0 0 18px', fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, textAlign: 'center' }}>
+        <p style={{ margin: '0 0 22px', fontSize: '1.2rem', fontWeight: 800, color: '#0f172a', lineHeight: 1.5, textAlign: 'center' }}>
           {t('onboarding.firstPron.introLine2')}
         </p>
         <button className="onb-next-btn" onClick={() => setPhase('listen')}>
           {t('onboarding.firstPron.introStart')} →
-        </button>
-        <button className="onb-skip-btn" onClick={onSkip}>
-          {t('onboarding.firstPron.later')}
         </button>
       </div>
     );
@@ -149,6 +151,10 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
               <button className="onb-next-btn" onClick={openAppSettings}>
                 {t('onboarding.firstPron.openSettings')}
               </button>
+              {/* 마이크 거부 시에만: 진행 막힘 방지용 탈출구 (일반 스킵 아님) */}
+              <button className="onb-skip-btn" onClick={onSkip}>
+                {t('onboarding.firstPron.continue')}
+              </button>
             </>
           ) : isAnalyzing ? (
             <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '0.95rem' }}>
@@ -190,10 +196,6 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
           {t('aiConsent.privacyLink')}
         </a>
       </p>
-
-      <button className="onb-skip-btn" onClick={onSkip}>
-        {t('onboarding.firstPron.later')}
-      </button>
     </div>
   );
 }

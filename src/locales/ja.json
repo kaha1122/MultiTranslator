@@ -565,6 +565,16 @@
     "dialogue": "会話",
     "word": "単語"
   },
+  "learnIntro": {
+    "title": "学習を始めましょう 🎓",
+    "body": "7つのカテゴリーにそれぞれ10個の学習教材が用意されています。ステップごとにボタンを押して学習を進めましょう。",
+    "start": "OK"
+  },
+  "streakEarned": {
+    "title": "今日の学習完了！🔥",
+    "body": "今日も学習を続けました。Streak が記録されました！",
+    "ok": "OK"
+  },
   "learningPath": {
     "here": "ここから",
     "unit": "ユニット",
@@ -714,7 +724,7 @@
     "intro": {
       "badge": "NEW",
       "title": "連続学習(Streak)でボーナスを獲得",
-      "subtitle": "毎日学習目標を達成すると Streak が伸び、マイルストーンごとにボーナスポイントがもらえます。",
+      "subtitle": "毎日学習を続けると Streak が伸び、マイルストーンごとにボーナスポイントがもらえます。",
       "dailyGoalTitle": "1日の目標",
       "dailyGoalHeadline": "発音目標スコアを通過したカードを1日3枚保存",
       "dailyGoalStepPron": "発音通過",

@@ -571,6 +571,16 @@
     "dialogue": "대화",
     "word": "단어"
   },
+  "learnIntro": {
+    "title": "학습을 시작해요 🎓",
+    "body": "총 7개의 카테고리에 10가지의 학습 자료가 마련되어 있어요. 단계별로 학습 버튼을 눌러 학습을 진행해 보아요.",
+    "start": "좋아요"
+  },
+  "streakEarned": {
+    "title": "오늘 학습 완료! 🔥",
+    "body": "오늘도 학습을 이어갔어요. Streak이 기록됐어요!",
+    "ok": "좋아요"
+  },
   "learningPath": {
     "here": "지금 여기",
     "unit": "유닛",
@@ -720,7 +730,7 @@
     "intro": {
       "badge": "NEW",
       "title": "연속학습(Streak)으로 보너스를 모으세요",
-      "subtitle": "매일 학습 목표를 달성하면 Streak 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
+      "subtitle": "매일 학습을 이어가면 Streak 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
       "dailyGoalTitle": "하루 목표",
       "dailyGoalHeadline": "발음 목표 점수를 통과한 카드를 하루 3장 저장하기",
       "dailyGoalStepPron": "발음 통과",

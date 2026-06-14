@@ -565,6 +565,16 @@
     "dialogue": "对话",
     "word": "词汇"
   },
+  "learnIntro": {
+    "title": "开始学习吧 🎓",
+    "body": "共有 7 个类别，每个类别有 10 项学习内容。点击每个阶段按钮开始学习吧。",
+    "start": "好的"
+  },
+  "streakEarned": {
+    "title": "今日学习完成！🔥",
+    "body": "今天也坚持学习了，Streak 已记录！",
+    "ok": "好的"
+  },
   "learningPath": {
     "here": "当前位置",
     "unit": "单元",
@@ -714,7 +724,7 @@
     "intro": {
       "badge": "NEW",
       "title": "连续学习(Streak),赚取大奖励",
-      "subtitle": "每天达成学习目标即可累积 Streak 天数,每个里程碑都能获得奖励积分。",
+      "subtitle": "每天坚持学习即可累积 Streak 天数,每个里程碑都能获得奖励积分。",
       "dailyGoalTitle": "每日目标",
       "dailyGoalHeadline": "每天保存 3 张通过发音目标分数的卡片",
       "dailyGoalStepPron": "通过发音",

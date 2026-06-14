@@ -565,6 +565,16 @@
     "dialogue": "Dialogue",
     "word": "Vocabulaire"
   },
+  "learnIntro": {
+    "title": "Commençons à apprendre 🎓",
+    "body": "7 catégories, chacune avec 10 contenus, vous attendent. Touchez chaque étape pour commencer à apprendre.",
+    "start": "Compris"
+  },
+  "streakEarned": {
+    "title": "Apprentissage du jour terminé ! 🔥",
+    "body": "Vous avez continué à apprendre aujourd'hui. Votre série est enregistrée !",
+    "ok": "Super"
+  },
   "learningPath": {
     "here": "Vous êtes ici",
     "unit": "Unité",
@@ -714,7 +724,7 @@
     "intro": {
       "badge": "NOUVEAU",
       "title": "Construisez votre série, gagnez de grandes récompenses",
-      "subtitle": "Atteignez votre objectif quotidien pour faire grandir votre série — débloquez des points bonus à chaque étape.",
+      "subtitle": "Continuez à apprendre chaque jour pour faire grandir votre série — débloquez des points bonus à chaque étape.",
       "dailyGoalTitle": "Objectif quotidien",
       "dailyGoalHeadline": "Enregistrez 3 cartes par jour ayant atteint votre score cible de prononciation",
       "dailyGoalStepPron": "Prononciation OK",

@@ -331,24 +331,24 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
 
     // 그날 토픽 진척(단어/지문 통과 1회 이상) 마킹 — Streak 판정 기준(2026-06-14 개편).
     // recordPass 성공 시 App에서 호출. weeklyData.topicProgress 낙관 갱신 → useStreak 즉시 반영.
+    // 반환: true=이번 호출이 '그날 첫 토픽 진척' 마킹(=오늘 Streak 달성), false=이미 마킹됨/무효
     const markTopicProgressToday = useCallback(async () => {
-        if (!user?.uid) return;
+        if (!user?.uid) return false;
         rolloverIfNeeded();
         const today = getToday();
-        if (lastTopicProgressDayRef.current === today) return; // 그날 1회만 write (통과마다 동일 값 반복 방지)
+        if (lastTopicProgressDayRef.current === today) return false; // 그날 1회만 (이미 마킹됨)
         lastTopicProgressDayRef.current = today;
         markActiveDayIfFirst();
         setWeeklyData(prev => prev.map(d => (d.date === today ? { ...d, topicProgress: true } : d)));
-        try {
-            await setDoc(
-                doc(db, 'users', user.uid, 'dailyProgress', today),
-                { topicProgressToday: true, updatedAt: serverTimestamp() },
-                { merge: true }
-            );
-        } catch (e) {
+        setDoc(
+            doc(db, 'users', user.uid, 'dailyProgress', today),
+            { topicProgressToday: true, updatedAt: serverTimestamp() },
+            { merge: true }
+        ).catch((e) => {
             console.error('[useDailyProgress] topicProgressToday 저장 실패:', e);
             lastTopicProgressDayRef.current = null; // 실패 시 다음 통과에서 재시도 가능하게 롤백
-        }
+        });
+        return true;
     }, [user, markActiveDayIfFirst, rolloverIfNeeded]);
 
     // 분석 전용 일일 Generate 카운터 — UI 미표시, Firestore atomic increment (state/ref 불필요)

@@ -589,17 +589,28 @@ function App() {
   const topicProgress = useTopicProgress(user);
   const [hubTopic, setHubTopic] = useState(null);          // TopicHub 오버레이: { topicId, activeLang } | null
   const [learningPreset, setLearningPreset] = useState(null); // { tab, catId, subId, topicId, level, lang } | null
+  const [showStreakEarned, setShowStreakEarned] = useState(false); // 학습 종료 시 streak 달성 팝업
+  const [showLearnIntro, setShowLearnIntro] = useState(false);     // 온보딩 후 홈 첫 진입 안내 팝업
+  const streakEarnedPendingRef = useRef(false);                    // 이번 세션 그날 첫 진척 발생 → 나갈 때 팝업
   const startTopicLearning = (tab, p) => { setLearningPreset({ tab, ...p }); setHubTopic(null); setViewMode(tab); };
   const exitTopicLearning = () => {
     const tid = learningPreset?.topicId, lang = learningPreset?.lang;
     setLearningPreset(null);
     setViewMode('home');
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
+    // 발음은 피드백 시점에 streak 올라가지만, 인지를 위해 '학습 종료(뒤로)' 시점에 팝업
+    if (streakEarnedPendingRef.current) {
+      streakEarnedPendingRef.current = false;
+      setShowStreakEarned(true);
+    }
   };
-  // 토픽 진척(단어/지문 통과) 기록 + 그날 Streak 마킹 — recordPass 성공 시에만 streak 카운트
+  // 토픽 진척(단어/지문 통과) 기록 + 그날 첫 진척이면 streak 달성 pending
   const handleTopicPass = async (args) => {
     const ok = await topicProgress.recordPass(args);
-    if (ok) markTopicProgressToday();
+    if (ok) {
+      const newlyMarked = await markTopicProgressToday();
+      if (newlyMarked) streakEarnedPendingRef.current = true;
+    }
     return ok;
   };
 
@@ -1841,6 +1852,8 @@ function App() {
     }
     setShowOnboarding(false);
     setViewMode('home');
+    // 온보딩 직후 홈 진입 안내 팝업 1회
+    try { if (!localStorage.getItem('lphIntroSeen')) setShowLearnIntro(true); } catch { setShowLearnIntro(true); }
     updateUserProfile({
       hasCompletedOnboarding: true,
       sourceLang: src,
@@ -1850,6 +1863,17 @@ function App() {
       ...(aiConsented ? { aiConsentAt: new Date() } : {}),
     }).catch(() => { });
   };
+
+  // 기존(이미 온보딩 완료) 유저도 홈 학습경로 안내 팝업 1회 노출
+  const didCheckLearnIntroRef = useRef(false);
+  useEffect(() => {
+    if (didCheckLearnIntroRef.current) return;
+    if (!user || showOnboarding || viewMode !== 'home') return;
+    let seen = false;
+    try { seen = !!localStorage.getItem('lphIntroSeen'); } catch { /* ignore */ }
+    didCheckLearnIntroRef.current = true;
+    if (!seen) setShowLearnIntro(true); // eslint-disable-line react-hooks/set-state-in-effect
+  }, [user, showOnboarding, viewMode]);
 
   // 별표 안내 팝업 — 두 발화 경로:
   //   (1) Streak Reminder push 진입 강제 발화 — count/session/dismissedV2 가드 모두 우회, 선행 모달 닫힐 때까지만 대기.
@@ -4206,17 +4230,19 @@ function App() {
           // 2026-06-07: 상단바 게이지 = Trial(일일 하드캡 3종) / Pro(월 한도 3종) / Premium 등(무제한→없음).
           //   목표달성(Target) 게이지는 홈 "오늘의 진도"에 있으므로 상단바에서 제거.
           //   순서: 💬 FreeTalk / 🎤 발음 / 🎧 Listening (Pro도 동일 아이콘, 월 카운트/캡).
+          // 2026-06-14: FreeTalk 일일 한도 게이지 제거(Phase3에서 Pro 전용화 예정) →
+          //   대신 하루 카드 저장 목표(todayCount/dailyGoal) 게이지로 교체. 발음/Listening은 유지.
           const gauges = isTrialTier
             ? [
-                { icon: MessageCircleMore, cur: todayFreeTalkCount, lim: TRIAL_FREETALK_DAILY_LIMIT },
-                { icon: Mic,               cur: todayPronCount,     lim: TRIAL_DAILY_PRON_LIMIT },
-                { icon: Headphones,        cur: todayListenCount,   lim: TRIAL_DAILY_LISTEN_LIMIT },
+                { icon: Target,     cur: todayCount,       lim: dailyGoal },
+                { icon: Mic,        cur: todayPronCount,   lim: TRIAL_DAILY_PRON_LIMIT },
+                { icon: Headphones, cur: todayListenCount, lim: TRIAL_DAILY_LISTEN_LIMIT },
               ]
             : isProTier
             ? [
-                { icon: MessageCircleMore, cur: proFreeTalkCount, lim: PRO_FREETALK_LIMIT },
-                { icon: Mic,               cur: proPronCount,     lim: PRO_PRON_LIMIT },
-                { icon: Headphones,        cur: proListenCount,   lim: PRO_LISTEN_LIMIT },
+                { icon: Target,     cur: todayCount,    lim: dailyGoal },
+                { icon: Mic,        cur: proPronCount,  lim: PRO_PRON_LIMIT },
+                { icon: Headphones, cur: proListenCount, lim: PRO_LISTEN_LIMIT },
               ]
             : []; // Premium 등 무제한 → 게이지 없음
 
@@ -5730,6 +5756,36 @@ function App() {
           onStartWord={(p) => startTopicLearning('vocab', p)}
           onStartPassage={(p) => startTopicLearning('listening', p)}
         />
+      )}
+
+      {/* 온보딩 후 홈 첫 진입 — 학습 안내 팝업 */}
+      {showLearnIntro && (
+        <div className="hub-overlay" style={{ zIndex: 1300, alignItems: 'center' }}
+          onClick={() => { try { localStorage.setItem('lphIntroSeen', '1'); } catch { /* ignore */ } setShowLearnIntro(false); }}>
+          <div className="hub-sheet" style={{ maxWidth: '380px', borderRadius: '20px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '34px', margin: '4px 0 10px' }}>🎓</div>
+            <h2 className="hub-title" style={{ flex: 'none', marginBottom: '10px' }}>{getT(sourceLang, 'learnIntro.title')}</h2>
+            <p style={{ fontSize: '0.95rem', color: '#334155', lineHeight: 1.6, margin: '0 0 18px' }}>{getT(sourceLang, 'learnIntro.body')}</p>
+            <button className="onb-next-btn" onClick={() => { try { localStorage.setItem('lphIntroSeen', '1'); } catch { /* ignore */ } setShowLearnIntro(false); }}>
+              {getT(sourceLang, 'learnIntro.start')}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 학습 종료(뒤로) 시 — 오늘 Streak 달성 팝업 */}
+      {showStreakEarned && (
+        <div className="hub-overlay" style={{ zIndex: 1400, alignItems: 'center' }} onClick={() => setShowStreakEarned(false)}>
+          <div className="hub-sheet" style={{ maxWidth: '340px', borderRadius: '20px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
+            <div style={{ fontSize: '40px', margin: '4px 0 6px' }}>🔥</div>
+            <h2 className="hub-title" style={{ flex: 'none', marginBottom: '8px' }}>{getT(sourceLang, 'streakEarned.title')}</h2>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0d9488', margin: '0 0 6px' }}>
+              {streakCurrent}<span style={{ fontSize: '1rem', marginLeft: '4px' }}>{getT(sourceLang, 'streak.daysUnit') || '일'}</span>
+            </div>
+            <p style={{ fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, margin: '0 0 18px' }}>{getT(sourceLang, 'streakEarned.body')}</p>
+            <button className="onb-next-btn" onClick={() => setShowStreakEarned(false)}>{getT(sourceLang, 'streakEarned.ok')}</button>
+          </div>
+        </div>
       )}
 
       {/* 신규 유저 온보딩 팝업 */}

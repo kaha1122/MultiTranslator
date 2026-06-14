@@ -565,6 +565,16 @@
     "dialogue": "Diálogo",
     "word": "Vocabulário"
   },
+  "learnIntro": {
+    "title": "Vamos começar a aprender 🎓",
+    "body": "7 categorias, cada uma com 10 conteúdos, prontas para você. Toque em cada etapa para começar a aprender.",
+    "start": "Entendi"
+  },
+  "streakEarned": {
+    "title": "Aprendizado de hoje concluído! 🔥",
+    "body": "Você continuou aprendendo hoje. Sua sequência foi registrada!",
+    "ok": "Boa"
+  },
   "learningPath": {
     "here": "Você está aqui",
     "unit": "Unidade",
@@ -714,7 +724,7 @@
     "intro": {
       "badge": "NOVO",
       "title": "Construa sua sequência, ganhe grandes recompensas",
-      "subtitle": "Atinja sua meta diária para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
+      "subtitle": "Continue aprendendo todos os dias para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
       "dailyGoalTitle": "Meta diária",
       "dailyGoalHeadline": "Salve 3 cards por dia que passaram na sua pontuação alvo de pronúncia",
       "dailyGoalStepPron": "Pronúncia OK",

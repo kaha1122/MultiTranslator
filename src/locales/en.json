@@ -571,6 +571,16 @@
     "dialogue": "Dialogue",
     "word": "Vocabulary"
   },
+  "learnIntro": {
+    "title": "Let's start learning 🎓",
+    "body": "7 categories, each with 10 lessons, are ready for you. Tap each step button to start learning.",
+    "start": "Got it"
+  },
+  "streakEarned": {
+    "title": "Today's learning done! 🔥",
+    "body": "You kept your learning going today. Your streak is recorded!",
+    "ok": "Nice"
+  },
   "learningPath": {
     "here": "You are here",
     "unit": "Unit",
@@ -720,7 +730,7 @@
     "intro": {
       "badge": "NEW",
       "title": "Build Your Streak, Earn Big Rewards",
-      "subtitle": "Practice every day. Hit your daily goal to grow your streak — unlock bonus points at every milestone.",
+      "subtitle": "Keep learning every day to grow your streak — unlock bonus points at every milestone.",
       "dailyGoalTitle": "Daily Goal",
       "dailyGoalHeadline": "Save 3 cards a day that passed your pronunciation target score",
       "dailyGoalStepPron": "Pass pronunciation",
