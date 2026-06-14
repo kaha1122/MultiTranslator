@@ -583,7 +583,7 @@ function App() {
   });
 
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday } = useDailyProgress(user, dailyGoal);
 
   // Phase 1 단계학습 — 토픽별 진행 모델 + 홈/허브 네비
   const topicProgress = useTopicProgress(user);
@@ -595,6 +595,12 @@ function App() {
     setLearningPreset(null);
     setViewMode('home');
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
+  };
+  // 토픽 진척(단어/지문 통과) 기록 + 그날 Streak 마킹 — recordPass 성공 시에만 streak 카운트
+  const handleTopicPass = async (args) => {
+    const ok = await topicProgress.recordPass(args);
+    if (ok) markTopicProgressToday();
+    return ok;
   };
 
   // Streak 시스템 — 마일스톤 7/14/30/100일 자동 보너스 (Phase 1)
@@ -4269,18 +4275,16 @@ function App() {
                   {weeklyData.map((d, i) => {
                     const isToday = d.date === today;
                     const isFuture = d.date > today;
-                    const achieved = d.achieved;
-                    const count = d.count || 0;
-                    const missed = !isFuture && !achieved && d.date < today;
+                    // 2026-06-14: Streak 기준 통일 — '그날 토픽 진척(topicProgress)'으로 판정
+                    const achieved = d.topicProgress;
                     const classes = ['tsb-week-day'];
                     if (achieved) classes.push('is-done');
-                    else if (missed && count > 0) classes.push('is-partial');
                     if (isFuture) classes.push('is-future');
                     if (isToday) classes.push('is-today');
                     let mark;
                     if (isFuture) mark = '';
                     else if (achieved) mark = '✅';
-                    else if (d.date < today) mark = count > 0 ? '🌙' : '·';
+                    else if (d.date < today) mark = '·';
                     else mark = '○';
                     return (
                       <div key={d.date} className={classes.join(' ')}>
@@ -4484,7 +4488,7 @@ function App() {
             isActive={viewMode === 'vocab'}
             preset={learningPreset?.tab === 'vocab' ? learningPreset : null}
             onBack={exitTopicLearning}
-            onTopicPass={topicProgress.recordPass}
+            onTopicPass={handleTopicPass}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
@@ -4513,7 +4517,7 @@ function App() {
             isActive={viewMode === 'listening'}
             preset={learningPreset?.tab === 'listening' ? learningPreset : null}
             onBack={exitTopicLearning}
-            onTopicPass={topicProgress.recordPass}
+            onTopicPass={handleTopicPass}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}

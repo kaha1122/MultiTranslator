@@ -28,7 +28,7 @@ const getWeekDates = () => {
 // 첫 로그인 시 Firestore 7-doc round-trip이 끝나기 전 UI가 7-dot 자리를 잡도록
 // achieved:false placeholder를 미리 채워둠 — load 완료되면 setWeeklyData로 덮어씀.
 const makePlaceholderWeek = (goal) =>
-    getWeekDates().map(date => ({ date, count: 0, goal, achieved: false }));
+    getWeekDates().map(date => ({ date, count: 0, goal, achieved: false, topicProgress: false }));
 
 export const useDailyProgress = (user, dailyGoal = 3) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
@@ -44,6 +44,7 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
     const todayListenCountRef = useRef(0);
     const todayFreeTalkCountRef = useRef(0);
     const lastMarkedActiveDayRef = useRef(null); // 그날 activeDayCount 증가 처리 완료한 YYYY-MM-DD
+    const lastTopicProgressDayRef = useRef(null); // 그날 topicProgressToday 마킹 완료한 YYYY-MM-DD (중복 write 차단)
     const loadedDayRef = useRef(getToday()); // 현재 ref/state가 어느 날짜 기준인지 — 자정 경과 감지용
 
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
@@ -89,9 +90,9 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
                     const d = weekSnaps[i].data();
                     const cnt = d.count || 0;
                     const goal = d.dailyGoal || dailyGoal;
-                    return { date, count: cnt, goal, achieved: cnt >= goal };
+                    return { date, count: cnt, goal, achieved: cnt >= goal, topicProgress: d.topicProgressToday === true };
                 }
-                return { date, count: 0, goal: dailyGoal, achieved: false };
+                return { date, count: 0, goal: dailyGoal, achieved: false, topicProgress: false };
             }));
         } catch (e) {
             console.error('[useDailyProgress] Firestore 로드 실패 (보안 규칙 확인 필요):', e);
@@ -137,6 +138,7 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
             todayListenCountRef.current = 0;
             todayFreeTalkCountRef.current = 0;
             lastMarkedActiveDayRef.current = null;
+            lastTopicProgressDayRef.current = null;
             return;
         }
         loadData();
@@ -327,6 +329,28 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
         }
     }, [user, markActiveDayIfFirst, rolloverIfNeeded]);
 
+    // 그날 토픽 진척(단어/지문 통과 1회 이상) 마킹 — Streak 판정 기준(2026-06-14 개편).
+    // recordPass 성공 시 App에서 호출. weeklyData.topicProgress 낙관 갱신 → useStreak 즉시 반영.
+    const markTopicProgressToday = useCallback(async () => {
+        if (!user?.uid) return;
+        rolloverIfNeeded();
+        const today = getToday();
+        if (lastTopicProgressDayRef.current === today) return; // 그날 1회만 write (통과마다 동일 값 반복 방지)
+        lastTopicProgressDayRef.current = today;
+        markActiveDayIfFirst();
+        setWeeklyData(prev => prev.map(d => (d.date === today ? { ...d, topicProgress: true } : d)));
+        try {
+            await setDoc(
+                doc(db, 'users', user.uid, 'dailyProgress', today),
+                { topicProgressToday: true, updatedAt: serverTimestamp() },
+                { merge: true }
+            );
+        } catch (e) {
+            console.error('[useDailyProgress] topicProgressToday 저장 실패:', e);
+            lastTopicProgressDayRef.current = null; // 실패 시 다음 통과에서 재시도 가능하게 롤백
+        }
+    }, [user, markActiveDayIfFirst, rolloverIfNeeded]);
+
     // 분석 전용 일일 Generate 카운터 — UI 미표시, Firestore atomic increment (state/ref 불필요)
     // kind: 'translation' | 'scene' | 'vocab' (Listening은 기존 listenCount로 추적)
     const incrementDailyGenerate = useCallback(async (kind) => {
@@ -346,5 +370,5 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
         }
     }, [user, markActiveDayIfFirst]);
 
-    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk };
+    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday };
 };

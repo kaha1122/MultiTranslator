@@ -121,8 +121,8 @@
 .lph-node {
   position: relative;
   z-index: 1;
-  width: 54px;
-  height: 54px;
+  width: 60px;
+  height: 60px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -168,8 +168,8 @@
   color: #475569;
   max-width: 96px;
 }
-.lph-row.left .lph-node-label { right: calc(50% + 84px); text-align: right; }
-.lph-row.right .lph-node-label { left: calc(50% + 84px); text-align: left; }
+.lph-row.left .lph-node-label { right: calc(50% + 90px); text-align: right; }
+.lph-row.right .lph-node-label { left: calc(50% + 90px); text-align: left; }
 
 /* 70 미니그리드 */
 .lph-minimap {

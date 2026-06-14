@@ -582,6 +582,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "AI 发音教练 🎤",
+      "introLine1": "听并跟读，AI 会为你的发音提供详细评分。",
+      "introLine2": "接下来通过教程练习发音吧。",
+      "introStart": "开始",
       "listenTitle": "先听一听 👂",
       "listenBtn": "听一听",
       "speakTitle": "现在跟着说一遍 🎤",

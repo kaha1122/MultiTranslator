@@ -55,7 +55,8 @@ const StatsPage = ({ user, dailyGoal, sourceLang, isActive, streakCurrent = 0, s
                     const d = doc.data();
                     const cnt = d.count || 0;
                     const goal = d.dailyGoal || dailyGoal;
-                    map[doc.id] = { count: cnt, dailyGoal: goal, achieved: cnt >= goal };
+                    // 2026-06-14: Streak 기준 통일 — '그날 토픽 진척(topicProgressToday)'으로 달성 판정
+                    map[doc.id] = { count: cnt, dailyGoal: goal, achieved: d.topicProgressToday === true };
                 });
                 setAllData(map);
             } catch (e) {

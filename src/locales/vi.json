@@ -582,6 +582,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "Huấn luyện viên phát âm AI 🎤",
+      "introLine1": "Nghe và lặp lại — AI sẽ chấm điểm phát âm chi tiết cho bạn.",
+      "introLine2": "Hãy luyện phát âm qua hướng dẫn tiếp theo nhé.",
+      "introStart": "Bắt đầu",
       "listenTitle": "Hãy nghe trước 👂",
       "listenBtn": "Nghe",
       "speakTitle": "Bây giờ hãy nói theo 🎤",

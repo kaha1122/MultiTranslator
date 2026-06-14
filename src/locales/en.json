@@ -588,6 +588,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "AI Pronunciation Coach 🎤",
+      "introLine1": "Listen and repeat — our AI gives you a detailed pronunciation score.",
+      "introLine2": "Let's practice with the quick tutorial next.",
+      "introStart": "Get started",
       "listenTitle": "First, listen 👂",
       "listenBtn": "Listen",
       "speakTitle": "Now, say it out loud 🎤",

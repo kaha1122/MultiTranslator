@@ -13,7 +13,7 @@ import { resetIOSViewport } from '../utils/resetIOSViewport';
 export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpeak, onSkip, onContinue }) {
   const t = (k) => getT(sourceLang, k);
   const phrase = getOnboardingPhrase(targetLang);
-  const [phase, setPhase] = useState('listen'); // 'listen' | 'speak'
+  const [phase, setPhase] = useState('intro'); // 'intro' | 'listen' | 'speak'
   const [hasListened, setHasListened] = useState(false);
 
   const {
@@ -64,6 +64,31 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
         </button>
         <button className="onb-skip-btn" onClick={handleRetry}>
           {t('onboarding.firstPron.retry')}
+        </button>
+      </div>
+    );
+  }
+
+  // 0단계: 앱 의미/목적 안내 — 발음 연습이 무엇인지 먼저 설명
+  if (phase === 'intro') {
+    return (
+      <div className="onb-pron">
+        <div style={{
+          width: '56px', height: '56px', borderRadius: '50%', background: '#f0fdfa',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px', fontSize: '28px',
+        }}>🎤</div>
+        <h2 className="onb-title">{t('onboarding.firstPron.introTitle')}</h2>
+        <p style={{ margin: '0 0 10px', fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, textAlign: 'center' }}>
+          {t('onboarding.firstPron.introLine1')}
+        </p>
+        <p style={{ margin: '0 0 18px', fontSize: '0.92rem', color: '#334155', lineHeight: 1.6, textAlign: 'center' }}>
+          {t('onboarding.firstPron.introLine2')}
+        </p>
+        <button className="onb-next-btn" onClick={() => setPhase('listen')}>
+          {t('onboarding.firstPron.introStart')} →
+        </button>
+        <button className="onb-skip-btn" onClick={onSkip}>
+          {t('onboarding.firstPron.later')}
         </button>
       </div>
     );

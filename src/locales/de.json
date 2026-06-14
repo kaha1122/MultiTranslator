@@ -582,6 +582,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "KI-Aussprachecoach 🎤",
+      "introLine1": "Hör zu und sprich nach — die KI bewertet deine Aussprache detailliert.",
+      "introLine2": "Lass uns mit dem nächsten Tutorial üben.",
+      "introStart": "Loslegen",
       "listenTitle": "Hör zuerst zu 👂",
       "listenBtn": "Anhören",
       "speakTitle": "Jetzt sprich es nach 🎤",

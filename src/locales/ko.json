@@ -588,6 +588,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "AI 발음 코치 🎤",
+      "introLine1": "발음을 듣고 따라 하면, AI가 발음을 상세히 평가해 줘요.",
+      "introLine2": "다음 튜토리얼을 통해 발음을 연습해 보아요.",
+      "introStart": "시작하기",
       "listenTitle": "먼저 들어보세요 👂",
       "listenBtn": "들어보기",
       "speakTitle": "이제 따라 말해보세요 🎤",

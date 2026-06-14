@@ -582,6 +582,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "Treinador de pronúncia IA 🎤",
+      "introLine1": "Ouça e repita — a IA avalia sua pronúncia em detalhes.",
+      "introLine2": "Vamos praticar com o tutorial a seguir.",
+      "introStart": "Começar",
       "listenTitle": "Primeiro, ouça 👂",
       "listenBtn": "Ouvir",
       "speakTitle": "Agora, repita em voz alta 🎤",

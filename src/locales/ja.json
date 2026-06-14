@@ -582,6 +582,10 @@
   },
   "onboarding": {
     "firstPron": {
+      "introTitle": "AI発音コーチ 🎤",
+      "introLine1": "発音を聞いてまねすると、AIが発音を詳しく評価します。",
+      "introLine2": "次のチュートリアルで発音を練習しましょう。",
+      "introStart": "はじめる",
       "listenTitle": "まず聞いてみましょう 👂",
       "listenBtn": "聞く",
       "speakTitle": "では、真似して言ってみましょう 🎤",
