@@ -46,8 +46,6 @@ export function VocabWordCard({
     const speak = ttsDurable
         ? (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, { ...(o || {}), _skipGate: true, durable: true })
         : onSpeak;
-    // 발음 통과 표시 — 현재 평가가 목표 점수 이상이면 카드 상단에 ✓ 배지(학습 진행 가시화)
-    const passed = !!assessmentResult && (assessmentResult.pronunciationScore || 0) >= targetGoal;
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 
@@ -63,6 +61,10 @@ export function VocabWordCard({
         isRecording, isAnalyzing, assessmentResult, coachTip,
         errorMsg, saveMessage, micDenied, openAppSettings, startRecording, stopRecording, resetAssessment,
     } = useAudioRecorder(referenceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
+
+    // 발음 통과 표시 — 현재 평가가 목표 점수 이상이면 카드 상단에 ✓ 배지(학습 진행 가시화)
+    // ※ assessmentResult가 useAudioRecorder에서 선언된 뒤에 계산해야 함 (TDZ 회피)
+    const passed = !!assessmentResult && (assessmentResult.pronunciationScore || 0) >= targetGoal;
 
     // practiceMode 전환 시 이전 결과 초기화
     const handleModeChange = (mode) => {
