@@ -230,7 +230,8 @@ export default function ListeningTab({
 
         // 2026-06-07: 신규 합성 전 포인트 게이트 — 보존 오디오 재청취는 위에서 이미 return(무료).
         //   Trial 0점이면 차단 + 포인트부족 팝업(onTtsGate 내부), 새 TTS 합성 안 함.
-        if (onTtsGate && !onTtsGate()) return;
+        //   2026-06-15: 지문 재생 비용 1→2점 (onTtsGate(2)). 첫 재생만 차감(재청취는 보존오디오로 무료).
+        if (onTtsGate && !onTtsGate(2)) return;
 
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const isDialogue = passageType === 'dialogue';

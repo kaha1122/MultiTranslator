@@ -787,10 +787,10 @@ function App() {
   // 2026-06-07: TTS 신규 합성 1점 게이트 — true=허용(차감 완료/무료), false=차단(포인트부족 팝업).
   //   캐시 hit(메모리/IndexedDB/보존오디오)은 호출 전에 이미 return → 재청취는 무료.
   //   신규 합성(서버 fetch)에만 적용. Trial 0점 → 차단+팝업. Pro/Premium은 무료 통과.
-  const tryConsumeTtsPoint = useCallback(() => {
+  const tryConsumeTtsPoint = useCallback((cost = 1) => {
     if (tier !== 'trial') return true;
-    if (bonusPoints < 1) { requestLimitModal('tts'); return false; }
-    consumeBonusPoints(1);
+    if (bonusPoints < cost) { requestLimitModal('tts'); return false; }
+    consumeBonusPoints(cost);
     return true;
   }, [tier, bonusPoints, consumeBonusPoints, requestLimitModal]);
 
@@ -2992,6 +2992,9 @@ function App() {
   // 2026-06-11: 동일 cacheKey의 진행 중 Azure fetch 공유 — 같은 텍스트 연타 시
   // 이중 차감 + 이중 Azure 합성(둘 다 MISS 과금) 차단. cacheKey → Promise<Blob>
   const ttsInflightRef = useRef(new Map());
+  // 2026-06-15: 듣기 포인트 차감(세션 단위 first-only). cacheKey 단위로 "이번 세션 차감됨" 기록 →
+  //   같은 항목 반복 청취는 무료. 앱 재시작 시 리셋(세션 기준). opts.ttsCost 넘긴 호출(카드)만 대상.
+  const ttsChargedRef = useRef(new Set());
 
   // [TTS 비용 절감 2026-06-09] 절충안 라우팅 — Web Speech(기기 내장/네트워크) 우선, "진짜 실패"만 Azure 폴백.
   //   목적: Azure Neural TTS 비용(5월 ₩25,498, 전체 63%) 절감.
@@ -3089,18 +3092,33 @@ function App() {
     }
     if (isStale()) return; // 대기 중 사용자가 다른 재생 시작
 
-    // ── seed 등 durable 콘텐츠: 네이티브 건너뛰고 Azure durable(Storage 저장·전원 공유) — 무과금 ──
-    //   품질 일관성 위해 seed 단어/문장은 첫 유저 Azure 합성→Storage→전원 재사용. 학습 재생이라 _skipGate.
+    // ── 듣기 포인트 차감 (2026-06-15) ──
+    //   카드(Vocab/Listening/Translation)가 opts.ttsCost 를 넘긴 경우에만 차감 대상.
+    //   캐시 hit은 위에서 무료 return → 여기 도달 = "신규 청취". 세션 단위 first-only(항목별):
+    //   같은 cacheKey 재청취는 무료(네이티브는 오디오 캐시가 없으므로 Set 으로 추적).
+    //   엔진(네이티브/durable/Azure) 무관하게 동일하게 차감(포인트 경제 = 광고/구매 유도, Azure 비용과 무관).
+    //   BYOK(자기 키)·_skipGate(이미 차감된 폴백)는 제외. 0점이면 차단+팝업 → 재생 안 함.
+    if (opts.ttsCost != null && !opts._skipGate && !byokAzureKey) {
+      if (!ttsChargedRef.current.has(cacheKey)) {
+        if (!tryConsumeTtsPoint(opts.ttsCost)) return;
+        ttsChargedRef.current.add(cacheKey);
+      }
+    }
+
+    // ── seed 등 durable 콘텐츠: 네이티브 건너뛰고 Azure durable(Storage 저장·전원 공유) — Azure 무과금 ──
+    //   품질 일관성 위해 seed 단어/문장은 첫 유저 Azure 합성→Storage→전원 재사용.
+    //   포인트는 위에서 이미 차감했으므로 handleSpeak 의 게이트는 _skipGate 로 우회(이중차감 방지).
     if (opts.durable) {
         beaconTtsRoute(src, 'azure-durable', langCode, { reason: 'durable' });
         handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true, durable: true });
         return;
     }
 
-    // ── ③ Azure 폴백 헬퍼 (네이티브 실패 시) — handleSpeak가 차감 + IndexedDB 저장 담당 ──
+    // ── ③ Azure 폴백 헬퍼 (네이티브 실패 시) — handleSpeak가 합성 + IndexedDB 저장 담당 ──
+    //   포인트는 smart 진입부에서 이미 ttsCost 차감(또는 ttsCost 없는 호출=무료)했으므로 _skipGate 로 우회.
     const azureFallback = (reason) => {
       beaconTtsRoute(src, 'azure-fallback', langCode, { reason });
-      handleSpeak(text, langCode, emotion, opts); // _skipGate 없음 → 정상 차감
+      handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true });
     };
 
     // ── ② 네이티브 TTS (무료·무차감) ──
@@ -4434,8 +4452,8 @@ function App() {
                       sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
-                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card' })}
-                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example' })}
+                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card', ttsCost: 1 })}
+                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example', ttsCost: 1 })}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
@@ -4543,7 +4561,7 @@ function App() {
               incrementListenGenerate();
               incrementDailyListen();
               incrementProListen(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
-              addAdPoints(5); // 풀 -5 (Listening 생성 비용, trial만)
+              addAdPoints(2); // 풀 -2 (Listening 생성 비용, trial만) — 2026-06-15 5→2
             }}
             onFirstPlay={() => {}}
             onNavigateToLibrary={(cardId) => {

@@ -42,10 +42,13 @@ export function VocabWordCard({
     ttsDurable = false,     // Phase 2 seed 콘텐츠: TTS를 Azure durable(저장·공유)로 — 무과금
     headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
-    // seed 콘텐츠는 durable Azure(저장 음성)로 재생 — onSpeak에 _skipGate+durable 부여
-    const speak = ttsDurable
-        ? (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, { ...(o || {}), _skipGate: true, durable: true })
-        : onSpeak;
+    // 듣기 포인트 차감 — 모든 카드 TTS(단어/예문/문장)에 ttsCost:1 부여(첫 청취 1점, 반복 무료=App 세션 추적).
+    //   seed 콘텐츠는 durable:true 로 Azure 저장 음성 재생(Azure 무과금) — 단, 포인트는 동일하게 1점 차감.
+    const speak = (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, {
+        ...(o || {}),
+        ttsCost: 1,
+        ...(ttsDurable ? { durable: true } : {}),
+    });
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 

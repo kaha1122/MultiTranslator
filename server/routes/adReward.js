@@ -1,5 +1,5 @@
-// 보상광고 보너스 충전 — 1회 +10pt (사이드바 "보너스포인트 충전" 버튼)
-//   (2026-06-09: native TTS 항상-차감 보정으로 +5→+10 상향)
+// 보상광고 보너스 충전 — 1회 +20pt (사이드바 "보너스포인트 충전" 버튼)
+//   (2026-06-09: native TTS 항상-차감 보정으로 +5→+10 / 2026-06-15: 듣기 차감 강화 보정으로 +10→+20 상향)
 // 어뷰즈 방어: 쿨다운 60s(lastAdRewardAt) + 일일 상한(adRewardCount/adRewardCountDate) + Pro/Premium 자동 skip
 // 주: AdMob SSV 미적용 → 클라가 광고 시청 없이 호출 가능하나, 쿨다운+일일상한으로 보수적 방어.
 const express = require('express');
@@ -10,7 +10,7 @@ const { grantBonusPoints } = require('../utils/bonusPoints');
 
 const router = express.Router();
 
-const AD_REWARD_AMOUNT = 10;
+const AD_REWARD_AMOUNT = 20;
 const COOLDOWN_MS = 60_000;     // 광고 1회 최소 간격
 const DAILY_CAP = 5;           // 하루 충전 횟수 상한
 

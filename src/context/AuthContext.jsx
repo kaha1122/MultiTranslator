@@ -406,8 +406,19 @@ export const AuthProvider = ({ children }) => {
     // Free Talking 평생 누적 세션 시작 횟수 (분석용 — 사용자별 generate 빈도 측정)
     const totalFreeTalkCount = profile?.totalFreeTalkCount || 0;
 
+    // 2026-06-15: 보너스 포인트 차감 디바운스 — TTS 듣기 차감 도입으로 users 본문 write 빈도 급증
+    //   (iOS 발열 규칙6: users write → AuthContext onSnapshot → App 재렌더). 차감을 ref 에 누적하고
+    //   4초/라이프사이클(탭숨김·이탈)에 1회만 Firestore write → write·onSnapshot 횟수 대폭 감소.
+    //   화면/게이트 잔액은 optimistic overlay(optimisticSpent)로 즉시 반영, 서버 잔액 하락 시 reconcile.
+    const optimisticSpentRef = useRef(0);            // 화면·게이트에 이미 반영된 미확정 차감 누계
+    const [optimisticSpent, setOptimisticSpentState] = useState(0);
+    const pendingFlushRef = useRef(0);               // 아직 Firestore write 안 한 차감 누계
+    const flushTimerRef = useRef(null);
+    const lastBonusRef = useRef(0);                  // reconcile 기준: 직전 서버 잔액
+
     // 보너스 포인트 — 캠페인 보상 (리뷰/추천/스트릭). 활성 시: 일일 한도 해제 + 인터스티셜 면제, 배너는 유지
-    const bonusPoints = profile?.bonusPoints || 0;
+    //   노출 잔액 = 서버 잔액 − optimistic 차감(미확정). 차감 즉시 줄어들고, flush·reconcile 후 서버값과 수렴.
+    const bonusPoints = Math.max(0, (profile?.bonusPoints || 0) - optimisticSpent);
     const hasBonusActive = bonusPoints > 0;
 
     // 2026-05-07 v1.5.0 신규: 보상광고 영구 적립 자산 (Firestore — 사용할 때까지 보관)
@@ -426,7 +437,7 @@ export const AuthProvider = ({ children }) => {
     // 2026-06-07 개편: 하드캡 절대(일일 한도 초과 불가) + 통합 포인트 풀(bonusPoints) 게이트.
     //   "한도 도달(하드캡)" 또는 "포인트 부족(< 액션 비용)" 중 하나라도면 차단. credits/bonus 우회 제거.
     //   포인트 부족이면 사이드바 보상광고 충전(+5)으로 회복, 하드캡이면 Tier 변경만.
-    const POINT_COST = { freeTalk: 10, listen: 5, pron: 2 };
+    const POINT_COST = { freeTalk: 10, listen: 2, pron: 2 };
     const isTrialPronLimitReached = tier === 'trial' && (dailyTrialPronReached || bonusPoints < POINT_COST.pron);
     const isTrialFreeTalkLimitReached = tier === 'trial' && (dailyTrialFreeTalkReached || bonusPoints < POINT_COST.freeTalk);
     const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);
@@ -434,25 +445,72 @@ export const AuthProvider = ({ children }) => {
     const isProFreeTalkLimitReached = tier === 'pro' && proFreeTalkCount >= PRO_FREETALK_LIMIT;
     const isProListenLimitReached = tier === 'pro' && proListenCount >= PRO_LISTEN_LIMIT;
 
-    // 보너스 포인트 차감 — 2026-06-07: 트랜잭션 → updateDoc(increment) 으로 단순화.
-    //   트랜잭션은 같은 user 문서 동시 쓰기(markActiveDay 등)와 낙관적 락 충돌(failed-precondition)
-    //   을 일으켜 콘솔 폭주 + 재시도 낭비 → increment 는 서버 원자 연산이라 경합해도 실패 없음.
-    //   음수 방지: 클라 보유분(profile.bonusPoints)으로 clamp. 게이트가 사전에 pool>=cost 보장하므로
+    // 누적 차감을 Firestore 에 1회 write 로 반영(디바운스 flush). 미확정분(pendingFlushRef)을 비우고
+    //   increment(-amount) 1회만 호출 → onSnapshot 1회. 성공 시 reconcile effect 가 optimisticSpent 를
+    //   같은 양 내려 화면 깜빡임 없이 서버값과 수렴. 실패 시 pending 복구(다음 flush 재시도).
+    const flushBonusDeduct = useCallback(async () => {
+        if (flushTimerRef.current) { clearTimeout(flushTimerRef.current); flushTimerRef.current = null; }
+        const amount = pendingFlushRef.current;
+        if (amount <= 0 || !user?.uid) return;
+        pendingFlushRef.current = 0;
+        try {
+            await updateDoc(doc(db, 'users', user.uid), { bonusPoints: increment(-amount) });
+        } catch (e) {
+            pendingFlushRef.current += amount; // write 실패 → 다음 flush 에서 재시도
+        }
+    }, [user?.uid]);
+
+    // 보너스 포인트 차감 — 2026-06-15: 디바운스. optimistic overlay(즉시 화면·게이트 반영) +
+    //   pendingFlushRef 누적 → 4초 후/라이프사이클에 flushBonusDeduct 가 1회 write.
+    //   음수 방지: 노출 잔액(서버−optimistic)으로 clamp. 게이트가 사전에 pool>=cost 보장하므로
     //   gated 액션은 음수 불가, best-effort(TTS/Vocab 등)도 clamp 로 0 미만 차감 안 함.
     const consumeBonusPoints = useCallback(async (amount) => {
         if (!user?.uid || amount <= 0) return 0;
-        // profileRef로 "차감 시점"의 최신 잔액을 읽음 — render 클로저의 stale profile 회피.
-        //   (메모이즈된 핸들러가 옛 bonusPoints=0 스냅샷에 갇혀 조용히 0차감하던 누수 차단)
-        const current = profileRef.current?.bonusPoints || 0;
-        const consumed = Math.min(current, amount);
+        // "차감 시점"의 최신 노출 잔액(서버 − 미확정 차감) 기준 clamp — render 클로저 stale 회피.
+        const available = Math.max(0, (profileRef.current?.bonusPoints || 0) - optimisticSpentRef.current);
+        const consumed = Math.min(available, amount);
         if (consumed <= 0) return 0;
-        try {
-            await updateDoc(doc(db, 'users', user.uid), { bonusPoints: increment(-consumed) });
-            return consumed;
-        } catch (e) {
-            return 0;
-        }
+        optimisticSpentRef.current += consumed;            // 게이트(동기) 즉시 반영
+        setOptimisticSpentState(optimisticSpentRef.current); // 화면 즉시 반영
+        pendingFlushRef.current += consumed;
+        if (flushTimerRef.current) clearTimeout(flushTimerRef.current);
+        flushTimerRef.current = setTimeout(() => { flushBonusDeduct(); }, 4000);
+        return consumed;
+    }, [user?.uid, flushBonusDeduct]);
+
+    // 계정(uid) 변경 시 overlay/pending 리셋 — 이전 계정 차감이 새 계정에 새지 않게
+    useEffect(() => {
+        pendingFlushRef.current = 0;
+        optimisticSpentRef.current = 0;
+        setOptimisticSpentState(0);
+        lastBonusRef.current = profileRef.current?.bonusPoints ?? 0;
     }, [user?.uid]);
+
+    // 서버 잔액(profile.bonusPoints) 하락 시(=flush write 반영) optimisticSpent 를 같은 양 내려 수렴.
+    //   모든 차감은 consumeBonusPoints(=optimistic) 경유이므로 bonusPoints '감소분' = 우리 flush 분량.
+    //   증가(일일충전/광고/구매)는 무시(증가는 overlay 와 무관). 화면 깜빡임 없이 서버값에 수렴.
+    useEffect(() => {
+        const cur = profile?.bonusPoints ?? 0;
+        const prev = lastBonusRef.current;
+        lastBonusRef.current = cur;
+        if (cur < prev) {
+            const next = Math.max(0, optimisticSpentRef.current - (prev - cur));
+            optimisticSpentRef.current = next;
+            setOptimisticSpentState(next);
+        }
+    }, [profile?.bonusPoints]);
+
+    // 탭 숨김/페이지 이탈/언마운트 시 즉시 flush — 디바운스 대기 중 차감 유실 최소화(best-effort)
+    useEffect(() => {
+        const onVis = () => { if (typeof document !== 'undefined' && document.visibilityState === 'hidden') flushBonusDeduct(); };
+        if (typeof document !== 'undefined') document.addEventListener('visibilitychange', onVis);
+        if (typeof window !== 'undefined') window.addEventListener('pagehide', flushBonusDeduct);
+        return () => {
+            if (typeof document !== 'undefined') document.removeEventListener('visibilitychange', onVis);
+            if (typeof window !== 'undefined') window.removeEventListener('pagehide', flushBonusDeduct);
+            flushBonusDeduct();
+        };
+    }, [flushBonusDeduct]);
 
     // 2026-06-07 개편: 일일 포인트 충전 — 1일차 30점, 2일차+ 매일 +10점(reset 아닌 누적).
     //   2026-06-11: 클라 트랜잭션 → 서버 endpoint(/api/bonus/daily-topup)로 이전.
@@ -842,8 +900,10 @@ export const AuthProvider = ({ children }) => {
         byokGeminiKey, byokAzureKey, byokAzureRegion,
         upgradeAnonymous,
         ensureAnonymousUser,
+    // optimisticSpent 포함 — 차감 즉시 노출 bonusPoints 갱신(화면 즉시 반영). write 는 여전히 디바운스라
+    //   rule6 핵심 비용(write→onSnapshot)은 제거됨. 재렌더 빈도는 기존 onSnapshot 기반과 동일 수준.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }), [user, profile, loading, dailyTrialPronReached, dailyTrialFreeTalkReached, dailyTrialListenReached]);
+    }), [user, profile, loading, dailyTrialPronReached, dailyTrialFreeTalkReached, dailyTrialListenReached, optimisticSpent]);
 
     return (
         <AuthContext.Provider value={contextValue}>
