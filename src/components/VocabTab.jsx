@@ -493,7 +493,8 @@ export default function VocabTab({
         if (!cardId) return;
         playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
-        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
+        // 단계학습 UX 보존: 저장해도 단어장으로 이동하지 않음(목표달성 팝업은 saveVocabCard에서 발화).
+        // 그 자리에서 계속 학습. (onNavigateToLibrary는 더 이상 호출하지 않음)
     };
 
     // ── Render ───────────────────────────────────────────────────────

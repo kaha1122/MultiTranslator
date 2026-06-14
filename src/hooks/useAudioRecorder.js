@@ -393,6 +393,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             formData.append('userAzureKey', byokAzureKey);
             formData.append('userAzureRegion', byokAzureRegion || 'eastasia');
         }
+        // 온보딩 등 무차감 컨텍스트(skipCount)는 코칭 팁 미표시 → 서버 Gemini 호출 생략
+        if (skipCount) formData.append('skipCoaching', '1');
 
         try {
             // 1. 발음 평가 서버 요청

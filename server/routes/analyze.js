@@ -269,7 +269,9 @@ router.post('/analyze', requireAuth, rateLimit('analyze', { perMinute: 20, perHo
         const geminiKeyToUse = req.body.userGeminiKey || GEMINI_API_KEY;
 
         const assessment = await analyzePronunciation(audioPath, referenceText, langCode, azureKeyToUse, azureRegionToUse);
-        const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang, geminiKeyToUse);
+        // 온보딩 첫발음 등은 코칭 팁을 표시하지 않으므로 Gemini 호출 생략(불필요 과금/지연 제거)
+        const skipCoaching = req.body.skipCoaching === '1' || req.body.skipCoaching === true;
+        const tip = skipCoaching ? '' : await generateCoachingTip(referenceText, assessment, req.body.sourceLang, geminiKeyToUse);
 
         if (fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);

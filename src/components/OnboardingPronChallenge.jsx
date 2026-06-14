@@ -42,19 +42,16 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
     setPhase('speak');
   };
 
-  // 결과 화면의 단어 TTS도 무과금으로 래핑
-  const speakFree = (text, lang, emotion, o) =>
-    onSpeak?.(text, lang, emotion, { ...(o || {}), _skipGate: true });
-
   if (effectivePhase === 'result') {
     return (
       <div className="onb-pron">
         <h2 className="onb-title">{t('onboarding.firstPron.resultTitle')}</h2>
+        {/* onSpeak 미전달: 음소 상세 🔊(단어 Azure 재생) 버튼 비노출 → 온보딩 불필요 과금 제거.
+            "내 목소리 다시 듣기"는 로컬 녹음 재생이라 그대로 동작 */}
         <PronunciationAssessment
           data={assessmentResult}
           sourceLangCode={sourceLang}
           langCode={targetLang}
-          onSpeak={speakFree}
           ttsSource="onboarding"
         />
         <div style={{
