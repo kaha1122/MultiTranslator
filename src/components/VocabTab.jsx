@@ -142,7 +142,7 @@ export function VocabWordCard({
             {/* 발음 통과 배지 (목표 점수 이상) — 카드 상단 우측 */}
             {passed && (
                 <div style={{
-                    position: 'absolute', top: 8, right: 8, zIndex: 2,
+                    position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 2,
                     display: 'flex', alignItems: 'center', gap: '3px',
                     background: '#dcfce7', color: '#15803d', border: '1px solid #86efac',
                     borderRadius: '999px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800,
