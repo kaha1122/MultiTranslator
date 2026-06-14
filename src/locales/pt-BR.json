@@ -737,7 +737,8 @@
       "milestoneHint": "Cada marco é concedido uma vez. Pro/Premium são excluídos automaticamente.",
       "dontShowAgain": "Não mostrar novamente",
       "later": "Mais tarde",
-      "cta": "Ver em Estatísticas"
+      "cta": "Ver em Estatísticas",
+      "start": "Começar"
     },
     "reminder": {
       "startTitle": "Comece sua Streak hoje!",

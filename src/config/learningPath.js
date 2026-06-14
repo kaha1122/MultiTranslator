@@ -9,8 +9,10 @@
 import VOCAB_CATEGORIES from '../data/vocabCategories.js';
 
 // 마스터 임계값 (post-launch 튜닝 대상)
-export const W_TARGET = 5; // 단어 발음 통과 목표
-export const P_TARGET = 4; // 지문 섀도잉 문장 통과 목표
+// 2026-06-14: 완료 부담 완화 — 단어 1개 + 지문 문장 1개 통과 시 토픽 마스터.
+//   (학습 카드는 여전히 5장 제공/study, 마스터·Listening 잠금해제는 1통과면 충분)
+export const W_TARGET = 1; // 단어 발음 통과 목표(마스터·Listening 잠금해제)
+export const P_TARGET = 1; // 지문 섀도잉 문장 통과 목표(마스터)
 
 // 유닛(=카테고리) 색상 — V2 스펙: teal/blue/purple/amber/pink/coral/green
 export const UNIT_COLORS = {

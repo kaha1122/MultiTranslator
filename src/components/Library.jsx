@@ -175,7 +175,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         if (result.audioUrl) setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
         if (result.pronunciationScore != null) {
             setSavedCards(prev => prev.map(card => card.id === id ? { ...card, pronunciationScore: result.pronunciationScore } : card));
-            const targetGoal = languageGoals[langCode] || 80;
+            const targetGoal = languageGoals[langCode] || 60;
             if (result.pronunciationScore >= targetGoal) onTargetAchieved?.(`library-${id}`);
             try {
                 await updateDoc(doc(db, "savedCards", id), { pronunciationScore: result.pronunciationScore });
@@ -231,7 +231,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     if (filterTargetMissed) {
         filteredCards = filteredCards.filter(card => {
-            const targetGoal = languageGoals[card.langCode] || 80;
+            const targetGoal = languageGoals[card.langCode] || 60;
             return !card.pronunciationScore || card.pronunciationScore < targetGoal;
         });
     }
@@ -476,7 +476,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 isLibraryView={true}
                                 onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}
                                 onTargetAchieved={onTargetAchieved}
-                                targetGoal={languageGoals[card.langCode] || 80}
+                                targetGoal={languageGoals[card.langCode] || 60}
                                 cardId={card.id}
                                 memos={card.memos || []}
                                 annotations={card.annotations || []}
@@ -495,12 +495,12 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                             {/* 하단 액션바 */}
                             <div className="card-action-bar">
                                 <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
-                                    <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 80}</strong></span>
+                                    <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 60}</strong></span>
                                     <span className="stat-divider">·</span>
                                     <span className="stat-text" title="내 점수">⭐️ <strong>{card.pronunciationScore || '-'}</strong></span>
                                     <span className="stat-divider">·</span>
                                     <span className="stat-text" title="달성 여부">
-                                        {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 80) ? '✅' : '❌'}
+                                        {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 60) ? '✅' : '❌'}
                                     </span>
                                     <span className="stat-divider">·</span>
                                     <button

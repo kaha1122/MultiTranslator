@@ -138,9 +138,9 @@ export default function LearningPathHome({
                           onClick={() => onOpenTopic?.(topicId, activeLang)}
                           aria-label={t(`vocabTopic.${topicId}`)}
                         >
-                          {state === 'mastered' ? <Check size={24} strokeWidth={3} />
-                            : state === 'current' ? <Play size={22} fill="currentColor" />
-                              : state === 'locked' ? <Lock size={18} />
+                          {state === 'mastered' ? <Check size={31} strokeWidth={3} />
+                            : state === 'current' ? <Play size={29} fill="currentColor" />
+                              : state === 'locked' ? <Lock size={23} />
                                 : <span className="lph-node-dot" />}
                         </button>
                         {isCurrent && <span className="lph-here">{t('learningPath.here')}</span>}

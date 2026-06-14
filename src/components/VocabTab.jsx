@@ -46,6 +46,8 @@ export function VocabWordCard({
     const speak = ttsDurable
         ? (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, { ...(o || {}), _skipGate: true, durable: true })
         : onSpeak;
+    // 발음 통과 표시 — 현재 평가가 목표 점수 이상이면 카드 상단에 ✓ 배지(학습 진행 가시화)
+    const passed = !!assessmentResult && (assessmentResult.pronunciationScore || 0) >= targetGoal;
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 
@@ -134,7 +136,18 @@ export function VocabWordCard({
     );
 
     return (
-        <div className="vocab-word-card">
+        <div className="vocab-word-card" style={{ position: 'relative' }}>
+            {/* 발음 통과 배지 (목표 점수 이상) — 카드 상단 우측 */}
+            {passed && (
+                <div style={{
+                    position: 'absolute', top: 8, right: 8, zIndex: 2,
+                    display: 'flex', alignItems: 'center', gap: '3px',
+                    background: '#dcfce7', color: '#15803d', border: '1px solid #86efac',
+                    borderRadius: '999px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800,
+                }}>
+                    <CheckCircle size={12} strokeWidth={2.5} /> {t('learningPath.passed')}
+                </div>
+            )}
             {/* 상단: 단어/문장 + 발음 + 뜻 + 액션 */}
             <div className={`vocab-word-top ${headlineBlock ? 'vocab-word-top-block' : ''}`}>
                 {headlineBlock
@@ -316,6 +329,7 @@ export default function VocabTab({
     const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
+    const loadedPagesRef = useRef({}); // `${historyKey}--${offset}` → words[] (재진입 시 재fetch 생략)
     const generateBtnRef = useRef(null);
     const didInitialScrollRef = useRef(false);
     // 커스텀 입력 진입 직전의 토픽 보관 — 입력을 비우면 이 토픽으로 복구해
@@ -445,6 +459,15 @@ export default function VocabTab({
         const { words: persistedWords, seedCursor } = await loadVocabHistory(historyKey);
         // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
+        // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
+        const pageCacheKey = `${historyKey}--${offset}`;
+        if (isSeed && loadedPagesRef.current[pageCacheKey]) {
+            setWords(loadedPagesRef.current[pageCacheKey]);
+            setSavedWords(new Set());
+            appendVocabHistory(historyKey, [], offset); // 커서 동기화
+            setIsLoading(false);
+            return;
+        }
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
         const avoidForApi = allAvoid.slice(-30); // custom 경로용 (seed는 서버가 자체 회피)
 
@@ -472,6 +495,7 @@ export default function VocabTab({
             if (data.words && Array.isArray(data.words)) {
                 setWords(data.words);
                 setSavedWords(new Set());
+                if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
                 if (onGenerate) onGenerate();
                 if (isSeed) {
                     // seed: 커서를 현재 페이지 offset으로 저장(words 누적 불필요 — 서버가 회피 관리)
@@ -676,7 +700,7 @@ export default function VocabTab({
                             onSave={(score) => handleSave(w, i, score)}
                             onTrialLimitReached={onTrialLimitReached}
                             onPronSuccess={onPronSuccess}
-                            targetGoal={languageGoals[selectedLang] || 80}
+                            targetGoal={languageGoals[selectedLang] || 60}
                             onBookmarkPrompt={onBookmarkPrompt}
                             activeRecIdx={activeRecIdx}
                             onRecordingStart={setActiveRecIdx}

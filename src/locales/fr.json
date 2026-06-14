@@ -737,7 +737,8 @@
       "milestoneHint": "Chaque étape est attribuée une seule fois. Exclu pour Pro/Premium.",
       "dontShowAgain": "Ne plus afficher",
       "later": "Plus tard",
-      "cta": "Voir dans les Stats"
+      "cta": "Voir dans les Stats",
+      "start": "Commencer"
     },
     "reminder": {
       "startTitle": "Commencez votre Streak aujourd'hui !",

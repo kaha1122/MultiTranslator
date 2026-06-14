@@ -737,7 +737,8 @@
       "milestoneHint": "Mỗi cột mốc chỉ nhận một lần. Pro/Premium tự động loại trừ.",
       "dontShowAgain": "Không hiển thị lại",
       "later": "Để sau",
-      "cta": "Xem trong Thống kê"
+      "cta": "Xem trong Thống kê",
+      "start": "Bắt đầu"
     },
     "reminder": {
       "startTitle": "Bắt đầu Streak hôm nay!",

@@ -362,6 +362,7 @@ export default function ListeningTab({
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
+    const loadedPassagesRef = useRef({}); // `${historyKey}--${offset}` → passage (재진입 시 재fetch 생략)
 
     const visibleLanguages = targetLangs;
 
@@ -431,7 +432,7 @@ export default function ListeningTab({
     const appendHistory = (key, newTitle, newMeta, nextCursor) => {
         const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0 };
         const updated = {
-            titles: [...existing.titles, newTitle],
+            titles: newTitle ? [...existing.titles, newTitle] : existing.titles,
             passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
             seedCursor: nextCursor != null ? nextCursor : (existing.seedCursor || 0),
         };
@@ -472,6 +473,16 @@ export default function ListeningTab({
         const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor } = await loadHistory(historyKey);
         // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
+        // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
+        const pageCacheKey = `${historyKey}--${offset}`;
+        if (isSeed && loadedPassagesRef.current[pageCacheKey]) {
+            setPassage(loadedPassagesRef.current[pageCacheKey]);
+            setShowTranslation(false);
+            setShowPronunciation(false);
+            appendHistory(historyKey, '', null, offset); // 커서 동기화(title 미추가)
+            setIsLoading(false);
+            return;
+        }
         const allAvoid = [...new Set([...persistedTitles, ...avoidTitlesRef.current])];
         // 50→20: long negative list 의 LLM 준수율 저하 회피 + 토큰 절감.
         // passagesMeta 도 동일하게 최근 20개만 전송 (서버에서 angle/keyword cluster rotation 강제).
@@ -513,7 +524,7 @@ export default function ListeningTab({
             const data = await res.json();
 
             if (data.passage || data.title) {
-                setPassage({
+                const passageObj = {
                     title: data.title || '',
                     titleTranslation: data.titleTranslation || '',
                     text: data.passage || '',
@@ -522,7 +533,9 @@ export default function ListeningTab({
                     sentences: Array.isArray(data.sentences) ? data.sentences : [], // seed 문장 카드(주석 포함)
                     counted: true,       // daily 3-limit: handleGenerate 에서 onGenerate 호출 → 첫 재생 dedup safety net
                     adsCharged: false,   // AdsPoint(15): 첫 재생 시 onFirstPlay 로 1회 더 차감 (Azure TTS 비용 반영)
-                });
+                };
+                setPassage(passageObj);
+                if (isSeed) loadedPassagesRef.current[pageCacheKey] = passageObj; // 페이지 캐시 저장
                 setShowTranslation(false);
                 setShowPronunciation(false);
                 if (onGenerate) onGenerate();
@@ -819,7 +832,7 @@ export default function ListeningTab({
                                     onSave={(score) => handleSeedSentenceSave(s, score)}
                                     onTrialLimitReached={onTrialLimitReached}
                                     onPronSuccess={onPronSuccess}
-                                    targetGoal={languageGoals[selectedLang] || 80}
+                                    targetGoal={languageGoals[selectedLang] || 60}
                                     onBookmarkPrompt={onBookmarkPrompt}
                                     activeRecIdx={activeRecIdx}
                                     onRecordingStart={setActiveRecIdx}
@@ -879,7 +892,7 @@ export default function ListeningTab({
                 onTrialLimitReached={onTrialLimitReached}
                 onPronSuccess={onPronSuccess}
                 onBookmarkPrompt={onBookmarkPrompt}
-                targetGoal={languageGoals[selectedLang] || 80}
+                targetGoal={languageGoals[selectedLang] || 60}
                 t={t}
                 ttsSource="listening"
                 onTopicPass={preset && onTopicPass

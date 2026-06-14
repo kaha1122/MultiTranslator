@@ -737,7 +737,8 @@
       "milestoneHint": "各マイルストーンは1回のみ支給。Pro/Premiumは自動除外。",
       "dontShowAgain": "今後表示しない",
       "later": "後で",
-      "cta": "統計タブで見る"
+      "cta": "統計タブで見る",
+      "start": "始める"
     },
     "reminder": {
       "startTitle": "今日からStreakスタート！",

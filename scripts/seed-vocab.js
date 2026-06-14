@@ -30,6 +30,9 @@ const PASSAGE_TYPES = (process.env.PASSAGE_TYPES || 'essay').split(',').map(s =>
 
 // Unit 1 (일상생활) 10토픽
 const UNIT1_TOPICS = ['morning', 'cooking', 'cleaning', 'shopping_daily', 'weather', 'cafe', 'exercise', 'hobby', 'pet', 'fashion'];
+// TOPICS env로 일부만 실행 가능(검증용). SKIP_TTS=1이면 TTS pre-render 생략(레이트리밋 회피·seed 텍스트만).
+const TOPICS = (process.env.TOPICS ? process.env.TOPICS.split(',').map(s => s.trim()).filter(Boolean) : UNIT1_TOPICS);
+const SKIP_TTS = process.env.SKIP_TTS === '1';
 
 if (!SERVER_URL || !ID_TOKEN) {
     console.error('SERVER_URL and SEED_ID_TOKEN env are required.');
@@ -48,6 +51,7 @@ async function post(path, body) {
 
 // Azure durable TTS pre-render (응답 본문 무시 — Storage 저장이 목적)
 async function warmTts(text, langCode) {
+    if (SKIP_TTS) return;
     if (!text || !text.trim()) return;
     try { await post('/api/azure-tts', { text, langCode, durable: true }); }
     catch (e) { console.warn('  tts warm fail:', e.message); }
@@ -86,7 +90,7 @@ async function seedPassages(targetLang, topic) {
 (async () => {
     console.log(`[seed] server=${SERVER_URL} src=${SOURCE_LANG} langs=${HEAD_LANGS.join(',')} level=${LEVEL}`);
     for (const lang of HEAD_LANGS) {
-        for (const topic of UNIT1_TOPICS) {
+        for (const topic of TOPICS) {
             console.log(`== ${lang} / ${topic} ==`);
             await seedVocab(lang, topic);
             if (PASSAGES > 0) await seedPassages(lang, topic);

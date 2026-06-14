@@ -714,7 +714,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
                         isSaved={isSaved}
                         onSpeak={onSpeak}
                         t={t}
-                        targetGoal={languageGoals[selectedLang] || 80}
+                        targetGoal={languageGoals[selectedLang] || 60}
                         onBookmarkPrompt={onBookmarkPrompt}
                     />
                 </div>
@@ -733,7 +733,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
                         isSaved={isAnswerSaved}
                         onSpeak={onSpeak}
                         t={t}
-                        targetGoal={languageGoals[selectedLang] || 80}
+                        targetGoal={languageGoals[selectedLang] || 60}
                         onBookmarkPrompt={onBookmarkPrompt}
                     />
                 </div>

@@ -737,7 +737,8 @@
       "milestoneHint": "每个里程碑仅发放一次。Pro/Premium 自动排除。",
       "dontShowAgain": "不再显示",
       "later": "稍后",
-      "cta": "前往统计查看"
+      "cta": "前往统计查看",
+      "start": "开始"
     },
     "reminder": {
       "startTitle": "今天开启 Streak！",

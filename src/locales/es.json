@@ -737,7 +737,8 @@
       "milestoneHint": "Cada hito se otorga una sola vez. Pro/Premium excluidos automáticamente.",
       "dontShowAgain": "No mostrar de nuevo",
       "later": "Más tarde",
-      "cta": "Ver en Estadísticas"
+      "cta": "Ver en Estadísticas",
+      "start": "Empezar"
     },
     "reminder": {
       "startTitle": "¡Comienza tu Streak hoy!",

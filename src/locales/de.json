@@ -737,7 +737,8 @@
       "milestoneHint": "Jeder Meilenstein wird einmalig vergeben. Pro/Premium automatisch ausgeschlossen.",
       "dontShowAgain": "Nicht mehr anzeigen",
       "later": "Später",
-      "cta": "In Statistik ansehen"
+      "cta": "In Statistik ansehen",
+      "start": "Starten"
     },
     "reminder": {
       "startTitle": "Starte heute deine Streak!",

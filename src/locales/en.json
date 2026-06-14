@@ -743,7 +743,8 @@
       "milestoneHint": "Each milestone is awarded once. Rewards skip for Pro/Premium.",
       "dontShowAgain": "Don't show this again",
       "later": "Later",
-      "cta": "View in Stats"
+      "cta": "View in Stats",
+      "start": "Start"
     },
     "reminder": {
       "startTitle": "Start your Streak today!",

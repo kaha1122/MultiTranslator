@@ -743,7 +743,8 @@
       "milestoneHint": "각 마일스톤은 1회만 지급됩니다. Pro/Premium은 자동 제외돼요.",
       "dontShowAgain": "다시 보지 않음",
       "later": "나중에",
-      "cta": "통계 탭에서 보기"
+      "cta": "통계 탭에서 보기",
+      "start": "시작"
     },
     "reminder": {
       "startTitle": "오늘부터 Streak 시작!",

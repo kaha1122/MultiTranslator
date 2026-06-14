@@ -9,18 +9,12 @@ import { useT } from '../utils/i18n';
 import { MILESTONES, MILESTONE_REWARDS } from '../hooks/useStreak';
 import './StreakIntroModal.css';
 
-const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang }) => {
+const StreakIntroModal = ({ open, onClose, onPermanentDismiss, sourceLang }) => {
     const t = useT(sourceLang);
     const [dontShowAgain, setDontShowAgain] = useState(false);
 
     const handleClose = () => {
         if (dontShowAgain) onPermanentDismiss();
-        else onClose();
-    };
-
-    const handleCta = () => {
-        if (dontShowAgain) onPermanentDismiss();
-        if (onCta) onCta();
         else onClose();
     };
 
@@ -102,13 +96,10 @@ const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang
                             <span>{t('streak.intro.dontShowAgain')}</span>
                         </label>
 
-                        {/* CTA 버튼 2개 */}
-                        <div className="streak-intro-actions">
-                            <button className="streak-intro-btn-secondary" onClick={handleClose}>
-                                {t('streak.intro.later')}
-                            </button>
-                            <button className="streak-intro-btn-primary" onClick={handleCta}>
-                                {t('streak.intro.cta')}
+                        {/* CTA — 단일 "시작" 버튼 (닫고 학습 시작) */}
+                        <div className="streak-intro-actions single">
+                            <button className="streak-intro-btn-primary" onClick={handleClose}>
+                                {t('streak.intro.start')}
                             </button>
                         </div>
                     </motion.div>

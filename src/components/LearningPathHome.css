@@ -84,13 +84,13 @@
   flex-direction: column;
   padding-bottom: 4px;
 }
-/* 중앙 연결선: 첫 노드 중심 ~ 마지막 노드 중심 (row-h 68 → top/bottom 34) */
+/* 중앙 연결선: 첫 노드 중심 ~ 마지막 노드 중심 (row-h 84 → top/bottom 42) */
 .lph-nodes::before {
   content: '';
   position: absolute;
   left: 50%;
-  top: 34px;
-  bottom: 34px;
+  top: 42px;
+  bottom: 42px;
   width: 3px;
   transform: translateX(-50%);
   background: color-mix(in srgb, var(--unit-color) 30%, #e2e8f0);
@@ -98,7 +98,7 @@
 }
 .lph-row {
   position: relative;
-  height: 68px;
+  height: 84px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -121,8 +121,8 @@
 .lph-node {
   position: relative;
   z-index: 1;
-  width: 60px;
-  height: 60px;
+  width: 78px;
+  height: 78px;
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -140,7 +140,7 @@
   box-shadow: 0 0 0 5px color-mix(in srgb, var(--unit-color) 18%, transparent);
 }
 .lph-node.locked { color: #cbd5e1; }
-.lph-node-dot { width: 14px; height: 14px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+.lph-node-dot { width: 18px; height: 18px; border-radius: 50%; background: currentColor; opacity: 0.5; }
 
 /* "지금 여기" 배지 — 노드 위, 노드 좌/우 위치 따라감 */
 .lph-here {
@@ -168,8 +168,8 @@
   color: #475569;
   max-width: 96px;
 }
-.lph-row.left .lph-node-label { right: calc(50% + 90px); text-align: right; }
-.lph-row.right .lph-node-label { left: calc(50% + 90px); text-align: left; }
+.lph-row.left .lph-node-label { right: calc(50% + 102px); text-align: right; }
+.lph-row.right .lph-node-label { left: calc(50% + 102px); text-align: left; }
 
 /* 70 미니그리드 */
 .lph-minimap {

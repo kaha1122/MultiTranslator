@@ -599,12 +599,14 @@ function App() {
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
     // streak 달성 팝업은 viewMode 전환 effect가 일괄 처리 (back 헤더/헤더 홈버튼/안드로이드 back 모두 커버)
   };
-  // 토픽 진척(단어/지문 통과) 기록 + 그날 첫 진척이면 streak 달성 pending
+  // 토픽 진척(단어/지문 통과) 기록 + 일일 목표 카운트(#5: 발음 통과=달성, 저장 무관) + streak pending
   const handleTopicPass = async (args) => {
     const ok = await topicProgress.recordPass(args);
     if (ok) {
       const newlyMarked = await markTopicProgressToday();
       if (newlyMarked) streakEarnedPendingRef.current = true;
+      // 일일 목표(🎯 todayCount/dailyGoal)는 발음 통과에서만 증가 (per-item dedup)
+      incrementAchievement(`pass-${args.topicId}-${args.lang}-${args.phase}-${args.itemKey}`);
     }
     return ok;
   };
@@ -2653,17 +2655,7 @@ function App() {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
       setSavedCardIds(prev => ({ ...prev, [langCode]: result.id }));
       incrementDailySave();
-
-      // 🔧 BUGFIX 2026-05-07: 발음 점수가 목표 달성하면 daily achievement 카운터 +1.
-      //   다른 탭(Vocab/Scene/Listening/Video/Library)들은 모두 같은 패턴이 있는데
-      //   Translation Tab만 누락되어 있어 "오늘 3장 중 X장 달성" 카운터가 안 늘어나던 결함 수정.
-      //   key는 docRef.id 기반(`library-${id}`)으로 다른 save 함수들과 통일.
-      const score = practiceResults[langCode]?.pronunciationScore;
-      const goal = languageGoals[langCode] || 80;
-      if (score != null && score >= goal && result.id) {
-        const wasNew = await incrementAchievement(`library-${result.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      // 2026-06-14 #5: 저장 시 달성 카운트 제거 — Translation 통과 카운트는 onTargetAchieved(발음 통과)에서 처리.
 
       // Library로 이동하여 저장된 카드 포커스
       if (result.id) {
@@ -2703,12 +2695,7 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      // 2026-06-14 #5: 저장은 학습 완료 아님 — 달성 카운트 제거(발음 통과에서만 증가)
     } catch (error) {
       console.error("Video 카드 저장 오류:", error);
     }
@@ -2758,12 +2745,8 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      // 2026-06-14 #5: 카드 저장은 '학습 완료/달성' 아님 — 일일 목표 카운트는 발음 통과
+      //   (handleTopicPass / handleTargetAchieved)에서만 증가. 저장 시 달성 카운트 제거.
       return docRef.id;
     } catch (error) {
       console.error("Scene 카드 저장 오류:", error);
@@ -2819,12 +2802,8 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      // 2026-06-14 #5: 카드 저장은 '학습 완료/달성' 아님 — 일일 목표 카운트는 발음 통과
+      //   (handleTopicPass / handleTargetAchieved)에서만 증가. 저장 시 달성 카운트 제거.
       return docRef.id;
     } catch (error) {
       console.error("ConversationMessage 카드 저장 오류:", error);
@@ -2974,12 +2953,8 @@ function App() {
       });
       incrementSavedCard();
       incrementDailySave();
-      // 2026-06-07: 카드 저장 무과금 (학습 핵심 행동) — addAdPoints 제거
-      const goal = languageGoals[langCode] || 80;
-      if (pronunciationScore != null && pronunciationScore >= goal) {
-        const wasNew = await incrementAchievement(`library-${docRef.id}`);
-        if (wasNew) setShowProgressPopup(true);
-      }
+      // 2026-06-14 #5: 카드 저장은 '학습 완료/달성' 아님 — 일일 목표 카운트는 발음 통과
+      //   (handleTopicPass / handleTargetAchieved)에서만 증가. 저장 시 달성 카운트 제거.
       return docRef.id;
     } catch (error) {
       console.error("Vocab 카드 저장 오류:", error);
@@ -3650,10 +3625,6 @@ function App() {
         open={showStreakIntro}
         onClose={closeStreakIntro}
         onPermanentDismiss={permanentlyDismissStreakIntro}
-        onCta={() => {
-          closeStreakIntro();
-          setViewMode('stats');
-        }}
         sourceLang={sourceLang}
       />
 
@@ -4445,7 +4416,7 @@ function App() {
                 return displayLangs.map((langCode) => {
                 const lang = getLangInfo(langCode);
                 const practiceResult = practiceResults[langCode];
-                const goal = languageGoals[langCode] || 80;
+                const goal = languageGoals[langCode] || 60;
                 // 모국어(sourceLang)가 아닌 모든 카드에 sourceLang 번역 부가 표시
                 const showSourceTranslation = langCode !== sourceLang && sourceTranslation;
                 return (
