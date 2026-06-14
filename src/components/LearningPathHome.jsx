@@ -1,9 +1,10 @@
 import { useState, useEffect, useRef } from 'react';
-import { Lock, Check, Play } from 'lucide-react';
+import { Lock, Check, Play, ChevronDown } from 'lucide-react';
 import { getT } from '../utils/i18n';
 import { getLangInfo } from '../config/languages';
 import {
   UNITS,
+  TOPIC_INDEX,
   TOTAL_TOPICS,
   isTopicMastered,
   getCurrentTopicId,
@@ -26,14 +27,27 @@ export default function LearningPathHome({
   const langs = targetLangs.length > 0 ? targetLangs : ['en'];
   const [activeLang, setActiveLang] = useState(langs[0]);
 
-  // targetLangs 변경 시 활성 언어 보정
+  // targetLangs 변경 시 활성 언어 보정 (prop 변화 동기화 — 조건부 1회성)
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     if (!langs.includes(activeLang)) setActiveLang(langs[0]);
   }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const progressMap = getLangProgress(activeLang);
   const currentTopicId = getCurrentTopicId(progressMap);
   const masteredCount = countMastered(progressMap);
+
+  // 유닛 접기/펼치기 — 처음엔 유닛1·2만 열림 + 현재 토픽이 속한 유닛은 로드 후 자동 오픈
+  const [openUnits, setOpenUnits] = useState({ 0: true, 1: true });
+  const didInitUnitsRef = useRef(false);
+  useEffect(() => {
+    if (didInitUnitsRef.current || !loaded) return;
+    didInitUnitsRef.current = true;
+    const cu = TOPIC_INDEX[currentTopicId]?.unitIndex;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    if (cu != null) setOpenUnits((prev) => (prev[cu] ? prev : { ...prev, [cu]: true }));
+  }, [loaded]); // eslint-disable-line react-hooks/exhaustive-deps
+  const toggleUnit = (idx) => setOpenUnits((prev) => ({ ...prev, [idx]: !prev[idx] }));
 
   // 현재("지금 여기") 노드로 최초 1회 스크롤 — VocabTab 패턴(getBoundingClientRect + 안드로이드 height-0 retry)
   const currentNodeRef = useRef(null);
@@ -89,41 +103,53 @@ export default function LearningPathHome({
         })}
       </div>
 
-      {/* 계단 — 유닛별 그룹 */}
+      {/* 계단 — 유닛별 그룹(접기/펼치기) */}
       <div className="lph-stairs">
         {UNITS.map((unit) => {
           const unitMastered = unit.topicIds.filter((id) => isTopicMastered(progressMap[id])).length;
+          const open = !!openUnits[unit.unitIndex];
           return (
             <section key={unit.catId} className="lph-unit" style={{ '--unit-color': unit.color }}>
-              <div className="lph-unit-banner">
+              <button
+                type="button"
+                className="lph-unit-banner"
+                onClick={() => toggleUnit(unit.unitIndex)}
+                aria-expanded={open}
+              >
                 <span className="lph-unit-title">
                   {t('learningPath.unit')} {unit.unitIndex + 1} · {unit.icon} {t(`vocabCat.${unit.catId}`)}
                 </span>
-                <span className="lph-unit-count">{unitMastered}/{unit.topicIds.length}</span>
-              </div>
-              <div className="lph-nodes">
-                {unit.topicIds.map((topicId, i) => {
-                  const state = nodeState(topicId);
-                  const isCurrent = state === 'current';
-                  return (
-                    <div key={topicId} className={`lph-node-wrap pos-${i % 3}`}>
-                      <button
-                        ref={isCurrent ? currentNodeRef : null}
-                        className={`lph-node ${state}`}
-                        onClick={() => onOpenTopic?.(topicId, activeLang)}
-                        aria-label={t(`vocabTopic.${topicId}`)}
-                      >
-                        {state === 'mastered' ? <Check size={26} strokeWidth={3} />
-                          : state === 'current' ? <Play size={24} fill="currentColor" />
-                            : state === 'locked' ? <Lock size={18} />
-                              : <span className="lph-node-dot" />}
-                      </button>
-                      {isCurrent && <span className="lph-here">{t('learningPath.here')}</span>}
-                      <span className="lph-node-label">{t(`vocabTopic.${topicId}`)}</span>
-                    </div>
-                  );
-                })}
-              </div>
+                <span className="lph-unit-right">
+                  <span className="lph-unit-count">{unitMastered}/{unit.topicIds.length}</span>
+                  <ChevronDown size={16} className={`lph-unit-chevron ${open ? 'open' : ''}`} />
+                </span>
+              </button>
+              {open && (
+                <div className="lph-nodes">
+                  {unit.topicIds.map((topicId, i) => {
+                    const state = nodeState(topicId);
+                    const isCurrent = state === 'current';
+                    const side = i % 2 === 0 ? 'left' : 'right';
+                    return (
+                      <div key={topicId} className={`lph-row ${side}`}>
+                        <button
+                          ref={isCurrent ? currentNodeRef : null}
+                          className={`lph-node ${state}`}
+                          onClick={() => onOpenTopic?.(topicId, activeLang)}
+                          aria-label={t(`vocabTopic.${topicId}`)}
+                        >
+                          {state === 'mastered' ? <Check size={24} strokeWidth={3} />
+                            : state === 'current' ? <Play size={22} fill="currentColor" />
+                              : state === 'locked' ? <Lock size={18} />
+                                : <span className="lph-node-dot" />}
+                        </button>
+                        {isCurrent && <span className="lph-here">{t('learningPath.here')}</span>}
+                        <span className="lph-node-label">{t(`vocabTopic.${topicId}`)}</span>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </section>
           );
         })}
