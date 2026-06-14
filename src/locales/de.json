@@ -565,7 +565,37 @@
     "dialogue": "Dialog",
     "word": "Vokabeln"
   },
+  "learningPath": {
+    "here": "Du bist hier",
+    "unit": "Einheit",
+    "mapTitle": "Karte aller 70 Themen",
+    "masteredLegend": "Gefüllt = gemeistert",
+    "masteredLabel": "gemeistert",
+    "wordPhaseTitle": "1. Wortaussprache",
+    "wordPhaseDesc": "5 Schlüsselwörter lernen & bewerten",
+    "passagePhaseTitle": "2. Text-Shadowing",
+    "passagePhaseDesc": "Sätze mit diesen Wörtern nachsprechen",
+    "passageLocked": "Zuerst die Wörter abschließen",
+    "passed": "bestanden",
+    "sentences": "Sätze",
+    "hubHint": "Wörter aus Schritt 1 fließen in den Text von Schritt 2 — dieselben Wörter erscheinen im Kontext wieder."
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "Hör zuerst zu 👂",
+      "listenBtn": "Anhören",
+      "speakTitle": "Jetzt sprich es nach 🎤",
+      "speakHint": "Tippe auf das Mikrofon und sprich nach",
+      "listenAgain": "Nochmal anhören",
+      "privacyNote": "Deine Stimme wird zur Ausspracheanalyse sicher verarbeitet.",
+      "later": "Später",
+      "analyzing": "Wird analysiert...",
+      "resultTitle": "Großartiger Start! 🎉",
+      "resultDesc": "Du bist bereit, mit dem Ausspracheüben zu beginnen.",
+      "retry": "Erneut versuchen",
+      "continue": "Weiter",
+      "openSettings": "Einstellungen öffnen"
+    },
     "nativeLang": "Was ist Ihre Muttersprache?",
     "targetLang": "Welche Sprache möchten Sie\nlernen?",
     "moreLang": "Noch eine weitere Sprache\nlernen?",

@@ -36,6 +36,7 @@ export function VocabWordCard({
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
     t,
+    onTopicPass,            // Phase 1 단계학습: score>=goal 통과 시 itemKey와 함께 호출(없으면 standalone)
     headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
@@ -85,6 +86,8 @@ export function VocabWordCard({
             if (score >= targetGoal) {
                 playSuccessSound();
                 if (!isSaved) onBookmarkPrompt?.(score);
+                // 단계학습 진행 기록 — 단어 텍스트를 itemKey로(멱등 dedup). preset 진입 시에만 제공됨.
+                onTopicPass?.(practiceMode === 'word' ? w.word : (w.example || w.word));
             } else {
                 playAlertSound();
             }
@@ -269,6 +272,9 @@ export default function VocabTab({
     userLevel,
     languageLevels = {},
     isActive = true,
+    preset = null,          // Phase 1 단계학습 진입: { catId, subId, topicId, level, lang } — 토픽 고정+UI collapse
+    onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
+    onTopicPass,            // 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -281,14 +287,17 @@ export default function VocabTab({
         const topic = sub.topics[Math.floor(Math.random() * sub.topics.length)];
         return { catId: cat.id, subId: sub.id, topicId: topic.id };
     };
-    const initialTopic = pickRandomTopic();
+    const initialTopic = preset
+        ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId }
+        : pickRandomTopic();
 
-    const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
+    const [selectedLang, setSelectedLang] = useState(preset ? preset.lang : (sourceLang || targetLangs[0] || 'en'));
     // 난이도는 "선택 언어"의 설정값을 따름 (languageLevels[selectedLang]).
     // 언어 전환 또는 해당 언어 설정 변경 시 자동 반영. 같은 언어 내 수동 변경은 deps가
     // 안 바뀌어 보존됨(setLevel은 level만 바꾸므로 effect 재실행 트리거 아님).
-    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    const [level, setLevel] = useState(() => preset ? preset.level : (languageLevels[selectedLang] || userLevel || 'basic'));
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 난이도는 preset/사용자 토글이 결정 — 자동 sync 비활성
         setLevel(languageLevels[selectedLang] || userLevel || 'basic');
     }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [pickerCatId, setPickerCatId] = useState(null);
@@ -375,6 +384,7 @@ export default function VocabTab({
     // stale 값이 우연히 신규 배열에 포함된 경우 사용자가 의도한 default를 무시하게 됨.
     const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 언어는 preset 고정 — default 따라가기 비활성
         if (visibleLanguages.length === 0) return;
         const newDefault = visibleLanguages[0];
         const defaultChanged = prevDefaultLangRef.current !== newDefault;
@@ -383,6 +393,15 @@ export default function VocabTab({
             setSelectedLang(newDefault);
         }
     }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // preset 변경(다른 토픽으로 재진입) 시 토픽/언어/난이도 재동기화 — 탭이 상시 마운트라 init만으론 부족
+    useEffect(() => {
+        if (!preset) return;
+        setSelectedLang(preset.lang);
+        setLevel(preset.level);
+        setSelectedTopic({ catId: preset.catId, subId: preset.subId, topicId: preset.topicId });
+        setCustomInput('');
+    }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 토픽 변경 시 리셋
     useEffect(() => {
@@ -480,7 +499,20 @@ export default function VocabTab({
     // ── Render ───────────────────────────────────────────────────────
     return (
         <div className="vocab-container">
-            {/* Language Pills */}
+            {/* 단계학습 back 헤더 */}
+            {preset && (
+                <button
+                    type="button"
+                    className="vocab-step-back"
+                    onClick={onBack}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#0d9488', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
+                >
+                    ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                </button>
+            )}
+
+            {/* Language Pills — 단계학습 진입 시 언어 고정이라 숨김 */}
+            {!preset && (
             <div className="vocab-lang-row">
                 {visibleLanguages.map(code => (
                     <button
@@ -492,6 +524,7 @@ export default function VocabTab({
                     </button>
                 ))}
             </div>
+            )}
 
             {/* Level Selector */}
             <div className="vocab-level-row">
@@ -510,6 +543,8 @@ export default function VocabTab({
                 ))}
             </div>
 
+            {/* 단계학습 진입 시 토픽이 고정이라 카테고리/칩/커스텀 입력 collapse */}
+            {!preset && (<>
             {/* ── Category Slider + 선택 칩 ──────────────────────── */}
             <CategorySlider
                 sourceLang={sourceLang}
@@ -558,6 +593,7 @@ export default function VocabTab({
                     }}
                 />
             </div>
+            </>)}
 
             {/* Generate Button */}
             <div className="vocab-generate-row">
@@ -609,6 +645,9 @@ export default function VocabTab({
                             activeRecIdx={activeRecIdx}
                             onRecordingStart={setActiveRecIdx}
                             t={t}
+                            onTopicPass={preset && onTopicPass
+                                ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'word', itemKey })
+                                : undefined}
                         />
                     ))}
                 </div>

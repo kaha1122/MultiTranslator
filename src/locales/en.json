@@ -571,7 +571,37 @@
     "dialogue": "Dialogue",
     "word": "Vocabulary"
   },
+  "learningPath": {
+    "here": "You are here",
+    "unit": "Unit",
+    "mapTitle": "All 70 Topics Map",
+    "masteredLegend": "Filled = mastered",
+    "masteredLabel": "mastered",
+    "wordPhaseTitle": "1. Word Pronunciation",
+    "wordPhaseDesc": "Learn & score 5 key words",
+    "passagePhaseTitle": "2. Passage Shadowing",
+    "passagePhaseDesc": "Shadow sentences using those words",
+    "passageLocked": "Finish the words first",
+    "passed": "passed",
+    "sentences": "sentences",
+    "hubHint": "Step 1 words feed Step 2's passage — the same words reappear in context."
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "First, listen 👂",
+      "listenBtn": "Listen",
+      "speakTitle": "Now, say it out loud 🎤",
+      "speakHint": "Tap the mic and repeat",
+      "listenAgain": "Listen again",
+      "privacyNote": "Your voice is processed securely for pronunciation analysis.",
+      "later": "I'll do this later",
+      "analyzing": "Analyzing...",
+      "resultTitle": "Great start! 🎉",
+      "resultDesc": "You're ready to start practicing pronunciation.",
+      "retry": "Try again",
+      "continue": "Continue",
+      "openSettings": "Open Settings"
+    },
     "nativeLang": "What is your native language?",
     "targetLang": "Which language would you\nlike to learn?",
     "moreLang": "Any other language you\nwould like to learn?",

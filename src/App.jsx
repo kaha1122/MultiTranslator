@@ -54,12 +54,14 @@ import DailyProgressPopup from './components/DailyProgressPopup';
 import StreakCelebrationModal from './components/StreakCelebrationModal';
 import StreakIntroModal from './components/StreakIntroModal';
 import StreakStatusPopup from './components/StreakStatusPopup';
-import HomePage from './components/HomePage';
+import LearningPathHome from './components/LearningPathHome';
+import TopicHub from './components/TopicHub';
 import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
+import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
@@ -582,6 +584,18 @@ function App() {
 
   // Daily progress hook
   const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk } = useDailyProgress(user, dailyGoal);
+
+  // Phase 1 단계학습 — 토픽별 진행 모델 + 홈/허브 네비
+  const topicProgress = useTopicProgress(user);
+  const [hubTopic, setHubTopic] = useState(null);          // TopicHub 오버레이: { topicId, activeLang } | null
+  const [learningPreset, setLearningPreset] = useState(null); // { tab, catId, subId, topicId, level, lang } | null
+  const startTopicLearning = (tab, p) => { setLearningPreset({ tab, ...p }); setHubTopic(null); setViewMode(tab); };
+  const exitTopicLearning = () => {
+    const tid = learningPreset?.topicId, lang = learningPreset?.lang;
+    setLearningPreset(null);
+    setViewMode('home');
+    if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
+  };
 
   // Streak 시스템 — 마일스톤 7/14/30/100일 자동 보너스 (Phase 1)
   const { streakCurrent, streakLongest, totalAchievedDays, earnedMilestones, nextMilestone, nextReward, daysToNext, celebration, dismissCelebration } = useStreak(user, weeklyData, dailyGoal, profile);
@@ -1125,7 +1139,9 @@ function App() {
   }, [user]);
 
   // 메인 탭 순서 — 하단 nav + 상단 타이틀바 양쪽이 참조
-  const TAB_ORDER = ['home', 'vocab', 'scene', 'listening', 'translation', 'video', 'library', 'stats'];
+  // Phase 1 네비 개편: Vocab·Listening은 단계학습(홈 계단)으로만 진입, Video 잠정삭제, Stats는 사이드바.
+  // 하단 네비 = 홈 / 단어장(Library) / 번역기 / Free Talking(scene)
+  const TAB_ORDER = ['home', 'library', 'translation', 'scene'];
   // 2026-05-04: emoji → lucide-react 컴포넌트로 통일 (사이드바와 일관성 + CSS color 토글 가능)
   // 2026-05-08: scene 아이콘 → MessageCircle + amber #f59e0b (Free Talking NEW 강조, 사이드바와 동일)
   const TAB_STYLE = {
@@ -3230,6 +3246,8 @@ function App() {
           emotion: emotion || undefined,
           byokAzureKey: byokAzureKey || undefined,
           byokAzureRegion: byokAzureRegion || undefined,
+          // durable: 고정/공통 콘텐츠(온보딩 등) — 서버 영속(Storage) write-through 캐시 사용
+          durable: opts.durable || undefined,
         }),
         signal: ac.signal,
       });
@@ -3839,34 +3857,17 @@ function App() {
                 {getT(sourceLang, 'nav.home')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'vocab' ? 'active' : ''}`}
-                onClick={() => { setViewMode('vocab'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><BookOpen size={16} /></span>
-                {getT(sourceLang, 'nav.vocab')}
-              </button>
-
+              {/* Phase 1: Vocab·Listening은 단계학습(홈)으로만 진입, Video 잠정삭제 → 사이드바에서 제거 */}
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
                 onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
                 {getT(sourceLang, 'nav.scene')}
               </button>
 
-              <button className={`sidebar-nav-item ${viewMode === 'listening' ? 'active' : ''}`}
-                onClick={() => { setViewMode('listening'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
-                <span className="sidebar-nav-icon"><Headphones size={16} /></span>
-                {getT(sourceLang, 'nav.listening')}
-              </button>
-
               <button className={`sidebar-nav-item ${viewMode === 'translation' ? 'active' : ''}`}
                 onClick={() => { setViewMode('translation'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
                 <span className="sidebar-nav-icon"><Languages size={16} /></span>
                 {getT(sourceLang, 'nav.translation')}
-              </button>
-
-              <button className={`sidebar-nav-item ${viewMode === 'video' ? 'active' : ''}`}
-                onClick={() => { setViewMode('video'); setSidebarOpen(false); }}>
-                <span className="sidebar-nav-icon"><Youtube size={16} /></span>
-                {getT(sourceLang, 'nav.video')}
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'library' ? 'active' : ''}`}
@@ -4299,23 +4300,15 @@ function App() {
       </header>
 
       <main className="app-main-content">
-        {/* 홈 탭 */}
+        {/* 홈 탭 — Phase 1: 학습경로 계단 홈 (기존 HomePage는 dormant 보존, 롤백용) */}
         <div style={{ display: viewMode === 'home' ? 'block' : 'none', width: '100%' }}>
-          <HomePage
-            user={user}
-            weeklyData={weeklyData}
-            todayCount={todayCount}
-            todaySaveCount={todaySaveCount}
-            todayPronCount={todayPronCount}
-            todayListenCount={todayListenCount}
-            todayFreeTalkCount={todayFreeTalkCount}
-            dailyGoal={dailyGoal}
-            dailyPronLimit={TRIAL_DAILY_PRON_LIMIT}
-            dailyFreeTalkLimit={TRIAL_FREETALK_DAILY_LIMIT}
-            dailyListenLimit={TRIAL_DAILY_LISTEN_LIMIT}
+          <LearningPathHome
             sourceLang={sourceLang}
-            onNavigate={(tab) => setViewMode(tab)}
+            targetLangs={targetLangs}
+            getLangProgress={topicProgress.getLangProgress}
+            loaded={topicProgress.loaded}
             isActive={viewMode === 'home'}
+            onOpenTopic={(topicId, activeLang) => setHubTopic({ topicId, activeLang })}
           />
         </div>
 
@@ -4489,6 +4482,9 @@ function App() {
           {visitedTabsRef.current.has('vocab') && (
           <VocabTab
             isActive={viewMode === 'vocab'}
+            preset={learningPreset?.tab === 'vocab' ? learningPreset : null}
+            onBack={exitTopicLearning}
+            onTopicPass={topicProgress.recordPass}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
@@ -4515,6 +4511,9 @@ function App() {
           {visitedTabsRef.current.has('listening') && (
           <ListeningTab
             isActive={viewMode === 'listening'}
+            preset={learningPreset?.tab === 'listening' ? learningPreset : null}
+            onBack={exitTopicLearning}
+            onTopicPass={topicProgress.recordPass}
             sourceLang={sourceLang}
             targetLangs={targetLangs}
             userLevel={userLevel}
@@ -5715,11 +5714,26 @@ function App() {
         )}
       </AnimatePresence>
 
+      {/* Phase 1 단계학습 — TopicHub 오버레이 (홈 계단 노드 탭) */}
+      {hubTopic && (
+        <TopicHub
+          topicId={hubTopic.topicId}
+          sourceLang={sourceLang}
+          activeLang={hubTopic.activeLang}
+          defaultLevel={languageLevels[hubTopic.activeLang] || userLevel || 'basic'}
+          getTopicProgress={topicProgress.getTopicProgress}
+          onClose={() => setHubTopic(null)}
+          onStartWord={(p) => startTopicLearning('vocab', p)}
+          onStartPassage={(p) => startTopicLearning('listening', p)}
+        />
+      )}
+
       {/* 신규 유저 온보딩 팝업 */}
       {showOnboarding && (
         <OnboardingModal
           defaultSourceLang={sourceLang}
           onComplete={handleOnboardingComplete}
+          onSpeak={handleSpeak}
         />
       )}
 

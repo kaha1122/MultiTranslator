@@ -565,7 +565,37 @@
     "dialogue": "Hội thoại",
     "word": "Từ vựng"
   },
+  "learningPath": {
+    "here": "Bạn đang ở đây",
+    "unit": "Phần",
+    "mapTitle": "Bản đồ 70 chủ đề",
+    "masteredLegend": "Tô màu = đã thành thạo",
+    "masteredLabel": "thành thạo",
+    "wordPhaseTitle": "1. Phát âm từ",
+    "wordPhaseDesc": "Học & chấm điểm 5 từ chính",
+    "passagePhaseTitle": "2. Nói theo đoạn văn",
+    "passagePhaseDesc": "Đọc theo câu có những từ đó",
+    "passageLocked": "Hoàn thành từ vựng trước",
+    "passed": "đạt",
+    "sentences": "câu",
+    "hubHint": "Từ ở bước 1 → đưa vào đoạn văn bước 2 → các từ đó xuất hiện lại trong ngữ cảnh"
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "Hãy nghe trước 👂",
+      "listenBtn": "Nghe",
+      "speakTitle": "Bây giờ hãy nói theo 🎤",
+      "speakHint": "Chạm vào micro và nói theo",
+      "listenAgain": "Nghe lại",
+      "privacyNote": "Giọng nói của bạn được xử lý an toàn để phân tích phát âm.",
+      "later": "Để sau",
+      "analyzing": "Đang phân tích...",
+      "resultTitle": "Khởi đầu tuyệt vời! 🎉",
+      "resultDesc": "Bạn đã sẵn sàng bắt đầu luyện phát âm.",
+      "retry": "Thử lại",
+      "continue": "Tiếp tục",
+      "openSettings": "Mở Cài đặt"
+    },
     "nativeLang": "Tiếng mẹ đẻ của bạn là gì?",
     "targetLang": "Bạn muốn học ngôn ngữ nào?",
     "moreLang": "Bạn có muốn học thêm\nngôn ngữ nào không?",

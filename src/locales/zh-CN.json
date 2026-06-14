@@ -565,7 +565,37 @@
     "dialogue": "对话",
     "word": "词汇"
   },
+  "learningPath": {
+    "here": "当前位置",
+    "unit": "单元",
+    "mapTitle": "全部 70 主题地图",
+    "masteredLegend": "填色 = 已掌握",
+    "masteredLabel": "掌握",
+    "wordPhaseTitle": "1. 单词发音",
+    "wordPhaseDesc": "学习并评分 5 个核心单词",
+    "passagePhaseTitle": "2. 篇章跟读",
+    "passagePhaseDesc": "朗读含这些单词的句子",
+    "passageLocked": "请先完成单词",
+    "passed": "通过",
+    "sentences": "句",
+    "hubHint": "第1步单词 → 注入第2步篇章 → 同样的单词在语境中再次出现"
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "先听一听 👂",
+      "listenBtn": "听一听",
+      "speakTitle": "现在跟着说一遍 🎤",
+      "speakHint": "点击麦克风并跟读",
+      "listenAgain": "再听一遍",
+      "privacyNote": "为进行发音分析，您的语音将被安全处理。",
+      "later": "稍后再说",
+      "analyzing": "分析中...",
+      "resultTitle": "很棒的开始！🎉",
+      "resultDesc": "您已准备好开始练习发音了。",
+      "retry": "再试一次",
+      "continue": "继续",
+      "openSettings": "打开设置"
+    },
     "nativeLang": "您的母语是什么？",
     "targetLang": "您想学习哪种语言？",
     "moreLang": "还有其他想学的语言吗？",

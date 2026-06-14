@@ -565,7 +565,37 @@
     "dialogue": "会話",
     "word": "単語"
   },
+  "learningPath": {
+    "here": "ここから",
+    "unit": "ユニット",
+    "mapTitle": "全70トピックマップ",
+    "masteredLegend": "色付き = マスター済み",
+    "masteredLabel": "マスター",
+    "wordPhaseTitle": "1. 単語の発音",
+    "wordPhaseDesc": "重要5単語を習得・採点",
+    "passagePhaseTitle": "2. 文章シャドーイング",
+    "passagePhaseDesc": "その単語が入った文章を発音",
+    "passageLocked": "先に単語を完了してください",
+    "passed": "合格",
+    "sentences": "文",
+    "hubHint": "ステップ1の単語 → ステップ2の文章に反映 → 同じ単語が文脈で再登場"
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "まず聞いてみましょう 👂",
+      "listenBtn": "聞く",
+      "speakTitle": "では、真似して言ってみましょう 🎤",
+      "speakHint": "マイクを押して話してください",
+      "listenAgain": "もう一度聞く",
+      "privacyNote": "発音分析のため、音声は安全に処理されます。",
+      "later": "あとでやります",
+      "analyzing": "分析中...",
+      "resultTitle": "素晴らしいスタートです！🎉",
+      "resultDesc": "発音練習を始める準備ができました。",
+      "retry": "もう一度挑戦",
+      "continue": "続ける",
+      "openSettings": "設定を開く"
+    },
     "nativeLang": "母国語は何ですか？",
     "targetLang": "学びたい言語は何ですか？",
     "moreLang": "他に学びたい言語は\nありますか？",

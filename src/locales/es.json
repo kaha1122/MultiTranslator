@@ -565,7 +565,37 @@
     "dialogue": "Diálogo",
     "word": "Vocabulario"
   },
+  "learningPath": {
+    "here": "Estás aquí",
+    "unit": "Unidad",
+    "mapTitle": "Mapa de los 70 temas",
+    "masteredLegend": "Relleno = dominado",
+    "masteredLabel": "dominado",
+    "wordPhaseTitle": "1. Pronunciación de palabras",
+    "wordPhaseDesc": "Aprende y puntúa 5 palabras clave",
+    "passagePhaseTitle": "2. Shadowing del texto",
+    "passagePhaseDesc": "Repite frases con esas palabras",
+    "passageLocked": "Completa primero las palabras",
+    "passed": "aprobado",
+    "sentences": "frases",
+    "hubHint": "Las palabras del paso 1 alimentan el texto del paso 2: las mismas palabras reaparecen en contexto."
+  },
   "onboarding": {
+    "firstPron": {
+      "listenTitle": "Primero, escucha 👂",
+      "listenBtn": "Escuchar",
+      "speakTitle": "Ahora, repítelo en voz alta 🎤",
+      "speakHint": "Toca el micrófono y repite",
+      "listenAgain": "Escuchar de nuevo",
+      "privacyNote": "Tu voz se procesa de forma segura para el análisis de pronunciación.",
+      "later": "Más tarde",
+      "analyzing": "Analizando...",
+      "resultTitle": "¡Excelente comienzo! 🎉",
+      "resultDesc": "Estás listo para empezar a practicar la pronunciación.",
+      "retry": "Intentar de nuevo",
+      "continue": "Continuar",
+      "openSettings": "Abrir Ajustes"
+    },
     "nativeLang": "¿Cuál es su idioma nativo?",
     "targetLang": "¿Qué idioma le gustaría\naprender?",
     "moreLang": "¿Algún otro idioma que\nquiera aprender?",
