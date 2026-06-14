@@ -9,6 +9,10 @@ const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
+const seedCache = require('../utils/seedCache');
+
+const SEED_COL = 'vocabSeed';
+const SEED_PAGE = 5;
 
 router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const { topic, topicLabel, category, isCustom, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
@@ -21,6 +25,21 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    // ── Phase 2: write-through seed (전역 공유·순차) ──────────────────────────
+    // offset이 오면(신규 클라) seed 경로. isCustom/구버전 클라(offset 없음)는 기존 개인 생성.
+    const hasOffset = req.body.offset !== undefined && req.body.offset !== null;
+    const offset = Math.max(0, parseInt(req.body.offset, 10) || 0);
+    const useSeed = !isCustom && hasOffset;
+    const seedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+    let seedItems = [];
+    if (useSeed) {
+        seedItems = await seedCache.readItems(SEED_COL, seedKey, 'words');
+        if (seedItems.length >= offset + SEED_PAGE) {
+            console.log(`[Seed] vocab HIT ${seedKey} offset=${offset} (Gemini 0)`);
+            return res.json({ words: seedItems.slice(offset, offset + SEED_PAGE), source: 'seed' });
+        }
+    }
 
     const targetLangName = LANG_NAMES[targetLang] || 'English';
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
@@ -52,12 +71,17 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
 
     // Anti-Duplication 블록 — 단순 negative list 한계(LLM lost-in-the-middle, 형태소 변형으로 우회) 보완.
     // self-check chain-of-thought 강제 + 어근/동의어/sub-cluster 차단 룰. 30개 cap (200개 박는 토큰 낭비 + 효과 저하).
-    const recent = Array.isArray(avoidWords) ? avoidWords.slice(-30) : [];
-    const olderCount = Array.isArray(avoidWords) ? Math.max(0, avoidWords.length - recent.length) : 0;
+    // seed 경로(frontier 생성)에선 기존 seed 단어 전체를 회피 소스로(전역 일관 시퀀스 유지).
+    // 비-seed(custom/구클라)는 기존대로 클라가 보낸 avoidWords.
+    const avoidSource = useSeed
+        ? seedItems.map(w => w?.word).filter(Boolean)
+        : (Array.isArray(avoidWords) ? avoidWords : []);
+    const recent = avoidSource.slice(-30);
+    const olderCount = Math.max(0, avoidSource.length - recent.length);
     const avoidBlock = recent.length > 0
         ? `
 === ANTI-DUPLICATION (CRITICAL — read carefully) ===
-The learner has already learned ${avoidWords.length} word(s) under this exact (topic + level + lang) combo.
+The learner has already learned ${avoidSource.length} word(s) under this exact (topic + level + lang) combo.
 ${olderCount > 0 ? `(${olderCount} older words omitted; ${recent.length} most recent shown.)\n` : ''}Recent avoided words:
 ${recent.map((w, i) => `${i + 1}. "${w}"`).join('\n')}
 
@@ -147,7 +171,14 @@ Return ONLY valid JSON (no markdown):
             w.example = stripAnnotations(w.example, targetLang);
         });
     }
-    res.json(parsed);
+    // seed 경로: frontier 생성물을 canonical 시퀀스에 append(경합 안전) 후 해당 페이지 slice 반환
+    if (useSeed && Array.isArray(parsed.words) && parsed.words.length > 0) {
+        const meta = { topicId: topic, level, sourceLang, targetLang };
+        const slice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', meta, parsed.words, offset, SEED_PAGE);
+        console.log(`[Seed] vocab MISS ${seedKey} offset=${offset} → Gemini 생성·저장`);
+        return res.json({ words: slice, source: 'gemini' });
+    }
+    res.json({ ...parsed, source: 'gemini' });
 });
 
 module.exports = router;

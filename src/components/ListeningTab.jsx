@@ -5,6 +5,7 @@ import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
+import { VocabWordCard } from './VocabTab';
 import CategorySlider from './CategorySlider';
 import TopicPickerModal from './TopicPickerModal';
 import MessageCardModal from './MessageCardModal';
@@ -251,8 +252,8 @@ export default function ListeningTab({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(
                     hasTurns
-                        ? { turns: dialogueTurns, dialogueSeed, langCode: selectedLang }
-                        : { text: ttsText, langCode: selectedLang }
+                        ? { turns: dialogueTurns, dialogueSeed, langCode: selectedLang, durable: !!preset }
+                        : { text: ttsText, langCode: selectedLang, durable: !!preset }
                 ),
                 signal: controller.signal,
             });
@@ -295,7 +296,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay, preset]);
 
     // 2026-06-09: 문장 클릭 → 카드 팝업 (개별 즉시재생 대체). 번역·발음·팁을 AI로 annotate 후
     //   MessageCardModal + ScenePracticeCard로 TTS(네이티브)·발음연습·저장 제공.
@@ -418,34 +419,39 @@ export default function ListeningTab({
             const cached = {
                 titles: Array.isArray(data.titles) ? data.titles : [],
                 passagesMeta: Array.isArray(data.passagesMeta) ? data.passagesMeta : [],
+                seedCursor: data.seedCursor || 0, // seed 경로: 현재 지문 페이지 offset
             };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: cached };
             return cached;
         } catch {
-            return { titles: [], passagesMeta: [] };
+            return { titles: [], passagesMeta: [], seedCursor: 0 };
         }
     };
 
-    const appendHistory = (key, newTitle, newMeta) => {
-        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [] };
+    const appendHistory = (key, newTitle, newMeta, nextCursor) => {
+        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0 };
         const updated = {
             titles: [...existing.titles, newTitle],
             passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
+            seedCursor: nextCursor != null ? nextCursor : (existing.seedCursor || 0),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/listeningHistory`, key), {
                 titles: updated.titles,
                 passagesMeta: updated.passagesMeta,
+                seedCursor: updated.seedCursor,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
     };
 
     // ── Generate Passage ─────────────────────────────────────────
-    const handleGenerate = async () => {
+    // opts.advance: seed 경로에서 "다음 지문"(커서 +1). 기본 false = 현재 페이지 로드.
+    const handleGenerate = async (opts = {}) => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        const isSeed = !hasCustom; // 비-custom = seed(전역 공유 순차) 경로
         // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
         if (isTrialListenLimitReached) {
             onTrialLimitReached?.();
@@ -463,7 +469,9 @@ export default function ListeningTab({
             ? customInput.trim()
             : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
         const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
-        const { titles: persistedTitles, passagesMeta: persistedMeta } = await loadHistory(historyKey);
+        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor } = await loadHistory(historyKey);
+        // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
+        const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
         const allAvoid = [...new Set([...persistedTitles, ...avoidTitlesRef.current])];
         // 50→20: long negative list 의 LLM 준수율 저하 회피 + 토큰 절감.
         // passagesMeta 도 동일하게 최근 20개만 전송 (서버에서 angle/keyword cluster rotation 강제).
@@ -496,7 +504,8 @@ export default function ListeningTab({
                     byokGeminiKey: byokGeminiKey || undefined,
                     avoidTitles: avoidTitlesForApi,
                     passagesMeta: passagesMetaForApi,
-                    wordsToInclude,
+                    wordsToInclude, // seed 경로는 서버가 vocabSeed로 대체(전송값 무시)
+                    offset: isSeed ? offset : undefined, // seed 경로만 offset 전송
                 }),
             });
 
@@ -510,6 +519,7 @@ export default function ListeningTab({
                     text: data.passage || '',
                     pronunciation: data.passagePronunciation || '',
                     translation: data.passageTranslation || '',
+                    sentences: Array.isArray(data.sentences) ? data.sentences : [], // seed 문장 카드(주석 포함)
                     counted: true,       // daily 3-limit: handleGenerate 에서 onGenerate 호출 → 첫 재생 dedup safety net
                     adsCharged: false,   // AdsPoint(15): 첫 재생 시 onFirstPlay 로 1회 더 차감 (Azure TTS 비용 반영)
                 });
@@ -518,12 +528,11 @@ export default function ListeningTab({
                 if (onGenerate) onGenerate();
                 if (data.title) {
                     avoidTitlesRef.current = [...avoidTitlesRef.current, data.title];
-                    // 신규 응답에 passageKeywords + angle 이 포함된 경우만 meta 누적.
-                    // 누락(이전 빌드 호환)이면 title 만 append → 기존 passagesMeta 그대로 보존.
                     const newMeta = (Array.isArray(data.passageKeywords) && data.angle)
                         ? { title: data.title, keywords: data.passageKeywords, angle: data.angle, createdAt: Date.now() }
                         : null;
-                    appendHistory(historyKey, data.title, newMeta);
+                    // seed 경로: 커서를 현재 페이지 offset으로 저장
+                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined);
                 }
             }
         } catch (e) {
@@ -539,6 +548,37 @@ export default function ListeningTab({
         setCustomInput('');
         setSelectedTopic({ catId, subId, topicId });
     };
+
+    // Phase 2: seed 문장 카드 저장 (자동 나열 카드용)
+    const handleSeedSentenceSave = async (s, pronunciationScore = null) => {
+        try {
+            const cardId = await onSaveSentence?.({
+                sentence: s.text,
+                translation: s.translation,
+                learningTip: s.learning_tip,
+                langCode: selectedLang,
+                scene: passage?.title || '',
+                pronunciationScore,
+            });
+            if (cardId !== null) { try { playStarSound(); } catch {} }
+            setSavedSentences(prev => new Set(prev).add(s.text));
+        } catch (e) {
+            console.error('[ListeningTab] seed sentence save failed:', e?.message);
+        }
+    };
+
+    // 단계학습(preset) 진입 시 현재 페이지 지문 자동 로드 (버튼 없이). preset 동기화 후 1회(토픽/유형별).
+    const autoGenKeyRef = useRef(null);
+    useEffect(() => {
+        if (!preset || !isActive) return;
+        if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
+        const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
+        if (autoGenKeyRef.current === k) return;
+        if (passage || isLoading) { autoGenKeyRef.current = k; return; }
+        autoGenKeyRef.current = k;
+        handleGenerate(); // 현재 페이지(seedCursor) 로드
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);
 
     // ── Render ───────────────────────────────────────────────────
     return (
@@ -660,7 +700,7 @@ export default function ListeningTab({
             {/* Generate Button */}
             <button
                 className="listening-generate-btn"
-                onClick={handleGenerate}
+                onClick={() => handleGenerate({ advance: !!selectedTopic && !!passage })}
                 disabled={isLoading || (!selectedTopic && !customInput.trim())}
             >
                 {isLoading ? (
@@ -720,16 +760,20 @@ export default function ListeningTab({
                         </div>
 
                         <div className="listening-passage-text">
-                            {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => (
-                                <span
-                                    key={idx}
-                                    className="listening-sentence"
-                                    onClick={() => openSentenceCard(sentence)}
-                                >
-                                    {sentence}
-                                    {passageType === 'dialogue' ? '\n' : ' '}
-                                </span>
-                            ))}
+                            {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => {
+                                const hasSeedCards = passage.sentences && passage.sentences.length > 0;
+                                return (
+                                    <span
+                                        key={idx}
+                                        className="listening-sentence"
+                                        onClick={hasSeedCards ? undefined : () => openSentenceCard(sentence)}
+                                        style={hasSeedCards ? { cursor: 'default' } : undefined}
+                                    >
+                                        {sentence}
+                                        {passageType === 'dialogue' ? '\n' : ' '}
+                                    </span>
+                                );
+                            })}
                         </div>
 
                         {passage.pronunciation && (
@@ -759,6 +803,36 @@ export default function ListeningTab({
                         )}
                     </div>
 
+                    {/* Phase 2: 문장 카드 자동 나열 (seed 주석 기반 — per-user Gemini 0). 단계학습 진입 시. */}
+                    {preset && passage.sentences && passage.sentences.length > 0 && (
+                        <div className="listening-keywords-list">
+                            {passage.sentences.map((s, i) => (
+                                <VocabWordCard
+                                    key={i}
+                                    w={{ word: s.text, pronunciation: s.pronunciation || '', meaning: s.translation || '', example: '', examplePronunciation: '', exampleTranslation: '', learningTip: s.learning_tip ? [s.learning_tip] : [] }}
+                                    index={i}
+                                    selectedLang={selectedLang}
+                                    sourceLang={sourceLang}
+                                    onSpeak={onSpeak}
+                                    ttsSource="listening"
+                                    isSaved={savedSentences.has(s.text)}
+                                    onSave={(score) => handleSeedSentenceSave(s, score)}
+                                    onTrialLimitReached={onTrialLimitReached}
+                                    onPronSuccess={onPronSuccess}
+                                    targetGoal={languageGoals[selectedLang] || 80}
+                                    onBookmarkPrompt={onBookmarkPrompt}
+                                    activeRecIdx={activeRecIdx}
+                                    onRecordingStart={setActiveRecIdx}
+                                    headlineBlock
+                                    t={t}
+                                    ttsDurable={!!preset}
+                                    onTopicPass={preset && onTopicPass
+                                        ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'passage', itemKey })
+                                        : undefined}
+                                />
+                            ))}
+                        </div>
+                    )}
                 </>
             )}
 

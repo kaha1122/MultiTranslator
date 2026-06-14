@@ -4,9 +4,12 @@ const { rateLimit } = require('../middleware/rateLimit');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
+const seedCache = require('../utils/seedCache');
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const PSEED_COL = 'passageSeed';
+const VSEED_COL = 'vocabSeed';
 
 // Listening 의 angle 차원 — 같은 토픽 안에서도 서술 각도를 회전해 다양성 확보.
 // 응답의 angle 필드는 반드시 이 5종 중 하나여야 함 (서버에서 화이트리스트 검증).
@@ -32,6 +35,19 @@ router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage'
     const guide = LANG_SPECIFIC_GUIDE[targetLang] || LANG_SPECIFIC_GUIDE['en'];
     const unit = guide.unit || 'words';
     const contentType = type === 'dialogue' ? 'dialogue' : 'essay';
+
+    // ── Phase 2: passageSeed (전역 공유·순차, 1개 단위) ──
+    const hasOffset = req.body.offset !== undefined && req.body.offset !== null;
+    const offset = Math.max(0, parseInt(req.body.offset, 10) || 0);
+    const useSeed = !isCustom && hasOffset;
+    const pseedKey = `${topic}--${contentType}--${level}--${sourceLang}--${targetLang}`;
+    if (useSeed) {
+        const passages = await seedCache.readItems(PSEED_COL, pseedKey, 'passages');
+        if (passages.length >= offset + 1) {
+            console.log(`[Seed] passage HIT ${pseedKey} offset=${offset} (Gemini 0)`);
+            return res.json({ ...passages[offset], source: 'seed' });
+        }
+    }
 
     const levelDesc = {
         basic: `Beginner (A1/A2)
@@ -81,9 +97,17 @@ Rotation rules — ALL mandatory:
 
     // [Phase 1 단계학습] 단어 단계에서 학습한 단어를 지문에 재등장시켜 문맥 학습 강화.
     // 빈 값이면 기존 동작과 동일(하위호환). 과도한 강제는 fluency 해치므로 "자연스럽게 최대한".
-    const includeWords = Array.isArray(wordsToInclude)
-        ? wordsToInclude.filter(w => typeof w === 'string' && w.trim()).map(w => w.trim().slice(0, 40)).slice(0, 12)
-        : [];
+    // seed 경로: 학습단어는 vocabSeed(전역 공유)에서 도출 → 지문 결정적·공유 유지.
+    // 비-seed(custom/구클라): 클라가 보낸 wordsToInclude(per-user).
+    let includeWordsSource = Array.isArray(wordsToInclude) ? wordsToInclude : [];
+    if (useSeed) {
+        const vseedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+        const vwords = await seedCache.readItems(VSEED_COL, vseedKey, 'words');
+        includeWordsSource = vwords.map(w => w?.word).filter(Boolean);
+    }
+    const includeWords = includeWordsSource
+        .filter(w => typeof w === 'string' && w.trim())
+        .map(w => w.trim().slice(0, 40)).slice(0, 12);
     const wordsBlock = includeWords.length > 0 ? `
 === STUDIED WORDS TO REUSE (IMPORTANT) ===
 The learner just studied these ${targetLangName} words/phrases. Weave AS MANY as read naturally into the passage so they re-encounter them in context (aim for at least ${Math.min(includeWords.length, 5)}). Do NOT force every one if it harms fluency:
@@ -155,6 +179,13 @@ ${avoidBlock}${wordsBlock}
     for 'essay' contentType you may pick from the other 4 angles, choosing one that hasn't been used recently
     per the rotation rules above.)
 
+=== SENTENCE CARDS (per-sentence study cards) ===
+8. Split the passage into its individual sentences (for dialogue: each turn line; strip "A:/B:" labels).
+   For EACH sentence output an item in "sentences" with: the pure sentence text (${targetLangName}, no
+   pronunciation annotations), its translation in ${sourceLangName}, its pronunciation
+   (zh-CN pinyin / ja hiragana / ru accent marks / others empty), and ONE concise learning_tip in ${sourceLangName}.
+   The "text" values concatenated must reconstruct the passage in order.
+
 Return ONLY valid JSON (no markdown):
 {
   "title": "<short title in ${targetLangName}>",
@@ -163,7 +194,11 @@ Return ONLY valid JSON (no markdown):
   "passagePronunciation": "<full pronunciation of passage — or empty string>",
   "passageTranslation": "<full passage translated in ${sourceLangName}>",
   "passageKeywords": ["<key1 in English, 1-3 words>", "<key2>", "<key3>"],
-  "angle": "<exactly one of ${JSON.stringify(LISTENING_ANGLES)}>"
+  "angle": "<exactly one of ${JSON.stringify(LISTENING_ANGLES)}>",
+  "sentences": [
+    { "text": "<pure sentence in ${targetLangName}>", "translation": "<in ${sourceLangName}>",
+      "pronunciation": "<pinyin/hiragana/accent or empty>", "learning_tip": "<one tip in ${sourceLangName}>" }
+  ]
 }`;
 
     const result = await callGeminiJson(prompt, geminiKey, {
@@ -189,7 +224,28 @@ Return ONLY valid JSON (no markdown):
             .map(k => k.trim().slice(0, 40))
             .slice(0, 3);
     }
-    res.json(parsed);
+    // 문장 카드 정규화 (주석 제거 보험)
+    if (Array.isArray(parsed.sentences)) {
+        parsed.sentences = parsed.sentences
+            .filter(s => s && typeof s.text === 'string' && s.text.trim())
+            .map(s => ({
+                text: stripAnnotations(s.text, targetLang),
+                translation: s.translation || '',
+                pronunciation: s.pronunciation || '',
+                learning_tip: s.learning_tip || '',
+            }));
+    } else {
+        parsed.sentences = [];
+    }
+
+    // seed 경로: canonical passage를 passageSeed에 append(경합 안전) 후 해당 passage 반환
+    if (useSeed && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
+        const meta = { topicId: topic, type: contentType, level, sourceLang, targetLang };
+        const slice = await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', meta, [parsed], offset, 1);
+        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → Gemini 생성·저장`);
+        return res.json({ ...(slice[0] || parsed), source: 'gemini' });
+    }
+    res.json({ ...parsed, source: 'gemini' });
 });
 
 // [2026-06-09] Listening 문장 카드용 — 기존 문장 1개를 annotate(번역·발음기호·학습팁).

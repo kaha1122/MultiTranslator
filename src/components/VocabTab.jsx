@@ -18,6 +18,8 @@ import './VocabTab.css';
 const makeVocabHistoryKey = (topicId, level, lang) =>
     `${topicId}--${level}--${lang}`;
 
+const SEED_PAGE = 5; // seed 페이지 크기(서버와 일치)
+
 const getServerUrl = () => {
     try {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
@@ -37,8 +39,13 @@ export function VocabWordCard({
     activeRecIdx, onRecordingStart,
     t,
     onTopicPass,            // Phase 1 단계학습: score>=goal 통과 시 itemKey와 함께 호출(없으면 standalone)
+    ttsDurable = false,     // Phase 2 seed 콘텐츠: TTS를 Azure durable(저장·공유)로 — 무과금
     headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
+    // seed 콘텐츠는 durable Azure(저장 음성)로 재생 — onSpeak에 _skipGate+durable 부여
+    const speak = ttsDurable
+        ? (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, { ...(o || {}), _skipGate: true, durable: true })
+        : onSpeak;
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 
@@ -111,7 +118,7 @@ export function VocabWordCard({
         <div className="vocab-word-actions">
             <button
                 className="vocab-action-btn"
-                onClick={() => onSpeak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
+                onClick={() => speak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
                 title="TTS"
             >
                 <Volume2 size={16} />
@@ -145,7 +152,7 @@ export function VocabWordCard({
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
                             }}
-                            onClick={() => onSpeak?.(w.example, selectedLang, undefined, { source: `${ttsSource}.example` })}
+                            onClick={() => speak?.(w.example, selectedLang, undefined, { source: `${ttsSource}.example` })}
                         >
                             <Volume2 size={14} />
                         </button>
@@ -218,7 +225,7 @@ export function VocabWordCard({
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} ttsSource={ttsSource} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={speak} ttsSource={ttsSource} />
 
                     {/* 녹음 버튼 */}
                     <div className="practice-actions">
@@ -351,27 +358,33 @@ export default function VocabTab({
         });
     }, [isActive]);
 
-    // Firebase에서 해당 키의 이력 읽기
+    // Firebase에서 해당 키의 이력 읽기 — { words(custom avoid용), seedCursor(현재 페이지 offset) }
     const loadVocabHistory = async (key) => {
-        if (!user) return [];
+        if (!user) return { words: [], seedCursor: 0 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
-            const words = snap.exists() ? (snap.data().words || []) : [];
-            historyCacheRef.current = { ...historyCacheRef.current, [key]: words };
-            return words;
+            const d = snap.exists() ? snap.data() : {};
+            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0 };
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: entry };
+            return entry;
         } catch {
-            return [];
+            return { words: [], seedCursor: 0 };
         }
     };
 
-    const appendVocabHistory = (key, newWords) => {
-        const existing = historyCacheRef.current[key] || [];
-        const updated = [...existing, ...newWords];
+    // newWords: custom 경로 avoid 누적용(seed 경로는 []), nextCursor: seed 현재 페이지 offset 저장
+    const appendVocabHistory = (key, newWords, nextCursor) => {
+        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0 };
+        const updated = {
+            words: [...existing.words, ...newWords],
+            seedCursor: nextCursor != null ? nextCursor : existing.seedCursor,
+        };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/vocabHistory`, key), {
-                words: updated,
+                words: updated.words,
+                seedCursor: updated.seedCursor,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -417,7 +430,8 @@ export default function VocabTab({
     }, [selectedTopic]);
 
     // ── Generate Words ───────────────────────────────────────────────
-    const handleGenerate = async () => {
+    // opts.advance: seed 경로에서 "다음 5장"(커서 +5). 기본 false = 현재 페이지 로드.
+    const handleGenerate = async (opts = {}) => {
         if (!selectedTopic && !customInput.trim()) return;
         setIsLoading(true);
         setActiveRecIdx(null);
@@ -425,13 +439,14 @@ export default function VocabTab({
         const topicId = selectedTopic?.topicId || 'custom';
         const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
         const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
+        const isSeed = !!selectedTopic; // 비-custom = seed(전역 공유 순차) 경로
 
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
-        const persistedWords = await loadVocabHistory(historyKey);
+        const { words: persistedWords, seedCursor } = await loadVocabHistory(historyKey);
+        // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
+        const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
-        // Firestore 에는 전체 누적, 서버 prompt 에는 최근 30개만 전송 (LLM long-list 한계 + 토큰 절감).
-        // 서버 vocab.js 도 추가로 slice(-30) 하지만 클라 단계에서 1차 cap 으로 네트워크 비용 축소.
-        const avoidForApi = allAvoid.slice(-30);
+        const avoidForApi = allAvoid.slice(-30); // custom 경로용 (seed는 서버가 자체 회피)
 
         try {
             const res = await authFetch(`${getServerUrl()}/api/vocab-words`, {
@@ -447,6 +462,7 @@ export default function VocabTab({
                     sourceLang,
                     byokGeminiKey: byokGeminiKey || undefined,
                     avoidWords: avoidForApi,
+                    offset: isSeed ? offset : undefined, // seed 경로만 offset 전송
                 }),
             });
 
@@ -457,9 +473,14 @@ export default function VocabTab({
                 setWords(data.words);
                 setSavedWords(new Set());
                 if (onGenerate) onGenerate();
-                const newWordTexts = data.words.map(w => w.word);
-                avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
-                appendVocabHistory(historyKey, newWordTexts);
+                if (isSeed) {
+                    // seed: 커서를 현재 페이지 offset으로 저장(words 누적 불필요 — 서버가 회피 관리)
+                    appendVocabHistory(historyKey, [], offset);
+                } else {
+                    const newWordTexts = data.words.map(w => w.word);
+                    avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
+                    appendVocabHistory(historyKey, newWordTexts);
+                }
             }
         } catch (e) {
             console.error('[VocabTab] Generate error:', e);
@@ -468,6 +489,20 @@ export default function VocabTab({
             setIsLoading(false);
         }
     };
+
+    // 단계학습(preset) 진입 시 현재 페이지 5장 자동 로드 (버튼 없이 카드 즉시 표시).
+    // preset → selectedTopic/Lang/Level 동기화가 끝난 뒤 1회만(토픽별).
+    const autoGenKeyRef = useRef(null);
+    useEffect(() => {
+        if (!preset || !isActive) return;
+        if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
+        const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
+        if (autoGenKeyRef.current === k) return;
+        if (words.length > 0 || isLoading) { autoGenKeyRef.current = k; return; }
+        autoGenKeyRef.current = k;
+        handleGenerate(); // advance 없음 = 현재 페이지(seedCursor) 로드
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
 
     // ── Save to Library ──────────────────────────────────────────────
     const handleSave = async (wordObj, index, pronunciationScore = null) => {
@@ -601,7 +636,7 @@ export default function VocabTab({
                 <button
                     ref={generateBtnRef}
                     className="vocab-generate-btn"
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate({ advance: !!selectedTopic && words.length > 0 })}
                     disabled={isLoading || (!selectedTopic && !customInput.trim())}
                 >
                     {isLoading ? (
@@ -646,6 +681,7 @@ export default function VocabTab({
                             activeRecIdx={activeRecIdx}
                             onRecordingStart={setActiveRecIdx}
                             t={t}
+                            ttsDurable={!!preset}
                             onTopicPass={preset && onTopicPass
                                 ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'word', itemKey })
                                 : undefined}

@@ -110,6 +110,16 @@ service cloud.firestore {
       allow read: if request.auth != null;
     }
 
+    // ── Phase 2 seed 캐시 (전역 공유 학습 콘텐츠) — 읽기만, 쓰기는 Admin SDK ──
+    match /vocabSeed/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+    match /passageSeed/{docId} {
+      allow read: if request.auth != null;
+      allow write: if false;
+    }
+
     // 그 외 컬렉션(orders, pointPurchases, bonusClaims, migrationArchive,
     // reengagementLogs 등)은 match 없음 = 클라이언트 접근 전면 거부 (서버 전용)
   }

@@ -3114,6 +3114,14 @@ function App() {
     }
     if (isStale()) return; // 대기 중 사용자가 다른 재생 시작
 
+    // ── seed 등 durable 콘텐츠: 네이티브 건너뛰고 Azure durable(Storage 저장·전원 공유) — 무과금 ──
+    //   품질 일관성 위해 seed 단어/문장은 첫 유저 Azure 합성→Storage→전원 재사용. 학습 재생이라 _skipGate.
+    if (opts.durable) {
+        beaconTtsRoute(src, 'azure-durable', langCode, { reason: 'durable' });
+        handleSpeak(text, langCode, emotion, { ...opts, _skipGate: true, durable: true });
+        return;
+    }
+
     // ── ③ Azure 폴백 헬퍼 (네이티브 실패 시) — handleSpeak가 차감 + IndexedDB 저장 담당 ──
     const azureFallback = (reason) => {
       beaconTtsRoute(src, 'azure-fallback', langCode, { reason });
