@@ -583,7 +583,7 @@
     "start": "Got it"
   },
   "streakEarned": {
-    "title": "Today's learning done! 🔥",
+    "title": "Today's streak done! 🔥",
     "body": "You kept your learning going today. Your streak is recorded!",
     "ok": "Nice"
   },
@@ -597,7 +597,7 @@
     "passage": "Passage",
     "wordPhaseTitle": "1. Word Pronunciation",
     "wordPhaseDesc": "Learn & score 5 key words",
-    "passagePhaseTitle": "2. Passage Shadowing",
+    "passagePhaseTitle": "2. Listening passage",
     "passagePhaseDesc": "Shadow sentences using those words",
     "passageLocked": "Finish the words first",
     "passed": "passed",

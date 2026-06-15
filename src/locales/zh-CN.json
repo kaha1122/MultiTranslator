@@ -577,7 +577,7 @@
     "start": "好的"
   },
   "streakEarned": {
-    "title": "今日学习完成！🔥",
+    "title": "今日Streak完成！🔥",
     "body": "今天也坚持学习了，Streak 已记录！",
     "ok": "好的"
   },
@@ -591,7 +591,7 @@
     "passage": "篇章",
     "wordPhaseTitle": "1. 单词发音",
     "wordPhaseDesc": "学习并评分 5 个核心单词",
-    "passagePhaseTitle": "2. 篇章跟读",
+    "passagePhaseTitle": "2. Listening 篇章",
     "passagePhaseDesc": "朗读含这些单词的句子",
     "passageLocked": "请先完成单词",
     "passed": "通过",

@@ -604,7 +604,8 @@ function App() {
   const handleTopicPass = async (args) => {
     const ok = await topicProgress.recordPass(args);
     if (ok) {
-      const newlyMarked = await markTopicProgressToday();
+      // #4: Streak 달성 = 오늘 단어 W_TARGET + 지문 P_TARGET 통과(phase별 집계) — markTopicProgressToday(phase)
+      const newlyMarked = await markTopicProgressToday(args.phase);
       if (newlyMarked) streakEarnedPendingRef.current = true;
       // 일일 목표(🎯 todayCount/dailyGoal)는 발음 통과에서만 증가 (per-item dedup)
       incrementAchievement(`pass-${args.topicId}-${args.lang}-${args.phase}-${args.itemKey}`);

@@ -97,8 +97,6 @@ export default function TopicHub({
           </div>
           {wordDone && <ArrowRight size={18} className="hub-phase-arrow" />}
         </button>
-
-        <p className="hub-hint">{t('learningPath.hubHint')}</p>
       </div>
     </div>
   );

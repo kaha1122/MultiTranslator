@@ -577,7 +577,7 @@
     "start": "Compris"
   },
   "streakEarned": {
-    "title": "Apprentissage du jour terminé ! 🔥",
+    "title": "Streak du jour terminé ! 🔥",
     "body": "Vous avez continué à apprendre aujourd'hui. Votre série est enregistrée !",
     "ok": "Super"
   },
@@ -591,7 +591,7 @@
     "passage": "Texte",
     "wordPhaseTitle": "1. Prononciation des mots",
     "wordPhaseDesc": "Apprenez et notez 5 mots clés",
-    "passagePhaseTitle": "2. Shadowing du texte",
+    "passagePhaseTitle": "2. Listening (texte)",
     "passagePhaseDesc": "Répétez des phrases avec ces mots",
     "passageLocked": "Terminez d'abord les mots",
     "passed": "réussi",

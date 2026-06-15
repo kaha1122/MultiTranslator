@@ -577,7 +577,7 @@
     "start": "Đã hiểu"
   },
   "streakEarned": {
-    "title": "Hoàn thành học hôm nay! 🔥",
+    "title": "Hoàn thành Streak hôm nay! 🔥",
     "body": "Hôm nay bạn đã tiếp tục học. Streak đã được ghi nhận!",
     "ok": "Tuyệt"
   },
@@ -591,7 +591,7 @@
     "passage": "Đoạn văn",
     "wordPhaseTitle": "1. Phát âm từ",
     "wordPhaseDesc": "Học & chấm điểm 5 từ chính",
-    "passagePhaseTitle": "2. Nói theo đoạn văn",
+    "passagePhaseTitle": "2. Listening đoạn văn",
     "passagePhaseDesc": "Đọc theo câu có những từ đó",
     "passageLocked": "Hoàn thành từ vựng trước",
     "passed": "đạt",

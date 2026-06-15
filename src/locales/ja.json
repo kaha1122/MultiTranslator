@@ -577,7 +577,7 @@
     "start": "OK"
   },
   "streakEarned": {
-    "title": "今日の学習完了！🔥",
+    "title": "今日のStreak完了！🔥",
     "body": "今日も学習を続けました。Streak が記録されました！",
     "ok": "OK"
   },
@@ -591,7 +591,7 @@
     "passage": "文章",
     "wordPhaseTitle": "1. 単語の発音",
     "wordPhaseDesc": "重要5単語を習得・採点",
-    "passagePhaseTitle": "2. 文章シャドーイング",
+    "passagePhaseTitle": "2. Listening 文章",
     "passagePhaseDesc": "その単語が入った文章を発音",
     "passageLocked": "先に単語を完了してください",
     "passed": "合格",

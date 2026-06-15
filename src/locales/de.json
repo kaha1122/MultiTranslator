@@ -577,7 +577,7 @@
     "start": "Verstanden"
   },
   "streakEarned": {
-    "title": "Heutiges Lernen erledigt! 🔥",
+    "title": "Heutiger Streak erledigt! 🔥",
     "body": "Du hast heute weitergelernt. Deine Serie ist gespeichert!",
     "ok": "Super"
   },
@@ -591,7 +591,7 @@
     "passage": "Text",
     "wordPhaseTitle": "1. Wortaussprache",
     "wordPhaseDesc": "5 Schlüsselwörter lernen & bewerten",
-    "passagePhaseTitle": "2. Text-Shadowing",
+    "passagePhaseTitle": "2. Listening-Text",
     "passagePhaseDesc": "Sätze mit diesen Wörtern nachsprechen",
     "passageLocked": "Zuerst die Wörter abschließen",
     "passed": "bestanden",

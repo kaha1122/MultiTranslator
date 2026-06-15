@@ -79,6 +79,9 @@ const TranslationCard = ({
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
     onMemoClose,
+    // 2026-06-16: 본문 슬롯 — 제공 시 문장 본문/발음연습/팁 대신 이 노드를 렌더(헤더·Flag·메모·CSS 공유).
+    //   Listening 지문 카드를 TranslationCard chrome 으로 통일하기 위함.
+    bodySlot = null,
     // Vocab 예문 (Library에서 vocab 카드 표시 시)
     example = '',
     exampleTranslation = '',
@@ -329,19 +332,25 @@ Return only these 2 lines.`;
                             <Star size={22} fill={isSaved ? '#facc15' : 'none'} color={isSaved ? '#facc15' : '#94a3b8'} />
                         </button>
                     )}
-                    <button
-                        className="speak-button"
-                        onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
-                        disabled={ttsTooLong}
-                        title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
-                        aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
-                        style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-                    >
-                        <Play size={22} fill="white" stroke="white" />
-                    </button>
+                    {/* 지문 슬롯(bodySlot)이면 본문에 자체 재생이 있으므로 헤더 재생버튼 숨김 */}
+                    {!bodySlot && (
+                        <button
+                            className="speak-button"
+                            onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
+                            disabled={ttsTooLong}
+                            title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                            aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                            style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+                        >
+                            <Play size={22} fill="white" stroke="white" />
+                        </button>
+                    )}
                 </div>
             </div>
 
+            {bodySlot ? (
+                <div className="card-body" style={{ paddingTop: 4 }}>{bodySlot}</div>
+            ) : (<>
             {/* Scene 태그 (emotion / interaction type) */}
             {(interactionType || selectedEmotion) && (
                 <div className="scene-tag-row" style={{ padding: '0 14px', marginTop: -2 }}>
@@ -485,11 +494,12 @@ Return only these 2 lines.`;
                     <p className="coach-tip-text">"{coachTip}"</p>
                 </div>
             )}
+            </>)}
 
-            {/* 카드 하단: 학습 팁 영역 */}
+            {/* 카드 하단: 학습 팁 영역(+메모). 지문 슬롯이면 팁은 본문에 있으므로 메모만 노출 */}
             <div className="card-footer">
-                <span className="tip-label">LEARNING TIP</span>
-                <div className="tip-content-wrapper">
+                {!bodySlot && <span className="tip-label">LEARNING TIP</span>}
+                {!bodySlot && <div className="tip-content-wrapper">
                     {typeof learningTip === 'string' ? (
                         <p className={`tip-content font-${sourceLangCode}`}>
                             <AnnotatedText text={learningTip} annotations={annotations} />
@@ -506,7 +516,7 @@ Return only these 2 lines.`;
                     ) : (
                         <p className="tip-content">AI is analyzing the sentence...</p>
                     )}
-                </div>
+                </div>}
 
                 {/* AI Q&A 메모 */}
                 {displayMemos.length > 0 && (

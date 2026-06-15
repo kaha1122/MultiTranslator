@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp, increment, runTransaction } from 'firebase/firestore';
+import { W_TARGET, P_TARGET } from '../config/learningPath.js';
 
 // 로컬 타임존 기준 YYYY-MM-DD — toISOString()은 UTC 라 자정 경계에서 어긋남
 const toLocalDateStr = (d) => {
@@ -46,6 +47,8 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     const todayFreeTalkCountRef = useRef(0);
     const lastMarkedActiveDayRef = useRef(null); // 그날 activeDayCount 증가 처리 완료한 YYYY-MM-DD
     const lastTopicProgressDayRef = useRef(null); // 그날 topicProgressToday 마킹 완료한 YYYY-MM-DD (중복 write 차단)
+    const wordPassRef = useRef(0);     // #4: 오늘 단어 통과 수(Streak 판정용)
+    const passagePassRef = useRef(0);  // #4: 오늘 지문 통과 수
     const loadedDayRef = useRef(getToday()); // 현재 ref/state가 어느 날짜 기준인지 — 자정 경과 감지용
 
     useEffect(() => { todayCountRef.current = todayCount; }, [todayCount]);
@@ -78,6 +81,9 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             apply(todayPronCountRef, setTodayPronCount, data.pronCount || 0);
             // pronBonus: 광고 추가분 — merge 시에도 서버값 우선(단조 증가, 클라가 증가 안 함)
             setTodayPronBonus(data.pronBonus || 0);
+            // #4 Streak: 오늘 단어/지문 통과 수(merge 시 max 보존)
+            wordPassRef.current = merge ? Math.max(wordPassRef.current, data.wordPassToday || 0) : (data.wordPassToday || 0);
+            passagePassRef.current = merge ? Math.max(passagePassRef.current, data.passagePassToday || 0) : (data.passagePassToday || 0);
             apply(todayListenCountRef, setTodayListenCount, data.listenCount || 0);
             apply(todayFreeTalkCountRef, setTodayFreeTalkCount, data.freeTalkCount || 0);
             achievedKeysRef.current = merge
@@ -116,6 +122,8 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
         todayPronCountRef.current = 0;
         todayListenCountRef.current = 0;
         todayFreeTalkCountRef.current = 0;
+        wordPassRef.current = 0;
+        passagePassRef.current = 0;
         setTodayCount(0);
         setTodaySaveCount(0);
         setTodayPronCount(0);
@@ -142,6 +150,8 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             todayPronCountRef.current = 0;
             todayListenCountRef.current = 0;
             todayFreeTalkCountRef.current = 0;
+            wordPassRef.current = 0;
+            passagePassRef.current = 0;
             lastMarkedActiveDayRef.current = null;
             lastTopicProgressDayRef.current = null;
             return;
@@ -337,13 +347,26 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
     // 그날 토픽 진척(단어/지문 통과 1회 이상) 마킹 — Streak 판정 기준(2026-06-14 개편).
     // recordPass 성공 시 App에서 호출. weeklyData.topicProgress 낙관 갱신 → useStreak 즉시 반영.
     // 반환: true=이번 호출이 '그날 첫 토픽 진척' 마킹(=오늘 Streak 달성), false=이미 마킹됨/무효
-    const markTopicProgressToday = useCallback(async () => {
+    // #4(2026-06-16): Streak 달성 = 오늘 단어 통과 ≥ W_TARGET AND 지문 통과 ≥ P_TARGET (phase 인자로 집계).
+    //   첫 발음 1회로는 부족 → 실질 학습(단어 2 + 지문 2)을 해야 Streak 기록.
+    const markTopicProgressToday = useCallback(async (phase) => {
         if (!user?.uid) return false;
         rolloverIfNeeded();
         const today = getToday();
-        if (lastTopicProgressDayRef.current === today) return false; // 그날 1회만 (이미 마킹됨)
-        lastTopicProgressDayRef.current = today;
+        // phase별 통과 수 집계(로컬 + Firestore atomic increment, dailyProgress 서브컬렉션)
+        const isPassage = phase === 'passage';
+        if (isPassage) passagePassRef.current += 1; else wordPassRef.current += 1;
         markActiveDayIfFirst();
+        setDoc(
+            doc(db, 'users', user.uid, 'dailyProgress', today),
+            { [isPassage ? 'passagePassToday' : 'wordPassToday']: increment(1), updatedAt: serverTimestamp() },
+            { merge: true }
+        ).catch((e) => console.error('[useDailyProgress] pass 카운트 저장 실패:', e));
+
+        if (lastTopicProgressDayRef.current === today) return false; // 이미 오늘 Streak 달성
+        // 단어·지문 둘 다 목표 도달해야 Streak 달성
+        if (wordPassRef.current < W_TARGET || passagePassRef.current < P_TARGET) return false;
+        lastTopicProgressDayRef.current = today;
         setWeeklyData(prev => prev.map(d => (d.date === today ? { ...d, topicProgress: true } : d)));
         setDoc(
             doc(db, 'users', user.uid, 'dailyProgress', today),
@@ -351,7 +374,7 @@ export const useDailyProgress = (user, dailyGoal = 10) => {
             { merge: true }
         ).catch((e) => {
             console.error('[useDailyProgress] topicProgressToday 저장 실패:', e);
-            lastTopicProgressDayRef.current = null; // 실패 시 다음 통과에서 재시도 가능하게 롤백
+            lastTopicProgressDayRef.current = null; // 실패 시 재시도 가능하게 롤백
         });
         return true;
     }, [user, markActiveDayIfFirst, rolloverIfNeeded]);
