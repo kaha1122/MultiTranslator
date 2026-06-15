@@ -177,6 +177,7 @@
     "filterThisWeek": "今週",
     "typeWord": "単語",
     "typeSentence": "文章",
+    "typeListening": "長文",
     "srcTranslation": "翻訳機",
     "srcScene": "会話",
     "srcVocab": "単語",
@@ -200,6 +201,11 @@
     "pointsTitle": "ポイントが不足しています",
     "pointsDesc": "ポイントを充電するか、ご購読ください",
     "pointsUpgradeHint": "購読すると広告・制限・ポイントなしで無制限に使えます",
+    "costPassage": "長文",
+    "pronAllowanceAd": "広告を見て今日の発音+10",
+    "pronAllowanceDesc": "今日だけ発音回数+10（ポイントではありません）",
+    "proOnlyTitle": "Pro/Premium限定です",
+    "proOnlyDesc": "Free-TalkingはPro・Premium会員のみ利用できます。",
     "costOther": "その他",
     "costGuideTitle": "利用時の消費ポイント",
     "costPlay": "再生",
@@ -565,7 +571,53 @@
     "dialogue": "会話",
     "word": "単語"
   },
+  "learnIntro": {
+    "title": "学習を始めましょう 🎓",
+    "body": "7つのカテゴリーにそれぞれ10個の学習教材が用意されています。ステップごとにボタンを押して学習を進めましょう。",
+    "start": "OK"
+  },
+  "streakEarned": {
+    "title": "今日の学習完了！🔥",
+    "body": "今日も学習を続けました。Streak が記録されました！",
+    "ok": "OK"
+  },
+  "learningPath": {
+    "here": "ここから",
+    "unit": "ユニット",
+    "mapTitle": "全70トピックマップ",
+    "masteredLegend": "色付き = マスター済み",
+    "masteredLabel": "マスター",
+    "word": "単語",
+    "passage": "文章",
+    "wordPhaseTitle": "1. 単語の発音",
+    "wordPhaseDesc": "重要5単語を習得・採点",
+    "passagePhaseTitle": "2. 文章シャドーイング",
+    "passagePhaseDesc": "その単語が入った文章を発音",
+    "passageLocked": "先に単語を完了してください",
+    "passed": "合格",
+    "sentences": "文",
+    "hubHint": "ステップ1の単語 → ステップ2の文章に反映 → 同じ単語が文脈で再登場"
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "AI発音コーチ 🎤",
+      "introLine1": "発音を聞いてまねすると、AIが発音を詳しく評価します。",
+      "introLine2": "次のチュートリアルで発音を練習しましょう。",
+      "introStart": "はじめる",
+      "listenTitle": "まず聞いてみましょう 👂",
+      "listenBtn": "聞く",
+      "speakTitle": "では、真似して言ってみましょう 🎤",
+      "speakHint": "マイクを押して話してください",
+      "listenAgain": "もう一度聞く",
+      "privacyNote": "発音分析のため、音声は安全に処理されます。",
+      "later": "あとでやります",
+      "analyzing": "分析中...",
+      "resultTitle": "素晴らしいスタートです！🎉",
+      "resultDesc": "発音練習を始める準備ができました。",
+      "retry": "もう一度挑戦",
+      "continue": "続ける",
+      "openSettings": "設定を開く"
+    },
     "nativeLang": "母国語は何ですか？",
     "targetLang": "学びたい言語は何ですか？",
     "moreLang": "他に学びたい言語は\nありますか？",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "NEW",
-      "title": "連続学習(Streak)でボーナスを獲得",
-      "subtitle": "毎日学習目標を達成すると Streak が伸び、マイルストーンごとにボーナスポイントがもらえます。",
+      "title": "学習を始めましょう — 連続学習(Streak)でボーナスを獲得",
+      "subtitle": "7つのカテゴリーと70のステップが用意されています。毎日学習を続けると Streak が伸び、マイルストーンごとにボーナスポイントがもらえます。",
       "dailyGoalTitle": "1日の目標",
       "dailyGoalHeadline": "発音目標スコアを通過したカードを1日3枚保存",
       "dailyGoalStepPron": "発音通過",
@@ -691,7 +743,8 @@
       "milestoneHint": "各マイルストーンは1回のみ支給。Pro/Premiumは自動除外。",
       "dontShowAgain": "今後表示しない",
       "later": "後で",
-      "cta": "統計タブで見る"
+      "cta": "統計タブで見る",
+      "start": "始める"
     },
     "reminder": {
       "startTitle": "今日からStreakスタート！",

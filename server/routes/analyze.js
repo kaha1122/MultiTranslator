@@ -6,8 +6,15 @@ const ffmpeg = require('fluent-ffmpeg');
 const multer = require('multer');
 const { requireAuth } = require('../middleware/auth');
 const { rateLimit } = require('../middleware/rateLimit');
+const { callGeminiText } = require('../utils/geminiCall');
 
 const router = express.Router();
+
+// 발음 코칭 팁 인메모리 LRU 캐시 — (refText + sourceLang + 점수밴드)별 재사용.
+//   반복 연습·유저 간 동일 단어/점수대는 같은 팁 → Gemini 호출 급감 + 503 회피.
+const coachCache = new Map();
+const COACH_MAX = Number(process.env.COACH_CACHE_MAX || 1000);
+const scoreBucket = (s) => (s >= 90 ? '90' : s >= 80 ? '80' : s >= 60 ? '60' : '0');
 
 const UPLOADS_DIR = 'uploads/';
 if (!fs.existsSync(UPLOADS_DIR)) {
@@ -186,6 +193,24 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     };
     const targetLangName = langNames[sourceLangCode] || langNames[sourceLangCode?.split('-')[0]] || 'English';
 
+    const fallbacks = {
+        'ko': '현재 AI 코치 연결이 원활하지 않지만, 발음 연습을 응원합니다!',
+        'en': 'The AI Coach is currently unavailable, but keep up the great pronunciation practice!',
+        'ja': '現在AIコーチの接続が不安定ですが、発音練習を応援しています！',
+        'zh': '目前AI教练连接不畅，但我们支持你的发音练习！',
+        'ru': 'AI-тренер временно недоступен, но продолжайте практиковать произношение!',
+        'pt': 'O treinador de IA está temporariamente indisponível, mas continue praticando a pronúncia!'
+    };
+    const fallbackTip = fallbacks[sourceLangCode?.split('-')[0]] || fallbacks['ko'];
+
+    // 캐시 조회 — (refText + sourceLang + 점수밴드). 같은 단어/점수대는 같은 팁 재사용(Gemini 0).
+    const cacheKey = `${sourceLangCode}|${scoreBucket(assessmentData.pronunciationScore || 0)}|${referenceText}`;
+    const cachedTip = coachCache.get(cacheKey);
+    if (cachedTip !== undefined) {
+        coachCache.delete(cacheKey); coachCache.set(cacheKey, cachedTip); // LRU 갱신
+        return cachedTip;
+    }
+
     const prompt = `
     You are a friendly and expert pronunciation coach.
     A student tried to say: "${referenceText}"
@@ -211,25 +236,17 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
     4. Return ONLY the tip text in ${targetLangName}, nothing else.
     `;
 
-    try {
-        console.log(`[Gemini] Requesting with model: gemini-2.5-flash-lite, Key prefix: ${geminiKey?.substring(0, 5)}...`);
-        const response = await axios.post(
-            geminiUrl(geminiKey),
-            { contents: [{ parts: [{ text: prompt }] }] }
-        );
-        return response.data.candidates[0].content.parts[0].text;
-    } catch (error) {
-        console.error("Gemini Error:", error.response?.data || error.message);
-        const fallbacks = {
-            'ko': '현재 AI 코치 연결이 원활하지 않지만, 발음 연습을 응원합니다!',
-            'en': 'The AI Coach is currently unavailable, but keep up the great pronunciation practice!',
-            'ja': '現在AIコーチの接続が不安定ですが、発音練習を応援しています！',
-            'zh': '目前AI教练连接不畅，但我们支持你的发音练习！',
-            'ru': 'AI-тренер временно недоступен, но продолжайте практиковать произношение!',
-            'pt': 'O treinador de IA está temporariamente indisponível, mas continue praticando a pronúncia!'
-        };
-        return fallbacks[sourceLangCode?.split('-')[0]] || fallbacks['ko'];
+    // callGeminiText: Flash-Lite 재시도 → 503 등 시 Flash로 자동 폴백 (코칭 503 무방비 해소)
+    const result = await callGeminiText(prompt, geminiKey, {
+        genConfig: { temperature: 1.0, topK: 40, topP: 0.95 },
+        label: 'CoachingTip',
+    });
+    if (result.text) {
+        coachCache.set(cacheKey, result.text);
+        while (coachCache.size > COACH_MAX) coachCache.delete(coachCache.keys().next().value);
+        return result.text;
     }
+    return fallbackTip; // Flash 폴백까지 실패 — 정적 폴백(캐시 안 함)
 }
 
 /**
@@ -269,7 +286,9 @@ router.post('/analyze', requireAuth, rateLimit('analyze', { perMinute: 20, perHo
         const geminiKeyToUse = req.body.userGeminiKey || GEMINI_API_KEY;
 
         const assessment = await analyzePronunciation(audioPath, referenceText, langCode, azureKeyToUse, azureRegionToUse);
-        const tip = await generateCoachingTip(referenceText, assessment, req.body.sourceLang, geminiKeyToUse);
+        // 온보딩 첫발음 등은 코칭 팁을 표시하지 않으므로 Gemini 호출 생략(불필요 과금/지연 제거)
+        const skipCoaching = req.body.skipCoaching === '1' || req.body.skipCoaching === true;
+        const tip = skipCoaching ? '' : await generateCoachingTip(referenceText, assessment, req.body.sourceLang, geminiKeyToUse);
 
         if (fs.existsSync(originalAudioPath)) fs.unlinkSync(originalAudioPath);
         if (fs.existsSync(audioPath)) fs.unlinkSync(audioPath);

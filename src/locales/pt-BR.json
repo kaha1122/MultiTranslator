@@ -177,6 +177,7 @@
     "filterThisWeek": "Esta Semana",
     "typeWord": "Palavra",
     "typeSentence": "Frase",
+    "typeListening": "Áudio",
     "srcTranslation": "Tradutor",
     "srcScene": "Diálogo",
     "srcVocab": "Vocabulário",
@@ -200,6 +201,11 @@
     "pointsTitle": "Sem pontos",
     "pointsDesc": "Recarregue pontos ou assine",
     "pointsUpgradeHint": "Assine para uso ilimitado — sem anúncios, limites ou pontos",
+    "costPassage": "Texto",
+    "pronAllowanceAd": "Ver anúncio: +10 pronúncia hoje",
+    "pronAllowanceDesc": "Só hoje — +10 pronúncias (não são pontos)",
+    "proOnlyTitle": "Apenas Pro/Premium",
+    "proOnlyDesc": "O Free-Talking está disponível apenas para assinantes Pro e Premium.",
     "costOther": "Outros",
     "costGuideTitle": "Pontos por ação",
     "costPlay": "Reproduzir",
@@ -565,7 +571,53 @@
     "dialogue": "Diálogo",
     "word": "Vocabulário"
   },
+  "learnIntro": {
+    "title": "Vamos começar a aprender 🎓",
+    "body": "7 categorias, cada uma com 10 conteúdos, prontas para você. Toque em cada etapa para começar a aprender.",
+    "start": "Entendi"
+  },
+  "streakEarned": {
+    "title": "Aprendizado de hoje concluído! 🔥",
+    "body": "Você continuou aprendendo hoje. Sua sequência foi registrada!",
+    "ok": "Boa"
+  },
+  "learningPath": {
+    "here": "Você está aqui",
+    "unit": "Unidade",
+    "mapTitle": "Mapa dos 70 temas",
+    "masteredLegend": "Preenchido = dominado",
+    "masteredLabel": "dominado",
+    "word": "Palavras",
+    "passage": "Texto",
+    "wordPhaseTitle": "1. Pronúncia das palavras",
+    "wordPhaseDesc": "Aprenda e pontue 5 palavras-chave",
+    "passagePhaseTitle": "2. Shadowing do texto",
+    "passagePhaseDesc": "Repita frases com essas palavras",
+    "passageLocked": "Conclua as palavras primeiro",
+    "passed": "aprovado",
+    "sentences": "frases",
+    "hubHint": "As palavras da etapa 1 alimentam o texto da etapa 2 — as mesmas palavras reaparecem no contexto."
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "Treinador de pronúncia IA 🎤",
+      "introLine1": "Ouça e repita — a IA avalia sua pronúncia em detalhes.",
+      "introLine2": "Vamos praticar com o tutorial a seguir.",
+      "introStart": "Começar",
+      "listenTitle": "Primeiro, ouça 👂",
+      "listenBtn": "Ouvir",
+      "speakTitle": "Agora, repita em voz alta 🎤",
+      "speakHint": "Toque no microfone e repita",
+      "listenAgain": "Ouvir novamente",
+      "privacyNote": "Sua voz é processada com segurança para análise de pronúncia.",
+      "later": "Mais tarde",
+      "analyzing": "Analisando...",
+      "resultTitle": "Ótimo começo! 🎉",
+      "resultDesc": "Você está pronto para começar a praticar a pronúncia.",
+      "retry": "Tentar novamente",
+      "continue": "Continuar",
+      "openSettings": "Abrir Configurações"
+    },
     "nativeLang": "Qual é o seu idioma nativo?",
     "targetLang": "Qual idioma você\ngostaria de aprender?",
     "moreLang": "Algum outro idioma que\nvocê gostaria de aprender?",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "NOVO",
-      "title": "Construa sua sequência, ganhe grandes recompensas",
-      "subtitle": "Atinja sua meta diária para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
+      "title": "Vamos aprender — ganhe bônus com sequências",
+      "subtitle": "7 categorias e 70 etapas estão prontas. Continue aprendendo todos os dias para fazer sua sequência crescer — desbloqueie pontos bônus a cada marco.",
       "dailyGoalTitle": "Meta diária",
       "dailyGoalHeadline": "Salve 3 cards por dia que passaram na sua pontuação alvo de pronúncia",
       "dailyGoalStepPron": "Pronúncia OK",
@@ -691,7 +743,8 @@
       "milestoneHint": "Cada marco é concedido uma vez. Pro/Premium são excluídos automaticamente.",
       "dontShowAgain": "Não mostrar novamente",
       "later": "Mais tarde",
-      "cta": "Ver em Estatísticas"
+      "cta": "Ver em Estatísticas",
+      "start": "Começar"
     },
     "reminder": {
       "startTitle": "Comece sua Streak hoje!",

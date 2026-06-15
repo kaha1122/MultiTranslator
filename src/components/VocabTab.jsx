@@ -18,6 +18,8 @@ import './VocabTab.css';
 const makeVocabHistoryKey = (topicId, level, lang) =>
     `${topicId}--${level}--${lang}`;
 
+const SEED_PAGE = 5; // seed 페이지 크기(서버와 일치)
+
 const getServerUrl = () => {
     try {
         if (typeof import.meta !== 'undefined' && import.meta.env?.VITE_API_URL) {
@@ -36,8 +38,17 @@ export function VocabWordCard({
     targetGoal, onBookmarkPrompt,
     activeRecIdx, onRecordingStart,
     t,
+    onTopicPass,            // Phase 1 단계학습: score>=goal 통과 시 itemKey와 함께 호출(없으면 standalone)
+    ttsDurable = false,     // Phase 2 seed 콘텐츠: TTS를 Azure durable(저장·공유)로 — 무과금
     headlineBlock = false,  // 2026-06-09: true면 문장 카드 레이아웃 — 액션(🔊·⭐) 윗줄 / 본문(문장) 아래 전체폭
 }) {
+    // 듣기 포인트 차감 — 모든 카드 TTS(단어/예문/문장)에 ttsCost:1 부여(첫 청취 1점, 반복 무료=App 세션 추적).
+    //   seed 콘텐츠는 durable:true 로 Azure 저장 음성 재생(Azure 무과금) — 단, 포인트는 동일하게 1점 차감.
+    const speak = (text, lang, emotion, o) => onSpeak?.(text, lang, emotion, {
+        ...(o || {}),
+        ttsCost: 1,
+        ...(ttsDurable ? { durable: true } : {}),
+    });
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
     const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
 
@@ -53,6 +64,10 @@ export function VocabWordCard({
         isRecording, isAnalyzing, assessmentResult, coachTip,
         errorMsg, saveMessage, micDenied, openAppSettings, startRecording, stopRecording, resetAssessment,
     } = useAudioRecorder(referenceText, selectedLang, sourceLang, onTrialLimitReached, onPronSuccess);
+
+    // 발음 통과 표시 — 현재 평가가 목표 점수 이상이면 카드 상단에 ✓ 배지(학습 진행 가시화)
+    // ※ assessmentResult가 useAudioRecorder에서 선언된 뒤에 계산해야 함 (TDZ 회피)
+    const passed = !!assessmentResult && (assessmentResult.pronunciationScore || 0) >= targetGoal;
 
     // practiceMode 전환 시 이전 결과 초기화
     const handleModeChange = (mode) => {
@@ -85,6 +100,8 @@ export function VocabWordCard({
             if (score >= targetGoal) {
                 playSuccessSound();
                 if (!isSaved) onBookmarkPrompt?.(score);
+                // 단계학습 진행 기록 — 단어 텍스트를 itemKey로(멱등 dedup). preset 진입 시에만 제공됨.
+                onTopicPass?.(practiceMode === 'word' ? w.word : (w.example || w.word));
             } else {
                 playAlertSound();
             }
@@ -108,7 +125,7 @@ export function VocabWordCard({
         <div className="vocab-word-actions">
             <button
                 className="vocab-action-btn"
-                onClick={() => onSpeak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
+                onClick={() => speak?.(w.word, selectedLang, undefined, { source: `${ttsSource}.word` })}
                 title="TTS"
             >
                 <Volume2 size={16} />
@@ -124,7 +141,18 @@ export function VocabWordCard({
     );
 
     return (
-        <div className="vocab-word-card">
+        <div className="vocab-word-card" style={{ position: 'relative' }}>
+            {/* 발음 통과 배지 (목표 점수 이상) — 카드 상단 우측 */}
+            {passed && (
+                <div style={{
+                    position: 'absolute', top: 8, left: '50%', transform: 'translateX(-50%)', zIndex: 2,
+                    display: 'flex', alignItems: 'center', gap: '3px',
+                    background: '#dcfce7', color: '#15803d', border: '1px solid #86efac',
+                    borderRadius: '999px', padding: '2px 8px', fontSize: '0.7rem', fontWeight: 800,
+                }}>
+                    <CheckCircle size={12} strokeWidth={2.5} /> {t('learningPath.passed')}
+                </div>
+            )}
             {/* 상단: 단어/문장 + 발음 + 뜻 + 액션 */}
             <div className={`vocab-word-top ${headlineBlock ? 'vocab-word-top-block' : ''}`}>
                 {headlineBlock
@@ -142,7 +170,7 @@ export function VocabWordCard({
                                 background: 'none', border: 'none', cursor: 'pointer',
                                 color: '#64748b', padding: '0 0 0 6px', verticalAlign: 'middle'
                             }}
-                            onClick={() => onSpeak?.(w.example, selectedLang, undefined, { source: `${ttsSource}.example` })}
+                            onClick={() => speak?.(w.example, selectedLang, undefined, { source: `${ttsSource}.example` })}
                         >
                             <Volume2 size={14} />
                         </button>
@@ -215,7 +243,7 @@ export function VocabWordCard({
                         </div>
                     )}
 
-                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={onSpeak} ttsSource={ttsSource} />
+                    <PronunciationAssessment data={assessmentResult} sourceLangCode={sourceLang} langCode={selectedLang} onSpeak={speak} ttsSource={ttsSource} />
 
                     {/* 녹음 버튼 */}
                     <div className="practice-actions">
@@ -269,6 +297,9 @@ export default function VocabTab({
     userLevel,
     languageLevels = {},
     isActive = true,
+    preset = null,          // Phase 1 단계학습 진입: { catId, subId, topicId, level, lang } — 토픽 고정+UI collapse
+    onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
+    onTopicPass,            // 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -281,14 +312,17 @@ export default function VocabTab({
         const topic = sub.topics[Math.floor(Math.random() * sub.topics.length)];
         return { catId: cat.id, subId: sub.id, topicId: topic.id };
     };
-    const initialTopic = pickRandomTopic();
+    const initialTopic = preset
+        ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId }
+        : pickRandomTopic();
 
-    const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
+    const [selectedLang, setSelectedLang] = useState(preset ? preset.lang : (sourceLang || targetLangs[0] || 'en'));
     // 난이도는 "선택 언어"의 설정값을 따름 (languageLevels[selectedLang]).
     // 언어 전환 또는 해당 언어 설정 변경 시 자동 반영. 같은 언어 내 수동 변경은 deps가
     // 안 바뀌어 보존됨(setLevel은 level만 바꾸므로 effect 재실행 트리거 아님).
-    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    const [level, setLevel] = useState(() => preset ? preset.level : (languageLevels[selectedLang] || userLevel || 'basic'));
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 난이도는 preset/사용자 토글이 결정 — 자동 sync 비활성
         setLevel(languageLevels[selectedLang] || userLevel || 'basic');
     }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [pickerCatId, setPickerCatId] = useState(null);
@@ -300,6 +334,7 @@ export default function VocabTab({
     const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
+    const loadedPagesRef = useRef({}); // `${historyKey}--${offset}` → words[] (재진입 시 재fetch 생략)
     const generateBtnRef = useRef(null);
     const didInitialScrollRef = useRef(false);
     // 커스텀 입력 진입 직전의 토픽 보관 — 입력을 비우면 이 토픽으로 복구해
@@ -342,27 +377,33 @@ export default function VocabTab({
         });
     }, [isActive]);
 
-    // Firebase에서 해당 키의 이력 읽기
+    // Firebase에서 해당 키의 이력 읽기 — { words(custom avoid용), seedCursor(현재 페이지 offset) }
     const loadVocabHistory = async (key) => {
-        if (!user) return [];
+        if (!user) return { words: [], seedCursor: 0 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
-            const words = snap.exists() ? (snap.data().words || []) : [];
-            historyCacheRef.current = { ...historyCacheRef.current, [key]: words };
-            return words;
+            const d = snap.exists() ? snap.data() : {};
+            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0 };
+            historyCacheRef.current = { ...historyCacheRef.current, [key]: entry };
+            return entry;
         } catch {
-            return [];
+            return { words: [], seedCursor: 0 };
         }
     };
 
-    const appendVocabHistory = (key, newWords) => {
-        const existing = historyCacheRef.current[key] || [];
-        const updated = [...existing, ...newWords];
+    // newWords: custom 경로 avoid 누적용(seed 경로는 []), nextCursor: seed 현재 페이지 offset 저장
+    const appendVocabHistory = (key, newWords, nextCursor) => {
+        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0 };
+        const updated = {
+            words: [...existing.words, ...newWords],
+            seedCursor: nextCursor != null ? nextCursor : existing.seedCursor,
+        };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/vocabHistory`, key), {
-                words: updated,
+                words: updated.words,
+                seedCursor: updated.seedCursor,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -375,6 +416,7 @@ export default function VocabTab({
     // stale 값이 우연히 신규 배열에 포함된 경우 사용자가 의도한 default를 무시하게 됨.
     const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 언어는 preset 고정 — default 따라가기 비활성
         if (visibleLanguages.length === 0) return;
         const newDefault = visibleLanguages[0];
         const defaultChanged = prevDefaultLangRef.current !== newDefault;
@@ -383,6 +425,15 @@ export default function VocabTab({
             setSelectedLang(newDefault);
         }
     }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // preset 변경(다른 토픽으로 재진입) 시 토픽/언어/난이도 재동기화 — 탭이 상시 마운트라 init만으론 부족
+    useEffect(() => {
+        if (!preset) return;
+        setSelectedLang(preset.lang);
+        setLevel(preset.level);
+        setSelectedTopic({ catId: preset.catId, subId: preset.subId, topicId: preset.topicId });
+        setCustomInput('');
+    }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 토픽 변경 시 리셋
     useEffect(() => {
@@ -398,7 +449,8 @@ export default function VocabTab({
     }, [selectedTopic]);
 
     // ── Generate Words ───────────────────────────────────────────────
-    const handleGenerate = async () => {
+    // opts.advance: seed 경로에서 "다음 5장"(커서 +5). 기본 false = 현재 페이지 로드.
+    const handleGenerate = async (opts = {}) => {
         if (!selectedTopic && !customInput.trim()) return;
         setIsLoading(true);
         setActiveRecIdx(null);
@@ -406,13 +458,23 @@ export default function VocabTab({
         const topicId = selectedTopic?.topicId || 'custom';
         const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
         const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
+        const isSeed = !!selectedTopic; // 비-custom = seed(전역 공유 순차) 경로
 
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
-        const persistedWords = await loadVocabHistory(historyKey);
+        const { words: persistedWords, seedCursor } = await loadVocabHistory(historyKey);
+        // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
+        const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
+        // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
+        const pageCacheKey = `${historyKey}--${offset}`;
+        if (isSeed && loadedPagesRef.current[pageCacheKey]) {
+            setWords(loadedPagesRef.current[pageCacheKey]);
+            setSavedWords(new Set());
+            appendVocabHistory(historyKey, [], offset); // 커서 동기화
+            setIsLoading(false);
+            return;
+        }
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
-        // Firestore 에는 전체 누적, 서버 prompt 에는 최근 30개만 전송 (LLM long-list 한계 + 토큰 절감).
-        // 서버 vocab.js 도 추가로 slice(-30) 하지만 클라 단계에서 1차 cap 으로 네트워크 비용 축소.
-        const avoidForApi = allAvoid.slice(-30);
+        const avoidForApi = allAvoid.slice(-30); // custom 경로용 (seed는 서버가 자체 회피)
 
         try {
             const res = await authFetch(`${getServerUrl()}/api/vocab-words`, {
@@ -428,6 +490,7 @@ export default function VocabTab({
                     sourceLang,
                     byokGeminiKey: byokGeminiKey || undefined,
                     avoidWords: avoidForApi,
+                    offset: isSeed ? offset : undefined, // seed 경로만 offset 전송
                 }),
             });
 
@@ -437,10 +500,16 @@ export default function VocabTab({
             if (data.words && Array.isArray(data.words)) {
                 setWords(data.words);
                 setSavedWords(new Set());
+                if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
                 if (onGenerate) onGenerate();
-                const newWordTexts = data.words.map(w => w.word);
-                avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
-                appendVocabHistory(historyKey, newWordTexts);
+                if (isSeed) {
+                    // seed: 커서를 현재 페이지 offset으로 저장(words 누적 불필요 — 서버가 회피 관리)
+                    appendVocabHistory(historyKey, [], offset);
+                } else {
+                    const newWordTexts = data.words.map(w => w.word);
+                    avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
+                    appendVocabHistory(historyKey, newWordTexts);
+                }
             }
         } catch (e) {
             console.error('[VocabTab] Generate error:', e);
@@ -449,6 +518,23 @@ export default function VocabTab({
             setIsLoading(false);
         }
     };
+
+    // 단계학습(preset) 진입 시 현재 페이지 5장 자동 로드 (버튼 없이 카드 즉시 표시).
+    // preset → selectedTopic/Lang/Level 동기화가 끝난 뒤 1회만(토픽별).
+    const autoGenKeyRef = useRef(null);
+    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 →
+    //   재진입 시에도 버튼 없이 캐시 페이지 자동 표시. handleGenerate 가 페이지 캐시 HIT 면 무차감(#8).
+    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    useEffect(() => {
+        if (!preset || !isActive) return;
+        if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
+        const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
+        if (autoGenKeyRef.current === k) return;
+        if (words.length > 0 || isLoading) { autoGenKeyRef.current = k; return; }
+        autoGenKeyRef.current = k;
+        handleGenerate(); // advance 없음 = 현재 페이지(seedCursor) 로드
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
 
     // ── Save to Library ──────────────────────────────────────────────
     const handleSave = async (wordObj, index, pronunciationScore = null) => {
@@ -474,13 +560,27 @@ export default function VocabTab({
         if (!cardId) return;
         playStarSound();
         setSavedWords(prev => new Set([...prev, index]));
-        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
+        // 단계학습 UX 보존: 저장해도 단어장으로 이동하지 않음(목표달성 팝업은 saveVocabCard에서 발화).
+        // 그 자리에서 계속 학습. (onNavigateToLibrary는 더 이상 호출하지 않음)
     };
 
     // ── Render ───────────────────────────────────────────────────────
     return (
         <div className="vocab-container">
-            {/* Language Pills */}
+            {/* 단계학습 back 헤더 */}
+            {preset && (
+                <button
+                    type="button"
+                    className="vocab-step-back"
+                    onClick={onBack}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#0d9488', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
+                >
+                    ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                </button>
+            )}
+
+            {/* Language Pills — 단계학습 진입 시 언어 고정이라 숨김 */}
+            {!preset && (
             <div className="vocab-lang-row">
                 {visibleLanguages.map(code => (
                     <button
@@ -492,6 +592,7 @@ export default function VocabTab({
                     </button>
                 ))}
             </div>
+            )}
 
             {/* Level Selector */}
             <div className="vocab-level-row">
@@ -510,6 +611,8 @@ export default function VocabTab({
                 ))}
             </div>
 
+            {/* 단계학습 진입 시 토픽이 고정이라 카테고리/칩/커스텀 입력 collapse */}
+            {!preset && (<>
             {/* ── Category Slider + 선택 칩 ──────────────────────── */}
             <CategorySlider
                 sourceLang={sourceLang}
@@ -558,13 +661,14 @@ export default function VocabTab({
                     }}
                 />
             </div>
+            </>)}
 
             {/* Generate Button */}
             <div className="vocab-generate-row">
                 <button
                     ref={generateBtnRef}
                     className="vocab-generate-btn"
-                    onClick={handleGenerate}
+                    onClick={() => handleGenerate({ advance: !!selectedTopic && words.length > 0 })}
                     disabled={isLoading || (!selectedTopic && !customInput.trim())}
                 >
                     {isLoading ? (
@@ -604,11 +708,15 @@ export default function VocabTab({
                             onSave={(score) => handleSave(w, i, score)}
                             onTrialLimitReached={onTrialLimitReached}
                             onPronSuccess={onPronSuccess}
-                            targetGoal={languageGoals[selectedLang] || 80}
+                            targetGoal={languageGoals[selectedLang] || 60}
                             onBookmarkPrompt={onBookmarkPrompt}
                             activeRecIdx={activeRecIdx}
                             onRecordingStart={setActiveRecIdx}
                             t={t}
+                            ttsDurable={!!preset}
+                            onTopicPass={preset && onTopicPass
+                                ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'word', itemKey })
+                                : undefined}
                         />
                     ))}
                 </div>

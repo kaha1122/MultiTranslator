@@ -177,6 +177,7 @@
     "filterThisWeek": "Tuần này",
     "typeWord": "Từ",
     "typeSentence": "Câu",
+    "typeListening": "Bài nghe",
     "srcTranslation": "Phiên dịch",
     "srcScene": "Hội thoại",
     "srcVocab": "Từ vựng",
@@ -200,6 +201,11 @@
     "pointsTitle": "Hết điểm",
     "pointsDesc": "Nạp điểm hoặc đăng ký",
     "pointsUpgradeHint": "Đăng ký để dùng không giới hạn — không quảng cáo, giới hạn hay điểm",
+    "costPassage": "Bài đọc",
+    "pronAllowanceAd": "Xem quảng cáo: +10 phát âm hôm nay",
+    "pronAllowanceDesc": "Chỉ hôm nay — +10 lượt phát âm (không phải điểm)",
+    "proOnlyTitle": "Chỉ dành cho Pro/Premium",
+    "proOnlyDesc": "Free-Talking chỉ dành cho người đăng ký Pro & Premium.",
     "costOther": "Khác",
     "costGuideTitle": "Điểm trừ mỗi thao tác",
     "costPlay": "Phát",
@@ -565,7 +571,53 @@
     "dialogue": "Hội thoại",
     "word": "Từ vựng"
   },
+  "learnIntro": {
+    "title": "Bắt đầu học nào 🎓",
+    "body": "Có 7 chủ đề, mỗi chủ đề gồm 10 nội dung học. Chạm vào nút từng bước để bắt đầu học nhé.",
+    "start": "Đã hiểu"
+  },
+  "streakEarned": {
+    "title": "Hoàn thành học hôm nay! 🔥",
+    "body": "Hôm nay bạn đã tiếp tục học. Streak đã được ghi nhận!",
+    "ok": "Tuyệt"
+  },
+  "learningPath": {
+    "here": "Bạn đang ở đây",
+    "unit": "Phần",
+    "mapTitle": "Bản đồ 70 chủ đề",
+    "masteredLegend": "Tô màu = đã thành thạo",
+    "masteredLabel": "thành thạo",
+    "word": "Từ",
+    "passage": "Đoạn văn",
+    "wordPhaseTitle": "1. Phát âm từ",
+    "wordPhaseDesc": "Học & chấm điểm 5 từ chính",
+    "passagePhaseTitle": "2. Nói theo đoạn văn",
+    "passagePhaseDesc": "Đọc theo câu có những từ đó",
+    "passageLocked": "Hoàn thành từ vựng trước",
+    "passed": "đạt",
+    "sentences": "câu",
+    "hubHint": "Từ ở bước 1 → đưa vào đoạn văn bước 2 → các từ đó xuất hiện lại trong ngữ cảnh"
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "Huấn luyện viên phát âm AI 🎤",
+      "introLine1": "Nghe và lặp lại — AI sẽ chấm điểm phát âm chi tiết cho bạn.",
+      "introLine2": "Hãy luyện phát âm qua hướng dẫn tiếp theo nhé.",
+      "introStart": "Bắt đầu",
+      "listenTitle": "Hãy nghe trước 👂",
+      "listenBtn": "Nghe",
+      "speakTitle": "Bây giờ hãy nói theo 🎤",
+      "speakHint": "Chạm vào micro và nói theo",
+      "listenAgain": "Nghe lại",
+      "privacyNote": "Giọng nói của bạn được xử lý an toàn để phân tích phát âm.",
+      "later": "Để sau",
+      "analyzing": "Đang phân tích...",
+      "resultTitle": "Khởi đầu tuyệt vời! 🎉",
+      "resultDesc": "Bạn đã sẵn sàng bắt đầu luyện phát âm.",
+      "retry": "Thử lại",
+      "continue": "Tiếp tục",
+      "openSettings": "Mở Cài đặt"
+    },
     "nativeLang": "Tiếng mẹ đẻ của bạn là gì?",
     "targetLang": "Bạn muốn học ngôn ngữ nào?",
     "moreLang": "Bạn có muốn học thêm\nngôn ngữ nào không?",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "MỚI",
-      "title": "Học liên tục (Streak) — nhận phần thưởng lớn",
-      "subtitle": "Hoàn thành mục tiêu mỗi ngày để xây dựng Streak — nhận điểm thưởng tại mỗi cột mốc.",
+      "title": "Bắt đầu học nào — nhận thưởng với Streak",
+      "subtitle": "Đã có 7 chủ đề và 70 bước. Tiếp tục học mỗi ngày để xây dựng Streak — nhận điểm thưởng tại mỗi cột mốc.",
       "dailyGoalTitle": "Mục tiêu hàng ngày",
       "dailyGoalHeadline": "Lưu 3 thẻ mỗi ngày đã đạt điểm phát âm mục tiêu",
       "dailyGoalStepPron": "Đạt phát âm",
@@ -691,7 +743,8 @@
       "milestoneHint": "Mỗi cột mốc chỉ nhận một lần. Pro/Premium tự động loại trừ.",
       "dontShowAgain": "Không hiển thị lại",
       "later": "Để sau",
-      "cta": "Xem trong Thống kê"
+      "cta": "Xem trong Thống kê",
+      "start": "Bắt đầu"
     },
     "reminder": {
       "startTitle": "Bắt đầu Streak hôm nay!",

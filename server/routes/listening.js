@@ -4,9 +4,12 @@ const { rateLimit } = require('../middleware/rateLimit');
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
+const seedCache = require('../utils/seedCache');
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+const PSEED_COL = 'passageSeed';
+const VSEED_COL = 'vocabSeed';
 
 // Listening 의 angle 차원 — 같은 토픽 안에서도 서술 각도를 회전해 다양성 확보.
 // 응답의 angle 필드는 반드시 이 5종 중 하나여야 함 (서버에서 화이트리스트 검증).
@@ -15,7 +18,7 @@ const LISTENING_ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultu
 router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const {
         topic, topicLabel, category, isCustom, level, type, targetLang, sourceLang,
-        byokGeminiKey, avoidTitles, passagesMeta,
+        byokGeminiKey, avoidTitles, passagesMeta, wordsToInclude,
     } = req.body;
     if (!topic || !targetLang) {
         return res.status(400).json({ error: 'Missing topic or targetLang' });
@@ -32,6 +35,19 @@ router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage'
     const guide = LANG_SPECIFIC_GUIDE[targetLang] || LANG_SPECIFIC_GUIDE['en'];
     const unit = guide.unit || 'words';
     const contentType = type === 'dialogue' ? 'dialogue' : 'essay';
+
+    // ── Phase 2: passageSeed (전역 공유·순차, 1개 단위) ──
+    const hasOffset = req.body.offset !== undefined && req.body.offset !== null;
+    const offset = Math.max(0, parseInt(req.body.offset, 10) || 0);
+    const useSeed = !isCustom && hasOffset;
+    const pseedKey = `${topic}--${contentType}--${level}--${sourceLang}--${targetLang}`;
+    if (useSeed) {
+        const passages = await seedCache.readItems(PSEED_COL, pseedKey, 'passages');
+        if (passages.length >= offset + 1) {
+            console.log(`[Seed] passage HIT ${pseedKey} offset=${offset} (Gemini 0)`);
+            return res.json({ ...passages[offset], source: 'seed' });
+        }
+    }
 
     const levelDesc = {
         basic: `Beginner (A1/A2)
@@ -79,6 +95,26 @@ Rotation rules — ALL mandatory:
         avoidBlock = `\nIMPORTANT — The learner has already read these passages. Generate a completely different passage (different title AND different sub-topic angle):\n${recentTitles.map((t, i) => `${i + 1}. "${t}"`).join('\n')}\n`;
     }
 
+    // [Phase 1 단계학습] 단어 단계에서 학습한 단어를 지문에 재등장시켜 문맥 학습 강화.
+    // 빈 값이면 기존 동작과 동일(하위호환). 과도한 강제는 fluency 해치므로 "자연스럽게 최대한".
+    // seed 경로: 학습단어는 vocabSeed(전역 공유)에서 도출 → 지문 결정적·공유 유지.
+    // 비-seed(custom/구클라): 클라가 보낸 wordsToInclude(per-user).
+    let includeWordsSource = Array.isArray(wordsToInclude) ? wordsToInclude : [];
+    if (useSeed) {
+        const vseedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+        const vwords = await seedCache.readItems(VSEED_COL, vseedKey, 'words');
+        includeWordsSource = vwords.map(w => w?.word).filter(Boolean);
+    }
+    const includeWords = includeWordsSource
+        .filter(w => typeof w === 'string' && w.trim())
+        .map(w => w.trim().slice(0, 40)).slice(0, 12);
+    const wordsBlock = includeWords.length > 0 ? `
+=== STUDIED WORDS TO REUSE (IMPORTANT) ===
+The learner just studied these ${targetLangName} words/phrases. Weave AS MANY as read naturally into the passage so they re-encounter them in context (aim for at least ${Math.min(includeWords.length, 5)}). Do NOT force every one if it harms fluency:
+${includeWords.map((w, i) => `  ${i + 1}. ${w}`).join('\n')}
+When picking the 5 KEY WORDS (rule 6), prefer some of these studied words if they fit the level.
+` : '';
+
     const passageInstruction = contentType === 'dialogue'
         ? `Write a natural dialogue between 2 people (Speaker A and Speaker B) about this topic.
   - 6-10 turns total (each turn = one speaker's line).
@@ -113,7 +149,7 @@ Context:
 - CRITICAL: ALL translations, meanings, and tips MUST be written in ${sourceLangName}. NEVER use ${targetLangName} for translations.
 - Content type: ${contentType === 'dialogue' ? 'Dialogue (2-person conversation)' : 'Essay (monologue/narrative)'}
 - Level: ${levelDesc}
-${avoidBlock}
+${avoidBlock}${wordsBlock}
 === PASSAGE RULES ===
 1. ${passageInstruction}
 2. Level compliance — strictly follow the grammar and vocabulary constraints defined above.
@@ -128,30 +164,28 @@ ${avoidBlock}
    - Use combining acute U+0301 directly on the vowel. Words with ё need no accent. Single-syllable words need no accent.
    For other languages: leave passagePronunciation as empty string.
 
-=== KEY WORDS RULES ===
-6. From the passage, select exactly 5 KEY WORDS/PHRASES that are most valuable for the learner at this level.
-7. Choose words that: (a) appear in the passage, (b) match the level, (c) are high-utility for the topic.
-8. For each keyword, provide a realistic example sentence DIFFERENT from the passage — showing the word in another context.
-9. All meanings, tips, and translations must be in ${sourceLangName}.
-10. Learning tips: 2 concise tips per word in ${sourceLangName}.
-11. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, or any annotation.** Bad: "咖啡 (kāfēi)", "食べる（たべる）". Good: "咖啡", "食べる".
-12. **"example" field must also contain ONLY the pure sentence in ${targetLangName} — no pronunciation annotations.**
-13. For zh-CN: include pinyin in pronunciation/examplePronunciation. For ja: include hiragana. For ru: include stressed form with ´ marks. For others: empty string.
-
-=== PASSAGE META (NEW — required for cross-session deduplication) ===
-14. Output a "passageKeywords" field: exactly 3 SHORT English noun phrases (1-3 words each) that capture the
-    most distinctive sub-domain concepts of THIS specific passage. These are DIFFERENT from the user-facing
-    "words" list — they are a stable English fingerprint used to detect topic-cluster overlap across sessions.
+=== PASSAGE META (required for cross-session deduplication) ===
+6. Output a "passageKeywords" field: exactly 3 SHORT English noun phrases (1-3 words each) that capture the
+    most distinctive sub-domain concepts of THIS specific passage — a stable English fingerprint used to
+    detect topic-cluster overlap across sessions.
     Examples for an "airport" topic:
        passage A → ["boarding pass", "security check", "duty-free"]
        passage B → ["lost luggage", "claim form", "compensation"]
        passage C → ["flight delay", "rebooking", "voucher"]
     Each passage's 3 keywords should be specific enough that two passages on the same topic produce LISTS
     that overlap in at most 1 entry. Pick the most distinctive 3 — not generic ones like "airport" / "travel".
-15. Output an "angle" field: EXACTLY one of ${JSON.stringify(LISTENING_ANGLES)}. This must match the actual
+7. Output an "angle" field: EXACTLY one of ${JSON.stringify(LISTENING_ANGLES)}. This must match the actual
     rhetorical mode of the passage you wrote. (If contentType is 'dialogue', angle is almost always 'dialogue';
     for 'essay' contentType you may pick from the other 4 angles, choosing one that hasn't been used recently
     per the rotation rules above.)
+
+=== SENTENCE CARDS (per-sentence study cards) ===
+8. Split the passage into its individual sentences (for dialogue: each turn line; strip "A:/B:" labels).
+   For EACH sentence output an item in "sentences" with: the pure sentence text (${targetLangName}, no
+   pronunciation annotations), its translation in ${sourceLangName}, its pronunciation
+   (zh-CN pinyin / ja hiragana / ru accent marks / others empty), and a learning_tip in ${sourceLangName}
+   (1-2 informative sentences: highlight a key word or grammar pattern in the sentence AND add a usage nuance or common mistake — specific, not generic).
+   The "text" values concatenated must reconstruct the passage in order.
 
 Return ONLY valid JSON (no markdown):
 {
@@ -162,16 +196,9 @@ Return ONLY valid JSON (no markdown):
   "passageTranslation": "<full passage translated in ${sourceLangName}>",
   "passageKeywords": ["<key1 in English, 1-3 words>", "<key2>", "<key3>"],
   "angle": "<exactly one of ${JSON.stringify(LISTENING_ANGLES)}>",
-  "words": [
-    {
-      "word": "<pure word/phrase>",
-      "pronunciation": "<pronunciation or empty>",
-      "meaning": "<meaning in ${sourceLangName}>",
-      "example": "<example sentence different from passage>",
-      "examplePronunciation": "<pronunciation or empty>",
-      "exampleTranslation": "<translation in ${sourceLangName}>",
-      "learningTip": ["<tip1>", "<tip2>"]
-    }
+  "sentences": [
+    { "text": "<pure sentence in ${targetLangName}>", "translation": "<in ${sourceLangName}>",
+      "pronunciation": "<pinyin/hiragana/accent or empty>", "learning_tip": "<one tip in ${sourceLangName}>" }
   ]
 }`;
 
@@ -186,12 +213,6 @@ Return ONLY valid JSON (no markdown):
     const parsed = result.parsed;
     // Gemini가 rule을 무시하고 주입한 furigana/핀인 주석 제거 (보험)
     parsed.passage = stripAnnotations(parsed.passage, targetLang);
-    if (Array.isArray(parsed.words)) {
-        parsed.words.forEach(w => {
-            w.word = stripAnnotations(w.word, targetLang);
-            w.example = stripAnnotations(w.example, targetLang);
-        });
-    }
     // angle 화이트리스트 검증 + keywords 정규화 (LLM 가 임의 값 줄 가능성 차단)
     if (!LISTENING_ANGLES.includes(parsed.angle)) {
         parsed.angle = (contentType === 'dialogue') ? 'dialogue' : 'first-person narrative';
@@ -204,7 +225,28 @@ Return ONLY valid JSON (no markdown):
             .map(k => k.trim().slice(0, 40))
             .slice(0, 3);
     }
-    res.json(parsed);
+    // 문장 카드 정규화 (주석 제거 보험)
+    if (Array.isArray(parsed.sentences)) {
+        parsed.sentences = parsed.sentences
+            .filter(s => s && typeof s.text === 'string' && s.text.trim())
+            .map(s => ({
+                text: stripAnnotations(s.text, targetLang),
+                translation: s.translation || '',
+                pronunciation: s.pronunciation || '',
+                learning_tip: s.learning_tip || '',
+            }));
+    } else {
+        parsed.sentences = [];
+    }
+
+    // seed 경로: canonical passage를 passageSeed에 append(경합 안전) 후 해당 passage 반환
+    if (useSeed && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
+        const meta = { topicId: topic, type: contentType, level, sourceLang, targetLang };
+        const slice = await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', meta, [parsed], offset, 1);
+        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → Gemini 생성·저장`);
+        return res.json({ ...(slice[0] || parsed), source: 'gemini' });
+    }
+    res.json({ ...parsed, source: 'gemini' });
 });
 
 // [2026-06-09] Listening 문장 카드용 — 기존 문장 1개를 annotate(번역·발음기호·학습팁).

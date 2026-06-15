@@ -9,18 +9,12 @@ import { useT } from '../utils/i18n';
 import { MILESTONES, MILESTONE_REWARDS } from '../hooks/useStreak';
 import './StreakIntroModal.css';
 
-const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang }) => {
+const StreakIntroModal = ({ open, onClose, onPermanentDismiss, sourceLang }) => {
     const t = useT(sourceLang);
     const [dontShowAgain, setDontShowAgain] = useState(false);
 
     const handleClose = () => {
         if (dontShowAgain) onPermanentDismiss();
-        else onClose();
-    };
-
-    const handleCta = () => {
-        if (dontShowAgain) onPermanentDismiss();
-        if (onCta) onCta();
         else onClose();
     };
 
@@ -73,48 +67,6 @@ const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang
                             <p className="streak-intro-subtitle">{t('streak.intro.subtitle')}</p>
                         </div>
 
-                        {/* 본문 — 하루 목표 (헤드라인 + 수식 시각화) */}
-                        <div className="streak-intro-section">
-                            <div className="streak-intro-section-label">{t('streak.intro.dailyGoalTitle')}</div>
-                            <div className="streak-intro-goal-card">
-                                <div className="streak-intro-goal-headline">
-                                    <span className="streak-intro-goal-headline-icon">🎯</span>
-                                    <span className="streak-intro-goal-headline-text">{t('streak.intro.dailyGoalHeadline')}</span>
-                                </div>
-                                <div className="streak-intro-goal-divider" />
-                                {/* 1단계: 발음 통과 + 저장 = 카드 1장 */}
-                                <div className="streak-intro-eq">
-                                    <div className="streak-intro-eq-item">
-                                        <span className="streak-intro-eq-icon">🎙️</span>
-                                        <span className="streak-intro-eq-label">{t('streak.intro.dailyGoalStepPron')}</span>
-                                    </div>
-                                    <span className="streak-intro-eq-op">+</span>
-                                    <div className="streak-intro-eq-item">
-                                        <span className="streak-intro-eq-icon">📇</span>
-                                        <span className="streak-intro-eq-label">{t('streak.intro.dailyGoalStepSave')}</span>
-                                    </div>
-                                    <span className="streak-intro-eq-op">=</span>
-                                    <div className="streak-intro-eq-item streak-intro-eq-result">
-                                        <span className="streak-intro-eq-icon">📇</span>
-                                        <span className="streak-intro-eq-label">{t('streak.intro.dailyGoalStepResult')}</span>
-                                    </div>
-                                </div>
-                                {/* 2단계: 카드 1장 × 3 = 하루 목표 달성 */}
-                                <div className="streak-intro-eq streak-intro-eq-final">
-                                    <div className="streak-intro-eq-cards">
-                                        <span className="streak-intro-eq-icon">📇</span>
-                                        <span className="streak-intro-eq-icon">📇</span>
-                                        <span className="streak-intro-eq-icon">📇</span>
-                                    </div>
-                                    <span className="streak-intro-eq-op">→</span>
-                                    <div className="streak-intro-eq-success">
-                                        <span className="streak-intro-eq-icon">✅</span>
-                                        <span className="streak-intro-eq-label">{t('streak.intro.dailyGoalSuccess')}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* 본문 — 마일스톤 보상 */}
                         <div className="streak-intro-section">
                             <div className="streak-intro-section-label">{t('streak.intro.milestonesTitle')}</div>
@@ -144,13 +96,10 @@ const StreakIntroModal = ({ open, onClose, onPermanentDismiss, onCta, sourceLang
                             <span>{t('streak.intro.dontShowAgain')}</span>
                         </label>
 
-                        {/* CTA 버튼 2개 */}
-                        <div className="streak-intro-actions">
-                            <button className="streak-intro-btn-secondary" onClick={handleClose}>
-                                {t('streak.intro.later')}
-                            </button>
-                            <button className="streak-intro-btn-primary" onClick={handleCta}>
-                                {t('streak.intro.cta')}
+                        {/* CTA — 단일 "시작" 버튼 (닫고 학습 시작) */}
+                        <div className="streak-intro-actions single">
+                            <button className="streak-intro-btn-primary" onClick={handleClose}>
+                                {t('streak.intro.start')}
                             </button>
                         </div>
                     </motion.div>

@@ -177,6 +177,7 @@
     "filterThisWeek": "This Week",
     "typeWord": "Word",
     "typeSentence": "Sentence",
+    "typeListening": "Listening",
     "srcTranslation": "Translator",
     "srcScene": "Dialogue",
     "srcVocab": "Vocabulary",
@@ -200,6 +201,11 @@
     "pointsTitle": "Out of points",
     "pointsDesc": "Top up points or subscribe to continue",
     "pointsUpgradeHint": "Subscribe for unlimited use — no ads, limits, or points",
+    "costPassage": "Passage",
+    "pronAllowanceAd": "Watch ad: +10 pronunciation today",
+    "pronAllowanceDesc": "Today only — pronunciation limit +10 (not points)",
+    "proOnlyTitle": "Pro/Premium only",
+    "proOnlyDesc": "Free-Talking is available only to Pro & Premium subscribers.",
     "costOther": "Other",
     "costGuideTitle": "Points used per action",
     "costPlay": "Play",
@@ -571,7 +577,53 @@
     "dialogue": "Dialogue",
     "word": "Vocabulary"
   },
+  "learnIntro": {
+    "title": "Let's start learning 🎓",
+    "body": "7 categories, each with 10 lessons, are ready for you. Tap each step button to start learning.",
+    "start": "Got it"
+  },
+  "streakEarned": {
+    "title": "Today's learning done! 🔥",
+    "body": "You kept your learning going today. Your streak is recorded!",
+    "ok": "Nice"
+  },
+  "learningPath": {
+    "here": "You are here",
+    "unit": "Unit",
+    "mapTitle": "All 70 Topics Map",
+    "masteredLegend": "Filled = mastered",
+    "masteredLabel": "mastered",
+    "word": "Words",
+    "passage": "Passage",
+    "wordPhaseTitle": "1. Word Pronunciation",
+    "wordPhaseDesc": "Learn & score 5 key words",
+    "passagePhaseTitle": "2. Passage Shadowing",
+    "passagePhaseDesc": "Shadow sentences using those words",
+    "passageLocked": "Finish the words first",
+    "passed": "passed",
+    "sentences": "sentences",
+    "hubHint": "Step 1 words feed Step 2's passage — the same words reappear in context."
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "AI Pronunciation Coach 🎤",
+      "introLine1": "Listen and repeat — our AI gives you a detailed pronunciation score.",
+      "introLine2": "Let's practice with the quick tutorial next.",
+      "introStart": "Get started",
+      "listenTitle": "First, listen 👂",
+      "listenBtn": "Listen",
+      "speakTitle": "Now, say it out loud 🎤",
+      "speakHint": "Tap the mic and repeat",
+      "listenAgain": "Listen again",
+      "privacyNote": "Your voice is processed securely for pronunciation analysis.",
+      "later": "I'll do this later",
+      "analyzing": "Analyzing...",
+      "resultTitle": "Great start! 🎉",
+      "resultDesc": "You're ready to start practicing pronunciation.",
+      "retry": "Try again",
+      "continue": "Continue",
+      "openSettings": "Open Settings"
+    },
     "nativeLang": "What is your native language?",
     "targetLang": "Which language would you\nlike to learn?",
     "moreLang": "Any other language you\nwould like to learn?",
@@ -685,8 +737,8 @@
     },
     "intro": {
       "badge": "NEW",
-      "title": "Build Your Streak, Earn Big Rewards",
-      "subtitle": "Practice every day. Hit your daily goal to grow your streak — unlock bonus points at every milestone.",
+      "title": "Let's start learning — earn bonuses with streaks",
+      "subtitle": "7 categories and 70 steps are ready. Keep learning every day to grow your streak — unlock bonus points at every milestone.",
       "dailyGoalTitle": "Daily Goal",
       "dailyGoalHeadline": "Save 3 cards a day that passed your pronunciation target score",
       "dailyGoalStepPron": "Pass pronunciation",
@@ -697,7 +749,8 @@
       "milestoneHint": "Each milestone is awarded once. Rewards skip for Pro/Premium.",
       "dontShowAgain": "Don't show this again",
       "later": "Later",
-      "cta": "View in Stats"
+      "cta": "View in Stats",
+      "start": "Start"
     },
     "reminder": {
       "startTitle": "Start your Streak today!",

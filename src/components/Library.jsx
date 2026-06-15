@@ -2,6 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { db } from '../firebase/config';
 import { collection, query, where, orderBy, onSnapshot, doc, updateDoc, limit, serverTimestamp } from 'firebase/firestore';
 import TranslationCard from './TranslationCard';
+import ListeningPassageView from './ListeningPassageView';
+import { authFetch } from '../utils/authFetch';
 import ConfirmModal from './ConfirmModal';
 import { Search, Trash2, Volume2, PenLine, ChevronDown, ArrowLeft } from 'lucide-react';
 import { useT } from '../utils/i18n';
@@ -32,7 +34,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
     //   동일 세션 내 사용자 변경은 React state로만 보존(다른 탭 다녀와도 display 토글뿐이라 유지),
     //   localStorage 영구 보존은 하지 않음.
     const [filterLang, setFilterLang] = useState('all');
-    const [filterTypes, setFilterTypes] = useState(() => new Set(['W', 'S']));
+    const [filterTypes, setFilterTypes] = useState(() => new Set(['W', 'S', 'L']));
     const [filterTargetMissed, setFilterTargetMissed] = useState(false);
     const [filterSource, setFilterSource] = useState('all');
     const [filterCategory, setFilterCategory] = useState('all');
@@ -175,7 +177,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         if (result.audioUrl) setSessionAudioUrls(prev => ({ ...prev, [id]: result.audioUrl }));
         if (result.pronunciationScore != null) {
             setSavedCards(prev => prev.map(card => card.id === id ? { ...card, pronunciationScore: result.pronunciationScore } : card));
-            const targetGoal = languageGoals[langCode] || 80;
+            const targetGoal = languageGoals[langCode] || 60;
             if (result.pronunciationScore >= targetGoal) onTargetAchieved?.(`library-${id}`);
             try {
                 await updateDoc(doc(db, "savedCards", id), { pronunciationScore: result.pronunciationScore });
@@ -231,7 +233,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
 
     if (filterTargetMissed) {
         filteredCards = filteredCards.filter(card => {
-            const targetGoal = languageGoals[card.langCode] || 80;
+            const targetGoal = languageGoals[card.langCode] || 60;
             return !card.pronunciationScore || card.pronunciationScore < targetGoal;
         });
     }
@@ -310,13 +312,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
         { value: 'all', label: t('library.filterAll') },
         { value: 'W', label: t('library.typeWord') },
         { value: 'S', label: t('library.typeSentence') },
+        { value: 'L', label: t('library.typeListening') },
     ];
 
     // 현재 선택된 드롭다운 라벨
     const getLangLabel = () => filterLang === 'all' ? t('library.filterAll') : filterLang.toUpperCase();
     const getWsLabel = () => {
-        if (filterTypes.size === 2 || filterTypes.size === 0) return t('library.filterAll');
+        if (filterTypes.size !== 1) return t('library.filterAll');
         if (filterTypes.has('W')) return t('library.typeWord');
+        if (filterTypes.has('L')) return t('library.typeListening');
         return t('library.typeSentence');
     };
     const getSourceLabel = () => SOURCE_OPTIONS.find(o => o.value === filterSource)?.label || t('library.filterAll');
@@ -454,6 +458,39 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         const globalIndex = savedCards.indexOf(card);
                         const cardNumber = card.serialNumber
                             ?? (globalIndex >= 0 ? savedCards.length - globalIndex : filteredCards.length - idx);
+                        // 2026-06-15: Listening 지문 카드(inputType:'L') — ListeningTab과 동일 UI 로 조회·재생(복습)
+                        if (card.inputType === 'L' && card.passageData) {
+                            return (
+                                <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
+                                    <ListeningPassageView
+                                        passage={card.passageData}
+                                        passageType={card.passageData.passageType || 'essay'}
+                                        langCode={card.langCode}
+                                        onSpeak={onSpeak}
+                                        authFetch={authFetch}
+                                        durable
+                                        t={t}
+                                        isActive
+                                    />
+                                    <div className="card-action-bar">
+                                        <div className="action-left" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                                            <span className="stat-text">#{cardNumber}</span>
+                                            <span className="stat-divider">·</span>
+                                            <span className="stat-text">{(card.langCode || '').toUpperCase()}</span>
+                                        </div>
+                                        <div className="action-right">
+                                            <button
+                                                className="action-icon-btn delete-action"
+                                                onClick={(e) => { e.stopPropagation(); triggerDelete(card.id); }}
+                                                title="Delete from Library"
+                                            >
+                                                <Trash2 size={22} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            );
+                        }
                         return (
                         <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
@@ -476,7 +513,7 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                                 isLibraryView={true}
                                 onPracticeResult={(langCode, result) => handlePracticeResult(card.id, langCode, result)}
                                 onTargetAchieved={onTargetAchieved}
-                                targetGoal={languageGoals[card.langCode] || 80}
+                                targetGoal={languageGoals[card.langCode] || 60}
                                 cardId={card.id}
                                 memos={card.memos || []}
                                 annotations={card.annotations || []}
@@ -495,12 +532,12 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                             {/* 하단 액션바 */}
                             <div className="card-action-bar">
                                 <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
-                                    <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 80}</strong></span>
+                                    <span className="stat-text" title="목표 점수">🎯 <strong>{languageGoals[card.langCode] || 60}</strong></span>
                                     <span className="stat-divider">·</span>
                                     <span className="stat-text" title="내 점수">⭐️ <strong>{card.pronunciationScore || '-'}</strong></span>
                                     <span className="stat-divider">·</span>
                                     <span className="stat-text" title="달성 여부">
-                                        {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 80) ? '✅' : '❌'}
+                                        {card.pronunciationScore && card.pronunciationScore >= (languageGoals[card.langCode] || 60) ? '✅' : '❌'}
                                     </span>
                                     <span className="stat-divider">·</span>
                                     <button
@@ -576,15 +613,15 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                 <div className="lib-bs-overlay" onClick={() => setBottomSheet(null)}>
                     <div className="lib-bs-sheet" onClick={e => e.stopPropagation()}>
                         <div className="lib-bs-handle" />
-                        <div className="lib-bs-title">W / S</div>
+                        <div className="lib-bs-title">W / S / L</div>
                         {WS_OPTIONS.map(opt => {
                             const isSelected = opt.value === 'all'
-                                ? (filterTypes.size === 2 || filterTypes.size === 0)
+                                ? (filterTypes.size !== 1)
                                 : (filterTypes.size === 1 && filterTypes.has(opt.value));
                             return (
                                 <button key={opt.value} className={`lib-bs-option ${isSelected ? 'selected' : ''}`}
                                     onClick={() => {
-                                        if (opt.value === 'all') setFilterTypes(new Set(['W', 'S']));
+                                        if (opt.value === 'all') setFilterTypes(new Set(['W', 'S', 'L']));
                                         else setFilterTypes(new Set([opt.value]));
                                         setBottomSheet(null);
                                     }}>

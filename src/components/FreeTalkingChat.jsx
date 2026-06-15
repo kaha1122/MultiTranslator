@@ -286,7 +286,7 @@ export default function FreeTalkingChat({
 
     const personaName = scenarioMeta?.responder_role || t('freeTalk.aiName') || 'AI';
     const headerLabel = setupArgs?.sceneI18nLabel || t('freeTalk.title') || 'Free-Talking';
-    const targetGoal = languageGoals?.[setupArgs?.targetLang] || 80;
+    const targetGoal = languageGoals?.[setupArgs?.targetLang] || 60;
 
     const inputDisabled = !playbackQueueDone || sessionEnded || isReplying || recorder.isProcessing;
 

@@ -177,6 +177,7 @@
     "filterThisWeek": "本周",
     "typeWord": "单词",
     "typeSentence": "句子",
+    "typeListening": "听力",
     "srcTranslation": "翻译器",
     "srcScene": "对话",
     "srcVocab": "词汇",
@@ -200,6 +201,11 @@
     "pointsTitle": "积分不足",
     "pointsDesc": "请充值积分或订阅",
     "pointsUpgradeHint": "订阅后无广告·无限制·无需积分，无限使用",
+    "costPassage": "听力文章",
+    "pronAllowanceAd": "看广告·今日发音+10",
+    "pronAllowanceDesc": "仅限今日·发音次数+10（非积分）",
+    "proOnlyTitle": "仅限Pro/Premium",
+    "proOnlyDesc": "自由对话仅限Pro和Premium订阅者使用。",
     "costOther": "其他",
     "costGuideTitle": "各功能消耗积分",
     "costPlay": "播放",
@@ -565,7 +571,53 @@
     "dialogue": "对话",
     "word": "词汇"
   },
+  "learnIntro": {
+    "title": "开始学习吧 🎓",
+    "body": "共有 7 个类别，每个类别有 10 项学习内容。点击每个阶段按钮开始学习吧。",
+    "start": "好的"
+  },
+  "streakEarned": {
+    "title": "今日学习完成！🔥",
+    "body": "今天也坚持学习了，Streak 已记录！",
+    "ok": "好的"
+  },
+  "learningPath": {
+    "here": "当前位置",
+    "unit": "单元",
+    "mapTitle": "全部 70 主题地图",
+    "masteredLegend": "填色 = 已掌握",
+    "masteredLabel": "掌握",
+    "word": "单词",
+    "passage": "篇章",
+    "wordPhaseTitle": "1. 单词发音",
+    "wordPhaseDesc": "学习并评分 5 个核心单词",
+    "passagePhaseTitle": "2. 篇章跟读",
+    "passagePhaseDesc": "朗读含这些单词的句子",
+    "passageLocked": "请先完成单词",
+    "passed": "通过",
+    "sentences": "句",
+    "hubHint": "第1步单词 → 注入第2步篇章 → 同样的单词在语境中再次出现"
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "AI 发音教练 🎤",
+      "introLine1": "听并跟读，AI 会为你的发音提供详细评分。",
+      "introLine2": "接下来通过教程练习发音吧。",
+      "introStart": "开始",
+      "listenTitle": "先听一听 👂",
+      "listenBtn": "听一听",
+      "speakTitle": "现在跟着说一遍 🎤",
+      "speakHint": "点击麦克风并跟读",
+      "listenAgain": "再听一遍",
+      "privacyNote": "为进行发音分析，您的语音将被安全处理。",
+      "later": "稍后再说",
+      "analyzing": "分析中...",
+      "resultTitle": "很棒的开始！🎉",
+      "resultDesc": "您已准备好开始练习发音了。",
+      "retry": "再试一次",
+      "continue": "继续",
+      "openSettings": "打开设置"
+    },
     "nativeLang": "您的母语是什么？",
     "targetLang": "您想学习哪种语言？",
     "moreLang": "还有其他想学的语言吗？",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "NEW",
-      "title": "连续学习(Streak),赚取大奖励",
-      "subtitle": "每天达成学习目标即可累积 Streak 天数,每个里程碑都能获得奖励积分。",
+      "title": "开始学习吧 — 通过连续学习(Streak)赚取奖励",
+      "subtitle": "已准备 7 个类别、70 个阶段。每天坚持学习即可累积 Streak 天数,每个里程碑都能获得奖励积分。",
       "dailyGoalTitle": "每日目标",
       "dailyGoalHeadline": "每天保存 3 张通过发音目标分数的卡片",
       "dailyGoalStepPron": "通过发音",
@@ -691,7 +743,8 @@
       "milestoneHint": "每个里程碑仅发放一次。Pro/Premium 自动排除。",
       "dontShowAgain": "不再显示",
       "later": "稍后",
-      "cta": "前往统计查看"
+      "cta": "前往统计查看",
+      "start": "开始"
     },
     "reminder": {
       "startTitle": "今天开启 Streak！",

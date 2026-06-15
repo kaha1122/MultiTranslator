@@ -20,9 +20,9 @@ const MILESTONE_REWARDS = {
 };
 
 // 서버 측 streak 재계산 — useStreak(클라)와 동일 정의:
-// dailyProgress/{YYYY-MM-DD} 문서 중 count >= dailyGoal 또는 goalAchievedToday===true 인
-// 날짜들의 "오늘/어제 앵커 연속 일수". 문서 ID는 클라 로컬 날짜라 서버(UTC)와 ±1일
-// 편차 가능 → 앵커 탐색 범위를 서버 기준 -2일 ~ +1일로 넓혀 흡수.
+// 2026-06-14 개편: dailyProgress/{YYYY-MM-DD} 문서 중 topicProgressToday===true 인
+// 날짜들의 "오늘/어제 앵커 연속 일수"(= 그날 토픽 진척 1회 이상). 문서 ID는 클라 로컬
+// 날짜라 서버(UTC)와 ±1일 편차 가능 → 앵커 탐색 범위를 서버 기준 -2일 ~ +1일로 넓혀 흡수.
 const DAY_MS = 24 * 60 * 60 * 1000;
 const fmtUTC = (ms) => {
     const d = new Date(ms);
@@ -33,8 +33,7 @@ async function computeServerStreak(uid, dailyGoalDefault) {
     const achieved = new Set();
     snap.forEach(d => {
         const v = d.data() || {};
-        const goal = v.dailyGoal || dailyGoalDefault;
-        if ((v.count || 0) >= goal || v.goalAchievedToday === true) achieved.add(d.id);
+        if (v.topicProgressToday === true) achieved.add(d.id);
     });
     const now = Date.now();
     let anchor = null;

@@ -9,6 +9,12 @@ const { callGeminiJson } = require('../utils/geminiCall');
 
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
+const seedCache = require('../utils/seedCache');
+const { generateUnit } = require('../utils/generateUnit');
+
+const SEED_COL = 'vocabSeed';
+const PSEED_COL = 'passageSeed';
+const SEED_PAGE = 5;
 
 router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinute: 10, perHour: 100 }), async (req, res) => {
     const { topic, topicLabel, category, isCustom, level, targetLang, sourceLang, byokGeminiKey, avoidWords } = req.body;
@@ -21,6 +27,49 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
+
+    // ── Phase 2: write-through seed (전역 공유·순차) ──────────────────────────
+    // offset이 오면(신규 클라) seed 경로. isCustom/구버전 클라(offset 없음)는 기존 개인 생성.
+    const hasOffset = req.body.offset !== undefined && req.body.offset !== null;
+    const offset = Math.max(0, parseInt(req.body.offset, 10) || 0);
+    const useSeed = !isCustom && hasOffset;
+    const seedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+    let seedItems = [];
+    if (useSeed) {
+        seedItems = await seedCache.readItems(SEED_COL, seedKey, 'words');
+        if (seedItems.length >= offset + SEED_PAGE) {
+            console.log(`[Seed] vocab HIT ${seedKey} offset=${offset} (Gemini 0)`);
+            return res.json({ words: seedItems.slice(offset, offset + SEED_PAGE), source: 'seed' });
+        }
+    }
+
+    // 2026-06-15: seed MISS(신규 frontier) → "지문 먼저 → 단어 추출" 결합 생성.
+    //   단어·지문을 한 번에 만들어 vocabSeed + passageSeed(essay) 정렬 저장 → 단어/지문 정합 + Listening 무생성(HIT).
+    //   기존 seed 는 위 HIT 로 그대로 서빙(보존). pseed 가 이미 있으면 appendAndSlice 가 덮어쓰지 않음.
+    if (useSeed) {
+        const pseedKey = `${topic}--essay--${level}--${sourceLang}--${targetLang}`;
+        const existingPassages = await seedCache.readItems(PSEED_COL, pseedKey, 'passages');
+        const unitRes = await generateUnit({
+            topic, topicLabel, category, level, targetLang, sourceLang, geminiKey,
+            avoidWords: seedItems.map(w => w?.word).filter(Boolean),
+            avoidTitles: existingPassages.map(p => p?.title).filter(Boolean),
+        });
+        if (unitRes.error) {
+            return res.status(unitRes.status || 502).json({ error: unitRes.userMsg || 'Failed to generate vocabulary' });
+        }
+        const vmeta = { topicId: topic, level, sourceLang, targetLang };
+        const wslice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', vmeta, unitRes.words, offset, SEED_PAGE);
+        // 지문(essay)을 정렬 offset(=단어offset/SEED_PAGE)에 저장. 이미 존재하면 보존(append race-guard).
+        if (unitRes.passage && unitRes.passage.passage) {
+            const pOffset = Math.floor(offset / SEED_PAGE);
+            const pmeta = { topicId: topic, type: 'essay', level, sourceLang, targetLang };
+            try {
+                await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', pmeta, [unitRes.passage], pOffset, 1);
+            } catch (e) { console.warn('[Seed] unit passage store failed:', e.message); }
+        }
+        console.log(`[Seed] UNIT MISS ${seedKey} offset=${offset} → 지문우선 결합생성 → 단어+지문 저장`);
+        return res.json({ words: wslice, source: 'gemini-unit' });
+    }
 
     const targetLangName = LANG_NAMES[targetLang] || 'English';
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
@@ -52,12 +101,17 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
 
     // Anti-Duplication 블록 — 단순 negative list 한계(LLM lost-in-the-middle, 형태소 변형으로 우회) 보완.
     // self-check chain-of-thought 강제 + 어근/동의어/sub-cluster 차단 룰. 30개 cap (200개 박는 토큰 낭비 + 효과 저하).
-    const recent = Array.isArray(avoidWords) ? avoidWords.slice(-30) : [];
-    const olderCount = Array.isArray(avoidWords) ? Math.max(0, avoidWords.length - recent.length) : 0;
+    // seed 경로(frontier 생성)에선 기존 seed 단어 전체를 회피 소스로(전역 일관 시퀀스 유지).
+    // 비-seed(custom/구클라)는 기존대로 클라가 보낸 avoidWords.
+    const avoidSource = useSeed
+        ? seedItems.map(w => w?.word).filter(Boolean)
+        : (Array.isArray(avoidWords) ? avoidWords : []);
+    const recent = avoidSource.slice(-30);
+    const olderCount = Math.max(0, avoidSource.length - recent.length);
     const avoidBlock = recent.length > 0
         ? `
 === ANTI-DUPLICATION (CRITICAL — read carefully) ===
-The learner has already learned ${avoidWords.length} word(s) under this exact (topic + level + lang) combo.
+The learner has already learned ${avoidSource.length} word(s) under this exact (topic + level + lang) combo.
 ${olderCount > 0 ? `(${olderCount} older words omitted; ${recent.length} most recent shown.)\n` : ''}Recent avoided words:
 ${recent.map((w, i) => `${i + 1}. "${w}"`).join('\n')}
 
@@ -112,7 +166,7 @@ Rules:
    - The accent mark (´) must be placed DIRECTLY on the vowel letter (combining acute U+0301), not before or after it.
    - Words with ё do not need an accent mark (ё is always stressed). Single-syllable words (в, на, он, да) need no accent mark.
 7. All meanings, tips, and example translations must be in ${sourceLangName}.
-8. For each word, provide 2-3 concise learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note or cultural context. Each tip should be one sentence.
+8. For each word, provide 3-4 substantive learning tips in ${sourceLangName}: (1) Part of speech & core meaning (2) Synonyms/antonyms or common collocations (3) Usage note, register, or cultural context (4) A vivid nuance, a common mistake learners make, or a memory hook. Make EACH tip genuinely informative and specific to this word — NOT generic filler. One full sentence each.
 9. **CRITICAL — "word" field must contain ONLY the pure word/phrase in ${targetLangName}. NEVER include pronunciation, pinyin, hiragana, romanization, hanja, parenthetical readings, or any annotation in the "word" field.** Bad: "咖啡 (kāfēi)", "食べる（たべる）", "おんがく (音楽)", "커피(coffee)". Good: "咖啡", "食べる", "音楽", "커피". For Japanese: the "word" field must use the standard written form (kanji where natural, e.g. "音楽" not "おんがく"). Hiragana reading goes ONLY in the "pronunciation" field.
 10. **"example" field must also contain ONLY the pure sentence in ${targetLangName} — no pronunciation annotations, no parenthetical readings.**
 
@@ -147,7 +201,14 @@ Return ONLY valid JSON (no markdown):
             w.example = stripAnnotations(w.example, targetLang);
         });
     }
-    res.json(parsed);
+    // seed 경로: frontier 생성물을 canonical 시퀀스에 append(경합 안전) 후 해당 페이지 slice 반환
+    if (useSeed && Array.isArray(parsed.words) && parsed.words.length > 0) {
+        const meta = { topicId: topic, level, sourceLang, targetLang };
+        const slice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', meta, parsed.words, offset, SEED_PAGE);
+        console.log(`[Seed] vocab MISS ${seedKey} offset=${offset} → Gemini 생성·저장`);
+        return res.json({ words: slice, source: 'gemini' });
+    }
+    res.json({ ...parsed, source: 'gemini' });
 });
 
 module.exports = router;

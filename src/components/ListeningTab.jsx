@@ -1,11 +1,12 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, BookOpen, Pencil, Headphones } from 'lucide-react';
+import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, Pencil, Headphones } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
+import ListeningPassageView from './ListeningPassageView';
 import CategorySlider from './CategorySlider';
 import TopicPickerModal from './TopicPickerModal';
 import MessageCardModal from './MessageCardModal';
@@ -100,6 +101,10 @@ export default function ListeningTab({
     languageLevels = {},
     isActive = true,
     isTrialListenLimitReached = false,  // 2026-05-23: Trial 일일 3회 한도 enforcement
+    preset = null,          // Phase 1 단계학습 진입: { catId, subId, topicId, level, lang }
+    onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
+    onTopicPass,            // 문장 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
+    onSavePassage,          // 2026-06-15: 지문 단어장 저장 — passage 객체 → Library 카드(inputType:'L')
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -113,24 +118,47 @@ export default function ListeningTab({
         return { catId: cat.id, subId: sub.id, topicId: topic.id };
     };
 
-    const [selectedLang, setSelectedLang] = useState(sourceLang || targetLangs[0] || 'en');
+    const [selectedLang, setSelectedLang] = useState(preset ? preset.lang : (sourceLang || targetLangs[0] || 'en'));
     // 난이도는 "선택 언어"의 설정값(languageLevels[selectedLang])을 따름. 언어 전환/해당 언어
     // 설정 변경 시 자동 반영, 같은 언어 내 수동 변경은 보존(deps 미변경).
-    const [level, setLevel] = useState(() => languageLevels[selectedLang] || userLevel || 'basic');
+    const [level, setLevel] = useState(() => preset ? preset.level : (languageLevels[selectedLang] || userLevel || 'basic'));
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 난이도 자동 sync 비활성
         setLevel(languageLevels[selectedLang] || userLevel || 'basic');
     }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
-    const [selectedTopic, setSelectedTopic] = useState(() => pickRandomTopic()); // { catId, subId, topicId }
+    const [selectedTopic, setSelectedTopic] = useState(() =>
+        preset ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId } : pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);
     const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
 
     const [passage, setPassage] = useState(null);
-    const [keywords, setKeywords] = useState([]);
+    const [passageSaved, setPassageSaved] = useState(false); // 현재 지문 단어장 저장 여부(별표)
+    // 새 지문이 로드되면 저장 상태 초기화
+    useEffect(() => { setPassageSaved(false); }, [passage?.text]);
+    // 지문 단어장 저장 — App.savePassageCard 경유. 성공 시 별표 채움.
+    const handleSavePassage = useCallback(async () => {
+        if (!passage || passageSaved || !onSavePassage) return;
+        try {
+            const ok = await onSavePassage({
+                title: passage.title || '',
+                titleTranslation: passage.titleTranslation || '',
+                text: passage.text || '',
+                pronunciation: passage.pronunciation || '',
+                translation: passage.translation || '',
+                sentences: Array.isArray(passage.sentences) ? passage.sentences : [],
+                passageType,
+                langCode: selectedLang,
+                level,
+                categoryId: selectedTopic?.catId || preset?.catId || '',
+                topicId: selectedTopic?.topicId || preset?.topicId || '',
+            });
+            if (ok !== false) { setPassageSaved(true); playStarSound(); }
+        } catch (e) { console.warn('[ListeningTab] savePassage failed:', e); }
+    }, [passage, passageSaved, onSavePassage, passageType, selectedLang, level, selectedTopic, preset]);
     const [isLoading, setIsLoading] = useState(false);
     const [showTranslation, setShowTranslation] = useState(false);
     const [showPronunciation, setShowPronunciation] = useState(false);
-    const [savedWords, setSavedWords] = useState(new Set());
     const [activeRecIdx, setActiveRecIdx] = useState(null);
     // 2026-06-09: 문장 클릭 → 카드 팝업 (개별 문장 즉시재생 대체)
     const [cardMessage, setCardMessage] = useState(null);   // annotate 결과 {fullText, translation, pronunciation, learning_tip} — null이면 닫힘
@@ -227,7 +255,8 @@ export default function ListeningTab({
 
         // 2026-06-07: 신규 합성 전 포인트 게이트 — 보존 오디오 재청취는 위에서 이미 return(무료).
         //   Trial 0점이면 차단 + 포인트부족 팝업(onTtsGate 내부), 새 TTS 합성 안 함.
-        if (onTtsGate && !onTtsGate()) return;
+        //   2026-06-15: 지문 재생 비용 1→2점 (onTtsGate(2)). 첫 재생만 차감(재청취는 보존오디오로 무료).
+        if (onTtsGate && !onTtsGate(2)) return;
 
         // 새로 재생 시작 — 세대 토큰 + AbortController 로 race 방지
         const isDialogue = passageType === 'dialogue';
@@ -249,8 +278,8 @@ export default function ListeningTab({
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify(
                     hasTurns
-                        ? { turns: dialogueTurns, dialogueSeed, langCode: selectedLang }
-                        : { text: ttsText, langCode: selectedLang }
+                        ? { turns: dialogueTurns, dialogueSeed, langCode: selectedLang, durable: !!preset }
+                        : { text: ttsText, langCode: selectedLang, durable: !!preset }
                 ),
                 signal: controller.signal,
             });
@@ -293,7 +322,7 @@ export default function ListeningTab({
             if (ttsAbortRef.current === controller) ttsAbortRef.current = null;
             if (myGen === playGenRef.current) setPassageLoading(false);
         }
-    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay]);
+    }, [passage, passagePlaying, passageType, selectedLang, onSpeak, onTtsGate, stopPassageAudio, isTrialListenLimitReached, onTrialLimitReached, onGenerate, onFirstPlay, preset]);
 
     // 2026-06-09: 문장 클릭 → 카드 팝업 (개별 즉시재생 대체). 번역·발음·팁을 AI로 annotate 후
     //   MessageCardModal + ScenePracticeCard로 TTS(네이티브)·발음연습·저장 제공.
@@ -359,6 +388,7 @@ export default function ListeningTab({
 
     const avoidTitlesRef = useRef([]);
     const historyCacheRef = useRef({});
+    const loadedPassagesRef = useRef({}); // `${historyKey}--${offset}` → passage (재진입 시 재fetch 생략)
 
     const visibleLanguages = targetLangs;
 
@@ -367,6 +397,7 @@ export default function ListeningTab({
     // stale 값이 우연히 신규 배열에 포함된 경우 사용자가 의도한 default를 무시하게 됨.
     const prevDefaultLangRef = useRef(targetLangs?.[0]);
     useEffect(() => {
+        if (preset) return; // 단계학습 진입 시 언어 preset 고정
         if (visibleLanguages.length === 0) return;
         const newDefault = visibleLanguages[0];
         const defaultChanged = prevDefaultLangRef.current !== newDefault;
@@ -376,12 +407,19 @@ export default function ListeningTab({
         }
     }, [targetLangs]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // preset 변경(다른 토픽 재진입) 시 재동기화
+    useEffect(() => {
+        if (!preset) return;
+        setSelectedLang(preset.lang);
+        setLevel(preset.level);
+        setSelectedTopic({ catId: preset.catId, subId: preset.subId, topicId: preset.topicId });
+        setCustomInput('');
+    }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // 조건 변경 시 리셋
     useEffect(() => {
         stopPassageAudio();
         setPassage(null);
-        setKeywords([]);
-        setSavedWords(new Set());
         setActiveRecIdx(null);
         setShowTranslation(false);
         setShowPronunciation(false);
@@ -408,34 +446,39 @@ export default function ListeningTab({
             const cached = {
                 titles: Array.isArray(data.titles) ? data.titles : [],
                 passagesMeta: Array.isArray(data.passagesMeta) ? data.passagesMeta : [],
+                seedCursor: data.seedCursor || 0, // seed 경로: 현재 지문 페이지 offset
             };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: cached };
             return cached;
         } catch {
-            return { titles: [], passagesMeta: [] };
+            return { titles: [], passagesMeta: [], seedCursor: 0 };
         }
     };
 
-    const appendHistory = (key, newTitle, newMeta) => {
-        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [] };
+    const appendHistory = (key, newTitle, newMeta, nextCursor) => {
+        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0 };
         const updated = {
-            titles: [...existing.titles, newTitle],
+            titles: newTitle ? [...existing.titles, newTitle] : existing.titles,
             passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
+            seedCursor: nextCursor != null ? nextCursor : (existing.seedCursor || 0),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/listeningHistory`, key), {
                 titles: updated.titles,
                 passagesMeta: updated.passagesMeta,
+                seedCursor: updated.seedCursor,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
     };
 
     // ── Generate Passage ─────────────────────────────────────────
-    const handleGenerate = async () => {
+    // opts.advance: seed 경로에서 "다음 지문"(커서 +1). 기본 false = 현재 페이지 로드.
+    const handleGenerate = async (opts = {}) => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        const isSeed = !hasCustom; // 비-custom = seed(전역 공유 순차) 경로
         // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
         if (isTrialListenLimitReached) {
             onTrialLimitReached?.();
@@ -453,12 +496,34 @@ export default function ListeningTab({
             ? customInput.trim()
             : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
         const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
-        const { titles: persistedTitles, passagesMeta: persistedMeta } = await loadHistory(historyKey);
+        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor } = await loadHistory(historyKey);
+        // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
+        const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
+        // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
+        const pageCacheKey = `${historyKey}--${offset}`;
+        if (isSeed && loadedPassagesRef.current[pageCacheKey]) {
+            setPassage(loadedPassagesRef.current[pageCacheKey]);
+            setShowTranslation(false);
+            setShowPronunciation(false);
+            appendHistory(historyKey, '', null, offset); // 커서 동기화(title 미추가)
+            setIsLoading(false);
+            return;
+        }
         const allAvoid = [...new Set([...persistedTitles, ...avoidTitlesRef.current])];
         // 50→20: long negative list 의 LLM 준수율 저하 회피 + 토큰 절감.
         // passagesMeta 도 동일하게 최근 20개만 전송 (서버에서 angle/keyword cluster rotation 강제).
         const avoidTitlesForApi = allAvoid.slice(-20);
         const passagesMetaForApi = (persistedMeta || []).slice(-20);
+
+        // 단계학습 진입: 단어 단계에서 학습한 단어를 지문에 재등장시키도록 서버에 전달(vocabHistory에서 로드)
+        let wordsToInclude = [];
+        if (preset && user) {
+            try {
+                const vKey = `${topicId}--${level}--${selectedLang}`;
+                const vSnap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, vKey));
+                wordsToInclude = (vSnap.exists() ? (vSnap.data().words || []) : []).slice(-12);
+            } catch { /* 무시 — 빈 값이면 서버는 기존 동작 */ }
+        }
 
         try {
             const res = await authFetch(`${getServerUrl()}/api/listening-passage`, {
@@ -476,6 +541,8 @@ export default function ListeningTab({
                     byokGeminiKey: byokGeminiKey || undefined,
                     avoidTitles: avoidTitlesForApi,
                     passagesMeta: passagesMetaForApi,
+                    wordsToInclude, // seed 경로는 서버가 vocabSeed로 대체(전송값 무시)
+                    offset: isSeed ? offset : undefined, // seed 경로만 offset 전송
                 }),
             });
 
@@ -483,28 +550,28 @@ export default function ListeningTab({
             const data = await res.json();
 
             if (data.passage || data.title) {
-                setPassage({
+                const passageObj = {
                     title: data.title || '',
                     titleTranslation: data.titleTranslation || '',
                     text: data.passage || '',
                     pronunciation: data.passagePronunciation || '',
                     translation: data.passageTranslation || '',
+                    sentences: Array.isArray(data.sentences) ? data.sentences : [], // seed 문장 카드(주석 포함)
                     counted: true,       // daily 3-limit: handleGenerate 에서 onGenerate 호출 → 첫 재생 dedup safety net
                     adsCharged: false,   // AdsPoint(15): 첫 재생 시 onFirstPlay 로 1회 더 차감 (Azure TTS 비용 반영)
-                });
-                setKeywords(data.words || []);
-                setSavedWords(new Set());
+                };
+                setPassage(passageObj);
+                if (isSeed) loadedPassagesRef.current[pageCacheKey] = passageObj; // 페이지 캐시 저장
                 setShowTranslation(false);
                 setShowPronunciation(false);
                 if (onGenerate) onGenerate();
                 if (data.title) {
                     avoidTitlesRef.current = [...avoidTitlesRef.current, data.title];
-                    // 신규 응답에 passageKeywords + angle 이 포함된 경우만 meta 누적.
-                    // 누락(이전 빌드 호환)이면 title 만 append → 기존 passagesMeta 그대로 보존.
                     const newMeta = (Array.isArray(data.passageKeywords) && data.angle)
                         ? { title: data.title, keywords: data.passageKeywords, angle: data.angle, createdAt: Date.now() }
                         : null;
-                    appendHistory(historyKey, data.title, newMeta);
+                    // seed 경로: 커서를 현재 페이지 offset으로 저장
+                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined);
                 }
             }
         } catch (e) {
@@ -515,43 +582,62 @@ export default function ListeningTab({
         }
     };
 
-    // ── Save Word to Library ─────────────────────────────────────
-    const handleSave = async (wordObj, index, pronunciationScore = null) => {
-        if (savedWords.has(index)) return;
-        if (!onSaveToLibrary) return;
-
-        const cardId = await onSaveToLibrary({
-            word: wordObj.word,
-            meaning: wordObj.meaning,
-            example: wordObj.example,
-            exampleTranslation: wordObj.exampleTranslation,
-            examplePronunciation: wordObj.examplePronunciation,
-            pronunciation: wordObj.pronunciation,
-            learningTip: wordObj.learningTip || [],
-            langCode: selectedLang,
-            topic: getT(sourceLang, `vocabTopic.${selectedTopic?.topicId}`),
-            categoryId: selectedTopic?.catId || 'custom',
-            topicId: selectedTopic?.topicId || 'custom',
-            difficulty: level,
-            pronunciationScore,
-        });
-
-        if (!cardId) return;
-        playStarSound();
-        setSavedWords(prev => new Set([...prev, index]));
-        if (onNavigateToLibrary) onNavigateToLibrary(cardId);
-    };
-
     // ── Topic selection from picker modal ─────────────────────────
     const handleTopicSelect = (catId, subId, topicId) => {
         setCustomInput('');
         setSelectedTopic({ catId, subId, topicId });
     };
 
+    // Phase 2: seed 문장 카드 저장 (자동 나열 카드용)
+    const handleSeedSentenceSave = async (s, pronunciationScore = null) => {
+        try {
+            const cardId = await onSaveSentence?.({
+                sentence: s.text,
+                translation: s.translation,
+                learningTip: s.learning_tip,
+                langCode: selectedLang,
+                scene: passage?.title || '',
+                pronunciationScore,
+            });
+            if (cardId !== null) { try { playStarSound(); } catch {} }
+            setSavedSentences(prev => new Set(prev).add(s.text));
+        } catch (e) {
+            console.error('[ListeningTab] seed sentence save failed:', e?.message);
+        }
+    };
+
+    // 단계학습(preset) 진입 시 현재 페이지 지문 자동 로드 (버튼 없이). preset 동기화 후 1회(토픽/유형별).
+    const autoGenKeyRef = useRef(null);
+    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 → 버튼 없이 캐시 지문 자동 표시(#8 무차감).
+    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    useEffect(() => {
+        if (!preset || !isActive) return;
+        if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
+        const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
+        if (autoGenKeyRef.current === k) return;
+        if (passage || isLoading) { autoGenKeyRef.current = k; return; }
+        autoGenKeyRef.current = k;
+        handleGenerate(); // 현재 페이지(seedCursor) 로드
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);
+
     // ── Render ───────────────────────────────────────────────────
     return (
         <div className="listening-container">
-            {/* Language Pills */}
+            {/* 단계학습 back 헤더 */}
+            {preset && (
+                <button
+                    type="button"
+                    className="vocab-step-back"
+                    onClick={onBack}
+                    style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
+                >
+                    ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                </button>
+            )}
+
+            {/* Language Pills — 단계학습 진입 시 언어 고정이라 숨김 */}
+            {!preset && (
             <div className="vocab-lang-row">
                 {visibleLanguages.map(code => (
                     <button
@@ -563,6 +649,7 @@ export default function ListeningTab({
                     </button>
                 ))}
             </div>
+            )}
 
             {/* Level Selector */}
             <div className="vocab-level-row">
@@ -603,6 +690,8 @@ export default function ListeningTab({
                 </span>
             </div>
 
+            {/* 단계학습 진입 시 토픽 고정 — 카테고리/칩/커스텀 입력 collapse */}
+            {!preset && (<>
             {/* Category Slider + 선택 칩 (VocabTab과 통일) */}
             <CategorySlider
                 sourceLang={sourceLang}
@@ -647,11 +736,12 @@ export default function ListeningTab({
                     }}
                 />
             </div>
+            </>)}
 
             {/* Generate Button */}
             <button
                 className="listening-generate-btn"
-                onClick={handleGenerate}
+                onClick={() => handleGenerate({ advance: !!selectedTopic && !!passage })}
                 disabled={isLoading || (!selectedTopic && !customInput.trim())}
             >
                 {isLoading ? (
@@ -672,114 +762,50 @@ export default function ListeningTab({
             {/* Passage Card */}
             {passage && !isLoading && (
                 <>
-                    <div className="listening-passage-card">
-                        <div className="listening-passage-header">
-                            <div style={{ flex: 1 }}>
-                                <h3 className="listening-passage-title">{passage.title}</h3>
-                                {passage.titleTranslation && (
-                                    <p className="listening-passage-title-trans">{passage.titleTranslation}</p>
-                                )}
-                            </div>
-                            {/* 재생 ↔ 반복 토글 */}
-                            <div className="listening-loop-toggle">
-                                <span className={`listening-loop-label ${!loopMode ? 'active' : ''}`}>
-                                    <Volume2 size={11} />
-                                </span>
-                                <button
-                                    className={`listening-loop-track ${loopMode ? 'on' : ''}`}
-                                    onClick={() => setLoopMode(m => !m)}
-                                >
-                                    <span className="listening-loop-thumb" />
-                                </button>
-                                <span className={`listening-loop-label ${loopMode ? 'active' : ''}`}>
-                                    <Repeat size={11} />
-                                </span>
-                            </div>
-                            {/* 재생/일시정지 버튼 */}
-                            <button
-                                className={`listening-tts-btn ${passagePlaying ? 'playing' : ''}`}
-                                onClick={handlePassagePlay}
-                                disabled={passageLoading}
-                                title={passagePlaying ? 'Pause' : 'Play'}
-                            >
-                                {passageLoading
-                                    ? <Loader2 size={18} className="spin" />
-                                    : passagePlaying
-                                        ? <Pause size={18} />
-                                        : <Volume2 size={18} />}
-                            </button>
-                        </div>
+                    <ListeningPassageView
+                        passage={passage}
+                        passageType={passageType}
+                        langCode={selectedLang}
+                        onSpeak={onSpeak}
+                        onTtsGate={onTtsGate}
+                        durable={!!preset}
+                        authFetch={authFetch}
+                        t={t}
+                        showSave
+                        isSaved={passageSaved}
+                        onSave={handleSavePassage}
+                        isActive={isActive}
+                    />
 
-                        <div className="listening-passage-text">
-                            {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => (
-                                <span
-                                    key={idx}
-                                    className="listening-sentence"
-                                    onClick={() => openSentenceCard(sentence)}
-                                >
-                                    {sentence}
-                                    {passageType === 'dialogue' ? '\n' : ' '}
-                                </span>
+                    {/* Phase 2: 문장 카드 자동 나열 (seed 주석 기반 — per-user Gemini 0). 단계학습 진입 시. */}
+                    {preset && passage.sentences && passage.sentences.length > 0 && (
+                        <div className="listening-keywords-list">
+                            {passage.sentences.map((s, i) => (
+                                <VocabWordCard
+                                    key={i}
+                                    w={{ word: s.text, pronunciation: s.pronunciation || '', meaning: s.translation || '', example: '', examplePronunciation: '', exampleTranslation: '', learningTip: s.learning_tip ? [s.learning_tip] : [] }}
+                                    index={i}
+                                    selectedLang={selectedLang}
+                                    sourceLang={sourceLang}
+                                    onSpeak={onSpeak}
+                                    ttsSource="listening"
+                                    isSaved={savedSentences.has(s.text)}
+                                    onSave={(score) => handleSeedSentenceSave(s, score)}
+                                    onTrialLimitReached={onTrialLimitReached}
+                                    onPronSuccess={onPronSuccess}
+                                    targetGoal={languageGoals[selectedLang] || 60}
+                                    onBookmarkPrompt={onBookmarkPrompt}
+                                    activeRecIdx={activeRecIdx}
+                                    onRecordingStart={setActiveRecIdx}
+                                    headlineBlock
+                                    t={t}
+                                    ttsDurable={!!preset}
+                                    onTopicPass={preset && onTopicPass
+                                        ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'passage', itemKey })
+                                        : undefined}
+                                />
                             ))}
                         </div>
-
-                        {passage.pronunciation && (
-                            <>
-                                <button
-                                    className="listening-translation-toggle"
-                                    onClick={() => setShowPronunciation(!showPronunciation)}
-                                >
-                                    {showPronunciation ? t('listening.hidePronunciation') : t('listening.showPronunciation')}
-                                    <ChevronDown size={14} className={showPronunciation ? 'rotated' : ''} />
-                                </button>
-                                {showPronunciation && (
-                                    <div className="listening-passage-pron">{passage.pronunciation}</div>
-                                )}
-                            </>
-                        )}
-
-                        <button
-                            className="listening-translation-toggle"
-                            onClick={() => setShowTranslation(!showTranslation)}
-                        >
-                            {showTranslation ? t('listening.hideTranslation') : t('listening.showTranslation')}
-                            <ChevronDown size={14} className={showTranslation ? 'rotated' : ''} />
-                        </button>
-                        {showTranslation && (
-                            <div className="listening-passage-translation">{passage.translation}</div>
-                        )}
-                    </div>
-
-                    {/* Key Words */}
-                    {keywords.length > 0 && (
-                        <>
-                            <div className="listening-keywords-label">
-                                <BookOpen size={14} />
-                                {t('listening.keywords')}
-                            </div>
-                            <div className="listening-keywords-list">
-                                {keywords.map((w, i) => (
-                                    <VocabWordCard
-                                        key={i}
-                                        w={w}
-                                        index={i}
-                                        selectedLang={selectedLang}
-                                        sourceLang={sourceLang}
-                                        onSpeak={onSpeak}
-                                        ttsSource="listening"
-                                        isSaved={savedWords.has(i)}
-                                        onSave={(score) => handleSave(w, i, score)}
-                                        onTrialLimitReached={onTrialLimitReached}
-                                        onPronSuccess={onPronSuccess}
-                                        targetGoal={languageGoals[selectedLang] || 80}
-                                        onBookmarkPrompt={onBookmarkPrompt}
-                                        activeRecIdx={activeRecIdx}
-                                        onRecordingStart={setActiveRecIdx}
-                                        t={t}
-                                    />
-                                ))}
-                            </div>
-                        </>
                     )}
                 </>
             )}
@@ -827,9 +853,12 @@ export default function ListeningTab({
                 onTrialLimitReached={onTrialLimitReached}
                 onPronSuccess={onPronSuccess}
                 onBookmarkPrompt={onBookmarkPrompt}
-                targetGoal={languageGoals[selectedLang] || 80}
+                targetGoal={languageGoals[selectedLang] || 60}
                 t={t}
                 ttsSource="listening"
+                onTopicPass={preset && onTopicPass
+                    ? (itemKey) => onTopicPass({ topicId: preset.topicId, lang: selectedLang, level, phase: 'passage', itemKey })
+                    : undefined}
             />
         </div>
     );

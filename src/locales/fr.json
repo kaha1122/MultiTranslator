@@ -177,6 +177,7 @@
     "filterThisWeek": "Cette semaine",
     "typeWord": "Mot",
     "typeSentence": "Phrase",
+    "typeListening": "Écoute",
     "srcTranslation": "Traducteur",
     "srcScene": "Dialogue",
     "srcVocab": "Vocabulaire",
@@ -200,6 +201,11 @@
     "pointsTitle": "Plus de points",
     "pointsDesc": "Rechargez des points ou abonnez-vous",
     "pointsUpgradeHint": "Abonnez-vous pour un accès illimité — sans pub, limites ni points",
+    "costPassage": "Texte",
+    "pronAllowanceAd": "Pub : +10 prononciations aujourd’hui",
+    "pronAllowanceDesc": "Aujourd’hui seulement — +10 prononciations (pas des points)",
+    "proOnlyTitle": "Réservé à Pro/Premium",
+    "proOnlyDesc": "Le Free-Talking est réservé aux abonnés Pro et Premium.",
     "costOther": "Autres",
     "costGuideTitle": "Points par action",
     "costPlay": "Écouter",
@@ -565,7 +571,53 @@
     "dialogue": "Dialogue",
     "word": "Vocabulaire"
   },
+  "learnIntro": {
+    "title": "Commençons à apprendre 🎓",
+    "body": "7 catégories, chacune avec 10 contenus, vous attendent. Touchez chaque étape pour commencer à apprendre.",
+    "start": "Compris"
+  },
+  "streakEarned": {
+    "title": "Apprentissage du jour terminé ! 🔥",
+    "body": "Vous avez continué à apprendre aujourd'hui. Votre série est enregistrée !",
+    "ok": "Super"
+  },
+  "learningPath": {
+    "here": "Vous êtes ici",
+    "unit": "Unité",
+    "mapTitle": "Carte des 70 thèmes",
+    "masteredLegend": "Coloré = maîtrisé",
+    "masteredLabel": "maîtrisé",
+    "word": "Mots",
+    "passage": "Texte",
+    "wordPhaseTitle": "1. Prononciation des mots",
+    "wordPhaseDesc": "Apprenez et notez 5 mots clés",
+    "passagePhaseTitle": "2. Shadowing du texte",
+    "passagePhaseDesc": "Répétez des phrases avec ces mots",
+    "passageLocked": "Terminez d'abord les mots",
+    "passed": "réussi",
+    "sentences": "phrases",
+    "hubHint": "Les mots de l'étape 1 alimentent le texte de l'étape 2 — les mêmes mots réapparaissent en contexte."
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "Coach de prononciation IA 🎤",
+      "introLine1": "Écoutez et répétez — l'IA évalue votre prononciation en détail.",
+      "introLine2": "Entraînons-nous avec le tutoriel suivant.",
+      "introStart": "Commencer",
+      "listenTitle": "D'abord, écoutez 👂",
+      "listenBtn": "Écouter",
+      "speakTitle": "Maintenant, répétez à voix haute 🎤",
+      "speakHint": "Appuyez sur le micro et répétez",
+      "listenAgain": "Réécouter",
+      "privacyNote": "Votre voix est traitée en toute sécurité pour l'analyse de la prononciation.",
+      "later": "Plus tard",
+      "analyzing": "Analyse en cours...",
+      "resultTitle": "Excellent début ! 🎉",
+      "resultDesc": "Vous êtes prêt à commencer à pratiquer la prononciation.",
+      "retry": "Réessayer",
+      "continue": "Continuer",
+      "openSettings": "Ouvrir les réglages"
+    },
     "nativeLang": "Quelle est votre langue maternelle ?",
     "targetLang": "Quelle langue souhaitez-vous\napprendre ?",
     "moreLang": "Une autre langue à\napprendre ?",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "NOUVEAU",
-      "title": "Construisez votre série, gagnez de grandes récompenses",
-      "subtitle": "Atteignez votre objectif quotidien pour faire grandir votre série — débloquez des points bonus à chaque étape.",
+      "title": "Commençons à apprendre — gagnez des bonus avec les séries",
+      "subtitle": "7 catégories et 70 étapes vous attendent. Continuez à apprendre chaque jour pour faire grandir votre série — débloquez des points bonus à chaque étape.",
       "dailyGoalTitle": "Objectif quotidien",
       "dailyGoalHeadline": "Enregistrez 3 cartes par jour ayant atteint votre score cible de prononciation",
       "dailyGoalStepPron": "Prononciation OK",
@@ -691,7 +743,8 @@
       "milestoneHint": "Chaque étape est attribuée une seule fois. Exclu pour Pro/Premium.",
       "dontShowAgain": "Ne plus afficher",
       "later": "Plus tard",
-      "cta": "Voir dans les Stats"
+      "cta": "Voir dans les Stats",
+      "start": "Commencer"
     },
     "reminder": {
       "startTitle": "Commencez votre Streak aujourd'hui !",

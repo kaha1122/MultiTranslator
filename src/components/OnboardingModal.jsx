@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { getT } from '../utils/i18n';
 import { resolveFlag } from '../config/languageFlags';
 import { useUserCountry } from '../hooks/useUserCountry';
+import OnboardingPronChallenge from './OnboardingPronChallenge';
 import './OnboardingModal.css';
 
 const LANGUAGES = [
@@ -39,7 +40,7 @@ const LEVELS = [
   { value: 'advanced', icon: '🎓', color: '#dc2626' },
 ];
 
-export default function OnboardingModal({ defaultSourceLang, onComplete }) {
+export default function OnboardingModal({ defaultSourceLang, onComplete, onSpeak }) {
   const userCountry = useUserCountry();
   const [step, setStep] = useState(0);
   const [source, setSource] = useState(defaultSourceLang || 'ko');
@@ -91,6 +92,11 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
   };
 
   const handleLevelConfirm = () => {
+    setStep('firstPron'); // 난이도 → 첫 발음 챌린지(가치 경험) → AI 동의
+  };
+
+  // 첫 발음 챌린지 완료/스킵 → AI 동의로
+  const handlePronDone = () => {
     setStep('aiConsent');
   };
 
@@ -121,8 +127,8 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
       >
         {/* 단계 인디케이터 */}
         <div className="onb-steps">
-          {[0, 1, 2, 3, 4].map(i => {
-            const stepIdx = step === 'aiConsent' ? 4 : step === 'level' ? 3 : (typeof step === 'number' ? step : 3);
+          {[0, 1, 2, 3, 4, 5].map(i => {
+            const stepIdx = step === 'aiConsent' ? 5 : step === 'firstPron' ? 4 : step === 'level' ? 3 : (typeof step === 'number' ? step : 3);
             return <span key={i} className={`onb-step-dot ${stepIdx >= i ? 'active' : ''}`} />;
           })}
         </div>
@@ -158,6 +164,14 @@ export default function OnboardingModal({ defaultSourceLang, onComplete }) {
                   {t('onboarding.next')} →
                 </button>
               </>
+            ) : step === 'firstPron' ? (
+              <OnboardingPronChallenge
+                sourceLang={source}
+                targetLang={targets[0] || 'en'}
+                onSpeak={onSpeak}
+                onSkip={handlePronDone}
+                onContinue={handlePronDone}
+              />
             ) : step === 'aiConsent' ? (
               <>
                 <div style={{

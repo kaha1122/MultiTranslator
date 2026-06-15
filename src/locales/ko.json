@@ -177,6 +177,7 @@
     "filterThisWeek": "이번주",
     "typeWord": "단어",
     "typeSentence": "문장",
+    "typeListening": "지문",
     "srcTranslation": "번역기",
     "srcScene": "대화",
     "srcVocab": "단어",
@@ -200,6 +201,11 @@
     "pointsTitle": "포인트가 부족합니다",
     "pointsDesc": "포인트를 충전하시거나, 구독하여 주십시오",
     "pointsUpgradeHint": "구독하면 광고·한도·포인트 없이 무제한으로 사용 가능합니다",
+    "costPassage": "지문",
+    "pronAllowanceAd": "광고 보고 오늘 발음 +10",
+    "pronAllowanceDesc": "오늘 하루만 발음 한도 +10 (포인트 아님)",
+    "proOnlyTitle": "Pro/Premium 전용입니다",
+    "proOnlyDesc": "Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.",
     "costOther": "기타",
     "costGuideTitle": "사용 시 차감 포인트",
     "costPlay": "듣기·재생",
@@ -571,7 +577,53 @@
     "dialogue": "대화",
     "word": "단어"
   },
+  "learnIntro": {
+    "title": "학습을 시작해요 🎓",
+    "body": "총 7개의 카테고리에 10가지의 학습 자료가 마련되어 있어요. 단계별로 학습 버튼을 눌러 학습을 진행해 보아요.",
+    "start": "좋아요"
+  },
+  "streakEarned": {
+    "title": "오늘 학습 완료! 🔥",
+    "body": "오늘도 학습을 이어갔어요. Streak이 기록됐어요!",
+    "ok": "좋아요"
+  },
+  "learningPath": {
+    "here": "지금 여기",
+    "unit": "유닛",
+    "mapTitle": "전체 70 학습 지도",
+    "masteredLegend": "색칠 = 마스터 완료",
+    "masteredLabel": "마스터",
+    "word": "단어",
+    "passage": "지문",
+    "wordPhaseTitle": "1. 단어 발음",
+    "wordPhaseDesc": "핵심 5단어 습득·채점",
+    "passagePhaseTitle": "2. 지문 섀도잉",
+    "passagePhaseDesc": "그 단어가 든 지문·문장 발음",
+    "passageLocked": "단어를 먼저 완료하세요",
+    "passed": "통과",
+    "sentences": "문장",
+    "hubHint": "1단계 단어 → 2단계 지문 프롬프트에 주입 → 같은 단어가 문맥에서 재등장"
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "AI 발음 코치 🎤",
+      "introLine1": "발음을 듣고 따라 하면, AI가 발음을 상세히 평가해 줘요.",
+      "introLine2": "다음 튜토리얼을 통해 발음을 연습해 보아요.",
+      "introStart": "시작하기",
+      "listenTitle": "먼저 들어보세요 👂",
+      "listenBtn": "들어보기",
+      "speakTitle": "이제 따라 말해보세요 🎤",
+      "speakHint": "마이크를 누르고 따라 말하기",
+      "listenAgain": "다시 들어보기",
+      "privacyNote": "발음 분석을 위해 음성이 안전하게 처리돼요.",
+      "later": "나중에 할게요",
+      "analyzing": "분석 중...",
+      "resultTitle": "훌륭한 시작이에요! 🎉",
+      "resultDesc": "이제 발음 연습을 시작할 준비가 됐어요.",
+      "retry": "다시 도전",
+      "continue": "계속하기",
+      "openSettings": "설정 열기"
+    },
     "nativeLang": "모국어는 어떤 언어인가요?",
     "targetLang": "학습하고자 하는 언어는\n어떤 언어인가요?",
     "moreLang": "함께 학습할 또 다른\n언어가 있나요?",
@@ -685,8 +737,8 @@
     },
     "intro": {
       "badge": "NEW",
-      "title": "연속학습(Streak)으로 보너스를 모으세요",
-      "subtitle": "매일 학습 목표를 달성하면 Streak 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
+      "title": "이제 학습을 진행해 보아요. 연속학습(Streak)으로 보너스를 모을 수 있어요",
+      "subtitle": "7개의 카테고리, 70개의 Step이 준비되어 있어요. 매일 학습을 이어가면 Streak 일수가 쌓이고, 마일스톤마다 보너스 포인트를 받을 수 있어요.",
       "dailyGoalTitle": "하루 목표",
       "dailyGoalHeadline": "발음 목표 점수를 통과한 카드를 하루 3장 저장하기",
       "dailyGoalStepPron": "발음 통과",
@@ -697,7 +749,8 @@
       "milestoneHint": "각 마일스톤은 1회만 지급됩니다. Pro/Premium은 자동 제외돼요.",
       "dontShowAgain": "다시 보지 않음",
       "later": "나중에",
-      "cta": "통계 탭에서 보기"
+      "cta": "통계 탭에서 보기",
+      "start": "시작"
     },
     "reminder": {
       "startTitle": "오늘부터 Streak 시작!",

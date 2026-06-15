@@ -38,7 +38,9 @@ const getApiUrl = () => {
 // 텍스트를 고유한 ID(숫자)로 변환하는 간단한 해시 함수 (파일 이름 생성용)
 const hashCode = (s) => Math.abs(s.split('').reduce((a, b) => { a = ((a << 5) - a) + b.charCodeAt(0); return a & a }, 0)).toString();
 
-export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitReached, onPronSuccess) => {
+export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitReached, onPronSuccess, opts = {}) => {
+    // skipCount: 온보딩 첫 발음 챌린지 등 무과금·무차감 컨텍스트 — 한도 게이트/카운터 모두 생략
+    const { skipCount = false } = opts;
     const { user, tier, isTrialPronLimitReached, isProPronLimitReached, incrementPronCount, byokAzureKey, byokAzureRegion } = useAuth();
     const [isRecording, setIsRecording] = useState(false);
     const [isAnalyzing, setIsAnalyzing] = useState(false);
@@ -76,8 +78,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         setMicDenied(false);
         setSaveMessage(null);
 
-        // 발음 횟수 제한 체크 (Trial 30회 / Pro 500회)
-        if (isTrialPronLimitReached || isProPronLimitReached) {
+        // 발음 횟수 제한 체크 (Trial 30회 / Pro 500회) — skipCount면 무차감 컨텍스트라 게이트 생략
+        if (!skipCount && (isTrialPronLimitReached || isProPronLimitReached)) {
             onTrialLimitReached?.();
             return;
         }
@@ -391,6 +393,8 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             formData.append('userAzureKey', byokAzureKey);
             formData.append('userAzureRegion', byokAzureRegion || 'eastasia');
         }
+        // 온보딩 등 무차감 컨텍스트(skipCount)는 코칭 팁 미표시 → 서버 Gemini 호출 생략
+        if (skipCount) formData.append('skipCoaching', '1');
 
         try {
             // 1. 발음 평가 서버 요청
@@ -412,17 +416,20 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
             setAssessmentResult(assessment);
             setCoachTip(coaching?.tip || null);
 
-            // 발음 카운터 증가 (trial: trialPronCount, pro: proPronCount)
-            incrementPronCount();
-            // 일간 발음 카운터 증가
-            onPronSuccess?.();
+            // 발음 카운터 증가 (trial: trialPronCount, pro: proPronCount) — skipCount면 무차감
+            if (!skipCount) {
+                incrementPronCount();
+                // 일간 발음 카운터 증가
+                onPronSuccess?.();
+            }
 
             // [성능 혁신] 서버에서 분석 결과를 받자마자! 빙글빙글 도는 스피너를 즉시 멈춥니다.
             // 사용자는 점수를 바로 볼 수 있고, 3번의 Firebase 클라우드 저장은 티 나지 않게 백그라운드에서 조용히 진행됩니다.
             setIsAnalyzing(false);
 
             // 3. Firestore 점수 기록 (로그인한 경우만, 오디오는 메모리에만 보관)
-            if (user) {
+            //    skipCount(온보딩 첫발음 등)는 점수 레코드도 저장 안 함 — 일회성, 재청취 없음
+            if (!skipCount && user) {
                 try {
                     const textHash = text ? hashCode(text) : 'unknown';
                     const recordRef = doc(db, `users/${user.uid}/pronunciation_records`, textHash);

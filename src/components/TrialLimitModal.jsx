@@ -10,6 +10,7 @@ const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
     onBuyPoints, buyingPoints = false, pointsPriceString = '',
+    pronLimit, onPronAllowanceAd,
 }) => {
     const t = useT(sourceLang);
     const {
@@ -78,11 +79,40 @@ const TrialLimitModal = ({
         );
     }
 
+    // ── Pro/Premium 전용 기능 안내 (Free Talking) ──────────────────────
+    if (reason === 'proOnly') {
+        return (
+            <div style={overlay} onClick={onClose}>
+                <div onClick={e => e.stopPropagation()} style={card}>
+                    <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
+                    <div style={{ textAlign: 'center', marginBottom: '12px' }}>
+                        <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>💬</div>
+                        <h2 style={{ margin: '0 0 4px', fontSize: '1.12rem', color: '#1e293b', fontWeight: 800, lineHeight: 1.3 }}>
+                            {t('trial.proOnlyTitle') || 'Pro/Premium 전용입니다'}
+                        </h2>
+                        <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem', lineHeight: 1.4 }}>
+                            {t('trial.proOnlyDesc') || 'Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.'}
+                        </p>
+                    </div>
+                    <button
+                        onClick={onUpgrade}
+                        style={{
+                            width: '100%', padding: '13px', background: 'var(--brand-primary)', color: 'white',
+                            border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem',
+                        }}
+                    >
+                        ✨ {t('trial.upgradeBtn')}
+                    </button>
+                </div>
+            </div>
+        );
+    }
+
     // ── 포인트 부족 모달 ──────────────────────────────────────────────
     if (reason === 'points') {
         const costs = [
-            { icon: '💬', label: 'Free-Talking', cost: 10 },
-            { icon: '🎧', label: 'Listening', cost: 5 },
+            { icon: '🎧', label: 'Listening', cost: 3 },
+            { icon: '📖', label: t('trial.costPassage') || '지문', cost: 2 },
             { icon: '🎤', label: t('settings.usagePron') || 'Pronunciation', cost: 2 },
             { icon: '✦', label: t('trial.costOther') || 'Other', cost: 1 },
         ];
@@ -198,19 +228,35 @@ const TrialLimitModal = ({
                 </p>
                 <div style={{ display: 'flex', justifyContent: 'center', gap: '8px', margin: '10px 0 0', flexWrap: 'wrap' }}>
                     <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
-                        💬 {freeTalkCount}/{TRIAL_FREETALK_DAILY_LIMIT} /day
-                    </span>
-                    <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
-                        🎤 {pronCount ?? 0}/{TRIAL_DAILY_PRON_LIMIT} /day
+                        🎤 {pronCount ?? 0}/{pronLimit ?? TRIAL_DAILY_PRON_LIMIT} /day
                     </span>
                     <span style={{ fontSize: '0.8rem', background: '#f1f5f9', padding: '4px 10px', borderRadius: '20px', color: '#475569' }}>
                         🎧 {listenCount ?? 0}/{TRIAL_DAILY_LISTEN_LIMIT} /day
                     </span>
                 </div>
+                {/* #4: bonus02 광고 → 오늘 발음 +10 (앱 전용, 당일 한정·포인트 아님). 발음 한도에 막혀도 당일 학습 지속 */}
+                {isNative && typeof onPronAllowanceAd === 'function' && (
+                    <button
+                        onClick={() => onPronAllowanceAd()}
+                        disabled={rewardAdLoading}
+                        style={{
+                            width: '100%', marginTop: '14px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                            padding: '11px', borderRadius: '12px',
+                            background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', border: '1px solid #fed7aa',
+                            cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
+                        }}>
+                        <span style={{ fontWeight: 700, color: '#9a3412', fontSize: '0.92rem' }}>
+                            🎤 {t('trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                        </span>
+                        <span style={{ fontSize: '0.72rem', color: '#c2410c' }}>
+                            {t('trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}
+                        </span>
+                    </button>
+                )}
                 <button
                     onClick={onUpgrade}
                     style={{
-                        width: '100%', marginTop: '16px', padding: '13px', background: 'var(--brand-primary)', color: 'white',
+                        width: '100%', marginTop: '10px', padding: '13px', background: 'var(--brand-primary)', color: 'white',
                         border: 'none', borderRadius: '12px', fontWeight: 'bold', cursor: 'pointer', fontSize: '1rem'
                     }}
                 >

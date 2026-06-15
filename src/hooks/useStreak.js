@@ -98,8 +98,8 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
                 const set = new Set();
                 progressSnap.forEach(docSnap => {
                     const d = docSnap.data();
-                    const goal = d.dailyGoal || dailyGoal;
-                    if ((d.count || 0) >= goal || d.goalAchievedToday === true) {
+                    // 2026-06-14 개편: Streak 기준 = 그날 토픽 진척(단어/지문 통과) 1회 이상.
+                    if (d.topicProgressToday === true) {
                         set.add(docSnap.id);
                     }
                 });
@@ -130,7 +130,8 @@ export const useStreak = (user, weeklyData, dailyGoal = 3, profile = null) => {
         const set = achievedSetRef.current;
         let changed = false;
         weeklyData.forEach(d => {
-            if (d.achieved && !set.has(d.date)) {
+            // Streak 기준 = 그날 토픽 진척(topicProgress). 오늘 통과 시 즉시 streak 반영.
+            if (d.topicProgress && !set.has(d.date)) {
                 set.add(d.date);
                 changed = true;
             }

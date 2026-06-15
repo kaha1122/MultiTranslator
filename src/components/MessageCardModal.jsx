@@ -28,6 +28,7 @@ export default function MessageCardModal({
     targetGoal,
     t,
     ttsSource = 'card',
+    onTopicPass,   // Phase 1 단계학습(Listening 지문 섀도잉): 문장 통과 시 호출(없으면 standalone)
 }) {
     // ESC 닫기
     useEffect(() => {
@@ -78,6 +79,7 @@ export default function MessageCardModal({
                         onRecordingStart={() => {}}
                         headlineBlock           /* 문장 카드: 🔊·⭐ 윗줄 / 문장 아래 전체폭 */
                         t={t}
+                        onTopicPass={onTopicPass}
                     />
                 </div>
             </div>

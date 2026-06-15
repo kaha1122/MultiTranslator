@@ -3,6 +3,7 @@ const axios = require('axios');
 const { requireAuth, optionalAuth } = require('../middleware/auth');
 const { rateLimit } = require('../middleware/rateLimit');
 const ttsCache = require('../utils/ttsCache');
+const ttsDurable = require('../utils/ttsDurableCache');
 const { recordTtsUsage } = require('../utils/ttsUsage');
 
 const router = express.Router();
@@ -116,7 +117,7 @@ const EMOTION_TO_STYLE = {
 //   + rate limit + 글자수 상한. 무토큰 스크립트가 Azure 과금을 무한 유발하던 구멍 차단.
 const MAX_TTS_CHARS = 1200; // Listening 장문 지문(~500자) + 대화 turns 합산 여유 포함
 router.post('/api/azure-tts', requireAuth, rateLimit('azure-tts', { perMinute: 30, perHour: 400 }), async (req, res) => {
-    const { text, langCode, emotion, byokAzureKey, byokAzureRegion, turns, dialogueSeed } = req.body;
+    const { text, langCode, emotion, byokAzureKey, byokAzureRegion, turns, dialogueSeed, durable } = req.body;
     // text 또는 turns 둘 중 하나는 필수
     if (!text && !(Array.isArray(turns) && turns.length > 0)) {
         return res.status(400).json({ error: 'Missing text or turns' });
@@ -170,13 +171,26 @@ router.post('/api/azure-tts', requireAuth, rateLimit('azure-tts', { perMinute: 3
 
     // 캐시 조회 — 동일 SSML이면 Azure 재합성 없이 즉시 반환 (BYOK는 bypass)
     const useCache = !byokAzureKey;
+    // durable: 고정/공통 콘텐츠(온보딩·seed)만 영속(Storage) write-through 캐시 사용
+    const useDurable = useCache && durable === true && ttsDurable.isEnabled();
     if (useCache) {
         const hit = ttsCache.get(ssml);
         if (hit) {
-            if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} billable=${billable} — 캐시 제공(Azure 호출 0)`);
+            if (VERBOSE) console.log(`[AzureTTS] HIT  id=${id} lang=${langCode} billable=${billable} — 인메모리 캐시(Azure 0)`);
             recordTtsUsage(req.uid, { hit: true, billable });
             res.set('Content-Type', 'audio/mpeg');
             return res.send(hit);
+        }
+    }
+    // 인메모리 miss → 영속(Storage) 캐시 조회 (durable 요청만). hit 시 hot 티어로 승격.
+    if (useDurable) {
+        const dHit = await ttsDurable.get(ssml);
+        if (dHit) {
+            ttsCache.set(ssml, dHit);
+            if (VERBOSE) console.log(`[AzureTTS] DURABLE-HIT id=${id} lang=${langCode} billable=${billable} — Storage 캐시(Azure 0)`);
+            recordTtsUsage(req.uid, { hit: true, billable });
+            res.set('Content-Type', 'audio/mpeg');
+            return res.send(dHit);
         }
     }
 
@@ -195,7 +209,8 @@ router.post('/api/azure-tts', requireAuth, rateLimit('azure-tts', { perMinute: 3
         );
         const buf = Buffer.from(response.data);
         if (useCache) ttsCache.set(ssml, buf); // 성공 응답만 캐시
-        if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} billable=${billable} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}`);
+        if (useDurable) ttsDurable.set(ssml, buf).catch(() => {}); // write-through(fire-and-forget) — 영속 저장
+        if (VERBOSE) console.log(`[AzureTTS] MISS id=${id} lang=${langCode} billable=${billable} → Azure 합성(과금 발생)${byokAzureKey ? ' [BYOK·캐시제외]' : ''}${useDurable ? ' [durable→Storage]' : ''}`);
         if (useCache) recordTtsUsage(req.uid, { hit: false, billable }); // BYOK(our 비용 아님)는 제외
         res.set('Content-Type', 'audio/mpeg');
         res.send(buf);

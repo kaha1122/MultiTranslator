@@ -177,6 +177,7 @@
     "filterThisWeek": "Diese Woche",
     "typeWord": "Wort",
     "typeSentence": "Satz",
+    "typeListening": "Hörtext",
     "srcTranslation": "Übersetzer",
     "srcScene": "Dialog",
     "srcVocab": "Vokabeln",
@@ -200,6 +201,11 @@
     "pointsTitle": "Keine Punkte mehr",
     "pointsDesc": "Punkte aufladen oder abonnieren",
     "pointsUpgradeHint": "Abonnieren für unbegrenzte Nutzung — ohne Werbung, Limits oder Punkte",
+    "costPassage": "Text",
+    "pronAllowanceAd": "Werbung: +10 Aussprache heute",
+    "pronAllowanceDesc": "Nur heute — +10 Aussprache (keine Punkte)",
+    "proOnlyTitle": "Nur für Pro/Premium",
+    "proOnlyDesc": "Free-Talking ist nur für Pro- und Premium-Abonnenten verfügbar.",
     "costOther": "Sonstiges",
     "costGuideTitle": "Punkte pro Aktion",
     "costPlay": "Abspielen",
@@ -565,7 +571,53 @@
     "dialogue": "Dialog",
     "word": "Vokabeln"
   },
+  "learnIntro": {
+    "title": "Lass uns lernen 🎓",
+    "body": "7 Kategorien mit je 10 Lerninhalten sind bereit. Tippe auf jede Stufe, um mit dem Lernen zu beginnen.",
+    "start": "Verstanden"
+  },
+  "streakEarned": {
+    "title": "Heutiges Lernen erledigt! 🔥",
+    "body": "Du hast heute weitergelernt. Deine Serie ist gespeichert!",
+    "ok": "Super"
+  },
+  "learningPath": {
+    "here": "Du bist hier",
+    "unit": "Einheit",
+    "mapTitle": "Karte aller 70 Themen",
+    "masteredLegend": "Gefüllt = gemeistert",
+    "masteredLabel": "gemeistert",
+    "word": "Wörter",
+    "passage": "Text",
+    "wordPhaseTitle": "1. Wortaussprache",
+    "wordPhaseDesc": "5 Schlüsselwörter lernen & bewerten",
+    "passagePhaseTitle": "2. Text-Shadowing",
+    "passagePhaseDesc": "Sätze mit diesen Wörtern nachsprechen",
+    "passageLocked": "Zuerst die Wörter abschließen",
+    "passed": "bestanden",
+    "sentences": "Sätze",
+    "hubHint": "Wörter aus Schritt 1 fließen in den Text von Schritt 2 — dieselben Wörter erscheinen im Kontext wieder."
+  },
   "onboarding": {
+    "firstPron": {
+      "introTitle": "KI-Aussprachecoach 🎤",
+      "introLine1": "Hör zu und sprich nach — die KI bewertet deine Aussprache detailliert.",
+      "introLine2": "Lass uns mit dem nächsten Tutorial üben.",
+      "introStart": "Loslegen",
+      "listenTitle": "Hör zuerst zu 👂",
+      "listenBtn": "Anhören",
+      "speakTitle": "Jetzt sprich es nach 🎤",
+      "speakHint": "Tippe auf das Mikrofon und sprich nach",
+      "listenAgain": "Nochmal anhören",
+      "privacyNote": "Deine Stimme wird zur Ausspracheanalyse sicher verarbeitet.",
+      "later": "Später",
+      "analyzing": "Wird analysiert...",
+      "resultTitle": "Großartiger Start! 🎉",
+      "resultDesc": "Du bist bereit, mit dem Ausspracheüben zu beginnen.",
+      "retry": "Erneut versuchen",
+      "continue": "Weiter",
+      "openSettings": "Einstellungen öffnen"
+    },
     "nativeLang": "Was ist Ihre Muttersprache?",
     "targetLang": "Welche Sprache möchten Sie\nlernen?",
     "moreLang": "Noch eine weitere Sprache\nlernen?",
@@ -679,8 +731,8 @@
     },
     "intro": {
       "badge": "NEU",
-      "title": "Baue deine Serie auf, verdiene große Belohnungen",
-      "subtitle": "Erreiche täglich dein Lernziel, um deine Serie zu verlängern — schalte Bonuspunkte bei jedem Meilenstein frei.",
+      "title": "Lass uns lernen — verdiene Boni mit Serien",
+      "subtitle": "7 Kategorien und 70 Stufen sind bereit. Lerne jeden Tag weiter, um deine Serie zu verlängern — schalte Bonuspunkte bei jedem Meilenstein frei.",
       "dailyGoalTitle": "Tägliches Ziel",
       "dailyGoalHeadline": "Speichere täglich 3 Karten, die deinen Aussprache-Zielwert bestanden haben",
       "dailyGoalStepPron": "Aussprache OK",
@@ -691,7 +743,8 @@
       "milestoneHint": "Jeder Meilenstein wird einmalig vergeben. Pro/Premium automatisch ausgeschlossen.",
       "dontShowAgain": "Nicht mehr anzeigen",
       "later": "Später",
-      "cta": "In Statistik ansehen"
+      "cta": "In Statistik ansehen",
+      "start": "Starten"
     },
     "reminder": {
       "startTitle": "Starte heute deine Streak!",

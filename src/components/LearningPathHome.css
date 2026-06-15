@@ -1,0 +1,337 @@
+/* ── 학습 경로 홈 (계단 + 언어 pill + 미니그리드) ───────────────────────── */
+.lph {
+  width: 100%;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 8px 12px 32px;
+  box-sizing: border-box;
+}
+
+/* 언어 pill 바 */
+.lph-langbar {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 6px 2px 10px;
+  scrollbar-width: none;
+}
+.lph-langbar::-webkit-scrollbar { display: none; }
+.lph-langbar.single { justify-content: center; }
+
+.lph-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex: 0 0 auto;
+  padding: 7px 12px;
+  border-radius: 999px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+  font-size: 0.85rem;
+  color: #475569;
+  transition: border-color 0.15s, background 0.15s;
+}
+.lph-pill.active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+  font-weight: 700;
+}
+.lph-pill-flag { font-size: 1.05rem; }
+.lph-pill-count {
+  font-size: 0.72rem;
+  font-weight: 700;
+  opacity: 0.8;
+}
+
+/* 계단 */
+.lph-stairs { margin-top: 6px; }
+.lph-unit { margin-bottom: 14px; }
+
+.lph-unit-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--unit-color) 12%, #fff);
+  border: 1px solid color-mix(in srgb, var(--unit-color) 30%, #fff);
+  margin-bottom: 8px;
+  cursor: pointer;
+  font: inherit;
+  text-align: left;
+}
+.lph-unit-title {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: color-mix(in srgb, var(--unit-color) 75%, #1e293b);
+}
+.lph-unit-right { display: flex; align-items: center; gap: 8px; flex: 0 0 auto; }
+.lph-unit-count {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: var(--unit-color);
+}
+.lph-unit-chevron { color: var(--unit-color); transition: transform 0.2s; }
+.lph-unit-chevron.open { transform: rotate(180deg); }
+
+/* 노드 — 중앙 연결선(척추) + 좌우 지그재그 + 노드↔선 stub */
+.lph-nodes {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  padding-bottom: 4px;
+}
+/* 중앙 연결선: 첫 노드 중심 ~ 마지막 노드 중심 (row-h 84 → top/bottom 42) */
+.lph-nodes::before {
+  content: '';
+  position: absolute;
+  left: 50%;
+  top: 42px;
+  bottom: 42px;
+  width: 3px;
+  transform: translateX(-50%);
+  background: color-mix(in srgb, var(--unit-color) 30%, #e2e8f0);
+  border-radius: 3px;
+}
+.lph-row {
+  position: relative;
+  height: 84px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+/* 노드 → 중앙선 연결 stub (좌/우) */
+.lph-row::before {
+  content: '';
+  position: absolute;
+  top: 50%;
+  height: 3px;
+  width: 54px;
+  transform: translateY(-50%);
+  background: color-mix(in srgb, var(--unit-color) 30%, #e2e8f0);
+}
+.lph-row.left::before { right: 50%; }
+.lph-row.right::before { left: 50%; }
+.lph-row.left .lph-node { transform: translateX(-54px); }
+.lph-row.right .lph-node { transform: translateX(54px); }
+
+.lph-node {
+  position: relative;
+  z-index: 1;
+  width: 78px;
+  height: 78px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 3px solid #cbd5e1;
+  background: #fff;
+  color: #94a3b8;
+}
+.lph-node.mastered { background: var(--unit-color); border-color: var(--unit-color); color: #fff; }
+.lph-node.inprogress { border-color: var(--unit-color); color: var(--unit-color); }
+.lph-node.current {
+  border-color: var(--unit-color);
+  color: var(--unit-color);
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--unit-color) 18%, transparent);
+}
+.lph-node.locked { color: #cbd5e1; }
+.lph-node-dot { width: 18px; height: 18px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+/* "지금 여기" 배지 — 노드 위, 노드 좌/우 위치 따라감 */
+.lph-here {
+  position: absolute;
+  top: -10px;
+  z-index: 2;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--unit-color);
+  color: #fff;
+  font-size: 0.66rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+.lph-row.left .lph-here { left: 50%; transform: translateX(calc(-50% - 54px)); }
+.lph-row.right .lph-here { left: 50%; transform: translateX(calc(-50% + 54px)); }
+
+/* 토픽 라벨 — 노드 바깥쪽(좌/우), 세로 중앙 */
+.lph-node-label {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 0.74rem;
+  line-height: 1.2;
+  color: #475569;
+  max-width: 96px;
+}
+.lph-row.left .lph-node-label { right: calc(50% + 102px); text-align: right; }
+.lph-row.right .lph-node-label { left: calc(50% + 102px); text-align: left; }
+
+/* 70 미니그리드 */
+.lph-minimap {
+  margin-top: 22px;
+  padding: 14px;
+  border-radius: 14px;
+  background: #f8fafc;
+  border: 1px solid #eef2f6;
+}
+.lph-minimap-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+.lph-minimap-title { font-size: 0.85rem; font-weight: 800; color: #1e293b; }
+.lph-minimap-legend { font-size: 0.68rem; color: #94a3b8; }
+.lph-minimap-rows { display: flex; flex-direction: column; gap: 6px; }
+.lph-minimap-row { display: flex; align-items: center; gap: 8px; }
+.lph-minimap-cat { font-size: 0.95rem; width: 20px; text-align: center; }
+.lph-minimap-dots { display: flex; gap: 5px; flex-wrap: wrap; }
+.lph-minidot {
+  width: 13px; height: 13px; border-radius: 50%;
+  border: 1.5px solid #cbd5e1; background: transparent;
+  box-sizing: border-box;
+}
+.lph-minidot.on { background: var(--unit-color); border-color: var(--unit-color); }
+.lph-minimap-total {
+  margin: 10px 0 0;
+  text-align: right;
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: #475569;
+}
+
+/* 모션 민감 사용자: transition 제거 */
+@media (prefers-reduced-motion: reduce) {
+  .lph-node, .lph-pill { transition: none; }
+}
+
+/* ── TopicHub (Layer 2) ─────────────────────────────────────────────────── */
+.hub-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(15, 23, 42, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+.hub-sheet {
+  position: relative;
+  width: 100%;
+  max-width: 520px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 22px 18px calc(20px + env(safe-area-inset-bottom));
+  box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
+  max-height: 88vh;
+  overflow-y: auto;
+}
+@media (min-width: 560px) {
+  .hub-overlay { align-items: center; }
+  .hub-sheet { border-radius: 20px; }
+}
+.hub-close {
+  position: absolute;
+  top: 14px; right: 14px;
+  background: none; border: none; cursor: pointer;
+  color: #94a3b8; padding: 4px;
+}
+
+.hub-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 14px;
+  padding-right: 28px;
+}
+.hub-icon { font-size: 1.5rem; }
+.hub-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; flex: 1; }
+.hub-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: #475569;
+  background: #f1f5f9;
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+.hub-badge.done { background: #dcfce7; color: #15803d; }
+
+.hub-level-row {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 16px;
+}
+.hub-level-btn {
+  flex: 1;
+  padding: 8px;
+  border-radius: 10px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  color: #64748b;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+.hub-level-btn.active {
+  border-color: #0d9488;
+  background: #f0fdfa;
+  color: #0f766e;
+}
+
+.hub-phase {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 14px;
+  margin-bottom: 12px;
+  border-radius: 14px;
+  border: 1px solid #e2e8f0;
+  background: #fff;
+  cursor: pointer;
+}
+.hub-phase.locked { opacity: 0.6; cursor: not-allowed; }
+.hub-phase-icon {
+  flex: 0 0 auto;
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  color: #fff;
+}
+.hub-phase-icon.word { background: #0d9488; }
+.hub-phase-icon.passage { background: #2563eb; }
+.hub-phase.locked .hub-phase-icon.passage { background: #94a3b8; }
+.hub-phase-body { flex: 1; display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.hub-phase-title { font-size: 0.95rem; font-weight: 700; color: #1e293b; }
+.hub-phase-desc { font-size: 0.78rem; color: #64748b; }
+.hub-phase-arrow { color: #cbd5e1; flex: 0 0 auto; }
+
+.hub-gauge {
+  height: 7px;
+  border-radius: 999px;
+  background: #e2e8f0;
+  overflow: hidden;
+  margin-top: 5px;
+}
+.hub-gauge-fill { display: block; height: 100%; border-radius: 999px; transition: width 0.35s ease; }
+.hub-gauge-fill.word { background: #0d9488; }
+.hub-gauge-fill.passage { background: #2563eb; }
+.hub-gauge-text { font-size: 0.72rem; font-weight: 700; color: #475569; }
+
+.hub-hint {
+  margin: 6px 0 0;
+  font-size: 0.74rem;
+  color: #94a3b8;
+  text-align: center;
+  line-height: 1.5;
+}
+@media (prefers-reduced-motion: reduce) {
+  .hub-gauge-fill { transition: none; }
+}
