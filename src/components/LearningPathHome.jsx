@@ -6,6 +6,7 @@ import {
   UNITS,
   TOPIC_INDEX,
   TOTAL_TOPICS,
+  LANG_SLOT_COLORS,
   isTopicMastered,
   getCurrentTopicId,
   countMastered,
@@ -35,7 +36,17 @@ export default function LearningPathHome({
 
   const progressMap = getLangProgress(activeLang);
   const currentTopicId = getCurrentTopicId(progressMap);
-  const masteredCount = countMastered(progressMap);
+
+  // 멀티언어 미니맵 — 활성 언어 최대 3개를 dot 안의 색상 아크로 표시
+  const dotLangs = langs.slice(0, 3);
+  const langMaps = dotLangs.map((l) => getLangProgress(l));
+  // 토픽 dot 배경: 언어별 마스터 여부를 슬롯 색(아크)로. 미마스터=연회색.
+  const dotBackground = (topicId) => {
+    const segs = dotLangs.map((l, i) => (isTopicMastered(langMaps[i][topicId]) ? LANG_SLOT_COLORS[i] : '#e5e7eb'));
+    if (segs.length <= 1) return segs[0] || '#e5e7eb';
+    const slice = 360 / segs.length;
+    return `conic-gradient(${segs.map((c, i) => `${c} ${slice * i}deg ${slice * (i + 1)}deg`).join(', ')})`;
+  };
 
   // 유닛 접기/펼치기 — 처음엔 유닛1·2만 열림 + 현재 토픽이 속한 유닛은 로드 후 자동 오픈
   const [openUnits, setOpenUnits] = useState({ 0: true, 1: true });
@@ -155,28 +166,40 @@ export default function LearningPathHome({
         })}
       </div>
 
-      {/* 70 미니그리드 — 활성 언어 마스터 색칠 */}
+      {/* 70-dot 멀티언어 보드 — 활성 언어(최대 3) 마스터를 색상 아크로 */}
       <div className="lph-minimap">
         <div className="lph-minimap-head">
           <span className="lph-minimap-title">{t('learningPath.mapTitle')}</span>
-          <span className="lph-minimap-legend">{t('learningPath.masteredLegend')}</span>
+        </div>
+        {/* 언어 색상 범례 + 언어별 N/70 */}
+        <div className="lph-minimap-legend">
+          {dotLangs.map((lang, i) => (
+            <span key={lang} className="lph-legend-item">
+              <span className="lph-legend-swatch" style={{ background: LANG_SLOT_COLORS[i] }} />
+              {getT(sourceLang, `langNames.${lang}`) || getLangInfo(lang)?.name || lang}
+              <strong className="lph-legend-count">{countMastered(langMaps[i])}/{TOTAL_TOPICS}</strong>
+            </span>
+          ))}
         </div>
         <div className="lph-minimap-rows">
           {UNITS.map((unit) => (
-            <div key={unit.catId} className="lph-minimap-row" style={{ '--unit-color': unit.color }}>
+            <div key={unit.catId} className="lph-minimap-row">
               <span className="lph-minimap-cat">{unit.icon}</span>
               <div className="lph-minimap-dots">
                 {unit.topicIds.map((topicId) => (
-                  <span
+                  <button
                     key={topicId}
-                    className={`lph-minidot ${isTopicMastered(progressMap[topicId]) ? 'on' : ''}`}
+                    type="button"
+                    className="lph-minidot"
+                    style={{ background: dotBackground(topicId) }}
+                    onClick={() => onOpenTopic?.(topicId, activeLang)}
+                    aria-label={t(`vocabTopic.${topicId}`)}
                   />
                 ))}
               </div>
             </div>
           ))}
         </div>
-        <p className="lph-minimap-total">{masteredCount} / {TOTAL_TOPICS}</p>
       </div>
     </div>
   );

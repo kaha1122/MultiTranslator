@@ -27,6 +27,9 @@ export const UNIT_COLORS = {
 
 const DEFAULT_COLOR = '#6366f1';
 
+// 멀티언어 미니맵 — 활성 언어 슬롯(최대 3)별 색상 (slot0 teal / slot1 blue / slot2 pink)
+export const LANG_SLOT_COLORS = ['#0d9488', '#2563eb', '#db2777'];
+
 // 유닛 목록 — VOCAB_CATEGORIES 배열 순서 유지. topics = subs.flatMap(s => s.topics)
 export const UNITS = VOCAB_CATEGORIES.map((cat, unitIndex) => ({
   unitIndex,
