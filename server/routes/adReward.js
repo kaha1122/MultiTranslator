@@ -122,4 +122,44 @@ router.post('/api/bonus/daily-topup', requireAuth, rateLimit('daily-topup', { pe
     }
 });
 
+// ── 발음 일일 허용량 추가 (Trial, bonus02 보상광고) ───────────────────────────
+// 2026-06-15 #4: Daily 발음 한도(10/day)에 막혀 학습 못하는 경우 → 광고 시청으로 오늘 발음 +10.
+//   dailyProgress/{date}.pronBonus 누적(다음날 자동 리셋). 쿨다운 + 하루 캡(최대 5회=+50).
+//   body: { date:'YYYY-MM-DD' } 클라 로컬 날짜(=클라가 읽는 dailyProgress 문서와 동일 키).
+const PRON_ALLOWANCE = 10;
+const PRON_ALLOWANCE_CAP = 5;
+router.post('/api/bonus/pron-allowance', requireAuth, rateLimit('pron-allowance', { perMinute: 4, perHour: 30 }), async (req, res) => {
+    if (!admin.apps.length) return res.status(500).json({ error: 'Firebase Admin not initialized' });
+    const uid = req.uid;
+    const clientDate = String(req.body?.date || '');
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(clientDate)) return res.status(400).json({ error: 'invalid_date' });
+    const clientMs = Date.parse(`${clientDate}T00:00:00Z`);
+    if (!Number.isFinite(clientMs) || Math.abs(clientMs - Date.now()) > 48 * 3600 * 1000) {
+        return res.status(400).json({ error: 'date_out_of_range' });
+    }
+    try {
+        const dref = adminDb.collection('users').doc(uid).collection('dailyProgress').doc(clientDate);
+        const claim = await adminDb.runTransaction(async (tx) => {
+            const snap = await tx.get(dref);
+            const d = snap.exists ? snap.data() : {};
+            const lastMs = d.lastPronAdAt?.toMillis?.() || 0;
+            if (Date.now() - lastMs < COOLDOWN_MS) return { reject: 429, error: 'cooldown', message: '잠시 후 다시 시도해주세요' };
+            const grants = d.pronBonusGrants || 0;
+            if (grants >= PRON_ALLOWANCE_CAP) return { reject: 429, error: 'daily_cap', message: '오늘 발음 추가 한도에 도달했어요' };
+            tx.set(dref, {
+                pronBonus: admin.firestore.FieldValue.increment(PRON_ALLOWANCE),
+                pronBonusGrants: grants + 1,
+                lastPronAdAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            return { grants };
+        });
+        if (claim.reject) return res.status(claim.reject).json({ error: claim.error, message: claim.message });
+        console.log(`[PronAllowance] +${PRON_ALLOWANCE} pron to ${uid} (${clientDate}, ${claim.grants + 1}/${PRON_ALLOWANCE_CAP})`);
+        return res.json({ success: true, granted: PRON_ALLOWANCE });
+    } catch (err) {
+        console.error('[PronAllowance] error:', err);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
 module.exports = router;

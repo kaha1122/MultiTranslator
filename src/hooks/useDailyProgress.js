@@ -30,10 +30,11 @@ const getWeekDates = () => {
 const makePlaceholderWeek = (goal) =>
     getWeekDates().map(date => ({ date, count: 0, goal, achieved: false, topicProgress: false }));
 
-export const useDailyProgress = (user, dailyGoal = 3) => {
+export const useDailyProgress = (user, dailyGoal = 10) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
+    const [todayPronBonus, setTodayPronBonus] = useState(0); // #4: 오늘 광고로 추가한 발음 허용량(+10/회)
     const [todayListenCount, setTodayListenCount] = useState(0);
     const [todayFreeTalkCount, setTodayFreeTalkCount] = useState(0);  // Free Talking 세션 시작 횟수 (Trial 한도 2회)
     const [weeklyData, setWeeklyData] = useState(() => makePlaceholderWeek(dailyGoal));
@@ -75,6 +76,8 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
             apply(todayCountRef, setTodayCount, data.count || 0);
             apply(todaySaveCountRef, setTodaySaveCount, data.saveCount || 0);
             apply(todayPronCountRef, setTodayPronCount, data.pronCount || 0);
+            // pronBonus: 광고 추가분 — merge 시에도 서버값 우선(단조 증가, 클라가 증가 안 함)
+            setTodayPronBonus(data.pronBonus || 0);
             apply(todayListenCountRef, setTodayListenCount, data.listenCount || 0);
             apply(todayFreeTalkCountRef, setTodayFreeTalkCount, data.freeTalkCount || 0);
             achievedKeysRef.current = merge
@@ -116,6 +119,7 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
         setTodayCount(0);
         setTodaySaveCount(0);
         setTodayPronCount(0);
+        setTodayPronBonus(0);
         setTodayListenCount(0);
         setTodayFreeTalkCount(0);
         loadData({ merge: true }); // 다른 디바이스가 이미 쓴 오늘 카운트 + 주간 데이터 반영
@@ -128,6 +132,7 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
             setTodayCount(0);
             setTodaySaveCount(0);
             setTodayPronCount(0);
+            setTodayPronBonus(0);
             setTodayListenCount(0);
             setTodayFreeTalkCount(0);
             setWeeklyData(makePlaceholderWeek(dailyGoal));
@@ -370,5 +375,5 @@ export const useDailyProgress = (user, dailyGoal = 3) => {
         }
     }, [user, markActiveDayIfFirst]);
 
-    return { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday };
+    return { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily: loadData };
 };

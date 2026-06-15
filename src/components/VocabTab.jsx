@@ -522,6 +522,9 @@ export default function VocabTab({
     // 단계학습(preset) 진입 시 현재 페이지 5장 자동 로드 (버튼 없이 카드 즉시 표시).
     // preset → selectedTopic/Lang/Level 동기화가 끝난 뒤 1회만(토픽별).
     const autoGenKeyRef = useRef(null);
+    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 →
+    //   재진입 시에도 버튼 없이 캐시 페이지 자동 표시. handleGenerate 가 페이지 캐시 HIT 면 무차감(#8).
+    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
     useEffect(() => {
         if (!preset || !isActive) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;

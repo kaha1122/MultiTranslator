@@ -437,7 +437,7 @@ export const AuthProvider = ({ children }) => {
     // 2026-06-07 개편: 하드캡 절대(일일 한도 초과 불가) + 통합 포인트 풀(bonusPoints) 게이트.
     //   "한도 도달(하드캡)" 또는 "포인트 부족(< 액션 비용)" 중 하나라도면 차단. credits/bonus 우회 제거.
     //   포인트 부족이면 사이드바 보상광고 충전(+5)으로 회복, 하드캡이면 Tier 변경만.
-    const POINT_COST = { freeTalk: 10, listen: 2, pron: 2 };
+    const POINT_COST = { freeTalk: 10, listen: 3, pron: 2 };
     const isTrialPronLimitReached = tier === 'trial' && (dailyTrialPronReached || bonusPoints < POINT_COST.pron);
     const isTrialFreeTalkLimitReached = tier === 'trial' && (dailyTrialFreeTalkReached || bonusPoints < POINT_COST.freeTalk);
     const isTrialListenLimitReached = tier === 'trial' && (dailyTrialListenReached || bonusPoints < POINT_COST.listen);

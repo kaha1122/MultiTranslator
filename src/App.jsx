@@ -565,25 +565,26 @@ function App() {
     }
   });
 
-  // 하루 학습 목표 카드 수 (기본 3장 — 2026-05-05 retention 정책 변경: 10장 → 3장)
-  // 1회성 강제 마이그레이션: 기존 유저의 localStorage 값(10장 default 또는 본인 설정값)도
-  // 새 default(3장)로 reset. dailyGoalMigrated_v3 플래그로 1회만 실행 — 이후 사용자가
-  // 슬라이더로 변경한 값은 그대로 보존됨.
+  // 하루 학습 목표 카드 수 (기본 10장 — 2026-06-15: 완료 기준이 '발음 통과'로 바뀌어 3장은 너무 적음 → 10장)
+  // 1회성 강제 마이그레이션(v4): 기존 유저의 localStorage 값도 새 default(10장)로 reset.
+  // dailyGoalMigrated_v4 플래그로 1회만 실행 — 이후 사용자가 슬라이더로 변경한 값은 그대로 보존됨.
   const [dailyGoal, setDailyGoal] = useState(() => {
     try {
-      const MIGRATION_KEY = 'dailyGoalMigrated_v3_2026_05_05';
+      const MIGRATION_KEY = 'dailyGoalMigrated_v4_2026_06_15';
       if (!localStorage.getItem(MIGRATION_KEY)) {
-        localStorage.setItem('dailyGoal', '3');
+        localStorage.setItem('dailyGoal', '10');
         localStorage.setItem(MIGRATION_KEY, '1');
-        return 3;
+        return 10;
       }
-      return parseInt(localStorage.getItem('dailyGoal') || '3', 10);
+      return parseInt(localStorage.getItem('dailyGoal') || '10', 10);
     }
-    catch (e) { return 3; }
+    catch (e) { return 10; }
   });
 
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily } = useDailyProgress(user, dailyGoal);
+  // #4(2026-06-15): 발음 일일 유효 한도 = 기본 한도 + 광고로 추가한 오늘 허용량(todayPronBonus)
+  const effectivePronLimit = TRIAL_DAILY_PRON_LIMIT + (todayPronBonus || 0);
 
   // Phase 1 단계학습 — 토픽별 진행 모델 + 홈/허브 네비
   const topicProgress = useTopicProgress(user);
@@ -771,7 +772,7 @@ function App() {
   //   하드캡 도달 → 'cap'(충전 무의미, 업그레이드만) / 그 외(=포인트 부족) → 'points'(충전 가능).
   const requestLimitModal = useCallback((feature) => {
     const capReached =
-      feature === 'pron' ? todayPronCount >= TRIAL_DAILY_PRON_LIMIT :
+      feature === 'pron' ? todayPronCount >= effectivePronLimit :
       feature === 'freeTalk' ? todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT :
       feature === 'listen' ? todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT : false;
     setTrialLimitReason(capReached ? 'cap' : 'points');
@@ -781,6 +782,12 @@ function App() {
   // 2026-06-07: Pro 월별 한도 도달 모달 — "다음 달 리셋 + Premium 업셀"(Trial 'cap'/'points'와 별개).
   const requestProLimitModal = useCallback(() => {
     setTrialLimitReason('proMonthly');
+    setShowTrialLimitModal(true);
+  }, []);
+
+  // 2026-06-15: Pro/Premium 전용 기능(Free Talking) 비구독자 진입 차단 모달.
+  const requestProOnlyModal = useCallback(() => {
+    setTrialLimitReason('proOnly');
     setShowTrialLimitModal(true);
   }, []);
 
@@ -874,11 +881,53 @@ function App() {
     }
   };
 
+  // #4(2026-06-15): bonus02(rewardedProns) 광고 → 오늘 발음 허용량 +10 (서버 검증, 클라 직접 증가 금지).
+  //   발음 한도(10/day)에 막혀 학습 못할 때 광고로 당일 한도만 확장(다음날 자동 리셋).
+  const handlePronAllowanceAd = async () => {
+    if (!window.Capacitor?.isNativePlatform?.()) return;
+    if (!user) return;
+    setRewardAdLoading(true);
+    const handles = [];
+    try {
+      const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
+      const adId = AD_UNITS.rewardedProns; // bonus02
+      await new Promise(async (resolve, reject) => {
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
+          try {
+            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const now = new Date();
+            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+            await authFetch(`${SERVER_URL}/api/bonus/pron-allowance`, {
+              method: 'POST', headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ date: localDate }),
+            });
+            await reloadDaily(); // pronBonus 갱신 → 유효 한도 즉시 반영
+          } catch (e) { console.error('[PronAllowanceAd] 충전 실패:', e); }
+          resolve();
+        }));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) => reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) => reject(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+        try {
+          await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
+          setRewardAdLoading(false);
+          await AdMob.showRewardVideoAd();
+        } catch (e) { reject(e); }
+      });
+    } catch (e) {
+      console.error('[PronAllowanceAd] 실패:', e);
+      alert(`광고 오류: ${e.message}`);
+    } finally {
+      setRewardAdLoading(false);
+      handles.forEach(h => h?.remove?.());
+    }
+  };
+
   // Trial 일간 제한 동기화 — daily 한도(점수와 무관) + credits 보유 여부는 AuthContext 가 통합 판정.
   // 2026-05-07 v1.5.0: 카드 한도 폐기. 발음/FT 만 동기화.
   useEffect(() => {
     if (tier === 'trial') {
-      setDailyTrialPronReached(todayPronCount >= TRIAL_DAILY_PRON_LIMIT);
+      setDailyTrialPronReached(todayPronCount >= effectivePronLimit);
       setDailyTrialFreeTalkReached(todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT);
       setDailyTrialListenReached(todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT);
     } else {
@@ -886,7 +935,7 @@ function App() {
       setDailyTrialFreeTalkReached(false);
       setDailyTrialListenReached(false);
     }
-  }, [tier, todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached]);
+  }, [tier, todayPronCount, todayPronBonus, effectivePronLimit, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT, setDailyTrialPronReached, setDailyTrialFreeTalkReached, setDailyTrialListenReached]);
 
   // 발음 목표 달성 팝업 상태
   const [showProgressPopup, setShowProgressPopup] = useState(false);
@@ -2754,6 +2803,67 @@ function App() {
     }
   };
 
+  // 2026-06-15: Listening 지문 전체를 Library 카드로 저장 (inputType:'L', sourceType:'listening').
+  //   고급 사용자가 생성된 지문을 지속 학습하도록. Library는 passageData 로 ListeningPassageView 동일 렌더.
+  //   반환: true=저장/이미저장, false=실패.
+  const savePassageCard = async ({ title, titleTranslation, text, pronunciation, translation, sentences = [], passageType = 'essay', langCode, level = 'basic', categoryId = '', topicId = '' }) => {
+    const u = user || await ensureAnonymousUser();
+    if (!u) { alert(getT(sourceLang, 'scene.loginRequired')); return false; }
+    if (!text) return false;
+    // 중복 체크 — 같은 지문(text) 이 이미 저장돼 있으면 별표 채움 유지(재저장 skip)
+    try {
+      const dupQ = query(
+        collection(db, "savedCards"),
+        where("userId", "==", u.uid),
+        where("translatedText", "==", text),
+        where("sourceType", "==", "listening")
+      );
+      const dupSnap = await getDocs(dupQ);
+      const active = dupSnap.docs.find(d => !d.data().isDeleted && d.data().inputType === 'L');
+      if (active) return true;
+    } catch (e) { console.error("Passage duplicate check failed:", e); }
+
+    const langInfo = getLangInfo(langCode);
+    try {
+      const serialNumber = await assignNextCardSerial(u.uid);
+      await addDoc(collection(db, "savedCards"), {
+        userId: u.uid,
+        userEmail: u.email,
+        translatedText: text,           // 검색·중복키
+        sourceText: title || '',
+        title: title || '',
+        langCode,
+        language: langInfo?.name || langCode,
+        inputLang: langCode,
+        inputType: 'L',                 // L = Listening 지문
+        sourceLang,
+        sourceType: 'listening',
+        difficulty: level,
+        categoryId,
+        topicId,
+        // ListeningPassageView 재구성용 전체 지문 데이터
+        passageData: {
+          title: title || '',
+          titleTranslation: titleTranslation || '',
+          text,
+          pronunciation: pronunciation || '',
+          translation: translation || '',
+          sentences: Array.isArray(sentences) ? sentences : [],
+          passageType,
+        },
+        pronunciationScore: null,
+        serialNumber,
+        createdAt: serverTimestamp(),
+      });
+      incrementSavedCard();
+      incrementDailySave();
+      return true;
+    } catch (error) {
+      console.error("지문 카드 저장 오류:", error);
+      return false;
+    }
+  };
+
   // 6.5. Free Talking 메시지를 Library에 저장 (sourceType='conversation_message') — saveSceneCard 패턴 차용
   const saveConversationMessage = async ({ message, langCode, sourceLang: srcLang, scene, category = 'locations', difficulty = 'basic', speechStyle, scenarioMeta, pronunciationScore = null }) => {
     const u = user || await ensureAnonymousUser();
@@ -3933,6 +4043,27 @@ function App() {
                       </div>
                     </div>
                   </button>
+                  {/* #4/#5: bonus02 광고 → 오늘 발음 허용량 +10 (당일 한정, 포인트 아님) */}
+                  <button
+                    onClick={() => handlePronAllowanceAd()}
+                    disabled={rewardAdLoading}
+                    style={{
+                      width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
+                      padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
+                      background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
+                      border: '1px solid #fed7aa', cursor: rewardAdLoading ? 'default' : 'pointer',
+                      opacity: rewardAdLoading ? 0.6 : 1, textAlign: 'left',
+                    }}>
+                    <span style={{ fontSize: '1.2rem' }}>🎤</span>
+                    <div>
+                      <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
+                        {getT(sourceLang, 'trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: '#fb923c' }}>
+                        {getT(sourceLang, 'trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}
+                      </div>
+                    </div>
+                  </button>
                   {rewardAdLoading && (
                     <p style={{ fontSize: '0.75rem', color: '#94a3b8', textAlign: 'center', margin: '4px 0 4px' }}>
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
@@ -4231,7 +4362,7 @@ function App() {
           const gauges = isTrialTier
             ? [
                 { icon: Target,     cur: todayCount,       lim: dailyGoal },
-                { icon: Mic,        cur: todayPronCount,   lim: TRIAL_DAILY_PRON_LIMIT },
+                { icon: Mic,        cur: todayPronCount,   lim: effectivePronLimit },
                 { icon: Headphones, cur: todayListenCount, lim: TRIAL_DAILY_LISTEN_LIMIT },
               ]
             : isProTier
@@ -4549,7 +4680,13 @@ function App() {
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
             onSpeak={handleSpeakSmart}
-            onTtsGate={tryConsumeTtsPoint}
+            onTtsGate={(cost = 1, key) => {
+              // key 있으면 세션 내 1회만 차감(#8: 지문 재진입 무차감). 없으면(문장 annotate) 매번 차감.
+              if (key && ttsChargedRef.current.has(key)) return true;
+              const ok = tryConsumeTtsPoint(cost);
+              if (ok && key) ttsChargedRef.current.add(key);
+              return ok;
+            }}
             ScenePracticeCardComp={ScenePracticeCard}
             onSaveSentence={({ sentence, translation, learningTip, langCode, scene, pronunciationScore }) =>
               saveSceneCard({ sentence, translation, learningTip, langCode, scene, sceneHint: scene, pronunciationScore, sourceType: 'listening' })}
@@ -4561,9 +4698,10 @@ function App() {
               incrementListenGenerate();
               incrementDailyListen();
               incrementProListen(); // Pro 월 카운트(+1) — 함수 내부 tier==='pro' 가드, 그 외 no-op
-              addAdPoints(2); // 풀 -2 (Listening 생성 비용, trial만) — 2026-06-15 5→2
+              addAdPoints(3); // 풀 -3 (Listening 생성 비용, trial만) — 2026-06-15 5→2→3(지문 재생 2pt 별도)
             }}
             onFirstPlay={() => {}}
+            onSavePassage={savePassageCard}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('listening');
@@ -4616,6 +4754,11 @@ function App() {
               setViewMode('library');
             }}
             onFreeTalkStart={async (args) => {
+              // 2026-06-15 #6: Free Talking 은 Pro/Premium 전용. 비구독자는 진입 차단 + 안내.
+              if (!(tier === 'pro' || tier === 'premium' || tier === 'admin')) {
+                requestProOnlyModal();
+                return;
+              }
               if (isProFreeTalkLimitReached) {
                 requestProLimitModal();
                 return;
@@ -5353,6 +5496,8 @@ function App() {
           onBuyPoints={handleBuyPoints}
           buyingPoints={buyingPoints}
           pointsPriceString={pointsPriceString}
+          pronLimit={effectivePronLimit}
+          onPronAllowanceAd={handlePronAllowanceAd}
         />
       )}
 

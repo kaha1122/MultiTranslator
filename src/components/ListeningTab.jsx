@@ -6,6 +6,7 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useT, getT } from '../utils/i18n';
 import VOCAB_CATEGORIES from '../data/vocabCategories';
 import { VocabWordCard } from './VocabTab';
+import ListeningPassageView from './ListeningPassageView';
 import CategorySlider from './CategorySlider';
 import TopicPickerModal from './TopicPickerModal';
 import MessageCardModal from './MessageCardModal';
@@ -103,6 +104,7 @@ export default function ListeningTab({
     preset = null,          // Phase 1 단계학습 진입: { catId, subId, topicId, level, lang }
     onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
     onTopicPass,            // 문장 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
+    onSavePassage,          // 2026-06-15: 지문 단어장 저장 — passage 객체 → Library 카드(inputType:'L')
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -131,6 +133,29 @@ export default function ListeningTab({
     const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
 
     const [passage, setPassage] = useState(null);
+    const [passageSaved, setPassageSaved] = useState(false); // 현재 지문 단어장 저장 여부(별표)
+    // 새 지문이 로드되면 저장 상태 초기화
+    useEffect(() => { setPassageSaved(false); }, [passage?.text]);
+    // 지문 단어장 저장 — App.savePassageCard 경유. 성공 시 별표 채움.
+    const handleSavePassage = useCallback(async () => {
+        if (!passage || passageSaved || !onSavePassage) return;
+        try {
+            const ok = await onSavePassage({
+                title: passage.title || '',
+                titleTranslation: passage.titleTranslation || '',
+                text: passage.text || '',
+                pronunciation: passage.pronunciation || '',
+                translation: passage.translation || '',
+                sentences: Array.isArray(passage.sentences) ? passage.sentences : [],
+                passageType,
+                langCode: selectedLang,
+                level,
+                categoryId: selectedTopic?.catId || preset?.catId || '',
+                topicId: selectedTopic?.topicId || preset?.topicId || '',
+            });
+            if (ok !== false) { setPassageSaved(true); playStarSound(); }
+        } catch (e) { console.warn('[ListeningTab] savePassage failed:', e); }
+    }, [passage, passageSaved, onSavePassage, passageType, selectedLang, level, selectedTopic, preset]);
     const [isLoading, setIsLoading] = useState(false);
     const [showTranslation, setShowTranslation] = useState(false);
     const [showPronunciation, setShowPronunciation] = useState(false);
@@ -583,6 +608,8 @@ export default function ListeningTab({
 
     // 단계학습(preset) 진입 시 현재 페이지 지문 자동 로드 (버튼 없이). preset 동기화 후 1회(토픽/유형별).
     const autoGenKeyRef = useRef(null);
+    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 → 버튼 없이 캐시 지문 자동 표시(#8 무차감).
+    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
     useEffect(() => {
         if (!preset || !isActive) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
@@ -735,87 +762,20 @@ export default function ListeningTab({
             {/* Passage Card */}
             {passage && !isLoading && (
                 <>
-                    <div className="listening-passage-card">
-                        <div className="listening-passage-header">
-                            <div style={{ flex: 1 }}>
-                                <h3 className="listening-passage-title">{passage.title}</h3>
-                                {passage.titleTranslation && (
-                                    <p className="listening-passage-title-trans">{passage.titleTranslation}</p>
-                                )}
-                            </div>
-                            {/* 재생 ↔ 반복 토글 */}
-                            <div className="listening-loop-toggle">
-                                <span className={`listening-loop-label ${!loopMode ? 'active' : ''}`}>
-                                    <Volume2 size={11} />
-                                </span>
-                                <button
-                                    className={`listening-loop-track ${loopMode ? 'on' : ''}`}
-                                    onClick={() => setLoopMode(m => !m)}
-                                >
-                                    <span className="listening-loop-thumb" />
-                                </button>
-                                <span className={`listening-loop-label ${loopMode ? 'active' : ''}`}>
-                                    <Repeat size={11} />
-                                </span>
-                            </div>
-                            {/* 재생/일시정지 버튼 */}
-                            <button
-                                className={`listening-tts-btn ${passagePlaying ? 'playing' : ''}`}
-                                onClick={handlePassagePlay}
-                                disabled={passageLoading}
-                                title={passagePlaying ? 'Pause' : 'Play'}
-                            >
-                                {passageLoading
-                                    ? <Loader2 size={18} className="spin" />
-                                    : passagePlaying
-                                        ? <Pause size={18} />
-                                        : <Volume2 size={18} />}
-                            </button>
-                        </div>
-
-                        <div className="listening-passage-text">
-                            {splitIntoSentences(passage.text, passageType === 'dialogue').map((sentence, idx) => {
-                                const hasSeedCards = passage.sentences && passage.sentences.length > 0;
-                                return (
-                                    <span
-                                        key={idx}
-                                        className="listening-sentence"
-                                        onClick={hasSeedCards ? undefined : () => openSentenceCard(sentence)}
-                                        style={hasSeedCards ? { cursor: 'default' } : undefined}
-                                    >
-                                        {sentence}
-                                        {passageType === 'dialogue' ? '\n' : ' '}
-                                    </span>
-                                );
-                            })}
-                        </div>
-
-                        {passage.pronunciation && (
-                            <>
-                                <button
-                                    className="listening-translation-toggle"
-                                    onClick={() => setShowPronunciation(!showPronunciation)}
-                                >
-                                    {showPronunciation ? t('listening.hidePronunciation') : t('listening.showPronunciation')}
-                                    <ChevronDown size={14} className={showPronunciation ? 'rotated' : ''} />
-                                </button>
-                                {showPronunciation && (
-                                    <div className="listening-passage-pron">{passage.pronunciation}</div>
-                                )}
-                            </>
-                        )}
-
-                        <button
-                            className="listening-translation-toggle"
-                            onClick={() => setShowTranslation(!showTranslation)}
-                        >
-                            {showTranslation ? t('listening.hideTranslation') : t('listening.showTranslation')}
-                            <ChevronDown size={14} className={showTranslation ? 'rotated' : ''} />
-                        </button>
-                        {showTranslation && (
-                            <div className="listening-passage-translation">{passage.translation}</div>
-                        )}
-                    </div>
+                    <ListeningPassageView
+                        passage={passage}
+                        passageType={passageType}
+                        langCode={selectedLang}
+                        onSpeak={onSpeak}
+                        onTtsGate={onTtsGate}
+                        durable={!!preset}
+                        authFetch={authFetch}
+                        t={t}
+                        showSave
+                        isSaved={passageSaved}
+                        onSave={handleSavePassage}
+                        isActive={isActive}
+                    />
 
                     {/* Phase 2: 문장 카드 자동 나열 (seed 주석 기반 — per-user Gemini 0). 단계학습 진입 시. */}
                     {preset && passage.sentences && passage.sentences.length > 0 && (

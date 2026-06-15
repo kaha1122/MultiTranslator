@@ -183,7 +183,8 @@ ${avoidBlock}${wordsBlock}
 8. Split the passage into its individual sentences (for dialogue: each turn line; strip "A:/B:" labels).
    For EACH sentence output an item in "sentences" with: the pure sentence text (${targetLangName}, no
    pronunciation annotations), its translation in ${sourceLangName}, its pronunciation
-   (zh-CN pinyin / ja hiragana / ru accent marks / others empty), and ONE concise learning_tip in ${sourceLangName}.
+   (zh-CN pinyin / ja hiragana / ru accent marks / others empty), and a learning_tip in ${sourceLangName}
+   (1-2 informative sentences: highlight a key word or grammar pattern in the sentence AND add a usage nuance or common mistake — specific, not generic).
    The "text" values concatenated must reconstruct the passage in order.
 
 Return ONLY valid JSON (no markdown):
