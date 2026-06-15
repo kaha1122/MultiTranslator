@@ -4042,10 +4042,10 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +10'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +20'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +10'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20'}
                       </div>
                     </div>
                   </button>
@@ -4063,7 +4063,7 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎤</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
-                        {getT(sourceLang, 'trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                        {getT(sourceLang, 'trial.pronAllowanceAd') || '발음 한도(광고) +10'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#fb923c' }}>
                         {getT(sourceLang, 'trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}

@@ -234,7 +234,8 @@
   max-width: 520px;
   background: #fff;
   border-radius: 20px 20px 0 0;
-  padding: 22px 18px calc(20px + env(safe-area-inset-bottom));
+  /* 2026-06-16: AdMob 배너에 하단 컨텐츠가 가려지지 않도록 banner 높이만큼 하단 패딩 확보 */
+  padding: 22px 18px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
   max-height: 88vh;
   overflow-y: auto;

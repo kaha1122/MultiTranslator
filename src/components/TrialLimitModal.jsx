@@ -164,7 +164,7 @@ const TrialLimitModal = ({
                                     cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                                     fontWeight: 700, color: '#166534', fontSize: '0.9rem',
                                 }}>
-                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +10'}
+                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +20'}
                             </button>
                         )}
                         {/* 보너스포인트 구매 (+200, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
@@ -246,7 +246,7 @@ const TrialLimitModal = ({
                             cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                         }}>
                         <span style={{ fontWeight: 700, color: '#9a3412', fontSize: '0.92rem' }}>
-                            🎤 {t('trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                            🎤 {t('trial.pronAllowanceAd') || '발음 한도(광고) +10'}
                         </span>
                         <span style={{ fontSize: '0.72rem', color: '#c2410c' }}>
                             {t('trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}
