@@ -199,7 +199,7 @@
 .lph-legend-count { font-weight: 800; color: #1e293b; }
 
 .lph-minimap-rows { display: flex; flex-direction: column; gap: 7px; }
-.lph-minimap-row { display: flex; align-items: center; gap: 7px; }
+.lph-minimap-row { display: flex; align-items: center; justify-content: center; gap: 7px; }
 .lph-minimap-cat { font-size: 1.05rem; width: 20px; text-align: center; flex: 0 0 auto; }
 .lph-minimap-dots { display: flex; gap: 5px; flex-wrap: wrap; }
 .lph-minidot {
