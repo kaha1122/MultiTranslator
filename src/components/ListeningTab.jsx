@@ -438,7 +438,7 @@ export default function ListeningTab({
     // titles[] (기존) + passagesMeta[] (신규: title+keywords+angle) 병행 보관.
     // 캐시 shape: historyCacheRef.current[key] = { titles, passagesMeta }
     const loadHistory = async (key) => {
-        if (!user) return { titles: [], passagesMeta: [] };
+        if (!user) return { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/listeningHistory`, key));
@@ -447,20 +447,22 @@ export default function ListeningTab({
                 titles: Array.isArray(data.titles) ? data.titles : [],
                 passagesMeta: Array.isArray(data.passagesMeta) ? data.passagesMeta : [],
                 seedCursor: data.seedCursor || 0, // seed 경로: 현재 지문 페이지 offset
+                chargedMax: (data.chargedMax != null ? data.chargedMax : -1), // enh1: 차감 완료 최대 offset
             };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: cached };
             return cached;
         } catch {
-            return { titles: [], passagesMeta: [], seedCursor: 0 };
+            return { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         }
     };
 
-    const appendHistory = (key, newTitle, newMeta, nextCursor) => {
-        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0 };
+    const appendHistory = (key, newTitle, newMeta, nextCursor, nextChargedMax) => {
+        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         const updated = {
             titles: newTitle ? [...existing.titles, newTitle] : existing.titles,
             passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
             seedCursor: nextCursor != null ? nextCursor : (existing.seedCursor || 0),
+            chargedMax: nextChargedMax != null ? Math.max(existing.chargedMax ?? -1, nextChargedMax) : (existing.chargedMax ?? -1),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
@@ -468,6 +470,7 @@ export default function ListeningTab({
                 titles: updated.titles,
                 passagesMeta: updated.passagesMeta,
                 seedCursor: updated.seedCursor,
+                chargedMax: updated.chargedMax,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -496,7 +499,7 @@ export default function ListeningTab({
             ? customInput.trim()
             : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
         const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
-        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor } = await loadHistory(historyKey);
+        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor, chargedMax } = await loadHistory(historyKey);
         // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
@@ -564,14 +567,16 @@ export default function ListeningTab({
                 if (isSeed) loadedPassagesRef.current[pageCacheKey] = passageObj; // 페이지 캐시 저장
                 setShowTranslation(false);
                 setShowPronunciation(false);
-                if (onGenerate) onGenerate();
+                // enh1: 이미 차감된 지문(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
+                const shouldCharge = !isSeed || offset > (chargedMax ?? -1);
+                if (shouldCharge && onGenerate) onGenerate();
                 if (data.title) {
                     avoidTitlesRef.current = [...avoidTitlesRef.current, data.title];
                     const newMeta = (Array.isArray(data.passageKeywords) && data.angle)
                         ? { title: data.title, keywords: data.passageKeywords, angle: data.angle, createdAt: Date.now() }
                         : null;
-                    // seed 경로: 커서를 현재 페이지 offset으로 저장
-                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined);
+                    // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
+                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined, isSeed && shouldCharge ? offset : undefined);
                 }
             }
         } catch (e) {

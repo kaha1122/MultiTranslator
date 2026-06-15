@@ -377,33 +377,36 @@ export default function VocabTab({
         });
     }, [isActive]);
 
-    // Firebase에서 해당 키의 이력 읽기 — { words(custom avoid용), seedCursor(현재 페이지 offset) }
+    // Firebase에서 해당 키의 이력 읽기 — { words, seedCursor(현재 페이지), chargedMax(차감 완료된 최대 offset) }
+    //   chargedMax: 이미 포인트 차감된 최대 offset. 재진입(offset ≤ chargedMax)은 재차감 안 함(영속).
     const loadVocabHistory = async (key) => {
-        if (!user) return { words: [], seedCursor: 0 };
+        if (!user) return { words: [], seedCursor: 0, chargedMax: -1 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
             const d = snap.exists() ? snap.data() : {};
-            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0 };
+            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0, chargedMax: (d.chargedMax != null ? d.chargedMax : -1) };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: entry };
             return entry;
         } catch {
-            return { words: [], seedCursor: 0 };
+            return { words: [], seedCursor: 0, chargedMax: -1 };
         }
     };
 
-    // newWords: custom 경로 avoid 누적용(seed 경로는 []), nextCursor: seed 현재 페이지 offset 저장
-    const appendVocabHistory = (key, newWords, nextCursor) => {
-        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0 };
+    // newWords: custom avoid 누적(seed 경로는 []), nextCursor: seed 현재 페이지 offset, nextChargedMax: 차감완료 최대 offset
+    const appendVocabHistory = (key, newWords, nextCursor, nextChargedMax) => {
+        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0, chargedMax: -1 };
         const updated = {
             words: [...existing.words, ...newWords],
             seedCursor: nextCursor != null ? nextCursor : existing.seedCursor,
+            chargedMax: nextChargedMax != null ? Math.max(existing.chargedMax ?? -1, nextChargedMax) : (existing.chargedMax ?? -1),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/vocabHistory`, key), {
                 words: updated.words,
                 seedCursor: updated.seedCursor,
+                chargedMax: updated.chargedMax,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -461,7 +464,7 @@ export default function VocabTab({
         const isSeed = !!selectedTopic; // 비-custom = seed(전역 공유 순차) 경로
 
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
-        const { words: persistedWords, seedCursor } = await loadVocabHistory(historyKey);
+        const { words: persistedWords, seedCursor, chargedMax } = await loadVocabHistory(historyKey);
         // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
@@ -501,10 +504,12 @@ export default function VocabTab({
                 setWords(data.words);
                 setSavedWords(new Set());
                 if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
-                if (onGenerate) onGenerate();
+                // enh1: 이미 차감된 페이지(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
+                const shouldCharge = !isSeed || offset > (chargedMax ?? -1);
+                if (shouldCharge && onGenerate) onGenerate();
                 if (isSeed) {
-                    // seed: 커서를 현재 페이지 offset으로 저장(words 누적 불필요 — 서버가 회피 관리)
-                    appendVocabHistory(historyKey, [], offset);
+                    // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
+                    appendVocabHistory(historyKey, [], offset, shouldCharge ? offset : undefined);
                 } else {
                     const newWordTexts = data.words.map(w => w.word);
                     avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];

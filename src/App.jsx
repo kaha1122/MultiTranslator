@@ -4006,7 +4006,12 @@ function App() {
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                onClick={() => {
+                  // #6/enh3: Free Talking(Scene) 은 Pro/Premium 전용 — 비구독자는 화면 진입 전 안내 팝업
+                  setSidebarOpen(false);
+                  if (!(tier === 'pro' || tier === 'premium' || tier === 'admin')) { requestProOnlyModal(); return; }
+                  setViewMode('scene'); setDictBackTo(null); setLibraryBackTo(null);
+                }}>
                 <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
                 {getT(sourceLang, 'nav.scene')}
                 <span style={{ marginLeft: 'auto', fontSize: '0.62rem', fontWeight: 800, color: '#dc2626', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '999px', padding: '1px 7px' }}>Pro ↑</span>
@@ -5467,7 +5472,11 @@ function App() {
                 type="button"
                 className={`tab-nav__btn ${active ? 'is-active' : ''}`}
                 style={{ '--tab-color': s.color }}
-                onClick={() => setViewMode(tab)}
+                onClick={() => {
+                  // #6/enh3: 하단바 Scene(Free Talking) 아이콘 — 비구독자는 화면 전에 Pro 안내 팝업(홈/씬 화면 차단)
+                  if (tab === 'scene' && !(tier === 'pro' || tier === 'premium' || tier === 'admin')) { requestProOnlyModal(); return; }
+                  setViewMode(tab);
+                }}
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
                 title={label}

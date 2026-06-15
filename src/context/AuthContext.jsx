@@ -389,7 +389,7 @@ export const AuthProvider = ({ children }) => {
     //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
     const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
-    const TRIAL_DAILY_LISTEN_LIMIT = 3;       // Free Trial: 하루 Listening passage 3회 (2026-05-23 신설) — Gemini + Azure TTS 비용 가드
+    const TRIAL_DAILY_LISTEN_LIMIT = 5;       // Free Trial: 하루 Listening passage 5회 (2026-06-15 3→5, 학습 추가 진행 보장)
     const PRO_PRON_LIMIT = 1000;              // Pro: 월 발음 1000회 (2026-06-07 1500→1000)
     const PRO_FREETALK_LIMIT = 100;           // Pro: 월 Free-Talking 100회 (2026-06-07 신설 — 무제한→월캡, Azure 꼬리위험 차단)
     const PRO_LISTEN_LIMIT = 200;             // Pro: 월 Listening 생성 200회 (2026-06-07 신설). Premium은 무제한.
