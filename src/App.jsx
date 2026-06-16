@@ -451,6 +451,8 @@ function App() {
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   // 2026-06-07: 한도 모달 사유 — 'cap'(하드캡 도달, 충전 무의미) / 'points'(포인트 부족, 충전 가능)
   const [trialLimitReason, setTrialLimitReason] = useState('cap');
+  // 2026-06-16: cap 모달에서 어떤 기능이 한도에 막혔는지 — 발음('pron')일 때만 발음 한도 광고 버튼 노출
+  const [trialLimitFeature, setTrialLimitFeature] = useState('');
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   // 2026-05-07 v1.5.0: 카드 한도 폐기 — trialCardCurrentCount state 제거됨 (사용처 없음).
 
@@ -776,6 +778,7 @@ function App() {
       feature === 'pron' ? todayPronCount >= effectivePronLimit :
       feature === 'freeTalk' ? todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT :
       feature === 'listen' ? todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT : false;
+    setTrialLimitFeature(feature);
     setTrialLimitReason(capReached ? 'cap' : 'points');
     setShowTrialLimitModal(true);
   }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
@@ -5500,6 +5503,7 @@ function App() {
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
           reason={trialLimitReason}
+          capFeature={trialLimitFeature}
           bonusPoints={bonusPoints}
           onCharge={handleRewardedAd}
           rewardAdLoading={rewardAdLoading}
