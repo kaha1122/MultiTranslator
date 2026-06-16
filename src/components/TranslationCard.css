@@ -112,6 +112,14 @@
     margin-bottom: 20px;
 }
 
+/* 지문(bodySlot) 카드 전용: 헤더 항목(No·언어칩·Flag)을 좌측으로 모아
+   우측에 지문 재생 컨트롤(.listening-passage-controls 절대배치)이 들어갈 자리를 비운다.
+   일반 카드(.card-header)는 그대로 space-between 유지. */
+.card-header-passage {
+    justify-content: flex-start;
+    gap: 8px;
+}
+
 .card-number-badge {
     font-size: 0.65rem;
     font-weight: 700;

@@ -262,6 +262,29 @@
   margin-bottom: 12px;
 }
 
+/* ════════════════════════════════════════════════════════════════════
+   Library 지문 카드(TranslationCard chrome + ListeningPassageView 슬롯) —
+   상단 컨트롤 1줄 통합. ListeningTab(.translation-card 미포함)에는 영향 없음.
+   ① 외곽 TranslationCard가 이미 카드 chrome(teal 외곽선·28px 패딩)을 제공하므로
+      내부 passage 박스의 중복 외곽선/패딩/마진 제거(이중외곽선 해소).
+   ② 재생 컨트롤(스피커·반복·재생)을 비어있는 헤더 우측으로 끌어올려
+      헤더(No·언어칩·Flag)와 같은 줄에 배치(절대배치, 흐름에서 분리).
+   ════════════════════════════════════════════════════════════════════ */
+.translation-card .listening-passage-card {
+  border: none;
+  padding: 0;
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+}
+.translation-card .listening-passage-controls {
+  position: absolute;
+  top: 20px;
+  right: 28px;
+  margin: 0;
+  z-index: 2;
+}
+
 .listening-passage-title {
   font-size: 0.95rem;
   font-weight: 800;

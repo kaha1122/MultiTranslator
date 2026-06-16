@@ -465,7 +465,8 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                             return (
                                 <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                                     <TranslationCard
-                                        language={card.language}
+                                        // 지문 카드 헤더는 1줄 통합 — 언어칩을 ISO 2자리 대문자 코드(EN/KO/ZH…)로 축약해 폭 절약
+                                        language={(card.langCode || '').split('-')[0].toUpperCase() || card.language}
                                         langCode={card.langCode}
                                         cardNumber={cardNumber}
                                         sourceLangCode={card.sourceLang || 'ko'}

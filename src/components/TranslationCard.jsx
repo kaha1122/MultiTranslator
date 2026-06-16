@@ -299,7 +299,8 @@ Return only these 2 lines.`;
     return (
         <div className="translation-card">
             {/* 카드 상단: 언어 정보, 별 저장 버튼, 읽기 버튼 */}
-            <div className="card-header">
+            {/* 지문(bodySlot) 카드는 헤더 항목을 좌측으로 모아 우측에 지문 재생 컨트롤(절대배치)이 들어갈 자리를 비운다 */}
+            <div className={`card-header${bodySlot ? ' card-header-passage' : ''}`}>
                 {cardNumber != null && (
                     <span className="card-number-badge">No{cardNumber}</span>
                 )}
