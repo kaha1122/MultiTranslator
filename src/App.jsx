@@ -607,6 +607,11 @@ function App() {
   const topicProgress = useTopicProgress(user);
   const [hubTopic, setHubTopic] = useState(null);          // TopicHub 오버레이: { topicId, activeLang } | null
   const [learningPreset, setLearningPreset] = useState(null); // { tab, catId, subId, topicId, level, lang } | null
+  // 2026-06-17: 결합 unit 지문 cross-tab 전달 — vocab(custom) generate 가 만든 지문을 Listening 단계가 표시(단어↔지문 정합).
+  //   seed(preset)는 passageSeed 공유로 이미 정합 → custom 경로만 사용. { passage, level, lang, label } | null
+  const [unitPassage, setUnitPassage] = useState(null);
+  // 역방향: listening(custom) generate 가 추출한 단어를 Vocab 단계가 표시. { words, level, lang, label } | null
+  const [unitWords, setUnitWords] = useState(null);
   const [showStreakEarned, setShowStreakEarned] = useState(false); // 학습 종료 시 streak 달성 팝업
   const streakEarnedPendingRef = useRef(false);                    // 이번 세션 그날 첫 진척 발생 → 나갈 때 팝업
   const startTopicLearning = (tab, p) => { setLearningPreset({ tab, ...p }); setHubTopic(null); setViewMode(tab); };
@@ -4817,6 +4822,9 @@ function App() {
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
             onCheckPoints={() => canSpendPoints(1, 'vocabGen')}
+            onUnitPassage={setUnitPassage}
+            incomingWords={unitWords}
+            onConsumeIncomingWords={() => setUnitWords(null)}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('vocab');
@@ -4833,6 +4841,9 @@ function App() {
           <ListeningTab
             isActive={viewMode === 'listening'}
             preset={learningPreset?.tab === 'listening' ? learningPreset : null}
+            incomingPassage={unitPassage}
+            onConsumeIncomingPassage={() => setUnitPassage(null)}
+            onUnitWords={setUnitWords}
             onBack={exitTopicLearning}
             onTopicPass={handleTopicPass}
             sourceLang={sourceLang}

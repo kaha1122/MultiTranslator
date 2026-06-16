@@ -100,7 +100,9 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
             await customUnits.appendUnit(req.uid, { topicLabel, level, sourceLang, targetLang }, unitRes);
         } catch (e) { console.warn('[custom] vocab store failed:', e.message); }
         console.log(`[Custom] vocab unit ${req.uid} "${topicLabel}" → 단어+지문 결합 생성·저장`);
-        return res.json({ words: (unitRes.words || []).slice(0, SEED_PAGE), source: 'gemini-unit-custom' });
+        // 2026-06-17: 결합 unit 지문도 함께 반환 → 클라가 들고 Listening 단계에서 같은 unit 지문 표시(단어↔지문 정합).
+        //   (custom 은 passageSeed 공유 불가 = customUnits write-only → 클라 cross-tab 전달로 해결)
+        return res.json({ words: (unitRes.words || []).slice(0, SEED_PAGE), passage: unitRes.passage, source: 'gemini-unit-custom' });
     }
 
     const targetLangName = LANG_NAMES[targetLang] || 'English';
