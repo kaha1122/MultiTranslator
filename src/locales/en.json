@@ -1419,11 +1419,5 @@
       "cta": "Start now",
       "later": "Later"
     }
-  },
-  "ttsAdPrompt": {
-    "title": "An ad keeps the app running",
-    "body": "You've enjoyed a lot of free listening. Please watch a short ad to keep it free.",
-    "longAd": "Watch long ad  (+20 points)",
-    "shortAd": "Watch short ad"
   }
 }

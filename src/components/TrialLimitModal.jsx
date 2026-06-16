@@ -10,7 +10,7 @@ const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
     onBuyPoints, buyingPoints = false, pointsPriceString = '',
-    pronLimit, onPronAllowanceAd, capFeature = '',
+    pronLimit, onPronAllowanceAd,
 }) => {
     const t = useT(sourceLang);
     const {
@@ -234,9 +234,8 @@ const TrialLimitModal = ({
                         🎧 {listenCount ?? 0}/{TRIAL_DAILY_LISTEN_LIMIT} /day
                     </span>
                 </div>
-                {/* #4: bonus02 광고 → 오늘 발음 +10 (앱 전용, 당일 한정·포인트 아님). 발음 한도에 막혀도 당일 학습 지속.
-                    2026-06-16: 발음 한도(capFeature==='pron')일 때만 노출 — Free-Talking/Listening 한도에는 무관하므로 숨김 */}
-                {isNative && capFeature === 'pron' && typeof onPronAllowanceAd === 'function' && (
+                {/* #4: bonus02 광고 → 오늘 발음 +10 (앱 전용, 당일 한정·포인트 아님). 발음 한도에 막혀도 당일 학습 지속 */}
+                {isNative && typeof onPronAllowanceAd === 'function' && (
                     <button
                         onClick={() => onPronAllowanceAd()}
                         disabled={rewardAdLoading}

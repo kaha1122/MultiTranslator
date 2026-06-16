@@ -1419,11 +1419,5 @@
     "desc": "Eine neue Version mit Verbesserungen und Fehlerbehebungen ist verfügbar. Bitte aktualisieren, um fortzufahren.",
     "btn": "Im Play Store aktualisieren",
     "later": "Später"
-  },
-  "ttsAdPrompt": {
-    "title": "Eine Anzeige hält die App am Laufen",
-    "body": "Sie haben viel kostenloses Vorlesen genutzt. Bitte sehen Sie eine kurze Anzeige, um es kostenlos zu halten.",
-    "longAd": "Lange Anzeige ansehen (+20 Punkte)",
-    "shortAd": "Kurze Anzeige ansehen"
   }
 }

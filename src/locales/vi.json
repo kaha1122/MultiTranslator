@@ -1419,11 +1419,5 @@
     "desc": "Đã có phiên bản mới với cải tiến và sửa lỗi. Vui lòng cập nhật để tiếp tục.",
     "btn": "Cập nhật trên Play Store",
     "later": "Để sau"
-  },
-  "ttsAdPrompt": {
-    "title": "Cần xem quảng cáo để duy trì ứng dụng",
-    "body": "Bạn đã nghe miễn phí khá nhiều. Vui lòng xem một quảng cáo ngắn để tiếp tục miễn phí.",
-    "longAd": "Xem quảng cáo dài (+20 điểm)",
-    "shortAd": "Xem quảng cáo ngắn"
   }
 }

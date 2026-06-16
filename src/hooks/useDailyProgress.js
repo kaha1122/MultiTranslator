@@ -31,10 +31,7 @@ const getWeekDates = () => {
 const makePlaceholderWeek = (goal) =>
     getWeekDates().map(date => ({ date, count: 0, goal, achieved: false, topicProgress: false }));
 
-// onDailySave: 카드 저장(off→on) 1건당 1회 호출되는 콜백 — 포인트 차감 hook(기능2).
-//   incrementDailySave 는 신규 저장 성공에서만 호출(중복/해제 경로는 호출 안 함)되므로
-//   여기에 거는 것이 "저장에서만 -1pt, 해제·환불 없음"을 보장하는 단일 chokepoint.
-export const useDailyProgress = (user, dailyGoal = 10, onDailySave) => {
+export const useDailyProgress = (user, dailyGoal = 10) => {
     const [todayCount, setTodayCount] = useState(0);       // 목표 달성 횟수 (score >= goal)
     const [todaySaveCount, setTodaySaveCount] = useState(0); // 카드 저장 횟수 (Trial 게이지용)
     const [todayPronCount, setTodayPronCount] = useState(0);
@@ -268,7 +265,6 @@ export const useDailyProgress = (user, dailyGoal = 10, onDailySave) => {
     // 카드 저장 일간 카운터 증가 (Trial 게이지용 — 발음 점수 무관)
     const incrementDailySave = useCallback(async () => {
         if (!user?.uid) return;
-        onDailySave?.(); // 기능2: 카드 저장(off→on) -1pt 차감 (해제·중복은 이 경로 안 탐 → 차감/환불 없음)
         rolloverIfNeeded();
         markActiveDayIfFirst();
         const today = getToday();
@@ -284,7 +280,7 @@ export const useDailyProgress = (user, dailyGoal = 10, onDailySave) => {
         } catch (e) {
             console.error('[useDailyProgress] saveCount 저장 실패:', e);
         }
-    }, [user, markActiveDayIfFirst, rolloverIfNeeded, onDailySave]);
+    }, [user, markActiveDayIfFirst, rolloverIfNeeded]);
 
     // 발음 연습 일간 카운터 증가
     const incrementDailyPron = useCallback(async () => {

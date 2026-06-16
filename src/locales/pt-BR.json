@@ -1419,11 +1419,5 @@
     "desc": "Há uma nova versão com melhorias e correções. Atualize para continuar.",
     "btn": "Atualizar na Play Store",
     "later": "Mais tarde"
-  },
-  "ttsAdPrompt": {
-    "title": "Um anúncio mantém o app funcionando",
-    "body": "Você aproveitou bastante a audição gratuita. Assista a um anúncio curto para mantê-la gratuita.",
-    "longAd": "Ver anúncio longo (+20 pontos)",
-    "shortAd": "Ver anúncio curto"
   }
 }
