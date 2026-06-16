@@ -60,10 +60,11 @@ import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
+import TtsAdPromptModal from './components/TtsAdPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
-import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import AppGuide from './components/AppGuide';
 import LandingPage from './components/LandingPage';
@@ -583,8 +584,16 @@ function App() {
     catch (e) { return 10; }
   });
 
+  // 기능2(2026-06-16): 카드 저장(off→on) 시 통합 포인트 풀 -1 차감. Trial 한정(Pro/Premium 면제).
+  //   consumeBonusPoints 는 clamp(음수 방지)+디바운스 → 잔액 0 이어도 저장은 진행(차단 안 함).
+  //   incrementDailySave(저장 성공 단일 신호)에 hook → 해제·중복 저장은 차감/환불 없음.
+  const chargeCardSave = useCallback(() => {
+    if (tier !== 'trial') return;
+    consumeBonusPoints(1);
+  }, [tier, consumeBonusPoints]);
+
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily } = useDailyProgress(user, dailyGoal, chargeCardSave);
   // #4(2026-06-15): 발음 일일 유효 한도 = 기본 한도 + 광고로 추가한 오늘 허용량(todayPronBonus)
   const effectivePronLimit = TRIAL_DAILY_PRON_LIMIT + (todayPronBonus || 0);
 
@@ -804,6 +813,61 @@ function App() {
     consumeBonusPoints(cost);
     return true;
   }, [tier, bonusPoints, consumeBonusPoints, requestLimitModal]);
+
+  // ── TTS Point 누적 + 광고 프롬프트 nudge (2026-06-16, 기능1) ──────────────
+  //   무료 듣기(캐시 적중 재생, 차감 0)마다 +1. 임계(20) 도달 + 오늘 광고 안봄 + 오늘 팝업 안띄움이면
+  //   TtsAdPromptModal 발화. 발열 규칙6: 매 재생마다 Firestore write/setState 폭주를 피하려고
+  //   ttsPoint 는 localStorage + ref 로만 관리(서버 권위 불필요한 디바이스 로컬 nudge). 팝업 표시 시에만
+  //   1회 setState. Trial·네이티브 한정(광고는 AdMob 네이티브 전용).
+  const TTS_POINT_KEY = 'ttsPointState';            // { date, count } (로컬 날짜 기준)
+  const TTS_AD_PROMPT_KEY = 'ttsAdPromptShownDate'; // 'YYYY-MM-DD' (오늘 팝업 띄웠는지)
+  const TTS_POINT_THRESHOLD = 20;
+  const ttsPointRef = useRef(0);
+  const [showTtsAdPrompt, setShowTtsAdPrompt] = useState(false);
+  // adRewardCountDate 비교용 UTC 날짜 키 (서버 adReward.js 가 UTC 로 기록 → 같은 기준으로 비교)
+  const utcDateStr = () => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  };
+
+  // 캐시 적중(무료 재생) 시 호출 — handleSpeak/handleSpeakSmart 의 캐시 분기에서 hook.
+  const bumpTtsPoint = () => {
+    if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
+    if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
+    const today = getToday();
+    let stored;
+    try { stored = JSON.parse(localStorage.getItem(TTS_POINT_KEY) || '{}'); } catch { stored = {}; }
+    const base = stored?.date === today ? (stored.count || 0) : 0; // 자정 경계: 날짜 바뀌면 0
+    const next = base + 1;
+    ttsPointRef.current = next;
+    try { localStorage.setItem(TTS_POINT_KEY, JSON.stringify({ date: today, count: next })); } catch {}
+
+    // 트리거 3조건 (모두 만족 시 팝업)
+    if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
+    let shownDate; try { shownDate = localStorage.getItem(TTS_AD_PROMPT_KEY); } catch {}
+    if (shownDate === today) return;                              // ③ 오늘 아직 안 띄움
+    if (profile?.adRewardCountDate === utcDateStr()) return;      // ① 오늘 아직 광고 안 봄
+    // 발화 — '오늘 표시' 마킹을 동기로 먼저(이후 재생은 ③에서 차단 → 중복 발화/재렌더 방지)
+    try { localStorage.setItem(TTS_AD_PROMPT_KEY, today); } catch {}
+    setShowTtsAdPrompt(true);
+  };
+
+  // 긴 광고(Rewarded) → 기존 handleRewardedAd 재사용(+20 bonusPoints, 서버 검증, adRewardCountDate 갱신)
+  const handleTtsAdLong = async () => {
+    setShowTtsAdPrompt(false);
+    await handleRewardedAd();
+  };
+  // 짧은 광고(Interstitial) → 보너스 없음
+  const handleTtsAdShort = async () => {
+    setShowTtsAdPrompt(false);
+    try { await showInterstitialAd(); } catch {}
+  };
+  // X 닫기 → 인터스티셜 강제 발화(빠져나갈 수 없음). 일관성: 어떤 경로든 오늘 재발화 안 함
+  //   (ttsAdPromptShownDate 는 발화 시점에 이미 today 로 마킹됨).
+  const handleTtsAdClose = async () => {
+    setShowTtsAdPrompt(false);
+    try { await showInterstitialAd(); } catch {}
+  };
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
@@ -3179,6 +3243,7 @@ function App() {
     const cacheKey = `${langCode}:${emotion || ''}:${text}`; // handleSpeak와 동일 키
 
     const playCachedUrl = (url) => {
+      bumpTtsPoint(); // 캐시 적중(무료 재생) → TTS Point +1 (메모리/IDB hit 공통 경로)
       const audio = new Audio(url);
       ttsAudioRef.current = audio;
       audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
@@ -3327,6 +3392,7 @@ function App() {
 
     // 캐시 히트 — 서버 호출 없이 즉시 재생
     if (ttsCacheRef.current.has(cacheKey)) {
+      bumpTtsPoint(); // 캐시 적중(메모리) 무료 재생 → TTS Point +1
       const cachedUrl = ttsCacheRef.current.get(cacheKey);
       try {
         const audio = new Audio(cachedUrl);
@@ -3346,6 +3412,7 @@ function App() {
       try {
         const idbBlob = await getCachedAudio(cacheKey);
         if (idbBlob && !isStale()) {
+          bumpTtsPoint(); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1
           const url = URL.createObjectURL(idbBlob);
           // 세션 메모리에도 승격 (LRU 상한 유지)
           if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
@@ -5512,6 +5579,16 @@ function App() {
           pointsPriceString={pointsPriceString}
           pronLimit={effectivePronLimit}
           onPronAllowanceAd={handlePronAllowanceAd}
+        />
+      )}
+
+      {/* TTS 광고 프롬프트 — 무료 듣기 누적(ttsPoint>=20) 시 광고 시청 유도 (기능1) */}
+      {showTtsAdPrompt && (
+        <TtsAdPromptModal
+          sourceLang={sourceLang}
+          onWatchLong={handleTtsAdLong}
+          onWatchShort={handleTtsAdShort}
+          onClose={handleTtsAdClose}
         />
       )}
 
