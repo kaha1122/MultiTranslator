@@ -831,25 +831,30 @@ function App() {
   };
 
   // 캐시 적중(무료 재생) 시 호출 — handleSpeak/handleSpeakSmart 의 캐시 분기에서 hook.
+  //   🚨 절대 throw 금지: 이 함수는 캐시 재생 분기(일부는 try/catch 내부)에서 호출되므로
+  //   예외가 새면 catch 가 삼키고 Azure 폴백으로 떨어져 캐시 재생 실패 + 과금이 된다.
+  //   본체 전체를 try/catch 로 감싸 어떤 예외도 호출자(재생 경로)에 전파되지 않게 한다.
   const bumpTtsPoint = () => {
-    if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
-    if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
-    const today = getToday();
-    let stored;
-    try { stored = JSON.parse(localStorage.getItem(TTS_POINT_KEY) || '{}'); } catch { stored = {}; }
-    const base = stored?.date === today ? (stored.count || 0) : 0; // 자정 경계: 날짜 바뀌면 0
-    const next = base + 1;
-    ttsPointRef.current = next;
-    try { localStorage.setItem(TTS_POINT_KEY, JSON.stringify({ date: today, count: next })); } catch {}
+    try {
+      if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
+      if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
+      const today = getToday();
+      let stored;
+      try { stored = JSON.parse(localStorage.getItem(TTS_POINT_KEY) || '{}'); } catch { stored = {}; }
+      const base = stored?.date === today ? (stored.count || 0) : 0; // 자정 경계: 날짜 바뀌면 0
+      const next = base + 1;
+      ttsPointRef.current = next;
+      try { localStorage.setItem(TTS_POINT_KEY, JSON.stringify({ date: today, count: next })); } catch {}
 
-    // 트리거 3조건 (모두 만족 시 팝업)
-    if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
-    let shownDate; try { shownDate = localStorage.getItem(TTS_AD_PROMPT_KEY); } catch {}
-    if (shownDate === today) return;                              // ③ 오늘 아직 안 띄움
-    if (profile?.adRewardCountDate === utcDateStr()) return;      // ① 오늘 아직 광고 안 봄
-    // 발화 — '오늘 표시' 마킹을 동기로 먼저(이후 재생은 ③에서 차단 → 중복 발화/재렌더 방지)
-    try { localStorage.setItem(TTS_AD_PROMPT_KEY, today); } catch {}
-    setShowTtsAdPrompt(true);
+      // 트리거 3조건 (모두 만족 시 팝업)
+      if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
+      let shownDate; try { shownDate = localStorage.getItem(TTS_AD_PROMPT_KEY); } catch {}
+      if (shownDate === today) return;                              // ③ 오늘 아직 안 띄움
+      if (profile?.adRewardCountDate === utcDateStr()) return;      // ① 오늘 아직 광고 안 봄
+      // 발화 — '오늘 표시' 마킹을 동기로 먼저(이후 재생은 ③에서 차단 → 중복 발화/재렌더 방지)
+      try { localStorage.setItem(TTS_AD_PROMPT_KEY, today); } catch {}
+      setShowTtsAdPrompt(true);
+    } catch { /* nudge 실패는 무시 — 재생을 절대 막지 않는다 */ }
   };
 
   // 긴 광고(Rewarded) → 기존 handleRewardedAd 재사용(+20 bonusPoints, 서버 검증, adRewardCountDate 갱신)
@@ -3243,12 +3248,12 @@ function App() {
     const cacheKey = `${langCode}:${emotion || ''}:${text}`; // handleSpeak와 동일 키
 
     const playCachedUrl = (url) => {
-      bumpTtsPoint(); // 캐시 적중(무료 재생) → TTS Point +1 (메모리/IDB hit 공통 경로)
       const audio = new Audio(url);
       ttsAudioRef.current = audio;
       audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
       const p = audio.play();
       if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+      bumpTtsPoint(); // 캐시 적중(무료 재생) → TTS Point +1. 재생 시작 후 호출(재생 보장)
     };
 
     // ── ① 캐시 우선 (무료) ── 메모리 → IndexedDB
@@ -3392,7 +3397,6 @@ function App() {
 
     // 캐시 히트 — 서버 호출 없이 즉시 재생
     if (ttsCacheRef.current.has(cacheKey)) {
-      bumpTtsPoint(); // 캐시 적중(메모리) 무료 재생 → TTS Point +1
       const cachedUrl = ttsCacheRef.current.get(cacheKey);
       try {
         const audio = new Audio(cachedUrl);
@@ -3401,6 +3405,7 @@ function App() {
         audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
         const p = audio.play();
         if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+        bumpTtsPoint(); // 캐시 적중(메모리) 무료 재생 → TTS Point +1. 재생 시작 후 호출
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
@@ -3412,7 +3417,6 @@ function App() {
       try {
         const idbBlob = await getCachedAudio(cacheKey);
         if (idbBlob && !isStale()) {
-          bumpTtsPoint(); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1
           const url = URL.createObjectURL(idbBlob);
           // 세션 메모리에도 승격 (LRU 상한 유지)
           if (ttsCacheRef.current.size >= TTS_CACHE_MAX) {
@@ -3427,6 +3431,7 @@ function App() {
           audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
           const p = audio.play();
           if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+          bumpTtsPoint(); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1. 재생 시작 후 호출
           return;
         }
       } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
