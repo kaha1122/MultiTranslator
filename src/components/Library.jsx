@@ -523,12 +523,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         return (
                         <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
-                                language={card.language}
+                                // 헤더 1줄 통일 — 언어칩을 ISO 2자리 대문자 코드(EN/KO/ZH…)로 축약
+                                language={(card.langCode || '').split('-')[0].toUpperCase() || card.language}
                                 langCode={card.langCode}
                                 cardNumber={cardNumber}
                                 sourceLangCode={card.sourceLang || 'ko'}
                                 text={card.translatedText}
-                                sourceTranslation={card.sourceTranslation || ''}
+                                // 단어(W) 카드는 뜻이 sourceText 에 저장됨(과거 카드 포함) → sourceTranslation 폴백으로 단어 밑 번역 복원
+                                sourceTranslation={card.sourceTranslation || (card.inputType === 'W' ? card.sourceText : '') || ''}
                                 pronunciation={card.pronunciation}
                                 learningTip={card.learningTip}
                                 example={card.example || ''}

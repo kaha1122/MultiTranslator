@@ -301,26 +301,29 @@ Return only these 2 lines.`;
             {/* 카드 상단: 언어 정보, 별 저장 버튼, 읽기 버튼 */}
             {/* 지문(bodySlot) 카드는 헤더 항목을 좌측으로 모아 우측에 지문 재생 컨트롤(절대배치)이 들어갈 자리를 비운다 */}
             <div className={`card-header${bodySlot ? ' card-header-passage' : ''}`}>
-                {cardNumber != null && (
-                    <span className="card-number-badge">No{cardNumber}</span>
-                )}
-                <span
-                    className="language-badge"
-                    style={{ backgroundColor: badgeColor, color: badgeTextColor }}
-                >
-                    {fullLanguage || language}
-                </span>
-
-                {/* Library 중요 마크 (card-header 중앙) */}
-                {isLibraryView && onToggleStarred && (
-                    <button
-                        className="lib-flag-btn"
-                        onClick={(e) => { e.stopPropagation(); onToggleStarred(); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.2s' }}
+                {/* 좌측 클러스터: No · 2자리 언어코드 · Flag — 1줄 정렬(우측 액션과 space-between 분리) */}
+                <div className="card-header-left">
+                    {cardNumber != null && (
+                        <span className="card-number-badge">No{cardNumber}</span>
+                    )}
+                    <span
+                        className="language-badge"
+                        style={{ backgroundColor: badgeColor, color: badgeTextColor }}
                     >
-                        <Flag size={20} fill={starred ? '#f59e0b' : 'none'} color={starred ? '#f59e0b' : '#d1d5db'} />
-                    </button>
-                )}
+                        {fullLanguage || language}
+                    </span>
+
+                    {/* Library 중요 마크 */}
+                    {isLibraryView && onToggleStarred && (
+                        <button
+                            className="lib-flag-btn"
+                            onClick={(e) => { e.stopPropagation(); onToggleStarred(); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.2s' }}
+                        >
+                            <Flag size={20} fill={starred ? '#f59e0b' : 'none'} color={starred ? '#f59e0b' : '#d1d5db'} />
+                        </button>
+                    )}
+                </div>
 
                 <div className="card-header-actions">
                     {!isLibraryView && (

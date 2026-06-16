@@ -3152,6 +3152,7 @@ function App() {
         userId: u.uid,
         userEmail: u.email,
         sourceText: meaning,          // 뜻 (모국어)
+        sourceTranslation: meaning,   // 단어 밑 번역(Library 렌더용) — sourceText 와 동일 값, 필드명 정합
         translatedText: word,         // 단어 (학습 언어)
         langCode,
         language: langInfo?.name || langCode,
