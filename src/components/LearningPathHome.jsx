@@ -40,6 +40,10 @@ export default function LearningPathHome({
   // 멀티언어 미니맵 — 활성 언어 최대 3개를 dot 안의 색상 아크로 표시
   const dotLangs = langs.slice(0, 3);
   const langMaps = dotLangs.map((l) => getLangProgress(l));
+  // 단계 원(.lph-node) 테마색 = 활성 언어의 슬롯 색. 하단 범례/grid dot과 동일 source(LANG_SLOT_COLORS)에서
+  //   공급받아 "단계 원 색 = 그 언어의 dot 색"이 항상 일치. (4개+ 선택 시 미니맵 비표시 언어는 slot0 폴백)
+  const activeSlot = dotLangs.indexOf(activeLang);
+  const activeLangColor = LANG_SLOT_COLORS[activeSlot] ?? LANG_SLOT_COLORS[0];
   // 토픽 dot 배경: 언어별 마스터 여부를 슬롯 색(아크)로. 미마스터=연회색.
   const dotBackground = (topicId) => {
     const segs = dotLangs.map((l, i) => (isTopicMastered(langMaps[i][topicId]) ? LANG_SLOT_COLORS[i] : '#e5e7eb'));
@@ -114,8 +118,8 @@ export default function LearningPathHome({
         })}
       </div>
 
-      {/* 계단 — 유닛별 그룹(접기/펼치기) */}
-      <div className="lph-stairs">
+      {/* 계단 — 유닛별 그룹(접기/펼치기). --lph-lang-color: 활성 언어 색(노드 원이 dot과 색 일치) */}
+      <div className="lph-stairs" style={{ '--lph-lang-color': activeLangColor }}>
         {UNITS.map((unit) => {
           const unitMastered = unit.topicIds.filter((id) => isTopicMastered(progressMap[id])).length;
           const open = !!openUnits[unit.unitIndex];

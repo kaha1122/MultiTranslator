@@ -132,12 +132,14 @@
   background: #fff;
   color: #94a3b8;
 }
-.lph-node.mastered { background: var(--unit-color); border-color: var(--unit-color); color: #fff; }
-.lph-node.inprogress { border-color: var(--unit-color); color: var(--unit-color); }
+/* 단계 원: 활성 언어 색(--lph-lang-color, 하단 dot과 동일 source). 미설정 시 유닛 색 폴백.
+   상태별 명도 패턴은 그대로 — 완료=solid / 진행=outline / 현재=outline+halo / 미진행=회색. */
+.lph-node.mastered { background: var(--lph-lang-color, var(--unit-color)); border-color: var(--lph-lang-color, var(--unit-color)); color: #fff; }
+.lph-node.inprogress { border-color: var(--lph-lang-color, var(--unit-color)); color: var(--lph-lang-color, var(--unit-color)); }
 .lph-node.current {
-  border-color: var(--unit-color);
-  color: var(--unit-color);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--unit-color) 18%, transparent);
+  border-color: var(--lph-lang-color, var(--unit-color));
+  color: var(--lph-lang-color, var(--unit-color));
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lph-lang-color, var(--unit-color)) 18%, transparent);
 }
 .lph-node.locked { color: #cbd5e1; }
 .lph-node-dot { width: 18px; height: 18px; border-radius: 50%; background: currentColor; opacity: 0.5; }
@@ -149,7 +151,7 @@
   z-index: 2;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--unit-color);
+  background: var(--lph-lang-color, var(--unit-color));
   color: #fff;
   font-size: 0.66rem;
   font-weight: 700;
