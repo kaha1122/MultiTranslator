@@ -11,11 +11,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard, { getTtsCharLimit } from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
+
+// [thermal-ios 2026-06-17] 보상형 광고(비디오) 종료 후 AVAudioSession 해제용.
+//   AdMob SDK가 광고 재생을 위해 setActive(true)로 켠 세션을 앱이 명시적으로 끄지 않으면
+//   mediaserverd가 awake 상태로 남아 발열 누적 → thermal throttling → 마이크 silent capture.
+//   녹음 흐름(useAudioRecorder/FreeTalkingChat)과 동일 플러그인. endAudioSession은 v1.5.73부터 존재.
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
@@ -984,6 +990,10 @@ function App() {
     } finally {
       setRewardAdLoading(false);
       handles.forEach(h => h?.remove?.());
+      // [thermal-ios] 광고 SDK가 켠 AVAudioSession을 해제 — mediaserverd awake 누수 → 발열 차단.
+      //   광고는 풀스크린 컨텍스트 종료 시점이라 모달 닫힘과 동일하게 endAudioSession(setActive=false).
+      //   ?.+catch: 구 IPA/Android 안전. iOS 한정(Android는 mediaserverd 발열 이슈 없음).
+      if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {});
     }
   };
 
@@ -1026,6 +1036,8 @@ function App() {
     } finally {
       setRewardAdLoading(false);
       handles.forEach(h => h?.remove?.());
+      // [thermal-ios] 광고 후 AVAudioSession 해제 (handleRewardedAd와 동일 — 발열 차단)
+      if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {});
     }
   };
 

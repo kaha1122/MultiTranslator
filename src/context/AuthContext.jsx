@@ -24,7 +24,20 @@ let anonSignInInProgress = false;
 // 전체 재렌더를 차단. updatedAt(접속시각)·ttsUsage(서버 통계 레거시 필드)는 UI 미사용인데
 // write마다 setProfile(새 객체) → useMemo deps 불일치 → App 전체 재렌더(iOS 발열 C1~C3 증폭기)였음.
 // 클라 어디에서도 profile.updatedAt / profile.ttsUsage를 읽지 않음을 확인하고 제외(grep 2026-06-12).
-const PROFILE_VOLATILE_FIELDS = ['updatedAt', 'ttsUsage'];
+//
+// [thermal 2026-06-17 광고 후 발열] 보상광고 1회 → 서버 write 2회(adReward 트랜잭션 3필드 +
+//   grantBonusPoints batch). 트랜잭션 필드(lastAdRewardAt/adRewardCountDate/adRewardCount)를
+//   휘발성에 추가해 그 write의 재렌더를 제거 → 광고당 전체 재렌더 2→1(bonusPoints write만).
+//   bonusPoints는 화면 표시라 제외 유지. bonusLastGrantedAt/lastTopUpAt도 UI 미사용이라 추가.
+//   ⚠ adRewardCountDate는 [App.jsx bumpTtsPoint] 게이트에서 read하지만:
+//     ① 같은 게이트의 localStorage 미러(ttsAdRewardDate)가 1차 신호로 동기 마킹됨(백업 의존 X)
+//     ② 보상흐름의 bonusPoints write(비휘발)가 같은 흐름에서 profile 전체를 갱신 → 값 lag 없음
+//     ③ 휘발성으로 인한 최악 = TTS 넛지 1회 오발화(자가복구, 크래시/데이터손실 무관). (grep 2026-06-17)
+//   lastTopUpDate(=daily-topup effect deps)·bonusPoints는 read되므로 추가 금지.
+const PROFILE_VOLATILE_FIELDS = [
+    'updatedAt', 'ttsUsage',
+    'lastAdRewardAt', 'adRewardCountDate', 'adRewardCount', 'bonusLastGrantedAt', 'lastTopUpAt',
+];
 const profileEssence = (data) => {
     if (!data) return null;
     const copy = { ...data };

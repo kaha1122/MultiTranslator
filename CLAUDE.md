@@ -69,6 +69,7 @@ npm run cap:ios          # Xcode 열기
 - **모든 commit 전에 [ios-heat-guard](.claude/agents/ios-heat-guard.md) 에이전트로 staged diff 발열 점검 필수** (Agent tool, `subagent_type: ios-heat-guard`). 신규 기능 설계 단계에서도 발열 영향 의심 시 호출.
 - 판정 `HEAT-GUARD: PASS` 확인 후 → `.claude/.heat-guard-pass` 플래그 파일 생성(touch) → commit. pre-commit 훅이 플래그 없으면 commit을 차단한다. FAIL이면 수정 후 재점검.
 - 배경(2026-06-12 발열 분석 확정): iOS 발열의 주 경로는 ① `users/{uid}` 본문 write(서버 admin SDK 포함) → AuthContext onSnapshot → App 전체 재렌더 폭주 ② 무한 CSS 애니메이션/backdrop-filter 네이티브 가드 누락(인라인 style 포함) ③ 탭 lazy-mount(visitedTabsRef) 우회 ④ 폴링/리스너 cleanup 누락. **통계·로그류 필드는 users 본문 금지, `users/{uid}/analytics/*` 서브컬렉션에 기록.**
+- 배경 추가(2026-06-17 "광고 후 발열" 확정): ⑤ **광고(보상형/전면, 비디오)는 AdMob SDK가 AVAudioSession을 `setActive(true)`로 켠다. 광고 종료 후 `BluetoothAudio.endAudioSession()`(iOS, setActive=false)으로 해제하지 않으면 mediaserverd awake 잔류 → 지속 발열 → 마이크 silent capture.** 모든 광고 show 핸들러의 `finally`에 iOS 한정 세션 해제 필수. 이 누수는 코드 diff에 안 드러나므로(SDK 런타임 동작), 광고 코드는 show→dismiss 전체 흐름으로 검토.
 - 발열 → iOS thermal throttling → 음성 재생 차단 → 마이크/Azure STT 평가 실패로 직결되는 실유저 피해 이슈다.
 
 ## 플랫폼별 트리거 규칙
