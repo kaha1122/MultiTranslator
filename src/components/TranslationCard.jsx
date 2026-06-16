@@ -97,7 +97,7 @@ const TranslationCard = ({
     groupTooLong = false,
 }) => {
     const t = useT(sourceLangCode);
-    const { byokGeminiKey, currentUser } = useAuth();
+    const { byokGeminiKey, user: currentUser } = useAuth();
 
     // ── 메모 팝업 상태 ──
     const [showMemoPopup, setShowMemoPopup] = useState(false);
