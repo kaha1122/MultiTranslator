@@ -1419,5 +1419,11 @@
     "desc": "Hay una nueva versión con mejoras y correcciones. Por favor, actualiza para continuar.",
     "btn": "Actualizar en Play Store",
     "later": "Más tarde"
+  },
+  "ttsAdPrompt": {
+    "title": "Un anuncio mantiene la app en marcha",
+    "body": "Has disfrutado de mucha escucha gratuita. Mira un anuncio breve para mantenerla gratis.",
+    "longAd": "Ver anuncio largo (+20 puntos)",
+    "shortAd": "Ver anuncio corto"
   }
 }
