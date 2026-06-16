@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, Pencil, Headphones } from 'lucide-react';
+import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, Pencil, Headphones, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -105,6 +105,8 @@ export default function ListeningTab({
     onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
     onTopicPass,            // 문장 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
     onSavePassage,          // 2026-06-15: 지문 단어장 저장 — passage 객체 → Library 카드(inputType:'L')
+    isProUser = true,       // 직접입력(custom)은 Pro 전용 — Trial은 잠금 표시
+    onProOnly,              // 잠긴 직접입력 탭 시 Pro 안내 모달 오픈
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -721,19 +723,24 @@ export default function ListeningTab({
                 </button>
             )}
 
-            {/* Custom Input — Free Talking과 동일 UI (왼쪽 2줄 label + 오른쪽 2줄 textarea) */}
-            <div className="scene-custom-block">
+            {/* Custom Input — 직접입력은 Pro 전용. Trial은 진입부터 잠긴 상태 + "Pro 전용입니다" placeholder 상시(탭 시 Pro 안내). */}
+            <div
+                className={`scene-custom-block${!isProUser ? ' locked' : ''}`}
+                onClick={!isProUser ? () => onProOnly?.() : undefined}
+            >
                 <div className="scene-custom-label" role="presentation">
                     <span className="scene-custom-label__icon" aria-hidden="true">
-                        <Pencil size={11} strokeWidth={2.25} />
+                        {isProUser ? <Pencil size={11} strokeWidth={2.25} /> : <Lock size={11} strokeWidth={2.25} />}
                     </span>
                     <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
                     className="scene-custom-input"
                     rows={2}
-                    placeholder={t('scene.customPlaceholder')}
-                    value={customInput}
+                    placeholder={isProUser ? t('scene.customPlaceholder') : (t('scene.customProOnly') || '🔒 Pro 전용입니다')}
+                    value={isProUser ? customInput : ''}
+                    disabled={!isProUser}
+                    readOnly={!isProUser}
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);

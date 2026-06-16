@@ -289,6 +289,7 @@
     "loginRequired": "Bitte einloggen.",
     "customLabelTop": "Eigene Eingabe",
     "customLabelBottom": "Frei eingeben",
+    "customProOnly": "🔒 Eigene Eingabe ist eine Pro-Funktion",
     "customPlaceholder": "Eigenen Ort oder Situation eingeben",
     "customPlaceholderFreetalk": "z. B. Mit dem Taxi fahren / Mit einem Freund über KI diskutieren"
   },

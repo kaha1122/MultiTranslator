@@ -4798,6 +4798,8 @@ function App() {
             onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
+            isProUser={tier === 'pro' || tier === 'premium' || tier === 'admin'}
+            onProOnly={requestProOnlyModal}
             onSpeak={handleSpeakSmart}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
@@ -4826,6 +4828,8 @@ function App() {
             userLevel={userLevel}
             languageLevels={languageLevels}
             isTrialListenLimitReached={isTrialListenLimitReached || isProListenLimitReached}
+            isProUser={tier === 'pro' || tier === 'premium' || tier === 'admin'}
+            onProOnly={requestProOnlyModal}
             onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}

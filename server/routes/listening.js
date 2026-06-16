@@ -5,6 +5,8 @@ const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 const seedCache = require('../utils/seedCache');
+const { getTier, isProTier } = require('../utils/userTier');
+const customUnits = require('../utils/customUnits');
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -25,6 +27,14 @@ router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage'
     }
     if (typeof topic === 'string' && topic.length > 300) {
         return res.status(413).json({ error: 'Topic too long (max 300 chars)' });
+    }
+
+    // 직접입력(custom)은 Pro 전용 — 서버 권위 차단(클라 잠금 우회 방지 + per-user 원가 보호).
+    if (isCustom) {
+        const tier = await getTier(req.uid);
+        if (tier && !isProTier(tier)) {
+            return res.status(403).json({ error: 'Custom input is a Pro feature', code: 'pro_required' });
+        }
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
@@ -187,6 +197,13 @@ ${avoidBlock}${wordsBlock}
    (1-2 informative sentences: highlight a key word or grammar pattern in the sentence AND add a usage nuance or common mistake — specific, not generic).
    The "text" values concatenated must reconstruct the passage in order.
 
+=== KEY VOCABULARY (extracted from the passage — for combined word+passage unit) ===
+9. Also EXTRACT exactly 5 KEY vocabulary items that **VERBATIM APPEAR in the passage** (each "word" must be a substring actually present in the passage text), most worth studying at this level. Variety of form appropriate to level (not 5 plain nouns unless Beginner).
+   - "word" = PURE word/phrase in ${targetLangName} — NO pronunciation/pinyin/hiragana/romanization/parenthetical readings.
+   - "example" = the actual passage sentence that contains the word.
+   - meaning, exampleTranslation, learningTip all in ${sourceLangName}. learningTip = array of 2-4 short substantive one-sentence tips (part of speech & meaning / collocations / usage note / a nuance or common mistake).
+   - pronunciation/examplePronunciation: pinyin(zh-CN) / hiragana(ja) / accent(ru) / empty otherwise.
+
 Return ONLY valid JSON (no markdown):
 {
   "title": "<short title in ${targetLangName}>",
@@ -199,6 +216,11 @@ Return ONLY valid JSON (no markdown):
   "sentences": [
     { "text": "<pure sentence in ${targetLangName}>", "translation": "<in ${sourceLangName}>",
       "pronunciation": "<pinyin/hiragana/accent or empty>", "learning_tip": "<one tip in ${sourceLangName}>" }
+  ],
+  "words": [
+    { "word": "<PURE word/phrase in ${targetLangName}, verbatim from passage>", "pronunciation": "<or empty>",
+      "meaning": "<${sourceLangName}>", "example": "<the passage sentence containing the word>",
+      "examplePronunciation": "<or empty>", "exampleTranslation": "<${sourceLangName}>", "learningTip": ["<tip1>", "<tip2>"] }
   ]
 }`;
 
@@ -239,12 +261,47 @@ Return ONLY valid JSON (no markdown):
         parsed.sentences = [];
     }
 
-    // seed 경로: canonical passage를 passageSeed에 append(경합 안전) 후 해당 passage 반환
+    // [2026-06-16] 결합 unit — 지문에서 추출한 5단어 정규화 + verbatim example 정합(지문 문장으로 교체).
+    const sentenceTexts = (parsed.sentences || []).map(s => s.text).filter(Boolean);
+    const unitWords = (Array.isArray(parsed.words) ? parsed.words : []).map(w => ({
+        word: stripAnnotations(w.word, targetLang),
+        pronunciation: w.pronunciation || '',
+        meaning: w.meaning || '',
+        example: stripAnnotations(w.example || '', targetLang),
+        examplePronunciation: w.examplePronunciation || '',
+        exampleTranslation: w.exampleTranslation || '',
+        learningTip: Array.isArray(w.learningTip) ? w.learningTip : (w.learningTip ? [w.learningTip] : []),
+    })).filter(w => w.word);
+    for (const w of unitWords) {
+        const wn = seedCache.normalizeWord(w.word);
+        if (!wn) continue;
+        const hit = sentenceTexts.find(s => seedCache.normalizeWord(s).includes(wn));
+        if (hit) w.example = hit;
+    }
+    parsed.words = unitWords; // 지문에 임베드(클라가 '이 지문의 핵심어' 표시 가능) + 응답 포함
+
+    // seed 경로: canonical passage를 passageSeed에 append(경합 안전) + 추출 단어를 공유 vocabSeed 풀에 dedup append
     if (useSeed && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
         const meta = { topicId: topic, type: contentType, level, sourceLang, targetLang };
         const slice = await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', meta, [parsed], offset, 1);
-        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → Gemini 생성·저장`);
+        if (unitWords.length) {
+            // 결합 unit: 지문↔단어 결합 + 전역 단어 풀 누적(essay·dialogue 공통, 정규화 dedup으로 중복 0)
+            const vseedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+            const vmeta = { topicId: topic, level, sourceLang, targetLang };
+            try {
+                await seedCache.appendItems(VSEED_COL, vseedKey, 'words', vmeta, unitWords,
+                    { dedupeBy: w => seedCache.normalizeWord(w?.word) });
+            } catch (e) { console.warn('[Seed] unit words store failed:', e.message); }
+        }
+        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → 지문+단어 결합 저장`);
         return res.json({ ...(slice[0] || parsed), source: 'gemini' });
+    }
+    // custom(!useSeed, Pro 전용): 전역 seed와 분리해 per-user customUnits에 누적 저장(공유 X).
+    if (isCustom && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
+        try {
+            await customUnits.appendUnit(req.uid, { topicLabel: topicLabel || topic, level, sourceLang, targetLang }, { words: unitWords, passage: parsed });
+        } catch (e) { console.warn('[custom] listening store failed:', e.message); }
+        console.log(`[Custom] listening unit ${req.uid} "${topicLabel || topic}" (${contentType}) → 저장`);
     }
     res.json({ ...parsed, source: 'gemini' });
 });

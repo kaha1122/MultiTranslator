@@ -289,6 +289,7 @@
     "loginRequired": "请先登录。",
     "customLabelTop": "自定义输入",
     "customLabelBottom": "自由输入",
+    "customProOnly": "🔒 自定义输入为Pro专属",
     "customPlaceholder": "请输入您的场景或情境",
     "customPlaceholderFreetalk": "例如：打车出行 / 和朋友讨论AI"
   },

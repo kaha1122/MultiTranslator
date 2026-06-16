@@ -289,6 +289,7 @@
     "loginRequired": "Vui lòng đăng nhập.",
     "customLabelTop": "Nhập tùy chỉnh",
     "customLabelBottom": "Nhập tự do",
+    "customProOnly": "🔒 Nhập tùy chỉnh chỉ dành cho Pro",
     "customPlaceholder": "Nhập địa điểm hoặc tình huống của bạn",
     "customPlaceholderFreetalk": "VD: Đi taxi / Tranh luận về AI với bạn"
   },

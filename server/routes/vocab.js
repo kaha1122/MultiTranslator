@@ -11,6 +11,8 @@ const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 const seedCache = require('../utils/seedCache');
 const { generateUnit } = require('../utils/generateUnit');
+const { getTier, isProTier } = require('../utils/userTier');
+const customUnits = require('../utils/customUnits');
 
 const SEED_COL = 'vocabSeed';
 const PSEED_COL = 'passageSeed';
@@ -23,6 +25,15 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
     }
     if (typeof topic === 'string' && topic.length > 300) {
         return res.status(413).json({ error: 'Topic too long (max 300 chars)' });
+    }
+
+    // 직접입력(custom)은 Pro 전용 — 서버 권위 차단(클라 잠금 우회 방지 + per-user 원가 보호).
+    // tier 판정 불가(로컬/읽기실패=null)면 통과(요청 흐름 보존, 보안 자원 아님).
+    if (isCustom) {
+        const tier = await getTier(req.uid);
+        if (tier && !isProTier(tier)) {
+            return res.status(403).json({ error: 'Custom input is a Pro feature', code: 'pro_required' });
+        }
     }
 
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
@@ -58,17 +69,38 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
             return res.status(unitRes.status || 502).json({ error: unitRes.userMsg || 'Failed to generate vocabulary' });
         }
         const vmeta = { topicId: topic, level, sourceLang, targetLang };
-        const wslice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', vmeta, unitRes.words, offset, SEED_PAGE);
+        // 하드 dedup: 정규화 단어 기준 기존 시퀀스 중복 제외(소프트 anti-dup 누수 차단).
+        const wslice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', vmeta, unitRes.words, offset, SEED_PAGE,
+            { dedupeBy: w => seedCache.normalizeWord(w?.word) });
         // 지문(essay)을 정렬 offset(=단어offset/SEED_PAGE)에 저장. 이미 존재하면 보존(append race-guard).
         if (unitRes.passage && unitRes.passage.passage) {
             const pOffset = Math.floor(offset / SEED_PAGE);
             const pmeta = { topicId: topic, type: 'essay', level, sourceLang, targetLang };
+            unitRes.passage.words = unitRes.words; // 지문 자기완결화('이 지문의 핵심어') — listening 경로와 일치
             try {
                 await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', pmeta, [unitRes.passage], pOffset, 1);
             } catch (e) { console.warn('[Seed] unit passage store failed:', e.message); }
         }
         console.log(`[Seed] UNIT MISS ${seedKey} offset=${offset} → 지문우선 결합생성 → 단어+지문 저장`);
         return res.json({ words: wslice, source: 'gemini-unit' });
+    }
+
+    // ── 직접입력(custom, Pro 전용) — 전역 seed와 분리. generateUnit으로 지문+5단어 결합 생성 후
+    //   per-user customUnits에 누적 저장(공유 X). dedup은 클라 avoidWords + 저장 시 정규화.
+    if (isCustom) {
+        const unitRes = await generateUnit({
+            topic, topicLabel, category, level, targetLang, sourceLang, geminiKey,
+            avoidWords: Array.isArray(avoidWords) ? avoidWords : [], type: 'essay',
+        });
+        if (unitRes.error) {
+            return res.status(unitRes.status || 502).json({ error: unitRes.userMsg || 'Failed to generate vocabulary' });
+        }
+        unitRes.passage.words = unitRes.words; // 지문 자기완결(이 지문의 핵심어)
+        try {
+            await customUnits.appendUnit(req.uid, { topicLabel, level, sourceLang, targetLang }, unitRes);
+        } catch (e) { console.warn('[custom] vocab store failed:', e.message); }
+        console.log(`[Custom] vocab unit ${req.uid} "${topicLabel}" → 단어+지문 결합 생성·저장`);
+        return res.json({ words: (unitRes.words || []).slice(0, SEED_PAGE), source: 'gemini-unit-custom' });
     }
 
     const targetLangName = LANG_NAMES[targetLang] || 'English';

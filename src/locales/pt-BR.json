@@ -289,6 +289,7 @@
     "loginRequired": "Faça login, por favor.",
     "customLabelTop": "Entrada personalizada",
     "customLabelBottom": "Digitar livremente",
+    "customProOnly": "🔒 Entrada personalizada é exclusiva do Pro",
     "customPlaceholder": "Digite seu próprio local ou situação",
     "customPlaceholderFreetalk": "ex.) Pegar um táxi / Debater sobre IA com um amigo"
   },

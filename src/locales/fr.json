@@ -289,6 +289,7 @@
     "loginRequired": "Veuillez vous connecter.",
     "customLabelTop": "Saisie personnalisée",
     "customLabelBottom": "Saisie libre",
+    "customProOnly": "🔒 La saisie personnalisée est réservée à Pro",
     "customPlaceholder": "Entrez votre propre lieu ou situation",
     "customPlaceholderFreetalk": "ex) Prendre un taxi / Débattre de l'IA avec un ami"
   },

@@ -289,6 +289,7 @@
     "loginRequired": "Please log in.",
     "customLabelTop": "Custom Input",
     "customLabelBottom": "Type freely",
+    "customProOnly": "🔒 Custom input is a Pro feature",
     "customPlaceholder": "Enter your own location or situation",
     "customPlaceholderFreetalk": "e.g. Taking a taxi / Debating AI with a friend"
   },

@@ -289,6 +289,7 @@
     "loginRequired": "ログインしてください。",
     "customLabelTop": "直接入力",
     "customLabelBottom": "自由に入力",
+    "customProOnly": "🔒 カスタム入力はPro専用です",
     "customPlaceholder": "場所や状況を直接入力してください",
     "customPlaceholderFreetalk": "例) タクシーで移動する / 友達とAIについて議論する"
   },

@@ -289,6 +289,7 @@
     "loginRequired": "로그인이 필요합니다.",
     "customLabelTop": "직접 입력",
     "customLabelBottom": "자유롭게 입력",
+    "customProOnly": "🔒 직접 입력은 Pro 전용입니다",
     "customPlaceholder": "장소나 상황을 직접 입력하세요",
     "customPlaceholderFreetalk": "예) Taxi로 이동하기 / 친구와 AI주제로 토론하기"
   },

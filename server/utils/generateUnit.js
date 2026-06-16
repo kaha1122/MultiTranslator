@@ -5,14 +5,20 @@
 const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { callGeminiJson } = require('../utils/geminiCall');
 const { stripAnnotations } = require('../utils/stripAnnotations');
+const { normalizeWord } = require('./seedCache');
 
 const ANGLES = ['first-person narrative', 'dialogue', 'how-to', 'cultural-explanation', 'opinion'];
 
-async function generateUnit({ topic, topicLabel, category, level, targetLang, sourceLang, geminiKey, avoidWords = [], avoidTitles = [] }) {
+// type: 'essay'(기본) | 'dialogue' — 지문 형식. 둘 다 "지문 먼저 → 단어 추출" 결합생성 동일 적용.
+async function generateUnit({ topic, topicLabel, category, level, targetLang, sourceLang, geminiKey, avoidWords = [], avoidTitles = [], type = 'essay' }) {
     const targetLangName = LANG_NAMES[targetLang] || 'English';
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
     const guide = LANG_SPECIFIC_GUIDE[targetLang] || LANG_SPECIFIC_GUIDE['en'];
     const unit = guide.unit || 'words';
+    const contentType = type === 'dialogue' ? 'dialogue' : 'essay';
+    const passageDirective = contentType === 'dialogue'
+        ? `write a natural DIALOGUE between 2 people (Speaker A and Speaker B) about the topic — format each line "A: ..." / "B: ...", 6-10 turns, with greetings, reactions, and natural turn-taking`
+        : `write a natural, coherent essay/article about the topic — as if written by a native speaker for a blog or textbook`;
 
     const levelDesc = {
         basic: `Beginner (A1/A2)
@@ -32,12 +38,18 @@ async function generateUnit({ topic, topicLabel, category, level, targetLang, so
     const recentWords = (Array.isArray(avoidWords) ? avoidWords : []).filter(Boolean).slice(-30);
     const recentTitles = (Array.isArray(avoidTitles) ? avoidTitles : []).filter(Boolean).slice(-15);
     const avoidBlock = (recentWords.length || recentTitles.length) ? `
-=== ANTI-DUPLICATION (CRITICAL) ===
+=== ANTI-DUPLICATION (CRITICAL — read carefully) ===
 ${recentTitles.length ? `Previously generated passages on this topic — make THIS passage clearly different (different sub-angle, title, key concepts):
-${recentTitles.map((t, i) => `  ${i + 1}. "${String(t).replace(/"/g, "'").slice(0, 80)}"`).join('\n')}` : ''}
-${recentWords.length ? `Words the learner already studied under this (topic+level+lang) — pick DIFFERENT key words (avoid same root/synonym/sub-cluster):
-${recentWords.map((w, i) => `  ${i + 1}. "${w}"`).join('\n')}` : ''}
-` : '';
+${recentTitles.map((t, i) => `  ${i + 1}. "${String(t).replace(/"/g, "'").slice(0, 80)}"`).join('\n')}
+` : ''}${recentWords.length ? `The learner already studied these ${recentWords.length} word(s) under this exact (topic+level+lang). Your 5 KEY words MUST avoid ALL overlap types below — not just exact matches:
+${recentWords.map((w, i) => `  ${i + 1}. "${w}"`).join('\n')}
+
+You MUST avoid:
+1. **Same root/stem/family** — if "run" is listed, no running/runner/runs; if "旅行", no 旅遊/旅館.
+2. **Synonyms/near-synonyms** — if "happy" is listed, no joyful/glad/cheerful.
+3. **Same semantic micro-cluster** — if 4+ avoided items cover one sub-domain, draw THIS unit's key words from a DIFFERENT sub-domain.
+MANDATORY self-check: for each of the 5 key words W, verify (a) no shared stem with any avoided word (b) not a synonym of any avoided word (c) not in an over-covered sub-cluster — if any fails, pick another word from the passage (write the passage so it naturally contains fresh, non-overlapping vocabulary).
+` : ''}` : '';
 
     const prompt = `You are a language teacher creating ONE integrated lesson — a reading passage PLUS the key vocabulary drawn from it — for a learner.
 
@@ -52,8 +64,8 @@ Context:
 - Level: ${levelDesc}
 ${avoidBlock}
 === GENERATION ORDER (MANDATORY — this guarantees coherence) ===
-STEP A. FIRST write a natural, coherent essay/article about the topic at the level — as if written by a native speaker for a blog or textbook. Do NOT think about vocabulary lists yet; just write the best passage.
-STEP B. THEN read your own passage and EXTRACT exactly 5 KEY vocabulary items that ACTUALLY APPEAR in the passage (or are central to it) and are most worth studying at this level. Because the words come FROM the passage, they are perfectly coherent with it.
+STEP A. FIRST ${passageDirective} at the level. Do NOT think about vocabulary lists yet; just write the best passage.
+STEP B. THEN read your own passage and EXTRACT exactly 5 KEY vocabulary items that **VERBATIM APPEAR in the passage** (each "word" must be a substring actually present in the passage text) and are most worth studying at this level. Because the words come FROM the passage, they are perfectly coherent with it. Do NOT invent words that are not in the passage.
 
 === PASSAGE RULES ===
 1. 5-10 sentences forming a coherent passage. Variety of sentence types.
@@ -103,7 +115,7 @@ Return ONLY valid JSON (no markdown):
 
     // 정규화 — 주석 제거 보험 + angle/keywords 화이트리스트
     p.passage = stripAnnotations(p.passage, targetLang);
-    if (!ANGLES.includes(p.angle)) p.angle = 'first-person narrative';
+    if (!ANGLES.includes(p.angle)) p.angle = (contentType === 'dialogue') ? 'dialogue' : 'first-person narrative';
     p.passageKeywords = Array.isArray(p.passageKeywords)
         ? p.passageKeywords.filter(k => typeof k === 'string' && k.trim()).map(k => k.trim().slice(0, 40)).slice(0, 3)
         : [];
@@ -125,6 +137,21 @@ Return ONLY valid JSON (no markdown):
         learningTip: Array.isArray(w.learningTip) ? w.learningTip : (w.learningTip ? [w.learningTip] : []),
     })).filter(w => w.word);
 
+    // verbatim 검증 — 추출 단어가 지문에 실제 등장하는지 확인.
+    //   등장하면 example을 그 단어를 포함한 지문 문장으로 교체(단어↔지문 문맥 정합 강화).
+    //   미등장 단어는 카운트만(결합생성 취지상 드묾) — 로그로 가시화해 품질 모니터링.
+    const sentenceTexts = p.sentences.map(s => s.text).filter(Boolean);
+    const passageNorm = normalizeWord(p.passage);
+    let nonVerbatim = 0;
+    for (const w of words) {
+        const wn = normalizeWord(w.word);
+        if (!wn) continue;
+        const hit = sentenceTexts.find(s => normalizeWord(s).includes(wn));
+        if (hit) w.example = hit;                       // 지문 문장으로 example 교체(정합)
+        else if (!passageNorm.includes(wn)) nonVerbatim++; // 지문 어디에도 없음(환각 가능)
+    }
+    if (nonVerbatim) console.log(`[generateUnit] ${nonVerbatim}/${words.length} key word(s) NOT verbatim in passage (${targetLang}/${topic}/${contentType})`);
+
     const passage = {
         title: p.title || '',
         titleTranslation: p.titleTranslation || '',
@@ -133,6 +160,7 @@ Return ONLY valid JSON (no markdown):
         passageTranslation: p.passageTranslation || '',
         passageKeywords: p.passageKeywords,
         angle: p.angle,
+        type: contentType,        // unit 지문 형식(essay|dialogue) 자기기술 — passageSeed 저장 시 보존
         sentences: p.sentences,
     };
 
