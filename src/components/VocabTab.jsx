@@ -461,10 +461,13 @@ export default function VocabTab({
         setIsLoading(true);
         setActiveRecIdx(null);
 
-        const topicId = selectedTopic?.topicId || 'custom';
-        const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
-        const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
-        const isSeed = !!selectedTopic; // 비-custom = seed(전역 공유 순차) 경로
+        // preset(고정 토픽)에서도 직접입력이 있으면 custom 우선. 단, 마스터 집계(onTopicPass)는 노드 그대로 유지.
+        const hasCustom = customInput.trim().length > 0;
+        const useTopic = !!selectedTopic && !hasCustom;
+        const topicId = useTopic ? selectedTopic.topicId : 'custom';
+        const topicLabel = useTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
+        const categoryLabel = useTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
+        const isSeed = useTopic; // seed(전역 공유 순차)=고정 토픽일 때만. custom 입력 시 false → 서버 isCustom.
 
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
         const { words: persistedWords, seedCursor, chargedMax } = await loadVocabHistory(historyKey);
@@ -493,7 +496,7 @@ export default function VocabTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
-                    isCustom: !selectedTopic,
+                    isCustom: !isSeed,
                     level,
                     targetLang: selectedLang,
                     sourceLang,
@@ -647,9 +650,12 @@ export default function VocabTab({
                     </span>
                 </button>
             )}
+            </>)}
 
-            {/* Custom Input — Free Talking과 동일 UI (2줄 label + 2줄 textarea).
-                직접입력은 Pro 전용 — Trial은 진입 시점부터 잠긴 상태 + "Pro 전용입니다" placeholder 상시 노출(탭 시 Pro 안내). */}
+            {/* Custom Input — preset(토픽 학습)·자유 모드 모두 노출.
+                직접입력은 Pro 전용 — Trial은 진입 시점부터 잠긴 상태 + "Pro 전용입니다" placeholder 상시(탭 시 Pro 안내).
+                preset 모드: 입력해도 selectedTopic(노드)은 유지 → handleGenerate가 입력 여부로만 custom 우선 판정.
+                custom 단어를 2개 통과하면 그 노드의 Master에 그대로 집계(onTopicPass 유지). */}
             <div
                 className={`scene-custom-block${!isProUser ? ' locked' : ''}`}
                 onClick={!isProUser ? () => onProOnly?.() : undefined}
@@ -670,15 +676,15 @@ export default function VocabTab({
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);
-                        // 입력이 있으면 custom 모드(토픽 해제), 비우면 직전 토픽으로 복구.
-                        // 복구가 없으면 한 번 입력한 뒤 selectedTopic이 null로 굳어
-                        // 이후 언어/난이도 전환·재생성이 전부 custom으로 기록됨.
-                        if (v.trim()) setSelectedTopic(null);
-                        else setSelectedTopic(prevTopicRef.current);
+                        // 자유 모드: 입력 있으면 custom(토픽 해제), 비우면 직전 토픽 복구.
+                        // preset 모드: 토픽 노드는 고정 유지(해제 X) — 입력 여부로만 custom 우선 판정.
+                        if (!preset) {
+                            if (v.trim()) setSelectedTopic(null);
+                            else setSelectedTopic(prevTopicRef.current);
+                        }
                     }}
                 />
             </div>
-            </>)}
 
             {/* Generate Button */}
             <div className="vocab-generate-row">

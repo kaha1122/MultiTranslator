@@ -722,8 +722,11 @@ export default function ListeningTab({
                     </span>
                 </button>
             )}
+            </>)}
 
-            {/* Custom Input — 직접입력은 Pro 전용. Trial은 진입부터 잠긴 상태 + "Pro 전용입니다" placeholder 상시(탭 시 Pro 안내). */}
+            {/* Custom Input — preset(토픽 학습)·자유 모드 모두 노출. 직접입력은 Pro 전용(Trial 잠금 + "Pro 전용입니다" placeholder).
+                preset 모드: 입력해도 selectedTopic(노드)은 유지 → handleGenerate가 입력 여부로만 custom 우선 판정.
+                custom 지문을 통과하면 그 노드 진행도(passage)에 그대로 집계(onTopicPass 유지). */}
             <div
                 className={`scene-custom-block${!isProUser ? ' locked' : ''}`}
                 onClick={!isProUser ? () => onProOnly?.() : undefined}
@@ -744,11 +747,11 @@ export default function ListeningTab({
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);
-                        if (v.trim()) setSelectedTopic(null);
+                        // preset 모드: 토픽 노드 고정 유지. 자유 모드만 입력 시 토픽 해제.
+                        if (!preset && v.trim()) setSelectedTopic(null);
                     }}
                 />
             </div>
-            </>)}
 
             {/* Generate Button */}
             <button
