@@ -821,6 +821,9 @@ function App() {
   //   1회 setState. Trial·네이티브 한정(광고는 AdMob 네이티브 전용).
   const TTS_POINT_KEY = 'ttsPointState';            // { date, count } (로컬 날짜 기준)
   const TTS_AD_PROMPT_KEY = 'ttsAdPromptShownDate'; // 'YYYY-MM-DD' (오늘 팝업 띄웠는지)
+  // 로컬 미러: 오늘 광고 시청 완료(긴/짧은/X 모두). 서버 adRewardCountDate 는 긴 광고만 갱신하므로,
+  //   짧은광고·X 경로도 일관되게 "오늘 광고 봄"으로 마킹 → 재발화 차단(users 본문 write 회피=heat-safe).
+  const TTS_AD_REWARD_DATE_KEY = 'ttsAdRewardDate'; // 'YYYY-MM-DD'
   const TTS_POINT_THRESHOLD = 20;
   const ttsPointRef = useRef(0);
   const [showTtsAdPrompt, setShowTtsAdPrompt] = useState(false);
@@ -850,27 +853,40 @@ function App() {
       if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
       let shownDate; try { shownDate = localStorage.getItem(TTS_AD_PROMPT_KEY); } catch {}
       if (shownDate === today) return;                              // ③ 오늘 아직 안 띄움
-      if (profile?.adRewardCountDate === utcDateStr()) return;      // ① 오늘 아직 광고 안 봄
+      // ① 오늘 아직 광고 안 봄 — 서버(UTC) 또는 로컬 미러(긴/짧은/X 모두 마킹) 중 하나라도 오늘이면 차단
+      let adDate; try { adDate = localStorage.getItem(TTS_AD_REWARD_DATE_KEY); } catch {}
+      if (adDate === today || profile?.adRewardCountDate === utcDateStr()) return;
       // 발화 — '오늘 표시' 마킹을 동기로 먼저(이후 재생은 ③에서 차단 → 중복 발화/재렌더 방지)
       try { localStorage.setItem(TTS_AD_PROMPT_KEY, today); } catch {}
+      console.log('[TtsAdPrompt] shown', { ttsPoint: next });
       setShowTtsAdPrompt(true);
     } catch { /* nudge 실패는 무시 — 재생을 절대 막지 않는다 */ }
   };
 
+  // 오늘 광고 시청 완료 로컬 마킹(긴/짧은/X 공통) — 트리거 ① 조건과 짝. best-effort.
+  const markAdWatchedToday = () => {
+    try { localStorage.setItem(TTS_AD_REWARD_DATE_KEY, getToday()); } catch {}
+  };
   // 긴 광고(Rewarded) → 기존 handleRewardedAd 재사용(+20 bonusPoints, 서버 검증, adRewardCountDate 갱신)
   const handleTtsAdLong = async () => {
+    console.log('[TtsAdPrompt] long_ad_clicked');
     setShowTtsAdPrompt(false);
-    await handleRewardedAd();
+    markAdWatchedToday();
+    await handleRewardedAd(); // 서버 adRewardCountDate 도 함께 갱신됨
   };
   // 짧은 광고(Interstitial) → 보너스 없음
   const handleTtsAdShort = async () => {
+    console.log('[TtsAdPrompt] short_ad_clicked');
     setShowTtsAdPrompt(false);
+    markAdWatchedToday();
     try { await showInterstitialAd(); } catch {}
   };
   // X 닫기 → 인터스티셜 강제 발화(빠져나갈 수 없음). 일관성: 어떤 경로든 오늘 재발화 안 함
-  //   (ttsAdPromptShownDate 는 발화 시점에 이미 today 로 마킹됨).
+  //   (ttsAdPromptShownDate 는 발화 시점에, adRewardDate 미러는 여기서 마킹).
   const handleTtsAdClose = async () => {
+    console.log('[TtsAdPrompt] x_closed → interstitial_forced');
     setShowTtsAdPrompt(false);
+    markAdWatchedToday();
     try { await showInterstitialAd(); } catch {}
   };
 
@@ -3295,6 +3311,7 @@ function App() {
             ttsCacheRef.current.delete(oldestKey);
           }
           ttsCacheRef.current.set(cacheKey, url);
+          beaconTtsRoute(src, 'idb-cache', langCode, { reason: 'idb-hit' }); // 사용량 모니터링(서버 0과금)
           playCachedUrl(url);
           return;
         }
@@ -3451,6 +3468,7 @@ function App() {
             ttsCacheRef.current.delete(oldestKey);
           }
           ttsCacheRef.current.set(cacheKey, url);
+          beaconTtsRoute(opts.source, 'idb-cache', langCode, { reason: 'idb-hit' }); // 사용량 모니터링(서버 0과금)
           const audio = new Audio(url);
           ttsAudioRef.current = audio;
           audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
