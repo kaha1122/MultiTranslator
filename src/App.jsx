@@ -798,6 +798,22 @@ function App() {
     setShowTrialLimitModal(true);
   }, []);
 
+  // 2026-06-16: 포인트 부족 모달 강제(reason='points' 고정 — capReached 판정 우회).
+  //   generate/카드저장 게이트 전용. 광고 보상 충전(+20) 버튼 포함이라 즉시 회복 가능.
+  const requestPointsModal = useCallback((feature) => {
+    setTrialLimitFeature(feature);
+    setTrialLimitReason('points');
+    setShowTrialLimitModal(true);
+  }, []);
+
+  // 2026-06-16: 잔액 게이트 — Trial 잔액 < cost 면 차단 + 포인트부족 모달, 충분하면 통과.
+  //   Pro/Premium 은 무제한 면제(true). 차감은 하지 않음(통과 후 기존 addAdPoints/chargeCardSave 가 차감).
+  const canSpendPoints = useCallback((cost, feature) => {
+    if (tier !== 'trial') return true;            // Pro/Premium 면제
+    if (bonusPoints < cost) { requestPointsModal(feature); return false; }
+    return true;
+  }, [tier, bonusPoints, requestPointsModal]);
+
   // 2026-06-15: Pro/Premium 전용 기능(Free Talking) 비구독자 진입 차단 모달.
   const requestProOnlyModal = useCallback(() => {
     setTrialLimitReason('proOnly');
@@ -2485,6 +2501,7 @@ function App() {
   // AI가 입력 언어를 자동 감지한 뒤 38개 언어 중 적절한 타겟으로 번역합니다.
   const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
+    if (retryCount === 0 && !canSpendPoints(1, 'translationGen')) return; // 2026-06-16: 잔액<1 차단(최초 시도만)
 
     // 2026-06-10: 번역 생성도 1점 차감 (Vocab/Scene 생성과 동일). Trial 0점이면 차단 + 충전 팝업.
     //   하드캡 없음 → requestLimitModal이 'points'(충전 가능) 사유로 표시. retryCount>0(내부 재시도)은 재게이트 안 함.
@@ -2788,6 +2805,7 @@ function App() {
 
   // 별 버튼 저장 함수 — 저장 성공 시 목표 달성 점수면 daily progress 카운트
   const handleStarSave = async (langCode) => {
+    if (!canSpendPoints(1, 'cardSave')) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
     const result = await saveToFirebase(langCode);
     if (result.status === "success") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
@@ -2810,6 +2828,7 @@ function App() {
   const saveVideoCard = async (sentenceText, videoTitle, langCode, pronunciationScore = null) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'video.loginRequired')); return; }
+    if (!canSpendPoints(1, 'cardSave')) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -2856,6 +2875,7 @@ function App() {
       if (active) return null; // 이미 저장됨 → 중복 방지
     } catch (e) { console.error("Scene duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return null; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -2912,6 +2932,7 @@ function App() {
       if (active) return true;
     } catch (e) { console.error("Passage duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return false; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -3123,6 +3144,7 @@ function App() {
       }
     } catch (e) { console.error("Vocab duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return null; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -4778,6 +4800,7 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
+            onCheckPoints={() => canSpendPoints(1, 'vocabGen')}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('vocab');
@@ -4873,6 +4896,7 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementSceneGenerate(); incrementDailyGenerate('scene'); addAdPoints(1); }}
+            onCheckPoints={() => canSpendPoints(1, 'sceneGen')}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('scene');

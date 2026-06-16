@@ -293,6 +293,7 @@ export default function VocabTab({
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
+    onCheckPoints,
     onNavigateToLibrary,
     userLevel,
     languageLevels = {},
@@ -476,6 +477,9 @@ export default function VocabTab({
             setIsLoading(false);
             return;
         }
+        // 2026-06-16: 잔액 게이트 — 차감 대상(신규 생성)만 검사. 무료 재진입(offset ≤ chargedMax)은 통과.
+        const willChargePts = !isSeed || offset > (chargedMax ?? -1);
+        if (willChargePts && onCheckPoints && !onCheckPoints()) { setIsLoading(false); return; }
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
         const avoidForApi = allAvoid.slice(-30); // custom 경로용 (seed는 서버가 자체 회피)
 

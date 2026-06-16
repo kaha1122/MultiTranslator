@@ -232,7 +232,7 @@ export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimi
 }
 
 // ── 메인 ScenePractice 컴포넌트 ───────────────────────────────────────────
-const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
+const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}, onTrialLimitReached, onPronSuccess, onSaveToLibrary, onSpeak, languageGoals = {}, onBookmarkPrompt, onGenerate, onCheckPoints, onNavigateToLibrary, onTargetAchieved, onFreeTalkStart }) => {
     // 랜덤 초기 장소 선택 (custom 제외)
     const pickRandomScene = (cat = 'locations') => {
         const list = SCENES[cat].filter(s => s.id !== 'custom');
@@ -384,6 +384,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
 
     const handleRequest = async () => {
         if (!canRequest) return;
+        if (onCheckPoints && !onCheckPoints()) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
         setLoading(true);
         setError(null);
         setGenerated(null);
@@ -437,6 +438,7 @@ const ScenePractice = ({ sourceLang, targetLangs, userLevel, languageLevels = {}
 
     const handleAnswerRequest = async () => {
         if (!generated) return;
+        if (onCheckPoints && !onCheckPoints()) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
         setLoadingAnswer(true);
         setError(null);
         setGeneratedAnswer(null);
