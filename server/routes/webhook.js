@@ -12,9 +12,11 @@ const ALLOW_INSECURE = process.env.ALLOW_INSECURE_WEBHOOKS === '1';
 
 const router = express.Router();
 
-// 2026-06-07: 인앱 포인트 상품 (소비성) — 구매 시 +200 적립
+// 2026-06-07: 인앱 포인트 상품 (소비성) — 구매 시 적립
+// 2026-06-16: 지급량 200 → 500 상향 (대부분 포인트 차감이 무과금이라 가치 상향). 스토어 SKU
+//   식별자(pronunfit_points_200)는 App Store/Play 등록값이라 그대로 유지(재심사 회피) — 같은 가격에 +500 지급.
 const POINTS_PRODUCT_ID = 'pronunfit_points_200';
-const POINTS_AMOUNT = 200;
+const POINTS_AMOUNT = 500;
 
 const TOSS_SECRET_KEY = process.env.TOSS_SECRET_KEY;
 const TOSS_WEBHOOK_SECRET = process.env.TOSS_WEBHOOK_SECRET;

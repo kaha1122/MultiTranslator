@@ -11,7 +11,7 @@ const VALID_SOURCES = new Set([
     'streak30',
     'streak100',
     'adReward',            // 보상광고 보너스 충전 (+5)
-    'pointPurchase',       // 인앱 결제 포인트 구매 (+200) — 실제 결제라 tier 무관 항상 적립
+    'pointPurchase',       // 인앱 결제 포인트 구매 (+500) — 실제 결제라 tier 무관 항상 적립
     'admin_manual',        // 어드민 수동 부여
     'admin_test',          // 테스트
 ]);

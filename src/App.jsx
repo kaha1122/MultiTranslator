@@ -912,12 +912,13 @@ function App() {
   //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
   //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
-  // 2026-06-07: 인앱 포인트 구매(소비성, +200) — 가격 표시 + 구매 진행 상태
+  // 2026-06-07: 인앱 포인트 구매(소비성) — 가격 표시 + 구매 진행 상태
+  // 2026-06-16: 지급량 +500 (서버 webhook POINTS_AMOUNT). SKU 식별자는 스토어 등록값 그대로 유지.
   const POINTS_PRODUCT_ID = 'pronunfit_points_200';
   const [pointsPriceString, setPointsPriceString] = useState('');
   const [buyingPoints, setBuyingPoints] = useState(false);
 
-  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +200 적립(멱등).
+  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +500 적립(멱등).
   //   클라는 결제 dialog만 띄우고, 적립은 webhook → Firestore onSnapshot 으로 자동 반영.
   const handleBuyPoints = async () => {
     if (!window.Capacitor?.isNativePlatform?.() || !user || buyingPoints) return;
@@ -929,7 +930,7 @@ function App() {
       if (!product) throw new Error('point product not found');
       await Purchases.purchaseStoreProduct({ product });
       // 성공 — 적립은 webhook(async). 안내만.
-      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 200포인트가 반영됩니다.');
+      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 500포인트가 반영됩니다.');
     } catch (e) {
       if (!e?.userCancelled) {
         console.error('[BuyPoints] 실패:', e);
@@ -4217,7 +4218,7 @@ function App() {
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
                   )}
-                  {/* 보너스포인트 구매 (+200, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
+                  {/* 보너스포인트 구매 (+500, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
                   {pointsPriceString && (
                     <button
                       onClick={handleBuyPoints}
@@ -4232,7 +4233,7 @@ function App() {
                       <span style={{ fontSize: '1.2rem' }}>🪙</span>
                       <div>
                         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +200'}
+                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +500'}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
                           {buyingPoints ? (getT(sourceLang, 'reward.buying') || '구매 처리 중...') : pointsPriceString}
