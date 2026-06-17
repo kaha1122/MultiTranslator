@@ -75,6 +75,7 @@ async function setActivePointer(uid, nodeKey, slug, source) {
             slug, source: source || 'vocab',
             updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         }, { merge: true });
+        console.log(`[ActiveUnit] set uid=${String(uid).slice(0, 8)} nodeKey=${nodeKey} slug=${slug} src=${source}`);
     } catch (e) {
         console.error('[customUnits] setActivePointer failed:', e.message);
     }
@@ -84,11 +85,12 @@ async function getActiveUnit(uid, nodeKey) {
     if (!adminDb || !uid || !nodeKey) return null;
     try {
         const snap = await activeRef(uid, nodeKey).get();
-        if (!snap.exists) return null;
+        if (!snap.exists) { console.log(`[ActiveUnit] get MISS(no-pointer) nodeKey=${nodeKey}`); return null; }
         const { slug, source } = snap.data() || {};
         if (!slug) return null;
         const unit = await getUnit(uid, slug);
-        if (!unit) return null;
+        if (!unit) { console.log(`[ActiveUnit] get MISS(no-unit) nodeKey=${nodeKey} slug=${slug}`); return null; }
+        console.log(`[ActiveUnit] get HIT nodeKey=${nodeKey} slug=${slug} words=${(unit.words || []).length}`);
         // 마지막(최신) 항목 반환 — words 풀 + 최신 지문 1개.
         const passages = Array.isArray(unit.passages) ? unit.passages : [];
         return {

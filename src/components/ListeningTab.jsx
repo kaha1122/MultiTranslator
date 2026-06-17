@@ -622,15 +622,17 @@ export default function ListeningTab({
     const autoGenKeyRef = useRef(null);
     // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 → 버튼 없이 캐시 지문 자동 표시(#8 무차감).
     useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 🔑 탭 비활성 시 리셋 → 재활성(타탭에서 Listening 복귀) 시 활성 포인터 재조회(2.1.7 dedup skip 버그 수정).
+    useEffect(() => { if (!isActive) autoGenKeyRef.current = null; }, [isActive]);
     useEffect(() => {
         if (!preset || !isActive) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
         const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
         if (autoGenKeyRef.current === k) return;
-        if (passage || isLoading) { autoGenKeyRef.current = k; return; }
+        if (isLoading) return;
         autoGenKeyRef.current = k;
         (async () => {
-            // 활성 custom unit 지문 우선 복원(무차감). 없음/실패면 preset generate(fail-soft).
+            // 활성 custom unit 지문 우선 복원(무차감, preset 지문보다 우선). 없음/실패면 preset(지문 없을 때만 generate).
             try {
                 const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
                 const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
@@ -638,6 +640,7 @@ export default function ListeningTab({
                     const { unit } = await res.json();
                     const up = unit?.passage;
                     if (up && up.passage) {
+                        console.log(`[ActiveUnit] listening restore HIT nodeKey=${nodeKey}`);
                         setPassage({
                             title: up.title || '', titleTranslation: up.titleTranslation || '',
                             text: up.passage || '', pronunciation: up.passagePronunciation || '',
@@ -648,9 +651,10 @@ export default function ListeningTab({
                         setShowPronunciation(false);
                         return;
                     }
+                    console.log(`[ActiveUnit] listening MISS nodeKey=${nodeKey}`);
                 }
             } catch { /* fail-soft → preset */ }
-            handleGenerate(); // 현재 페이지(seedCursor) 로드
+            if (!passage) handleGenerate(); // 포인터 없음 + 지문 없을 때만 preset 로드
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);

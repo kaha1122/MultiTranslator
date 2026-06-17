@@ -6075,6 +6075,7 @@ function App() {
           activeLang={hubTopic.activeLang}
           defaultLevel={languageLevels[hubTopic.activeLang] || userLevel || 'basic'}
           getTopicProgress={topicProgress.getTopicProgress}
+          isPro={tier === 'pro' || tier === 'premium' || tier === 'admin'}
           onClose={() => setHubTopic(null)}
           onStartWord={(p) => startTopicLearning('vocab', p)}
           onStartPassage={(p) => startTopicLearning('listening', p)}

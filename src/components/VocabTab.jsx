@@ -541,28 +541,33 @@ export default function VocabTab({
     //   없으면 preset generate. 서버 포인터 기반이라 재진입/타탭/크로스기기 일관(localStorage 결함 해소).
     const autoGenKeyRef = useRef(null);
     useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 🔑 탭 비활성 시 리셋 → 재활성(타탭에서 Vocab 복귀) 시 활성 포인터를 다시 조회. 같은 노드라도
+    //   listening 에서 만든 custom unit 을 반영하려면 매 진입 재조회 필수(2.1.7 dedup skip 버그 수정).
+    useEffect(() => { if (!isActive) autoGenKeyRef.current = null; }, [isActive]);
     useEffect(() => {
         if (!preset || !isActive) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
         const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
         if (autoGenKeyRef.current === k) return;
-        if (words.length > 0 || isLoading) { autoGenKeyRef.current = k; return; }
+        if (isLoading) return;
         autoGenKeyRef.current = k;
         (async () => {
-            // 활성 custom unit 우선 복원(무차감). 실패/없음이면 preset generate(fail-soft).
+            // 활성 custom unit 우선 복원(무차감, preset 단어보다 우선). 없음/실패면 preset(단어 없을 때만 generate).
             try {
                 const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
                 const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
                 if (res.ok) {
                     const { unit } = await res.json();
                     if (unit && Array.isArray(unit.words) && unit.words.length > 0) {
+                        console.log(`[ActiveUnit] vocab restore HIT nodeKey=${nodeKey} words=${unit.words.length}`);
                         setWords(unit.words);
                         setSavedWords(new Set());
                         return;
                     }
+                    console.log(`[ActiveUnit] vocab MISS nodeKey=${nodeKey}`);
                 }
             } catch { /* fail-soft → preset */ }
-            handleGenerate(); // advance 없음 = 현재 페이지(seedCursor) 로드
+            if (words.length === 0) handleGenerate(); // 포인터 없음 + 단어 없을 때만 preset 로드
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
