@@ -1317,7 +1317,8 @@
     "showPronunciation": "Показать произношение",
     "hidePronunciation": "Скрыть произношение",
     "emptyState": "Выберите тему и создайте текст для аудирования",
-    "keywords": "Ключевые слова"
+    "keywords": "Ключевые слова",
+    "dialogueProOnly": "Диалог — функция Pro"
   },
   "langNames": {
     "ko": "Корейский",

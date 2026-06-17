@@ -1317,7 +1317,8 @@
     "showPronunciation": "Aussprache anzeigen",
     "hidePronunciation": "Aussprache ausblenden",
     "emptyState": "Wählen Sie ein Thema und erstellen Sie einen Hörtext",
-    "keywords": "Schlüsselwörter"
+    "keywords": "Schlüsselwörter",
+    "dialogueProOnly": "Dialog ist eine Pro-Funktion"
   },
   "langNames": {
     "ko": "Koreanisch",

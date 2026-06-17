@@ -1317,7 +1317,8 @@
     "showPronunciation": "Mostrar pronunciación",
     "hidePronunciation": "Ocultar pronunciación",
     "emptyState": "Selecciona un tema y genera un texto de escucha",
-    "keywords": "Vocabulario clave"
+    "keywords": "Vocabulario clave",
+    "dialogueProOnly": "El diálogo es una función Pro"
   },
   "langNames": {
     "ko": "Coreano",

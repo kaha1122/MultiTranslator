@@ -1323,7 +1323,8 @@
     "showPronunciation": "Show Pronunciation",
     "hidePronunciation": "Hide Pronunciation",
     "emptyState": "Select a topic and generate a listening passage",
-    "keywords": "Key Vocabulary"
+    "keywords": "Key Vocabulary",
+    "dialogueProOnly": "Dialogue is a Pro feature"
   },
   "langNames": {
     "ko": "Korean",

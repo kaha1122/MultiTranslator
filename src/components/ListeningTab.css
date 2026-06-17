@@ -43,6 +43,13 @@
   background: #6366f1;
 }
 
+/* [작업2] dialogue Pro 전용 — Trial 잠금 시각 표현(흐림 + 잠금 커서) */
+.listening-type-track.locked,
+.listening-type-label.locked {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
 .listening-type-thumb {
   position: absolute;
   top: 2px;

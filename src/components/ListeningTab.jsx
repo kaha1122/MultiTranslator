@@ -129,6 +129,8 @@ export default function ListeningTab({
         setLevel(languageLevels[selectedLang] || userLevel || 'basic');
     }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
+    // [작업2] dialogue 는 Pro/Premium 전용 — Trial 은 항상 essay 강제(토글 잠금 우회/구독만료 대비 안전 가드).
+    useEffect(() => { if (!isProUser && passageType !== 'essay') setPassageType('essay'); }, [isProUser, passageType]);
     const [selectedTopic, setSelectedTopic] = useState(() =>
         preset ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId } : pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);
@@ -710,7 +712,7 @@ export default function ListeningTab({
                 ))}
             </div>
 
-            {/* Essay / Dialogue Toggle */}
+            {/* Essay / Dialogue Toggle — dialogue 는 Pro/Premium 전용(Trial 잠금) */}
             <div className="listening-type-row">
                 <span
                     className={`listening-type-label ${passageType === 'essay' ? 'active' : ''}`}
@@ -719,16 +721,18 @@ export default function ListeningTab({
                     {t('listening.essay')}
                 </span>
                 <button
-                    className={`listening-type-track ${passageType === 'dialogue' ? 'on' : ''}`}
-                    onClick={() => setPassageType(p => p === 'essay' ? 'dialogue' : 'essay')}
+                    className={`listening-type-track ${passageType === 'dialogue' ? 'on' : ''} ${!isProUser ? 'locked' : ''}`}
+                    title={!isProUser ? (t('listening.dialogueProOnly') || 'Dialogue is a Pro feature') : undefined}
+                    onClick={() => { if (!isProUser) { onProOnly?.(); return; } setPassageType(p => p === 'essay' ? 'dialogue' : 'essay'); }}
                 >
                     <span className="listening-type-thumb" />
                 </button>
                 <span
-                    className={`listening-type-label ${passageType === 'dialogue' ? 'active' : ''}`}
-                    onClick={() => setPassageType('dialogue')}
+                    className={`listening-type-label ${passageType === 'dialogue' ? 'active' : ''} ${!isProUser ? 'locked' : ''}`}
+                    title={!isProUser ? (t('listening.dialogueProOnly') || 'Dialogue is a Pro feature') : undefined}
+                    onClick={() => { if (!isProUser) { onProOnly?.(); return; } setPassageType('dialogue'); }}
                 >
-                    {t('listening.dialogue')}
+                    {t('listening.dialogue')}{!isProUser ? ' 🔒' : ''}
                 </span>
             </div>
 

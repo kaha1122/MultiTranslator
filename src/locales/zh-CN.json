@@ -1317,7 +1317,8 @@
     "showPronunciation": "显示拼音",
     "hidePronunciation": "隐藏拼音",
     "emptyState": "选择主题并生成听力文章",
-    "keywords": "核心词汇"
+    "keywords": "核心词汇",
+    "dialogueProOnly": "对话为 Pro 专属功能"
   },
   "langNames": {
     "ko": "韩语",

@@ -1317,7 +1317,8 @@
     "showPronunciation": "発音を表示",
     "hidePronunciation": "発音を非表示",
     "emptyState": "トピックを選んでリスニング文章を生成しましょう",
-    "keywords": "重要単語"
+    "keywords": "重要単語",
+    "dialogueProOnly": "対話文はPro専用です"
   },
   "langNames": {
     "ko": "韓国語",

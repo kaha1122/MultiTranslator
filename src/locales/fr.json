@@ -1317,7 +1317,8 @@
     "showPronunciation": "Afficher la prononciation",
     "hidePronunciation": "Masquer la prononciation",
     "emptyState": "Choisissez un sujet et générez un texte d'écoute",
-    "keywords": "Vocabulaire clé"
+    "keywords": "Vocabulaire clé",
+    "dialogueProOnly": "Le dialogue est réservé à Pro"
   },
   "langNames": {
     "ko": "Coréen",

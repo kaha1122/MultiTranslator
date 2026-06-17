@@ -1323,7 +1323,8 @@
     "showPronunciation": "발음 보기",
     "hidePronunciation": "발음 숨기기",
     "emptyState": "주제를 선택하고 듣기 지문을 생성해 보세요",
-    "keywords": "핵심 단어"
+    "keywords": "핵심 단어",
+    "dialogueProOnly": "대화문은 Pro 전용이에요"
   },
   "langNames": {
     "ko": "한국어",

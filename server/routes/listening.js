@@ -44,7 +44,13 @@ router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage'
     const sourceLangName = LANG_NAMES[sourceLang] || 'Korean';
     const guide = LANG_SPECIFIC_GUIDE[targetLang] || LANG_SPECIFIC_GUIDE['en'];
     const unit = guide.unit || 'words';
-    const contentType = type === 'dialogue' ? 'dialogue' : 'essay';
+    // [작업2] dialogue 는 Pro/Premium 전용 — Trial 요청은 essay 강제(서버 안전망, 클라 토글 잠금이 우선).
+    //   tier 판정 불가(null)면 통과(흐름 보존). isCustom 은 위에서 이미 Pro 게이트.
+    let contentType = type === 'dialogue' ? 'dialogue' : 'essay';
+    if (contentType === 'dialogue') {
+        const dTier = await getTier(req.uid);
+        if (dTier && !isProTier(dTier)) contentType = 'essay';
+    }
 
     // ── Phase 2: passageSeed (전역 공유·순차, 1개 단위) ──
     const hasOffset = req.body.offset !== undefined && req.body.offset !== null;
@@ -118,12 +124,35 @@ Rotation rules — ALL mandatory:
     const includeWords = includeWordsSource
         .filter(w => typeof w === 'string' && w.trim())
         .map(w => w.trim().slice(0, 40)).slice(0, 12);
-    const wordsBlock = includeWords.length > 0 ? `
+
+    // [작업1, 2026-06-17] dialogue 는 essay unit 의 5단어를 그대로 재사용(새 추출 X) → 단어↔지문 정합.
+    //   SEED: vocabSeed 의 essay 페이지(=passage offset*5)와 정렬된 5단어. CUSTOM: 활성 unit 의 words.
+    //   reuseWordObjs 가 채워지면 아래 응답에서 parsed.words 를 이걸로 override + vocabSeed append skip.
+    let reuseWordObjs = [];
+    if (contentType === 'dialogue') {
+        if (useSeed) {
+            const vseedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
+            const vwords = await seedCache.readItems(VSEED_COL, vseedKey, 'words');
+            reuseWordObjs = (Array.isArray(vwords) ? vwords : []).slice(offset * 5, offset * 5 + 5);
+        } else if (isCustom && req.body.nodeTopicId) {
+            const nodeKey = `${req.body.nodeTopicId}--${level}--${sourceLang}--${targetLang}`;
+            const active = await customUnits.getActiveUnit(req.uid, nodeKey);
+            reuseWordObjs = Array.isArray(active?.words) ? active.words.slice(0, 5) : [];
+        }
+    }
+    const reuseWords = reuseWordObjs.map(w => w?.word).filter(Boolean);
+
+    const wordsBlock = reuseWords.length > 0 ? `
+=== KEY WORDS TO USE (MANDATORY — dialogue must teach exactly these) ===
+This dialogue accompanies the SAME vocabulary unit the learner studied. You MUST naturally include ALL of these ${targetLangName} words/phrases in the dialogue (each at least once, in natural context):
+${reuseWords.map((w, i) => `  ${i + 1}. ${w}`).join('\n')}
+These ARE the unit's key words — do NOT introduce different key words.
+` : (includeWords.length > 0 ? `
 === STUDIED WORDS TO REUSE (IMPORTANT) ===
 The learner just studied these ${targetLangName} words/phrases. Weave AS MANY as read naturally into the passage so they re-encounter them in context (aim for at least ${Math.min(includeWords.length, 5)}). Do NOT force every one if it harms fluency:
 ${includeWords.map((w, i) => `  ${i + 1}. ${w}`).join('\n')}
 When picking the 5 KEY WORDS (rule 6), prefer some of these studied words if they fit the level.
-` : '';
+` : '');
 
     const passageInstruction = contentType === 'dialogue'
         ? `Write a natural dialogue between 2 people (Speaker A and Speaker B) about this topic.
@@ -272,35 +301,47 @@ Return ONLY valid JSON (no markdown):
         exampleTranslation: w.exampleTranslation || '',
         learningTip: Array.isArray(w.learningTip) ? w.learningTip : (w.learningTip ? [w.learningTip] : []),
     })).filter(w => w.word);
-    for (const w of unitWords) {
-        const wn = seedCache.normalizeWord(w.word);
-        if (!wn) continue;
-        const hit = sentenceTexts.find(s => seedCache.normalizeWord(s).includes(wn));
-        if (hit) w.example = hit;
+    // [작업1] dialogue 재사용: 추출 단어 대신 essay unit 의 원본 5단어를 그대로 사용(단어↔지문 정합).
+    //   example 은 dialogue 문장 중 그 단어가 나오는 문장으로 교체(없으면 원본 유지). vocabSeed append 는 skip.
+    const isDialogueReuse = contentType === 'dialogue' && reuseWordObjs.length > 0;
+    let finalWords = unitWords;
+    if (isDialogueReuse) {
+        finalWords = reuseWordObjs.map(w => {
+            const wn = seedCache.normalizeWord(w?.word);
+            const hit = wn ? sentenceTexts.find(s => seedCache.normalizeWord(s).includes(wn)) : null;
+            return hit ? { ...w, example: hit } : { ...w };
+        }).filter(w => w.word);
+    } else {
+        for (const w of unitWords) {
+            const wn = seedCache.normalizeWord(w.word);
+            if (!wn) continue;
+            const hit = sentenceTexts.find(s => seedCache.normalizeWord(s).includes(wn));
+            if (hit) w.example = hit;
+        }
     }
-    parsed.words = unitWords; // 지문에 임베드(클라가 '이 지문의 핵심어' 표시 가능) + 응답 포함
+    parsed.words = finalWords; // 지문에 임베드(클라가 '이 지문의 핵심어' 표시) + 응답 포함
 
     // seed 경로: canonical passage를 passageSeed에 append(경합 안전) + 추출 단어를 공유 vocabSeed 풀에 dedup append
     if (useSeed && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
         const meta = { topicId: topic, type: contentType, level, sourceLang, targetLang };
         const slice = await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', meta, [parsed], offset, 1);
-        if (unitWords.length) {
-            // 결합 unit: 지문↔단어 결합 + 전역 단어 풀 누적(essay·dialogue 공통, 정규화 dedup으로 중복 0)
+        // dialogue 재사용은 단어가 이미 vocabSeed 에 있으므로 append skip(풀 오염·정합 깨짐 방지). essay/추출 경로만 누적.
+        if (finalWords.length && !isDialogueReuse) {
             const vseedKey = `${topic}--${level}--${sourceLang}--${targetLang}`;
             const vmeta = { topicId: topic, level, sourceLang, targetLang };
             try {
-                await seedCache.appendItems(VSEED_COL, vseedKey, 'words', vmeta, unitWords,
+                await seedCache.appendItems(VSEED_COL, vseedKey, 'words', vmeta, finalWords,
                     { dedupeBy: w => seedCache.normalizeWord(w?.word) });
             } catch (e) { console.warn('[Seed] unit words store failed:', e.message); }
         }
-        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → 지문+단어 결합 저장`);
+        console.log(`[Seed] passage MISS ${pseedKey} offset=${offset} → 지문${isDialogueReuse ? '(단어 재사용)' : '+단어'} 저장`);
         return res.json({ ...(slice[0] || parsed), source: 'gemini' });
     }
     // custom(!useSeed, Pro 전용): 전역 seed와 분리해 per-user customUnits에 누적 저장(공유 X).
     if (isCustom && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
         try {
             const label = topicLabel || topic;
-            await customUnits.appendUnit(req.uid, { topicLabel: label, level, sourceLang, targetLang }, { words: unitWords, passage: parsed });
+            await customUnits.appendUnit(req.uid, { topicLabel: label, level, sourceLang, targetLang }, { words: finalWords, passage: parsed });
             // F-redesign: 노드별 활성 unit 포인터 갱신(source 'listening') → Vocab 단계/재진입 복원.
             const nodeTopicId = req.body.nodeTopicId || label;
             const slug = customUnits.slugFor(label, level, sourceLang, targetLang);

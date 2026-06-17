@@ -1317,7 +1317,8 @@
     "showPronunciation": "Hiện phát âm",
     "hidePronunciation": "Ẩn phát âm",
     "emptyState": "Chọn chủ đề và tạo bài nghe",
-    "keywords": "Từ vựng chính"
+    "keywords": "Từ vựng chính",
+    "dialogueProOnly": "Hội thoại là tính năng Pro"
   },
   "langNames": {
     "ko": "Tiếng Hàn",
