@@ -261,7 +261,9 @@
   padding-right: 28px;
 }
 .hub-icon { font-size: 1.5rem; }
-.hub-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; flex: 1; }
+.hub-titlewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.hub-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; }
+.hub-code { font-size: 0.68rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }
 .hub-badge {
   font-size: 0.72rem;
   font-weight: 700;

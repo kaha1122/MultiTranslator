@@ -5,6 +5,7 @@ import {
   W_TARGET,
   P_TARGET,
   TOPIC_INDEX,
+  topicCode,
   isWordPhaseComplete,
   isTopicMastered,
 } from '../config/learningPath.js';
@@ -46,7 +47,10 @@ export default function TopicHub({
 
         <div className="hub-head">
           <span className="hub-icon">{icon}</span>
-          <h2 className="hub-title">{t(`vocabTopic.${topicId}`)}</h2>
+          <div className="hub-titlewrap">
+            <h2 className="hub-title">{t(`vocabTopic.${topicId}`)}</h2>
+            <span className="hub-code">{topicCode(topicId)}</span>
+          </div>
           <span className={`hub-badge ${mastered ? 'done' : ''}`}>
             {t('learningPath.word')} {wm}/{W_TARGET} · {t('learningPath.passage')} {pm}/{P_TARGET}
           </span>

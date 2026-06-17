@@ -43,13 +43,16 @@ export const UNITS = VOCAB_CATEGORIES.map((cat, unitIndex) => ({
 // 코스 순서 — 모든 유닛을 펼친 평면 토픽 디스크립터 배열(soft-lock "현재" 계산 기준)
 export const COURSE_ORDER = [];
 VOCAB_CATEGORIES.forEach((cat, unitIndex) => {
+  let unitTopicSeq = 0; // 유닛 내 토픽 순서(1-based) — "U{unit}-{seq}" 코드용
   cat.subs.forEach((sub) => {
     sub.topics.forEach((topic) => {
+      unitTopicSeq += 1;
       COURSE_ORDER.push({
         topicId: topic.id,
         catId: cat.id,
         subId: sub.id,
         unitIndex,
+        unitTopicIndex: unitTopicSeq,
         color: UNIT_COLORS[cat.id] || DEFAULT_COLOR,
         icon: cat.icon,
       });
@@ -65,6 +68,12 @@ export const TOPIC_INDEX = COURSE_ORDER.reduce((acc, entry, orderIndex) => {
   acc[entry.topicId] = { ...entry, orderIndex };
   return acc;
 }, {});
+
+// topicId → "U{유닛번호}-{유닛 내 순서}" 코드 (예: U1-4 = Unit1의 4번째 토픽). 학습 체계 시각화용.
+export const topicCode = (topicId) => {
+  const m = TOPIC_INDEX[topicId];
+  return m ? `U${m.unitIndex + 1}-${m.unitTopicIndex}` : '';
+};
 
 // 빈 진행 객체 생성기 (Firestore 문서 부재 시 로컬 기본값)
 export const makeEmptyProgress = (topicId, lang) => ({
