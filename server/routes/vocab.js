@@ -98,10 +98,14 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
         unitRes.passage.words = unitRes.words; // 지문 자기완결(이 지문의 핵심어)
         try {
             await customUnits.appendUnit(req.uid, { topicLabel, level, sourceLang, targetLang }, unitRes);
+            // 2026-06-17 F-redesign: 노드별 활성 unit 포인터 갱신(=마지막 입력이 활성) → 재진입/타탭에서
+            //   같은 unit 조회 복원. nodeKey = 노드 토픽(클라가 nodeTopicId 로 전달, 없으면 custom slug 자체).
+            const nodeTopicId = req.body.nodeTopicId || topicLabel;
+            const slug = customUnits.slugFor(topicLabel, level, sourceLang, targetLang);
+            const nodeKey = `${nodeTopicId}--${level}--${sourceLang}--${targetLang}`;
+            await customUnits.setActivePointer(req.uid, nodeKey, slug, 'vocab');
         } catch (e) { console.warn('[custom] vocab store failed:', e.message); }
         console.log(`[Custom] vocab unit ${req.uid} "${topicLabel}" → 단어+지문 결합 생성·저장`);
-        // 2026-06-17: 결합 unit 지문도 함께 반환 → 클라가 들고 Listening 단계에서 같은 unit 지문 표시(단어↔지문 정합).
-        //   (custom 은 passageSeed 공유 불가 = customUnits write-only → 클라 cross-tab 전달로 해결)
         return res.json({ words: (unitRes.words || []).slice(0, SEED_PAGE), passage: unitRes.passage, source: 'gemini-unit-custom' });
     }
 
@@ -243,6 +247,20 @@ Return ONLY valid JSON (no markdown):
         return res.json({ words: slice, source: 'gemini' });
     }
     res.json({ ...parsed, source: 'gemini' });
+});
+
+// 2026-06-17 F-redesign: 노드 진입 시 활성 custom unit 조회 → words/passage 복원(재진입/크로스기기 영구).
+//   nodeKey = `${topicId}--${level}--${sourceLang}--${targetLang}` (클라 진입 단위). 없으면 unit:null → preset 경로.
+router.get('/api/active-unit', requireAuth, async (req, res) => {
+    const nodeKey = String(req.query.nodeKey || '');
+    if (!nodeKey) return res.status(400).json({ error: 'Missing nodeKey' });
+    try {
+        const unit = await customUnits.getActiveUnit(req.uid, nodeKey);
+        return res.json({ unit: unit || null });
+    } catch (e) {
+        console.error('[active-unit] error:', e.message);
+        return res.json({ unit: null }); // fail-soft → 기존 preset 경로
+    }
 });
 
 module.exports = router;

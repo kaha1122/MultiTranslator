@@ -299,7 +299,13 @@ Return ONLY valid JSON (no markdown):
     // custom(!useSeed, Pro 전용): 전역 seed와 분리해 per-user customUnits에 누적 저장(공유 X).
     if (isCustom && typeof parsed.passage === 'string' && parsed.passage.length > 0) {
         try {
-            await customUnits.appendUnit(req.uid, { topicLabel: topicLabel || topic, level, sourceLang, targetLang }, { words: unitWords, passage: parsed });
+            const label = topicLabel || topic;
+            await customUnits.appendUnit(req.uid, { topicLabel: label, level, sourceLang, targetLang }, { words: unitWords, passage: parsed });
+            // F-redesign: 노드별 활성 unit 포인터 갱신(source 'listening') → Vocab 단계/재진입 복원.
+            const nodeTopicId = req.body.nodeTopicId || label;
+            const slug = customUnits.slugFor(label, level, sourceLang, targetLang);
+            const nodeKey = `${nodeTopicId}--${level}--${sourceLang}--${targetLang}`;
+            await customUnits.setActivePointer(req.uid, nodeKey, slug, 'listening');
         } catch (e) { console.warn('[custom] listening store failed:', e.message); }
         console.log(`[Custom] listening unit ${req.uid} "${topicLabel || topic}" (${contentType}) → 저장`);
     }

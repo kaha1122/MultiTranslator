@@ -13,7 +13,6 @@ import MessageCardModal from './MessageCardModal';
 import { authFetch } from '../utils/authFetch';
 import { playStarSound } from '../utils/soundEffects';
 import { getLangName } from '../config/languages';
-import { saveCustomUnitSession, loadCustomUnitSession, clearCustomUnitSession } from '../utils/customUnitSession';
 import './ListeningTab.css';
 
 // 대화형 지문에서 A:/B: 레이블 제거 + 줄바꿈을 SSML pause로 변환 (단일 voice 폴백용)
@@ -540,6 +539,7 @@ export default function ListeningTab({
                     topicLabel,
                     category: categoryLabel,
                     isCustom: hasCustom,
+                    nodeTopicId: preset?.topicId || undefined, // F-redesign: 활성 unit 포인터를 노드 단위로 키잉
                     level,
                     type: passageType,
                     targetLang: selectedLang,
@@ -568,15 +568,7 @@ export default function ListeningTab({
                 };
                 setPassage(passageObj);
                 if (isSeed) loadedPassagesRef.current[pageCacheKey] = passageObj; // 페이지 캐시 저장
-                // 2026-06-17: custom 결합 unit(지문+단어)을 노드 단위 세션 저장 →
-                //   ① Vocab 진입 시 같은 unit 단어 표시 ② 노드 재진입 시 지문 세션 복원. seed 는 세션 제거(preset 전환).
-                if (hasCustom) {
-                    saveCustomUnitSession(preset?.topicId, level, selectedLang, {
-                        words: Array.isArray(data.words) ? data.words : null, passage: passageObj, label: topicLabel,
-                    });
-                } else if (isSeed) {
-                    clearCustomUnitSession(preset?.topicId, level, selectedLang);
-                }
+                // F-redesign: custom 활성 unit 포인터는 서버가 generate 시 갱신 → 재진입/타탭 복원. 클라 저장 불필요.
                 setShowTranslation(false);
                 setShowPronunciation(false);
                 // enh1: 이미 차감된 지문(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
@@ -636,17 +628,30 @@ export default function ListeningTab({
         const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
         if (autoGenKeyRef.current === k) return;
         if (passage || isLoading) { autoGenKeyRef.current = k; return; }
-        // custom unit 세션 지문 복원 우선 — 있으면 generate 대신 저장된 지문 표시(무차감).
-        const sess = loadCustomUnitSession(preset.topicId, preset.level, preset.lang);
-        if (sess && sess.passage && sess.passage.text) {
-            autoGenKeyRef.current = k;
-            setPassage(sess.passage);
-            setShowTranslation(false);
-            setShowPronunciation(false);
-            return;
-        }
         autoGenKeyRef.current = k;
-        handleGenerate(); // 현재 페이지(seedCursor) 로드
+        (async () => {
+            // 활성 custom unit 지문 우선 복원(무차감). 없음/실패면 preset generate(fail-soft).
+            try {
+                const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+                const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
+                if (res.ok) {
+                    const { unit } = await res.json();
+                    const up = unit?.passage;
+                    if (up && up.passage) {
+                        setPassage({
+                            title: up.title || '', titleTranslation: up.titleTranslation || '',
+                            text: up.passage || '', pronunciation: up.passagePronunciation || '',
+                            translation: up.passageTranslation || '', sentences: Array.isArray(up.sentences) ? up.sentences : [],
+                            counted: true, adsCharged: false,
+                        });
+                        setShowTranslation(false);
+                        setShowPronunciation(false);
+                        return;
+                    }
+                }
+            } catch { /* fail-soft → preset */ }
+            handleGenerate(); // 현재 페이지(seedCursor) 로드
+        })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);
 
