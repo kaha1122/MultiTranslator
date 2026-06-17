@@ -12,6 +12,7 @@ import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
 import { authFetch } from '../utils/authFetch';
 import { getLangName } from '../config/languages';
+import { saveCustomUnitSession, loadCustomUnitSession, clearCustomUnitSession } from '../utils/customUnitSession';
 import './VocabTab.css';
 
 // Vocab history 문서 ID: {topicId}--{level}--{lang}
@@ -294,9 +295,6 @@ export default function VocabTab({
     onBookmarkPrompt,
     onGenerate,
     onCheckPoints,
-    onUnitPassage,
-    incomingWords = null,    // 2026-06-17 역방향: listening(custom) 이 추출한 결합 unit 단어 — 진입 시 표시
-    onConsumeIncomingWords,  // 소비 후 부모 state 비우기 → 재진입 중복 방지
     onNavigateToLibrary,
     userLevel,
     languageLevels = {},
@@ -515,10 +513,21 @@ export default function VocabTab({
             if (data.words && Array.isArray(data.words)) {
                 setWords(data.words);
                 setSavedWords(new Set());
-                // 2026-06-17: custom 결합 unit 지문을 부모로 올림 → Listening 단계가 같은 unit 지문 표시(단어↔지문 정합).
-                //   seed(preset)는 passageSeed 공유로 이미 정합 → 전달 불필요.
-                if (data.passage && !isSeed && onUnitPassage) {
-                    onUnitPassage({ passage: data.passage, level, lang: selectedLang, label: topicLabel });
+                // 2026-06-17: custom 결합 unit(단어+지문)을 노드 단위 localStorage 세션에 저장 →
+                //   ① Listening 진입 시 같은 unit 지문 표시 ② 노드 재진입 시 단어 세션 복원.
+                //   preset(seed)로 생성하면 그 노드의 custom 세션 제거(preset 콘텐츠로 전환).
+                if (!isSeed) {
+                    // 서버 generateUnit passage 객체 → ListeningTab 표시용 passageObj 로 매핑(세션 형태 통일).
+                    const up = data.passage;
+                    const passageObj = up ? {
+                        title: up.title || '', titleTranslation: up.titleTranslation || '',
+                        text: up.passage || '', pronunciation: up.passagePronunciation || '',
+                        translation: up.passageTranslation || '', sentences: Array.isArray(up.sentences) ? up.sentences : [],
+                        counted: true, adsCharged: false,
+                    } : null;
+                    saveCustomUnitSession(preset?.topicId, level, selectedLang, { words: data.words, passage: passageObj, label: topicLabel });
+                } else {
+                    clearCustomUnitSession(preset?.topicId, level, selectedLang);
                 }
                 if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
                 // enh1: 이미 차감된 페이지(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
@@ -541,35 +550,30 @@ export default function VocabTab({
         }
     };
 
-    // 단계학습(preset) 진입 시 현재 페이지 5장 자동 로드 (버튼 없이 카드 즉시 표시).
-    // preset → selectedTopic/Lang/Level 동기화가 끝난 뒤 1회만(토픽별).
-    // 2026-06-17 역방향: listening(custom) 이 추출한 결합 unit 단어를 진입 시 표시 — 단어↔지문 정합.
-    //   lang/level 매치 시 소비(setWords) 후 부모 state 비움. auto-gen 보다 우선. 무차감(listening generate 가 이미 차감).
-    useEffect(() => {
-        if (!incomingWords || !isActive) return;
-        if (!Array.isArray(incomingWords.words) || incomingWords.words.length === 0) return;
-        if (incomingWords.lang !== selectedLang || incomingWords.level !== level) return;
-        setWords(incomingWords.words);
-        setSavedWords(new Set());
-        onConsumeIncomingWords?.();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [incomingWords, isActive, selectedLang, level]);
-
+    // 단계학습(preset) 진입 시 자동 로드 (버튼 없이 카드 즉시 표시). preset 동기화 후 1회(토픽별).
+    //   2026-06-17: 이 노드에 저장된 custom unit 세션이 있으면 그 단어를 복원(generate X) →
+    //   listening 에서 custom 지문 만든 뒤(역방향) 또는 노드 재진입 시 같은 unit 단어 표시(단어↔지문 정합).
+    //   리셋 effect(조건 변경) 이후 실행되므로 wipe race 없음(transient 방식의 결함 해소).
     const autoGenKeyRef = useRef(null);
-    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 →
-    //   재진입 시에도 버튼 없이 캐시 페이지 자동 표시. handleGenerate 가 페이지 캐시 HIT 면 무차감(#8).
     useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
     useEffect(() => {
         if (!preset || !isActive) return;
-        if (incomingWords) return; // 결합 unit 단어(custom)가 대기 중이면 소비 effect 에 양보
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
         const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
         if (autoGenKeyRef.current === k) return;
         if (words.length > 0 || isLoading) { autoGenKeyRef.current = k; return; }
+        // custom unit 세션 복원 우선 — 있으면 generate 대신 저장된 단어 표시(무차감).
+        const sess = loadCustomUnitSession(preset.topicId, preset.level, preset.lang);
+        if (sess && Array.isArray(sess.words) && sess.words.length > 0) {
+            autoGenKeyRef.current = k;
+            setWords(sess.words);
+            setSavedWords(new Set());
+            return;
+        }
         autoGenKeyRef.current = k;
         handleGenerate(); // advance 없음 = 현재 페이지(seedCursor) 로드
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length, incomingWords]);
+    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
 
     // ── Save to Library ──────────────────────────────────────────────
     const handleSave = async (wordObj, index, pronunciationScore = null) => {
