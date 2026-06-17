@@ -445,6 +445,9 @@ export default function VocabTab({
     //   selectedTopic 을 새 객체로 바꿔 이 리셋이 복원 단어를 wipe 하던 race 차단 — autoUnitRef 가드).
     useEffect(() => {
         if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
+        // [v2.1.11] 토글로 autoUnitRef 가 reset 된 뒤에도 복원된 노드면 wipe 금지(복원 단어 보존).
+        const nk = preset ? `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}` : null;
+        if (nk && restoredKeysRef.current.has(nk)) return;
         setWords([]);
         setSavedWords(new Set());
         setActiveRecIdx(null);
@@ -461,6 +464,12 @@ export default function VocabTab({
     // opts.advance: seed 경로에서 "다음 5장"(커서 +5). 기본 false = 현재 페이지 로드.
     const handleGenerate = async (opts = {}) => {
         if (!selectedTopic && !customInput.trim()) return;
+        // [v2.1.11] 최후 방어선 — 이 노드가 복원된 적 있으면 자동(auto) preset gen 절대 차단.
+        //   effect 게이트가 race 로 뚫려도 여기서 막음. 수동 버튼/직접입력(custom)은 정당하므로 통과.
+        if (opts.auto && !customInput.trim() && selectedTopic && preset) {
+            const nk = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+            if (restoredKeysRef.current.has(nk)) return;
+        }
         setIsLoading(true);
         setActiveRecIdx(null);
 
@@ -546,6 +555,9 @@ export default function VocabTab({
     //   words.length 를 deps 에서 제외 → setWords 가 effect 재실행/재fetch(GET 폭주) 유발 안 함.
     //   inflight 가드 → 비동기 fetch 중 재진입 중복 차단. restored → preset auto-gen 명시 억제.
     const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    // [v2.1.11] 복원 권위 영속 Set — resetAutoUnit/탭 토글로 안 지워짐. 한 번 HIT된 nodeKey 는
+    //   transient fetch 실패(catch)·게이트 race 에도 preset auto-gen 영구 억제. 명시적 MISS(포인터 삭제)만 해제.
+    const restoredKeysRef = useRef(new Set());
     const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
     useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level]);
     // 탭 비활성 시 리셋 → 재활성(타탭 복귀) 시 1회 재조회(listening custom 반영).
@@ -569,13 +581,16 @@ export default function VocabTab({
                         setWords(unit.words);
                         setSavedWords(new Set());
                         restored = true;
+                        restoredKeysRef.current.add(nodeKey); // [v2.1.11] 복원 권위 획득 → 이후 preset 영구 억제
                     } else {
                         console.log(`[ActiveUnit] vocab MISS nodeKey=${nodeKey}`);
+                        restoredKeysRef.current.delete(nodeKey); // [v2.1.11] 포인터 진짜 없음 → 권위 해제(generate 허용)
                     }
                 }
-            } catch { /* fail-soft → preset */ }
+            } catch { /* fail-soft → preset. transient 는 권위 유지(잘못된 preset 오염 차단) */ }
             autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
-            if (!restored && !hadWords) handleGenerate(); // 포인터 없음 + 단어 없을 때만 preset 로드
+            // [v2.1.11] restored(이번 run) || 영속 권위 || 기존 단어 있으면 preset auto-gen 금지.
+            if (!restored && !hadWords && !restoredKeysRef.current.has(nodeKey)) handleGenerate({ auto: true });
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level]);

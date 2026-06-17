@@ -424,6 +424,9 @@ export default function ListeningTab({
     //   selectedTopic 을 바꿔 이 리셋이 복원 지문을 wipe 하던 race 차단 — autoUnitRef 가드).
     useEffect(() => {
         if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
+        // [v2.1.11] 토글로 autoUnitRef 가 reset 된 뒤에도 복원된 노드(같은 passageType)면 wipe 금지(복원 지문 보존).
+        const rk = preset ? `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}--${passageType}` : null;
+        if (rk && restoredKeysRef.current.has(rk)) return;
         stopPassageAudio();
         setPassage(null);
         setActiveRecIdx(null);
@@ -487,6 +490,12 @@ export default function ListeningTab({
     const handleGenerate = async (opts = {}) => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        // [v2.1.11] 최후 방어선 — 이 노드(같은 passageType)가 복원된 적 있으면 자동(auto) preset gen 절대 차단.
+        //   effect 게이트가 race 로 뚫려도 여기서 막음. 수동 버튼/직접입력(custom)은 정당하므로 통과.
+        if (opts.auto && !hasCustom && selectedTopic && preset) {
+            const rk = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}--${passageType}`;
+            if (restoredKeysRef.current.has(rk)) return;
+        }
         const isSeed = !hasCustom; // 비-custom = seed(전역 공유 순차) 경로
         // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
         if (isTrialListenLimitReached) {
@@ -625,6 +634,9 @@ export default function ListeningTab({
     //   리셋 effect(조건 변경) 이후 실행되므로 wipe race 없음(transient 방식의 결함 해소). 무차감.
     // 진입 자동 로드 상태(단일 ref) — nodeKey별 1회만 fetch(GET 폭주 차단). passage deps 제외 → setPassage 재실행 안 함.
     const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    // [v2.1.11] 복원 권위 영속 Set — resetAutoUnit/토글로 안 지워짐. 키는 nodeKey--passageType 로 스코프
+    //   (essay 복원이 dialogue 자동생성을 막지 않게). transient 실패·게이트 race 에도 preset 영구 억제, 명시 MISS만 해제.
+    const restoredKeysRef = useRef(new Set());
     const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
     useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level, passageType]);
     useEffect(() => { if (!isActive) resetAutoUnit(); }, [isActive]);
@@ -654,13 +666,16 @@ export default function ListeningTab({
                         setShowTranslation(false);
                         setShowPronunciation(false);
                         restored = true;
+                        restoredKeysRef.current.add(`${nodeKey}--${passageType}`); // [v2.1.11] 복원 권위 획득
                     } else {
                         console.log(`[ActiveUnit] listening MISS nodeKey=${nodeKey}`);
+                        restoredKeysRef.current.delete(`${nodeKey}--${passageType}`); // [v2.1.11] 포인터 없음 → 권위 해제
                     }
                 }
-            } catch { /* fail-soft → preset */ }
+            } catch { /* fail-soft → preset. transient 는 권위 유지(잘못된 preset 오염 차단) */ }
             autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
-            if (!restored && !hadPassage) handleGenerate(); // 포인터 없음 + 지문 없을 때만 preset 로드
+            // [v2.1.11] restored(이번 run) || 영속 권위 || 기존 지문 있으면 preset auto-gen 금지.
+            if (!restored && !hadPassage && !restoredKeysRef.current.has(`${nodeKey}--${passageType}`)) handleGenerate({ auto: true });
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level]);
