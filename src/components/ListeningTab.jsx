@@ -418,8 +418,10 @@ export default function ListeningTab({
         setCustomInput('');
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 조건 변경 시 리셋
+    // 조건 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 지문 유지(첫 진입 mount 시 preset-sync 가
+    //   selectedTopic 을 바꿔 이 리셋이 복원 지문을 wipe 하던 race 차단 — autoUnitRef 가드).
     useEffect(() => {
+        if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
         stopPassageAudio();
         setPassage(null);
         setActiveRecIdx(null);
@@ -619,22 +621,22 @@ export default function ListeningTab({
     //   2026-06-17: 이 노드에 저장된 custom unit 세션 지문이 있으면 복원(generate X) →
     //   vocab 에서 custom 단어 만든 뒤(정방향) 또는 노드 재진입 시 같은 unit 지문 표시(단어↔지문 정합).
     //   리셋 effect(조건 변경) 이후 실행되므로 wipe race 없음(transient 방식의 결함 해소). 무차감.
-    const autoGenKeyRef = useRef(null);
-    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 → 버튼 없이 캐시 지문 자동 표시(#8 무차감).
-    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
-    // 🔑 탭 비활성 시 리셋 → 재활성(타탭에서 Listening 복귀) 시 활성 포인터 재조회(2.1.7 dedup skip 버그 수정).
-    useEffect(() => { if (!isActive) autoGenKeyRef.current = null; }, [isActive]);
+    // 진입 자동 로드 상태(단일 ref) — nodeKey별 1회만 fetch(GET 폭주 차단). passage deps 제외 → setPassage 재실행 안 함.
+    const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
+    useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level, passageType]);
+    useEffect(() => { if (!isActive) resetAutoUnit(); }, [isActive]);
     useEffect(() => {
-        if (!preset || !isActive) return;
+        if (!preset || !isActive || isLoading) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
-        const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
-        if (autoGenKeyRef.current === k) return;
-        if (isLoading) return;
-        autoGenKeyRef.current = k;
+        const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+        const st = autoUnitRef.current;
+        if (st.key === nodeKey && (st.inflight || st.done)) return; // 이 활성 동안 nodeKey 1회만
+        autoUnitRef.current = { key: nodeKey, inflight: true, done: false, restored: false };
+        const hadPassage = !!passage;
         (async () => {
-            // 활성 custom unit 지문 우선 복원(무차감, preset 지문보다 우선). 없음/실패면 preset(지문 없을 때만 generate).
+            let restored = false;
             try {
-                const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
                 const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
                 if (res.ok) {
                     const { unit } = await res.json();
@@ -649,15 +651,17 @@ export default function ListeningTab({
                         });
                         setShowTranslation(false);
                         setShowPronunciation(false);
-                        return;
+                        restored = true;
+                    } else {
+                        console.log(`[ActiveUnit] listening MISS nodeKey=${nodeKey}`);
                     }
-                    console.log(`[ActiveUnit] listening MISS nodeKey=${nodeKey}`);
                 }
             } catch { /* fail-soft → preset */ }
-            if (!passage) handleGenerate(); // 포인터 없음 + 지문 없을 때만 preset 로드
+            autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
+            if (!restored && !hadPassage) handleGenerate(); // 포인터 없음 + 지문 없을 때만 preset 로드
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);
+    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level]);
 
     // ── Render ───────────────────────────────────────────────────
     return (

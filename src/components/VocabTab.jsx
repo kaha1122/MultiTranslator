@@ -441,12 +441,15 @@ export default function VocabTab({
         setCustomInput('');
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 토픽 변경 시 리셋
+    // 토픽 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 단어 유지(첫 진입 mount 시 preset-sync 가
+    //   selectedTopic 을 새 객체로 바꿔 이 리셋이 복원 단어를 wipe 하던 race 차단 — autoUnitRef 가드).
     useEffect(() => {
+        if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
         setWords([]);
         setSavedWords(new Set());
         setActiveRecIdx(null);
         avoidWordsRef.current = [];
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTopic, selectedLang, level]);
 
     // 마지막으로 선택된 "실제 토픽"을 보관 (custom 진입으로 null이 된 동안에도 유지)
@@ -539,22 +542,25 @@ export default function VocabTab({
     // 단계학습(preset) 진입 시 자동 로드 (버튼 없이 카드 즉시 표시). preset 동기화 후 1회(토픽별).
     //   F-redesign(2026-06-17): 노드 활성 custom unit 포인터 조회 → 있으면 그 단어 복원(generate X),
     //   없으면 preset generate. 서버 포인터 기반이라 재진입/타탭/크로스기기 일관(localStorage 결함 해소).
-    const autoGenKeyRef = useRef(null);
-    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
-    // 🔑 탭 비활성 시 리셋 → 재활성(타탭에서 Vocab 복귀) 시 활성 포인터를 다시 조회. 같은 노드라도
-    //   listening 에서 만든 custom unit 을 반영하려면 매 진입 재조회 필수(2.1.7 dedup skip 버그 수정).
-    useEffect(() => { if (!isActive) autoGenKeyRef.current = null; }, [isActive]);
+    // 진입 자동 로드 상태(단일 ref) — nodeKey별 1회만 fetch. {key, inflight, done, restored}.
+    //   words.length 를 deps 에서 제외 → setWords 가 effect 재실행/재fetch(GET 폭주) 유발 안 함.
+    //   inflight 가드 → 비동기 fetch 중 재진입 중복 차단. restored → preset auto-gen 명시 억제.
+    const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
+    useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 탭 비활성 시 리셋 → 재활성(타탭 복귀) 시 1회 재조회(listening custom 반영).
+    useEffect(() => { if (!isActive) resetAutoUnit(); }, [isActive]);
     useEffect(() => {
-        if (!preset || !isActive) return;
+        if (!preset || !isActive || isLoading) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
-        const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
-        if (autoGenKeyRef.current === k) return;
-        if (isLoading) return;
-        autoGenKeyRef.current = k;
+        const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+        const st = autoUnitRef.current;
+        if (st.key === nodeKey && (st.inflight || st.done)) return; // 이 활성 동안 nodeKey 1회만
+        autoUnitRef.current = { key: nodeKey, inflight: true, done: false, restored: false };
+        const hadWords = words.length > 0;
         (async () => {
-            // 활성 custom unit 우선 복원(무차감, preset 단어보다 우선). 없음/실패면 preset(단어 없을 때만 generate).
+            let restored = false;
             try {
-                const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
                 const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
                 if (res.ok) {
                     const { unit } = await res.json();
@@ -562,15 +568,17 @@ export default function VocabTab({
                         console.log(`[ActiveUnit] vocab restore HIT nodeKey=${nodeKey} words=${unit.words.length}`);
                         setWords(unit.words);
                         setSavedWords(new Set());
-                        return;
+                        restored = true;
+                    } else {
+                        console.log(`[ActiveUnit] vocab MISS nodeKey=${nodeKey}`);
                     }
-                    console.log(`[ActiveUnit] vocab MISS nodeKey=${nodeKey}`);
                 }
             } catch { /* fail-soft → preset */ }
-            if (words.length === 0) handleGenerate(); // 포인터 없음 + 단어 없을 때만 preset 로드
+            autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
+            if (!restored && !hadWords) handleGenerate(); // 포인터 없음 + 단어 없을 때만 preset 로드
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
+    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level]);
 
     // ── Save to Library ──────────────────────────────────────────────
     const handleSave = async (wordObj, index, pronunciationScore = null) => {
