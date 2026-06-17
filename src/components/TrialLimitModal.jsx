@@ -21,6 +21,7 @@ const TrialLimitModal = ({
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
     onBuyPoints, buyingPoints = false, pointsPriceString = '',
     pronLimit, onPronAllowanceAd, capFeature = '',
+    onReferral, onReview, reviewBonusClaimed = false,
 }) => {
     const t = useT(sourceLang);
     const {
@@ -208,6 +209,44 @@ const TrialLimitModal = ({
                             ))}
                         </div>
                     </div>
+
+                    {/* 영역 3: 보너스 포인트 더 받기 (친구 추천 / 평가하기) — 사이드바 버튼 미러.
+                        한 자리에서 모든 포인트 획득 액션을 보고 결정하게. onClose 후 해당 모달 오픈은 부모가 처리. */}
+                    {(onReferral || onReview) && (
+                        <div style={{ marginTop: '10px' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.03em' }}>
+                                {t('trial.moreBonusTitle') || 'Earn more points'}
+                            </p>
+                            {onReferral && (
+                                <button onClick={onReferral} style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', border: '1px solid #f9a8d4',
+                                    cursor: 'pointer', textAlign: 'left',
+                                }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9d174d' }}>
+                                        {t('bonus.referralBtn') || '🤝 Refer a friend'}
+                                    </span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9d174d', background: '#fbcfe8', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>+100pt</span>
+                                </button>
+                            )}
+                            {onReview && (
+                                <button onClick={onReview} disabled={reviewBonusClaimed} style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 12px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', border: '1px solid #fdba74',
+                                    cursor: reviewBonusClaimed ? 'default' : 'pointer', opacity: reviewBonusClaimed ? 0.5 : 1, textAlign: 'left',
+                                }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
+                                        {t('bonus.reviewBtn') || '🌟 Google Play review'}
+                                    </span>
+                                    {reviewBonusClaimed
+                                        ? <span style={{ fontSize: '0.7rem', color: '#9a3412' }}>✓ {t('bonus.review.alreadyClaimed') || 'Already claimed'}</span>
+                                        : <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9a3412', background: '#fed7aa', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>+100pt</span>}
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         );

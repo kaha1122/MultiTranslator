@@ -5690,6 +5690,15 @@ function App() {
           pointsPriceString={pointsPriceString}
           pronLimit={effectivePronLimit}
           onPronAllowanceAd={handlePronAllowanceAd}
+          onReferral={() => {
+            setShowTrialLimitModal(false);
+            if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReferralModal(true);
+          }}
+          onReview={Capacitor.getPlatform() !== 'ios' ? () => {
+            setShowTrialLimitModal(false);
+            if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReviewBonusModal(true);
+          } : null}
+          reviewBonusClaimed={reviewBonusClaimed}
         />
       )}
 
