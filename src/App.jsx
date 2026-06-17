@@ -6106,7 +6106,7 @@ function App() {
       {showStreakEarned && (
         <div className="hub-overlay" style={{ zIndex: 1400, alignItems: 'center' }} onClick={() => setShowStreakEarned(false)}>
           <div className="hub-sheet" style={{ maxWidth: '340px', borderRadius: '20px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '40px', margin: '4px 0 6px' }}>🔥</div>
+            <div style={{ fontSize: '40px', margin: '4px 0 6px' }}>💎</div>
             <h2 className="hub-title" style={{ flex: 'none', marginBottom: '8px' }}>{getT(sourceLang, 'streakEarned.title')}</h2>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0d9488', margin: '0 0 6px' }}>
               {streakCurrent}<span style={{ fontSize: '1rem', marginLeft: '4px' }}>{getT(sourceLang, 'streak.daysUnit') || '일'}</span>
