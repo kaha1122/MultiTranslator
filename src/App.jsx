@@ -617,6 +617,14 @@ function App() {
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
     // streak 달성 팝업은 viewMode 전환 effect가 일괄 처리 (back 헤더/헤더 홈버튼/안드로이드 back 모두 커버)
   };
+  // 하드웨어 back 핸들러(mount 1회 등록, deps=[sidebarOpen])에서 stale closure 없이 최신값 참조하기 위한 refs.
+  //   hubTopic/learningPreset state 를 직접 참조하면 항상 초기 null 이라 back 분기가 무동작 → ref 필수.
+  const hubTopicRef = useRef(null);
+  useEffect(() => { hubTopicRef.current = hubTopic; }, [hubTopic]);
+  const learningPresetRef = useRef(null);
+  useEffect(() => { learningPresetRef.current = learningPreset; }, [learningPreset]);
+  const exitTopicLearningRef = useRef(exitTopicLearning);
+  exitTopicLearningRef.current = exitTopicLearning;
   // 토픽 진척(단어/지문 통과) 기록 + 일일 목표 카운트(#5: 발음 통과=달성, 저장 무관) + streak pending
   const handleTopicPass = async (args) => {
     const ok = await topicProgress.recordPass(args);
@@ -1250,6 +1258,18 @@ function App() {
         const currentViewMode = viewModeHistoryRef.current[viewModeHistoryRef.current.length - 1];
         if (currentViewMode === 'settings' && settingsScreenRef.current !== 'main') {
           setSettingsScreen('main');
+          return;
+        }
+
+        // TopicHub 오버레이(LearningPathHome 위 popup)가 열려있으면 닫기 — 옛 탭으로 새지 않게(viewMode 유지)
+        if (hubTopicRef.current) {
+          setHubTopic(null);
+          return;
+        }
+
+        // 단계학습(vocab/listening preset) 화면이면 정상 복원 경로 재사용(허브로 복귀)
+        if (learningPresetRef.current) {
+          exitTopicLearningRef.current?.();
           return;
         }
 
