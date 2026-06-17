@@ -2,6 +2,16 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
+// "Pro"/"Premium" 단어를 3번째 학습 언어 테마색(pink, LANG_SLOT_COLORS[2] = #db2777)으로 강조.
+//   언어별로 연결어(/ · ・ & 和 et und y …)가 달라 토큰 split 대신 단어 단위 매칭.
+const PLAN_RE = /(Pro|Premium)/g;
+const colorizePlan = (text) =>
+    String(text).split(PLAN_RE).map((part, i) =>
+        part === 'Pro' || part === 'Premium'
+            ? <span key={i} style={{ color: '#db2777', fontWeight: 700 }}>{part}</span>
+            : part
+    );
+
 // 2026-06-07 개편: 한도 모달 — 사유(reason)에 따라 3가지.
 //   'cap'       : Trial 하드캡 도달(오늘 더 못함) → 업그레이드만. 충전 무의미.
 //   'points'    : Trial 포인트 부족 → 업그레이드 + 보상광고 충전(+5) + 사용 항목별 차감 안내.
@@ -86,12 +96,11 @@ const TrialLimitModal = ({
                 <div onClick={e => e.stopPropagation()} style={card}>
                     <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
                     <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>💬</div>
                         <h2 style={{ margin: '0 0 4px', fontSize: '1.12rem', color: '#1e293b', fontWeight: 800, lineHeight: 1.3 }}>
-                            {t('trial.proOnlyTitle') || 'Pro/Premium 전용입니다'}
+                            {colorizePlan(t('trial.proOnlyTitle') || 'Pro/Premium 전용입니다')}
                         </h2>
                         <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem', lineHeight: 1.4 }}>
-                            {t('trial.proOnlyDesc') || 'Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.'}
+                            {colorizePlan(t('trial.proOnlyDesc') || 'Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.')}
                         </p>
                     </div>
                     <button
