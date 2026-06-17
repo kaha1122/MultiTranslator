@@ -19,6 +19,8 @@ const makeVocabHistoryKey = (topicId, level, lang) =>
     `${topicId}--${level}--${lang}`;
 
 const SEED_PAGE = 5; // seed 페이지 크기(서버와 일치)
+const LV_CODE = { basic: 'L', intermediate: 'I', advanced: 'H' }; // 단계학습 turn 헤더 레벨 약어 (L/I/H)
+const LV_ORDER = ['basic', 'intermediate', 'advanced'];
 
 const getServerUrl = () => {
     try {
@@ -335,6 +337,7 @@ export default function VocabTab({
     const [isLoading, setIsLoading] = useState(false);
     const [savedWords, setSavedWords] = useState(new Set());
     const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
+    const [levelTurns, setLevelTurns] = useState({ basic: 0, intermediate: 0, advanced: 0 }); // 레벨별 진행 turn — 헤더 "L3·I2·H0"
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
     const loadedPagesRef = useRef({}); // `${historyKey}--${offset}` → words[] (재진입 시 재fetch 생략)
@@ -439,7 +442,29 @@ export default function VocabTab({
         setLevel(preset.level);
         setSelectedTopic({ catId: preset.catId, subId: preset.subId, topicId: preset.topicId });
         setCustomInput('');
+        setLevelTurns({ basic: 0, intermediate: 0, advanced: 0 }); // 토픽 재진입 시 초기화(fetch/handleGenerate 가 갱신)
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 단계학습 헤더 "L3·I2·H0" — 비활성 레벨 2개의 seedCursor 를 vocabHistory 서브컬렉션에서 read(본문 X, 발열 무관).
+    //   활성 레벨은 handleGenerate 가 직접 갱신하므로 여기선 제외. write 0, 진입당 read 최대 2.
+    useEffect(() => {
+        if (!preset || !user) return;
+        const topicId = preset.topicId, lang = preset.lang;
+        let cancelled = false;
+        (async () => {
+            await Promise.all(LV_ORDER.map(async (lv) => {
+                if (lv === level) return; // 활성 레벨은 handleGenerate 가 처리
+                const key = makeVocabHistoryKey(topicId, lv, lang);
+                try {
+                    const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
+                    if (cancelled) return;
+                    const turn = snap.exists() ? Math.floor((snap.data().seedCursor || 0) / SEED_PAGE) + 1 : 0;
+                    setLevelTurns(prev => ({ ...prev, [lv]: turn }));
+                } catch { /* fail-soft: 0 유지 */ }
+            }));
+        })();
+        return () => { cancelled = true; };
+    }, [preset?.topicId, preset?.lang, user, level]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // 토픽 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 단어 유지(첫 진입 mount 시 preset-sync 가
     //   selectedTopic 을 새 객체로 바꿔 이 리셋이 복원 단어를 wipe 하던 race 차단 — autoUnitRef 가드).
@@ -485,6 +510,8 @@ export default function VocabTab({
         const { words: persistedWords, seedCursor, chargedMax } = await loadVocabHistory(historyKey);
         // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
+        if (isSeed) setLevelTurns(prev => ({ ...prev, [level]: Math.floor(offset / SEED_PAGE) + 1 })); // 활성 레벨 turn — "다른 단어"마다 +1
+
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
         const pageCacheKey = `${historyKey}--${offset}`;
         if (isSeed && loadedPagesRef.current[pageCacheKey]) {
@@ -635,6 +662,9 @@ export default function VocabTab({
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#0d9488', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
                 >
                     ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                    <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#64748b' }}>
+                        {LV_ORDER.map(lv => `${LV_CODE[lv]}${levelTurns[lv]}`).join('·')}
+                    </span>
                 </button>
             )}
 
