@@ -223,13 +223,21 @@ router.post('/api/azure-tts', requireAuth, rateLimit('azure-tts', { perMinute: 3
 // [TTS 라우팅 텔레메트리 2026-06-09] 클라가 매 TTS 재생마다 fire-and-forget 비콘 → Render 로그.
 //   native(기기/네트워크 음성, 비용 0) vs azure-fallback(비용 발생) portion + 소스·언어·플랫폼 식별용.
 //   응답 본문 불요(204). optionalAuth로 uid 있으면 기록(없어도 통과).
-router.post('/api/tts/route-log', optionalAuth, rateLimit('route-log', { perMinute: 60 }), (req, res) => {
+router.post('/api/tts/route-log', optionalAuth, rateLimit('route-log', { perMinute: 240 }), (req, res) => {
     try {
-        const { source, engine, lang, platform, voice, localService, reason } = req.body || {};
+        const { source, engine, lang, platform, voice, localService, reason, count, threshold } = req.body || {};
         const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
         // native 비콘은 과금(첫 재생) 시 1회만 옴 → 줄 수 = 과금 횟수
+        // replay 비콘(2026-06-18)은 무차감 재생(캐시 적중, Azure 0과금)마다 1건 → 누가 얼마나 반복 재생하는지 +
+        //   일일 카운트(count). threshold=true = daily 20 도달(광고 팝업 트리거 시점).
         const tail = engine === 'native'
             ? `voice="${voice || '?'}" localService=${localService}`
+            : engine === 'replay'
+            ? `count=${count != null ? count : '?'}${threshold ? ' THRESHOLD→adPrompt' : ''}`
+            : engine === 'tts-ad'
+            // daily-20 광고 프롬프트 선택 이벤트(2026-06-18): ad=rewarded(+20pt)|interstitial|interstitial-forced(X닫기).
+            //   rewarded는 adReward.js 서버 로그도 남지만, interstitial은 클라 AdMob 전용이라 이 비콘이 유일한 Render 흔적.
+            ? `ad=${reason || '?'} count=${count != null ? count : '?'}`
             : `reason=${reason || '?'}`;
         console.log(`[TTSRoute] uid=${uid} source=${source || '?'} engine=${engine || '?'} lang=${lang || '?'} platform=${platform || '?'} ${tail}`);
     } catch (e) {

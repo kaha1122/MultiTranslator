@@ -913,7 +913,7 @@ function App() {
   //   🚨 절대 throw 금지: 이 함수는 캐시 재생 분기(일부는 try/catch 내부)에서 호출되므로
   //   예외가 새면 catch 가 삼키고 Azure 폴백으로 떨어져 캐시 재생 실패 + 과금이 된다.
   //   본체 전체를 try/catch 로 감싸 어떤 예외도 호출자(재생 경로)에 전파되지 않게 한다.
-  const bumpTtsPoint = () => {
+  const bumpTtsPoint = (source, langCode) => {
     try {
       if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
       if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
@@ -924,6 +924,11 @@ function App() {
       const next = base + 1;
       ttsPointRef.current = next;
       try { localStorage.setItem(TTS_POINT_KEY, JSON.stringify({ date: today, count: next })); } catch {}
+
+      // [2026-06-18] 무차감 재생 1건을 Render 로그에 기록 (fire-and-forget, Firestore write 0 → 발열·비용 무관).
+      //   서버 [TTSRoute] engine=replay count=N 으로 "누가 얼마나 반복 재생하는지" 가시화.
+      //   threshold=true = daily 20 도달(광고 팝업 트리거 시점) — 20 이상 모든 재생에 표기되어 초과 재생도 추적.
+      beaconTtsRoute(source, 'replay', langCode, { count: next, threshold: next >= TTS_POINT_THRESHOLD });
 
       // 트리거 3조건 (모두 만족 시 팝업)
       if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
@@ -946,13 +951,15 @@ function App() {
   // 긴 광고(Rewarded) → 기존 handleRewardedAd 재사용(+20 bonusPoints, 서버 검증, adRewardCountDate 갱신)
   const handleTtsAdLong = async () => {
     console.log('[TtsAdPrompt] long_ad_clicked');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'rewarded', count: ttsPointRef.current });
     setShowTtsAdPrompt(false);
     markAdWatchedToday();
     await handleRewardedAd(); // 서버 adRewardCountDate 도 함께 갱신됨
   };
-  // 짧은 광고(Interstitial) → 보너스 없음
+  // 짧은 광고(Interstitial) → 보너스 없음. AdMob 클라 전용이라 서버 흔적이 없어 비콘으로 Render 로그 남김.
   const handleTtsAdShort = async () => {
     console.log('[TtsAdPrompt] short_ad_clicked');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial', count: ttsPointRef.current });
     setShowTtsAdPrompt(false);
     markAdWatchedToday();
     try { await showInterstitialAd(); } catch {}
@@ -961,6 +968,7 @@ function App() {
   //   (ttsAdPromptShownDate 는 발화 시점에, adRewardDate 미러는 여기서 마킹).
   const handleTtsAdClose = async () => {
     console.log('[TtsAdPrompt] x_closed → interstitial_forced');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial-forced', count: ttsPointRef.current });
     setShowTtsAdPrompt(false);
     markAdWatchedToday();
     try { await showInterstitialAd(); } catch {}
@@ -3463,7 +3471,7 @@ function App() {
           healFromCorrupt(); // autoplay 외 진짜 재생 실패(손상 블롭 등)
         }
       });
-      bumpTtsPoint(); // 캐시 적중(무료 재생) → TTS Point +1. 재생 시작 후 호출(재생 보장)
+      bumpTtsPoint(src, langCode); // 캐시 적중(무료 재생) → TTS Point +1. 재생 시작 후 호출(재생 보장)
     };
 
     // ── ① 캐시 우선 (무료) ── 메모리 → IndexedDB
@@ -3616,7 +3624,7 @@ function App() {
         audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
         const p = audio.play();
         if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
-        bumpTtsPoint(); // 캐시 적중(메모리) 무료 재생 → TTS Point +1. 재생 시작 후 호출
+        bumpTtsPoint(opts.source, langCode); // 캐시 적중(메모리) 무료 재생 → TTS Point +1. 재생 시작 후 호출
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
@@ -3643,7 +3651,7 @@ function App() {
           audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
           const p = audio.play();
           if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
-          bumpTtsPoint(); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1. 재생 시작 후 호출
+          bumpTtsPoint(opts.source, langCode); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1. 재생 시작 후 호출
           return;
         }
       } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
