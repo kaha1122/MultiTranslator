@@ -945,6 +945,9 @@ function App() {
     setBuyingPoints(true);
     try {
       const { Purchases } = await import('@revenuecat/purchases-capacitor');
+      // [race fix 2026-06-18] 결제 직전 RC app_user_id 를 현재 uid 로 강제 — in-session 마이그레이션
+      //   중 결제가 옛 uid 에 귀속되던 사고의 최종 차단선(마이그레이션 후 logIn 보강과 이중 안전).
+      try { await Purchases.logIn({ appUserID: user.uid }); } catch (le) { console.warn('[BuyPoints] logIn:', le?.message); }
       const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
       const product = products?.[0];
       if (!product) throw new Error('point product not found');
