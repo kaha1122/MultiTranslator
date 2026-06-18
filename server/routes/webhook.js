@@ -65,23 +65,28 @@ router.post('/api/revenuecat-webhook', verifyWebhook, async (req, res) => {
         //   tier 무관 항상 적립(grantBonusPoints가 pointPurchase는 Pro skip 예외 처리).
         if (eventType === 'NON_RENEWING_PURCHASE' && (event?.event?.product_id || '') === POINTS_PRODUCT_ID) {
             const txId = String(event?.event?.transaction_id || event?.event?.id || `${appUserId}-${event?.event?.purchased_at_ms || ''}`);
+            // [2026-06-18 근본수정] webhook 의 app_user_id 는 신뢰하지 않는다.
+            //   RC 가 Apple 영수증을 "최초 소유 app_user_id"(옛 익명 uid)에 고정해, 재설치·익명 churn·
+            //   마이그레이션 시 결제가 엉뚱한 계정(GzSB…)에 귀속되던 3회 반복 사고의 근본 원인.
+            //   포인트 적립은 클라가 인증된 Firebase ID 토큰으로 호출하는 /api/confirm-point-purchase 가
+            //   "결제를 누른 그 순간 로그인된 검증 uid" 로 수행한다(아래 라우트). 여기서는 직접 적립 금지 —
+            //   미claim 영수증 가시성만 기록(클라 confirm 유실 시 관리자 reconciliation 용).
             const purchaseRef = adminDb.collection('pointPurchases').doc(txId);
             try {
                 await purchaseRef.create({
-                    uid: appUserId,
+                    rcAppUserId: appUserId,        // 신뢰 불가값 — 적립 근거 아님, 추적용
+                    status: 'webhook_seen',
                     productId: POINTS_PRODUCT_ID,
                     amount: POINTS_AMOUNT,
                     environment: event?.event?.environment || 'unknown',
                     createdAt: admin.firestore.FieldValue.serverTimestamp(),
                 });
+                console.log(`[Webhook] point purchase recorded, awaiting client claim tx=${txId} rcUid=${appUserId}`);
             } catch (dupErr) {
-                // 이미 처리된 transaction (중복 webhook) → 멱등 skip
-                console.log(`[Webhook] point purchase DUP skip tx=${txId}`);
-                return res.status(200).json({ success: true, duplicate: true });
+                // 이미 클라가 적립(status=granted)했거나 중복 webhook → 멱등 skip (적립 안 함)
+                console.log(`[Webhook] point purchase already recorded/claimed tx=${txId}`);
             }
-            await grantBonusPoints({ uid: appUserId, amount: POINTS_AMOUNT, source: 'pointPurchase', meta: { txId, productId: POINTS_PRODUCT_ID } });
-            console.log(`[Webhook] +${POINTS_AMOUNT}pt to ${appUserId} (pointPurchase tx=${txId})`);
-            return res.status(200).json({ success: true, granted: POINTS_AMOUNT });
+            return res.status(200).json({ success: true, recorded: true });
         }
 
         // ⚠ Sandbox 이벤트 차단 — TestFlight / Apple 리뷰어 / 베타 테스터의 sandbox 결제가
@@ -659,6 +664,59 @@ router.post('/api/paypal-activate', requireAuth, async (req, res) => {
     } catch (err) {
         console.error('[PayPal] Activate error:', err.response?.data || err.message);
         res.status(500).json({ error: err.message });
+    }
+});
+
+// ── 인앱 포인트 구매 적립 (클라 주도, 인증) ─────────────────────────────────────
+//   [2026-06-18 근본수정] RC webhook 의 app_user_id 는 Apple 영수증 핀 때문에 옛 익명 uid 로
+//   오염될 수 있어 신뢰 불가. 적립 대상은 "결제를 누른 그 순간 로그인된 검증 Firebase uid"
+//   (requireAuth → req.uid) 로 확정한다. dedup + increment + 이력을 단일 트랜잭션으로 원자화 —
+//   "멱등토큰만 소진되고 적립 실패" 창을 제거(과거 NOT_FOUND 유실 패턴 차단).
+//   멱등키: pointPurchases/{transactionId}. 클라 구매 성공 직후 + 다음 실행 재시도 큐에서 호출.
+router.post('/api/confirm-point-purchase', requireAuth, async (req, res) => {
+    if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
+    const uid = req.uid;
+    const txId = String(req.body?.transactionId || '').trim();
+    if (!txId) return res.status(400).json({ error: 'transactionId required' });
+    if (!uid) return res.status(401).json({ error: 'uid required' });
+
+    const purchaseRef = adminDb.collection('pointPurchases').doc(txId);
+    const userRef = adminDb.collection('users').doc(uid);
+    const FieldValue = admin.firestore.FieldValue;
+
+    try {
+        const granted = await adminDb.runTransaction(async (t) => {
+            const snap = await t.get(purchaseRef);
+            if (snap.exists && snap.data().status === 'granted') return false; // 이미 적립 — 멱등 skip
+            // users 본문 increment(set+merge: 문서 부재 시 0 기준 생성) — 실결제 통화라 발열 가드상 통계류 아님.
+            t.set(userRef, {
+                bonusPoints: FieldValue.increment(POINTS_AMOUNT),
+                bonusLastGrantedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            // 이력 (grantBonusPoints 와 동일 스키마 — bonusEvents 서브컬렉션)
+            t.set(userRef.collection('bonusEvents').doc(), {
+                source: 'pointPurchase',
+                amount: POINTS_AMOUNT,
+                meta: { txId, via: 'client' },
+                createdAt: FieldValue.serverTimestamp(),
+            });
+            // 멱등토큰 확정 (webhook_seen 이 먼저 와 있어도 granted 로 승격)
+            t.set(purchaseRef, {
+                uid,
+                status: 'granted',
+                source: 'client',
+                productId: POINTS_PRODUCT_ID,
+                amount: POINTS_AMOUNT,
+                grantedAt: FieldValue.serverTimestamp(),
+            }, { merge: true });
+            return true;
+        });
+        if (granted) console.log(`[ConfirmPoint] +${POINTS_AMOUNT}pt to ${uid} (tx=${txId})`);
+        else console.log(`[ConfirmPoint] already granted tx=${txId}`);
+        return res.status(200).json({ success: true, granted: granted ? POINTS_AMOUNT : 0, alreadyGranted: !granted });
+    } catch (e) {
+        console.error('[ConfirmPoint] failed:', e?.message);
+        return res.status(500).json({ error: 'grant failed' });
     }
 });
 

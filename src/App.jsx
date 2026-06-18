@@ -131,6 +131,31 @@ async function syncRevenueCatUser(Purchases, targetUid, tag) {
   } catch (e) { console.warn(`[RC:${tag}] sync error:`, e?.message); return null; }
 }
 
+// ── 포인트 구매 적립 재시도 큐 ─────────────────────────────────────────────────
+//   [2026-06-18 근본수정] 적립은 RC webhook 의 app_user_id(옛 익명 uid 로 오염됨)가 아니라,
+//   인증된 현재 Firebase uid 로 서버 /api/confirm-point-purchase 를 호출해 수행한다. 구매 직후
+//   confirm 이 실패(네트워크 등)하면 txId 를 localStorage 에 적재 → 다음 앱 실행 시 재시도한다.
+//   localStorage 사용(네이티브 플러그인 X) → Capgo OTA 로 즉시 배포 가능.
+const PENDING_POINTS_KEY = 'pendingPointPurchases';
+const getPendingPointTx = () => {
+  try { return JSON.parse(localStorage.getItem(PENDING_POINTS_KEY) || '[]'); }
+  catch { return []; }
+};
+const addPendingPointTx = (txId) => {
+  if (!txId) return;
+  try {
+    const set = new Set(getPendingPointTx());
+    set.add(String(txId));
+    localStorage.setItem(PENDING_POINTS_KEY, JSON.stringify([...set]));
+  } catch (e) { console.warn('[BuyPoints] queue save failed:', e?.message); }
+};
+const removePendingPointTx = (txId) => {
+  try {
+    const next = getPendingPointTx().filter((t) => t !== String(txId));
+    localStorage.setItem(PENDING_POINTS_KEY, JSON.stringify(next));
+  } catch (e) { console.warn('[BuyPoints] queue clear failed:', e?.message); }
+};
+
 function App() {
   // ── 스플래시 화면 상태 ──────────────────────────────────────────────────
   // 앱 시작 시 한 번만 true, 스플래시가 끝나면 false로 바뀌어 메인 화면이 나타납니다.
@@ -952,15 +977,37 @@ function App() {
   const [pointsPriceString, setPointsPriceString] = useState('');
   const [buyingPoints, setBuyingPoints] = useState(false);
 
-  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +500 적립(멱등).
-  //   클라는 결제 dialog만 띄우고, 적립은 webhook → Firestore onSnapshot 으로 자동 반영.
+  // 인앱 포인트 구매 — RC StoreProduct 구매 → 클라가 인증된 현재 Firebase uid 로 서버 적립 요청.
+  //   [2026-06-18 근본수정] 적립 근거를 RC webhook 의 app_user_id(Apple 영수증 핀으로 옛 익명 uid 에
+  //   오염되어 3회 반복 사고)가 아니라, "결제를 누른 그 순간 로그인된 검증 uid" 로 바꾼다. confirm 실패 시
+  //   txId 를 재시도 큐에 적재 → 다음 실행 시 자동 재시도. 적립 반영은 Firestore onSnapshot.
+  const confirmPointPurchase = async (txId) => {
+    if (!txId) return false;
+    const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    try {
+      const res = await authFetch(`${SERVER_URL}/api/confirm-point-purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: String(txId) }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      removePendingPointTx(txId);
+      return true;
+    } catch (e) {
+      console.warn('[BuyPoints] confirm failed, queued for retry:', e?.message);
+      addPendingPointTx(txId);
+      return false;
+    }
+  };
+
   const handleBuyPoints = async () => {
     if (!window.Capacitor?.isNativePlatform?.() || !user || buyingPoints) return;
     setBuyingPoints(true);
     try {
       const { Purchases } = await import('@revenuecat/purchases-capacitor');
-      // [v2.1.16] 결제 직전 RC appUserID 강제 동기화(logOut+logIn) + 검증. 최종 차단선.
-      //   동기화 후에도 RC uid != 현재 uid 면 결제 중단 → 잘못된 uid 로의 오귀속(돈 유실) 원천 차단.
+      // [v2.1.16] 결제 직전 RC appUserID 강제 동기화(logOut+logIn) + 검증 — RC 자체 레코드 정합용 방어.
+      //   동기화 후에도 RC uid != 현재 uid 면 결제 중단(오귀속 방어). 단, 적립 정확성의 근거는 RC uid 가
+      //   아니라 아래 서버 /api/confirm-point-purchase(인증 uid)다 — 이 abort 는 보조 안전망(v2.1.17).
       const rcUid = await syncRevenueCatUser(Purchases, user.uid, 'BuyPoints');
       if (rcUid !== user.uid) {
         console.error(`[BuyPoints] ABORT — RC appUserID=${rcUid} != ${user.uid}`);
@@ -971,8 +1018,15 @@ function App() {
       const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
       const product = products?.[0];
       if (!product) throw new Error('point product not found');
-      await Purchases.purchaseStoreProduct({ product });
-      // 성공 — 적립은 webhook(async). 안내만.
+      const purchaseRes = await Purchases.purchaseStoreProduct({ product });
+      // RC capacitor 결제 결과에서 Apple/Play transaction id 추출(SDK 버전별 키 차이 방어).
+      const txId = purchaseRes?.transaction?.transactionIdentifier
+        || purchaseRes?.transaction?.transactionId
+        || purchaseRes?.transaction?.id
+        || '';
+      if (!txId) console.error('[BuyPoints] transactionId 추출 실패 — webhook_seen 기록만 남고 적립 누락 위험:', purchaseRes?.transaction);
+      await confirmPointPurchase(txId);
+      // 성공 — 적립은 서버 confirm(또는 재시도 큐) → Firestore onSnapshot 으로 반영.
       alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 500포인트가 반영됩니다.');
     } catch (e) {
       if (!e?.userCancelled) {
@@ -983,6 +1037,18 @@ function App() {
       setBuyingPoints(false);
     }
   };
+
+  // 포인트 적립 재시도 — 이전 실행에서 confirm 이 실패(네트워크 등)해 큐에 남은 txId 를
+  //   앱 시작/로그인 시점에 인증된 현재 uid 로 재시도. confirm 은 멱등(서버 트랜잭션)이라 중복 안전.
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.() || !user) return;
+    const pending = getPendingPointTx();
+    if (!pending.length) return;
+    (async () => {
+      for (const txId of pending) { await confirmPointPurchase(txId); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
   //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
