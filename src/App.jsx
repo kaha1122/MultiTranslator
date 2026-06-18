@@ -114,6 +114,23 @@ const getDefaultTargetLangs = (src) => src === 'en' ? ['ko'] : ['en'];
 
 const languageNames = Object.fromEntries(ALL_LANGUAGES.map(l => [l.code, l.name]));
 
+// [v2.1.16] RevenueCat appUserID 를 targetUid 로 강제 동기화.
+//   RC 네이티브 캐시가 옛 익명 uid(앱 재설치 잔재)에 고정돼 결제가 잘못 귀속되던 사고 수정.
+//   logIn 단독은 캐시 override 실패 가능 → logOut(저장된 appUserID 강제 클리어) 선행 후 logIn.
+//   getAppUserID 로 전/후 검증 + 로깅(Safari Web Inspector 추적용). 반환: 동기화 후 실제 RC uid(실패 null).
+async function syncRevenueCatUser(Purchases, targetUid, tag) {
+  try {
+    const { appUserID: before } = await Purchases.getAppUserID();
+    if (before === targetUid) { console.log(`[RC:${tag}] appUserID already current=${before}`); return before; }
+    console.log(`[RC:${tag}] sync needed: cache=${before} want=${targetUid}`);
+    try { await Purchases.logOut(); } catch (lo) { console.warn(`[RC:${tag}] logOut skip:`, lo?.message); }
+    await Purchases.logIn({ appUserID: targetUid });
+    const { appUserID: after } = await Purchases.getAppUserID();
+    console.log(`[RC:${tag}] post-sync appUserID=${after} ${after === targetUid ? 'OK' : 'MISMATCH'}`);
+    return after;
+  } catch (e) { console.warn(`[RC:${tag}] sync error:`, e?.message); return null; }
+}
+
 function App() {
   // ── 스플래시 화면 상태 ──────────────────────────────────────────────────
   // 앱 시작 시 한 번만 true, 스플래시가 끝나면 false로 바뀌어 메인 화면이 나타납니다.
@@ -705,13 +722,10 @@ function App() {
         const { Purchases, LOG_LEVEL } = await import('@revenuecat/purchases-capacitor');
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
-        // RC app_user_id 를 항상 현재 Firebase uid 로 강제 동기화. configure 는 최초 1회만 적용돼
-        //   uid 변경(익명 재발급/계정 마이그레이션) 시 옛 uid 에 결제가 귀속되던 사고(2026-06-18) 수정.
-        //   effect deps=[user?.uid] 라 uid 변경 시 재실행 → logIn 이 RC 전환 + alias 연결.
-        //   이미 드리프트된 유저도 다음 세션 logIn 으로 현재 uid 로 옮겨져 자가 복구.
-        try { await Purchases.logIn({ appUserID: user.uid }); }
-        catch (le) { console.warn('[RevenueCat] logIn failed:', le?.message); }
-        console.log('[RevenueCat] Configured + logIn for', user.uid);
+        // [v2.1.16] RC 네이티브 캐시가 옛 uid(익명 재설치 잔재)에 고정돼 결제가 잘못 귀속되던 사고 수정.
+        //   logIn 단독은 캐시 override 실패 사례 → logOut(저장된 appUserID 강제 클리어)+logIn 으로 동기화.
+        //   effect deps=[user?.uid] 라 익명 sign-in/실계정 로그인 등 모든 auth 변경 시 재실행.
+        await syncRevenueCatUser(Purchases, user.uid, 'configure');
         // 포인트 상품(소비성) 가격 조회 — 사이드바 구매 버튼 가격 표시용
         try {
           const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
@@ -945,9 +959,15 @@ function App() {
     setBuyingPoints(true);
     try {
       const { Purchases } = await import('@revenuecat/purchases-capacitor');
-      // [race fix 2026-06-18] 결제 직전 RC app_user_id 를 현재 uid 로 강제 — in-session 마이그레이션
-      //   중 결제가 옛 uid 에 귀속되던 사고의 최종 차단선(마이그레이션 후 logIn 보강과 이중 안전).
-      try { await Purchases.logIn({ appUserID: user.uid }); } catch (le) { console.warn('[BuyPoints] logIn:', le?.message); }
+      // [v2.1.16] 결제 직전 RC appUserID 강제 동기화(logOut+logIn) + 검증. 최종 차단선.
+      //   동기화 후에도 RC uid != 현재 uid 면 결제 중단 → 잘못된 uid 로의 오귀속(돈 유실) 원천 차단.
+      const rcUid = await syncRevenueCatUser(Purchases, user.uid, 'BuyPoints');
+      if (rcUid !== user.uid) {
+        console.error(`[BuyPoints] ABORT — RC appUserID=${rcUid} != ${user.uid}`);
+        alert(getT(sourceLang, 'reward.buyFail') || '결제 준비 중 문제가 발생했어요. 앱을 완전히 종료 후 다시 시도해주세요.');
+        setBuyingPoints(false);
+        return;
+      }
       const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
       const product = products?.[0];
       if (!product) throw new Error('point product not found');
