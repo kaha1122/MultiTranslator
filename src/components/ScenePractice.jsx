@@ -64,7 +64,7 @@ const SCENES = {
 
 // ── 생성된 카드 + 발음 연습 ─────────────────────────────────────────────────
 // Free Talking 모드의 카드 팝업(MessageCardModal)에서도 동일 컴포넌트 재사용 — named export.
-export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 80, onBookmarkPrompt }) {
+export function ScenePracticeCard({ generated, langCode, sourceLang, onTrialLimitReached, onPronSuccess, onSave, isSaved, onSpeak, t, targetGoal = 60, onBookmarkPrompt }) {
     // 일본어(ja)는 한자 원문 대신 히라가나(pronunciation)를 Azure 발음평가 기준으로 사용.
     // 한자는 Azure가 음소 분석을 대부분 포기해 phoneme 배열이 빈 값이 됨.
     // 중국어(zh-CN)는 pronunciation에 pinyin이 오지만 Azure는 한자 기반 평가가 더 정확 → 원문 유지.

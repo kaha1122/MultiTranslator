@@ -595,7 +595,7 @@ function App() {
     }
   };
 
-  // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
+  // 언어별 목표 점수를 저장하는 상태 (미설정 시 채점·설정 UI 모두 기본값 60점 — 2026-06-18 80→60 통일)
   const [languageGoals, setLanguageGoals] = useState(() => {
     try {
       const saved = localStorage.getItem('languageGoals');
@@ -5336,7 +5336,7 @@ function App() {
                 {targetLangs.map(code => {
                   const lang = getLangInfo(code);
                   const rawGoal = languageGoals[code];
-                  const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 80 : rawGoal;
+                  const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 60 : rawGoal;
                   const sliderColor = lang?.textColor || 'var(--primary-color)';
                   const pct = sliderGoal;
                   return (
@@ -5368,7 +5368,7 @@ function App() {
                         }}
                         onBlur={() => {
                           if (rawGoal === '' || rawGoal === undefined) {
-                            setLanguageGoals({ ...languageGoals, [code]: 80 });
+                            setLanguageGoals({ ...languageGoals, [code]: 60 });
                           }
                         }}
                         style={{ '--slider-color': sliderColor, color: sliderColor }}

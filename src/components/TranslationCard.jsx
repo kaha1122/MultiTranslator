@@ -64,7 +64,7 @@ const TranslationCard = ({
     onBookmarkPrompt,   // 비Library 탭 미저장 카드 전용 (score, saveFn) => void
     savedCardId,        // Translation 탭에서 저장 후 받은 Firestore docId
     isLibraryView,
-    targetGoal = 80,
+    targetGoal = 60,
     // 메모 & 어노테이션 (Library에서만 사용)
     cardId,
     memos = [],
