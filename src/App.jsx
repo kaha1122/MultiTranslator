@@ -34,6 +34,7 @@ import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, Goog
 import { googleProvider, facebookProvider } from './firebase/config';
 import { setDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
+import { touchUpdatedAt } from './utils/touchUpdatedAt';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
@@ -1413,11 +1414,27 @@ function App() {
         // 백그라운드 진입 → 모든 활성 recorder에 중단 신호
         console.log('[App] 백그라운드 진입 → 녹음 자동 중단 신호');
         window.dispatchEvent(new Event('app-background'));
+      } else {
+        // 포그라운드 복귀(resume) → updatedAt 갱신.
+        //   콜드 스타트(onAuthStateChanged)만으로는 메모리 잔류 앱의 재사용을 못 잡아
+        //   "최근 사용" 추적이 누락되던 갭을 메움. 5분 가드/볼라타일 필드라 발열·비용 무시 가능.
+        //   auth.currentUser를 호출 시점에 직접 읽어 stale 클로저 회피.
+        touchUpdatedAt(auth.currentUser?.uid);
       }
     });
     return () => {
       if (listener) listener.then(l => l.remove());
     };
+  }, []);
+
+  // ── 웹: 탭 가시성 복귀 시 updatedAt 갱신 (네이티브 appStateChange 미발화 경로 보완) ──
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) return; // 네이티브는 위 appStateChange가 처리
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') touchUpdatedAt(auth.currentUser?.uid);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
   // 탭 이동 또는 사이드바 열기 시 종료 토스트 즉시 해제
