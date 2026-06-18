@@ -705,7 +705,13 @@ function App() {
         const { Purchases, LOG_LEVEL } = await import('@revenuecat/purchases-capacitor');
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
-        console.log('[RevenueCat] Configured for', user.uid);
+        // RC app_user_id 를 항상 현재 Firebase uid 로 강제 동기화. configure 는 최초 1회만 적용돼
+        //   uid 변경(익명 재발급/계정 마이그레이션) 시 옛 uid 에 결제가 귀속되던 사고(2026-06-18) 수정.
+        //   effect deps=[user?.uid] 라 uid 변경 시 재실행 → logIn 이 RC 전환 + alias 연결.
+        //   이미 드리프트된 유저도 다음 세션 logIn 으로 현재 uid 로 옮겨져 자가 복구.
+        try { await Purchases.logIn({ appUserID: user.uid }); }
+        catch (le) { console.warn('[RevenueCat] logIn failed:', le?.message); }
+        console.log('[RevenueCat] Configured + logIn for', user.uid);
         // 포인트 상품(소비성) 가격 조회 — 사이드바 구매 버튼 가격 표시용
         try {
           const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
