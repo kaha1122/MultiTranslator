@@ -549,23 +549,34 @@ export default function VocabTab({
             if (!res.ok) throw new Error(`Server error ${res.status}`);
             const data = await res.json();
 
-            if (data.words && Array.isArray(data.words)) {
-                setWords(data.words);
-                setSavedWords(new Set());
-                // F-redesign: custom 활성 unit 포인터는 서버가 generate 시 갱신(setActivePointer) →
-                //   재진입/타탭에서 GET /api/active-unit 으로 같은 unit 복원. 클라 저장 불필요.
-                if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
-                // enh1: 이미 차감된 페이지(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
-                const shouldCharge = !isSeed || offset > (chargedMax ?? -1);
-                if (shouldCharge && onGenerate) onGenerate();
-                if (isSeed) {
-                    // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
-                    appendVocabHistory(historyKey, [], offset, shouldCharge ? offset : undefined);
-                } else {
-                    const newWordTexts = data.words.map(w => w.word);
-                    avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
-                    appendVocabHistory(historyKey, newWordTexts);
-                }
+            // 방어선(2026-06-19 brick fix): 빈 단어 배열을 "정상 페이지"로 오인하면 차감·커서전진·빈캐시로
+            //   노드가 영구 먹통이 된다. 서버 frontier-safe 슬라이스로 사실상 발생 불가지만(adminDb 다운 등
+            //   극단 케이스 보험), 비어 있으면 차감/저장/캐시 없이 재시도 안내만 한다.
+            if (!data.words || !Array.isArray(data.words) || data.words.length === 0) {
+                console.warn('[VocabTab] empty words from server (no charge, no cursor advance)', { historyKey, offset });
+                alert(t('scene.loadError'));
+                setIsLoading(false);
+                return;
+            }
+
+            // (위 guard 로 data.words 는 비어있지 않음이 보장됨)
+            setWords(data.words);
+            setSavedWords(new Set());
+            // F-redesign: custom 활성 unit 포인터는 서버가 generate 시 갱신(setActivePointer) →
+            //   재진입/타탭에서 GET /api/active-unit 으로 같은 unit 복원. 클라 저장 불필요.
+            if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
+            // review(서버가 토픽 소진으로 복습 페이지를 서빙) = 새 단어 아님 → 차감/충전 안 함(2026-06-19).
+            const isReview = data.source === 'review';
+            // enh1: 이미 차감된 페이지(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
+            const shouldCharge = !isReview && (!isSeed || offset > (chargedMax ?? -1));
+            if (shouldCharge && onGenerate) onGenerate();
+            if (isSeed) {
+                // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
+                appendVocabHistory(historyKey, [], offset, shouldCharge ? offset : undefined);
+            } else {
+                const newWordTexts = data.words.map(w => w.word);
+                avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
+                appendVocabHistory(historyKey, newWordTexts);
             }
         } catch (e) {
             console.error('[VocabTab] Generate error:', e);

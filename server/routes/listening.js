@@ -59,6 +59,11 @@ router.post('/api/listening-passage', requireAuth, rateLimit('listening-passage'
     const pseedKey = `${topic}--${contentType}--${level}--${sourceLang}--${targetLang}`;
     if (useSeed) {
         const passages = await seedCache.readItems(PSEED_COL, pseedKey, 'passages');
+        // 🔭 desync 탐지: 클라 지문 커서(offset)가 글로벌 passageSeed 길이를 앞섬. appendAndSlice frontier-safe
+        //   슬라이스 + (slice[0] || parsed) 폴백으로 화면 공백은 안 나지만, 재발 모니터링 위해 uid 와 함께 로그.
+        if (passages.length < offset) {
+            console.warn(`[listening] CURSOR DESYNC uid=${req.uid} ${pseedKey} offset=${offset} > poolLen=${passages.length} (will self-heal)`);
+        }
         if (passages.length >= offset + 1) {
             console.log(`[Seed] passage HIT ${pseedKey} offset=${offset} (Gemini 0)`);
             return res.json({ ...passages[offset], source: 'seed' });

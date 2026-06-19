@@ -48,6 +48,11 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
     let seedItems = [];
     if (useSeed) {
         seedItems = await seedCache.readItems(SEED_COL, seedKey, 'words');
+        // 🔭 desync 탐지: 클라 seedCursor(offset) 가 글로벌 풀 길이를 앞섬 = 과거 brick 의 직접 원인.
+        //   appendAndSlice frontier-safe 슬라이스로 self-heal 되지만, 영향 유저 식별 위해 uid 와 함께 로그.
+        if (seedItems.length < offset) {
+            console.warn(`[vocab] CURSOR DESYNC uid=${req.uid} ${seedKey} offset=${offset} > poolLen=${seedItems.length} (will self-heal)`);
+        }
         if (seedItems.length >= offset + SEED_PAGE) {
             console.log(`[Seed] vocab HIT ${seedKey} offset=${offset} (Gemini 0)`);
             return res.json({ words: seedItems.slice(offset, offset + SEED_PAGE), source: 'seed' });
@@ -81,8 +86,15 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
                 await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', pmeta, [unitRes.passage], pOffset, 1);
             } catch (e) { console.warn('[Seed] unit passage store failed:', e.message); }
         }
+        // 복습(review) 판정: 서빙된 단어가 전부 "생성 전 풀(seedItems)"에 이미 있었으면 = 토픽 소진으로
+        //   새 단어 0개 → appendAndSlice 가 마지막 페이지를 복습 서빙한 것. 새 단어가 아니므로 클라가
+        //   포인트를 차감하면 안 된다(source:'review' 로 신호). self-heal(새 단어 append)은 풀에 없던
+        //   단어라 review 가 아니다 → 정상 과금. 저비용(5단어) 정규화 subset 체크.
+        const seenNorm = new Set(seedItems.map(w => seedCache.normalizeWord(w?.word)).filter(Boolean));
+        const isReview = wslice.length > 0 && wslice.every(w => seenNorm.has(seedCache.normalizeWord(w?.word)));
+        if (isReview) console.log(`[Seed] REVIEW ${seedKey} offset=${offset} → 토픽 소진, 복습 페이지 서빙(무차감)`);
         console.log(`[Seed] UNIT MISS ${seedKey} offset=${offset} → 지문우선 결합생성 → 단어+지문 저장`);
-        return res.json({ words: wslice, source: 'gemini-unit' });
+        return res.json({ words: wslice, source: isReview ? 'review' : 'gemini-unit' });
     }
 
     // ── 직접입력(custom, Pro 전용) — 전역 seed와 분리. generateUnit으로 지문+5단어 결합 생성 후
