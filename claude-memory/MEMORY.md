@@ -20,8 +20,7 @@
 - [vercel-private-repo-author-block.md](vercel-private-repo-author-block.md) — 2026-05-20 사고/복구: repo private 전환 후 Vercel Blocked, 원인=git user.email placeholder(kaha1122@example.com). Fix=no-reply email 설정 + 빈 커밋 재트리거.
 
 ## 🔑 Facebook/Meta 자격증명 (현재 활성)
-> ⚠️ 자격증명(App ID·Client Token·Dataset ID 등)은 공유본에서 제거됨. 로컬 라이브 메모리(`~/.claude/.../memory/MEMORY.md`)에서만 확인.
-
+> ⚠️ 자격증명(App ID·Client Token·Dataset ID 등)은 공유본에서 제거됨. 로컬 라이브 메모리(~/.claude/.../memory/MEMORY.md)에서만 확인.
 ## 메모리 파일 인덱스
 - [changes-0619.md](changes-0619.md) — 2026-06-19 **seed 커서 desync 빈페이지 brick 근본수정**: appendAndSlice가 요청offset 아닌 실제 추가위치(existing.length)서 슬라이스→self-heal, review 무차감, CURSOR DESYNC 로그(uid). 커밋 1846e07 main로컬(배포대기)
 - [changes-0615-session2.md](changes-0615-session2.md) — 2026-06-15 2차: **Listening 지문 단어장 저장**(ListeningPassageView 공유컴포넌트·inputType:'L' passageData스냅샷·Library W/S/L필터·이중외곽선 fix) + **결합생성**(generateUnit 지문먼저→단어추출, vocab frontier서 vocabSeed+passageSeed 동시저장, 기존seed HIT보존) + **#3~#9 배치**(daily목표10·bonus02광고→오늘발음+10[/api/bonus/pron-allowance·pronBonus·effectivePronLimit]·Listening생성2→3·FT Pro전용+Scene진입차단·learningtip보강·재진입무차감[영속chargedMax+세션chargeKey]·재진입자동로드·Listen한도3→5). 커밋 acb1816+a4d5959 main push, **모바일 OTA 대기**. 미확정: enh3 Scene전체차단 범위. dead code 클린업 대기
