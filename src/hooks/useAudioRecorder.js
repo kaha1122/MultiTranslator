@@ -375,6 +375,17 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
 
     // 3. 발음 분석 서버로 전송하는 함수
     const analyzeFullPronunciation = async (blob, mimeType) => {
+        // [방어선] 기준 텍스트(reference)가 비었거나 풀리지 않은 경우 서버 전송 자체를 막는다.
+        //   FormData.append(name, undefined)는 값을 문자열 "undefined"로 강제 변환 → 서버는
+        //   truthy 문자열로 받아 Azure에 refText="undefined"로 평가(엉뚱한 단어와 비교) → 무의미 점수.
+        //   원인: Gemini 응답에 word/sentence 키 누락 + 클라 폴백 부재로 referenceText가 undefined로 풀림.
+        //   여기서 끊으면 불필요한 Azure 과금/차감 없이 "다시 시도" 안내로 자연 복구.
+        const cleanText = (text == null ? '' : String(text)).trim();
+        if (!cleanText || cleanText === 'undefined' || cleanText === 'null') {
+            console.warn('[AudioRecorder] referenceText 비어있음/미해석 → 발음 분석 skip', { text });
+            setErrorMsg(getT(sourceLangCode, 'errors.retryPronunciation') || 'Please try again.');
+            return;
+        }
         setAssessmentResult(null);
         setCoachTip(null);
         setIsAnalyzing(true);
@@ -385,7 +396,7 @@ export const useAudioRecorder = (text, langCode, sourceLangCode, onTrialLimitRea
         const fileExtension = mimeType && mimeType.includes('mp4') ? 'mp4' : 'webm';
         formData.append('audio', blob, `recording.${fileExtension}`);
 
-        formData.append('text', text);
+        formData.append('text', cleanText);
         formData.append('lang', langCode || 'en');
         formData.append('sourceLang', sourceLangCode || 'ko');
         // BYOK: 사용자 본인의 Azure 키가 있으면 서버에 함께 전달

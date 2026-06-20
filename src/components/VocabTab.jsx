@@ -52,7 +52,9 @@ export function VocabWordCard({
         ...(ttsDurable ? { durable: true } : {}),
     });
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
-    const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
+    // word 모드도 example과 동일하게 '' 폴백 — w.word 누락 시 undefined가 useAudioRecorder→FormData를
+    // 거쳐 "undefined" 문자열로 Azure에 전달되던 경로 차단(2026-06-21).
+    const practiceText = practiceMode === 'word' ? (w.word || '') : (w.example || '');
 
     // 일본어(ja)만 한자 대신 히라가나(pronunciation/examplePronunciation)를 Azure 기준으로 사용.
     // 중국어/러시아어는 원문이 더 정확히 평가됨 → 치환하지 않음.

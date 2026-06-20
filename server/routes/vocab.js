@@ -250,6 +250,17 @@ Return ONLY valid JSON (no markdown):
             w.word = stripAnnotations(w.word, targetLang);
             w.example = stripAnnotations(w.example, targetLang);
         });
+        // [방어선] word 키 누락/빈 항목 제거 — Gemini가 가끔 word 없이 반환하면 클라에서
+        //   referenceText가 undefined로 풀려 Azure refText="undefined" 평가로 직결됨(2026-06-21).
+        //   validate(line 240)는 배열 길이만 보므로 항목 무결성은 여기서 보장. seed append 전에 정제.
+        const before = parsed.words.length;
+        parsed.words = parsed.words.filter(w => typeof w.word === 'string' && w.word.trim());
+        if (parsed.words.length < before) {
+            console.warn(`[Vocab] dropped ${before - parsed.words.length} word item(s) missing 'word' (lang=${targetLang})`);
+        }
+    }
+    if (!Array.isArray(parsed.words) || parsed.words.length === 0) {
+        return res.status(502).json({ error: 'Failed to generate vocabulary' });
     }
     // seed 경로: frontier 생성물을 canonical 시퀀스에 append(경합 안전) 후 해당 페이지 slice 반환
     if (useSeed && Array.isArray(parsed.words) && parsed.words.length > 0) {
