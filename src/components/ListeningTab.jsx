@@ -82,6 +82,11 @@ const getServerUrl = () => {
 const makeHistoryKey = (topicId, type, level, lang) =>
     `${topicId}--${type}--${level}--${lang}`;
 
+// 단계학습 헤더 진행 코드 "L3·I2·H0" — VocabTab과 동일 포맷(레벨별 turn). Listening은 지문 1개=1page라
+//   turn = seedCursor+1(본 지문 수). 미방문(문서 없음)=0.
+const LV_CODE = { basic: 'L', intermediate: 'I', advanced: 'H' };
+const LV_ORDER = ['basic', 'intermediate', 'advanced'];
+
 export default function ListeningTab({
     sourceLang,
     targetLangs = [],
@@ -135,6 +140,7 @@ export default function ListeningTab({
         preset ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId } : pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);
     const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
+    const [levelTurns, setLevelTurns] = useState({ basic: 0, intermediate: 0, advanced: 0 }); // 헤더 "L3·I2·H0"(지문 진행)
 
     const [passage, setPassage] = useState(null);
     const [passageSaved, setPassageSaved] = useState(false); // 현재 지문 단어장 저장 여부(별표)
@@ -420,6 +426,26 @@ export default function ListeningTab({
         setCustomInput('');
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
+    // 단계학습 헤더 "L3·I2·H0"(지문 진행) — 3개 레벨의 listeningHistory seedCursor 를 read(본문 X, 발열 무관).
+    //   활성 레벨은 handleGenerate 가 즉시 갱신하나, 진입/토픽·타입 변경 시 영속값으로 동기화. write 0.
+    useEffect(() => {
+        if (!preset || !user) return;
+        const topicId = preset.topicId, lang = preset.lang;
+        let cancelled = false;
+        (async () => {
+            await Promise.all(LV_ORDER.map(async (lv) => {
+                const key = makeHistoryKey(topicId, passageType, lv, lang);
+                try {
+                    const snap = await getDoc(doc(db, `users/${user.uid}/listeningHistory`, key));
+                    if (cancelled) return;
+                    const turn = snap.exists() ? (snap.data().seedCursor || 0) + 1 : 0;
+                    setLevelTurns(prev => ({ ...prev, [lv]: turn }));
+                } catch { /* fail-soft: 0 유지 */ }
+            }));
+        })();
+        return () => { cancelled = true; };
+    }, [preset?.topicId, preset?.lang, passageType, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
     // 조건 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 지문 유지(첫 진입 mount 시 preset-sync 가
     //   selectedTopic 을 바꿔 이 리셋이 복원 지문을 wipe 하던 race 차단 — autoUnitRef 가드).
     useEffect(() => {
@@ -517,6 +543,8 @@ export default function ListeningTab({
         const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor, chargedMax } = await loadHistory(historyKey);
         // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
+        if (isSeed) setLevelTurns(prev => ({ ...prev, [level]: offset + 1 })); // 활성 레벨 turn — 지문 1개=+1
+
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
         const pageCacheKey = `${historyKey}--${offset}`;
         if (isSeed && loadedPassagesRef.current[pageCacheKey]) {
@@ -692,6 +720,9 @@ export default function ListeningTab({
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
                 >
                     ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                    <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#64748b' }}>
+                        {LV_ORDER.map(lv => `${LV_CODE[lv]}${levelTurns[lv]}`).join('·')}
+                    </span>
                 </button>
             )}
 

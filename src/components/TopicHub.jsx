@@ -6,7 +6,6 @@ import {
   P_TARGET,
   TOPIC_INDEX,
   topicCode,
-  isWordPhaseComplete,
   isTopicMastered,
 } from '../config/learningPath.js';
 
@@ -19,7 +18,6 @@ export default function TopicHub({
   activeLang,
   defaultLevel = 'basic',
   getTopicProgress,
-  isPro = false,            // Pro/Premium: 단어 학습 건너뛰고 지문(Listening) 직접 진입 허용
   onClose,
   onStartWord,
   onStartPassage,
@@ -33,9 +31,9 @@ export default function TopicHub({
   const p = getTopicProgress(topicId, activeLang);
   const wm = Math.min(p.wordMastered || 0, W_TARGET);
   const pm = Math.min(p.passageMastered || 0, P_TARGET);
-  const wordDone = isWordPhaseComplete(p);
-  // Pro/Premium 은 단어 단계 완료 없이도 지문 직접 진입 가능(잠금 해제). 양방향 정합은 활성 unit 포인터가 담당.
-  const passageUnlocked = wordDone || isPro;
+  // 2026-06-21: 단어↔지문 정합 폐지(단어·지문 자유 생성)로 순차 학습 제약 해제 →
+  //   Trial 포함 전 유저가 단어/지문 어느 쪽이든 자유 접근. (기존: isWordPhaseComplete(p) || isPro = Trial만 잠금)
+  const passageUnlocked = true;
   const mastered = isTopicMastered(p);
 
   const preset = { catId, subId, topicId, level, lang: activeLang };
