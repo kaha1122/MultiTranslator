@@ -36,6 +36,22 @@ app.get('/ping', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is awake!' });
 });
 
+// 세션 시작 로그 — 클라가 앱 실행/로그인 직후(프로필 로드 후) 세션당 1회 호출.
+//   목적: 로그만으로 "이 UID 유저가 접속을 시작했다"(신규/기존)를 추적. DB write 없음(로그 전용)
+//   → users 본문 write로 인한 onSnapshot 재렌더/iOS 발열과 무관(CLAUDE.md 규칙6 안전).
+//   컨텍스트는 클라가 보유한 profile에서 받음(서버 DB read 0) + IP는 서버에서 해석.
+const { requireAuth } = require('./middleware/auth');
+const { rateLimit } = require('./middleware/rateLimit');
+app.post('/api/session-start', requireAuth, rateLimit('session-start', { perMinute: 10, perHour: 120 }), (req, res) => {
+    if (!req.uid) return res.status(401).json({ error: 'unauthorized' });
+    const xForwardedFor = req.headers['x-forwarded-for'] || '';
+    const clientIp = xForwardedFor.split(',')[0]?.trim() || req.ip;
+    const b = req.body || {};
+    const f = (v) => (v == null || v === '' ? '?' : String(v).slice(0, 40));
+    console.log(`[SessionStart] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=${b.isAnonymous ? 'Y' : 'n'} tier=${f(b.tier)} platform=${f(b.platform)} nativeVer=${f(b.nativeVersion)} lang=${f(b.lang)} country=${f(b.country)} ip=${clientIp}`);
+    res.json({ ok: true });
+});
+
 // IP 기반 국가 감지 (프로필 geoCountry 기록용) — 클라이언트 IP를 서버에서 조회
 app.get('/api/detect-country', async (req, res) => {
     const xForwardedFor = req.headers['x-forwarded-for'] || '';

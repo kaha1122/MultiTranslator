@@ -65,6 +65,12 @@ export const AuthProvider = ({ children }) => {
     const profileRef = useRef(profile);
     useEffect(() => { profileRef.current = profile; }, [profile]);
 
+    // [SessionStart] 추적용 ref —
+    //   newUserUidRef: 이번 세션에 신규 문서가 생성된 UID(신규 판정). 생성 경로에서 세팅.
+    //   sessionStartUidRef: [SessionStart] 로그를 이미 보낸 UID(세션당 1회 가드, UID 변경 시 재발화).
+    const newUserUidRef = useRef(null);
+    const sessionStartUidRef = useRef(null);
+
     // 최종 안전장치: 어떤 코드 경로에서든 loading이 10초 이상 지속되면 강제 해제
     // (Strategy A 적용 후엔 onAuthStateChanged의 정상 경로에서 loading=false가 즉시 풀리므로
     //  실제로 이 타이머가 발화하는 경우는 거의 없음 — 디펜스 인 뎁스로 유지)
@@ -119,6 +125,7 @@ export const AuthProvider = ({ children }) => {
                                 lastTopUpDate: getToday(),
                             });
                             docJustCreated = true;
+                            newUserUidRef.current = authenticatedUser.uid; // [SessionStart] 신규 판정
                             // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
                             // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                             detectGeoInfo().then(info => {
@@ -202,6 +209,7 @@ export const AuthProvider = ({ children }) => {
                     if (authenticatedUser.email) newDoc.email = authenticatedUser.email;
                     if (authenticatedUser.displayName) newDoc.displayName = authenticatedUser.displayName;
                     await setDoc(docRef, newDoc, { merge: true });
+                    newUserUidRef.current = authenticatedUser.uid; // [SessionStart] 신규 판정
                     // 위치 정보 비동기 저장
                     // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                     detectGeoInfo().then(info => {
@@ -631,6 +639,30 @@ export const AuthProvider = ({ children }) => {
         //   폭주 → !!profile 로 "로드 1회"만 트리거. 트랜잭션 가드로 이중충전 차단.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.uid, !!profile, profile?.lastTopUpDate, tier]);
+
+    // [SessionStart] 서버 로그 — profile 로드 후 세션당 1회(UID당). 신규/기존 모두 발화.
+    //   목적: 서버 로그만으로 "이 UID가 접속을 시작했다"를 추적(로그 분석 가시성). DB write 0(로그 전용)
+    //   → onSnapshot 재발화·iOS 발열과 무관. UID 변경(익명→실계정 등) 시 새 UID로 1회 재발화.
+    useEffect(() => {
+        if (!user?.uid || !profile) return;
+        if (sessionStartUidRef.current === user.uid) return;
+        sessionStartUidRef.current = user.uid;
+        const isNew = newUserUidRef.current === user.uid;
+        authFetch(`${API_URL}/api/session-start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                isNew,
+                isAnonymous: !!user.isAnonymous,
+                tier: profile.tier || 'trial',
+                platform: Capacitor.isNativePlatform() ? 'app' : 'web',
+                nativeVersion: profile.currentNativeVersion || null,
+                lang: profile.sourceLang || profile.deviceLang || null,
+                country: profile.geoCountry || null,
+            }),
+        }).catch(() => {}); // 베스트에포트 — 실패해도 앱 흐름 무관
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.uid, !!profile]);
 
     // 구독 만료 체크
     useEffect(() => {
