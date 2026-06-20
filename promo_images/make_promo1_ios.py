@@ -13,15 +13,18 @@ import numpy as np
 HERE = Path(__file__).resolve().parent
 NEW = HERE / "NewImages/Promo1"
 OUT = NEW / "out"; OUT.mkdir(exist_ok=True)
+IOS_OUT = HERE / "NewImages/New_EachLanguage_ios"
 BG_REF = HERE / "Promo_01/output/ko/promo_01_ko_1080x1920_BAK.png"
 CJK = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"   # idx: JP0 KR1 HK2 TC3 SC4
 LATIN = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-W, Hc = 1080, 1920
+W, Hc = 1242, 2688
 INK = (31, 41, 37); MINT = (0, 168, 132)
 
 # 배경 그라데이션(연그린 톤) 재현
 ref = np.asarray(Image.open(BG_REF).convert("RGB")).astype(int)
-BG_ROWS = np.median(ref[:, 8:40, :], axis=1).astype(np.uint8)
+_rows = np.median(ref[:, 8:40, :], axis=1)
+_src = np.linspace(0, 1, _rows.shape[0]); _dst = np.linspace(0, 1, Hc)
+BG_ROWS = np.stack([np.interp(_dst, _src, _rows[:, c]) for c in range(3)], axis=1).astype(np.uint8)
 
 # 언어별: 파일, 2줄 헤더, 강조어, 폰트(종류, ttc인덱스)
 LANGS = [
@@ -47,12 +50,12 @@ def build(lang, fname, lines, hl, fspec):
 
     # 폰 프레임
     shot = Image.open(NEW / fname).convert("RGB")
-    OW = 800; B = 16; x = (W - OW) // 2; OT = 425   # 폰 상단 위치(빨간선 기준 살짝 올림)
+    OW = 1080; B = 18; x = (W - OW) // 2; OT = 500   # 폰 상단 위치(빨간선 기준 살짝 올림)
     IW = OW - 2 * B
     f = IW / shot.width
     IH = int(shot.height * f)
     shot = shot.resize((IW, IH), Image.LANCZOS)
-    Rin = 54; Rout = 70
+    Rin = 62; Rout = 80
     OH = IH + 2 * B
 
     phone = Image.new("RGBA", (OW, OH), (0, 0, 0, 0))
@@ -73,15 +76,15 @@ def build(lang, fname, lines, hl, fspec):
 
     # 헤더 (오토핏: 가장 긴 줄이 940px 안에 들도록)
     dr = ImageDraw.Draw(canvas)
-    size = 66
-    while size > 40:
+    size = 78
+    while size > 48:
         font = get_font(fspec, size)
-        if max(dr.textlength(l, font=font) for l in lines) <= 940:
+        if max(dr.textlength(l, font=font) for l in lines) <= 1100:
             break
         size -= 2
     font = get_font(fspec, size)
     lh = int(size * 1.34)
-    y = 140 if len(lines) <= 2 else 100
+    y = 180 if len(lines) <= 2 else 120
 
     def w(s): return dr.textlength(s, font=font)
     for line in lines:
@@ -95,7 +98,7 @@ def build(lang, fname, lines, hl, fspec):
             dr.text(((W - w(line)) / 2, y), line, font=font, fill=INK)
         y += lh
 
-    out = OUT / f"promo_01_{lang}_1080x1920.png"
+    out = IOS_OUT / lang; out.mkdir(parents=True, exist_ok=True); out = out / f"promo_01_{lang}_1242x2688.png"
     canvas.save(out)
     return out
 

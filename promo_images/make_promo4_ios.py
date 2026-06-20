@@ -2,36 +2,39 @@
 # -*- coding: utf-8 -*-
 """
 Promo_01 6개 언어 초안 생성 (그림1 스타일)
- - 새 폰 스크린샷(NewImages/Promo1/pro01_*.jpg) 사용
+ - 새 폰 스크린샷(NewImages/Promo4/pro01_*.jpg) 사용
  - 배경: promo_01 연그린 톤 재현 / 헤더: 언어별 번역 / 폰: 상단 고정·하단 크롭
-헤더 원문(ko): "레벨별 70가지 토픽, 3개국어 동시학습이 가능해요"
+헤더 원문(ko): "레벨별 70가지 Topic, 3개국어 동시학습이 가능해요"
 """
 from pathlib import Path
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 import numpy as np
 
 HERE = Path(__file__).resolve().parent
-NEW = HERE / "NewImages/Promo1"
+NEW = HERE / "NewImages/Promo4"
 OUT = NEW / "out"; OUT.mkdir(exist_ok=True)
+IOS_OUT = HERE / "NewImages/New_EachLanguage_ios"
 BG_REF = HERE / "Promo_01/output/ko/promo_01_ko_1080x1920_BAK.png"
 CJK = "/usr/share/fonts/opentype/noto/NotoSansCJK-Bold.ttc"   # idx: JP0 KR1 HK2 TC3 SC4
 LATIN = "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf"
-W, Hc = 1080, 1920
+W, Hc = 1242, 2688
 INK = (31, 41, 37); MINT = (0, 168, 132)
 
 # 배경 그라데이션(연그린 톤) 재현
 ref = np.asarray(Image.open(BG_REF).convert("RGB")).astype(int)
-BG_ROWS = np.median(ref[:, 8:40, :], axis=1).astype(np.uint8)
+_rows = np.median(ref[:, 8:40, :], axis=1)
+_src = np.linspace(0, 1, _rows.shape[0]); _dst = np.linspace(0, 1, Hc)
+BG_ROWS = np.stack([np.interp(_dst, _src, _rows[:, c]) for c in range(3)], axis=1).astype(np.uint8)
 
 # 언어별: 파일, 2줄 헤더, 강조어, 폰트(종류, ttc인덱스)
 LANGS = [
- ("kr", "pro01_kr.jpg", ["레벨별 70가지 토픽,", "3개국어 동시학습이 가능해요"], "3개국어 동시학습", ("cjk", 1)),
- ("en", "pro01_en.jpg", ["70 topics by level,", "learn 3 languages at once"], "3 languages at once", ("latin", 0)),
- ("cn", "pro01_cn.jpg", ["70个分级主题，", "支持三种语言同时学习"], "三种语言同时学习", ("cjk", 4)),
- ("jp", "pro01_jp.jpg", ["レベル別70のトピック、", "3か国語を同時に学習できます"], "3か国語を同時に学習", ("cjk", 0)),
- ("es", "pro01_es.jpg", ["70 temas por nivel y", "aprende 3 idiomas a la vez"], "3 idiomas a la vez", ("latin", 0)),
- ("ru", "pro01_ru.jpg", ["70 тем по уровням и", "изучай 3 языка сразу"], "3 языка сразу", ("latin", 0)),
- ("vn", "pro01_vn.jpg", ["70 chủ đề theo cấp độ,", "học 3 ngôn ngữ cùng lúc"], "3 ngôn ngữ cùng lúc", ("latin", 0)),
+ ("kr", "Pro04_kr.jpg", ["포인트로 무료 학습이 가능한", "AI 영어 학습 앱이에요"], "무료 학습", ("cjk", 1)),
+ ("en", "Pro04_en.jpg", ["Free learning with points,", "an AI English app"], "Free learning", ("latin", 0)),
+ ("cn", "Pro04_cn.jpg", ["用积分免费学习的", "AI英语学习应用"], "免费学习", ("cjk", 4)),
+ ("jp", "Pro04_jp.jpg", ["ポイントで無料学習できる", "AI英語学習アプリ"], "無料学習", ("cjk", 0)),
+ ("es", "Pro04_es.jpg", ["Aprende gratis con puntos,", "una app de inglés con IA"], "gratis", ("latin", 0)),
+ ("ru", "Pro04_ru.jpg", ["Бесплатно за баллы —", "AI-приложение для английского"], "Бесплатно", ("latin", 0)),
+ ("vn", "Pro04_vn.jpg", ["Học miễn phí bằng điểm,", "ứng dụng tiếng Anh AI"], "miễn phí", ("latin", 0)),
 ]
 
 def get_font(spec, size):
@@ -47,12 +50,12 @@ def build(lang, fname, lines, hl, fspec):
 
     # 폰 프레임
     shot = Image.open(NEW / fname).convert("RGB")
-    OW = 800; B = 16; x = (W - OW) // 2; OT = 425   # 폰 상단 위치(빨간선 기준 살짝 올림)
+    OW = 1080; B = 18; x = (W - OW) // 2; OT = 500   # 폰 상단 위치(빨간선 기준 살짝 올림)
     IW = OW - 2 * B
     f = IW / shot.width
     IH = int(shot.height * f)
     shot = shot.resize((IW, IH), Image.LANCZOS)
-    Rin = 54; Rout = 70
+    Rin = 62; Rout = 80
     OH = IH + 2 * B
 
     phone = Image.new("RGBA", (OW, OH), (0, 0, 0, 0))
@@ -73,15 +76,15 @@ def build(lang, fname, lines, hl, fspec):
 
     # 헤더 (오토핏: 가장 긴 줄이 940px 안에 들도록)
     dr = ImageDraw.Draw(canvas)
-    size = 66
-    while size > 40:
+    size = 78
+    while size > 48:
         font = get_font(fspec, size)
-        if max(dr.textlength(l, font=font) for l in lines) <= 940:
+        if max(dr.textlength(l, font=font) for l in lines) <= 1100:
             break
         size -= 2
     font = get_font(fspec, size)
     lh = int(size * 1.34)
-    y = 140 if len(lines) <= 2 else 100
+    y = 180 if len(lines) <= 2 else 120
 
     def w(s): return dr.textlength(s, font=font)
     for line in lines:
@@ -95,7 +98,7 @@ def build(lang, fname, lines, hl, fspec):
             dr.text(((W - w(line)) / 2, y), line, font=font, fill=INK)
         y += lh
 
-    out = OUT / f"promo_01_{lang}_1080x1920.png"
+    out = IOS_OUT / lang; out.mkdir(parents=True, exist_ok=True); out = out / f"promo_04_{lang}_1242x2688.png"
     canvas.save(out)
     return out
 
