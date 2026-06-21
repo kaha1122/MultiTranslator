@@ -52,8 +52,9 @@ export default function LearningPathHome({
     return `conic-gradient(${segs.map((c, i) => `${c} ${slice * i}deg ${slice * (i + 1)}deg`).join(', ')})`;
   };
 
-  // 유닛 접기/펼치기 — 처음엔 유닛1·2만 열림 + 현재 토픽이 속한 유닛은 로드 후 자동 오픈
-  const [openUnits, setOpenUnits] = useState({ 0: true, 1: true });
+  // 유닛 접기/펼치기 — 처음엔 유닛1만 열림(나머지 폴더·하단 70dot 미니맵 존재를 인지하도록)
+  //   + 현재 토픽이 속한 유닛은 로드 후 자동 오픈
+  const [openUnits, setOpenUnits] = useState({ 0: true });
   const didInitUnitsRef = useRef(false);
   useEffect(() => {
     if (didInitUnitsRef.current || !loaded) return;
