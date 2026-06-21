@@ -135,3 +135,9 @@ npm run cap:ios          # Xcode 열기
 ## 추가 참고
 
 PC 로컬 auto-memory(`~/.claude/projects/.../memory/`)에는 50+ 세션 로그(changes-MMDD.md)와 추가 feedback 파일이 있습니다. 이 CLAUDE.md는 그 중 **load-bearing한 stable 룰만 추출**한 것입니다. 외부 dispatch 환경에서 더 깊은 컨텍스트가 필요하면 사용자에게 요청하세요.
+
+### 📌 메모리 동기화 룰 (신규/변경 memory 추가 시 필수)
+- auto-memory(`~/.claude/projects/.../memory/`)는 **repo 밖**이라 일반 `git push`로 안 올라간다. 두 PC 공유본은 repo `claude-memory/`.
+- **이번 세션에 memory 파일을 추가/수정/삭제했으면, 세션 마무리 전 반드시** `bash scripts/sync-memory.sh --push` 실행 (live → `claude-memory/` 정제 복사 후 commit+push).
+- 이 스크립트는 **암호화가 아니라 비밀 제외(redaction)** — 비밀 포함 파일 통째 제외 + MEMORY.md 자격증명 블록 제거 + fail-closed 검증. 공유본은 정제된 평문(다른 PC는 `--restore`로 복원).
+- `--push`의 `git pull --rebase`가 **무관한 미스테이징 변경**(예: promo_images/*)으로 막히면, 원격이 발산 안 했을 때 한해 `git push origin main`으로 직접 push (커밋된 것만 올라감).
