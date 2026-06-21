@@ -144,6 +144,17 @@
 .lph-node.locked { color: #cbd5e1; }
 .lph-node-dot { width: 18px; height: 18px; border-radius: 50%; background: currentColor; opacity: 0.5; }
 
+/* 절반 채움(마스터 전 단계 완료): 단어=왼쪽 반 / 지문=오른쪽 반. 원이 gradient를 50% 클립.
+   border는 활성 언어색으로 강조(진행 중임을 테두리로도 표시). */
+.lph-node.half-word {
+  border-color: var(--lph-lang-color, var(--unit-color));
+  background: linear-gradient(90deg, var(--lph-lang-color, var(--unit-color)) 0 50%, #fff 50% 100%);
+}
+.lph-node.half-passage {
+  border-color: var(--lph-lang-color, var(--unit-color));
+  background: linear-gradient(90deg, #fff 0 50%, var(--lph-lang-color, var(--unit-color)) 50% 100%);
+}
+
 /* "지금 여기" 배지 — 노드 위, 노드 좌/우 위치 따라감 */
 .lph-here {
   position: absolute;

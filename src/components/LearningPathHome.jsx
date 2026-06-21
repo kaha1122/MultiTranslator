@@ -7,6 +7,8 @@ import {
   TOPIC_INDEX,
   TOTAL_TOPICS,
   LANG_SLOT_COLORS,
+  W_TARGET,
+  P_TARGET,
   isTopicMastered,
   getCurrentTopicId,
   countMastered,
@@ -97,6 +99,16 @@ export default function LearningPathHome({
     return 'locked';
   };
 
+  // 절반 채움(마스터 전 단계 완료 시각화): 단어 단계 완료=왼쪽 절반, 지문 단계 완료=오른쪽 절반.
+  //   둘 다면 mastered(꽉참)라 여기 도달 안 함. 단어만 학습 시 모든 토픽이 "왼쪽 반" 채워진 모습이 됨.
+  const nodeHalf = (topicId) => {
+    const p = progressMap[topicId];
+    if (!p || isTopicMastered(p)) return null;
+    if ((p.wordMastered || 0) >= W_TARGET) return 'word';      // 왼쪽
+    if ((p.passageMastered || 0) >= P_TARGET) return 'passage'; // 오른쪽
+    return null;
+  };
+
   return (
     <div className="lph">
       {/* 언어 pill 바 — 1개면 단일 헤더처럼, 2~3개면 전환 가능 */}
@@ -144,20 +156,23 @@ export default function LearningPathHome({
                 <div className="lph-nodes">
                   {unit.topicIds.map((topicId, i) => {
                     const state = nodeState(topicId);
+                    const half = nodeHalf(topicId); // 'word'(왼쪽)|'passage'(오른쪽)|null
                     const isCurrent = state === 'current';
                     const side = i % 2 === 0 ? 'left' : 'right';
                     return (
                       <div key={topicId} className={`lph-row ${side}`}>
                         <button
                           ref={isCurrent ? currentNodeRef : null}
-                          className={`lph-node ${state}`}
+                          className={`lph-node ${state}${half ? ` half-${half}` : ''}`}
                           onClick={() => onOpenTopic?.(topicId, activeLang)}
                           aria-label={t(`vocabTopic.${topicId}`)}
                         >
+                          {/* 절반 채움이면 아이콘 없이 색으로만 진행 표시(꽉참=Check). */}
                           {state === 'mastered' ? <Check size={31} strokeWidth={3} />
-                            : state === 'current' ? <Play size={29} fill="currentColor" />
-                              : state === 'locked' ? <Lock size={23} />
-                                : <span className="lph-node-dot" />}
+                            : half ? null
+                              : state === 'current' ? <Play size={29} fill="currentColor" />
+                                : state === 'locked' ? <Lock size={23} />
+                                  : <span className="lph-node-dot" />}
                         </button>
                         {isCurrent && <span className="lph-here">{t('learningPath.here')}</span>}
                         <span className="lph-node-label">{t(`vocabTopic.${topicId}`)}</span>
