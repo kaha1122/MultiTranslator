@@ -122,6 +122,7 @@ const TrialLimitModal = ({
     if (reason === 'points') {
         const costs = [
             { icon: '🎧', label: 'Listening', cost: 3 },
+            { icon: '🌐', label: t('trial.costTranslation') || '번역', cost: 3 },
             { icon: '📖', label: t('trial.costPassage') || '지문', cost: 2 },
             { icon: '🎤', label: t('settings.usagePron') || 'Pronunciation', cost: 2 },
             { icon: '✦', label: t('trial.costOther') || 'Other', cost: 1 },
@@ -177,7 +178,7 @@ const TrialLimitModal = ({
                                 🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +20'}
                             </button>
                         )}
-                        {/* 보너스포인트 구매 (+500, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
+                        {/* 보너스포인트 구매 (+1000, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
                         {isNative && typeof onBuyPoints === 'function' && pointsPriceString && (
                             <button
                                 onClick={() => onBuyPoints()}
@@ -189,7 +190,7 @@ const TrialLimitModal = ({
                                     cursor: buyingPoints ? 'default' : 'pointer', opacity: buyingPoints ? 0.6 : 1,
                                     fontWeight: 700, color: '#1e40af', fontSize: '0.9rem',
                                 }}>
-                                🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +500')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
+                                🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +1000')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
                             </button>
                         )}
                         {rewardAdLoading && (

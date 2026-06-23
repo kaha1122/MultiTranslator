@@ -982,6 +982,7 @@ function App() {
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
   // 2026-06-07: 인앱 포인트 구매(소비성) — 가격 표시 + 구매 진행 상태
   // 2026-06-16: 지급량 +500 (서버 webhook POINTS_AMOUNT). SKU 식별자는 스토어 등록값 그대로 유지.
+  // 2026-06-23: 지급량 +1000 (서버 webhook POINTS_AMOUNT). 실제 지급은 서버 권위 — 여기 문구는 표시용.
   const POINTS_PRODUCT_ID = 'pronunfit_points_200';
   const [pointsPriceString, setPointsPriceString] = useState('');
   const [buyingPoints, setBuyingPoints] = useState(false);
@@ -1036,7 +1037,7 @@ function App() {
       if (!txId) console.error('[BuyPoints] transactionId 추출 실패 — webhook_seen 기록만 남고 적립 누락 위험:', purchaseRes?.transaction);
       await confirmPointPurchase(txId);
       // 성공 — 적립은 서버 confirm(또는 재시도 큐) → Firestore onSnapshot 으로 반영.
-      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 500포인트가 반영됩니다.');
+      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 1000포인트가 반영됩니다.');
     } catch (e) {
       if (!e?.userCancelled) {
         console.error('[BuyPoints] 실패:', e);
@@ -2870,7 +2871,7 @@ function App() {
       setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
       incrementDailyGenerate('translation'); // 일일 분석용
-      addAdPoints(1); // 풀 -1 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과)
+      addAdPoints(3); // 풀 -3 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과). 2026-06-23 1→3: 번역은 공용 캐시 불가한 1회성 비용이라 상향
 
     } catch (error) {
       console.error("번역 실패:", error);
@@ -4370,7 +4371,7 @@ function App() {
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
                   )}
-                  {/* 보너스포인트 구매 (+500, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
+                  {/* 보너스포인트 구매 (+1000, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
                   {pointsPriceString && (
                     <button
                       onClick={handleBuyPoints}
@@ -4385,7 +4386,7 @@ function App() {
                       <span style={{ fontSize: '1.2rem' }}>🪙</span>
                       <div>
                         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +500'}
+                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +1000'}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
                           {buyingPoints ? (getT(sourceLang, 'reward.buying') || '구매 처리 중...') : pointsPriceString}
@@ -4884,8 +4885,8 @@ function App() {
                       sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
-                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card', ttsCost: 1 })}
-                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example', ttsCost: 1 })}
+                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card', ttsCost: 2 })}
+                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example', ttsCost: 2 })}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
