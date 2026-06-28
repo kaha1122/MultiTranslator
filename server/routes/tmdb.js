@@ -1,0 +1,194 @@
+// ── TMDB 프록시 + K-Contents discover/detail + 메타 Gemini 번역 ──────────
+// K-DramaLingo 전용. TMDB 키는 서버 환경변수(TMDB_API_KEY/TMDB_ACCESS_TOKEN)에만 둔다.
+// 인메모리 TTL 캐시로 TMDB 호출량 절감. 인증은 requireAuthAny(kculture/PronunFit 토큰 모두 허용).
+const express = require('express');
+const { requireAuthAny } = require('../middleware/authAny');
+const { rateLimit } = require('../middleware/rateLimit');
+
+const router = express.Router();
+
+const TMDB_BASE = 'https://api.themoviedb.org/3';
+const TMDB_KEY = process.env.TMDB_API_KEY || '';          // v3 api_key (query)
+const TMDB_TOKEN = process.env.TMDB_ACCESS_TOKEN || '';    // v4 bearer (optional)
+
+// 클라 2-letter lang → TMDB language 코드
+const LANG_MAP = {
+    ko: 'ko-KR', en: 'en-US', es: 'es-ES', ru: 'ru-RU', id: 'id-ID',
+    'pt-BR': 'pt-BR', 'zh-CN': 'zh-CN', ja: 'ja-JP', vi: 'vi-VN', fr: 'fr-FR', de: 'de-DE',
+};
+const toTmdbLang = (l) => LANG_MAP[l] || l || 'en-US';
+
+// ── 인메모리 TTL 캐시 ──────────────────────────────────────────────
+const cache = new Map();
+function getCache(k) {
+    const e = cache.get(k);
+    if (!e) return null;
+    if (Date.now() > e.exp) { cache.delete(k); return null; }
+    return e.v;
+}
+function setCache(k, v, ttlMs) {
+    cache.set(k, { v, exp: Date.now() + ttlMs });
+    // 단순 상한 — 1000개 초과 시 가장 오래된 것부터 제거
+    if (cache.size > 1000) cache.delete(cache.keys().next().value);
+}
+
+async function tmdbFetch(path, params = {}) {
+    if (!TMDB_KEY && !TMDB_TOKEN) throw new Error('TMDB key not configured');
+    const usp = new URLSearchParams(params);
+    if (TMDB_KEY) usp.set('api_key', TMDB_KEY);
+    const url = `${TMDB_BASE}${path}?${usp.toString()}`;
+    const headers = TMDB_TOKEN ? { Authorization: `Bearer ${TMDB_TOKEN}` } : {};
+    const res = await fetch(url, { headers });
+    if (!res.ok) {
+        const t = await res.text();
+        throw new Error(`TMDB ${res.status}: ${t.slice(0, 200)}`);
+    }
+    return res.json();
+}
+
+const TMDB_RL = { perMinute: 60, perHour: 1000 };
+
+// ── discover: 한국 콘텐츠 (최신/장르/랭킹/인기 모두 이 엔드포인트로) ──
+router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const media = req.query.media === 'movie' ? 'movie' : 'tv';
+        const lang = toTmdbLang(req.query.lang);
+        const sort = String(req.query.sort || 'popularity.desc');
+        const page = Math.min(parseInt(req.query.page, 10) || 1, 500);
+        const params = {
+            language: lang,
+            sort_by: sort,
+            with_original_language: 'ko',
+            page: String(page),
+            include_adult: 'false',
+        };
+        if (req.query.genre) params.with_genres = String(req.query.genre);
+        if (req.query.provider) { // OTT 필터 (어디서 볼까)
+            params.with_watch_providers = String(req.query.provider);
+            params.watch_region = String(req.query.region || 'US').toUpperCase().slice(0, 2);
+            params.with_watch_monetization_types = 'flatrate';
+        }
+        if (sort.startsWith('vote_average')) params['vote_count.gte'] = '200'; // 랭킹 신뢰도
+        if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date')) {
+            const today = new Date().toISOString().slice(0, 10);
+            params[media === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte'] = today; // 미래작 제외
+        }
+        const key = `disc:${media}:${JSON.stringify(params)}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch(`/discover/${media}`, params); setCache(key, data, 30 * 60 * 1000); }
+        res.json({ media, page: data.page, totalPages: data.total_pages, results: data.results || [] });
+    } catch (e) {
+        console.error('[tmdb/discover]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── 장르 목록 ──
+router.get('/api/tmdb/genres', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const media = req.query.media === 'movie' ? 'movie' : 'tv';
+        const lang = toTmdbLang(req.query.lang);
+        const key = `genres:${media}:${lang}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch(`/genre/${media}/list`, { language: lang }); setCache(key, data, 24 * 60 * 60 * 1000); }
+        res.json({ genres: data.genres || [] });
+    } catch (e) {
+        console.error('[tmdb/genres]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── 상세 (credits/images/videos/watch providers/translations append) ──
+router.get('/api/tmdb/title/:media/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const media = req.params.media === 'movie' ? 'movie' : 'tv';
+        const id = String(req.params.id).replace(/\D/g, '');
+        if (!id) return res.status(400).json({ error: 'bad id' });
+        const lang = toTmdbLang(req.query.lang);
+        const key = `title:${media}:${id}:${lang}`;
+        let data = getCache(key);
+        if (!data) {
+            data = await tmdbFetch(`/${media}/${id}`, {
+                language: lang,
+                append_to_response: 'credits,images,videos,watch/providers,translations',
+            });
+            setCache(key, data, 6 * 60 * 60 * 1000);
+        }
+        res.json(data);
+    } catch (e) {
+        console.error('[tmdb/title]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── OTT 제공자 목록 (지역별) ──
+router.get('/api/tmdb/providers', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const media = req.query.media === 'movie' ? 'movie' : 'tv';
+        const region = String(req.query.region || 'US').toUpperCase().slice(0, 2);
+        const key = `providers:${media}:${region}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch(`/watch/providers/${media}`, { watch_region: region }); setCache(key, data, 24 * 60 * 60 * 1000); }
+        const providers = (data.results || [])
+            .map((p) => ({ id: p.provider_id, name: p.provider_name, logo: p.logo_path, priority: (p.display_priorities?.[region] ?? p.display_priority ?? 999) }))
+            .sort((a, b) => a.priority - b.priority)
+            .slice(0, 24);
+        res.json({ region, providers });
+    } catch (e) {
+        console.error('[tmdb/providers]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── 검색 (한국 작품 + 인물) ──
+router.get('/api/tmdb/search', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const q = String(req.query.q || '').trim();
+        if (!q) return res.json({ results: [] });
+        const lang = toTmdbLang(req.query.lang);
+        const page = Math.min(parseInt(req.query.page, 10) || 1, 100);
+        const key = `search:${lang}:${page}:${q.toLowerCase()}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch('/search/multi', { language: lang, query: q, page: String(page), include_adult: 'false' }); setCache(key, data, 10 * 60 * 1000); }
+        // tv/movie는 한국 원작만, person은 모두 유지
+        const results = (data.results || []).filter((r) =>
+            (r.media_type === 'tv' || r.media_type === 'movie') ? r.original_language === 'ko' : r.media_type === 'person'
+        );
+        res.json({ results, page: data.page, totalPages: data.total_pages });
+    } catch (e) {
+        console.error('[tmdb/search]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── 인물 상세 + 출연작(한국 작품) ──
+router.get('/api/tmdb/person/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const id = String(req.params.id).replace(/\D/g, '');
+        if (!id) return res.status(400).json({ error: 'bad id' });
+        const lang = toTmdbLang(req.query.lang);
+        const key = `person:${id}:${lang}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits' }); setCache(key, data, 6 * 60 * 60 * 1000); }
+        // 출연작: 한국 작품 + 포스터 있는 것만, 중복 제거, 인기순
+        const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
+        const seen = new Set();
+        const works = credits
+            .filter((c) => c.original_language === 'ko' && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
+            .filter((c) => { const k = `${c.media_type}-${c.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
+            .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
+        res.json({
+            id: data.id, name: data.name, biography: data.biography,
+            profile_path: data.profile_path, known_for_department: data.known_for_department,
+            works,
+        });
+    } catch (e) {
+        console.error('[tmdb/person]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// 참고: TMDB 메타 번역은 별도 번역 호출 없이 append_to_response=translations 의 언어별 번역본을
+//       클라이언트가 추출/캐시하고, 없으면 영어로 폴백한다(비용 0). Gemini는 커뮤니티 UGC 번역에만 사용.
+
+module.exports = router;

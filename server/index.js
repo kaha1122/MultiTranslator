@@ -30,6 +30,9 @@ app.use(require('./routes/adReward'));
 app.use(require('./routes/streak'));
 app.use(require('./routes/reengagement'));
 app.use(require('./routes/converse'));
+app.use(require('./routes/tmdb')); // [신규] K-DramaLingo TMDB 프록시 (requireAuthAny — PronunFit 영향 없음)
+app.use(require('./routes/cronTmdb')); // [신규] K-DramaLingo 신작 메타 번역 증분 (requireCronAuth)
+app.use(require('./routes/community')); // [신규] K-DramaLingo 커뮤니티 UGC 번역 (requireAuthAny)
 
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 app.get('/ping', (req, res) => {
