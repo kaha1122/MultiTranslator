@@ -51,7 +51,9 @@ const TMDB_RL = { perMinute: 60, perHour: 1000 };
 // ── discover: 한국 콘텐츠 (최신/장르/랭킹/인기 모두 이 엔드포인트로) ──
 router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
-        const media = req.query.media === 'movie' ? 'movie' : 'tv';
+        // kind: drama|movie|variety (없으면 media 파라미터 하위호환)
+        const kind = req.query.kind;
+        const media = (kind === 'movie' || (!kind && req.query.media === 'movie')) ? 'movie' : 'tv';
         const lang = toTmdbLang(req.query.lang);
         const sort = String(req.query.sort || 'popularity.desc');
         const page = Math.min(parseInt(req.query.page, 10) || 1, 500);
@@ -62,7 +64,12 @@ router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), asy
             page: String(page),
             include_adult: 'false',
         };
-        if (req.query.genre) params.with_genres = String(req.query.genre);
+        // 콘텐츠 타입별 기본 장르 필터 (드라마=Drama / 예능=Reality·Talk) + 사용자 장르(AND)
+        const genreParts = [];
+        if (kind === 'drama') genreParts.push('18');
+        else if (kind === 'variety') genreParts.push('10764|10767');
+        if (req.query.genre) genreParts.push(String(req.query.genre));
+        if (genreParts.length) params.with_genres = genreParts.join(',');
         if (req.query.provider) { // OTT 필터 (어디서 볼까)
             params.with_watch_providers = String(req.query.provider);
             params.watch_region = String(req.query.region || 'US').toUpperCase().slice(0, 2);
