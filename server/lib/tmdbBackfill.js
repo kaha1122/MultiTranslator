@@ -4,6 +4,7 @@
 // 멱등: 마커(titles/{id}.metaTranslated)가 있으면 skip → 재실행/중단복구 안전.
 const { callGeminiText } = require('../utils/geminiCall');
 const { kcultureDb } = require('../config/firebaseKculture');
+const { PRIMARY_CONTENT_LANG } = require('../config/contentLang'); // 메인 콘텐츠 언어 — 'ko' 하드코딩 금지
 
 // flash-lite가 JSON 뒤에 중복 블록을 붙이는 글리치 대응: 첫 번째 완결 {…} 객체만 추출.
 function parseFirstJsonObject(text) {
@@ -137,7 +138,7 @@ async function* enumerateIds(media, yearFrom, yearTo) {
         let page = 1, totalPages = 1;
         do {
             const d = await tmdb(`/discover/${media}`, {
-                with_original_language: 'ko', sort_by: 'popularity.desc', include_adult: 'false',
+                with_original_language: PRIMARY_CONTENT_LANG, sort_by: 'popularity.desc', include_adult: 'false',
                 [`${dateField}.gte`]: `${y}-01-01`, [`${dateField}.lte`]: `${y}-12-31`, page: String(page),
             });
             totalPages = Math.min(d.total_pages || 1, 500);
@@ -183,7 +184,7 @@ async function runIncremental({ days = 14, maxTitles = 200, concurrency = 3 } = 
         let page = 1, totalPages = 1;
         do {
             const d = await tmdb(`/discover/${media}`, {
-                with_original_language: 'ko', sort_by: `${dateField}.desc`,
+                with_original_language: PRIMARY_CONTENT_LANG, sort_by: `${dateField}.desc`,
                 [`${dateField}.gte`]: since, page: String(page),
             });
             totalPages = Math.min(d.total_pages || 1, 5);

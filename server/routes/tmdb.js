@@ -18,6 +18,16 @@ const LANG_MAP = {
 };
 const toTmdbLang = (l) => LANG_MAP[l] || l || 'en-US';
 
+// 앱 메인 콘텐츠 언어 — 'ko' 하드코딩 금지, 반드시 이 상수 사용(server/config/contentLang.js).
+const { PRIMARY_CONTENT_LANG } = require('../config/contentLang');
+
+// 이미지 우선순위 선택: 콘텐츠 원어(original_language) → 영어. 없으면 null(호출측이 TMDB 기본값 유지).
+function pickImageByLang(arr, originalLang) {
+    const a = arr || [];
+    const by = (l) => a.find((x) => x.iso_639_1 === l);
+    return (by(originalLang) || by('en'))?.file_path || null;
+}
+
 // ── 인메모리 TTL 캐시 ──────────────────────────────────────────────
 const cache = new Map();
 function getCache(k) {
@@ -60,7 +70,7 @@ router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), asy
         const params = {
             language: lang,
             sort_by: sort,
-            with_original_language: 'ko',
+            with_original_language: PRIMARY_CONTENT_LANG,
             page: String(page),
             include_adult: 'false',
         };
@@ -83,7 +93,23 @@ router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), asy
         const key = `disc:${media}:${JSON.stringify(params)}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch(`/discover/${media}`, params); setCache(key, data, 30 * 60 * 1000); }
-        res.json({ media, page: data.page, totalPages: data.total_pages, results: data.results || [] });
+
+        // 이미지는 언어별로 바꾸지 않고 항상 메인 콘텐츠 언어판으로(제목만 언어별).
+        // 사용자 언어 ≠ 메인 콘텐츠 언어면 메인 콘텐츠 언어로 한 번 더 받아 포스터를 id로 병합.
+        let results = data.results || [];
+        const primaryLang = toTmdbLang(PRIMARY_CONTENT_LANG);
+        if (lang !== primaryLang && results.length) {
+            const pParams = { ...params, language: primaryLang };
+            const pKey = `disc:${media}:${JSON.stringify(pParams)}`;
+            let pData = getCache(pKey);
+            if (!pData) { pData = await tmdbFetch(`/discover/${media}`, pParams); setCache(pKey, pData, 30 * 60 * 1000); }
+            const pMap = new Map((pData.results || []).map((r) => [r.id, r]));
+            results = results.map((r) => {
+                const p = pMap.get(r.id);
+                return p ? { ...r, poster_path: p.poster_path ?? r.poster_path, backdrop_path: p.backdrop_path ?? r.backdrop_path } : r;
+            });
+        }
+        res.json({ media, page: data.page, totalPages: data.total_pages, results });
     } catch (e) {
         console.error('[tmdb/discover]', e.message);
         res.status(502).json({ error: 'tmdb_failed' });
@@ -118,7 +144,15 @@ router.get('/api/tmdb/title/:media/:id', requireAuthAny, rateLimit('tmdb', TMDB_
             data = await tmdbFetch(`/${media}/${id}`, {
                 language: lang,
                 append_to_response: 'credits,images,videos,watch/providers,translations',
+                // 이미지 후보를 메인 콘텐츠 언어·영어·무언어로 받아둠(아래 우선순위 선택에 사용)
+                include_image_language: `${PRIMARY_CONTENT_LANG},en,null`,
             });
+            // 이미지는 언어별로 바꾸지 않고 콘텐츠 원어 → 영어 우선(없으면 TMDB 기본값 유지). 제목·줄거리만 언어별.
+            const ol = data.original_language || PRIMARY_CONTENT_LANG;
+            const poster = pickImageByLang(data.images?.posters, ol);
+            const backdrop = pickImageByLang(data.images?.backdrops, ol);
+            if (poster) data.poster_path = poster;
+            if (backdrop) data.backdrop_path = backdrop;
             setCache(key, data, 6 * 60 * 60 * 1000);
         }
         res.json(data);
@@ -157,9 +191,9 @@ router.get('/api/tmdb/search', requireAuthAny, rateLimit('tmdb', TMDB_RL), async
         const key = `search:${lang}:${page}:${q.toLowerCase()}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch('/search/multi', { language: lang, query: q, page: String(page), include_adult: 'false' }); setCache(key, data, 10 * 60 * 1000); }
-        // tv/movie는 한국 원작만, person은 모두 유지
+        // tv/movie는 메인 콘텐츠 언어 원작만, person은 모두 유지
         const results = (data.results || []).filter((r) =>
-            (r.media_type === 'tv' || r.media_type === 'movie') ? r.original_language === 'ko' : r.media_type === 'person'
+            (r.media_type === 'tv' || r.media_type === 'movie') ? r.original_language === PRIMARY_CONTENT_LANG : r.media_type === 'person'
         );
         res.json({ results, page: data.page, totalPages: data.total_pages });
     } catch (e) {
@@ -177,11 +211,11 @@ router.get('/api/tmdb/person/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), a
         const key = `person:${id}:${lang}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits' }); setCache(key, data, 6 * 60 * 60 * 1000); }
-        // 출연작: 한국 작품 + 포스터 있는 것만, 중복 제거, 인기순
+        // 출연작: 메인 콘텐츠 언어 작품 + 포스터 있는 것만, 중복 제거, 인기순
         const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
         const seen = new Set();
         const works = credits
-            .filter((c) => c.original_language === 'ko' && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
+            .filter((c) => c.original_language === PRIMARY_CONTENT_LANG && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
             .filter((c) => { const k = `${c.media_type}-${c.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
             .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
         res.json({
