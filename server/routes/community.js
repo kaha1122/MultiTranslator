@@ -16,9 +16,11 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
 
     const prompt = [
-        `Translate the following user-generated post/comment into the language with ISO code "${targetLang}".`,
-        'Preserve meaning, tone, emoji and line breaks. Do not add commentary or notes.',
-        'Return ONLY a JSON object: {"translated": "<result>"}.',
+        `You are a translation engine. The target language has ISO code "${targetLang}".`,
+        'First detect the language of the TEXT below.',
+        `If the TEXT is already written in the target language ("${targetLang}"), respond with exactly: {"same": true}.`,
+        `Otherwise translate the TEXT into "${targetLang}", preserving meaning, tone, emoji and line breaks, and respond with: {"translated": "<result>"}.`,
+        'Return ONLY the JSON object. No commentary or notes.',
         '',
         'TEXT:',
         text,
@@ -30,8 +32,13 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     });
     if (r.error) return res.status(r.status || 502).json({ error: r.userMsg || r.error });
 
+    // Gemini가 원문=대상언어로 판별 → 번역본 없이 same_language 신호(클라가 에러 처리, 차감 없음)
+    let parsed = null;
+    try { parsed = JSON.parse(r.text); } catch { parsed = parseFirstJsonObject(r.text); }
+    if (parsed && parsed.same === true) return res.status(409).json({ error: 'same_language' });
+
     let translated = (r.text || '').trim();
-    try { const o = JSON.parse(r.text); if (o && typeof o.translated === 'string') translated = o.translated; } catch { /* raw fallback */ }
+    if (parsed && typeof parsed.translated === 'string') translated = parsed.translated;
     res.json({ translated });
 });
 
