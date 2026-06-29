@@ -195,6 +195,47 @@ router.get('/api/tmdb/person/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), a
     }
 });
 
+// ── 컬렉션 검색 (영화 프랜차이즈/시리즈) ──
+router.get('/api/tmdb/search-collection', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const q = String(req.query.q || '').trim();
+        if (!q) return res.json({ results: [] });
+        const lang = toTmdbLang(req.query.lang);
+        const page = Math.min(parseInt(req.query.page, 10) || 1, 100);
+        const key = `searchcol:${lang}:${page}:${q.toLowerCase()}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch('/search/collection', { language: lang, query: q, page: String(page) }); setCache(key, data, 10 * 60 * 1000); }
+        const results = (data.results || []).map((c) => ({
+            id: c.id, name: c.name, poster_path: c.poster_path, backdrop_path: c.backdrop_path, overview: c.overview,
+        }));
+        res.json({ results, page: data.page, totalPages: data.total_pages });
+    } catch (e) {
+        console.error('[tmdb/search-collection]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── 컬렉션 상세 (수록 작품) ──
+router.get('/api/tmdb/collection/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const id = String(req.params.id).replace(/\D/g, '');
+        if (!id) return res.status(400).json({ error: 'bad id' });
+        const lang = toTmdbLang(req.query.lang);
+        const key = `collection:${id}:${lang}`;
+        let data = getCache(key);
+        if (!data) { data = await tmdbFetch(`/collection/${id}`, { language: lang }); setCache(key, data, 6 * 60 * 60 * 1000); }
+        // 수록 영화: 포스터 있는 것 + 개봉일 순. media_type 부여(클라 라우팅용)
+        const parts = (data.parts || [])
+            .filter((p) => p.poster_path)
+            .map((p) => ({ ...p, media_type: 'movie' }))
+            .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
+        res.json({ id: data.id, name: data.name, overview: data.overview, poster_path: data.poster_path, backdrop_path: data.backdrop_path, parts });
+    } catch (e) {
+        console.error('[tmdb/collection]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
 // 참고: TMDB 메타 번역은 별도 번역 호출 없이 append_to_response=translations 의 언어별 번역본을
 //       클라이언트가 추출/캐시하고, 없으면 영어로 폴백한다(비용 0). Gemini는 커뮤니티 UGC 번역에만 사용.
 
