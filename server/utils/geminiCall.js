@@ -2,7 +2,8 @@
  * Gemini 호출 with retry + 모델 fallback (2026-05-22 v1.5.53+).
  *
  * Flash-Lite 503 outage 가 4월부터 community 다수 보고. retry 만으로는 회복 안 됨.
- * → 1~3차 Flash-Lite retry, 마지막 1회 Flash escalate. 비용 평균 ~1.25x.
+ * → 1~3차 Flash-Lite(2.5) retry, 마지막 1회 FALLBACK_MODEL escalate.
+ *   FALLBACK 기본값은 'gemini-3.1-flash-lite'(2.5-flash-lite 동급 가격대) — 자세한 건 config/gemini.js 참조.
  *
  * 사용 예:
  *   const result = await callGeminiJson(prompt, geminiKey, {

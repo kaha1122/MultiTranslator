@@ -3,15 +3,19 @@
  *
  * 2026-05-22 — Flash-Lite 503 outage 대응:
  *   PRIMARY_MODEL 1~3회 retry 후 fail 시 FALLBACK_MODEL 1회 escalate.
- *   평소 비용 ~1x (Flash-Lite), outage 시에만 ~5x (Flash) 일부 호출.
+ *
+ * 2026-06-29 — FALLBACK_MODEL 기본값을 'gemini-2.5-flash'(비용 ~5x) → 'gemini-3.1-flash-lite' 로 변경.
+ *   3.1-flash-lite 는 2.5-flash-lite 와 동급 가격대의 신형 lite 모델로, 2.5-flash-lite outage 시
+ *   비용 부담 없이 escalate 가능. 평소 ~1x, outage 시에도 ~1x 유지(기존 5x 대비 대폭 절감).
+ *   Render env GEMINI_FALLBACK_MODEL_ID 로 언제든 오버라이드(예: 비상 시 'gemini-2.5-flash').
  *
  * 2026-05-22 — 운영자 토글 GEMINI_MODE (Render env 로 즉시 변경 가능):
- *   'auto'  (기본) : Flash-Lite 3회 + Flash fallback   ← 평소 운영
- *   'fast'         : Flash-Lite 1회만 + 즉시 Flash       ← Flash-Lite 불안정 + 빠른 응답
- *   'flash'        : Flash 만 사용 (Flash-Lite 건너뜀)  ← 완전 outage 시 비상
+ *   'auto'  (기본) : Flash-Lite(2.5) 3회 + FALLBACK escalate   ← 평소 운영
+ *   'fast'         : Flash-Lite(2.5) 1회만 + 즉시 FALLBACK       ← 2.5 불안정 + 빠른 응답
+ *   'flash'        : FALLBACK 만 사용 (2.5 Flash-Lite 건너뜀)   ← 완전 outage 시 비상
  */
 const PRIMARY_MODEL = process.env.GEMINI_MODEL_ID || 'gemini-2.5-flash-lite';
-const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL_ID || 'gemini-2.5-flash';
+const FALLBACK_MODEL = process.env.GEMINI_FALLBACK_MODEL_ID || 'gemini-3.1-flash-lite';
 const GEMINI_MODEL = PRIMARY_MODEL;  // backward compat
 
 const RAW_MODE = (process.env.GEMINI_MODE || 'auto').toLowerCase();
