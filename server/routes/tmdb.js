@@ -2,7 +2,7 @@
 // K-DramaLingo 전용. TMDB 키는 서버 환경변수(TMDB_API_KEY/TMDB_ACCESS_TOKEN)에만 둔다.
 // 인메모리 TTL 캐시로 TMDB 호출량 절감. 인증은 requireAuthAny(kculture/PronunFit 토큰 모두 허용).
 const express = require('express');
-const { requireAuthAny } = require('../middleware/authAny');
+const { optionalAuthAny } = require('../middleware/authAny');
 const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
@@ -105,7 +105,7 @@ async function tmdbFetch(path, params = {}) {
 const TMDB_RL = { perMinute: 60, perHour: 1000 };
 
 // ── discover: 한국 콘텐츠 (최신/장르/랭킹/인기 모두 이 엔드포인트로) ──
-router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         // kind: drama|movie|variety (없으면 media 파라미터 하위호환)
         const kind = req.query.kind;
@@ -175,7 +175,7 @@ router.get('/api/tmdb/discover', requireAuthAny, rateLimit('tmdb', TMDB_RL), asy
 });
 
 // ── 장르 목록 ──
-router.get('/api/tmdb/genres', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/genres', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const media = req.query.media === 'movie' ? 'movie' : 'tv';
         const lang = toTmdbLang(req.query.lang);
@@ -190,7 +190,7 @@ router.get('/api/tmdb/genres', requireAuthAny, rateLimit('tmdb', TMDB_RL), async
 });
 
 // ── 상세 (credits/images/videos/watch providers/translations append) ──
-router.get('/api/tmdb/title/:media/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const media = req.params.media === 'movie' ? 'movie' : 'tv';
         const id = String(req.params.id).replace(/\D/g, '');
@@ -242,7 +242,7 @@ router.get('/api/tmdb/title/:media/:id', requireAuthAny, rateLimit('tmdb', TMDB_
 });
 
 // ── OTT 제공자 목록 (지역별) ──
-router.get('/api/tmdb/providers', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/providers', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const media = req.query.media === 'movie' ? 'movie' : 'tv';
         const region = String(req.query.region || 'US').toUpperCase().slice(0, 2);
@@ -261,7 +261,7 @@ router.get('/api/tmdb/providers', requireAuthAny, rateLimit('tmdb', TMDB_RL), as
 });
 
 // ── 검색 (한국 작품 + 인물) ──
-router.get('/api/tmdb/search', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const q = String(req.query.q || '').trim();
         if (!q) return res.json({ results: [] });
@@ -292,7 +292,7 @@ router.get('/api/tmdb/search', requireAuthAny, rateLimit('tmdb', TMDB_RL), async
 });
 
 // ── 인물 상세 + 출연작(한국 작품) ──
-router.get('/api/tmdb/person/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });
@@ -319,7 +319,7 @@ router.get('/api/tmdb/person/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), a
 });
 
 // ── 컬렉션 검색 (영화 프랜차이즈/시리즈) ──
-router.get('/api/tmdb/search-collection', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/search-collection', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const q = String(req.query.q || '').trim();
         if (!q) return res.json({ results: [] });
@@ -339,7 +339,7 @@ router.get('/api/tmdb/search-collection', requireAuthAny, rateLimit('tmdb', TMDB
 });
 
 // ── 컬렉션 상세 (수록 작품) ──
-router.get('/api/tmdb/collection/:id', requireAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+router.get('/api/tmdb/collection/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });

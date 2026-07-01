@@ -35,4 +35,26 @@ async function requireAuthAny(req, res, next) {
     next();
 }
 
-module.exports = { requireAuthAny };
+// ── 선택적 인증 (공개 읽기 라우트용 — /api/tmdb/* discover·검색·상세 등) ──────
+// TMDB는 공개 데이터라 로그인 없이 열람 가능해야 한다(로그아웃 홈/탐색). 토큰이 있으면
+// 검증해 req.uid를 채우고(레이트리밋을 uid 기준으로), 없거나 유효하지 않으면 익명으로 통과한다
+// (rateLimit이 req.uid 부재 시 IP로 폴백). ⚠ 쓰기/과금 라우트(community translate 등)에는 쓰지 말 것.
+async function optionalAuthAny(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader?.startsWith('Bearer ')) return next(); // 익명 허용
+
+    const idToken = authHeader.split('Bearer ')[1];
+    if (!admin.apps.length) { req.uid = 'dev-user'; return next(); }
+
+    const tryVerify = async (authInstance) => {
+        if (!authInstance) return null;
+        try { return await authInstance.verifyIdToken(idToken); }
+        catch { return null; }
+    };
+    let decoded = await tryVerify(kcultureAuth);
+    if (!decoded) decoded = await tryVerify(admin.auth());
+    if (decoded) req.uid = decoded.uid; // 유효하지 않아도 401 대신 익명 통과
+    next();
+}
+
+module.exports = { requireAuthAny, optionalAuthAny };
