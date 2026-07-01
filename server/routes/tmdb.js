@@ -169,6 +169,8 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
             params.with_watch_monetization_types = 'flatrate';
         }
         if (sort.startsWith('vote_average')) params['vote_count.gte'] = '200'; // 랭킹 신뢰도
+        // 인기순 무명 이상치 제거: 최소 누적 평점수 하한. 예능은 TMDB 누적 평점이 희소 → 하한 완화(행 비는 것 방지).
+        else if (sort.startsWith('popularity')) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
         if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date')) {
             const today = new Date().toISOString().slice(0, 10);
             params[media === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte'] = today; // 미래작 제외
