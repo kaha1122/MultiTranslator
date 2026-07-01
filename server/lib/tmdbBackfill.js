@@ -131,12 +131,31 @@ async function geminiMulti(srcTitle, srcOverview, codes, srcLangName = 'English'
     return parseFirstJsonObject(r.text) || {};
 }
 
+// 검색 인덱스 저비용 보강: 이미 번역 완료된 작품(스킵 대상)에 searchLower/searchTitle 맵이 없을 때,
+// 저장돼 있는 번역 subcollection(titles/{id}/translations/{code}.title)만으로 인덱스를 재구성(Gemini 재호출 0).
+// 포스터는 검색 카드 썸네일용으로 TMDB 1회(무료)만 조회. 한 번 채우면 다음 실행부터 재조회 안 함.
+async function fillSearchIndex(media, id, markerRef) {
+    const snap = await kcultureDb.collection(`titles/${id}/translations`).get();
+    const searchTitle = {}, searchLower = {};
+    snap.forEach((d) => {
+        const ti = (d.data()?.title || '').trim();
+        if (ti) { searchTitle[d.id] = ti; searchLower[d.id] = ti.toLowerCase(); }
+    });
+    let poster_path = null;
+    try { const det = await tmdb(`/${media}/${id}`, { language: 'en-US' }); poster_path = det.poster_path || null; } catch { /* 포스터 실패는 무시(제목 폴백 카드) */ }
+    await markerRef.set({ poster_path, searchTitle, searchLower, searchIndexedAt: new Date() }, { merge: true });
+}
+
 async function processTitle(media, id, { force = false } = {}) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const markerRef = kcultureDb.doc(`titles/${id}`);
     if (!force) {
         const m = await markerRef.get();
-        if (m.exists && m.data()?.metaTranslated) return { id, skipped: true, langs: 0, geminiUsed: 0 };
+        if (m.exists && m.data()?.metaTranslated) {
+            // 이미 번역 완료. 검색 인덱스만 없으면 저비용 보강(Gemini 없이 — 기존 번역제목 재사용).
+            if (!m.data()?.searchLower) { try { await fillSearchIndex(media, id, markerRef); } catch { /* 보강 실패는 무시 */ } }
+            return { id, skipped: true, langs: 0, geminiUsed: 0 };
+        }
     }
 
     const detail = await tmdb(`/${media}/${id}`, { language: 'en-US', append_to_response: 'translations' });
@@ -178,6 +197,14 @@ async function processTitle(media, id, { force = false } = {}) {
     const noSource = !src;
     const done = complete || noSource;
 
+    // 검색 인덱스: 사용자 언어 번역제목 접두 검색용 맵(marker doc). TMDB 검색은 번역제목을 인덱싱하지
+    //   않으므로(원제·영문·별칭만) 이 맵으로 보완. searchLower=소문자 접두매칭 키, searchTitle=표시용.
+    const searchTitle = {}, searchLower = {};
+    for (const [code, v] of Object.entries(out)) {
+        const ti = (v.title || '').trim();
+        if (ti) { searchTitle[code] = ti; searchLower[code] = ti.toLowerCase(); }
+    }
+
     const batch = kcultureDb.batch();
     for (const [code, v] of Object.entries(out)) {
         batch.set(kcultureDb.doc(`titles/${id}/translations/${code}`), {
@@ -189,6 +216,9 @@ async function processTitle(media, id, { force = false } = {}) {
         metaTranslated: done,           // 완료(또는 원본없음)일 때만 → 부분실패는 false로 재시도 대상
         metaComplete: complete,         // 9개 타깃 전부 채움 여부(감사/통계용)
         metaLangs: Object.keys(out),
+        poster_path: detail.poster_path || null,  // 검색 카드 썸네일용
+        searchTitle,                    // {code: 번역제목} — 검색결과 표시
+        searchLower,                    // {code: 번역제목 소문자} — 접두 범위질의 키
         ...(noSource && !complete ? { metaNoSource: true } : {}),
         updatedAt: new Date(),
     }, { merge: true });

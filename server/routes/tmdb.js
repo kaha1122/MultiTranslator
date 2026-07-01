@@ -74,6 +74,43 @@ async function localizeTitles(results, { clientLang, fetchEn }) {
     });
 }
 
+// 사전번역 캐시 접두 검색: TMDB 검색은 번역제목(현지어)을 인덱싱하지 않으므로(원제·영문·별칭만),
+//   우리가 저장한 번역제목(titles/{id}.searchLower.{lang})을 접두(prefix) 범위질의로 조회해 결과를 보완한다.
+//   - map 하위필드 단일 범위질의 → Firestore 자동 단일필드 인덱스 사용(수동 복합 인덱스 불필요).
+//   - clientLang='en'은 TMDB가 이미 영문 제목을 검색하므로 건너뜀(비용 절약). kcultureDb 없으면 [].
+async function searchLocalizedTitles(qLower, clientLang, limit = 20) {
+    if (!kcultureDb || !qLower || !clientLang || clientLang === 'en') return [];
+    const field = `searchLower.${clientLang}`;
+    const HIGH = String.fromCharCode(0xf8ff); // 접두 범위 상한(유니코드 사설영역 최상위) — startAt~endAt 대체
+    try {
+        const snap = await kcultureDb.collection('titles')
+            .where(field, '>=', qLower)
+            .where(field, '<=', qLower + HIGH) // 접두 범위 상한
+            .limit(limit)
+            .get();
+        const out = [];
+        snap.forEach((d) => {
+            const data = d.data() || {};
+            const title = data.searchTitle?.[clientLang] || '';
+            if (!title) return;
+            const media_type = data.media === 'movie' ? 'movie' : 'tv';
+            out.push({
+                id: Number(d.id),
+                media_type,
+                title,                                 // movie 카드용
+                name: title,                           // tv 카드용(displayName은 name 우선)
+                poster_path: data.poster_path || null,
+                original_language: PRIMARY_CONTENT_LANG,
+                _fromCache: true,                      // 디버그 표식(클라 무시)
+            });
+        });
+        return out;
+    } catch (e) {
+        console.warn('[tmdb/search] localized cache search failed:', e.message);
+        return []; // 캐시 검색 실패는 TMDB 결과만으로 폴백(검색 자체는 계속 동작)
+    }
+}
+
 // ── 인메모리 TTL 캐시 ──────────────────────────────────────────────
 const cache = new Map();
 function getCache(k) {
@@ -266,8 +303,12 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
         const q = String(req.query.q || '').trim();
         if (!q) return res.json({ results: [] });
         const lang = toTmdbLang(req.query.lang);
+        const clientLang = String(req.query.lang || 'en');
         const page = Math.min(parseInt(req.query.page, 10) || 1, 100);
-        const key = `search:${lang}:${page}:${q.toLowerCase()}`;
+        const qLower = q.toLowerCase();
+        // 사전번역 캐시 접두 검색을 TMDB 검색과 병렬로(추가 지연 최소화). 1페이지에서만 보완.
+        const cachePromise = page === 1 ? searchLocalizedTitles(qLower, clientLang) : Promise.resolve([]);
+        const key = `search:${lang}:${page}:${qLower}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch('/search/multi', { language: lang, query: q, page: String(page), include_adult: 'false' }); setCache(key, data, 10 * 60 * 1000); }
         // tv/movie는 메인 콘텐츠 언어 원작만, person은 모두 유지
@@ -276,14 +317,23 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
         );
         // 제목 현지화: 우리 번역제목(Firestore) → 영어 → 한국어 원제. (person은 helper가 건너뜀)
         results = await localizeTitles(results, {
-            clientLang: String(req.query.lang || 'en'),
+            clientLang,
             fetchEn: async () => {
-                const enKey = `search:en-US:${page}:${q.toLowerCase()}`;
+                const enKey = `search:en-US:${page}:${qLower}`;
                 let ed = getCache(enKey);
                 if (!ed) { ed = await tmdbFetch('/search/multi', { language: 'en-US', query: q, page: String(page), include_adult: 'false' }); setCache(enKey, ed, 10 * 60 * 1000); }
                 return ed.results || [];
             },
         });
+        // 캐시 접두검색 결과 병합: TMDB가 못 찾은 번역제목만 추가(중복은 TMDB 원본 우선 — 더 풍부).
+        const cacheHits = await cachePromise;
+        if (cacheHits.length) {
+            const seen = new Set(results.map((r) => `${r.media_type}:${r.id}`));
+            for (const c of cacheHits) {
+                const k = `${c.media_type}:${c.id}`;
+                if (!seen.has(k)) { seen.add(k); results.push(c); }
+            }
+        }
         res.json({ results, page: data.page, totalPages: data.total_pages });
     } catch (e) {
         console.error('[tmdb/search]', e.message);
