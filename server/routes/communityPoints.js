@@ -96,6 +96,12 @@ router.post('/api/community/points/paypal/create-order', requireAuthAny, rateLim
                     description: pkg.name,
                     amount: { currency_code: 'USD', value: pkg.usd },
                 }],
+                // 디지털 재화(포인트) — 배송주소 수집 안 함 + "지금 결제" 버튼으로 입력 최소화.
+                application_context: {
+                    brand_name: 'K-DramaAnyLang',
+                    shipping_preference: 'NO_SHIPPING',
+                    user_action: 'PAY_NOW',
+                },
             },
             { headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' } }
         );
