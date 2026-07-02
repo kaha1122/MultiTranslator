@@ -14,12 +14,16 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 const langName = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
 
 router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
-    const { text, targetLang } = req.body || {};
+    const { text, targetLang, maxChars } = req.body || {};
     if (!text || !targetLang) return res.status(400).json({ error: 'missing fields' });
     if (text.length > 5000) return res.status(413).json({ error: 'too long (max 5000)' });
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
 
     const targetName = langName(targetLang);
+    // 선택적 길이 제약(KCulture 한줄평 등 고정 박스용). optional이라 미전송 호출(PronunFit 포함)엔 무영향.
+    const lenRule = (Number.isFinite(maxChars) && maxChars > 0)
+        ? `5. Length limit: keep the "translated" value within about ${maxChars} characters. If a faithful translation would be longer, condense naturally (preserve the core meaning, drop redundancy) — never cut off mid-sentence.`
+        : null;
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         ``,
@@ -34,6 +38,7 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         `   - NEVER mix languages. No notes, commentary, romanization, or surrounding quotes.`,
         `   - Translate naturally and idiomatically, faithfully preserving meaning, nuance, tone, register (formality / slang / emotion), emoji and line breaks.`,
         `4. Self-check before answering: if your "translated" value is still (even partly) in the source language, you FAILED — redo it fully in ${targetName}.`,
+        ...(lenRule ? [lenRule] : []),
         ``,
         `Respond with ONLY one JSON object, no markdown:`,
         `  {"translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`,
