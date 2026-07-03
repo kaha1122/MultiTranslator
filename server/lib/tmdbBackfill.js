@@ -297,4 +297,25 @@ async function runIncremental({ days = 14, maxTitles = 200, concurrency = 3 } = 
     return stat;
 }
 
-module.exports = { runBackfill, runIncremental, processTitle, TARGETS };
+// 부분 실패 재시도 (delta B): metaTranslated=false 인 문서만 인덱스 쿼리로 집어 재처리.
+// - 왜 필요: processTitle 완료 게이트가 9언어 전부 채워야 true → Gemini 일시오류로 일부만 성공하면 false로 남음.
+//   그 문서들만 O(결과수)로 재시도(전체 25k 스캔 아님 → 저비용). where('metaTranslated','==',false)는
+//   단일필드 자동 인덱스라 복합인덱스 불필요. 미처리작(필드 없음)은 매칭 안 됨 → runIncremental/주간 sweep 담당.
+// - force=false로 호출: 재처리 중 이미 true된 건 markerRef.get()으로 skip(경합 안전).
+async function runRetry({ limit = 100, concurrency = 3 } = {}) {
+    if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    const snap = await kcultureDb.collection('titles')
+        .where('metaTranslated', '==', false)
+        .limit(limit)
+        .get();
+    const items = [];
+    snap.forEach((d) => { const m = d.data()?.media; if (m) items.push({ media: m, id: d.id }); });
+    const stat = { scanned: items.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0 };
+    await runPool(items, concurrency, async ({ media, id }) => {
+        try { const r = await processTitle(media, id); if (r.skipped) stat.skipped++; else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; } }
+        catch { stat.errors++; }
+    });
+    return stat;
+}
+
+module.exports = { runBackfill, runIncremental, runRetry, processTitle, TARGETS };
