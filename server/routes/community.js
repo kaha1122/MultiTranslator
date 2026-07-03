@@ -54,15 +54,25 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높아 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });
-    if (r.error) return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    // 서버에 도달한 호출 = 클라 Firestore 캐시 MISS = Gemini 실호출(과금). 캐시 HIT은 클라에서 처리돼
+    // 서버에 오지 않는다 → 아래 로그 1줄 = 실제 과금 1건. (TTS의 [AzureTTS] MISS 대응)
+    const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
+    if (r.error) {
+        console.log(`[CommunityTx] uid=${uid} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
+        return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    }
 
     // Gemini가 원문=대상언어로 판별 → 번역본 없이 same_language 신호(클라가 에러 처리, 차감 없음)
     let parsed = null;
     try { parsed = JSON.parse(r.text); } catch { parsed = parseFirstJsonObject(r.text); }
-    if (parsed && parsed.same === true) return res.status(409).json({ error: 'same_language' });
+    if (parsed && parsed.same === true) {
+        console.log(`[CommunityTx] uid=${uid} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} → SAME-LANG(번역 안 함, 차감 없음)`);
+        return res.status(409).json({ error: 'same_language' });
+    }
 
     let translated = (r.text || '').trim();
     if (parsed && typeof parsed.translated === 'string') translated = parsed.translated;
+    console.log(`[CommunityTx] uid=${uid} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} model=${r.modelUsed || '?'} → Gemini 번역(과금 발생)`);
     res.json({ translated });
 });
 
@@ -79,10 +89,16 @@ router.post('/api/community/detect', requireAuthAny, rateLimit('community-detect
         label: 'community-detect',
         genConfig: { temperature: 0, topP: 0.9, responseMimeType: 'application/json' }, // 결정적 판별 → temp 0
     });
-    if (r.error) return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
+    if (r.error) {
+        console.log(`[CommunityDetect] uid=${uid} chars=${text.length} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
+        return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    }
 
     // 허용 코드일 때만 반환, 아니면(und·오탐) null → 클라가 UI 언어로 폴백
-    res.json({ lang: parseDetected(r.text) });
+    const detected = parseDetected(r.text);
+    console.log(`[CommunityDetect] uid=${uid} chars=${text.length} model=${r.modelUsed || '?'} → lang=${detected || 'und'}(과금 발생)`);
+    res.json({ lang: detected });
 });
 
 // 첫 번째 완결 JSON 객체만 추출 (flash-lite 중복 블록 글리치 방어)
@@ -137,8 +153,13 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높음). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });
-    if (r.error) return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
+    if (r.error) {
+        console.log(`[CommunityTx] uid=${uid} target=${targetLang} batch items=${items.length} chars=${total} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
+        return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+    }
     const map = parseFirstJsonObject(r.text) || {};
+    console.log(`[CommunityTx] uid=${uid} target=${targetLang} batch items=${items.length} chars=${total} model=${r.modelUsed || '?'} → Gemini 배치번역(과금 발생)`);
     res.json({ results: map });
 });
 
