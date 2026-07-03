@@ -150,6 +150,8 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         const lang = toTmdbLang(req.query.lang);
         const sort = String(req.query.sort || 'popularity.desc');
         const page = Math.min(parseInt(req.query.page, 10) || 1, 500);
+        // days: 최근 N일 내 출시작만(홈 "최신 hot"용). 0/미지정=무제한. 상한 60(과도한 범위 방지).
+        const days = Math.min(Math.max(parseInt(req.query.days, 10) || 0, 0), 60);
         const params = {
             language: lang,
             sort_by: sort,
@@ -170,10 +172,15 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         }
         if (sort.startsWith('vote_average')) params['vote_count.gte'] = '200'; // 랭킹 신뢰도
         // 인기순 무명 이상치 제거: 최소 누적 평점수 하한. 예능은 TMDB 누적 평점이 희소 → 하한 완화(행 비는 것 방지).
-        else if (sort.startsWith('popularity')) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
-        if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date')) {
+        // 단 days(최근 N일) 창에선 신작이 아직 누적 평점이 적어 하한을 적용하면 거의 다 걸러짐 → 하한 미적용.
+        else if (sort.startsWith('popularity') && !days) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
+        const dateField = media === 'tv' ? 'first_air_date' : 'primary_release_date';
+        if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date') || days) {
             const today = new Date().toISOString().slice(0, 10);
-            params[media === 'tv' ? 'first_air_date.lte' : 'primary_release_date.lte'] = today; // 미래작 제외
+            params[`${dateField}.lte`] = today; // 미래작 제외
+        }
+        if (days) { // 최근 N일 하한(홈 hot). 미래작 제외(.lte)와 함께 [today-days, today] 창으로 좁힘.
+            params[`${dateField}.gte`] = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         }
         const key = `disc:${media}:${JSON.stringify(params)}`;
         let data = getCache(key);
