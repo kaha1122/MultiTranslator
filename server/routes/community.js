@@ -64,6 +64,43 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     res.json({ translated });
 });
 
+// ── 언어 감지 (배지용) — 번역이 아닌 ISO 코드만 반환 → 출력 토큰 극소 = 저비용 ──────
+// 작성 시 1회 호출해 글의 실제 언어를 판별(작성자 UI 언어가 아닌 텍스트 기준). 실패/모호 시 클라가 UI 언어로 폴백.
+const DETECT_CODES = Object.keys(LANG_NAMES); // 앱 지원 코드(번역 targetLang과 동일 키셋)
+router.post('/api/community/detect', requireAuthAny, rateLimit('community-detect', { perMinute: 60, perHour: 600 }), async (req, res) => {
+    const { text } = req.body || {};
+    if (!text || typeof text !== 'string') return res.status(400).json({ error: 'missing text' });
+    if (text.length > 5000) return res.status(413).json({ error: 'too long (max 5000)' });
+    if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
+
+    const prompt = [
+        `You are a language identification engine. Identify the dominant natural language of the TEXT below.`,
+        ``,
+        `[Rules]`,
+        `- Respond with the ISO code, chosen EXACTLY from this allowed list: ${DETECT_CODES.join(', ')}.`,
+        `- For Chinese use "zh-CN" (Simplified) or "zh-TW" (Traditional); for Portuguese use "pt-BR".`,
+        `- Judge by the actual words, not by names/emoji/numbers.`,
+        `- If the text is too short, ambiguous, only emoji/numbers/symbols, or its language is NOT in the list, respond with "und".`,
+        ``,
+        `Respond with ONLY one JSON object, no markdown: {"lang":"<code or und>"}`,
+        ``,
+        `TEXT:`,
+        text,
+    ].join('\n');
+
+    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+        label: 'community-detect',
+        genConfig: { temperature: 0, topP: 0.9, responseMimeType: 'application/json' }, // 결정적 판별 → temp 0
+    });
+    if (r.error) return res.status(r.status || 502).json({ error: r.userMsg || r.error });
+
+    let parsed = null;
+    try { parsed = JSON.parse(r.text); } catch { parsed = parseFirstJsonObject(r.text); }
+    const code = parsed && typeof parsed.lang === 'string' ? parsed.lang.trim() : 'und';
+    // 허용 코드일 때만 반환, 아니면(und·오탐) null → 클라가 UI 언어로 폴백
+    res.json({ lang: DETECT_CODES.includes(code) ? code : null });
+});
+
 // 첫 번째 완결 JSON 객체만 추출 (flash-lite 중복 블록 글리치 방어)
 function parseFirstJsonObject(text) {
     if (!text) return null;
