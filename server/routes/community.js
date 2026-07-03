@@ -6,7 +6,7 @@ const { requireAuthAny } = require('../middleware/authAny');
 const { rateLimit } = require('../middleware/rateLimit');
 const { callGeminiText } = require('../utils/geminiCall');
 const { LANG_NAMES } = require('../config/langGuide');
-const { buildDetectPrompt, parseDetected } = require('../lib/langDetect');
+const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/langDetect'); // same 판정을 detect와 동일 단서로 통합(SSOT)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -31,8 +31,9 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
         ``,
         `[Rules — read carefully, apply in order]`,
-        `1. Detect the source language of the TEXT below.`,
-        `2. If the source language is the SAME as the target language (${targetName}), respond with EXACTLY: {"same": true}`,
+        `1. Determine the source language of the TEXT below using these decisive cues:`,
+        LANG_SCRIPT_CUES,
+        `2. Respond with EXACTLY {"same": true} ONLY IF the source language is genuinely the SAME as the target language (${targetName}) by the cues above. If the text is in ANY other language — even if it mentions or is about ${targetName}-speaking topics — you MUST translate it (go to rule 3). When unsure, translate.`,
         `3. Otherwise translate the ENTIRE text into ${targetName}:`,
         `   - The "translated" value MUST be written 100% in ${targetName}.`,
         `   - NEVER return, copy, paraphrase, or echo the source-language text. Returning the source language is a FAILURE.`,
@@ -115,10 +116,13 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         `You are a professional translator for a multilingual community app.`,
         `Translate each item's text into ${targetName} (ISO code "${targetLang}").`,
         ``,
+        `[Judging each item's source language — apply these decisive cues]`,
+        LANG_SCRIPT_CUES,
+        ``,
         `[Rules]`,
         `- Each output value MUST be written 100% in ${targetName}.`,
         `- NEVER return, copy, paraphrase, or echo the source language. Returning the source language is a FAILURE.`,
-        `- If an item's text is already in ${targetName}, keep it as-is.`,
+        `- Keep an item as-is ONLY IF it is genuinely already in ${targetName} by the cues above. If it is in any other language — even if it mentions ${targetName} topics — you MUST translate it.`,
         `- Translate naturally and idiomatically, faithfully preserving meaning, nuance, tone, register, emoji and line breaks. No notes or commentary.`,
         `- Self-check: if any value is still in the source language, redo it fully in ${targetName}.`,
         ``,

@@ -5,17 +5,25 @@ const { LANG_NAMES } = require('../config/langGuide');
 
 const DETECT_CODES = Object.keys(LANG_NAMES); // 번역 targetLang과 동일 키셋
 
+// 언어 판정 스크립트 단서 — 단일 출처(SSOT). detect 엔드포인트와 번역 라우트의 same 판정이 공유해
+// 두 곳의 판정이 어긋나지 않도록 한다. (CJK 혼동·"주제≠언어" 오탐 방지의 핵심.)
+// 번역 라우트가 자체 부실 판정을 하던 버그(일본어 한줄평을 "이미 한국어"로 오판 → 번역 차단)를
+// 여기 단서를 재사용하도록 통합해 해소한다.
+const LANG_SCRIPT_CUES = [
+    `[Decisive script cues — apply FIRST, they override everything else]`,
+    `- Contains any Hangul (가–힣) → "ko" (Korean).`,
+    `- Contains any Japanese kana, hiragana (ぁ–ゖ) or katakana (ァ–ヶ) → "ja" (Japanese), even if Han/Kanji characters are also present.`,
+    `- Han/Chinese characters only, with NO kana and NO Hangul → "zh-CN" (Simplified) or "zh-TW" (Traditional).`,
+    `- Judge by the SCRIPT and GRAMMAR, NOT by the topic. Text that is ABOUT a country/person is NOT necessarily written in that country's language (e.g. Japanese text mentioning "韓国"/Korea is still "ja").`,
+].join('\n');
+
 function buildDetectPrompt(text) {
     return [
         `You are a language identification engine. Identify the language the TEXT below is WRITTEN IN.`,
         ``,
-        `[Decisive script cues — apply FIRST, they override everything else]`,
-        `- Contains any Hangul (가–힣) → "ko" (Korean).`,
-        `- Contains any Japanese kana, hiragana (ぁ–ゖ) or katakana (ァ–ヶ) → "ja" (Japanese), even if Han/Kanji characters are also present.`,
-        `- Han/Chinese characters only, with NO kana and NO Hangul → "zh-CN" (Simplified) or "zh-TW" (Traditional).`,
+        LANG_SCRIPT_CUES,
         ``,
         `[Rules]`,
-        `- Judge by the SCRIPT and GRAMMAR, NOT by the topic. Text that is ABOUT a country/person is NOT necessarily written in that country's language (e.g. Japanese text mentioning "韓国"/Korea is still "ja").`,
         `- Respond with the ISO code, chosen EXACTLY from this allowed list: ${DETECT_CODES.join(', ')}.`,
         `- For Portuguese use "pt-BR".`,
         `- Ignore emoji, numbers, URLs and symbols when judging.`,
@@ -52,4 +60,4 @@ function parseDetected(rawText) {
     return DETECT_CODES.includes(code) ? code : null;
 }
 
-module.exports = { DETECT_CODES, buildDetectPrompt, parseDetected };
+module.exports = { DETECT_CODES, LANG_SCRIPT_CUES, buildDetectPrompt, parseDetected };
