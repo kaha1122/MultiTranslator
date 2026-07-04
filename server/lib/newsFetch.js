@@ -37,15 +37,41 @@ function parseRss(xml, { fallbackSource, lang }) {
             const rawTitle = String(it.title?.['#text'] ?? it.title ?? '').trim();
             const url = String(it.link?.['#text'] ?? it.link ?? '').trim();
             if (!rawTitle || !url.startsWith('http')) continue;
-            // Google News: <source>가 매체명. 제목 꼬리 " - 매체명"은 중복이라 제거.
+            // Google News: <source>가 매체명, @_url 속성이 매체 도메인. 제목 꼬리 " - 매체명" 중복 제거.
             let source = String(it.source?.['#text'] ?? it.source ?? '').trim() || fallbackSource;
             let title = rawTitle;
             if (source && title.endsWith(` - ${source}`)) title = title.slice(0, -(source.length + 3)).trim();
             const publishedAt = it.pubDate ? new Date(it.pubDate).toISOString() : null;
-            out.push({ id: sha1(url), title, url, source: source || 'News', publishedAt, lang });
+            // 매체 로고(파비콘) — Google News 아이템은 원문 og:image를 못 얻으므로(JS 리다이렉트 페이지)
+            // 매체 도메인 파비콘을 좌측 썸네일 폴백으로 사용. 직접 URL 아이템은 자기 도메인.
+            let iconDomain = null;
+            try {
+                const srcUrl = it.source?.['@_url'];
+                iconDomain = new URL(srcUrl || url).hostname;
+                if (iconDomain.includes('news.google.com')) iconDomain = null;
+            } catch { /* 도메인 파싱 실패 — 아이콘 없음 */ }
+            const icon = iconDomain ? `https://www.google.com/s2/favicons?domain=${iconDomain}&sz=64` : null;
+            out.push({ id: sha1(url), title, url, source: source || 'News', publishedAt, lang, icon, image: null });
         } catch { /* 개별 아이템 파손 무시 */ }
     }
     return out;
+}
+
+// og:image 보강 — 직접 매체 URL(Soompi 등, news.google.com 제외)만. 언어당 상한 max건.
+// Google News 링크는 서버 리다이렉트가 아닌 JS 페이지(실측 200)라 스크레이프 불가 → icon 폴백 사용.
+async function enrichOgImages(items, max = 10) {
+    const targets = items.filter((it) => !it.image && !it.url.includes('news.google.com')).slice(0, max);
+    await Promise.allSettled(targets.map(async (it) => {
+        const res = await fetch(it.url, {
+            signal: AbortSignal.timeout(5000),
+            headers: { 'User-Agent': 'Mozilla/5.0 (compatible; KDramaAnyLangBot/1.0)' },
+        });
+        if (!res.ok) return;
+        const html = (await res.text()).slice(0, 200000); // 헤더 영역이면 충분 — 페이로드 상한
+        const m = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+            || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
+        if (m && m[1].startsWith('http')) it.image = m[1];
+    }));
 }
 
 async function fetchFeed(url, opts) {
@@ -72,7 +98,9 @@ async function fetchNewsForLang(lang) {
         return true;
     });
     deduped.sort((a, b) => String(b.publishedAt || '').localeCompare(String(a.publishedAt || '')));
-    return deduped.slice(0, MAX_ITEMS);
+    const capped = deduped.slice(0, MAX_ITEMS);
+    await enrichOgImages(capped); // 직접 URL 아이템만(언어당 ≤10건) — 실패는 icon 폴백
+    return capped;
 }
 
 module.exports = { LANG_FEEDS, fetchNewsForLang };
