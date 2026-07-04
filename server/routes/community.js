@@ -194,4 +194,46 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
     res.json({ results: map });
 });
 
+// ── 인앱 알림 fan-out ────────────────────────────────────────────────────────
+// 내 콘텐츠(리뷰/토론/코멘트/평가·한줄평 및 그 답글)에 남이 좋아요/댓글/답글을 남기면
+// 수신자 users/{uid}/notifications 에 알림 문서를 기록. 클라가 좋아요/댓글 성공 후 호출.
+// ⚠ 보안: 액터 신원은 requireAuthAny가 토큰에서 확정(req.uid) → 위조 불가. 수신자 서브컬렉션은
+//   보안규칙상 클라 직접쓰기 불가(admin SDK만) → 이 엔드포인트가 유일한 생성 경로. 자기 자신 알림은 skip.
+// ⚠ 현재는 "인앱 알림"만 기록. FCM 푸시 전송은 아래 TODO(수신자 토큰 조회 후 admin.messaging().send()).
+const NOTIF_KINDS = new Set([
+    'post_like', 'post_comment', 'comment_like', 'comment_reply', 'reply_like',
+    'discussion_like', 'discussion_reply', 'dreply_like', 'review_like',
+]);
+router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify', { perMinute: 60, perHour: 600 }), async (req, res) => {
+    const actorUid = req.uid;
+    const { recipientUid, kind, postId, titleId, media, preview, actorName, actorPhoto } = req.body || {};
+    if (!recipientUid || typeof recipientUid !== 'string' || recipientUid.length > 128) return res.status(400).json({ error: 'bad recipient' });
+    if (!NOTIF_KINDS.has(kind)) return res.status(400).json({ error: 'bad kind' });
+    if (recipientUid === actorUid) return res.json({ ok: true, skipped: 'self' }); // 자기 자신에겐 알림 안 함
+    if (!kcultureDb) return res.status(503).json({ error: 'not_configured' }); // service account 없으면(로컬) no-op
+
+    try {
+        await kcultureDb.collection('users').doc(recipientUid).collection('notifications').add({
+            kind,
+            actorUid,
+            actorName: String(actorName || 'User').slice(0, 80),
+            actorPhoto: actorPhoto ? String(actorPhoto).slice(0, 1000) : null,
+            postId: postId ? String(postId).slice(0, 64) : null,       // 이동 대상: 리뷰(게시글) 상세
+            titleId: (titleId !== undefined && titleId !== null && titleId !== '') ? Number(titleId) : null, // 이동 대상: 작품 상세
+            media: media === 'movie' ? 'movie' : (media === 'tv' ? 'tv' : null),
+            preview: String(preview || '').slice(0, 140),              // 카드 미리보기(원문 스니펫)
+            read: false,
+            createdAt: new Date(),
+        });
+        // TODO(FCM 푸시): 여기서 kcultureDb...doc(recipientUid).collection('fcmTokens') 토큰 조회 →
+        //   admin.messaging(kcultureApp).sendEachForMulticast({ tokens, notification: { title, body } })
+        //   로 실제 푸시 전송. (클라 토큰 등록/권한 UI + kcultureApp 주입 선행 필요.)
+        console.log(`[Notify] actor=${String(actorUid).slice(0, 8)} → ${String(recipientUid).slice(0, 8)} kind=${kind}`);
+        res.json({ ok: true });
+    } catch (e) {
+        console.warn('[Notify] write failed:', e?.message);
+        res.status(500).json({ error: 'notify_failed' });
+    }
+});
+
 module.exports = router;
