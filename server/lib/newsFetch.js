@@ -101,29 +101,39 @@ async function decodeGoogleUrl(gUrl) {
         const m = gUrl.match(/articles\/([^?]+)/);
         if (!m) return null;
         const id = m[1];
+        // DC IP(Render)에서 구글이 동의(consent) 리다이렉트/축소 페이지를 주는 경우 대비:
+        // SOCS/CONSENT 쿠키로 동의 우회 + 브라우저형 헤더. 실패 지점은 warn 로그(운영 진단용).
+        const commonHeaders = {
+            'User-Agent': UA,
+            'Accept-Language': 'en-US,en;q=0.9',
+            Cookie: 'SOCS=CAISNQgDEitib3FfaWRlbnRpdHlmcm9udGVuZHVpc2VydmVyXzIwMjMwODI5LjA3X3AxGgJlbiACGgYIgJnPpwY; CONSENT=PENDING+987',
+        };
         const pageRes = await fetch(`https://news.google.com/articles/${id}`, {
-            headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000),
+            headers: commonHeaders, signal: AbortSignal.timeout(6000),
         });
-        if (!pageRes.ok) return null;
+        if (!pageRes.ok) { console.warn('[news] decode: page', pageRes.status); return null; }
         const page = await pageRes.text();
         const sg = page.match(/data-n-a-sg="([^"]+)"/)?.[1];
         const ts = page.match(/data-n-a-ts="([^"]+)"/)?.[1];
-        if (!sg || !ts) return null;
+        if (!sg || !ts) {
+            console.warn('[news] decode: no sg/ts (len', page.length, 'consent:', page.includes('consent.google') ? 'Y' : 'N', ')');
+            return null;
+        }
         const inner = JSON.stringify(['garturlreq',
             [['X', 'X', ['X', 'X'], null, null, 1, 1, 'US:en', null, 1, null, null, null, null, null, 0, 1],
                 'X', 'X', 1, [1, 1, 1], 1, 1, null, 0, 0, null, 0], id, Number(ts), sg]);
         const body = 'f.req=' + encodeURIComponent(JSON.stringify([[['Fbv4je', inner, null, 'generic']]]));
         const res = await fetch('https://news.google.com/_/DotsSplashUi/data/batchexecute', {
             method: 'POST',
-            headers: { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8', 'User-Agent': UA },
+            headers: { ...commonHeaders, 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body, signal: AbortSignal.timeout(6000),
         });
-        if (!res.ok) return null;
+        if (!res.ok) { console.warn('[news] decode: batch', res.status); return null; }
         const text = await res.text();
         const um = text.match(/garturlres\\",\\"(https?:[^\\"]+)/) || text.match(/"garturlres","(https?:[^"]+)"/);
-        if (!um) return null;
+        if (!um) { console.warn('[news] decode: no garturlres (len', text.length, ')'); return null; }
         return um[1].replace(/\\u003d/gi, '=').replace(/\\\//g, '/');
-    } catch { return null; }
+    } catch (e) { console.warn('[news] decode: err', e.message); return null; }
 }
 
 // ── 기사 이미지 보강 (상위 max건) ─────────────────────────────────
@@ -186,6 +196,9 @@ async function fetchNewsForLang(lang) {
     const filtered = await filterContentNews(deduped.slice(0, 60));
     const capped = filtered.slice(0, MAX_ITEMS);
     await enrichArticles(capped);
+    console.log('[news]', lang, 'items', capped.length,
+        'decoded', capped.filter((it) => !it.url.includes('news.google.com')).length,
+        'images', capped.filter((it) => it.image).length);
     return capped;
 }
 
