@@ -250,6 +250,10 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                 append_to_response: 'credits,images,videos,watch/providers,translations',
                 // 이미지 후보를 메인 콘텐츠 언어·영어·무언어로 받아둠(아래 우선순위 선택에 사용)
                 include_image_language: `${PRIMARY_CONTENT_LANG},en,null`,
+                // 예고편도 언어 폴백: videos는 language로 필터되므로, 사용자 언어에 영상이 없으면
+                // 빈 배열이 됨(예: 한국 작품인데 en 예고편만 존재). 콘텐츠 원어·영어·무언어를 함께 받아
+                // 클라가 우선순위로 1종 선택하게 한다(이미지와 동일 정책).
+                include_video_language: `${PRIMARY_CONTENT_LANG},en,null`,
             });
             // 이미지는 언어별로 바꾸지 않고 콘텐츠 원어 → 영어 우선(없으면 TMDB 기본값 유지). 제목·줄거리만 언어별.
             const ol = data.original_language || PRIMARY_CONTENT_LANG;
