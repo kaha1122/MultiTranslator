@@ -77,10 +77,13 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     // 크론 전역 429 서킷 — 한 언어가 차단당하면 나머지도 디코드 skip(전부 이전 캐시 재사용).
     // 다음 크론에서 쿼터 회복 시 신규분만 점진 디코드.
     const state = { blocked: false };
+    // 언어당 디코드 상한 4 → 10개 언어 × 4 = 40 < 구글 429 임계(~53). 첫 실행부터 전 언어가
+    // 429 없이 4건씩 받고 회차마다 위(최신)부터 누적. 캐시된 언어는 재사용이라 실제론 더 적게 씀.
+    const DECODE_PER_LANG = 4;
     for (const lang of Object.keys(LANG_FEEDS)) {
         try {
             const prevItems = await prevItemsOf(lang);
-            const items = await fetchNewsForLang(lang, { prevItems, state });
+            const items = await fetchNewsForLang(lang, { prevItems, state, decodeBudget: DECODE_PER_LANG });
             if (items.length) {
                 const entry = { items, ts: Date.now() };
                 memory.set(lang, entry);
