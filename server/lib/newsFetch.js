@@ -52,7 +52,8 @@ function parseRss(xml, { fallbackSource, lang }) {
                 if (iconDomain.includes('news.google.com')) iconDomain = null;
             } catch { /* 도메인 파싱 실패 — 아이콘 없음 */ }
             const icon = iconDomain ? `https://www.google.com/s2/favicons?domain=${iconDomain}&sz=64` : null;
-            out.push({ id: sha1(url), title, url, source: source || 'News', publishedAt, lang, icon, image: null });
+            // srcUrl = 피드 원본 URL(불변 키) — url은 디코드로 바뀌므로 크론 간 동일 기사 매칭에 사용
+            out.push({ id: sha1(url), title, url, srcUrl: url, source: source || 'News', publishedAt, lang, icon, image: null });
         } catch { /* 개별 아이템 파손 무시 */ }
     }
     return out;
@@ -96,7 +97,9 @@ async function filterContentNews(items) {
 // ① 기사 페이지에서 서명(data-n-a-sg)·타임스탬프(data-n-a-ts) 추출
 // ② batchexecute(Fbv4je/garturlreq) 호출 → garturlres에 원문 URL.
 // 비공식 내부 API — 실패는 조용히 null(파비콘 폴백 유지). 형식 변경 시 이 함수만 수리.
-async function decodeGoogleUrl(gUrl) {
+// state.blocked: 429 서킷브레이커 — 한 번 걸리면 이번 실행의 남은 디코드 전부 생략
+// (계속 두드리면 차단이 길어짐. 이전 캐시 재사용 덕에 다음 크론에서 자연 회복.)
+async function decodeGoogleUrl(gUrl, state) {
     try {
         const m = gUrl.match(/articles\/([^?]+)/);
         if (!m) return null;
@@ -111,7 +114,11 @@ async function decodeGoogleUrl(gUrl) {
         const pageRes = await fetch(`https://news.google.com/articles/${id}`, {
             headers: commonHeaders, signal: AbortSignal.timeout(6000),
         });
-        if (!pageRes.ok) { console.warn('[news] decode: page', pageRes.status); return null; }
+        if (!pageRes.ok) {
+            if (pageRes.status === 429 && state) state.blocked = true;
+            console.warn('[news] decode: page', pageRes.status);
+            return null;
+        }
         const page = await pageRes.text();
         const sg = page.match(/data-n-a-sg="([^"]+)"/)?.[1];
         const ts = page.match(/data-n-a-ts="([^"]+)"/)?.[1];
@@ -128,7 +135,11 @@ async function decodeGoogleUrl(gUrl) {
             headers: { ...commonHeaders, 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' },
             body, signal: AbortSignal.timeout(6000),
         });
-        if (!res.ok) { console.warn('[news] decode: batch', res.status); return null; }
+        if (!res.ok) {
+            if (res.status === 429 && state) state.blocked = true;
+            console.warn('[news] decode: batch', res.status);
+            return null;
+        }
         const text = await res.text();
         const um = text.match(/garturlres\\",\\"(https?:[^\\"]+)/) || text.match(/"garturlres","(https?:[^"]+)"/);
         if (!um) { console.warn('[news] decode: no garturlres (len', text.length, ')'); return null; }
@@ -136,15 +147,46 @@ async function decodeGoogleUrl(gUrl) {
     } catch (e) { console.warn('[news] decode: err', e.message); return null; }
 }
 
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+const DECODE_GAP_MS = 500; // 구글 429 회피 — 디코드 요청 간 간격(버스트 금지)
+const st = (s) => (s?.blocked ? '(429-blocked)' : ''); // 로그용 서킷 상태 표기
+
 // ── 기사 이미지 보강 (상위 max건) ─────────────────────────────────
-// Google News 아이템: 원문 URL 디코드 성공 시 url/icon까지 원문 기준으로 교체(직행 링크).
-// 이후 원문 페이지에서 og:image 추출. 전 과정 실패해도 파비콘 폴백이 있어 카드가 비지 않음.
-async function enrichArticles(items, max = 12) {
+// Google News 링크는 JS 리다이렉트라 직접 이미지가 없음 → 원문 URL 디코드 후 og:image 추출.
+// 429(rate limit) 방지 3중:
+//   ① 이전 캐시 재사용(prevBySrc): 같은 기사(srcUrl 불변)는 재디코드 없이 이전 url/icon/image 승계
+//      → 크론마다 신규 기사 몇 건만 디코드 → 요청량 급감 + 성공한 이미지가 회귀하지 않음
+//   ② 직렬 처리 + 간격(500ms): 병렬 버스트 금지
+//   ③ 서킷브레이커(state.blocked): 429 만나면 이번 실행의 남은 디코드 즉시 중단(차단 연장 방지)
+//      실패해도 파비콘 폴백이 있어 카드는 비지 않음. 다음 크론에서 자연 회복.
+async function enrichArticles(items, { prevItems = [], state } = {}, max = 12) {
+    const circuit = state || { blocked: false };
+    // 이전 실행 결과를 피드 원본 URL(srcUrl) 기준으로 매핑 — 디코드/이미지 캐시
+    const prevBySrc = new Map();
+    for (const p of prevItems) {
+        const key = p.srcUrl || p.url;
+        if (key) prevBySrc.set(key, p);
+    }
+
     const targets = items.slice(0, max);
-    await Promise.allSettled(targets.map(async (it) => {
+    let reused = 0;
+    for (const it of targets) {
+        // ① 이전 캐시에 있고 이미 처리됨(디코드 완료 = url이 구글이 아님) → 승계, 요청 0
+        const prev = prevBySrc.get(it.srcUrl);
+        if (prev && !String(prev.url || '').includes('news.google.com')) {
+            it.url = prev.url;
+            it.id = prev.id || it.id;
+            if (prev.icon) it.icon = prev.icon;
+            if (prev.image) it.image = prev.image;
+            reused += 1;
+            continue;
+        }
+
         try {
             if (it.url.includes('news.google.com')) {
-                const real = await decodeGoogleUrl(it.url);
+                if (circuit.blocked) continue; // 서킷 열림 — 이후 전부 skip(파비콘 폴백 유지)
+                const real = await decodeGoogleUrl(it.url, circuit);
+                await sleep(DECODE_GAP_MS);
                 if (real) {
                     it.url = real;
                     it.id = sha1(real);
@@ -152,33 +194,34 @@ async function enrichArticles(items, max = 12) {
                         it.icon = `https://www.google.com/s2/favicons?domain=${new URL(real).hostname}&sz=64`;
                     } catch { /* icon 기존값 유지 */ }
                 } else {
-                    return; // 디코드 실패 — 구글 페이지 스크레이프는 무의미
+                    continue; // 디코드 실패 — 구글 페이지 스크레이프는 무의미
                 }
             }
             const res = await fetch(it.url, {
                 signal: AbortSignal.timeout(5000),
                 headers: { 'User-Agent': UA },
             });
-            if (!res.ok) return;
+            if (!res.ok) continue;
             const html = (await res.text()).slice(0, 200000); // 헤더 영역이면 충분 — 페이로드 상한
             const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
                 || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
             if (og && og[1].startsWith('http')) it.image = og[1];
         } catch { /* 아이템별 격리 */ }
-    }));
+    }
 }
 
 async function fetchFeed(url, opts) {
     const res = await fetch(url, {
         signal: AbortSignal.timeout(8000),
-        headers: { 'User-Agent': 'KDramaAnyLang/1.0 (+https://k-culture-five.vercel.app)' },
+        headers: { 'User-Agent': 'KDramaAnyLang/1.0 (+https://kdramaanylang.com)' },
     });
     if (!res.ok) throw new Error(`feed ${res.status}`);
     return parseRss(await res.text(), opts);
 }
 
 // 언어 1개 수집: Google News (+en은 Soompi 병합) → dedupe(url) → 최신순 → 40건 캡.
-async function fetchNewsForLang(lang) {
+// opts.prevItems: 직전 캐시 아이템(디코드/이미지 재사용) / opts.state: 크론 전역 429 서킷 공유.
+async function fetchNewsForLang(lang, opts = {}) {
     const feedUrl = LANG_FEEDS[lang];
     if (!feedUrl) return [];
     const jobs = [fetchFeed(feedUrl, { fallbackSource: 'Google News', lang })];
@@ -195,10 +238,11 @@ async function fetchNewsForLang(lang) {
     // Gemini 콘텐츠 필터(작품/배우 기사만) → 40건 캡 → 상위 12건 원문 디코드+og:image 보강
     const filtered = await filterContentNews(deduped.slice(0, 60));
     const capped = filtered.slice(0, MAX_ITEMS);
-    await enrichArticles(capped);
+    await enrichArticles(capped, { prevItems: opts.prevItems, state: opts.state });
     console.log('[news]', lang, 'items', capped.length,
         'decoded', capped.filter((it) => !it.url.includes('news.google.com')).length,
-        'images', capped.filter((it) => it.image).length);
+        'images', capped.filter((it) => it.image).length,
+        st(opts.state));
     return capped;
 }
 

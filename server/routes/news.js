@@ -30,6 +30,14 @@ async function writeMirror(lang, entry) {
     try { await mirrorRef(lang)?.set(entry); } catch (e) { console.warn('[news] mirror write fail', lang, e.message); }
 }
 
+// 직전 캐시 아이템(디코드/이미지 재사용용) — 메모리 우선, 없으면 미러.
+async function prevItemsOf(lang) {
+    const mem = memory.get(lang);
+    if (mem?.items?.length) return mem.items;
+    const mirror = await readMirror(lang);
+    return mirror?.items || [];
+}
+
 // 언어 1개 확보(캐시 우선). 라이브 fetch는 마지막 수단 — 실패 시 빈 배열(위젯은 조용히 숨음).
 async function getLang(lang) {
     const mem = memory.get(lang);
@@ -42,7 +50,8 @@ async function getLang(lang) {
     }
 
     try {
-        const items = await fetchNewsForLang(lang);
+        // 직전(만료) 캐시를 넘겨 디코드/이미지 재사용 — 라이브 요청 시 구글 재디코드 최소화
+        const items = await fetchNewsForLang(lang, { prevItems: mirror?.items || mem?.items || [] });
         if (items.length) {
             const entry = { items, ts: Date.now() };
             memory.set(lang, entry);
@@ -65,9 +74,13 @@ router.get('/api/news', rateLimit('news', { perMinute: 30, perHour: 300 }), asyn
 
 router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     const out = {};
+    // 크론 전역 429 서킷 — 한 언어가 차단당하면 나머지도 디코드 skip(전부 이전 캐시 재사용).
+    // 다음 크론에서 쿼터 회복 시 신규분만 점진 디코드.
+    const state = { blocked: false };
     for (const lang of Object.keys(LANG_FEEDS)) {
         try {
-            const items = await fetchNewsForLang(lang);
+            const prevItems = await prevItemsOf(lang);
+            const items = await fetchNewsForLang(lang, { prevItems, state });
             if (items.length) {
                 const entry = { items, ts: Date.now() };
                 memory.set(lang, entry);
@@ -78,8 +91,8 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
             out[lang] = `fail: ${e.message}`; // 언어별 격리 — 다음 언어 계속
         }
     }
-    console.log('[cron/news-refresh]', JSON.stringify(out));
-    res.json({ ok: true, counts: out });
+    console.log('[cron/news-refresh]', JSON.stringify(out), state.blocked ? '429-hit' : '');
+    res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
 module.exports = router;
