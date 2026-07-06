@@ -23,9 +23,18 @@ const router = express.Router();
 
 // ── 서버 권위 패키지 테이블(단일 출처) ───────────────────────────────────────
 // 금액/포인트는 절대 클라 body에서 도출하지 않는다.
+// 2026-07-05: 150pt→1,000pt/$0.99 통일(웹 PayPal·네이티브 IAP) — 보상형 광고 5회=150pt와
+// $1이 등가면 구매 유인이 없어 6.7배 가치로 조정. POINTS_ENABLED=false 기간이라 유통 주문 0.
 const PACKAGES = {
-    pt_pp_150: { method: 'paypal', points: 150, usd: '0.99', name: 'K-DramaAnyLang 150 Points' },
+    pt_pp_1000: { method: 'paypal', points: 1000, usd: '0.99', name: 'K-DramaAnyLang 1,000 Points' },
+    kdrama_points_1000: { method: 'iap', points: 1000, usd: '0.99', name: 'K-DramaAnyLang 1,000 Points (IAP)' },
 };
+
+// ── 보상형 광고 지급 정책(서버 권위) ─────────────────────────────────────────
+const AD_REWARD_AMOUNT = 30;      // 시청 1회 지급
+const AD_COOLDOWN_MS = 60_000;    // 60초 쿨다운
+const AD_DAILY_CAP = 5;           // 일 5회(UTC) → 일 최대 +150pt
+const utcDateStr = () => new Date().toISOString().slice(0, 10);
 
 // PayPal — KCulture 전용 자격증명. 없으면 라우트 503.
 const PAYPAL_CLIENT_ID = process.env.KCULTURE_PAYPAL_CLIENT_ID;
@@ -161,6 +170,59 @@ router.post('/api/community/points/paypal/capture', requireAuthAny, rateLimit('k
         const detail = err.response?.data;
         console.error('[KC/Points] paypal capture error:', detail || err.message);
         res.status(500).json({ error: detail?.message || err.message });
+    }
+});
+
+// ── 보상형 광고 지급 (네이티브 AdMob rewarded — 클라가 시청 완료 후 claim) ──────
+// AdMob SSV 미적용(PronunFit adReward.js와 동일 스탠스) — 클라가 시청 없이 호출할 수는
+// 있으나 쿨다운(60s)+일일캡(5회)+rateLimit 3중 방어로 손실 상한이 일 150pt로 명확.
+// 단일 트랜잭션에서 쿨다운/캡 검사와 지급을 함께 수행(슬롯 선점·지급 분리 창 제거).
+// ⚠ assertReady() 미사용 — PayPal env와 무관(kcultureDb만 필요).
+router.post('/api/community/points/ad-reward', requireAuthAny, rateLimit('kc-ad-reward', { perMinute: 4, perHour: 40 }), async (req, res) => {
+    if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
+    const userRef = kcultureDb.collection('users').doc(req.uid);
+    const today = utcDateStr();
+    try {
+        const claim = await kcultureDb.runTransaction(async (tx) => {
+            const snap = await tx.get(userRef);
+            if (!snap.exists) return { reject: 404, error: 'user_not_found' };
+            const d = snap.data();
+            const lastAt = d.lastAdRewardAt?.toMillis?.() || 0;
+            if (Date.now() - lastAt < AD_COOLDOWN_MS) return { reject: 429, error: 'cooldown' };
+            const todayCount = d.adRewardCountDate === today ? (d.adRewardCount || 0) : 0;
+            if (todayCount >= AD_DAILY_CAP) return { reject: 429, error: 'daily_cap' };
+            tx.update(userRef, {
+                lastAdRewardAt: admin.firestore.FieldValue.serverTimestamp(),
+                adRewardCountDate: today,
+                adRewardCount: todayCount + 1,
+                points: admin.firestore.FieldValue.increment(AD_REWARD_AMOUNT),
+            });
+            return { todayCount };
+        });
+        if (claim.reject) return res.status(claim.reject).json({ error: claim.error });
+        console.log(`[KC/Points] ad-reward: ${req.uid} +${AD_REWARD_AMOUNT}pt (${claim.todayCount + 1}/${AD_DAILY_CAP})`);
+        return res.json({ success: true, granted: AD_REWARD_AMOUNT, remainingToday: AD_DAILY_CAP - (claim.todayCount + 1) });
+    } catch (err) {
+        console.error('[KC/Points] ad-reward error:', err.message);
+        return res.status(500).json({ error: err.message });
+    }
+});
+
+// ── 네이티브 IAP(RevenueCat consumable) 적립 확정 ───────────────────────────
+// 영수증 검증 없음(PronunFit confirm-point-purchase와 동일) — 적립 대상은 인증된
+// req.uid 권위 + pointPurchases/{iap_txId} 멱등으로 이중적립 차단.
+// RevenueCat 웹훅 대조(webhook_seen 패턴)는 RC 프로젝트 생성 후 선택 과제.
+router.post('/api/community/points/confirm-iap', requireAuthAny, rateLimit('kc-points-iap', { perMinute: 10, perHour: 60 }), async (req, res) => {
+    if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
+    const txId = String(req.body?.txId || '').trim();
+    if (!txId || txId.length > 200) return res.status(400).json({ error: 'txId required' });
+    try {
+        const result = await creditPoints(req.uid, 'kdrama_points_1000', `iap_${txId}`, { method: 'iap', txId });
+        console.log(`[KC/Points] iap credited: ${req.uid} +${result.points}pt (${txId}${result.already ? ', idempotent' : ''})`);
+        return res.json({ success: true, points: result.points, alreadyGranted: result.already });
+    } catch (err) {
+        console.error('[KC/Points] confirm-iap error:', err.message);
+        return res.status(500).json({ error: err.message });
     }
 });
 
