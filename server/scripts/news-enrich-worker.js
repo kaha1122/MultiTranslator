@@ -17,6 +17,9 @@ const API = process.env.NEWS_API_BASE || 'https://multitranslator.onrender.com';
 const SECRET = process.env.NEWS_CRON_SECRET || process.env.CRON_SECRET;
 const LANGS = (process.env.NEWS_LANGS || 'ko,en,ja,zh-CN,vi,fr,de,es,ru,pt-BR').split(',');
 const DECODE_PER_LANG = parseInt(process.env.NEWS_DECODE_PER_LANG || '10', 10);
+// 런당 전역 디코드 예산 — GH 러너 실측: ~37건(≈74요청)에서 429. 30건이면 매 런 무-429로
+// 종료하고, 언어 순서 회전과 합쳐 몇 런 안에 전 언어가 채워짐(2h 주기 × 30 = 360/일 ≫ 신규 기사량).
+const GLOBAL_DECODE_BUDGET = parseInt(process.env.NEWS_GLOBAL_DECODE || '30', 10);
 const GAP_MS = 600;
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
@@ -80,11 +83,17 @@ async function scrapeOgImage(url) {
 
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
-    const circuit = { blocked: false }; // 전 언어 공유 — 429 시 전체 중단(다음 주기에 재개)
+    const circuit = { blocked: false }; // 전 언어 공유 — 429 시 디코드 중단(스크레이프는 계속)
     let totalPatched = 0;
+    let globalDecodes = 0;
 
-    for (const lang of LANGS) {
-        if (circuit.blocked) { console.log(`[${lang}] skip (429 circuit open)`); continue; }
+    // 언어 시작 순서 회전 — 중간에 429로 끊겨도 매 실행 다른 언어가 앞 순서를 받아
+    // 꼬리 언어(ru/pt-BR)가 굶지 않게 함. 2시간 주기 기준 회전.
+    const rot = Math.floor(Date.now() / (2 * 60 * 60 * 1000)) % LANGS.length;
+    const ordered = [...LANGS.slice(rot), ...LANGS.slice(0, rot)];
+    console.log('[worker] lang order:', ordered.join(','));
+
+    for (const lang of ordered) {
         let items;
         try {
             const r = await fetch(`${API}/api/news?lang=${encodeURIComponent(lang)}&limit=40`, { signal: AbortSignal.timeout(30000) });
@@ -94,12 +103,14 @@ async function scrapeOgImage(url) {
         const patches = [];
         let decodes = 0;
         for (const it of items) {
-            if (circuit.blocked || decodes >= DECODE_PER_LANG) break;
             const key = it.srcUrl || it.url;
             let url = it.url;
             let patch = null;
             if (isGoogle(url)) {
-                decodes += 1;
+                // 디코드는 구글 쿼터 소비 — 서킷/언어당/전역 예산 안에서만. 초과 시 이 아이템만 skip
+                // (뒤의 직접 URL 아이템 og:image 스크레이프는 구글 무관이라 계속).
+                if (circuit.blocked || decodes >= DECODE_PER_LANG || globalDecodes >= GLOBAL_DECODE_BUDGET) continue;
+                decodes += 1; globalDecodes += 1;
                 const real = await decodeGoogleUrl(url, circuit);
                 await sleep(GAP_MS);
                 if (!real) continue;
@@ -130,5 +141,5 @@ async function scrapeOgImage(url) {
             console.log(`[${lang}] nothing to patch${circuit.blocked ? ' (429)' : ''}`);
         }
     }
-    console.log('[worker] done — applied', totalPatched, circuit.blocked ? '| 429 circuit opened' : '');
+    console.log('[worker] done — applied', totalPatched, '| decodes', globalDecodes + '/' + GLOBAL_DECODE_BUDGET, circuit.blocked ? '| 429 circuit opened' : '');
 })();
