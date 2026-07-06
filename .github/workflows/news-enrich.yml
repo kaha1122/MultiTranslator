@@ -12,12 +12,14 @@ on:
 jobs:
   enrich:
     runs-on: ubuntu-latest
+    # CRON_SECRET이 Production environment secret으로 등록돼 있음 — environment 지정 필수
+    environment: Production
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 24
       # 의존성 0 스크립트 — npm ci 불필요
       - name: Run enrich worker
         env:
