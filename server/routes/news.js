@@ -50,8 +50,9 @@ async function getLang(lang) {
     }
 
     try {
-        // 직전(만료) 캐시를 넘겨 디코드/이미지 재사용 — 라이브 요청 시 구글 재디코드 최소화
-        const items = await fetchNewsForLang(lang, { prevItems: mirror?.items || mem?.items || [] });
+        // 직전(만료) 캐시를 넘겨 디코드/이미지 재사용. decodeBudget 0 — Render IP는 구글에
+        // 상시 429(공유 DC IP 봇월)라 여기선 디코드 안 함. 디코드는 GH Actions 워커 담당.
+        const items = await fetchNewsForLang(lang, { prevItems: mirror?.items || mem?.items || [], decodeBudget: 0 });
         if (items.length) {
             const entry = { items, ts: Date.now() };
             memory.set(lang, entry);
@@ -77,9 +78,10 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     // 크론 전역 429 서킷 — 한 언어가 차단당하면 나머지도 디코드 skip(전부 이전 캐시 재사용).
     // 다음 크론에서 쿼터 회복 시 신규분만 점진 디코드.
     const state = { blocked: false };
-    // 언어당 디코드 상한 4 → 10개 언어 × 4 = 40 < 구글 429 임계(~53). 첫 실행부터 전 언어가
-    // 429 없이 4건씩 받고 회차마다 위(최신)부터 누적. 캐시된 언어는 재사용이라 실제론 더 적게 씀.
-    const DECODE_PER_LANG = 4;
+    // 디코드 0 — Render 공유 DC IP는 구글 뉴스 페이지에서 상시 429(탐침 1건/2h도 차단 실측).
+    // 원문 URL 디코드+기사 이미지는 GH Actions 워커(news-enrich-worker.js)가 다른 IP에서 수행해
+    // POST /api/news/enrich 로 패치한다. 여기선 피드+필터+파비콘+직접URL og:image만.
+    const DECODE_PER_LANG = 0;
     for (const lang of Object.keys(LANG_FEEDS)) {
         try {
             const prevItems = await prevItemsOf(lang);
@@ -96,6 +98,39 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     }
     console.log('[cron/news-refresh]', JSON.stringify(out), state.blocked ? '429-hit' : '');
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
+});
+
+// ── 외부 워커의 보강 패치 수신 (GH Actions / 로컬 — 구글 429 없는 IP에서 디코드) ──
+// body: { lang, patches: [{ srcUrl, url, image?, icon?, id? }] }
+// srcUrl(피드 원본 URL, 불변 키)로 현재 캐시 아이템을 찾아 원문 url/이미지를 병합.
+// 인증은 크론과 동일한 x-cron-secret. 캐시에 없는 srcUrl은 무시(이미 교체된 옛 기사).
+router.post('/api/news/enrich', requireCronAuth, async (req, res) => {
+    const { lang, patches } = req.body || {};
+    if (!LANG_FEEDS[lang] || !Array.isArray(patches)) {
+        return res.status(400).json({ error: 'lang and patches[] required' });
+    }
+    const entry = memory.get(lang) || await readMirror(lang);
+    if (!entry?.items?.length) return res.json({ ok: true, applied: 0, reason: 'no cache' });
+
+    const byKey = new Map(patches.filter((p) => p?.srcUrl).map((p) => [p.srcUrl, p]));
+    let applied = 0;
+    for (const it of entry.items) {
+        const p = byKey.get(it.srcUrl || it.url);
+        if (!p) continue;
+        if (p.url && typeof p.url === 'string' && p.url.startsWith('http')) {
+            it.url = p.url;
+            if (p.id) it.id = p.id;
+        }
+        if (p.icon && String(p.icon).startsWith('http')) it.icon = p.icon;
+        if (p.image && String(p.image).startsWith('http')) it.image = p.image;
+        applied += 1;
+    }
+    if (applied > 0) {
+        memory.set(lang, entry); // ts 유지 — 데이터 보강이지 신규 수집이 아님
+        await writeMirror(lang, entry);
+    }
+    console.log('[news/enrich]', lang, 'patches', patches.length, 'applied', applied);
+    res.json({ ok: true, applied });
 });
 
 module.exports = router;

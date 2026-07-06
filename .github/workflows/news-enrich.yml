@@ -1,0 +1,26 @@
+# K-뉴스 보강 워커 — Render(공유 DC IP)가 구글 뉴스에서 상시 429라,
+# 디코드+기사 이미지 수집만 GH 러너 IP에서 수행해 서버에 패치한다.
+# Render 크론(정각 2h)이 새 기사를 수집한 15분 뒤에 돌도록 오프셋.
+# 필요 secret: CRON_SECRET (Render 웹 서비스의 CRON_SECRET과 동일 값)
+name: news-enrich
+
+on:
+  schedule:
+    - cron: '15 */2 * * *'
+  workflow_dispatch: {}
+
+jobs:
+  enrich:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      # 의존성 0 스크립트 — npm ci 불필요
+      - name: Run enrich worker
+        env:
+          NEWS_CRON_SECRET: ${{ secrets.CRON_SECRET }}
+          NEWS_API_BASE: https://multitranslator.onrender.com
+        run: node server/scripts/news-enrich-worker.js
