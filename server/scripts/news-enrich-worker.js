@@ -93,12 +93,20 @@ async function scrapeOgImage(url) {
     const ordered = [...LANGS.slice(rot), ...LANGS.slice(0, rot)];
     console.log('[worker] lang order:', ordered.join(','));
 
-    for (const lang of ordered) {
+    for (let li = 0; li < ordered.length; li += 1) {
+        const lang = ordered[li];
         let items;
         try {
             const r = await fetch(`${API}/api/news?lang=${encodeURIComponent(lang)}&limit=40`, { signal: AbortSignal.timeout(30000) });
             items = (await r.json()).items || [];
         } catch (e) { console.warn(`[${lang}] api read fail:`, e.message); continue; }
+
+        // 공정 분배: 남은 예산 ÷ 남은 언어(올림) — 선착순이면 회전 선두 2~3개 언어의 백로그가
+        // 예산 30을 통째로 먹어 뒤 언어(예: ko)가 10시간+ 굶는 실측 문제(2026-07-07).
+        // 언어당 ~3건이면 신규 기사(2h당 1~3건)는 매 런 전 언어 처리되고, 밀린 백로그는
+        // 앞 언어가 덜 쓴 잔여 예산 + 회전으로 점진 소화된다.
+        const langCap = Math.min(DECODE_PER_LANG,
+            Math.ceil((GLOBAL_DECODE_BUDGET - globalDecodes) / (ordered.length - li)));
 
         const patches = [];
         let decodes = 0;
@@ -107,9 +115,9 @@ async function scrapeOgImage(url) {
             let url = it.url;
             let patch = null;
             if (isGoogle(url)) {
-                // 디코드는 구글 쿼터 소비 — 서킷/언어당/전역 예산 안에서만. 초과 시 이 아이템만 skip
-                // (뒤의 직접 URL 아이템 og:image 스크레이프는 구글 무관이라 계속).
-                if (circuit.blocked || decodes >= DECODE_PER_LANG || globalDecodes >= GLOBAL_DECODE_BUDGET) continue;
+                // 디코드는 구글 쿼터 소비 — 서킷/언어당(공정 분배)/전역 예산 안에서만. 초과 시 이
+                // 아이템만 skip(뒤의 직접 URL 아이템 og:image 스크레이프는 구글 무관이라 계속).
+                if (circuit.blocked || decodes >= langCap || globalDecodes >= GLOBAL_DECODE_BUDGET) continue;
                 decodes += 1; globalDecodes += 1;
                 const real = await decodeGoogleUrl(url, circuit);
                 await sleep(GAP_MS);
