@@ -2,7 +2,8 @@
 // 작품별로: ① TMDB translations에서 언어별 번역 추출(무료) ② 없는 언어만 Gemini 묶음 번역
 //           ③ kculture Firestore(titles/{id}/translations/{code})에 저장 + 마커.
 // 멱등: 마커(titles/{id}.metaTranslated)가 있으면 skip → 재실행/중단복구 안전.
-const { callGeminiText } = require('../utils/geminiCall');
+const { callGeminiText, callOnce } = require('../utils/geminiCall');
+const { FALLBACK_MODEL } = require('../config/gemini');
 const { kcultureDb } = require('../config/firebaseKculture');
 const { PRIMARY_CONTENT_LANG } = require('../config/contentLang'); // 메인 콘텐츠 언어 — 'ko' 하드코딩 금지
 const { LANG_NAMES } = require('../config/langGuide'); // ISO → 정식 언어명(Gemini가 코드보다 명칭에 정확)
@@ -122,13 +123,18 @@ async function geminiMulti(srcTitle, srcOverview, codes, srcLangName = 'English'
         `SOURCE overview: ${srcOverview}`,
     ].join('\n');
     // raw 텍스트로 받아 첫 완결 JSON만 추출 (flash-lite 중복 블록 글리치에도 견고, 불필요 재시도 방지)
-    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
-        label: 'tmdb-backfill',
-        // 번역 충실도 → 낮은 temperature(기본 ~1.0은 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형(UGC와 동일).
-        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
-    });
+    const genConfig = { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' }; // 번역 충실도 → 낮은 temperature(기본 ~1.0은 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형(UGC와 동일).
+    const r = await callGeminiText(prompt, GEMINI_API_KEY, { label: 'tmdb-backfill', genConfig });
     if (r.error) return {};
-    return parseFirstJsonObject(r.text) || {};
+    const parsed = parseFirstJsonObject(r.text);
+    if (parsed) return parsed;
+    // 안전 필터 차단(PROHIBITED_CONTENT)은 HTTP 200 + 빈 텍스트로 와서 callGeminiText가 "성공" 취급
+    // → 내부 폴백 승격을 안 탐. 폴백 모델은 같은 프롬프트를 통과시킴을 확인(2026-07-09) → 여기서 폴백 1회 직접 호출.
+    // 공유 유틸(geminiCall)은 PronunFit 라우트도 쓰므로 건드리지 않고 kculture 전용 경로에서만 처리.
+    console.warn(`[tmdb-backfill] primary 응답 빈값/파싱불가 → ${FALLBACK_MODEL} 1회 폴백`);
+    const fb = await callOnce(FALLBACK_MODEL, prompt, GEMINI_API_KEY, genConfig);
+    if (fb.error) return {};
+    return parseFirstJsonObject(fb.raw) || {};
 }
 
 // 검색 인덱스 저비용 보강: 이미 번역 완료된 작품(스킵 대상)에 searchLower/searchTitle 맵이 없을 때,
@@ -166,7 +172,11 @@ async function processTitle(media, id, { force = false } = {}) {
     const missing = [];
     for (const t of TARGETS) {
         const ex = extractTmdb(trs, t);
-        if (ex) out[t.code] = { ...ex, source: 'tmdb' };
+        if (ex) {
+            // TMDB 번역 레코드가 줄거리만 있고 제목이 빈 경우가 흔함(특히 ko) — 타깃이 원어면 원제가 곧 그 언어 제목.
+            if (!ex.title && t.iso === detail.original_language) ex.title = detail.original_title || detail.original_name || '';
+            out[t.code] = { ...ex, source: 'tmdb' };
+        }
         else missing.push(t);
     }
 
