@@ -26,7 +26,7 @@ router.post('/api/community/session-start', requireAuthAny, rateLimit('kc-sessio
     const clientIp = xForwardedFor.split(',')[0]?.trim() || req.ip;
     const b = req.body || {};
     const f = (v) => (v == null || v === '' ? '?' : String(v).slice(0, 40));
-    console.log(`[SessionStart/KC] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=${b.isAnonymous ? 'Y' : 'n'} platform=${f(b.platform)} ver=${f(b.appVersion)} lang=${f(b.lang)} country=${f(b.country)} ip=${clientIp}`);
+    console.log(`[SessionStart/KC] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=${b.isAnonymous ? 'Y' : 'n'} platform=${f(b.platform)} ver=${f(b.appVersion)} lang=${f(b.lang)} locale=${f(b.locale)} tz=${f(b.timezone)} country=${f(b.country)} city=${f(b.city)} ip=${clientIp}`);
     res.json({ ok: true });
 });
 
