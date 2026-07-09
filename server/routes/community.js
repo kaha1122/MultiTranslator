@@ -9,6 +9,7 @@ const { callGeminiText } = require('../utils/geminiCall');
 const { LANG_NAMES } = require('../config/langGuide');
 const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/langDetect'); // same 판정을 detect와 동일 단서로 통합(SSOT)
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
+const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -213,7 +214,7 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
 // 수신자 users/{uid}/notifications 에 알림 문서를 기록. 클라가 좋아요/댓글 성공 후 호출.
 // ⚠ 보안: 액터 신원은 requireAuthAny가 토큰에서 확정(req.uid) → 위조 불가. 수신자 서브컬렉션은
 //   보안규칙상 클라 직접쓰기 불가(admin SDK만) → 이 엔드포인트가 유일한 생성 경로. 자기 자신 알림은 skip.
-// ⚠ 현재는 "인앱 알림"만 기록. FCM 푸시 전송은 아래 TODO(수신자 토큰 조회 후 admin.messaging().send()).
+// 인앱 알림 기록 + FCM 웹 푸시(lib/kculturePush, fire-and-forget) 동시 발송.
 const NOTIF_KINDS = new Set([
     'post_like', 'post_comment', 'comment_like', 'comment_reply', 'reply_like',
     'discussion_like', 'discussion_reply', 'dreply_like', 'review_like',
@@ -227,7 +228,7 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
     if (!kcultureDb) return res.status(503).json({ error: 'not_configured' }); // service account 없으면(로컬) no-op
 
     try {
-        await kcultureDb.collection('users').doc(recipientUid).collection('notifications').add({
+        const notif = {
             kind,
             actorUid,
             actorName: String(actorName || 'User').slice(0, 80),
@@ -238,10 +239,10 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
             preview: String(preview || '').slice(0, 140),              // 카드 미리보기(원문 스니펫)
             read: false,
             createdAt: new Date(),
-        });
-        // TODO(FCM 푸시): 여기서 kcultureDb...doc(recipientUid).collection('fcmTokens') 토큰 조회 →
-        //   admin.messaging(kcultureApp).sendEachForMulticast({ tokens, notification: { title, body } })
-        //   로 실제 푸시 전송. (클라 토큰 등록/권한 UI + kcultureApp 주입 선행 필요.)
+        };
+        await kcultureDb.collection('users').doc(recipientUid).collection('notifications').add(notif);
+        // FCM 웹 푸시 — fire-and-forget(내부 catch). 푸시 실패가 인앱 알림 성공 응답을 막지 않는다.
+        sendPushForNotif(recipientUid, notif);
         console.log(`[Notify] actor=${String(actorUid).slice(0, 8)} → ${String(recipientUid).slice(0, 8)} kind=${kind}`);
         res.json({ ok: true });
     } catch (e) {
