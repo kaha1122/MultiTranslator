@@ -16,6 +16,20 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // ISO 코드 → 정식 언어명(Gemini가 코드보다 명칭에 훨씬 정확). 지역코드는 베이스로 폴백.
 const langName = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
 
+// ── 세션 시작 로그 (K-DramaAnyLang) — PronunFit /api/session-start(index.js) 대응 ──
+// 클라가 로그인/프로필 로드 직후 세션당 1회(UID당) 호출. 로그 전용, DB write 0
+// → users 본문 write로 인한 onSnapshot 재렌더와 무관. 컨텍스트는 클라 profile에서 받고 IP만 서버 해석.
+// 프리픽스 [SessionStart/KC]로 PronunFit 로그와 구분(같은 Render 콘솔 공유).
+router.post('/api/community/session-start', requireAuthAny, rateLimit('kc-session-start', { perMinute: 10, perHour: 120 }), (req, res) => {
+    if (!req.uid) return res.status(401).json({ error: 'unauthorized' });
+    const xForwardedFor = req.headers['x-forwarded-for'] || '';
+    const clientIp = xForwardedFor.split(',')[0]?.trim() || req.ip;
+    const b = req.body || {};
+    const f = (v) => (v == null || v === '' ? '?' : String(v).slice(0, 40));
+    console.log(`[SessionStart/KC] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=${b.isAnonymous ? 'Y' : 'n'} platform=${f(b.platform)} ver=${f(b.appVersion)} lang=${f(b.lang)} country=${f(b.country)} ip=${clientIp}`);
+    res.json({ ok: true });
+});
+
 // 번역 캐시 경로 검증 — admin SDK는 보안규칙을 우회하므로 translations 하위 doc만 read/write 허용(임의경로 차단).
 // 허용: (titles|posts)/…/translations/{targetLang}, 짝수 세그먼트(문서 경로), 세그먼트당 안전 문자만.
 const CACHE_ROOTS = new Set(['titles', 'posts']);
