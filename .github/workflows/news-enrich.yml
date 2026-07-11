@@ -1,12 +1,15 @@
 # K-뉴스 보강 워커 — Render(공유 DC IP)가 구글 뉴스에서 상시 429라,
 # 디코드+기사 이미지 수집만 GH 러너 IP에서 수행해 서버에 패치한다.
-# Render 크론(정각 2h)이 새 기사를 수집한 15분 뒤에 돌도록 오프셋.
 # 필요 secret: CRON_SECRET (Render 웹 서비스의 CRON_SECRET과 동일 값)
+#
+# 2026-07-11 수평 확장(ko 등 비영어 피드 파비콘 고착 해소):
+#   ① matrix 3그룹 — 러너마다 IP가 달라 구글 429 예산이 잡별 독립(런당 디코드 30→90)
+#   ② 30분 주기 — 피드 수집(Render 크론 2h)과 무관하게 백로그를 계속 소화
 name: news-enrich
 
 on:
   schedule:
-    - cron: '15 */2 * * *'
+    - cron: '*/30 * * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -15,14 +18,30 @@ jobs:
     # CRON_SECRET이 Production environment secret으로 등록돼 있음 — environment 지정 필수
     environment: Production
     timeout-minutes: 15
+    strategy:
+      fail-fast: false # 한 그룹 429/실패가 다른 그룹을 중단시키지 않음
+      matrix:
+        include:
+          - name: east   # 비영어 아시아권 — 전부 구글 경유라 디코드 수요 최대
+            langs: 'ko,ja,zh-CN'
+          - name: west
+            langs: 'en,vi,fr,de'
+          - name: latam
+            langs: 'es,ru,pt-BR'
+    # 30분 주기 + 15분 타임아웃 — 지연 시 같은 그룹이 겹치지 않게 취소
+    concurrency:
+      group: news-enrich-${{ matrix.name }}
+      cancel-in-progress: true
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with:
           node-version: 24
       # 의존성 0 스크립트 — npm ci 불필요
-      - name: Run enrich worker
+      - name: Run enrich worker (${{ matrix.name }})
         env:
           NEWS_CRON_SECRET: ${{ secrets.CRON_SECRET }}
           NEWS_API_BASE: https://multitranslator.onrender.com
+          NEWS_LANGS: ${{ matrix.langs }}
+          NEWS_GLOBAL_DECODE: '30'
         run: node server/scripts/news-enrich-worker.js

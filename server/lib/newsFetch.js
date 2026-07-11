@@ -21,7 +21,9 @@ const LANG_FEEDS = {
 const SOOMPI_FEED = 'https://www.soompi.com/feed'; // 검증된 RSS 2.0, 영어 K-드라마/K-pop 전문지
 
 const MAX_ITEMS = 40;
-const parser = new XMLParser({ ignoreAttributes: false });
+// htmlEntities: Soompi(WordPress)가 제목 따옴표를 &#8220; 같은 숫자 참조로 내보냄 —
+// 기본 옵션은 XML 5대 엔티티만 풀어서 화면에 "&#8220;"가 그대로 노출됐다(2026-07-11 실측).
+const parser = new XMLParser({ ignoreAttributes: false, htmlEntities: true });
 
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
 
