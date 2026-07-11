@@ -38,6 +38,9 @@ test-gemini*
 # Local debug/utility scripts (keep locally, do not track)
 server/query-user.js
 
+# TMDB 사전번역 연도별 러너의 로컬 진행상태 (커밋 불필요)
+server/scripts/.backfill-years.json
+
 # Python 컴파일 캐시
 __pycache__/
 *.pyc

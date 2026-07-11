@@ -247,7 +247,8 @@ async function* enumerateIds(media, yearFrom, yearTo) {
                 [`${dateField}.gte`]: `${y}-01-01`, [`${dateField}.lte`]: `${y}-12-31`, page: String(page),
             });
             totalPages = Math.min(d.total_pages || 1, 500);
-            for (const it of (d.results || [])) yield { id: it.id };
+            // name: 연도별 러너(backfill-by-year.js) 로그 표시용 — runBackfill은 id만 사용(무해 additive)
+            for (const it of (d.results || [])) yield { id: it.id, name: it.name || it.title || '' };
             page++;
         } while (page <= totalPages);
     }
@@ -328,4 +329,4 @@ async function runRetry({ limit = 100, concurrency = 3 } = {}) {
     return stat;
 }
 
-module.exports = { runBackfill, runIncremental, runRetry, processTitle, TARGETS };
+module.exports = { runBackfill, runIncremental, runRetry, processTitle, enumerateIds, TARGETS };
