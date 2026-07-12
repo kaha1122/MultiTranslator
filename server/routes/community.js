@@ -31,6 +31,16 @@ router.post('/api/community/session-start', requireAuthAny, rateLimit('kc-sessio
     res.json({ ok: true });
 });
 
+// ── 클라이언트 에러 리포트 (K-DramaAnyLang) — ErrorBoundary가 크래시를 보고(원격 디버깅) ──
+// 무인증(크래시 시점 auth 상태 불명) + 강한 rate limit. 로그 전용, DB write 0.
+// 2026-07-12 실기기 "리뷰 탭 흰 화면" 조사용 — 재현 불가 크래시의 스택을 Render 로그로 수집.
+router.post('/api/community/client-error', rateLimit('kc-client-error', { perMinute: 5, perHour: 30 }), (req, res) => {
+    const b = req.body || {};
+    const f = (v, n) => String(v == null ? '' : v).replace(/\s+/g, ' ').slice(0, n);
+    console.log(`[ClientError/KC] url=${f(b.url, 120)} ver=${f(b.ver, 20)} ua=${f(b.ua, 140)}\n  msg=${f(b.message, 300)}\n  stack=${f(b.stack, 800)}\n  comp=${f(b.componentStack, 400)}`);
+    res.json({ ok: true });
+});
+
 // 번역 캐시 경로 검증 — admin SDK는 보안규칙을 우회하므로 translations 하위 doc만 read/write 허용(임의경로 차단).
 // 허용: (titles|posts)/…/translations/{targetLang}, 짝수 세그먼트(문서 경로), 세그먼트당 안전 문자만.
 const CACHE_ROOTS = new Set(['titles', 'posts']);
