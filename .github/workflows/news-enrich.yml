@@ -5,6 +5,12 @@
 # 2026-07-11 수평 확장(ko 등 비영어 피드 파비콘 고착 해소):
 #   ① matrix 3그룹 — 러너마다 IP가 달라 구글 429 예산이 잡별 독립(런당 디코드 30→90)
 #   ② 30분 주기 — 피드 수집(Render 크론 2h)과 무관하게 백로그를 계속 소화
+#
+# 2026-07-12 트리거 이원화(신선 뉴스 이미지 공백 해소):
+#   주 트리거 = workflow_dispatch — Render 크론(news-refresh, 짝수 시 정각 UTC)이 갱신
+#   완료 직후 API로 기동(routes/news.js dispatchEnrichWorkflow, GH_DISPATCH_TOKEN).
+#   schedule(*/30)은 실측상 시간당 1회 수준 + 최장 63분 지연(공용 러너 혼잡 시 스킵)이라
+#   신선도 보장용으론 못 쓰고 백로그 청소 폴백으로만 유지.
 name: news-enrich
 
 on:

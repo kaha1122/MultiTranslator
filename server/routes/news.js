@@ -73,6 +73,32 @@ router.get('/api/news', rateLimit('news', { perMinute: 30, perHour: 300 }), asyn
     res.json({ items: items.slice(0, limit), fetchedAt: ts });
 });
 
+// ── 갱신 직후 GH Actions enrich 워크플로우 즉시 기동 ──────────────────────────
+// GitHub 스케줄(*/30)은 공용 러너 혼잡으로 수십 분 지연·스킵이 잦아(실측 최장 63분)
+// 신선한 뉴스의 이미지 공백이 그만큼 벌어진다. 갱신 완료 시점에 workflow_dispatch로
+// 즉시 1회 기동해 "수집 후 수 분 내 보강"을 보장(디스패치 잡은 지연 없이 큐잉됨).
+// GH_DISPATCH_TOKEN(fine-grained PAT, 이 repo Actions write) 미설정 시 조용히 skip
+// — 기존 30분 스케줄이 폴백으로 백로그를 계속 소화한다.
+const GH_DISPATCH_URL = 'https://api.github.com/repos/kaha1122/MultiTranslator/actions/workflows/news-enrich.yml/dispatches';
+async function dispatchEnrichWorkflow() {
+    const token = process.env.GH_DISPATCH_TOKEN;
+    if (!token) return;
+    try {
+        const r = await fetch(GH_DISPATCH_URL, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                Accept: 'application/vnd.github+json',
+                'User-Agent': 'multitranslator-news-cron',
+                'content-type': 'application/json',
+            },
+            body: JSON.stringify({ ref: 'main' }),
+            signal: AbortSignal.timeout(8000),
+        });
+        console.log('[news/dispatch-enrich]', r.status === 204 ? 'ok' : `fail ${r.status}`);
+    } catch (e) { console.warn('[news/dispatch-enrich] err', e.message); }
+}
+
 router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     const out = {};
     // 크론 전역 429 서킷 — 한 언어가 차단당하면 나머지도 디코드 skip(전부 이전 캐시 재사용).
@@ -97,6 +123,7 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
         }
     }
     console.log('[cron/news-refresh]', JSON.stringify(out), state.blocked ? '429-hit' : '');
+    dispatchEnrichWorkflow(); // fire-and-forget — 갱신 완료 캐시를 워커가 바로 보강
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
