@@ -1,4 +1,4 @@
-// ── K-DramaAnyLang 웹 푸시 발송(FCM) ─────────────────────────────────────────
+// ── K-DramaAnyLang 푸시 발송(FCM — 웹 + Android 네이티브) ────────────────────
 // /api/community/notify가 인앱 알림 문서 기록 후 fire-and-forget으로 호출.
 // 수신자 users/{uid}/pushTokens/* (클라 등록: {platform,lang,updatedAt}) 를 읽어
 // 토큰별 언어로 문구를 만들어 sendEach → 무효 토큰(unregistered)은 즉시 문서 삭제.
@@ -47,15 +47,27 @@ async function sendPushForNotif(recipientUid, notif) {
             if (!template) continue;
             const title = template.replaceAll('{name}', name);
             const body = notif.preview || '';
-            // 현재 웹 토큰만 존재(클라 4단계에서 네이티브 확장 시 platform별 android/apns 블록 추가).
-            messages.push({
-                token: d.id,
-                data: { kind: notif.kind, url },
-                webpush: {
+            // platform별 메시지(클라 push.js가 토큰 문서에 기록: 'web' | 'android'. ios는 APNs 콘솔 작업 후 apns 블록 추가).
+            const platform = d.get('platform') || 'web';
+            if (platform === 'android') {
+                // 시스템 트레이 알림(notification 메시지) — 탭 시 data.url을
+                // 클라 NativePushHandler(notificationActionPerformed)가 라우팅.
+                messages.push({
+                    token: d.id,
+                    data: { kind: notif.kind, url },
                     notification: { title, body },
-                    headers: { Urgency: 'normal', TTL: '86400' }, // 하루 지난 알림은 폐기
-                },
-            });
+                    android: { ttl: 86400 * 1000, priority: 'normal' }, // 하루 지난 알림은 폐기(ms)
+                });
+            } else {
+                messages.push({
+                    token: d.id,
+                    data: { kind: notif.kind, url },
+                    webpush: {
+                        notification: { title, body },
+                        headers: { Urgency: 'normal', TTL: '86400' }, // 하루 지난 알림은 폐기
+                    },
+                });
+            }
             tokenDocs.push(d.ref);
         }
         if (!messages.length) return;
