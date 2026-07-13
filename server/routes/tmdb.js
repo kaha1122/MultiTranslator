@@ -170,7 +170,8 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
             params.watch_region = String(req.query.region || 'US').toUpperCase().slice(0, 2);
             params.with_watch_monetization_types = 'flatrate';
         }
-        if (sort.startsWith('vote_average')) params['vote_count.gte'] = '200'; // 랭킹 신뢰도
+        // 랭킹 신뢰도 하한. 예능은 TMDB 평점 누적이 희소해 200 하한이면 3~4개만 남음 → 하한 없이 평점순 전부(2026-07-13 사용자 결정)
+        if (sort.startsWith('vote_average')) { if (kind !== 'variety') params['vote_count.gte'] = '200'; }
         // 인기순 무명 이상치 제거: 최소 누적 평점수 하한. 예능은 TMDB 누적 평점이 희소 → 하한 완화(행 비는 것 방지).
         // 단 days(최근 N일) 창에선 신작이 아직 누적 평점이 적어 하한을 적용하면 거의 다 걸러짐 → 하한 미적용.
         else if (sort.startsWith('popularity') && !days) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
