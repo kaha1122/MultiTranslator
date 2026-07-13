@@ -178,10 +178,12 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         const dateField = media === 'tv' ? 'first_air_date' : 'primary_release_date';
         if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date') || days) {
             const today = new Date().toISOString().slice(0, 10);
-            params[`${dateField}.lte`] = today; // 미래작 제외
-        }
-        if (days) { // 최근 N일 하한(홈 hot). 미래작 제외(.lte)와 함께 [today-days, today] 창으로 좁힘.
-            params[`${dateField}.gte`] = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+            // days 창(홈 hot)은 tv에선 에피소드 방영일(air_date) 기준 — 첫 방영 N일이 지나도 방영 진행중이면 포함.
+            // (first_air_date 창은 방영 3주차 화제작이 탈락하는 결함 — "김부장" 사례, 2026-07-13 사용자 결정)
+            const windowField = (days && media === 'tv') ? 'air_date' : dateField;
+            params[`${windowField}.lte`] = today; // 미래작 제외
+            // 최근 N일 하한. 미래작 제외(.lte)와 함께 [today-days, today] 창으로 좁힘.
+            if (days) params[`${windowField}.gte`] = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
         }
         const key = `disc:${media}:${JSON.stringify(params)}`;
         let data = getCache(key);
