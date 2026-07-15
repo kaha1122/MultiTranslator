@@ -11,8 +11,8 @@ import VOCAB_CATEGORIES from '../data/vocabCategories.js';
 // 마스터 임계값 (post-launch 튜닝 대상)
 // 2026-06-14: 완료 부담 완화 — 단어 1개 + 지문 문장 1개 통과 시 토픽 마스터.
 //   (학습 카드는 여전히 5장 제공/study, 마스터·Listening 잠금해제는 1통과면 충분)
-export const W_TARGET = 1; // 단어 발음 통과 목표(마스터·Listening 잠금해제)
-export const P_TARGET = 1; // 지문 섀도잉 문장 통과 목표(마스터)
+export const W_TARGET = 2; // 단어 발음 통과 목표(마스터·Listening 잠금해제) — 2026-06-16 1→2
+export const P_TARGET = 2; // 지문 문장 통과 목표(마스터) — 2026-06-16 1→2
 
 // 유닛(=카테고리) 색상 — V2 스펙: teal/blue/purple/amber/pink/coral/green
 export const UNIT_COLORS = {
@@ -27,6 +27,9 @@ export const UNIT_COLORS = {
 
 const DEFAULT_COLOR = '#6366f1';
 
+// 멀티언어 미니맵 — 활성 언어 슬롯(최대 3)별 색상 (slot0 teal / slot1 blue / slot2 pink)
+export const LANG_SLOT_COLORS = ['#0d9488', '#2563eb', '#db2777'];
+
 // 유닛 목록 — VOCAB_CATEGORIES 배열 순서 유지. topics = subs.flatMap(s => s.topics)
 export const UNITS = VOCAB_CATEGORIES.map((cat, unitIndex) => ({
   unitIndex,
@@ -40,13 +43,16 @@ export const UNITS = VOCAB_CATEGORIES.map((cat, unitIndex) => ({
 // 코스 순서 — 모든 유닛을 펼친 평면 토픽 디스크립터 배열(soft-lock "현재" 계산 기준)
 export const COURSE_ORDER = [];
 VOCAB_CATEGORIES.forEach((cat, unitIndex) => {
+  let unitTopicSeq = 0; // 유닛 내 토픽 순서(1-based) — "U{unit}-{seq}" 코드용
   cat.subs.forEach((sub) => {
     sub.topics.forEach((topic) => {
+      unitTopicSeq += 1;
       COURSE_ORDER.push({
         topicId: topic.id,
         catId: cat.id,
         subId: sub.id,
         unitIndex,
+        unitTopicIndex: unitTopicSeq,
         color: UNIT_COLORS[cat.id] || DEFAULT_COLOR,
         icon: cat.icon,
       });
@@ -62,6 +68,12 @@ export const TOPIC_INDEX = COURSE_ORDER.reduce((acc, entry, orderIndex) => {
   acc[entry.topicId] = { ...entry, orderIndex };
   return acc;
 }, {});
+
+// topicId → "U{유닛번호}-{유닛 내 순서}" 코드 (예: U1-4 = Unit1의 4번째 토픽). 학습 체계 시각화용.
+export const topicCode = (topicId) => {
+  const m = TOPIC_INDEX[topicId];
+  return m ? `U${m.unitIndex + 1}-${m.unitTopicIndex}` : '';
+};
 
 // 빈 진행 객체 생성기 (Firestore 문서 부재 시 로컬 기본값)
 export const makeEmptyProgress = (topicId, lang) => ({

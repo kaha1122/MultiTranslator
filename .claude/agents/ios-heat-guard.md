@@ -39,10 +39,11 @@ setProfile → contextValue 재생성 → App.jsx(약 6,000줄, React.memo 없�
 - `addListener` cleanup 누락 (실사례: CapacitorUpdater 4개).
 - launch 시점 console.log 다발 (WKWebView 브리지 비용).
 
-### 5. 🟡 오디오/마이크 세션
+### 5. 🔴 오디오/마이크 세션 (실사례: 광고 후 발열, 2026-06-17)
 - AVAudioSession 카테고리 변경, `.playback` idle 전환(AppDelegate.swift) 훼손.
 - 모달 닫힘 시 `endAudioSession`/TTS 정지 누락, Azure STT recognizer 미해제.
 - 백그라운드 이동 시 녹음/재생 미정지.
+- **광고 show/dismiss는 반드시 오디오 세션 복원으로 감쌀 것**: 보상형/전면 광고(비디오)는 AdMob SDK가 `setActive(true)`로 AVAudioSession을 켠다. 광고 종료 후 앱이 `BluetoothAudio.endAudioSession()`(iOS, setActive=false)으로 해제하지 않으면 mediaserverd가 awake로 남아 **지속 발열 → throttling → 마이크 silent capture**. 광고 핸들러(`handleRewardedAd`/`handlePronAllowanceAd` 등)의 `finally`에 iOS 한정 해제 호출이 있는지 확인. **이 누수는 코드 diff에 안 보인다(SDK 런타임 동작) — 광고 관련 코드는 diff뿐 아니라 show→dismiss 전체 흐름을 검토하라.**
 
 ## 절차
 1. `git diff --cached` (없으면 `git diff HEAD`, 또는 호출자가 지정한 범위)로 변경을 파악한다.

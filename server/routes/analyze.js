@@ -256,10 +256,13 @@ async function generateCoachingTip(referenceText, assessmentData, sourceLangCode
 // 쓰기 전에 차단. 발음평가는 최고가 경로(STT+Enhanced)라 rate limit 필수.
 router.post('/analyze', requireAuth, rateLimit('analyze', { perMinute: 20, perHour: 200 }), upload.single('audio'), async (req, res) => {
     const originalAudioPath = req.file?.path;
-    const referenceText = req.body.text;
+    const referenceText = typeof req.body.text === 'string' ? req.body.text.trim() : '';
     const langCode = req.body.lang || 'en';
 
-    if (!originalAudioPath || !referenceText) {
+    // 'undefined'/'null'은 클라 FormData가 JS undefined/null을 문자열화한 값 — 빈 텍스트와 동일 취급.
+    //   이게 통과하면 Azure가 refText="undefined"로 엉뚱하게 평가(2026-06-21 GBqG... 사례).
+    if (!originalAudioPath || !referenceText || referenceText === 'undefined' || referenceText === 'null') {
+        if (originalAudioPath) { try { fs.unlinkSync(originalAudioPath); } catch (_) { /* noop */ } }
         return res.status(400).json({ error: "Missing audio or text" });
     }
     if (referenceText.length > 1000) {

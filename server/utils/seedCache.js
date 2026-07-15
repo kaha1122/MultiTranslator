@@ -21,6 +21,17 @@ const stats = { hit: 0, miss: 0, write: 0, raceSkip: 0 };
 
 const memKey = (col, key) => `${col}/${key}`;
 
+// 단어 중복 판정용 정규화 키 — lowercase·NFKC·공백 정리·흔한 구두점 제거.
+// 프롬프트 회유(soft)가 새도 저장 직전 이 키로 코드가 중복을 막는다(sun×2 등 누수 차단).
+function normalizeWord(s) {
+    return String(s == null ? '' : s)
+        .normalize('NFKC')
+        .toLowerCase()
+        .replace(/[\s ]+/g, ' ')
+        .replace(/[.,!?;:"'`´()[\]{}…·、。！？，]/g, '')
+        .trim();
+}
+
 function memGet(col, key) {
     const k = memKey(col, key);
     const v = mem.get(k);
@@ -55,23 +66,109 @@ async function readItems(col, key, field) {
 }
 
 /**
- * frontier 생성물(newItems)을 seed에 append하고 [offset, offset+count) slice 반환.
+ * frontier 생성물(newItems)을 seed에 append하고 "방금 채워진 frontier 페이지"를 slice 반환.
  * 트랜잭션 내 length 재확인 — 다른 요청이 이미 채웠으면(length > offset) 그쪽 slice 반환(중복 쓰기 방지).
- * @returns {Promise<Array>} authoritative slice (length ≤ count)
+ *
+ * 🔑 frontier-safe 슬라이스(2026-06-19 brick fix): append 경로에서는 요청 offset 이 아니라
+ *   "새로 붙은 실제 위치(existing.length)"에서 슬라이스한다. 클라 seedCursor 가 글로벌 풀보다
+ *   앞서 있어도(offset > existing.length: 페이지가 클라엔 서빙됐지만 풀엔 영속 안 된 desync 등)
+ *   빈 배열 대신 방금 만든 frontier 페이지를 돌려줘 화면 공백·영구 brick 을 차단하고, 풀이 커서를
+ *   따라잡으며 자가치유(self-heal)된다. offset == existing.length(정상 동기화)면 동작 100% 동일.
+ *
+ * @param {object} [opts]
+ * @param {(item:any)=>string} [opts.dedupeBy] 주어지면 이 키로 기존 시퀀스/신규 내부 중복을 append 전에 제거(하드 dedup).
+ *   단어 시퀀스에만 사용(passage 등엔 미지정). dedup으로 일부가 빠지면 그 페이지 slice가 count보다 짧을 수 있음(드묾).
+ * @returns {Promise<Array>} authoritative slice (항상 비어있지 않음 — 풀에 데이터가 있는 한)
  */
-async function appendAndSlice(col, key, field, meta, newItems, offset, count) {
+async function appendAndSlice(col, key, field, meta, newItems, offset, count, opts = {}) {
     if (!adminDb) return newItems.slice(0, count); // 로컬/미초기화 폴백
     const ref = adminDb.collection(col).doc(key);
+    const dedupeBy = typeof opts.dedupeBy === 'function' ? opts.dedupeBy : null;
+    try {
+        const out = await adminDb.runTransaction(async (tx) => {
+            const snap = await tx.get(ref);
+            const data = snap.exists ? snap.data() : null;
+            const existing = data && Array.isArray(data[field]) ? data[field] : [];
+            if (existing.length > offset) {
+                // 다른 요청이 이미 frontier 채움(race) → 쓰기 생략, 요청 offset 그대로 서빙
+                return { merged: existing, start: offset, appended: 0, prevLen: existing.length, reason: 'race' };
+            }
+            // 하드 dedup — 기존 시퀀스 + 신규 내부 중복을 append 전에 제거(소프트 anti-dup 누수 차단).
+            let toAppend = newItems;
+            if (dedupeBy) {
+                const seen = new Set(existing.map(dedupeBy).filter(Boolean));
+                toAppend = [];
+                let dropped = 0;
+                for (const it of newItems) {
+                    const k = dedupeBy(it);
+                    if (k && seen.has(k)) { dropped++; continue; }
+                    if (k) seen.add(k);
+                    toAppend.push(it);
+                }
+                if (dropped) console.log(`[seedCache] dedup dropped ${dropped} dup item(s) ${col}/${key}`);
+            }
+            const next = [...existing, ...toAppend];
+            tx.set(ref, {
+                ...meta,
+                [field]: next,
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+            // frontier 페이지는 새로 붙은 위치(existing.length)부터. dedup 으로 신규가 0개면(토픽 소진)
+            //   마지막 페이지를 복습용으로 서빙해 공백을 막는다(요청 offset 무시 — 항상 실제 데이터 위치).
+            const start = toAppend.length > 0
+                ? existing.length
+                : Math.max(0, existing.length - count);
+            return {
+                merged: next, start, appended: toAppend.length, prevLen: existing.length,
+                reason: toAppend.length > 0 ? 'append' : 'exhausted',
+            };
+        });
+        if (out.appended > 0) stats.write++; else stats.raceSkip++;
+        // 🔭 desync 탐지(2026-06-19): 요청 offset 이 실제 풀 길이를 앞섬 = 클라 seedCursor 가 글로벌 풀보다
+        //   앞서 나간 상태(과거 brick 의 직접 원인). frontier-safe 슬라이스로 self-heal 되지만, 재발 모니터링용으로
+        //   반드시 로그를 남긴다. race(정상 경합)는 제외. 'CURSOR DESYNC' 로 grep.
+        if (out.reason !== 'race' && offset > out.prevLen) {
+            console.warn(`[seedCache] CURSOR DESYNC ${col}/${key}: reqOffset=${offset} > poolLen=${out.prevLen} → served@${out.start} (self-healed via ${out.reason})`);
+        }
+        // 토픽 소진(생성물 전부 중복) — 마지막 페이지를 복습용으로 서빙. 'SEED EXHAUSTED' 로 grep.
+        if (out.reason === 'exhausted') {
+            console.warn(`[seedCache] SEED EXHAUSTED ${col}/${key}: all ${newItems.length} generated item(s) were duplicates at offset=${offset} (poolLen=${out.prevLen}) → serving review page@${out.start}`);
+        }
+        memSet(col, key, { ...meta, [field]: out.merged });
+        return out.merged.slice(out.start, out.start + count);
+    } catch (e) {
+        console.error(`[seedCache] append failed ${col}/${key}:`, e.message);
+        return newItems.slice(0, count); // 실패 시 생성물 직접 반환(과금됐으니 버리지 않음)
+    }
+}
+
+/**
+ * 배열 끝에 무조건 append(+옵션 dedup). appendAndSlice의 frontier(offset 1회 채움) 의미가 아니라
+ * "공유 풀에 항목 추가" 용도 — 다른 writer가 이미 늘렸어도 내 항목을 (dedup 후) 끝에 붙인다.
+ * (listening 결합 unit이 추출 단어를 vocabSeed 풀에 누적할 때 사용.)
+ */
+async function appendItems(col, key, field, meta, newItems, opts = {}) {
+    if (!adminDb || !Array.isArray(newItems) || newItems.length === 0) return;
+    const ref = adminDb.collection(col).doc(key);
+    const dedupeBy = typeof opts.dedupeBy === 'function' ? opts.dedupeBy : null;
     try {
         const merged = await adminDb.runTransaction(async (tx) => {
             const snap = await tx.get(ref);
             const data = snap.exists ? snap.data() : null;
             const existing = data && Array.isArray(data[field]) ? data[field] : [];
-            if (existing.length > offset) {
-                // 다른 요청이 이미 frontier 채움 → 쓰기 생략, 기존 사용
-                return existing;
+            let toAppend = newItems;
+            if (dedupeBy) {
+                const seen = new Set(existing.map(dedupeBy).filter(Boolean));
+                toAppend = [];
+                for (const it of newItems) {
+                    const k = dedupeBy(it);
+                    if (k && seen.has(k)) continue;
+                    if (k) seen.add(k);
+                    toAppend.push(it);
+                }
             }
-            const next = [...existing, ...newItems];
+            if (!toAppend.length) return existing;
+            const next = [...existing, ...toAppend];
             tx.set(ref, {
                 ...meta,
                 [field]: next,
@@ -79,15 +176,12 @@ async function appendAndSlice(col, key, field, meta, newItems, offset, count) {
             }, { merge: true });
             return next;
         });
-        if (merged.length > offset + newItems.length) stats.raceSkip++; else stats.write++;
         memSet(col, key, { ...meta, [field]: merged });
-        return merged.slice(offset, offset + count);
     } catch (e) {
-        console.error(`[seedCache] append failed ${col}/${key}:`, e.message);
-        return newItems.slice(0, count); // 실패 시 생성물 직접 반환(과금됐으니 버리지 않음)
+        console.error(`[seedCache] appendItems failed ${col}/${key}:`, e.message);
     }
 }
 
 const snapshot = () => ({ size: mem.size, max: MEM_MAX, ...stats });
 
-module.exports = { readItems, appendAndSlice, snapshot };
+module.exports = { readItems, appendAndSlice, appendItems, snapshot, normalizeWord };

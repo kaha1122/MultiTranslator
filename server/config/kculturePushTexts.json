@@ -1,0 +1,112 @@
+{
+  "en": {
+    "post_like": "{name} liked your review.",
+    "post_comment": "{name} started a discussion on your review.",
+    "comment_like": "{name} liked your discussion.",
+    "comment_reply": "{name} replied to your discussion.",
+    "reply_like": "{name} liked your reply.",
+    "discussion_like": "{name} liked your comment.",
+    "discussion_reply": "{name} replied to your comment.",
+    "dreply_like": "{name} liked your reply.",
+    "review_like": "{name} liked your rating."
+  },
+  "ko": {
+    "post_like": "{name}님이 회원님의 리뷰를 좋아합니다.",
+    "post_comment": "{name}님이 회원님의 리뷰에 토론을 남겼어요.",
+    "comment_like": "{name}님이 회원님의 토론을 좋아합니다.",
+    "comment_reply": "{name}님이 회원님의 토론에 답글을 남겼어요.",
+    "reply_like": "{name}님이 회원님의 답글을 좋아합니다.",
+    "discussion_like": "{name}님이 회원님의 코멘트를 좋아합니다.",
+    "discussion_reply": "{name}님이 회원님의 코멘트에 답글을 남겼어요.",
+    "dreply_like": "{name}님이 회원님의 답글을 좋아합니다.",
+    "review_like": "{name}님이 회원님의 평가를 좋아합니다."
+  },
+  "es": {
+    "post_like": "A {name} le gustó tu reseña.",
+    "post_comment": "{name} inició un debate en tu reseña.",
+    "comment_like": "A {name} le gustó tu debate.",
+    "comment_reply": "{name} respondió a tu debate.",
+    "reply_like": "A {name} le gustó tu respuesta.",
+    "discussion_like": "A {name} le gustó tu comentario.",
+    "discussion_reply": "{name} respondió a tu comentario.",
+    "dreply_like": "A {name} le gustó tu respuesta.",
+    "review_like": "A {name} le gustó tu valoración."
+  },
+  "ja": {
+    "post_like": "{name}さんがあなたのレビューにいいねしました。",
+    "post_comment": "{name}さんがあなたのレビューにディスカッションを投稿しました。",
+    "comment_like": "{name}さんがあなたのディスカッションにいいねしました。",
+    "comment_reply": "{name}さんがあなたのディスカッションに返信しました。",
+    "reply_like": "{name}さんがあなたの返信にいいねしました。",
+    "discussion_like": "{name}さんがあなたのコメントにいいねしました。",
+    "discussion_reply": "{name}さんがあなたのコメントに返信しました。",
+    "dreply_like": "{name}さんがあなたの返信にいいねしました。",
+    "review_like": "{name}さんがあなたの評価にいいねしました。"
+  },
+  "zh-CN": {
+    "post_like": "{name} 赞了你的评论。",
+    "post_comment": "{name} 在你的评论下发起了讨论。",
+    "comment_like": "{name} 赞了你的讨论。",
+    "comment_reply": "{name} 回复了你的讨论。",
+    "reply_like": "{name} 赞了你的回复。",
+    "discussion_like": "{name} 赞了你的短评。",
+    "discussion_reply": "{name} 回复了你的短评。",
+    "dreply_like": "{name} 赞了你的回复。",
+    "review_like": "{name} 赞了你的评分。"
+  },
+  "vi": {
+    "post_like": "{name} đã thích bài đánh giá của bạn.",
+    "post_comment": "{name} đã mở thảo luận trên bài đánh giá của bạn.",
+    "comment_like": "{name} đã thích thảo luận của bạn.",
+    "comment_reply": "{name} đã trả lời thảo luận của bạn.",
+    "reply_like": "{name} đã thích phản hồi của bạn.",
+    "discussion_like": "{name} đã thích bình luận của bạn.",
+    "discussion_reply": "{name} đã trả lời bình luận của bạn.",
+    "dreply_like": "{name} đã thích phản hồi của bạn.",
+    "review_like": "{name} đã thích lượt đánh giá của bạn."
+  },
+  "fr": {
+    "post_like": "{name} a aimé votre critique.",
+    "post_comment": "{name} a lancé une discussion sur votre critique.",
+    "comment_like": "{name} a aimé votre discussion.",
+    "comment_reply": "{name} a répondu à votre discussion.",
+    "reply_like": "{name} a aimé votre réponse.",
+    "discussion_like": "{name} a aimé votre commentaire.",
+    "discussion_reply": "{name} a répondu à votre commentaire.",
+    "dreply_like": "{name} a aimé votre réponse.",
+    "review_like": "{name} a aimé votre note."
+  },
+  "de": {
+    "post_like": "{name} gefällt deine Rezension.",
+    "post_comment": "{name} hat eine Diskussion zu deiner Rezension gestartet.",
+    "comment_like": "{name} gefällt deine Diskussion.",
+    "comment_reply": "{name} hat auf deine Diskussion geantwortet.",
+    "reply_like": "{name} gefällt deine Antwort.",
+    "discussion_like": "{name} gefällt dein Kommentar.",
+    "discussion_reply": "{name} hat auf deinen Kommentar geantwortet.",
+    "dreply_like": "{name} gefällt deine Antwort.",
+    "review_like": "{name} gefällt deine Bewertung."
+  },
+  "ru": {
+    "post_like": "{name} оценил(а) вашу рецензию.",
+    "post_comment": "{name} начал(а) обсуждение вашей рецензии.",
+    "comment_like": "{name} оценил(а) ваше обсуждение.",
+    "comment_reply": "{name} ответил(а) на ваше обсуждение.",
+    "reply_like": "{name} оценил(а) ваш ответ.",
+    "discussion_like": "{name} оценил(а) ваш комментарий.",
+    "discussion_reply": "{name} ответил(а) на ваш комментарий.",
+    "dreply_like": "{name} оценил(а) ваш ответ.",
+    "review_like": "{name} оценил(а) вашу оценку."
+  },
+  "pt-BR": {
+    "post_like": "{name} curtiu sua crítica.",
+    "post_comment": "{name} iniciou uma discussão na sua crítica.",
+    "comment_like": "{name} curtiu sua discussão.",
+    "comment_reply": "{name} respondeu à sua discussão.",
+    "reply_like": "{name} curtiu sua resposta.",
+    "discussion_like": "{name} curtiu seu comentário.",
+    "discussion_reply": "{name} respondeu ao seu comentário.",
+    "dreply_like": "{name} curtiu sua resposta.",
+    "review_like": "{name} curtiu sua avaliação."
+  }
+}

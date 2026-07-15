@@ -3,6 +3,7 @@ import { auth, db, analytics } from '../firebase/config';
 import { onAuthStateChanged, signInAnonymously, linkWithCredential } from 'firebase/auth';
 import { doc, onSnapshot, setDoc, updateDoc, increment, serverTimestamp, getDoc, runTransaction } from 'firebase/firestore';
 import { setUserId } from 'firebase/analytics';
+import { touchUpdatedAt } from '../utils/touchUpdatedAt';
 import { Capacitor } from '@capacitor/core';
 import { isBot } from '../utils/isBot';
 import { authFetch } from '../utils/authFetch';
@@ -24,7 +25,20 @@ let anonSignInInProgress = false;
 // 전체 재렌더를 차단. updatedAt(접속시각)·ttsUsage(서버 통계 레거시 필드)는 UI 미사용인데
 // write마다 setProfile(새 객체) → useMemo deps 불일치 → App 전체 재렌더(iOS 발열 C1~C3 증폭기)였음.
 // 클라 어디에서도 profile.updatedAt / profile.ttsUsage를 읽지 않음을 확인하고 제외(grep 2026-06-12).
-const PROFILE_VOLATILE_FIELDS = ['updatedAt', 'ttsUsage'];
+//
+// [thermal 2026-06-17 광고 후 발열] 보상광고 1회 → 서버 write 2회(adReward 트랜잭션 3필드 +
+//   grantBonusPoints batch). 트랜잭션 필드(lastAdRewardAt/adRewardCountDate/adRewardCount)를
+//   휘발성에 추가해 그 write의 재렌더를 제거 → 광고당 전체 재렌더 2→1(bonusPoints write만).
+//   bonusPoints는 화면 표시라 제외 유지. bonusLastGrantedAt/lastTopUpAt도 UI 미사용이라 추가.
+//   ⚠ adRewardCountDate는 [App.jsx bumpTtsPoint] 게이트에서 read하지만:
+//     ① 같은 게이트의 localStorage 미러(ttsAdRewardDate)가 1차 신호로 동기 마킹됨(백업 의존 X)
+//     ② 보상흐름의 bonusPoints write(비휘발)가 같은 흐름에서 profile 전체를 갱신 → 값 lag 없음
+//     ③ 휘발성으로 인한 최악 = TTS 넛지 1회 오발화(자가복구, 크래시/데이터손실 무관). (grep 2026-06-17)
+//   lastTopUpDate(=daily-topup effect deps)·bonusPoints는 read되므로 추가 금지.
+const PROFILE_VOLATILE_FIELDS = [
+    'updatedAt', 'ttsUsage',
+    'lastAdRewardAt', 'adRewardCountDate', 'adRewardCount', 'bonusLastGrantedAt', 'lastTopUpAt',
+];
 const profileEssence = (data) => {
     if (!data) return null;
     const copy = { ...data };
@@ -50,6 +64,12 @@ export const AuthProvider = ({ children }) => {
     //   차감 시점의 실제 잔액을 보장 — 2026-06-10 신규유저 발음 9회 0차감 누수 사고 대응.
     const profileRef = useRef(profile);
     useEffect(() => { profileRef.current = profile; }, [profile]);
+
+    // [SessionStart] 추적용 ref —
+    //   newUserUidRef: 이번 세션에 신규 문서가 생성된 UID(신규 판정). 생성 경로에서 세팅.
+    //   sessionStartUidRef: [SessionStart] 로그를 이미 보낸 UID(세션당 1회 가드, UID 변경 시 재발화).
+    const newUserUidRef = useRef(null);
+    const sessionStartUidRef = useRef(null);
 
     // 최종 안전장치: 어떤 코드 경로에서든 loading이 10초 이상 지속되면 강제 해제
     // (Strategy A 적용 후엔 onAuthStateChanged의 정상 경로에서 loading=false가 즉시 풀리므로
@@ -105,6 +125,7 @@ export const AuthProvider = ({ children }) => {
                                 lastTopUpDate: getToday(),
                             });
                             docJustCreated = true;
+                            newUserUidRef.current = authenticatedUser.uid; // [SessionStart] 신규 판정
                             // 위치 정보 비동기 저장 (문서 생성 블로킹하지 않음)
                             // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                             detectGeoInfo().then(info => {
@@ -124,30 +145,16 @@ export const AuthProvider = ({ children }) => {
                     }
                 }
 
-                // [v1.5.84+ thermal-ios] 앱 재실행 시 updatedAt 갱신 — 5분 가드 추가
+                // [v1.5.84+ thermal-ios] 앱 재실행 시 updatedAt 갱신 — 5분 가드 (touchUpdatedAt 공용 헬퍼)
                 // Why: updatedAt write → onSnapshot 발화 → setProfile → AuthProvider 재렌더
                 //   cascade가 매 앱 실행마다 발생. v1.5.83 useMemo로 consumer 재렌더는
                 //   차단됐지만 profile reference 자체가 새로워져 useMemo deps 비교 실패 →
-                //   value 재생성 → consumer 재렌더. 따라서 write 빈도 자체를 줄이는 게
-                //   효과적. 4차 mobile-production-guardian Fix 3.
+                //   value 재생성 → consumer 재렌더. updatedAt은 PROFILE_VOLATILE_FIELDS라 재렌더 0.
                 // localStorage 가드: 디바이스별 추적, 5분 이내 재실행 시 write skip.
-                // 다른 디바이스에서 동일 계정 사용 시는 가드 무시되지만 영향 미미
-                // (re-engagement push의 lastActiveAt 별도 추적).
+                //   App.jsx의 포그라운드 복귀(resume) 경로와 동일 키를 공유해 가드가 일관됨.
+                //   (re-engagement push의 lastActiveAt 별도 추적).
                 if (!docJustCreated) {
-                    try {
-                        const lastUpdatedKey = `pronunfit_lastUpdatedAt_${authenticatedUser.uid}`;
-                        const lastUpdatedMs = parseInt(localStorage.getItem(lastUpdatedKey) || '0', 10);
-                        const FIVE_MIN_MS = 5 * 60 * 1000;
-                        if (Date.now() - lastUpdatedMs >= FIVE_MIN_MS) {
-                            updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(e =>
-                                console.error('[AuthContext] updatedAt refresh failed:', e)
-                            );
-                            localStorage.setItem(lastUpdatedKey, String(Date.now()));
-                        }
-                    } catch (e) {
-                        // localStorage 접근 실패 시 fallback — 가드 없이 write (이전 동작)
-                        updateDoc(docRef, { updatedAt: serverTimestamp() }).catch(() => {});
-                    }
+                    touchUpdatedAt(authenticatedUser.uid);
                 }
 
                 // Push 토큰 재등록은 App.jsx mount에서 전역 리스너가 처리
@@ -202,6 +209,7 @@ export const AuthProvider = ({ children }) => {
                     if (authenticatedUser.email) newDoc.email = authenticatedUser.email;
                     if (authenticatedUser.displayName) newDoc.displayName = authenticatedUser.displayName;
                     await setDoc(docRef, newDoc, { merge: true });
+                    newUserUidRef.current = authenticatedUser.uid; // [SessionStart] 신규 판정
                     // 위치 정보 비동기 저장
                     // phoneCountry도 함께 기록 — 결제 통화 결정 기본값 (프로필 편집 전까지)
                     detectGeoInfo().then(info => {
@@ -389,7 +397,7 @@ export const AuthProvider = ({ children }) => {
     //   카드 저장은 점수 차감(-1)으로만 관리. TRIAL_DAILY_CARD_LIMIT 상수 폐기.
     const TRIAL_DAILY_PRON_LIMIT = 10;        // Free Trial: 하루 발음 10회 (+ pronCredits 영구) — 2026-05-19 20→10 (Azure 비용 절감)
     const TRIAL_FREETALK_DAILY_LIMIT = 2;     // Free Trial: 하루 Free-Talking 세션 2회 (+ freeTalkCredits 영구)
-    const TRIAL_DAILY_LISTEN_LIMIT = 3;       // Free Trial: 하루 Listening passage 3회 (2026-05-23 신설) — Gemini + Azure TTS 비용 가드
+    const TRIAL_DAILY_LISTEN_LIMIT = 5;       // Free Trial: 하루 Listening passage 5회 (2026-06-15 3→5, 학습 추가 진행 보장)
     const PRO_PRON_LIMIT = 1000;              // Pro: 월 발음 1000회 (2026-06-07 1500→1000)
     const PRO_FREETALK_LIMIT = 100;           // Pro: 월 Free-Talking 100회 (2026-06-07 신설 — 무제한→월캡, Azure 꼬리위험 차단)
     const PRO_LISTEN_LIMIT = 200;             // Pro: 월 Listening 생성 200회 (2026-06-07 신설). Premium은 무제한.
@@ -631,6 +639,30 @@ export const AuthProvider = ({ children }) => {
         //   폭주 → !!profile 로 "로드 1회"만 트리거. 트랜잭션 가드로 이중충전 차단.
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [user?.uid, !!profile, profile?.lastTopUpDate, tier]);
+
+    // [SessionStart] 서버 로그 — profile 로드 후 세션당 1회(UID당). 신규/기존 모두 발화.
+    //   목적: 서버 로그만으로 "이 UID가 접속을 시작했다"를 추적(로그 분석 가시성). DB write 0(로그 전용)
+    //   → onSnapshot 재발화·iOS 발열과 무관. UID 변경(익명→실계정 등) 시 새 UID로 1회 재발화.
+    useEffect(() => {
+        if (!user?.uid || !profile) return;
+        if (sessionStartUidRef.current === user.uid) return;
+        sessionStartUidRef.current = user.uid;
+        const isNew = newUserUidRef.current === user.uid;
+        authFetch(`${API_URL}/api/session-start`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                isNew,
+                isAnonymous: !!user.isAnonymous,
+                tier: profile.tier || 'trial',
+                platform: Capacitor.isNativePlatform() ? 'app' : 'web',
+                nativeVersion: profile.currentNativeVersion || null,
+                lang: profile.sourceLang || profile.deviceLang || null,
+                country: profile.geoCountry || null,
+            }),
+        }).catch(() => {}); // 베스트에포트 — 실패해도 앱 흐름 무관
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [user?.uid, !!profile]);
 
     // 구독 만료 체크
     useEffect(() => {

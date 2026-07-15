@@ -5,6 +5,7 @@ import { getOnboardingPhrase } from '../config/onboardingPhrases';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
 import PronunciationAssessment from './PronunciationAssessment';
 import { resetIOSViewport } from '../utils/resetIOSViewport';
+import { playSuccessSound, playAlertSound } from '../utils/soundEffects';
 
 // ── 온보딩 첫 발음 챌린지 (무과금) ────────────────────────────────────────
 // 흐름: 5-A 먼저 들어보기 → 5-B 따라 말하기 → 5-C 결과(+따뜻한 카피)
@@ -26,9 +27,13 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
   // 결과 단계는 state가 아니라 채점 결과 유무에서 파생 (setState-in-effect 회피)
   const effectivePhase = assessmentResult ? 'result' : phase;
 
-  // 채점 결과 도착 시 iOS viewport 복구만 수행(마이크 권한 팝업 후 stuck 방지) — side-effect only
+  // 채점 결과 도착 시: iOS viewport 복구 + 점수 효과음(실 학습과 동일 — 목표 이상 성공음/미만 알림음).
+  //   결과 1회 도착에만 발동(assessmentResult 변경 시). 온보딩 무과금이라 효과음은 로컬 사운드.
   useEffect(() => {
-    if (assessmentResult) resetIOSViewport();
+    if (!assessmentResult) return;
+    resetIOSViewport();
+    const score = assessmentResult.pronunciationScore || 0;
+    if (score >= 60) playSuccessSound(); else playAlertSound();
   }, [assessmentResult]);
 
   const handleListen = () => {
@@ -46,13 +51,14 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
     return (
       <div className="onb-pron">
         <h2 className="onb-title">{t('onboarding.firstPron.resultTitle')}</h2>
-        {/* onSpeak 미전달: 음소 상세 🔊(단어 Azure 재생) 버튼 비노출 → 온보딩 불필요 과금 제거.
-            "내 목소리 다시 듣기"는 로컬 녹음 재생이라 그대로 동작 */}
+        {/* 음소 상세 🔊(단어 재생) 버튼 복원 — 실 학습과 동일하게 단어를 눌러 들을 수 있어야 함.
+            온보딩은 무과금이라 _skipGate(차감 X) + durable(전역 1회 합성·공유)로 재생 → 비용 우려 해소. */}
         <PronunciationAssessment
           data={assessmentResult}
           sourceLangCode={sourceLang}
           langCode={targetLang}
           ttsSource="onboarding"
+          onSpeak={(text, lc, emo, opts) => onSpeak?.(text, lc, emo, { ...(opts || {}), _skipGate: true, durable: true })}
         />
         <div style={{
           background: '#f0fdfa', border: '1.5px solid #5eead4', borderRadius: '14px',

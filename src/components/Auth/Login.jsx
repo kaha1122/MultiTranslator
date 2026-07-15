@@ -28,6 +28,11 @@ const migrateAnonymousData = async (anonymousUid, newUser, isNewUser) => {
         });
         const data = await resp.json();
         if (data.success) console.log('[Login Migrate] success:', data.migrated);
+        // [race fix 2026-06-18] 마이그레이션 직후 RC app_user_id 를 새 uid 로 전환(결제 귀속 drift 방지).
+        if (window.Capacitor?.isNativePlatform?.()) {
+            try { const { Purchases } = await import('@revenuecat/purchases-capacitor'); await Purchases.logIn({ appUserID: newUser.uid }); }
+            catch (le) { console.warn('[Login Migrate] RC logIn:', le?.message); }
+        }
     } catch (e) {
         console.warn('[Login Migrate] failed (non-blocking):', e.message);
     }

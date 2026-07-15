@@ -11,11 +11,17 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TranslationCard, { getTtsCharLimit } from './components/TranslationCard';
 import { Analytics } from '@vercel/analytics/react';
 import { App as CapacitorApp } from '@capacitor/app';
-import { Capacitor } from '@capacitor/core';
+import { Capacitor, registerPlugin } from '@capacitor/core';
 import { TextToSpeech } from '@capacitor-community/text-to-speech';
 import { CapacitorUpdater } from '@capgo/capacitor-updater';
 import './App.css';
 import './components/Auth/Auth.css'; // [추가] 모달창 디자인을 위해 Auth.css 활용
+
+// [thermal-ios 2026-06-17] 보상형 광고(비디오) 종료 후 AVAudioSession 해제용.
+//   AdMob SDK가 광고 재생을 위해 setActive(true)로 켠 세션을 앱이 명시적으로 끄지 않으면
+//   mediaserverd가 awake 상태로 남아 발열 누적 → thermal throttling → 마이크 silent capture.
+//   녹음 흐름(useAudioRecorder/FreeTalkingChat)과 동일 플러그인. endAudioSession은 v1.5.73부터 존재.
+const BluetoothAudio = registerPlugin('BluetoothAudio');
 
 // Firebase & Auth
 import { auth, db, RecaptchaVerifier } from './firebase/config';
@@ -28,6 +34,7 @@ import { signOut, signInAnonymously, signInWithPopup, signInWithCredential, Goog
 import { googleProvider, facebookProvider } from './firebase/config';
 import { setDoc, getDoc, doc, updateDoc } from 'firebase/firestore';
 import { useAuth, setAccountDeletionFlag } from './context/AuthContext';
+import { touchUpdatedAt } from './utils/touchUpdatedAt';
 import Login from './components/Auth/Login';
 import Library from './components/Library'; // [신규] 보관함 컴포넌트
 import Signup from './components/Auth/Signup';
@@ -60,10 +67,11 @@ import OnboardingModal from './components/OnboardingModal';
 import RenewalReminderPopup from './components/RenewalReminderPopup';
 import StatsPage from './components/StatsPage';
 import BookmarkPromptModal from './components/BookmarkPromptModal';
+import TtsAdPromptModal from './components/TtsAdPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
-import { useAdMob, AD_UNITS, IS_TESTING } from './hooks/useAdMob';
+import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import AppGuide from './components/AppGuide';
 import LandingPage from './components/LandingPage';
@@ -78,7 +86,7 @@ import { COUNTRY_PHONES, formatPhoneByCountry, getCountryByLang } from './utils/
 import { isBot } from './utils/isBot';
 import { playSuccessSound } from './utils/soundEffects';
 import { assignNextCardSerial } from './utils/cardSerial';
-import { getCachedAudio, putCachedAudio } from './utils/ttsAudioCache';
+import { getCachedAudio, putCachedAudio, deleteCachedAudio } from './utils/ttsAudioCache';
 import { stripAnnotations } from './utils/stripAnnotations';
 
 // [신규] AdSense 승인을 위한 법적 페이지 컴포넌트 (Privacy Policy, Terms, Contact)
@@ -106,6 +114,48 @@ const detectBrowserSourceLang = () => {
 const getDefaultTargetLangs = (src) => src === 'en' ? ['ko'] : ['en'];
 
 const languageNames = Object.fromEntries(ALL_LANGUAGES.map(l => [l.code, l.name]));
+
+// [v2.1.16] RevenueCat appUserID 를 targetUid 로 강제 동기화.
+//   RC 네이티브 캐시가 옛 익명 uid(앱 재설치 잔재)에 고정돼 결제가 잘못 귀속되던 사고 수정.
+//   logIn 단독은 캐시 override 실패 가능 → logOut(저장된 appUserID 강제 클리어) 선행 후 logIn.
+//   getAppUserID 로 전/후 검증 + 로깅(Safari Web Inspector 추적용). 반환: 동기화 후 실제 RC uid(실패 null).
+async function syncRevenueCatUser(Purchases, targetUid, tag) {
+  try {
+    const { appUserID: before } = await Purchases.getAppUserID();
+    if (before === targetUid) { console.log(`[RC:${tag}] appUserID already current=${before}`); return before; }
+    console.log(`[RC:${tag}] sync needed: cache=${before} want=${targetUid}`);
+    try { await Purchases.logOut(); } catch (lo) { console.warn(`[RC:${tag}] logOut skip:`, lo?.message); }
+    await Purchases.logIn({ appUserID: targetUid });
+    const { appUserID: after } = await Purchases.getAppUserID();
+    console.log(`[RC:${tag}] post-sync appUserID=${after} ${after === targetUid ? 'OK' : 'MISMATCH'}`);
+    return after;
+  } catch (e) { console.warn(`[RC:${tag}] sync error:`, e?.message); return null; }
+}
+
+// ── 포인트 구매 적립 재시도 큐 ─────────────────────────────────────────────────
+//   [2026-06-18 근본수정] 적립은 RC webhook 의 app_user_id(옛 익명 uid 로 오염됨)가 아니라,
+//   인증된 현재 Firebase uid 로 서버 /api/confirm-point-purchase 를 호출해 수행한다. 구매 직후
+//   confirm 이 실패(네트워크 등)하면 txId 를 localStorage 에 적재 → 다음 앱 실행 시 재시도한다.
+//   localStorage 사용(네이티브 플러그인 X) → Capgo OTA 로 즉시 배포 가능.
+const PENDING_POINTS_KEY = 'pendingPointPurchases';
+const getPendingPointTx = () => {
+  try { return JSON.parse(localStorage.getItem(PENDING_POINTS_KEY) || '[]'); }
+  catch { return []; }
+};
+const addPendingPointTx = (txId) => {
+  if (!txId) return;
+  try {
+    const set = new Set(getPendingPointTx());
+    set.add(String(txId));
+    localStorage.setItem(PENDING_POINTS_KEY, JSON.stringify([...set]));
+  } catch (e) { console.warn('[BuyPoints] queue save failed:', e?.message); }
+};
+const removePendingPointTx = (txId) => {
+  try {
+    const next = getPendingPointTx().filter((t) => t !== String(txId));
+    localStorage.setItem(PENDING_POINTS_KEY, JSON.stringify(next));
+  } catch (e) { console.warn('[BuyPoints] queue clear failed:', e?.message); }
+};
 
 function App() {
   // ── 스플래시 화면 상태 ──────────────────────────────────────────────────
@@ -451,6 +501,8 @@ function App() {
   const [showTrialLimitModal, setShowTrialLimitModal] = useState(false);
   // 2026-06-07: 한도 모달 사유 — 'cap'(하드캡 도달, 충전 무의미) / 'points'(포인트 부족, 충전 가능)
   const [trialLimitReason, setTrialLimitReason] = useState('cap');
+  // 2026-06-16: cap 모달에서 어떤 기능이 한도에 막혔는지 — 발음('pron')일 때만 발음 한도 광고 버튼 노출
+  const [trialLimitFeature, setTrialLimitFeature] = useState('');
   const [showApiKeyWizard, setShowApiKeyWizard] = useState(false);
   // 2026-05-07 v1.5.0: 카드 한도 폐기 — trialCardCurrentCount state 제거됨 (사용처 없음).
 
@@ -544,7 +596,7 @@ function App() {
     }
   };
 
-  // 언어별 목표 점수를 저장하는 상태 (기본값 80점)
+  // 언어별 목표 점수를 저장하는 상태 (미설정 시 채점·설정 UI 모두 기본값 60점 — 2026-06-18 80→60 통일)
   const [languageGoals, setLanguageGoals] = useState(() => {
     try {
       const saved = localStorage.getItem('languageGoals');
@@ -581,8 +633,16 @@ function App() {
     catch (e) { return 10; }
   });
 
+  // 기능2(2026-06-16): 카드 저장(off→on) 시 통합 포인트 풀 -1 차감. Trial 한정(Pro/Premium 면제).
+  //   consumeBonusPoints 는 clamp(음수 방지)+디바운스 → 잔액 0 이어도 저장은 진행(차단 안 함).
+  //   incrementDailySave(저장 성공 단일 신호)에 hook → 해제·중복 저장은 차감/환불 없음.
+  const chargeCardSave = useCallback(() => {
+    if (tier !== 'trial') return;
+    consumeBonusPoints(1);
+  }, [tier, consumeBonusPoints]);
+
   // Daily progress hook
-  const { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily } = useDailyProgress(user, dailyGoal);
+  const { todayCount, todaySaveCount, todayPronCount, todayPronBonus, todayListenCount, todayFreeTalkCount, weeklyData, incrementAchievement, incrementDailySave, incrementDailyPron, incrementDailyListen, incrementDailyGenerate, incrementDailyFreeTalk, markTopicProgressToday, reloadDaily } = useDailyProgress(user, dailyGoal, chargeCardSave);
   // #4(2026-06-15): 발음 일일 유효 한도 = 기본 한도 + 광고로 추가한 오늘 허용량(todayPronBonus)
   const effectivePronLimit = TRIAL_DAILY_PRON_LIMIT + (todayPronBonus || 0);
 
@@ -600,11 +660,20 @@ function App() {
     if (tid) setHubTopic({ topicId: tid, activeLang: lang }); // 학습 종료 → 해당 토픽 허브로 복귀(게이지 갱신)
     // streak 달성 팝업은 viewMode 전환 effect가 일괄 처리 (back 헤더/헤더 홈버튼/안드로이드 back 모두 커버)
   };
+  // 하드웨어 back 핸들러(mount 1회 등록, deps=[sidebarOpen])에서 stale closure 없이 최신값 참조하기 위한 refs.
+  //   hubTopic/learningPreset state 를 직접 참조하면 항상 초기 null 이라 back 분기가 무동작 → ref 필수.
+  const hubTopicRef = useRef(null);
+  useEffect(() => { hubTopicRef.current = hubTopic; }, [hubTopic]);
+  const learningPresetRef = useRef(null);
+  useEffect(() => { learningPresetRef.current = learningPreset; }, [learningPreset]);
+  const exitTopicLearningRef = useRef(exitTopicLearning);
+  exitTopicLearningRef.current = exitTopicLearning;
   // 토픽 진척(단어/지문 통과) 기록 + 일일 목표 카운트(#5: 발음 통과=달성, 저장 무관) + streak pending
   const handleTopicPass = async (args) => {
     const ok = await topicProgress.recordPass(args);
     if (ok) {
-      const newlyMarked = await markTopicProgressToday();
+      // #4: Streak 달성 = 오늘 단어 W_TARGET + 지문 P_TARGET 통과(phase별 집계) — markTopicProgressToday(phase)
+      const newlyMarked = await markTopicProgressToday(args.phase);
       if (newlyMarked) streakEarnedPendingRef.current = true;
       // 일일 목표(🎯 todayCount/dailyGoal)는 발음 통과에서만 증가 (per-item dedup)
       incrementAchievement(`pass-${args.topicId}-${args.lang}-${args.phase}-${args.itemKey}`);
@@ -679,7 +748,10 @@ function App() {
         const { Purchases, LOG_LEVEL } = await import('@revenuecat/purchases-capacitor');
         await Purchases.setLogLevel({ level: LOG_LEVEL.DEBUG });
         await Purchases.configure({ apiKey: rcApiKey, appUserID: user.uid });
-        console.log('[RevenueCat] Configured for', user.uid);
+        // [v2.1.16] RC 네이티브 캐시가 옛 uid(익명 재설치 잔재)에 고정돼 결제가 잘못 귀속되던 사고 수정.
+        //   logIn 단독은 캐시 override 실패 사례 → logOut(저장된 appUserID 강제 클리어)+logIn 으로 동기화.
+        //   effect deps=[user?.uid] 라 익명 sign-in/실계정 로그인 등 모든 auth 변경 시 재실행.
+        await syncRevenueCatUser(Purchases, user.uid, 'configure');
         // 포인트 상품(소비성) 가격 조회 — 사이드바 구매 버튼 가격 표시용
         try {
           const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
@@ -775,6 +847,7 @@ function App() {
       feature === 'pron' ? todayPronCount >= effectivePronLimit :
       feature === 'freeTalk' ? todayFreeTalkCount >= TRIAL_FREETALK_DAILY_LIMIT :
       feature === 'listen' ? todayListenCount >= TRIAL_DAILY_LISTEN_LIMIT : false;
+    setTrialLimitFeature(feature);
     setTrialLimitReason(capReached ? 'cap' : 'points');
     setShowTrialLimitModal(true);
   }, [todayPronCount, todayFreeTalkCount, todayListenCount, TRIAL_DAILY_PRON_LIMIT, TRIAL_FREETALK_DAILY_LIMIT, TRIAL_DAILY_LISTEN_LIMIT]);
@@ -784,6 +857,22 @@ function App() {
     setTrialLimitReason('proMonthly');
     setShowTrialLimitModal(true);
   }, []);
+
+  // 2026-06-16: 포인트 부족 모달 강제(reason='points' 고정 — capReached 판정 우회).
+  //   generate/카드저장 게이트 전용. 광고 보상 충전(+20) 버튼 포함이라 즉시 회복 가능.
+  const requestPointsModal = useCallback((feature) => {
+    setTrialLimitFeature(feature);
+    setTrialLimitReason('points');
+    setShowTrialLimitModal(true);
+  }, []);
+
+  // 2026-06-16: 잔액 게이트 — Trial 잔액 < cost 면 차단 + 포인트부족 모달, 충분하면 통과.
+  //   Pro/Premium 은 무제한 면제(true). 차감은 하지 않음(통과 후 기존 addAdPoints/chargeCardSave 가 차감).
+  const canSpendPoints = useCallback((cost, feature) => {
+    if (tier !== 'trial') return true;            // Pro/Premium 면제
+    if (bonusPoints < cost) { requestPointsModal(feature); return false; }
+    return true;
+  }, [tier, bonusPoints, requestPointsModal]);
 
   // 2026-06-15: Pro/Premium 전용 기능(Free Talking) 비구독자 진입 차단 모달.
   const requestProOnlyModal = useCallback(() => {
@@ -801,30 +890,154 @@ function App() {
     return true;
   }, [tier, bonusPoints, consumeBonusPoints, requestLimitModal]);
 
+  // ── TTS Point 누적 + 광고 프롬프트 nudge (2026-06-16, 기능1) ──────────────
+  //   무료 듣기(캐시 적중 재생, 차감 0)마다 +1. 임계(20) 도달 + 오늘 광고 안봄 + 오늘 팝업 안띄움이면
+  //   TtsAdPromptModal 발화. 발열 규칙6: 매 재생마다 Firestore write/setState 폭주를 피하려고
+  //   ttsPoint 는 localStorage + ref 로만 관리(서버 권위 불필요한 디바이스 로컬 nudge). 팝업 표시 시에만
+  //   1회 setState. Trial·네이티브 한정(광고는 AdMob 네이티브 전용).
+  const TTS_POINT_KEY = 'ttsPointState';            // { date, count } (로컬 날짜 기준)
+  const TTS_AD_PROMPT_KEY = 'ttsAdPromptShownDate'; // 'YYYY-MM-DD' (오늘 팝업 띄웠는지)
+  // 로컬 미러: 오늘 광고 시청 완료(긴/짧은/X 모두). 서버 adRewardCountDate 는 긴 광고만 갱신하므로,
+  //   짧은광고·X 경로도 일관되게 "오늘 광고 봄"으로 마킹 → 재발화 차단(users 본문 write 회피=heat-safe).
+  const TTS_AD_REWARD_DATE_KEY = 'ttsAdRewardDate'; // 'YYYY-MM-DD'
+  const TTS_POINT_THRESHOLD = 20;
+  const ttsPointRef = useRef(0);
+  const [showTtsAdPrompt, setShowTtsAdPrompt] = useState(false);
+  // adRewardCountDate 비교용 UTC 날짜 키 (서버 adReward.js 가 UTC 로 기록 → 같은 기준으로 비교)
+  const utcDateStr = () => {
+    const d = new Date();
+    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, '0')}-${String(d.getUTCDate()).padStart(2, '0')}`;
+  };
+
+  // 캐시 적중(무료 재생) 시 호출 — handleSpeak/handleSpeakSmart 의 캐시 분기에서 hook.
+  //   🚨 절대 throw 금지: 이 함수는 캐시 재생 분기(일부는 try/catch 내부)에서 호출되므로
+  //   예외가 새면 catch 가 삼키고 Azure 폴백으로 떨어져 캐시 재생 실패 + 과금이 된다.
+  //   본체 전체를 try/catch 로 감싸 어떤 예외도 호출자(재생 경로)에 전파되지 않게 한다.
+  const bumpTtsPoint = (source, langCode) => {
+    try {
+      if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
+      if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
+      const today = getToday();
+      let stored;
+      try { stored = JSON.parse(localStorage.getItem(TTS_POINT_KEY) || '{}'); } catch { stored = {}; }
+      const base = stored?.date === today ? (stored.count || 0) : 0; // 자정 경계: 날짜 바뀌면 0
+      const next = base + 1;
+      ttsPointRef.current = next;
+      try { localStorage.setItem(TTS_POINT_KEY, JSON.stringify({ date: today, count: next })); } catch {}
+
+      // [2026-06-18] 무차감 재생 1건을 Render 로그에 기록 (fire-and-forget, Firestore write 0 → 발열·비용 무관).
+      //   서버 [TTSRoute] engine=replay count=N 으로 "누가 얼마나 반복 재생하는지" 가시화.
+      //   threshold=true = daily 20 도달(광고 팝업 트리거 시점) — 20 이상 모든 재생에 표기되어 초과 재생도 추적.
+      beaconTtsRoute(source, 'replay', langCode, { count: next, threshold: next >= TTS_POINT_THRESHOLD });
+
+      // 트리거 3조건 (모두 만족 시 팝업)
+      if (next < TTS_POINT_THRESHOLD) return;                       // ② ttsPoint >= 20
+      let shownDate; try { shownDate = localStorage.getItem(TTS_AD_PROMPT_KEY); } catch {}
+      if (shownDate === today) return;                              // ③ 오늘 아직 안 띄움
+      // ① 오늘 아직 광고 안 봄 — 서버(UTC) 또는 로컬 미러(긴/짧은/X 모두 마킹) 중 하나라도 오늘이면 차단
+      let adDate; try { adDate = localStorage.getItem(TTS_AD_REWARD_DATE_KEY); } catch {}
+      if (adDate === today || profile?.adRewardCountDate === utcDateStr()) return;
+      // 발화 — '오늘 표시' 마킹을 동기로 먼저(이후 재생은 ③에서 차단 → 중복 발화/재렌더 방지)
+      try { localStorage.setItem(TTS_AD_PROMPT_KEY, today); } catch {}
+      console.log('[TtsAdPrompt] shown', { ttsPoint: next });
+      setShowTtsAdPrompt(true);
+    } catch { /* nudge 실패는 무시 — 재생을 절대 막지 않는다 */ }
+  };
+
+  // 오늘 광고 시청 완료 로컬 마킹(긴/짧은/X 공통) — 트리거 ① 조건과 짝. best-effort.
+  const markAdWatchedToday = () => {
+    try { localStorage.setItem(TTS_AD_REWARD_DATE_KEY, getToday()); } catch {}
+  };
+  // 긴 광고(Rewarded) → 기존 handleRewardedAd 재사용(+20 bonusPoints, 서버 검증, adRewardCountDate 갱신)
+  const handleTtsAdLong = async () => {
+    console.log('[TtsAdPrompt] long_ad_clicked');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'rewarded', count: ttsPointRef.current });
+    setShowTtsAdPrompt(false);
+    markAdWatchedToday();
+    await handleRewardedAd(); // 서버 adRewardCountDate 도 함께 갱신됨
+  };
+  // 짧은 광고(Interstitial) → 보너스 없음. AdMob 클라 전용이라 서버 흔적이 없어 비콘으로 Render 로그 남김.
+  const handleTtsAdShort = async () => {
+    console.log('[TtsAdPrompt] short_ad_clicked');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial', count: ttsPointRef.current });
+    setShowTtsAdPrompt(false);
+    markAdWatchedToday();
+    try { await showInterstitialAd(); } catch {}
+  };
+  // X 닫기 → 인터스티셜 강제 발화(빠져나갈 수 없음). 일관성: 어떤 경로든 오늘 재발화 안 함
+  //   (ttsAdPromptShownDate 는 발화 시점에, adRewardDate 미러는 여기서 마킹).
+  const handleTtsAdClose = async () => {
+    console.log('[TtsAdPrompt] x_closed → interstitial_forced');
+    beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial-forced', count: ttsPointRef.current });
+    setShowTtsAdPrompt(false);
+    markAdWatchedToday();
+    try { await showInterstitialAd(); } catch {}
+  };
+
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
   // 2026-05-07 v1.5.0: rewardBonus_{date} localStorage 시스템 폐기.
   //   freeTalks 광고 → freeTalkCredits +2 (영구), prons 광고 → pronCredits +5 (영구).
   //   사용할 때까지 Firestore 에 보관, 자정 리셋 없음 → 미사용분 손실 X.
   //   2026-05-19: pronCredits +10 → +5 (Azure 비용 vs 광고 eCPM break-even 회복)
   const [rewardAdLoading, setRewardAdLoading] = useState(false);
-  // 2026-06-07: 인앱 포인트 구매(소비성, +200) — 가격 표시 + 구매 진행 상태
+  // 2026-06-07: 인앱 포인트 구매(소비성) — 가격 표시 + 구매 진행 상태
+  // 2026-06-16: 지급량 +500 (서버 webhook POINTS_AMOUNT). SKU 식별자는 스토어 등록값 그대로 유지.
+  // 2026-06-23: 지급량 +1000 (서버 webhook POINTS_AMOUNT). 실제 지급은 서버 권위 — 여기 문구는 표시용.
   const POINTS_PRODUCT_ID = 'pronunfit_points_200';
   const [pointsPriceString, setPointsPriceString] = useState('');
   const [buyingPoints, setBuyingPoints] = useState(false);
 
-  // 인앱 포인트 구매 — RC StoreProduct 구매 → 서버 webhook(NON_RENEWING_PURCHASE)이 +200 적립(멱등).
-  //   클라는 결제 dialog만 띄우고, 적립은 webhook → Firestore onSnapshot 으로 자동 반영.
+  // 인앱 포인트 구매 — RC StoreProduct 구매 → 클라가 인증된 현재 Firebase uid 로 서버 적립 요청.
+  //   [2026-06-18 근본수정] 적립 근거를 RC webhook 의 app_user_id(Apple 영수증 핀으로 옛 익명 uid 에
+  //   오염되어 3회 반복 사고)가 아니라, "결제를 누른 그 순간 로그인된 검증 uid" 로 바꾼다. confirm 실패 시
+  //   txId 를 재시도 큐에 적재 → 다음 실행 시 자동 재시도. 적립 반영은 Firestore onSnapshot.
+  const confirmPointPurchase = async (txId) => {
+    if (!txId) return false;
+    const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+    try {
+      const res = await authFetch(`${SERVER_URL}/api/confirm-point-purchase`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transactionId: String(txId) }),
+      });
+      if (!res.ok) throw new Error(`status ${res.status}`);
+      removePendingPointTx(txId);
+      return true;
+    } catch (e) {
+      console.warn('[BuyPoints] confirm failed, queued for retry:', e?.message);
+      addPendingPointTx(txId);
+      return false;
+    }
+  };
+
   const handleBuyPoints = async () => {
     if (!window.Capacitor?.isNativePlatform?.() || !user || buyingPoints) return;
     setBuyingPoints(true);
     try {
       const { Purchases } = await import('@revenuecat/purchases-capacitor');
+      // [v2.1.16] 결제 직전 RC appUserID 강제 동기화(logOut+logIn) + 검증 — RC 자체 레코드 정합용 방어.
+      //   동기화 후에도 RC uid != 현재 uid 면 결제 중단(오귀속 방어). 단, 적립 정확성의 근거는 RC uid 가
+      //   아니라 아래 서버 /api/confirm-point-purchase(인증 uid)다 — 이 abort 는 보조 안전망(v2.1.17).
+      const rcUid = await syncRevenueCatUser(Purchases, user.uid, 'BuyPoints');
+      if (rcUid !== user.uid) {
+        console.error(`[BuyPoints] ABORT — RC appUserID=${rcUid} != ${user.uid}`);
+        alert(getT(sourceLang, 'reward.buyFail') || '결제 준비 중 문제가 발생했어요. 앱을 완전히 종료 후 다시 시도해주세요.');
+        setBuyingPoints(false);
+        return;
+      }
       const { products } = await Purchases.getProducts({ productIdentifiers: [POINTS_PRODUCT_ID], type: 'INAPP' });
       const product = products?.[0];
       if (!product) throw new Error('point product not found');
-      await Purchases.purchaseStoreProduct({ product });
-      // 성공 — 적립은 webhook(async). 안내만.
-      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 200포인트가 반영됩니다.');
+      const purchaseRes = await Purchases.purchaseStoreProduct({ product });
+      // RC capacitor 결제 결과에서 Apple/Play transaction id 추출(SDK 버전별 키 차이 방어).
+      const txId = purchaseRes?.transaction?.transactionIdentifier
+        || purchaseRes?.transaction?.transactionId
+        || purchaseRes?.transaction?.id
+        || '';
+      if (!txId) console.error('[BuyPoints] transactionId 추출 실패 — webhook_seen 기록만 남고 적립 누락 위험:', purchaseRes?.transaction);
+      await confirmPointPurchase(txId);
+      // 성공 — 적립은 서버 confirm(또는 재시도 큐) → Firestore onSnapshot 으로 반영.
+      alert(getT(sourceLang, 'reward.buySuccess') || '구매 완료! 곧 1000포인트가 반영됩니다.');
     } catch (e) {
       if (!e?.userCancelled) {
         console.error('[BuyPoints] 실패:', e);
@@ -834,6 +1047,18 @@ function App() {
       setBuyingPoints(false);
     }
   };
+
+  // 포인트 적립 재시도 — 이전 실행에서 confirm 이 실패(네트워크 등)해 큐에 남은 txId 를
+  //   앱 시작/로그인 시점에 인증된 현재 uid 로 재시도. confirm 은 멱등(서버 트랜잭션)이라 중복 안전.
+  useEffect(() => {
+    if (!window.Capacitor?.isNativePlatform?.() || !user) return;
+    const pending = getPendingPointTx();
+    if (!pending.length) return;
+    (async () => {
+      for (const txId of pending) { await confirmPointPurchase(txId); }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.uid]);
 
   // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
   //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
@@ -878,6 +1103,10 @@ function App() {
     } finally {
       setRewardAdLoading(false);
       handles.forEach(h => h?.remove?.());
+      // [thermal-ios] 광고 SDK가 켠 AVAudioSession을 해제 — mediaserverd awake 누수 → 발열 차단.
+      //   광고는 풀스크린 컨텍스트 종료 시점이라 모달 닫힘과 동일하게 endAudioSession(setActive=false).
+      //   ?.+catch: 구 IPA/Android 안전. iOS 한정(Android는 mediaserverd 발열 이슈 없음).
+      if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {});
     }
   };
 
@@ -920,6 +1149,8 @@ function App() {
     } finally {
       setRewardAdLoading(false);
       handles.forEach(h => h?.remove?.());
+      // [thermal-ios] 광고 후 AVAudioSession 해제 (handleRewardedAd와 동일 — 발열 차단)
+      if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {});
     }
   };
 
@@ -1135,6 +1366,18 @@ function App() {
           return;
         }
 
+        // TopicHub 오버레이(LearningPathHome 위 popup)가 열려있으면 닫기 — 옛 탭으로 새지 않게(viewMode 유지)
+        if (hubTopicRef.current) {
+          setHubTopic(null);
+          return;
+        }
+
+        // 단계학습(vocab/listening preset) 화면이면 정상 복원 경로 재사용(허브로 복귀)
+        if (learningPresetRef.current) {
+          exitTopicLearningRef.current?.();
+          return;
+        }
+
         // viewMode 히스토리 스택에서 이전 화면으로 이동
         const history = viewModeHistoryRef.current;
         if (history.length > 1) {
@@ -1180,11 +1423,27 @@ function App() {
         // 백그라운드 진입 → 모든 활성 recorder에 중단 신호
         console.log('[App] 백그라운드 진입 → 녹음 자동 중단 신호');
         window.dispatchEvent(new Event('app-background'));
+      } else {
+        // 포그라운드 복귀(resume) → updatedAt 갱신.
+        //   콜드 스타트(onAuthStateChanged)만으로는 메모리 잔류 앱의 재사용을 못 잡아
+        //   "최근 사용" 추적이 누락되던 갭을 메움. 5분 가드/볼라타일 필드라 발열·비용 무시 가능.
+        //   auth.currentUser를 호출 시점에 직접 읽어 stale 클로저 회피.
+        touchUpdatedAt(auth.currentUser?.uid);
       }
     });
     return () => {
       if (listener) listener.then(l => l.remove());
     };
+  }, []);
+
+  // ── 웹: 탭 가시성 복귀 시 updatedAt 갱신 (네이티브 appStateChange 미발화 경로 보완) ──
+  React.useEffect(() => {
+    if (Capacitor.isNativePlatform()) return; // 네이티브는 위 appStateChange가 처리
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') touchUpdatedAt(auth.currentUser?.uid);
+    };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => document.removeEventListener('visibilitychange', onVisible);
   }, []);
 
   // 탭 이동 또는 사이드바 열기 시 종료 토스트 즉시 해제
@@ -2396,6 +2655,7 @@ function App() {
   // AI가 입력 언어를 자동 감지한 뒤 38개 언어 중 적절한 타겟으로 번역합니다.
   const handleTranslate = async (retryCount = 0) => {
     if (!inputText.trim()) return;
+    if (retryCount === 0 && !canSpendPoints(1, 'translationGen')) return; // 2026-06-16: 잔액<1 차단(최초 시도만)
 
     // 2026-06-10: 번역 생성도 1점 차감 (Vocab/Scene 생성과 동일). Trial 0점이면 차단 + 충전 팝업.
     //   하드캡 없음 → requestLimitModal이 'points'(충전 가능) 사유로 표시. retryCount>0(내부 재시도)은 재게이트 안 함.
@@ -2611,7 +2871,7 @@ function App() {
       setTranslationExamples(newExamples);
       incrementTrialCard(); // 번역 클릭 누적 (분석용, 모든 tier에서 기록)
       incrementDailyGenerate('translation'); // 일일 분석용
-      addAdPoints(1); // 풀 -1 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과)
+      addAdPoints(3); // 풀 -3 (번역 생성 비용, Trial만 — Pro/Premium 무료 통과). 2026-06-23 1→3: 번역은 공용 캐시 불가한 1회성 비용이라 상향
 
     } catch (error) {
       console.error("번역 실패:", error);
@@ -2699,6 +2959,7 @@ function App() {
 
   // 별 버튼 저장 함수 — 저장 성공 시 목표 달성 점수면 daily progress 카운트
   const handleStarSave = async (langCode) => {
+    if (!canSpendPoints(1, 'cardSave')) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
     const result = await saveToFirebase(langCode);
     if (result.status === "success") {
       setSavedLangCodes(prev => new Set([...prev, langCode]));
@@ -2721,6 +2982,7 @@ function App() {
   const saveVideoCard = async (sentenceText, videoTitle, langCode, pronunciationScore = null) => {
     const u = user || await ensureAnonymousUser();
     if (!u) { alert(getT(sourceLang, 'video.loginRequired')); return; }
+    if (!canSpendPoints(1, 'cardSave')) return; // 2026-06-16: 잔액<1 차단 + 포인트부족 모달
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -2767,6 +3029,7 @@ function App() {
       if (active) return null; // 이미 저장됨 → 중복 방지
     } catch (e) { console.error("Scene duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return null; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -2823,6 +3086,7 @@ function App() {
       if (active) return true;
     } catch (e) { console.error("Passage duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return false; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -3034,6 +3298,7 @@ function App() {
       }
     } catch (e) { console.error("Vocab duplicate check failed:", e); }
 
+    if (!canSpendPoints(1, 'cardSave')) return null; // 2026-06-16: 잔액<1 차단(중복 이후=신규 저장만)
     const langInfo = getLangInfo(langCode);
     try {
       const serialNumber = await assignNextCardSerial(u.uid);
@@ -3041,6 +3306,7 @@ function App() {
         userId: u.uid,
         userEmail: u.email,
         sourceText: meaning,          // 뜻 (모국어)
+        sourceTranslation: meaning,   // 단어 밑 번역(Library 렌더용) — sourceText 와 동일 값, 필드명 정합
         translatedText: word,         // 단어 (학습 언어)
         langCode,
         language: langInfo?.name || langCode,
@@ -3178,8 +3444,35 @@ function App() {
       const audio = new Audio(url);
       ttsAudioRef.current = audio;
       audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
+      // 손상 캐시 self-heal — 재생 실패 시 메모리+IDB 캐시 퇴출 후 네이티브 폴백 발화.
+      //   (handleSpeak 의 캐시 분기엔 onerror 가 있으나 여기엔 없어, 손상 블롭이 영구 무음이던 버그.
+      //    "wash" 등 특정 단어 캐시 손상 → onerror 없어 폴백/재합성 못 하던 사례 수정.)
+      //   handleSpeakFallback = 순수 네이티브(Web Speech/Android plugin) → 캐시 우회·루프 없음.
+      let healed = false;
+      const healFromCorrupt = () => {
+        if (healed || isStale()) return;
+        healed = true;
+        try { URL.revokeObjectURL(url); } catch {}
+        ttsCacheRef.current.delete(cacheKey);  // 메모리 캐시 퇴출
+        deleteCachedAudio(cacheKey);           // IDB 영속 캐시 퇴출(fire-and-forget) → 다음엔 재합성
+        handleSpeakFallback(text, langCode);   // 무음 방지: 네이티브 즉시 발화
+      };
+      audio.onerror = healFromCorrupt;
       const p = audio.play();
-      if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+      if (p) p.catch((err) => {
+        // iOS autoplay 차단(NotAllowedError) = 제스처 부재 → 다음 클릭에 재시도(기존 UX 유지, 캐시 정상).
+        //   재시도도 실패하면 진짜 재생불가 → self-heal.
+        if (err && err.name === 'NotAllowedError') {
+          document.addEventListener('click', () => {
+            if (isStale()) return;
+            const rp = audio.play();
+            if (rp) rp.catch(() => healFromCorrupt());
+          }, { once: true });
+        } else {
+          healFromCorrupt(); // autoplay 외 진짜 재생 실패(손상 블롭 등)
+        }
+      });
+      bumpTtsPoint(src, langCode); // 캐시 적중(무료 재생) → TTS Point +1. 재생 시작 후 호출(재생 보장)
     };
 
     // ── ① 캐시 우선 (무료) ── 메모리 → IndexedDB
@@ -3195,6 +3488,7 @@ function App() {
             ttsCacheRef.current.delete(oldestKey);
           }
           ttsCacheRef.current.set(cacheKey, url);
+          beaconTtsRoute(src, 'idb-cache', langCode, { reason: 'idb-hit' }); // 사용량 모니터링(서버 0과금)
           playCachedUrl(url);
           return;
         }
@@ -3331,6 +3625,7 @@ function App() {
         audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
         const p = audio.play();
         if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+        bumpTtsPoint(opts.source, langCode); // 캐시 적중(메모리) 무료 재생 → TTS Point +1. 재생 시작 후 호출
         return;
       } catch { /* 캐시 URL 만료 시 아래로 진행 */ }
     }
@@ -3350,12 +3645,14 @@ function App() {
             ttsCacheRef.current.delete(oldestKey);
           }
           ttsCacheRef.current.set(cacheKey, url);
+          beaconTtsRoute(opts.source, 'idb-cache', langCode, { reason: 'idb-hit' }); // 사용량 모니터링(서버 0과금)
           const audio = new Audio(url);
           ttsAudioRef.current = audio;
           audio.onended = () => { if (ttsAudioRef.current === audio) ttsAudioRef.current = null; };
           audio.onerror = () => { if (!isStale()) handleSpeakFallback(text, langCode); };
           const p = audio.play();
           if (p) p.catch(() => document.addEventListener('click', () => { if (!isStale()) audio.play(); }, { once: true }));
+          bumpTtsPoint(opts.source, langCode); // 캐시 적중(IndexedDB 영속) 무료 재생 → TTS Point +1. 재생 시작 후 호출
           return;
         }
       } catch { /* IndexedDB 실패 → 네트워크로 진행 */ }
@@ -4006,7 +4303,12 @@ function App() {
               </button>
 
               <button className={`sidebar-nav-item ${viewMode === 'scene' ? 'active' : ''}`}
-                onClick={() => { setViewMode('scene'); setSidebarOpen(false); setDictBackTo(null); setLibraryBackTo(null); }}>
+                onClick={() => {
+                  // #6/enh3: Free Talking(Scene) 은 Pro/Premium 전용 — 비구독자는 화면 진입 전 안내 팝업
+                  setSidebarOpen(false);
+                  if (!(tier === 'pro' || tier === 'premium' || tier === 'admin')) { requestProOnlyModal(); return; }
+                  setViewMode('scene'); setDictBackTo(null); setLibraryBackTo(null);
+                }}>
                 <span className="sidebar-nav-icon"><MessageCircle size={16} color="#f59e0b" /></span>
                 {getT(sourceLang, 'nav.scene')}
                 <span style={{ marginLeft: 'auto', fontSize: '0.62rem', fontWeight: 800, color: '#dc2626', background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '999px', padding: '1px 7px' }}>Pro ↑</span>
@@ -4036,10 +4338,10 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#166534' }}>
-                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +10'}
+                        {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +20'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +10'}
+                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20'}
                       </div>
                     </div>
                   </button>
@@ -4057,7 +4359,7 @@ function App() {
                     <span style={{ fontSize: '1.2rem' }}>🎤</span>
                     <div>
                       <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
-                        {getT(sourceLang, 'trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                        {getT(sourceLang, 'trial.pronAllowanceAd') || '발음 한도(광고) +10'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#fb923c' }}>
                         {getT(sourceLang, 'trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}
@@ -4069,7 +4371,7 @@ function App() {
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
                   )}
-                  {/* 보너스포인트 구매 (+200, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
+                  {/* 보너스포인트 구매 (+1000, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
                   {pointsPriceString && (
                     <button
                       onClick={handleBuyPoints}
@@ -4084,7 +4386,7 @@ function App() {
                       <span style={{ fontSize: '1.2rem' }}>🪙</span>
                       <div>
                         <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#1e40af' }}>
-                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +200'}
+                          {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +1000'}
                         </div>
                         <div style={{ fontSize: '0.72rem', color: '#60a5fa' }}>
                           {buyingPoints ? (getT(sourceLang, 'reward.buying') || '구매 처리 중...') : pointsPriceString}
@@ -4583,8 +4885,8 @@ function App() {
                       sourceTranslation={showSourceTranslation ? sourceTranslation : ''}
                       badgeColor={lang?.color}
                       badgeTextColor={lang?.textColor}
-                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card', ttsCost: 1 })}
-                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example', ttsCost: 1 })}
+                      onSpeak={() => handleSpeakSmart(translations[langCode], langCode, undefined, { source: 'translation.card', ttsCost: 2 })}
+                      onSpeakText={(text, lc) => handleSpeakSmart(text, lc, undefined, { source: 'translation.example', ttsCost: 2 })}
                       onSave={() => handleStarSave(langCode)}
                       isSaved={savedLangCodes.has(langCode)}
                       savedCardId={savedCardIds[langCode]}
@@ -4649,10 +4951,13 @@ function App() {
             onTrialLimitReached={() => { if (isProPronLimitReached) requestProLimitModal(); else requestLimitModal('pron'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={saveVocabCard}
+            isProUser={tier === 'pro' || tier === 'premium' || tier === 'admin'}
+            onProOnly={requestProOnlyModal}
             onSpeak={handleSpeakSmart}
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementVocabGenerate(); incrementDailyGenerate('vocab'); addAdPoints(1); }}
+            onCheckPoints={() => canSpendPoints(1, 'vocabGen')}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('vocab');
@@ -4676,6 +4981,8 @@ function App() {
             userLevel={userLevel}
             languageLevels={languageLevels}
             isTrialListenLimitReached={isTrialListenLimitReached || isProListenLimitReached}
+            isProUser={tier === 'pro' || tier === 'premium' || tier === 'admin'}
+            onProOnly={requestProOnlyModal}
             onTrialLimitReached={() => { if (isProListenLimitReached) requestProLimitModal(); else requestLimitModal('listen'); }}
             onPronSuccess={onPronSuccess}
             onSaveToLibrary={(params) => saveVocabCard({ ...params, sourceType: 'listening' })}
@@ -4748,6 +5055,7 @@ function App() {
             languageGoals={languageGoals}
             onBookmarkPrompt={handleBookmarkPrompt}
             onGenerate={() => { incrementSceneGenerate(); incrementDailyGenerate('scene'); addAdPoints(1); }}
+            onCheckPoints={() => canSpendPoints(1, 'sceneGen')}
             onNavigateToLibrary={(cardId) => {
               setFocusCardId(cardId);
               setLibraryBackTo('scene');
@@ -5054,7 +5362,7 @@ function App() {
                 {targetLangs.map(code => {
                   const lang = getLangInfo(code);
                   const rawGoal = languageGoals[code];
-                  const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 80 : rawGoal;
+                  const sliderGoal = (rawGoal === '' || rawGoal === undefined) ? 60 : rawGoal;
                   const sliderColor = lang?.textColor || 'var(--primary-color)';
                   const pct = sliderGoal;
                   return (
@@ -5086,7 +5394,7 @@ function App() {
                         }}
                         onBlur={() => {
                           if (rawGoal === '' || rawGoal === undefined) {
-                            setLanguageGoals({ ...languageGoals, [code]: 80 });
+                            setLanguageGoals({ ...languageGoals, [code]: 60 });
                           }
                         }}
                         style={{ '--slider-color': sliderColor, color: sliderColor }}
@@ -5467,7 +5775,11 @@ function App() {
                 type="button"
                 className={`tab-nav__btn ${active ? 'is-active' : ''}`}
                 style={{ '--tab-color': s.color }}
-                onClick={() => setViewMode(tab)}
+                onClick={() => {
+                  // #6/enh3: 하단바 Scene(Free Talking) 아이콘 — 비구독자는 화면 전에 Pro 안내 팝업(홈/씬 화면 차단)
+                  if (tab === 'scene' && !(tier === 'pro' || tier === 'premium' || tier === 'admin')) { requestProOnlyModal(); return; }
+                  setViewMode(tab);
+                }}
                 aria-current={active ? 'page' : undefined}
                 aria-label={label}
                 title={label}
@@ -5490,6 +5802,7 @@ function App() {
           onClose={() => setShowTrialLimitModal(false)}
           onUpgrade={() => { setShowTrialLimitModal(false); requestUpgrade(true); }}
           reason={trialLimitReason}
+          capFeature={trialLimitFeature}
           bonusPoints={bonusPoints}
           onCharge={handleRewardedAd}
           rewardAdLoading={rewardAdLoading}
@@ -5498,6 +5811,25 @@ function App() {
           pointsPriceString={pointsPriceString}
           pronLimit={effectivePronLimit}
           onPronAllowanceAd={handlePronAllowanceAd}
+          onReferral={() => {
+            setShowTrialLimitModal(false);
+            if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReferralModal(true);
+          }}
+          onReview={Capacitor.getPlatform() !== 'ios' ? () => {
+            setShowTrialLimitModal(false);
+            if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReviewBonusModal(true);
+          } : null}
+          reviewBonusClaimed={reviewBonusClaimed}
+        />
+      )}
+
+      {/* TTS 광고 프롬프트 — 무료 듣기 누적(ttsPoint>=20) 시 광고 시청 유도 (기능1) */}
+      {showTtsAdPrompt && (
+        <TtsAdPromptModal
+          sourceLang={sourceLang}
+          onWatchLong={handleTtsAdLong}
+          onWatchShort={handleTtsAdShort}
+          onClose={handleTtsAdClose}
         />
       )}
 
@@ -5893,6 +6225,7 @@ function App() {
           activeLang={hubTopic.activeLang}
           defaultLevel={languageLevels[hubTopic.activeLang] || userLevel || 'basic'}
           getTopicProgress={topicProgress.getTopicProgress}
+          isPro={tier === 'pro' || tier === 'premium' || tier === 'admin'}
           onClose={() => setHubTopic(null)}
           onStartWord={(p) => startTopicLearning('vocab', p)}
           onStartPassage={(p) => startTopicLearning('listening', p)}
@@ -5903,7 +6236,7 @@ function App() {
       {showStreakEarned && (
         <div className="hub-overlay" style={{ zIndex: 1400, alignItems: 'center' }} onClick={() => setShowStreakEarned(false)}>
           <div className="hub-sheet" style={{ maxWidth: '340px', borderRadius: '20px', textAlign: 'center' }} onClick={(e) => e.stopPropagation()}>
-            <div style={{ fontSize: '40px', margin: '4px 0 6px' }}>🔥</div>
+            <div style={{ fontSize: '40px', margin: '4px 0 6px' }}>💎</div>
             <h2 className="hub-title" style={{ flex: 'none', marginBottom: '8px' }}>{getT(sourceLang, 'streakEarned.title')}</h2>
             <div style={{ fontSize: '2rem', fontWeight: 800, color: '#0d9488', margin: '0 0 6px' }}>
               {streakCurrent}<span style={{ fontSize: '1rem', marginLeft: '4px' }}>{getT(sourceLang, 'streak.daysUnit') || '일'}</span>

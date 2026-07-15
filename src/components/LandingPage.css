@@ -172,7 +172,7 @@
   z-index: -1;
 }
 
-/* 서브카피 */
+/* 서브카피 — 프로모 이미지 아래 보조 카피 */
 .lp-promo-subtitle {
   font-size: 0.88rem;
   color: var(--lp-text-muted);
@@ -180,101 +180,31 @@
   white-space: pre-line;
   word-break: keep-all;
   max-width: 420px;
-  margin: 0 0 1.8rem;
+  margin: 0;
   position: relative;
   z-index: 1;
-  animation: lpFadeInUp 0.7s ease 0.1s both;
+  animation: lpFadeInUp 0.7s ease 0.2s both;
 }
 
-/* 폰 감싸기 (돋보기/별표 기준점) — 폰 너비 기준 고정 */
-.lp-phone-wrap {
+/* 완성형 프로모 카드 이미지 (1080×1920, 헤드라인·폰 목업 포함) */
+.lp-promo-img-wrap {
   position: relative;
   z-index: 1;
-  width: 260px;
-  max-width: 70vw;
-  margin: 0 auto;
+  width: 340px;
+  max-width: 88vw;
+  margin: 0 auto 1.4rem;
   animation: lpFadeInUp 0.8s ease 0.15s both;
 }
 
-/* 돋보기 */
-.lp-magnifier {
-  position: absolute;
-  width: 100px;
-  height: 100px;
-  border-radius: 50%;
-  border: 2.5px solid var(--lp-green);
-  overflow: hidden;
-  z-index: 3;
-  top: 2%;
-  left: -55px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25), 0 0 0 4px rgba(255, 255, 255, 0.6);
-  background: #fff;
-}
-
-.lp-magnifier-img {
-  position: absolute;
-  display: block;
-  width: 190px;
-  top: -16px;
-  left: 2px;
-}
-
-.lp-magnifier-handle {
-  position: absolute;
-  width: 4px;
-  height: 28px;
-  background: linear-gradient(180deg, var(--lp-green), var(--lp-green-dark));
-  border-radius: 3px;
-  z-index: 4;
-  bottom: -22px;
-  right: 6px;
-  transform: rotate(-35deg);
-  box-shadow: 1px 1px 3px rgba(0, 0, 0, 0.2);
-}
-
-/* 별표 — 폰 프레임 오른쪽 바로 바깥 */
-.lp-star {
-  position: absolute;
-  right: 12%;
-  z-index: 3;
-  font-size: 18px;
-  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.2));
-  animation: lpFadeInUp 0.6s ease both;
-}
-
-.lp-star:nth-child(3) { animation-delay: 0.1s; }
-.lp-star:nth-child(4) { animation-delay: 0.15s; }
-.lp-star:nth-child(5) { animation-delay: 0.2s; }
-.lp-star:nth-child(6) { animation-delay: 0.25s; }
-.lp-star:nth-child(7) { animation-delay: 0.3s; }
-.lp-star:nth-child(8) { animation-delay: 0.35s; }
-
-/* 폰 프레임 — overflow visible로 별표가 바깥에 표시 가능 */
-.lp-phone-frame {
-  position: relative;
-  z-index: 1;
-  width: 260px;
-  max-width: 70vw;
-  border-radius: 28px;
-  border: 3px solid rgba(255, 255, 255, 0.12);
-  background: #000;
-  box-shadow:
-    0 20px 60px rgba(0, 0, 0, 0.5),
-    0 0 0 1px rgba(255, 255, 255, 0.05),
-    0 0 40px rgba(16, 185, 129, 0.08);
-  overflow: visible;
-}
-
-/* 이미지 클리핑용 inner */
-.lp-phone-inner {
-  border-radius: 25px;
-  overflow: hidden;
-}
-
-.lp-phone-screenshot {
+.lp-promo-img {
   display: block;
   width: 100%;
   height: auto;
+  border-radius: 24px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow:
+    0 20px 60px rgba(0, 0, 0, 0.5),
+    0 0 40px rgba(16, 185, 129, 0.08);
 }
 
 /* 추천 대상 */
@@ -565,38 +495,8 @@
     font-size: 1rem;
   }
 
-  .lp-phone-wrap {
-    width: 320px;
-  }
-
-  .lp-phone-frame {
-    width: 320px;
-    border-radius: 34px;
-    border-width: 4px;
-  }
-
-  .lp-magnifier {
-    width: 150px;
-    height: 150px;
-    left: -110px;
-    border-width: 3px;
-  }
-
-  .lp-magnifier-img {
-    width: 285px;
-    top: -24px;
-    left: 4px;
-  }
-
-  .lp-magnifier-handle {
-    width: 6px;
-    height: 40px;
-    bottom: -30px;
-  }
-
-  .lp-star {
-    font-size: 22px;
-    right: 12%;
+  .lp-promo-img-wrap {
+    width: 400px;
   }
 
   .lp-recommend {
@@ -625,36 +525,7 @@
     max-width: 500px;
   }
 
-  .lp-phone-wrap {
-    width: 360px;
-  }
-
-  .lp-phone-frame {
-    width: 360px;
-    border-radius: 38px;
-  }
-
-  .lp-magnifier {
-    width: 180px;
-    height: 180px;
-    left: -130px;
-    border-width: 3px;
-  }
-
-  .lp-magnifier-img {
-    width: 342px;
-    top: -29px;
-    left: 4px;
-  }
-
-  .lp-magnifier-handle {
-    width: 7px;
-    height: 48px;
-    bottom: -36px;
-  }
-
-  .lp-star {
-    font-size: 24px;
-    right: 12%;
+  .lp-promo-img-wrap {
+    width: 440px;
   }
 }

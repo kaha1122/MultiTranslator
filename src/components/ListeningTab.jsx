@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, Pencil, Headphones } from 'lucide-react';
+import { ChevronDown, Sparkles, Volume2, Pause, Repeat, Loader2, Pencil, Headphones, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -82,6 +82,11 @@ const getServerUrl = () => {
 const makeHistoryKey = (topicId, type, level, lang) =>
     `${topicId}--${type}--${level}--${lang}`;
 
+// 단계학습 헤더 진행 코드 "L3·I2·H0" — VocabTab과 동일 포맷(레벨별 turn). Listening은 지문 1개=1page라
+//   turn = seedCursor+1(본 지문 수). 미방문(문서 없음)=0.
+const LV_CODE = { basic: 'L', intermediate: 'I', advanced: 'H' };
+const LV_ORDER = ['basic', 'intermediate', 'advanced'];
+
 export default function ListeningTab({
     sourceLang,
     targetLangs = [],
@@ -105,6 +110,8 @@ export default function ListeningTab({
     onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
     onTopicPass,            // 문장 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
     onSavePassage,          // 2026-06-15: 지문 단어장 저장 — passage 객체 → Library 카드(inputType:'L')
+    isProUser = true,       // 직접입력(custom)은 Pro 전용 — Trial은 잠금 표시
+    onProOnly,              // 잠긴 직접입력 탭 시 Pro 안내 모달 오픈
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -127,10 +134,13 @@ export default function ListeningTab({
         setLevel(languageLevels[selectedLang] || userLevel || 'basic');
     }, [selectedLang, languageLevels[selectedLang], userLevel]); // eslint-disable-line react-hooks/exhaustive-deps
     const [passageType, setPassageType] = useState('essay'); // 'essay' | 'dialogue'
+    // [작업2] dialogue 는 Pro/Premium 전용 — Trial 은 항상 essay 강제(토글 잠금 우회/구독만료 대비 안전 가드).
+    useEffect(() => { if (!isProUser && passageType !== 'essay') setPassageType('essay'); }, [isProUser, passageType]);
     const [selectedTopic, setSelectedTopic] = useState(() =>
         preset ? { catId: preset.catId, subId: preset.subId, topicId: preset.topicId } : pickRandomTopic()); // { catId, subId, topicId }
     const [pickerCatId, setPickerCatId] = useState(null);
     const [customInput, setCustomInput] = useState(''); // 사용자가 직접 입력한 커스텀 주제
+    const [levelTurns, setLevelTurns] = useState({ basic: 0, intermediate: 0, advanced: 0 }); // 헤더 "L3·I2·H0"(지문 진행)
 
     const [passage, setPassage] = useState(null);
     const [passageSaved, setPassageSaved] = useState(false); // 현재 지문 단어장 저장 여부(별표)
@@ -416,8 +426,33 @@ export default function ListeningTab({
         setCustomInput('');
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 조건 변경 시 리셋
+    // 단계학습 헤더 "L3·I2·H0"(지문 진행) — 3개 레벨의 listeningHistory seedCursor 를 read(본문 X, 발열 무관).
+    //   활성 레벨은 handleGenerate 가 즉시 갱신하나, 진입/토픽·타입 변경 시 영속값으로 동기화. write 0.
     useEffect(() => {
+        if (!preset || !user) return;
+        const topicId = preset.topicId, lang = preset.lang;
+        let cancelled = false;
+        (async () => {
+            await Promise.all(LV_ORDER.map(async (lv) => {
+                const key = makeHistoryKey(topicId, passageType, lv, lang);
+                try {
+                    const snap = await getDoc(doc(db, `users/${user.uid}/listeningHistory`, key));
+                    if (cancelled) return;
+                    const turn = snap.exists() ? (snap.data().seedCursor || 0) + 1 : 0;
+                    setLevelTurns(prev => ({ ...prev, [lv]: turn }));
+                } catch { /* fail-soft: 0 유지 */ }
+            }));
+        })();
+        return () => { cancelled = true; };
+    }, [preset?.topicId, preset?.lang, passageType, user?.uid]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 조건 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 지문 유지(첫 진입 mount 시 preset-sync 가
+    //   selectedTopic 을 바꿔 이 리셋이 복원 지문을 wipe 하던 race 차단 — autoUnitRef 가드).
+    useEffect(() => {
+        if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
+        // [v2.1.11] 토글로 autoUnitRef 가 reset 된 뒤에도 복원된 노드(같은 passageType)면 wipe 금지(복원 지문 보존).
+        const rk = preset ? `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}--${passageType}` : null;
+        if (rk && restoredKeysRef.current.has(rk)) return;
         stopPassageAudio();
         setPassage(null);
         setActiveRecIdx(null);
@@ -438,7 +473,7 @@ export default function ListeningTab({
     // titles[] (기존) + passagesMeta[] (신규: title+keywords+angle) 병행 보관.
     // 캐시 shape: historyCacheRef.current[key] = { titles, passagesMeta }
     const loadHistory = async (key) => {
-        if (!user) return { titles: [], passagesMeta: [] };
+        if (!user) return { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/listeningHistory`, key));
@@ -447,20 +482,22 @@ export default function ListeningTab({
                 titles: Array.isArray(data.titles) ? data.titles : [],
                 passagesMeta: Array.isArray(data.passagesMeta) ? data.passagesMeta : [],
                 seedCursor: data.seedCursor || 0, // seed 경로: 현재 지문 페이지 offset
+                chargedMax: (data.chargedMax != null ? data.chargedMax : -1), // enh1: 차감 완료 최대 offset
             };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: cached };
             return cached;
         } catch {
-            return { titles: [], passagesMeta: [], seedCursor: 0 };
+            return { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         }
     };
 
-    const appendHistory = (key, newTitle, newMeta, nextCursor) => {
-        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0 };
+    const appendHistory = (key, newTitle, newMeta, nextCursor, nextChargedMax) => {
+        const existing = historyCacheRef.current[key] || { titles: [], passagesMeta: [], seedCursor: 0, chargedMax: -1 };
         const updated = {
             titles: newTitle ? [...existing.titles, newTitle] : existing.titles,
             passagesMeta: newMeta ? [...existing.passagesMeta, newMeta] : existing.passagesMeta,
             seedCursor: nextCursor != null ? nextCursor : (existing.seedCursor || 0),
+            chargedMax: nextChargedMax != null ? Math.max(existing.chargedMax ?? -1, nextChargedMax) : (existing.chargedMax ?? -1),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
@@ -468,6 +505,7 @@ export default function ListeningTab({
                 titles: updated.titles,
                 passagesMeta: updated.passagesMeta,
                 seedCursor: updated.seedCursor,
+                chargedMax: updated.chargedMax,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -478,6 +516,12 @@ export default function ListeningTab({
     const handleGenerate = async (opts = {}) => {
         const hasCustom = customInput.trim().length > 0;
         if (!selectedTopic && !hasCustom) return;
+        // [v2.1.11] 최후 방어선 — 이 노드(같은 passageType)가 복원된 적 있으면 자동(auto) preset gen 절대 차단.
+        //   effect 게이트가 race 로 뚫려도 여기서 막음. 수동 버튼/직접입력(custom)은 정당하므로 통과.
+        if (opts.auto && !hasCustom && selectedTopic && preset) {
+            const rk = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}--${passageType}`;
+            if (restoredKeysRef.current.has(rk)) return;
+        }
         const isSeed = !hasCustom; // 비-custom = seed(전역 공유 순차) 경로
         // 2026-05-23: Trial 일일 한도 enforcement — Pron/FreeTalk 와 동일 패턴
         if (isTrialListenLimitReached) {
@@ -496,9 +540,11 @@ export default function ListeningTab({
             ? customInput.trim()
             : getT(selectedLang, `vocabCat.${selectedTopic.catId}`);
         const historyKey = makeHistoryKey(topicId, passageType, level, selectedLang);
-        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor } = await loadHistory(historyKey);
+        const { titles: persistedTitles, passagesMeta: persistedMeta, seedCursor, chargedMax } = await loadHistory(historyKey);
         // seed offset(지문 페이지=1단위): 현재(seedCursor), advance면 다음(+1)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? 1 : 0)) : 0;
+        if (isSeed) setLevelTurns(prev => ({ ...prev, [level]: offset + 1 })); // 활성 레벨 turn — 지문 1개=+1
+
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
         const pageCacheKey = `${historyKey}--${offset}`;
         if (isSeed && loadedPassagesRef.current[pageCacheKey]) {
@@ -534,6 +580,7 @@ export default function ListeningTab({
                     topicLabel,
                     category: categoryLabel,
                     isCustom: hasCustom,
+                    nodeTopicId: preset?.topicId || undefined, // F-redesign: 활성 unit 포인터를 노드 단위로 키잉
                     level,
                     type: passageType,
                     targetLang: selectedLang,
@@ -562,16 +609,19 @@ export default function ListeningTab({
                 };
                 setPassage(passageObj);
                 if (isSeed) loadedPassagesRef.current[pageCacheKey] = passageObj; // 페이지 캐시 저장
+                // F-redesign: custom 활성 unit 포인터는 서버가 generate 시 갱신 → 재진입/타탭 복원. 클라 저장 불필요.
                 setShowTranslation(false);
                 setShowPronunciation(false);
-                if (onGenerate) onGenerate();
+                // enh1: 이미 차감된 지문(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
+                const shouldCharge = !isSeed || offset > (chargedMax ?? -1);
+                if (shouldCharge && onGenerate) onGenerate();
                 if (data.title) {
                     avoidTitlesRef.current = [...avoidTitlesRef.current, data.title];
                     const newMeta = (Array.isArray(data.passageKeywords) && data.angle)
                         ? { title: data.title, keywords: data.passageKeywords, angle: data.angle, createdAt: Date.now() }
                         : null;
-                    // seed 경로: 커서를 현재 페이지 offset으로 저장
-                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined);
+                    // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
+                    appendHistory(historyKey, data.title, newMeta, isSeed ? offset : undefined, isSeed && shouldCharge ? offset : undefined);
                 }
             }
         } catch (e) {
@@ -606,20 +656,57 @@ export default function ListeningTab({
         }
     };
 
-    // 단계학습(preset) 진입 시 현재 페이지 지문 자동 로드 (버튼 없이). preset 동기화 후 1회(토픽/유형별).
-    const autoGenKeyRef = useRef(null);
-    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 → 버튼 없이 캐시 지문 자동 표시(#8 무차감).
-    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 단계학습(preset) 진입 시 지문 자동 로드 (버튼 없이). preset 동기화 후 1회(토픽/유형별).
+    //   2026-06-17: 이 노드에 저장된 custom unit 세션 지문이 있으면 복원(generate X) →
+    //   vocab 에서 custom 단어 만든 뒤(정방향) 또는 노드 재진입 시 같은 unit 지문 표시(단어↔지문 정합).
+    //   리셋 effect(조건 변경) 이후 실행되므로 wipe race 없음(transient 방식의 결함 해소). 무차감.
+    // 진입 자동 로드 상태(단일 ref) — nodeKey별 1회만 fetch(GET 폭주 차단). passage deps 제외 → setPassage 재실행 안 함.
+    const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    // [v2.1.11] 복원 권위 영속 Set — resetAutoUnit/토글로 안 지워짐. 키는 nodeKey--passageType 로 스코프
+    //   (essay 복원이 dialogue 자동생성을 막지 않게). transient 실패·게이트 race 에도 preset 영구 억제, 명시 MISS만 해제.
+    const restoredKeysRef = useRef(new Set());
+    const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
+    useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level, passageType]);
+    useEffect(() => { if (!isActive) resetAutoUnit(); }, [isActive]);
     useEffect(() => {
-        if (!preset || !isActive) return;
+        if (!preset || !isActive || isLoading) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
-        const k = `${preset.topicId}--${passageType}--${preset.level}--${preset.lang}`;
-        if (autoGenKeyRef.current === k) return;
-        if (passage || isLoading) { autoGenKeyRef.current = k; return; }
-        autoGenKeyRef.current = k;
-        handleGenerate(); // 현재 페이지(seedCursor) 로드
+        const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+        const st = autoUnitRef.current;
+        if (st.key === nodeKey && (st.inflight || st.done)) return; // 이 활성 동안 nodeKey 1회만
+        autoUnitRef.current = { key: nodeKey, inflight: true, done: false, restored: false };
+        const hadPassage = !!passage;
+        (async () => {
+            let restored = false;
+            try {
+                const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
+                if (res.ok) {
+                    const { unit } = await res.json();
+                    const up = unit?.passage;
+                    if (up && up.passage) {
+                        console.log(`[ActiveUnit] listening restore HIT nodeKey=${nodeKey}`);
+                        setPassage({
+                            title: up.title || '', titleTranslation: up.titleTranslation || '',
+                            text: up.passage || '', pronunciation: up.passagePronunciation || '',
+                            translation: up.passageTranslation || '', sentences: Array.isArray(up.sentences) ? up.sentences : [],
+                            counted: true, adsCharged: false,
+                        });
+                        setShowTranslation(false);
+                        setShowPronunciation(false);
+                        restored = true;
+                        restoredKeysRef.current.add(`${nodeKey}--${passageType}`); // [v2.1.11] 복원 권위 획득
+                    } else {
+                        console.log(`[ActiveUnit] listening MISS nodeKey=${nodeKey}`);
+                        restoredKeysRef.current.delete(`${nodeKey}--${passageType}`); // [v2.1.11] 포인터 없음 → 권위 해제
+                    }
+                }
+            } catch { /* fail-soft → preset. transient 는 권위 유지(잘못된 preset 오염 차단) */ }
+            autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
+            // [v2.1.11] restored(이번 run) || 영속 권위 || 기존 지문 있으면 preset auto-gen 금지.
+            if (!restored && !hadPassage && !restoredKeysRef.current.has(`${nodeKey}--${passageType}`)) handleGenerate({ auto: true });
+        })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level, passage]);
+    }, [preset?.topicId, preset?.lang, preset?.level, passageType, isActive, selectedTopic, selectedLang, level]);
 
     // ── Render ───────────────────────────────────────────────────
     return (
@@ -633,6 +720,9 @@ export default function ListeningTab({
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#2563eb', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
                 >
                     ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                    <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#64748b' }}>
+                        {LV_ORDER.map(lv => `${LV_CODE[lv]}${levelTurns[lv]}`).join('·')}
+                    </span>
                 </button>
             )}
 
@@ -668,7 +758,7 @@ export default function ListeningTab({
                 ))}
             </div>
 
-            {/* Essay / Dialogue Toggle */}
+            {/* Essay / Dialogue Toggle — dialogue 는 Pro/Premium 전용(Trial 잠금) */}
             <div className="listening-type-row">
                 <span
                     className={`listening-type-label ${passageType === 'essay' ? 'active' : ''}`}
@@ -677,16 +767,18 @@ export default function ListeningTab({
                     {t('listening.essay')}
                 </span>
                 <button
-                    className={`listening-type-track ${passageType === 'dialogue' ? 'on' : ''}`}
-                    onClick={() => setPassageType(p => p === 'essay' ? 'dialogue' : 'essay')}
+                    className={`listening-type-track ${passageType === 'dialogue' ? 'on' : ''} ${!isProUser ? 'locked' : ''}`}
+                    title={!isProUser ? (t('listening.dialogueProOnly') || 'Dialogue is a Pro feature') : undefined}
+                    onClick={() => { if (!isProUser) { onProOnly?.(); return; } setPassageType(p => p === 'essay' ? 'dialogue' : 'essay'); }}
                 >
                     <span className="listening-type-thumb" />
                 </button>
                 <span
-                    className={`listening-type-label ${passageType === 'dialogue' ? 'active' : ''}`}
-                    onClick={() => setPassageType('dialogue')}
+                    className={`listening-type-label ${passageType === 'dialogue' ? 'active' : ''} ${!isProUser ? 'locked' : ''}`}
+                    title={!isProUser ? (t('listening.dialogueProOnly') || 'Dialogue is a Pro feature') : undefined}
+                    onClick={() => { if (!isProUser) { onProOnly?.(); return; } setPassageType('dialogue'); }}
                 >
-                    {t('listening.dialogue')}
+                    {t('listening.dialogue')}{!isProUser ? ' 🔒' : ''}
                 </span>
             </div>
 
@@ -715,28 +807,36 @@ export default function ListeningTab({
                     </span>
                 </button>
             )}
+            </>)}
 
-            {/* Custom Input — Free Talking과 동일 UI (왼쪽 2줄 label + 오른쪽 2줄 textarea) */}
-            <div className="scene-custom-block">
+            {/* Custom Input — preset(토픽 학습)·자유 모드 모두 노출. 직접입력은 Pro 전용(Trial 잠금 + "Pro 전용입니다" placeholder).
+                preset 모드: 입력해도 selectedTopic(노드)은 유지 → handleGenerate가 입력 여부로만 custom 우선 판정.
+                custom 지문을 통과하면 그 노드 진행도(passage)에 그대로 집계(onTopicPass 유지). */}
+            <div
+                className={`scene-custom-block${!isProUser ? ' locked' : ''}`}
+                onClick={!isProUser ? () => onProOnly?.() : undefined}
+            >
                 <div className="scene-custom-label" role="presentation">
                     <span className="scene-custom-label__icon" aria-hidden="true">
-                        <Pencil size={11} strokeWidth={2.25} />
+                        {isProUser ? <Pencil size={11} strokeWidth={2.25} /> : <Lock size={11} strokeWidth={2.25} />}
                     </span>
                     <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
                     className="scene-custom-input"
                     rows={2}
-                    placeholder={t('scene.customPlaceholder')}
-                    value={customInput}
+                    placeholder={isProUser ? t('scene.customPlaceholder') : (t('scene.customProOnly') || '🔒 Pro 전용입니다')}
+                    value={isProUser ? customInput : ''}
+                    disabled={!isProUser}
+                    readOnly={!isProUser}
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);
-                        if (v.trim()) setSelectedTopic(null);
+                        // preset 모드: 토픽 노드 고정 유지. 자유 모드만 입력 시 토픽 해제.
+                        if (!preset && v.trim()) setSelectedTopic(null);
                     }}
                 />
             </div>
-            </>)}
 
             {/* Generate Button */}
             <button

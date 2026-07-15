@@ -64,7 +64,7 @@ const TranslationCard = ({
     onBookmarkPrompt,   // 비Library 탭 미저장 카드 전용 (score, saveFn) => void
     savedCardId,        // Translation 탭에서 저장 후 받은 Firestore docId
     isLibraryView,
-    targetGoal = 80,
+    targetGoal = 60,
     // 메모 & 어노테이션 (Library에서만 사용)
     cardId,
     memos = [],
@@ -79,6 +79,9 @@ const TranslationCard = ({
     // Library에서 외부적으로 팝업 열기/닫기 제어
     memoPopupOpen = false,
     onMemoClose,
+    // 2026-06-16: 본문 슬롯 — 제공 시 문장 본문/발음연습/팁 대신 이 노드를 렌더(헤더·Flag·메모·CSS 공유).
+    //   Listening 지문 카드를 TranslationCard chrome 으로 통일하기 위함.
+    bodySlot = null,
     // Vocab 예문 (Library에서 vocab 카드 표시 시)
     example = '',
     exampleTranslation = '',
@@ -94,7 +97,7 @@ const TranslationCard = ({
     groupTooLong = false,
 }) => {
     const t = useT(sourceLangCode);
-    const { byokGeminiKey, currentUser } = useAuth();
+    const { byokGeminiKey, user: currentUser } = useAuth();
 
     // ── 메모 팝업 상태 ──
     const [showMemoPopup, setShowMemoPopup] = useState(false);
@@ -296,27 +299,31 @@ Return only these 2 lines.`;
     return (
         <div className="translation-card">
             {/* 카드 상단: 언어 정보, 별 저장 버튼, 읽기 버튼 */}
-            <div className="card-header">
-                {cardNumber != null && (
-                    <span className="card-number-badge">No{cardNumber}</span>
-                )}
-                <span
-                    className="language-badge"
-                    style={{ backgroundColor: badgeColor, color: badgeTextColor }}
-                >
-                    {fullLanguage || language}
-                </span>
-
-                {/* Library 중요 마크 (card-header 중앙) */}
-                {isLibraryView && onToggleStarred && (
-                    <button
-                        className="lib-flag-btn"
-                        onClick={(e) => { e.stopPropagation(); onToggleStarred(); }}
-                        style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.2s' }}
+            {/* 지문(bodySlot) 카드는 헤더 항목을 좌측으로 모아 우측에 지문 재생 컨트롤(절대배치)이 들어갈 자리를 비운다 */}
+            <div className={`card-header${bodySlot ? ' card-header-passage' : ''}`}>
+                {/* 좌측 클러스터: No · 2자리 언어코드 · Flag — 1줄 정렬(우측 액션과 space-between 분리) */}
+                <div className="card-header-left">
+                    {cardNumber != null && (
+                        <span className="card-number-badge">No{cardNumber}</span>
+                    )}
+                    <span
+                        className="language-badge"
+                        style={{ backgroundColor: badgeColor, color: badgeTextColor }}
                     >
-                        <Flag size={20} fill={starred ? '#f59e0b' : 'none'} color={starred ? '#f59e0b' : '#d1d5db'} />
-                    </button>
-                )}
+                        {fullLanguage || language}
+                    </span>
+
+                    {/* Library 중요 마크 */}
+                    {isLibraryView && onToggleStarred && (
+                        <button
+                            className="lib-flag-btn"
+                            onClick={(e) => { e.stopPropagation(); onToggleStarred(); }}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', transition: 'transform 0.2s' }}
+                        >
+                            <Flag size={20} fill={starred ? '#f59e0b' : 'none'} color={starred ? '#f59e0b' : '#d1d5db'} />
+                        </button>
+                    )}
+                </div>
 
                 <div className="card-header-actions">
                     {!isLibraryView && (
@@ -329,19 +336,25 @@ Return only these 2 lines.`;
                             <Star size={22} fill={isSaved ? '#facc15' : 'none'} color={isSaved ? '#facc15' : '#94a3b8'} />
                         </button>
                     )}
-                    <button
-                        className="speak-button"
-                        onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
-                        disabled={ttsTooLong}
-                        title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
-                        aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
-                        style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
-                    >
-                        <Play size={22} fill="white" stroke="white" />
-                    </button>
+                    {/* 지문 슬롯(bodySlot)이면 본문에 자체 재생이 있으므로 헤더 재생버튼 숨김 */}
+                    {!bodySlot && (
+                        <button
+                            className="speak-button"
+                            onClick={(e) => { e.stopPropagation(); if (ttsTooLong) return; onSpeak(); }}
+                            disabled={ttsTooLong}
+                            title={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                            aria-label={ttsTooLong ? t('card.ttsTooLong') : 'Listen'}
+                            style={ttsTooLong ? { opacity: 0.4, cursor: 'not-allowed' } : undefined}
+                        >
+                            <Play size={22} fill="white" stroke="white" />
+                        </button>
+                    )}
                 </div>
             </div>
 
+            {bodySlot ? (
+                <div className="card-body" style={{ paddingTop: 4 }}>{bodySlot}</div>
+            ) : (<>
             {/* Scene 태그 (emotion / interaction type) */}
             {(interactionType || selectedEmotion) && (
                 <div className="scene-tag-row" style={{ padding: '0 14px', marginTop: -2 }}>
@@ -485,11 +498,12 @@ Return only these 2 lines.`;
                     <p className="coach-tip-text">"{coachTip}"</p>
                 </div>
             )}
+            </>)}
 
-            {/* 카드 하단: 학습 팁 영역 */}
+            {/* 카드 하단: 학습 팁 영역(+메모). 지문 슬롯이면 팁은 본문에 있으므로 메모만 노출 */}
             <div className="card-footer">
-                <span className="tip-label">LEARNING TIP</span>
-                <div className="tip-content-wrapper">
+                {!bodySlot && <span className="tip-label">LEARNING TIP</span>}
+                {!bodySlot && <div className="tip-content-wrapper">
                     {typeof learningTip === 'string' ? (
                         <p className={`tip-content font-${sourceLangCode}`}>
                             <AnnotatedText text={learningTip} annotations={annotations} />
@@ -506,7 +520,7 @@ Return only these 2 lines.`;
                     ) : (
                         <p className="tip-content">AI is analyzing the sentence...</p>
                     )}
-                </div>
+                </div>}
 
                 {/* AI Q&A 메모 */}
                 {displayMemos.length > 0 && (

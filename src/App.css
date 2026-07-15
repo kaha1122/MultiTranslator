@@ -1872,6 +1872,14 @@ html.admob-active.platform-native::after {
   background-color: transparent !important;
 }
 
+/* 2026-06-15 #1: Library 의 Listening 지문 카드 — wrapper 가 외곽선을 제공하므로 내부 카드의 테두리 제거(이중선 해소) */
+.library-card-wrapper .listening-passage-card {
+  box-shadow: none !important;
+  margin: 0 !important;
+  border: none !important;
+  border-radius: 0 !important;
+}
+
 .card-action-bar {
   display: flex;
   justify-content: space-between;

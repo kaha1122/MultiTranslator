@@ -112,6 +112,23 @@
     margin-bottom: 20px;
 }
 
+/* 지문(bodySlot) 카드 전용: 헤더 항목(No·언어칩·Flag)을 좌측으로 모아
+   우측에 지문 재생 컨트롤(.listening-passage-controls 절대배치)이 들어갈 자리를 비운다.
+   일반 카드(.card-header)는 그대로 space-between 유지. */
+.card-header-passage {
+    justify-content: flex-start;
+    gap: 8px;
+}
+
+/* 헤더 좌측 클러스터: No·언어칩·Flag 를 한 덩어리로 묶어 1줄 정렬(우측 액션과 space-between 분리).
+   모든 카드 공통 — 일반 카드는 좌 클러스터 + 우 액션, 지문 카드는 flex-start 로 좌측 정렬. */
+.card-header-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+}
+
 .card-number-badge {
     font-size: 0.65rem;
     font-weight: 700;

@@ -132,15 +132,28 @@
   background: #fff;
   color: #94a3b8;
 }
-.lph-node.mastered { background: var(--unit-color); border-color: var(--unit-color); color: #fff; }
-.lph-node.inprogress { border-color: var(--unit-color); color: var(--unit-color); }
+/* 단계 원: 활성 언어 색(--lph-lang-color, 하단 dot과 동일 source). 미설정 시 유닛 색 폴백.
+   상태별 명도 패턴은 그대로 — 완료=solid / 진행=outline / 현재=outline+halo / 미진행=회색. */
+.lph-node.mastered { background: var(--lph-lang-color, var(--unit-color)); border-color: var(--lph-lang-color, var(--unit-color)); color: #fff; }
+.lph-node.inprogress { border-color: var(--lph-lang-color, var(--unit-color)); color: var(--lph-lang-color, var(--unit-color)); }
 .lph-node.current {
-  border-color: var(--unit-color);
-  color: var(--unit-color);
-  box-shadow: 0 0 0 5px color-mix(in srgb, var(--unit-color) 18%, transparent);
+  border-color: var(--lph-lang-color, var(--unit-color));
+  color: var(--lph-lang-color, var(--unit-color));
+  box-shadow: 0 0 0 5px color-mix(in srgb, var(--lph-lang-color, var(--unit-color)) 18%, transparent);
 }
 .lph-node.locked { color: #cbd5e1; }
 .lph-node-dot { width: 18px; height: 18px; border-radius: 50%; background: currentColor; opacity: 0.5; }
+
+/* 절반 채움(마스터 전 단계 완료): 단어=왼쪽 반 / 지문=오른쪽 반. 원이 gradient를 50% 클립.
+   border는 활성 언어색으로 강조(진행 중임을 테두리로도 표시). */
+.lph-node.half-word {
+  border-color: var(--lph-lang-color, var(--unit-color));
+  background: linear-gradient(90deg, var(--lph-lang-color, var(--unit-color)) 0 50%, #fff 50% 100%);
+}
+.lph-node.half-passage {
+  border-color: var(--lph-lang-color, var(--unit-color));
+  background: linear-gradient(90deg, #fff 0 50%, var(--lph-lang-color, var(--unit-color)) 50% 100%);
+}
 
 /* "지금 여기" 배지 — 노드 위, 노드 좌/우 위치 따라감 */
 .lph-here {
@@ -149,7 +162,7 @@
   z-index: 2;
   padding: 2px 8px;
   border-radius: 999px;
-  background: var(--unit-color);
+  background: var(--lph-lang-color, var(--unit-color));
   color: #fff;
   font-size: 0.66rem;
   font-weight: 700;
@@ -183,27 +196,35 @@
   display: flex;
   align-items: baseline;
   justify-content: space-between;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 .lph-minimap-title { font-size: 0.85rem; font-weight: 800; color: #1e293b; }
-.lph-minimap-legend { font-size: 0.68rem; color: #94a3b8; }
-.lph-minimap-rows { display: flex; flex-direction: column; gap: 6px; }
-.lph-minimap-row { display: flex; align-items: center; gap: 8px; }
-.lph-minimap-cat { font-size: 0.95rem; width: 20px; text-align: center; }
+
+/* 언어 색상 범례 (활성 언어별 색 + N/70) */
+.lph-minimap-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-bottom: 12px;
+}
+.lph-legend-item { display: inline-flex; align-items: center; gap: 5px; font-size: 0.78rem; color: #475569; }
+.lph-legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex: 0 0 auto; }
+.lph-legend-count { font-weight: 800; color: #1e293b; }
+
+.lph-minimap-rows { display: flex; flex-direction: column; gap: 7px; }
+.lph-minimap-row { display: flex; align-items: center; justify-content: center; gap: 7px; }
+.lph-minimap-cat { font-size: 1.05rem; width: 20px; text-align: center; flex: 0 0 auto; }
 .lph-minimap-dots { display: flex; gap: 5px; flex-wrap: wrap; }
 .lph-minidot {
-  width: 13px; height: 13px; border-radius: 50%;
-  border: 1.5px solid #cbd5e1; background: transparent;
+  width: 22px; height: 22px; border-radius: 50%;
+  border: 1.5px solid #cbd5e1;
   box-sizing: border-box;
+  padding: 0;
+  cursor: pointer;
+  flex: 0 0 auto;
 }
-.lph-minidot.on { background: var(--unit-color); border-color: var(--unit-color); }
-.lph-minimap-total {
-  margin: 10px 0 0;
-  text-align: right;
-  font-size: 0.78rem;
-  font-weight: 700;
-  color: #475569;
-}
+.lph-minidot:active { transform: scale(0.9); }
+@media (prefers-reduced-motion: reduce) { .lph-minidot:active { transform: none; } }
 
 /* 모션 민감 사용자: transition 제거 */
 @media (prefers-reduced-motion: reduce) {
@@ -226,7 +247,8 @@
   max-width: 520px;
   background: #fff;
   border-radius: 20px 20px 0 0;
-  padding: 22px 18px calc(20px + env(safe-area-inset-bottom));
+  /* 2026-06-16: AdMob 배너에 하단 컨텐츠가 가려지지 않도록 banner 높이만큼 하단 패딩 확보 */
+  padding: 22px 18px calc(20px + max(env(safe-area-inset-bottom, 0px), var(--admob-bottom, 0px)));
   box-shadow: 0 -8px 30px rgba(0, 0, 0, 0.18);
   max-height: 88vh;
   overflow-y: auto;
@@ -250,7 +272,9 @@
   padding-right: 28px;
 }
 .hub-icon { font-size: 1.5rem; }
-.hub-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; flex: 1; }
+.hub-titlewrap { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+.hub-title { font-size: 1.15rem; font-weight: 800; color: #0f172a; margin: 0; }
+.hub-code { font-size: 0.68rem; font-weight: 700; color: #94a3b8; letter-spacing: 0.05em; }
 .hub-badge {
   font-size: 0.72rem;
   font-weight: 700;

@@ -11,6 +11,8 @@ const { LANG_NAMES, LANG_SPECIFIC_GUIDE } = require('../config/langGuide');
 const { stripAnnotations } = require('../utils/stripAnnotations');
 const seedCache = require('../utils/seedCache');
 const { generateUnit } = require('../utils/generateUnit');
+const { getTier, isProTier } = require('../utils/userTier');
+const customUnits = require('../utils/customUnits');
 
 const SEED_COL = 'vocabSeed';
 const PSEED_COL = 'passageSeed';
@@ -25,6 +27,15 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
         return res.status(413).json({ error: 'Topic too long (max 300 chars)' });
     }
 
+    // 직접입력(custom)은 Pro 전용 — 서버 권위 차단(클라 잠금 우회 방지 + per-user 원가 보호).
+    // tier 판정 불가(로컬/읽기실패=null)면 통과(요청 흐름 보존, 보안 자원 아님).
+    if (isCustom) {
+        const tier = await getTier(req.uid);
+        if (tier && !isProTier(tier)) {
+            return res.status(403).json({ error: 'Custom input is a Pro feature', code: 'pro_required' });
+        }
+    }
+
     const geminiKey = byokGeminiKey || GEMINI_API_KEY;
     if (!geminiKey) return res.status(500).json({ error: 'Gemini API key not configured' });
 
@@ -37,6 +48,11 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
     let seedItems = [];
     if (useSeed) {
         seedItems = await seedCache.readItems(SEED_COL, seedKey, 'words');
+        // 🔭 desync 탐지: 클라 seedCursor(offset) 가 글로벌 풀 길이를 앞섬 = 과거 brick 의 직접 원인.
+        //   appendAndSlice frontier-safe 슬라이스로 self-heal 되지만, 영향 유저 식별 위해 uid 와 함께 로그.
+        if (seedItems.length < offset) {
+            console.warn(`[vocab] CURSOR DESYNC uid=${req.uid} ${seedKey} offset=${offset} > poolLen=${seedItems.length} (will self-heal)`);
+        }
         if (seedItems.length >= offset + SEED_PAGE) {
             console.log(`[Seed] vocab HIT ${seedKey} offset=${offset} (Gemini 0)`);
             return res.json({ words: seedItems.slice(offset, offset + SEED_PAGE), source: 'seed' });
@@ -58,17 +74,51 @@ router.post('/api/vocab-words', requireAuth, rateLimit('vocab-words', { perMinut
             return res.status(unitRes.status || 502).json({ error: unitRes.userMsg || 'Failed to generate vocabulary' });
         }
         const vmeta = { topicId: topic, level, sourceLang, targetLang };
-        const wslice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', vmeta, unitRes.words, offset, SEED_PAGE);
+        // 하드 dedup: 정규화 단어 기준 기존 시퀀스 중복 제외(소프트 anti-dup 누수 차단).
+        const wslice = await seedCache.appendAndSlice(SEED_COL, seedKey, 'words', vmeta, unitRes.words, offset, SEED_PAGE,
+            { dedupeBy: w => seedCache.normalizeWord(w?.word) });
         // 지문(essay)을 정렬 offset(=단어offset/SEED_PAGE)에 저장. 이미 존재하면 보존(append race-guard).
         if (unitRes.passage && unitRes.passage.passage) {
             const pOffset = Math.floor(offset / SEED_PAGE);
             const pmeta = { topicId: topic, type: 'essay', level, sourceLang, targetLang };
+            unitRes.passage.words = unitRes.words; // 지문 자기완결화('이 지문의 핵심어') — listening 경로와 일치
             try {
                 await seedCache.appendAndSlice(PSEED_COL, pseedKey, 'passages', pmeta, [unitRes.passage], pOffset, 1);
             } catch (e) { console.warn('[Seed] unit passage store failed:', e.message); }
         }
+        // 복습(review) 판정: 서빙된 단어가 전부 "생성 전 풀(seedItems)"에 이미 있었으면 = 토픽 소진으로
+        //   새 단어 0개 → appendAndSlice 가 마지막 페이지를 복습 서빙한 것. 새 단어가 아니므로 클라가
+        //   포인트를 차감하면 안 된다(source:'review' 로 신호). self-heal(새 단어 append)은 풀에 없던
+        //   단어라 review 가 아니다 → 정상 과금. 저비용(5단어) 정규화 subset 체크.
+        const seenNorm = new Set(seedItems.map(w => seedCache.normalizeWord(w?.word)).filter(Boolean));
+        const isReview = wslice.length > 0 && wslice.every(w => seenNorm.has(seedCache.normalizeWord(w?.word)));
+        if (isReview) console.log(`[Seed] REVIEW ${seedKey} offset=${offset} → 토픽 소진, 복습 페이지 서빙(무차감)`);
         console.log(`[Seed] UNIT MISS ${seedKey} offset=${offset} → 지문우선 결합생성 → 단어+지문 저장`);
-        return res.json({ words: wslice, source: 'gemini-unit' });
+        return res.json({ words: wslice, source: isReview ? 'review' : 'gemini-unit' });
+    }
+
+    // ── 직접입력(custom, Pro 전용) — 전역 seed와 분리. generateUnit으로 지문+5단어 결합 생성 후
+    //   per-user customUnits에 누적 저장(공유 X). dedup은 클라 avoidWords + 저장 시 정규화.
+    if (isCustom) {
+        const unitRes = await generateUnit({
+            topic, topicLabel, category, level, targetLang, sourceLang, geminiKey,
+            avoidWords: Array.isArray(avoidWords) ? avoidWords : [], type: 'essay',
+        });
+        if (unitRes.error) {
+            return res.status(unitRes.status || 502).json({ error: unitRes.userMsg || 'Failed to generate vocabulary' });
+        }
+        unitRes.passage.words = unitRes.words; // 지문 자기완결(이 지문의 핵심어)
+        try {
+            await customUnits.appendUnit(req.uid, { topicLabel, level, sourceLang, targetLang }, unitRes);
+            // 2026-06-17 F-redesign: 노드별 활성 unit 포인터 갱신(=마지막 입력이 활성) → 재진입/타탭에서
+            //   같은 unit 조회 복원. nodeKey = 노드 토픽(클라가 nodeTopicId 로 전달, 없으면 custom slug 자체).
+            const nodeTopicId = req.body.nodeTopicId || topicLabel;
+            const slug = customUnits.slugFor(topicLabel, level, sourceLang, targetLang);
+            const nodeKey = `${nodeTopicId}--${level}--${sourceLang}--${targetLang}`;
+            await customUnits.setActivePointer(req.uid, nodeKey, slug, 'vocab');
+        } catch (e) { console.warn('[custom] vocab store failed:', e.message); }
+        console.log(`[Custom] vocab unit ${req.uid} "${topicLabel}" → 단어+지문 결합 생성·저장`);
+        return res.json({ words: (unitRes.words || []).slice(0, SEED_PAGE), passage: unitRes.passage, source: 'gemini-unit-custom' });
     }
 
     const targetLangName = LANG_NAMES[targetLang] || 'English';
@@ -200,6 +250,17 @@ Return ONLY valid JSON (no markdown):
             w.word = stripAnnotations(w.word, targetLang);
             w.example = stripAnnotations(w.example, targetLang);
         });
+        // [방어선] word 키 누락/빈 항목 제거 — Gemini가 가끔 word 없이 반환하면 클라에서
+        //   referenceText가 undefined로 풀려 Azure refText="undefined" 평가로 직결됨(2026-06-21).
+        //   validate(line 240)는 배열 길이만 보므로 항목 무결성은 여기서 보장. seed append 전에 정제.
+        const before = parsed.words.length;
+        parsed.words = parsed.words.filter(w => typeof w.word === 'string' && w.word.trim());
+        if (parsed.words.length < before) {
+            console.warn(`[Vocab] dropped ${before - parsed.words.length} word item(s) missing 'word' (lang=${targetLang})`);
+        }
+    }
+    if (!Array.isArray(parsed.words) || parsed.words.length === 0) {
+        return res.status(502).json({ error: 'Failed to generate vocabulary' });
     }
     // seed 경로: frontier 생성물을 canonical 시퀀스에 append(경합 안전) 후 해당 페이지 slice 반환
     if (useSeed && Array.isArray(parsed.words) && parsed.words.length > 0) {
@@ -209,6 +270,20 @@ Return ONLY valid JSON (no markdown):
         return res.json({ words: slice, source: 'gemini' });
     }
     res.json({ ...parsed, source: 'gemini' });
+});
+
+// 2026-06-17 F-redesign: 노드 진입 시 활성 custom unit 조회 → words/passage 복원(재진입/크로스기기 영구).
+//   nodeKey = `${topicId}--${level}--${sourceLang}--${targetLang}` (클라 진입 단위). 없으면 unit:null → preset 경로.
+router.get('/api/active-unit', requireAuth, async (req, res) => {
+    const nodeKey = String(req.query.nodeKey || '');
+    if (!nodeKey) return res.status(400).json({ error: 'Missing nodeKey' });
+    try {
+        const unit = await customUnits.getActiveUnit(req.uid, nodeKey);
+        return res.json({ unit: unit || null });
+    } catch (e) {
+        console.error('[active-unit] error:', e.message);
+        return res.json({ unit: null }); // fail-soft → 기존 preset 경로
+    }
 });
 
 module.exports = router;

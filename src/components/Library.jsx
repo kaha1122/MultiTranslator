@@ -460,23 +460,52 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                             ?? (globalIndex >= 0 ? savedCards.length - globalIndex : filteredCards.length - idx);
                         // 2026-06-15: Listening 지문 카드(inputType:'L') — ListeningTab과 동일 UI 로 조회·재생(복습)
                         if (card.inputType === 'L' && card.passageData) {
+                            // 2026-06-16: 지문 카드도 TranslationCard chrome(헤더 No/언어/Flag + 메모 + CSS) 공유 →
+                            //   Vocab 카드와 UI 통일. 본문만 ListeningPassageView 슬롯으로 주입.
                             return (
                                 <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
-                                    <ListeningPassageView
-                                        passage={card.passageData}
-                                        passageType={card.passageData.passageType || 'essay'}
+                                    <TranslationCard
+                                        // 지문 카드 헤더는 1줄 통합 — 언어칩을 ISO 2자리 대문자 코드(EN/KO/ZH…)로 축약해 폭 절약
+                                        language={(card.langCode || '').split('-')[0].toUpperCase() || card.language}
                                         langCode={card.langCode}
-                                        onSpeak={onSpeak}
-                                        authFetch={authFetch}
-                                        durable
-                                        t={t}
-                                        isActive
+                                        cardNumber={cardNumber}
+                                        sourceLangCode={card.sourceLang || 'ko'}
+                                        badgeColor={getLangInfo(card.langCode)?.color || '#f1f5f9'}
+                                        badgeTextColor={getLangInfo(card.langCode)?.textColor || '#475569'}
+                                        isLibraryView={true}
+                                        cardId={card.id}
+                                        memos={card.memos || []}
+                                        annotations={card.annotations || []}
+                                        userNotes={card.userNotes || []}
+                                        onMemoUpdate={(newMemos, newAnnotations, newUserNotes) => handleMemoUpdate(card.id, newMemos, newAnnotations, newUserNotes)}
+                                        starred={card.starred || false}
+                                        onToggleStarred={() => toggleStarred(card.id, card.starred)}
+                                        memoPopupOpen={memoOpenId === card.id}
+                                        onMemoClose={() => setMemoOpenId(null)}
+                                        bodySlot={
+                                            <ListeningPassageView
+                                                passage={card.passageData}
+                                                passageType={card.passageData.passageType || 'essay'}
+                                                langCode={card.langCode}
+                                                onSpeak={onSpeak}
+                                                authFetch={authFetch}
+                                                durable
+                                                t={t}
+                                                isActive
+                                            />
+                                        }
                                     />
+                                    {/* 하단 액션바 — 지문은 점수/녹음 없음: 메모 + 삭제만 */}
                                     <div className="card-action-bar">
-                                        <div className="action-left" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                                            <span className="stat-text">#{cardNumber}</span>
-                                            <span className="stat-divider">·</span>
-                                            <span className="stat-text">{(card.langCode || '').toUpperCase()}</span>
+                                        <div className="action-left" style={{ display: 'flex', alignItems: 'center' }}>
+                                            <button
+                                                className="stat-icon-btn"
+                                                title="메모 / 어노테이션"
+                                                onClick={(e) => { e.stopPropagation(); setMemoOpenId(memoOpenId === card.id ? null : card.id); }}
+                                                style={{ background: 'none', border: 'none', outline: 'none', cursor: 'pointer', padding: 0, display: 'flex', alignItems: 'center', color: (card.memos?.length || card.userNotes?.length) ? '#6366f1' : 'var(--text-secondary)' }}
+                                            >
+                                                <PenLine size={16} />
+                                            </button>
                                         </div>
                                         <div className="action-right">
                                             <button
@@ -494,12 +523,14 @@ const Library = ({ user, sourceLang, onSpeak, languageGoals = {}, todayCount = 0
                         return (
                         <div key={card.id} id={`library-card-${card.id}`} className="library-card-wrapper">
                             <TranslationCard
-                                language={card.language}
+                                // 헤더 1줄 통일 — 언어칩을 ISO 2자리 대문자 코드(EN/KO/ZH…)로 축약
+                                language={(card.langCode || '').split('-')[0].toUpperCase() || card.language}
                                 langCode={card.langCode}
                                 cardNumber={cardNumber}
                                 sourceLangCode={card.sourceLang || 'ko'}
                                 text={card.translatedText}
-                                sourceTranslation={card.sourceTranslation || ''}
+                                // 단어(W) 카드는 뜻이 sourceText 에 저장됨(과거 카드 포함) → sourceTranslation 폴백으로 단어 밑 번역 복원
+                                sourceTranslation={card.sourceTranslation || (card.inputType === 'W' ? card.sourceText : '') || ''}
                                 pronunciation={card.pronunciation}
                                 learningTip={card.learningTip}
                                 example={card.example || ''}

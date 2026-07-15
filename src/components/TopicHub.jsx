@@ -5,7 +5,7 @@ import {
   W_TARGET,
   P_TARGET,
   TOPIC_INDEX,
-  isWordPhaseComplete,
+  topicCode,
   isTopicMastered,
 } from '../config/learningPath.js';
 
@@ -31,7 +31,9 @@ export default function TopicHub({
   const p = getTopicProgress(topicId, activeLang);
   const wm = Math.min(p.wordMastered || 0, W_TARGET);
   const pm = Math.min(p.passageMastered || 0, P_TARGET);
-  const wordDone = isWordPhaseComplete(p);
+  // 2026-06-21: 단어↔지문 정합 폐지(단어·지문 자유 생성)로 순차 학습 제약 해제 →
+  //   Trial 포함 전 유저가 단어/지문 어느 쪽이든 자유 접근. (기존: isWordPhaseComplete(p) || isPro = Trial만 잠금)
+  const passageUnlocked = true;
   const mastered = isTopicMastered(p);
 
   const preset = { catId, subId, topicId, level, lang: activeLang };
@@ -43,7 +45,10 @@ export default function TopicHub({
 
         <div className="hub-head">
           <span className="hub-icon">{icon}</span>
-          <h2 className="hub-title">{t(`vocabTopic.${topicId}`)}</h2>
+          <div className="hub-titlewrap">
+            <h2 className="hub-title">{t(`vocabTopic.${topicId}`)}</h2>
+            <span className="hub-code">{topicCode(topicId)}</span>
+          </div>
           <span className={`hub-badge ${mastered ? 'done' : ''}`}>
             {t('learningPath.word')} {wm}/{W_TARGET} · {t('learningPath.passage')} {pm}/{P_TARGET}
           </span>
@@ -78,27 +83,25 @@ export default function TopicHub({
           <ArrowRight size={18} className="hub-phase-arrow" />
         </button>
 
-        {/* 단계 2 — 지문 섀도잉 (단어 완료 전 잠금) */}
+        {/* 단계 2 — 지문 섀도잉 (단어 완료 전 잠금 / Pro·Premium 은 직접 진입) */}
         <button
-          className={`hub-phase ${wordDone ? '' : 'locked'}`}
-          onClick={() => wordDone && onStartPassage?.(preset)}
-          disabled={!wordDone}
+          className={`hub-phase ${passageUnlocked ? '' : 'locked'}`}
+          onClick={() => passageUnlocked && onStartPassage?.(preset)}
+          disabled={!passageUnlocked}
         >
           <div className="hub-phase-icon passage">
-            {wordDone ? <Headphones size={20} /> : <Lock size={18} />}
+            {passageUnlocked ? <Headphones size={20} /> : <Lock size={18} />}
           </div>
           <div className="hub-phase-body">
             <span className="hub-phase-title">{t('learningPath.passagePhaseTitle')}</span>
             <span className="hub-phase-desc">
-              {wordDone ? t('learningPath.passagePhaseDesc') : t('learningPath.passageLocked')}
+              {passageUnlocked ? t('learningPath.passagePhaseDesc') : t('learningPath.passageLocked')}
             </span>
             <div className="hub-gauge"><span className="hub-gauge-fill passage" style={{ width: `${(pm / P_TARGET) * 100}%` }} /></div>
             <span className="hub-gauge-text">{pm} / {P_TARGET} {t('learningPath.sentences')}</span>
           </div>
-          {wordDone && <ArrowRight size={18} className="hub-phase-arrow" />}
+          {passageUnlocked && <ArrowRight size={18} className="hub-phase-arrow" />}
         </button>
-
-        <p className="hub-hint">{t('learningPath.hubHint')}</p>
       </div>
     </div>
   );

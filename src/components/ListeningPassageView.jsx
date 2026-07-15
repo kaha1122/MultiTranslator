@@ -179,15 +179,7 @@ export default function ListeningPassageView({
 
     return (
         <div className="listening-passage-card">
-            {/* 1번째 줄 — 제목(+번역)만 (아이콘 없음, 제목 길어도 줄 안 넘침) */}
-            <div className="listening-passage-titleblock">
-                <h3 className="listening-passage-title">{passage.title}</h3>
-                {passage.titleTranslation && (
-                    <p className="listening-passage-title-trans">{passage.titleTranslation}</p>
-                )}
-            </div>
-
-            {/* 2번째 줄 — 컨트롤: 반복토글 > 지문재생 > 별표 */}
+            {/* 1번째 줄 — 컨트롤: 반복토글 > 지문재생 > 별표 (제목 위로 올림 — 제목/번역과 간격 최소화) */}
             <div className="listening-passage-controls">
                 <div className="listening-loop-toggle">
                     <span className={`listening-loop-label ${!loopMode ? 'active' : ''}`}>
@@ -223,6 +215,14 @@ export default function ListeningPassageView({
                     >
                         <Star size={18} fill={isSaved ? '#f59e0b' : 'none'} color={isSaved ? '#f59e0b' : 'currentColor'} />
                     </button>
+                )}
+            </div>
+
+            {/* 2·3번째 줄 — 제목 / 번역 */}
+            <div className="listening-passage-titleblock">
+                <h3 className="listening-passage-title">{passage.title}</h3>
+                {passage.titleTranslation && (
+                    <p className="listening-passage-title-trans">{passage.titleTranslation}</p>
                 )}
             </div>
 

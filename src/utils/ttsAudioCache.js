@@ -86,6 +86,23 @@ export async function putCachedAudio(key, blob) {
     } catch { /* 저장 실패(쿼터 등) → 무시, 다음엔 네트워크 폴백 */ }
 }
 
+/**
+ * 단일 항목 IDB 퇴출 — 손상 블롭 self-heal 용(재생 실패 시 호출 → 다음엔 재합성).
+ * best-effort, 실패해도 조용히 무시.
+ */
+export async function deleteCachedAudio(key) {
+    try {
+        const db = await openDB();
+        await new Promise((resolve) => {
+            const tx = db.transaction(STORE, 'readwrite');
+            tx.objectStore(STORE).delete(key);
+            tx.oncomplete = () => resolve();
+            tx.onerror = () => resolve();
+            tx.onabort = () => resolve();
+        });
+    } catch { /* noop */ }
+}
+
 /** 항목 수가 MAX_ENTRIES 초과면 lastUsed 오래된 순으로 삭제. best-effort. */
 function evictIfNeeded(db) {
     try {

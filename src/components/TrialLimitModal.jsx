@@ -2,6 +2,16 @@ import { useT } from '../utils/i18n';
 import { useAuth } from '../context/AuthContext';
 import { X } from 'lucide-react';
 
+// "Pro"/"Premium" 단어를 3번째 학습 언어 테마색(pink, LANG_SLOT_COLORS[2] = #db2777)으로 강조.
+//   언어별로 연결어(/ · ・ & 和 et und y …)가 달라 토큰 split 대신 단어 단위 매칭.
+const PLAN_RE = /(Pro|Premium)/g;
+const colorizePlan = (text) =>
+    String(text).split(PLAN_RE).map((part, i) =>
+        part === 'Pro' || part === 'Premium'
+            ? <span key={i} style={{ color: '#db2777', fontWeight: 700 }}>{part}</span>
+            : part
+    );
+
 // 2026-06-07 개편: 한도 모달 — 사유(reason)에 따라 3가지.
 //   'cap'       : Trial 하드캡 도달(오늘 더 못함) → 업그레이드만. 충전 무의미.
 //   'points'    : Trial 포인트 부족 → 업그레이드 + 보상광고 충전(+5) + 사용 항목별 차감 안내.
@@ -10,7 +20,8 @@ const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
     onBuyPoints, buyingPoints = false, pointsPriceString = '',
-    pronLimit, onPronAllowanceAd,
+    pronLimit, onPronAllowanceAd, capFeature = '',
+    onReferral, onReview, reviewBonusClaimed = false,
 }) => {
     const t = useT(sourceLang);
     const {
@@ -86,12 +97,11 @@ const TrialLimitModal = ({
                 <div onClick={e => e.stopPropagation()} style={card}>
                     <button className="modal-close" onClick={onClose} aria-label="Close"><X size={20} /></button>
                     <div style={{ textAlign: 'center', marginBottom: '12px' }}>
-                        <div style={{ fontSize: '2.2rem', marginBottom: '4px' }}>💬</div>
                         <h2 style={{ margin: '0 0 4px', fontSize: '1.12rem', color: '#1e293b', fontWeight: 800, lineHeight: 1.3 }}>
-                            {t('trial.proOnlyTitle') || 'Pro/Premium 전용입니다'}
+                            {colorizePlan(t('trial.proOnlyTitle') || 'Pro/Premium 전용입니다')}
                         </h2>
                         <p style={{ margin: 0, color: '#64748b', fontSize: '0.84rem', lineHeight: 1.4 }}>
-                            {t('trial.proOnlyDesc') || 'Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.'}
+                            {colorizePlan(t('trial.proOnlyDesc') || 'Free Talking은 Pro·Premium 구독자만 이용할 수 있어요.')}
                         </p>
                     </div>
                     <button
@@ -112,6 +122,7 @@ const TrialLimitModal = ({
     if (reason === 'points') {
         const costs = [
             { icon: '🎧', label: 'Listening', cost: 3 },
+            { icon: '🌐', label: t('trial.costTranslation') || '번역', cost: 3 },
             { icon: '📖', label: t('trial.costPassage') || '지문', cost: 2 },
             { icon: '🎤', label: t('settings.usagePron') || 'Pronunciation', cost: 2 },
             { icon: '✦', label: t('trial.costOther') || 'Other', cost: 1 },
@@ -164,10 +175,10 @@ const TrialLimitModal = ({
                                     cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                                     fontWeight: 700, color: '#166534', fontSize: '0.9rem',
                                 }}>
-                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +10'}
+                                🎬 {t('reward.topUpBonus') || '보너스포인트 (광고) +20'}
                             </button>
                         )}
-                        {/* 보너스포인트 구매 (+200, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
+                        {/* 보너스포인트 구매 (+1000, 인앱 결제) — 앱 전용 + 가격 조회 성공 시 */}
                         {isNative && typeof onBuyPoints === 'function' && pointsPriceString && (
                             <button
                                 onClick={() => onBuyPoints()}
@@ -179,7 +190,7 @@ const TrialLimitModal = ({
                                     cursor: buyingPoints ? 'default' : 'pointer', opacity: buyingPoints ? 0.6 : 1,
                                     fontWeight: 700, color: '#1e40af', fontSize: '0.9rem',
                                 }}>
-                                🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +200')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
+                                🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +1000')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
                             </button>
                         )}
                         {rewardAdLoading && (
@@ -199,6 +210,44 @@ const TrialLimitModal = ({
                             ))}
                         </div>
                     </div>
+
+                    {/* 영역 3: 보너스 포인트 더 받기 (친구 추천 / 평가하기) — 사이드바 버튼 미러.
+                        한 자리에서 모든 포인트 획득 액션을 보고 결정하게. onClose 후 해당 모달 오픈은 부모가 처리. */}
+                    {(onReferral || onReview) && (
+                        <div style={{ marginTop: '10px' }}>
+                            <p style={{ margin: '0 0 6px', fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700, letterSpacing: '0.03em' }}>
+                                {t('trial.moreBonusTitle') || 'Earn more points'}
+                            </p>
+                            {onReferral && (
+                                <button onClick={onReferral} style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 12px', marginBottom: '6px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #fdf2f8, #fce7f3)', border: '1px solid #f9a8d4',
+                                    cursor: 'pointer', textAlign: 'left',
+                                }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9d174d' }}>
+                                        {t('bonus.referralBtn') || '🤝 Refer a friend'}
+                                    </span>
+                                    <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9d174d', background: '#fbcfe8', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>+100pt</span>
+                                </button>
+                            )}
+                            {onReview && (
+                                <button onClick={onReview} disabled={reviewBonusClaimed} style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 12px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #fff7ed, #ffedd5)', border: '1px solid #fdba74',
+                                    cursor: reviewBonusClaimed ? 'default' : 'pointer', opacity: reviewBonusClaimed ? 0.5 : 1, textAlign: 'left',
+                                }}>
+                                    <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#9a3412' }}>
+                                        {t('bonus.reviewBtn') || '🌟 Google Play review'}
+                                    </span>
+                                    {reviewBonusClaimed
+                                        ? <span style={{ fontSize: '0.7rem', color: '#9a3412' }}>✓ {t('bonus.review.alreadyClaimed') || 'Already claimed'}</span>
+                                        : <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#9a3412', background: '#fed7aa', borderRadius: '6px', padding: '2px 6px', whiteSpace: 'nowrap' }}>+100pt</span>}
+                                </button>
+                            )}
+                        </div>
+                    )}
                 </div>
             </div>
         );
@@ -234,8 +283,9 @@ const TrialLimitModal = ({
                         🎧 {listenCount ?? 0}/{TRIAL_DAILY_LISTEN_LIMIT} /day
                     </span>
                 </div>
-                {/* #4: bonus02 광고 → 오늘 발음 +10 (앱 전용, 당일 한정·포인트 아님). 발음 한도에 막혀도 당일 학습 지속 */}
-                {isNative && typeof onPronAllowanceAd === 'function' && (
+                {/* #4: bonus02 광고 → 오늘 발음 +10 (앱 전용, 당일 한정·포인트 아님). 발음 한도에 막혀도 당일 학습 지속.
+                    2026-06-16: 발음 한도(capFeature==='pron')일 때만 노출 — Free-Talking/Listening 한도에는 무관하므로 숨김 */}
+                {isNative && capFeature === 'pron' && typeof onPronAllowanceAd === 'function' && (
                     <button
                         onClick={() => onPronAllowanceAd()}
                         disabled={rewardAdLoading}
@@ -246,7 +296,7 @@ const TrialLimitModal = ({
                             cursor: rewardAdLoading ? 'default' : 'pointer', opacity: rewardAdLoading ? 0.6 : 1,
                         }}>
                         <span style={{ fontWeight: 700, color: '#9a3412', fontSize: '0.92rem' }}>
-                            🎤 {t('trial.pronAllowanceAd') || '광고 보고 오늘 발음 +10'}
+                            🎤 {t('trial.pronAllowanceAd') || '발음 한도(광고) +10'}
                         </span>
                         <span style={{ fontSize: '0.72rem', color: '#c2410c' }}>
                             {t('trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}

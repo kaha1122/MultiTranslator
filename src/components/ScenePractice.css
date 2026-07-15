@@ -230,6 +230,18 @@
     gap: 6px;
 }
 
+/* 직접입력 Pro 잠금 — Trial은 진입부터 잠긴 상태로 표시(탭 시 Pro 안내). */
+.scene-custom-block.locked {
+    cursor: pointer;
+    opacity: 0.6;
+}
+.scene-custom-block.locked .scene-custom-input {
+    cursor: pointer;
+    background: #f1f5f9;
+    color: #94a3b8;
+    pointer-events: none; /* textarea 자체는 비활성, 클릭은 부모 block 이 받아 Pro 모달 오픈 */
+}
+
 .scene-custom-label {
     display: inline-flex;
     align-items: center;

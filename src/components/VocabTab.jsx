@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle, Pencil, BookOpen } from 'lucide-react';
+import { Sparkles, Volume2, Star, RefreshCw, Mic, MicOff, RotateCcw, Award, AlertCircle, CheckCircle, Pencil, BookOpen, Lock } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../firebase/config';
 import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
@@ -19,6 +19,8 @@ const makeVocabHistoryKey = (topicId, level, lang) =>
     `${topicId}--${level}--${lang}`;
 
 const SEED_PAGE = 5; // seed 페이지 크기(서버와 일치)
+const LV_CODE = { basic: 'L', intermediate: 'I', advanced: 'H' }; // 단계학습 turn 헤더 레벨 약어 (L/I/H)
+const LV_ORDER = ['basic', 'intermediate', 'advanced'];
 
 const getServerUrl = () => {
     try {
@@ -50,7 +52,9 @@ export function VocabWordCard({
         ...(ttsDurable ? { durable: true } : {}),
     });
     const [practiceMode, setPracticeMode] = useState('word'); // 'word' | 'example'
-    const practiceText = practiceMode === 'word' ? w.word : (w.example || '');
+    // word 모드도 example과 동일하게 '' 폴백 — w.word 누락 시 undefined가 useAudioRecorder→FormData를
+    // 거쳐 "undefined" 문자열로 Azure에 전달되던 경로 차단(2026-06-21).
+    const practiceText = practiceMode === 'word' ? (w.word || '') : (w.example || '');
 
     // 일본어(ja)만 한자 대신 히라가나(pronunciation/examplePronunciation)를 Azure 기준으로 사용.
     // 중국어/러시아어는 원문이 더 정확히 평가됨 → 치환하지 않음.
@@ -293,6 +297,7 @@ export default function VocabTab({
     languageGoals = {},
     onBookmarkPrompt,
     onGenerate,
+    onCheckPoints,
     onNavigateToLibrary,
     userLevel,
     languageLevels = {},
@@ -300,6 +305,8 @@ export default function VocabTab({
     preset = null,          // Phase 1 단계학습 진입: { catId, subId, topicId, level, lang } — 토픽 고정+UI collapse
     onBack,                 // 단계학습 back 헤더 → TopicHub 복귀
     onTopicPass,            // 통과 기록: ({ topicId, lang, level, phase, itemKey }) => recordPass
+    isProUser = true,       // 직접입력(custom)은 Pro 전용 — Trial은 잠금 표시(기본 true=미지정 시 비잠금)
+    onProOnly,              // 잠긴 직접입력 탭 시 Pro 안내 모달 오픈
 }) {
     const { byokGeminiKey, user } = useAuth();
     const t = useT(sourceLang);
@@ -332,6 +339,7 @@ export default function VocabTab({
     const [isLoading, setIsLoading] = useState(false);
     const [savedWords, setSavedWords] = useState(new Set());
     const [activeRecIdx, setActiveRecIdx] = useState(null); // 동시 녹음 방지
+    const [levelTurns, setLevelTurns] = useState({ basic: 0, intermediate: 0, advanced: 0 }); // 레벨별 진행 turn — 헤더 "L3·I2·H0"
     const avoidWordsRef = useRef([]);
     const historyCacheRef = useRef({});
     const loadedPagesRef = useRef({}); // `${historyKey}--${offset}` → words[] (재진입 시 재fetch 생략)
@@ -377,33 +385,36 @@ export default function VocabTab({
         });
     }, [isActive]);
 
-    // Firebase에서 해당 키의 이력 읽기 — { words(custom avoid용), seedCursor(현재 페이지 offset) }
+    // Firebase에서 해당 키의 이력 읽기 — { words, seedCursor(현재 페이지), chargedMax(차감 완료된 최대 offset) }
+    //   chargedMax: 이미 포인트 차감된 최대 offset. 재진입(offset ≤ chargedMax)은 재차감 안 함(영속).
     const loadVocabHistory = async (key) => {
-        if (!user) return { words: [], seedCursor: 0 };
+        if (!user) return { words: [], seedCursor: 0, chargedMax: -1 };
         if (historyCacheRef.current[key] !== undefined) return historyCacheRef.current[key];
         try {
             const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
             const d = snap.exists() ? snap.data() : {};
-            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0 };
+            const entry = { words: Array.isArray(d.words) ? d.words : [], seedCursor: d.seedCursor || 0, chargedMax: (d.chargedMax != null ? d.chargedMax : -1) };
             historyCacheRef.current = { ...historyCacheRef.current, [key]: entry };
             return entry;
         } catch {
-            return { words: [], seedCursor: 0 };
+            return { words: [], seedCursor: 0, chargedMax: -1 };
         }
     };
 
-    // newWords: custom 경로 avoid 누적용(seed 경로는 []), nextCursor: seed 현재 페이지 offset 저장
-    const appendVocabHistory = (key, newWords, nextCursor) => {
-        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0 };
+    // newWords: custom avoid 누적(seed 경로는 []), nextCursor: seed 현재 페이지 offset, nextChargedMax: 차감완료 최대 offset
+    const appendVocabHistory = (key, newWords, nextCursor, nextChargedMax) => {
+        const existing = historyCacheRef.current[key] || { words: [], seedCursor: 0, chargedMax: -1 };
         const updated = {
             words: [...existing.words, ...newWords],
             seedCursor: nextCursor != null ? nextCursor : existing.seedCursor,
+            chargedMax: nextChargedMax != null ? Math.max(existing.chargedMax ?? -1, nextChargedMax) : (existing.chargedMax ?? -1),
         };
         historyCacheRef.current = { ...historyCacheRef.current, [key]: updated };
         if (user) {
             setDoc(doc(db, `users/${user.uid}/vocabHistory`, key), {
                 words: updated.words,
                 seedCursor: updated.seedCursor,
+                chargedMax: updated.chargedMax,
                 updatedAt: serverTimestamp(),
             }, { merge: true }).catch(console.error);
         }
@@ -433,14 +444,42 @@ export default function VocabTab({
         setLevel(preset.level);
         setSelectedTopic({ catId: preset.catId, subId: preset.subId, topicId: preset.topicId });
         setCustomInput('');
+        setLevelTurns({ basic: 0, intermediate: 0, advanced: 0 }); // 토픽 재진입 시 초기화(fetch/handleGenerate 가 갱신)
     }, [preset?.topicId, preset?.lang, preset?.level]); // eslint-disable-line react-hooks/exhaustive-deps
 
-    // 토픽 변경 시 리셋
+    // 단계학습 헤더 "L3·I2·H0" — 비활성 레벨 2개의 seedCursor 를 vocabHistory 서브컬렉션에서 read(본문 X, 발열 무관).
+    //   활성 레벨은 handleGenerate 가 직접 갱신하므로 여기선 제외. write 0, 진입당 read 최대 2.
     useEffect(() => {
+        if (!preset || !user) return;
+        const topicId = preset.topicId, lang = preset.lang;
+        let cancelled = false;
+        (async () => {
+            await Promise.all(LV_ORDER.map(async (lv) => {
+                if (lv === level) return; // 활성 레벨은 handleGenerate 가 처리
+                const key = makeVocabHistoryKey(topicId, lv, lang);
+                try {
+                    const snap = await getDoc(doc(db, `users/${user.uid}/vocabHistory`, key));
+                    if (cancelled) return;
+                    const turn = snap.exists() ? Math.floor((snap.data().seedCursor || 0) / SEED_PAGE) + 1 : 0;
+                    setLevelTurns(prev => ({ ...prev, [lv]: turn }));
+                } catch { /* fail-soft: 0 유지 */ }
+            }));
+        })();
+        return () => { cancelled = true; };
+    }, [preset?.topicId, preset?.lang, user, level]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // 토픽 변경 시 리셋. 단, custom 활성 unit 복원 중/완료면 단어 유지(첫 진입 mount 시 preset-sync 가
+    //   selectedTopic 을 새 객체로 바꿔 이 리셋이 복원 단어를 wipe 하던 race 차단 — autoUnitRef 가드).
+    useEffect(() => {
+        if (autoUnitRef.current.inflight || autoUnitRef.current.restored) return;
+        // [v2.1.11] 토글로 autoUnitRef 가 reset 된 뒤에도 복원된 노드면 wipe 금지(복원 단어 보존).
+        const nk = preset ? `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}` : null;
+        if (nk && restoredKeysRef.current.has(nk)) return;
         setWords([]);
         setSavedWords(new Set());
         setActiveRecIdx(null);
         avoidWordsRef.current = [];
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [selectedTopic, selectedLang, level]);
 
     // 마지막으로 선택된 "실제 토픽"을 보관 (custom 진입으로 null이 된 동안에도 유지)
@@ -452,18 +491,29 @@ export default function VocabTab({
     // opts.advance: seed 경로에서 "다음 5장"(커서 +5). 기본 false = 현재 페이지 로드.
     const handleGenerate = async (opts = {}) => {
         if (!selectedTopic && !customInput.trim()) return;
+        // [v2.1.11] 최후 방어선 — 이 노드가 복원된 적 있으면 자동(auto) preset gen 절대 차단.
+        //   effect 게이트가 race 로 뚫려도 여기서 막음. 수동 버튼/직접입력(custom)은 정당하므로 통과.
+        if (opts.auto && !customInput.trim() && selectedTopic && preset) {
+            const nk = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+            if (restoredKeysRef.current.has(nk)) return;
+        }
         setIsLoading(true);
         setActiveRecIdx(null);
 
-        const topicId = selectedTopic?.topicId || 'custom';
-        const topicLabel = selectedTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
-        const categoryLabel = selectedTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
-        const isSeed = !!selectedTopic; // 비-custom = seed(전역 공유 순차) 경로
+        // preset(고정 토픽)에서도 직접입력이 있으면 custom 우선. 단, 마스터 집계(onTopicPass)는 노드 그대로 유지.
+        const hasCustom = customInput.trim().length > 0;
+        const useTopic = !!selectedTopic && !hasCustom;
+        const topicId = useTopic ? selectedTopic.topicId : 'custom';
+        const topicLabel = useTopic ? getT(selectedLang, `vocabTopic.${selectedTopic.topicId}`) : customInput.trim();
+        const categoryLabel = useTopic ? getT(selectedLang, `vocabCat.${selectedTopic.catId}`) : customInput.trim();
+        const isSeed = useTopic; // seed(전역 공유 순차)=고정 토픽일 때만. custom 입력 시 false → 서버 isCustom.
 
         const historyKey = makeVocabHistoryKey(topicId, level, selectedLang);
-        const { words: persistedWords, seedCursor } = await loadVocabHistory(historyKey);
+        const { words: persistedWords, seedCursor, chargedMax } = await loadVocabHistory(historyKey);
         // seed offset: 현재 페이지(=seedCursor), advance면 다음 페이지(+5)
         const offset = isSeed ? ((seedCursor || 0) + (opts.advance ? SEED_PAGE : 0)) : 0;
+        if (isSeed) setLevelTurns(prev => ({ ...prev, [level]: Math.floor(offset / SEED_PAGE) + 1 })); // 활성 레벨 turn — "다른 단어"마다 +1
+
         // 컴포넌트 페이지 캐시 — 재진입/같은 offset이면 네트워크 없이 즉시 복원
         const pageCacheKey = `${historyKey}--${offset}`;
         if (isSeed && loadedPagesRef.current[pageCacheKey]) {
@@ -473,6 +523,9 @@ export default function VocabTab({
             setIsLoading(false);
             return;
         }
+        // 2026-06-16: 잔액 게이트 — 차감 대상(신규 생성)만 검사. 무료 재진입(offset ≤ chargedMax)은 통과.
+        const willChargePts = !isSeed || offset > (chargedMax ?? -1);
+        if (willChargePts && onCheckPoints && !onCheckPoints()) { setIsLoading(false); return; }
         const allAvoid = [...new Set([...persistedWords, ...avoidWordsRef.current])];
         const avoidForApi = allAvoid.slice(-30); // custom 경로용 (seed는 서버가 자체 회피)
 
@@ -484,7 +537,8 @@ export default function VocabTab({
                     topic: topicId,
                     topicLabel,
                     category: categoryLabel,
-                    isCustom: !selectedTopic,
+                    isCustom: !isSeed,
+                    nodeTopicId: preset?.topicId || undefined, // F-redesign: 활성 unit 포인터를 노드 단위로 키잉
                     level,
                     targetLang: selectedLang,
                     sourceLang,
@@ -497,19 +551,34 @@ export default function VocabTab({
             if (!res.ok) throw new Error(`Server error ${res.status}`);
             const data = await res.json();
 
-            if (data.words && Array.isArray(data.words)) {
-                setWords(data.words);
-                setSavedWords(new Set());
-                if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
-                if (onGenerate) onGenerate();
-                if (isSeed) {
-                    // seed: 커서를 현재 페이지 offset으로 저장(words 누적 불필요 — 서버가 회피 관리)
-                    appendVocabHistory(historyKey, [], offset);
-                } else {
-                    const newWordTexts = data.words.map(w => w.word);
-                    avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
-                    appendVocabHistory(historyKey, newWordTexts);
-                }
+            // 방어선(2026-06-19 brick fix): 빈 단어 배열을 "정상 페이지"로 오인하면 차감·커서전진·빈캐시로
+            //   노드가 영구 먹통이 된다. 서버 frontier-safe 슬라이스로 사실상 발생 불가지만(adminDb 다운 등
+            //   극단 케이스 보험), 비어 있으면 차감/저장/캐시 없이 재시도 안내만 한다.
+            if (!data.words || !Array.isArray(data.words) || data.words.length === 0) {
+                console.warn('[VocabTab] empty words from server (no charge, no cursor advance)', { historyKey, offset });
+                alert(t('scene.loadError'));
+                setIsLoading(false);
+                return;
+            }
+
+            // (위 guard 로 data.words 는 비어있지 않음이 보장됨)
+            setWords(data.words);
+            setSavedWords(new Set());
+            // F-redesign: custom 활성 unit 포인터는 서버가 generate 시 갱신(setActivePointer) →
+            //   재진입/타탭에서 GET /api/active-unit 으로 같은 unit 복원. 클라 저장 불필요.
+            if (isSeed) loadedPagesRef.current[pageCacheKey] = data.words; // 페이지 캐시 저장
+            // review(서버가 토픽 소진으로 복습 페이지를 서빙) = 새 단어 아님 → 차감/충전 안 함(2026-06-19).
+            const isReview = data.source === 'review';
+            // enh1: 이미 차감된 페이지(offset ≤ chargedMax) 재진입은 무차감. custom 은 항상 차감.
+            const shouldCharge = !isReview && (!isSeed || offset > (chargedMax ?? -1));
+            if (shouldCharge && onGenerate) onGenerate();
+            if (isSeed) {
+                // seed: 커서=현재 offset 저장 + 차감했으면 chargedMax 갱신(영속 무차감)
+                appendVocabHistory(historyKey, [], offset, shouldCharge ? offset : undefined);
+            } else {
+                const newWordTexts = data.words.map(w => w.word);
+                avoidWordsRef.current = [...avoidWordsRef.current, ...newWordTexts];
+                appendVocabHistory(historyKey, newWordTexts);
             }
         } catch (e) {
             console.error('[VocabTab] Generate error:', e);
@@ -519,22 +588,52 @@ export default function VocabTab({
         }
     };
 
-    // 단계학습(preset) 진입 시 현재 페이지 5장 자동 로드 (버튼 없이 카드 즉시 표시).
-    // preset → selectedTopic/Lang/Level 동기화가 끝난 뒤 1회만(토픽별).
-    const autoGenKeyRef = useRef(null);
-    // #9(2026-06-15): 섹션 닫았다 재진입(preset 재설정) 시 자동로드 1회 재허용 →
-    //   재진입 시에도 버튼 없이 캐시 페이지 자동 표시. handleGenerate 가 페이지 캐시 HIT 면 무차감(#8).
-    useEffect(() => { autoGenKeyRef.current = null; }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 단계학습(preset) 진입 시 자동 로드 (버튼 없이 카드 즉시 표시). preset 동기화 후 1회(토픽별).
+    //   F-redesign(2026-06-17): 노드 활성 custom unit 포인터 조회 → 있으면 그 단어 복원(generate X),
+    //   없으면 preset generate. 서버 포인터 기반이라 재진입/타탭/크로스기기 일관(localStorage 결함 해소).
+    // 진입 자동 로드 상태(단일 ref) — nodeKey별 1회만 fetch. {key, inflight, done, restored}.
+    //   words.length 를 deps 에서 제외 → setWords 가 effect 재실행/재fetch(GET 폭주) 유발 안 함.
+    //   inflight 가드 → 비동기 fetch 중 재진입 중복 차단. restored → preset auto-gen 명시 억제.
+    const autoUnitRef = useRef({ key: null, inflight: false, done: false, restored: false });
+    // [v2.1.11] 복원 권위 영속 Set — resetAutoUnit/탭 토글로 안 지워짐. 한 번 HIT된 nodeKey 는
+    //   transient fetch 실패(catch)·게이트 race 에도 preset auto-gen 영구 억제. 명시적 MISS(포인터 삭제)만 해제.
+    const restoredKeysRef = useRef(new Set());
+    const resetAutoUnit = () => { autoUnitRef.current = { key: null, inflight: false, done: false, restored: false }; };
+    useEffect(() => { resetAutoUnit(); }, [preset?.topicId, preset?.lang, preset?.level]);
+    // 탭 비활성 시 리셋 → 재활성(타탭 복귀) 시 1회 재조회(listening custom 반영).
+    useEffect(() => { if (!isActive) resetAutoUnit(); }, [isActive]);
     useEffect(() => {
-        if (!preset || !isActive) return;
+        if (!preset || !isActive || isLoading) return;
         if (selectedTopic?.topicId !== preset.topicId || selectedLang !== preset.lang || level !== preset.level) return;
-        const k = `${preset.topicId}--${preset.level}--${preset.lang}`;
-        if (autoGenKeyRef.current === k) return;
-        if (words.length > 0 || isLoading) { autoGenKeyRef.current = k; return; }
-        autoGenKeyRef.current = k;
-        handleGenerate(); // advance 없음 = 현재 페이지(seedCursor) 로드
+        const nodeKey = `${preset.topicId}--${preset.level}--${sourceLang}--${selectedLang}`;
+        const st = autoUnitRef.current;
+        if (st.key === nodeKey && (st.inflight || st.done)) return; // 이 활성 동안 nodeKey 1회만
+        autoUnitRef.current = { key: nodeKey, inflight: true, done: false, restored: false };
+        const hadWords = words.length > 0;
+        (async () => {
+            let restored = false;
+            try {
+                const res = await authFetch(`${getServerUrl()}/api/active-unit?nodeKey=${encodeURIComponent(nodeKey)}`);
+                if (res.ok) {
+                    const { unit } = await res.json();
+                    if (unit && Array.isArray(unit.words) && unit.words.length > 0) {
+                        console.log(`[ActiveUnit] vocab restore HIT nodeKey=${nodeKey} words=${unit.words.length}`);
+                        setWords(unit.words);
+                        setSavedWords(new Set());
+                        restored = true;
+                        restoredKeysRef.current.add(nodeKey); // [v2.1.11] 복원 권위 획득 → 이후 preset 영구 억제
+                    } else {
+                        console.log(`[ActiveUnit] vocab MISS nodeKey=${nodeKey}`);
+                        restoredKeysRef.current.delete(nodeKey); // [v2.1.11] 포인터 진짜 없음 → 권위 해제(generate 허용)
+                    }
+                }
+            } catch { /* fail-soft → preset. transient 는 권위 유지(잘못된 preset 오염 차단) */ }
+            autoUnitRef.current = { key: nodeKey, inflight: false, done: true, restored };
+            // [v2.1.11] restored(이번 run) || 영속 권위 || 기존 단어 있으면 preset auto-gen 금지.
+            if (!restored && !hadWords && !restoredKeysRef.current.has(nodeKey)) handleGenerate({ auto: true });
+        })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level, words.length]);
+    }, [preset?.topicId, preset?.lang, preset?.level, isActive, selectedTopic, selectedLang, level]);
 
     // ── Save to Library ──────────────────────────────────────────────
     const handleSave = async (wordObj, index, pronunciationScore = null) => {
@@ -576,6 +675,9 @@ export default function VocabTab({
                     style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', cursor: 'pointer', color: '#0d9488', fontWeight: 700, fontSize: '0.95rem', padding: '8px 4px 6px' }}
                 >
                     ← {getT(sourceLang, `vocabTopic.${preset.topicId}`)}
+                    <span style={{ fontWeight: 600, fontSize: '0.82rem', color: '#64748b' }}>
+                        {LV_ORDER.map(lv => `${LV_CODE[lv]}${levelTurns[lv]}`).join('·')}
+                    </span>
                 </button>
             )}
 
@@ -636,32 +738,41 @@ export default function VocabTab({
                     </span>
                 </button>
             )}
+            </>)}
 
-            {/* Custom Input — Free Talking과 동일 UI (2줄 label + 2줄 textarea) */}
-            <div className="scene-custom-block">
+            {/* Custom Input — preset(토픽 학습)·자유 모드 모두 노출.
+                직접입력은 Pro 전용 — Trial은 진입 시점부터 잠긴 상태 + "Pro 전용입니다" placeholder 상시(탭 시 Pro 안내).
+                preset 모드: 입력해도 selectedTopic(노드)은 유지 → handleGenerate가 입력 여부로만 custom 우선 판정.
+                custom 단어를 2개 통과하면 그 노드의 Master에 그대로 집계(onTopicPass 유지). */}
+            <div
+                className={`scene-custom-block${!isProUser ? ' locked' : ''}`}
+                onClick={!isProUser ? () => onProOnly?.() : undefined}
+            >
                 <div className="scene-custom-label" role="presentation">
                     <span className="scene-custom-label__icon" aria-hidden="true">
-                        <Pencil size={11} strokeWidth={2.25} />
+                        {isProUser ? <Pencil size={11} strokeWidth={2.25} /> : <Lock size={11} strokeWidth={2.25} />}
                     </span>
                     <span className="scene-custom-label__text">{t('scene.customLabelTop')}</span>
                 </div>
                 <textarea
                     className="scene-custom-input"
                     rows={2}
-                    placeholder={t('scene.customPlaceholder')}
-                    value={customInput}
+                    placeholder={isProUser ? t('scene.customPlaceholder') : (t('scene.customProOnly') || '🔒 Pro 전용입니다')}
+                    value={isProUser ? customInput : ''}
+                    disabled={!isProUser}
+                    readOnly={!isProUser}
                     onChange={evt => {
                         const v = evt.target.value;
                         setCustomInput(v);
-                        // 입력이 있으면 custom 모드(토픽 해제), 비우면 직전 토픽으로 복구.
-                        // 복구가 없으면 한 번 입력한 뒤 selectedTopic이 null로 굳어
-                        // 이후 언어/난이도 전환·재생성이 전부 custom으로 기록됨.
-                        if (v.trim()) setSelectedTopic(null);
-                        else setSelectedTopic(prevTopicRef.current);
+                        // 자유 모드: 입력 있으면 custom(토픽 해제), 비우면 직전 토픽 복구.
+                        // preset 모드: 토픽 노드는 고정 유지(해제 X) — 입력 여부로만 custom 우선 판정.
+                        if (!preset) {
+                            if (v.trim()) setSelectedTopic(null);
+                            else setSelectedTopic(prevTopicRef.current);
+                        }
                     }}
                 />
             </div>
-            </>)}
 
             {/* Generate Button */}
             <div className="vocab-generate-row">

@@ -11,7 +11,7 @@ const VALID_SOURCES = new Set([
     'streak30',
     'streak100',
     'adReward',            // 보상광고 보너스 충전 (+5)
-    'pointPurchase',       // 인앱 결제 포인트 구매 (+200) — 실제 결제라 tier 무관 항상 적립
+    'pointPurchase',       // 인앱 결제 포인트 구매 (+1000) — 실제 결제라 tier 무관 항상 적립
     'admin_manual',        // 어드민 수동 부여
     'admin_test',          // 테스트
 ]);
@@ -48,10 +48,13 @@ async function grantBonusPoints({ uid, amount, source, meta = {} }) {
 
     const eventRef = userRef.collection('bonusEvents').doc();
     const batch = db.batch();
-    batch.update(userRef, {
+    // set+merge: 문서 부재(NOT_FOUND) 방어 — 실결제(pointPurchase)/마이그레이션 직후처럼 users 문서가
+    //   아직 없거나 RC appUserId 매핑 edge 에서도 포인트가 유실되지 않도록 없으면 생성, 있으면 보존.
+    //   increment 는 set+merge 에서 부재 필드를 0 기준으로 처리됨.
+    batch.set(userRef, {
         bonusPoints: admin.firestore.FieldValue.increment(amount),
         bonusLastGrantedAt: admin.firestore.FieldValue.serverTimestamp(),
-    });
+    }, { merge: true });
     batch.set(eventRef, {
         source,
         amount,

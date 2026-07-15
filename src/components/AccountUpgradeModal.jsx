@@ -55,6 +55,12 @@ const AccountUpgradeModal = ({ onClose, onSuccess, fromSubscription, sourceLang 
                 if (data.success) {
                     console.log('[Migrate] success:', data.migrated);
                 }
+                // [race fix 2026-06-18] 마이그레이션 직후 RC app_user_id 를 새 uid 로 전환 —
+                //   in-session 마이그레이션 중 결제가 옛 익명 uid 에 귀속되던 사고 차단.
+                if (window.Capacitor?.isNativePlatform?.()) {
+                    try { const { Purchases } = await import('@revenuecat/purchases-capacitor'); await Purchases.logIn({ appUserID: result.user.uid }); }
+                    catch (le) { console.warn('[Migrate] RC logIn:', le?.message); }
+                }
             } catch (e) {
                 console.warn('[Migrate] failed (non-blocking):', e.message);
             }
