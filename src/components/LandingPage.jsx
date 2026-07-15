@@ -18,24 +18,16 @@ const detectLang = () => {
   return 'en';
 };
 
-// 로케일 → 이미지 파일명 언어코드 매핑 (6개 언어만 이미지 존재)
+// 로케일 → 이미지 파일명 언어코드 매핑 (7개 언어 이미지 존재, fr/de/pt-BR은 en 폴백)
 const IMG_LANG_MAP = {
-  'ko': 'ko', 'ja': 'jp', 'es': 'es', 'ru': 'ru', 'vi': 'vn',
-  'en': 'en', 'zh-CN': 'en', 'fr': 'en', 'de': 'en', 'pt-BR': 'en',
+  'ko': 'kr', 'ja': 'jp', 'zh-CN': 'cn', 'vi': 'vn',
+  'es': 'es', 'ru': 'ru', 'en': 'en',
+  'fr': 'en', 'de': 'en', 'pt-BR': 'en',
 };
 
-// 5장 카드 정의: 순서 Promo1→3→4→5→2
-// Card5(발음)는 영어 스크린샷만 존재
-// 별표 Y비율 (Card4 - 가성비, 각 메뉴 항목 옆)
-const STAR_POSITIONS = [0.34, 0.44, 0.54, 0.64, 0.74, 0.83];
-
-const CARDS = [
-  { id: 'card1', hasLangVariant: true },
-  { id: 'card2', hasLangVariant: true },
-  { id: 'card3', hasLangVariant: true, magnifier: true },   // 돋보기
-  { id: 'card4', hasLangVariant: true, stars: true },        // 별표
-  { id: 'card5', hasLangVariant: false },  // 영어 전용
-];
+// 5장 프로모 카드: 헤드라인·폰 목업이 이미지에 포함된 완성형 카드 (promo1~5)
+// cardN 순서 = promo_0N 순서 (①70토픽·3개국어 ②음소분석 ③38언어 ④포인트무료 ⑤듣기무한생성)
+const CARDS = ['card1', 'card2', 'card3', 'card4', 'card5'];
 
 const isNative = window.Capacitor?.isNativePlatform?.() || false;
 
@@ -108,14 +100,15 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
       </nav>
 
       {/* 5장 프로모 카드 */}
-      {CARDS.map((card, idx) => {
-        const title = c[`${card.id}Title`] || '';
-        const highlight = c[`${card.id}Highlight`] || '';
-        const subtitle = c[`${card.id}Subtitle`] || '';
-        const recommendTitle = c[`${card.id}RecommendTitle`] || '';
-        const recommends = [1, 2, 3, 4].map(n => c[`${card.id}Recommend${n}`]).filter(Boolean);
-        const screenshotLang = card.hasLangVariant ? imgLang : 'en';
-        const imgSrc = `/landing/${card.id}_${screenshotLang}.png`;
+      {CARDS.map((cardId, idx) => {
+        const title = c[`${cardId}Title`] || '';
+        const highlight = c[`${cardId}Highlight`] || '';
+        const subtitle = c[`${cardId}Subtitle`] || '';
+        const recommendTitle = c[`${cardId}RecommendTitle`] || '';
+        const recommends = [1, 2, 3, 4].map(n => c[`${cardId}Recommend${n}`]).filter(Boolean);
+        const imgSrc = `/landing/promo${idx + 1}_${imgLang}.webp`;
+        // 헤드라인은 이미지에 박혀 있음 — 이미지가 en 폴백인 비영어 로케일(fr/de/pt-BR)에만 HTML 헤드카피 표시
+        const showHtmlTitle = imgLang === 'en' && langCode !== 'en';
 
         // 타이틀에서 highlight 부분을 강조
         const renderTitle = () => {
@@ -135,13 +128,23 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
         };
 
         return (
-          <section key={card.id} id={card.id} className={`lp-promo-section ${idx === 0 ? 'first' : ''}`}>
+          <section key={cardId} id={cardId} className={`lp-promo-section ${idx === 0 ? 'first' : ''}`}>
             {/* 배경 장식 orb */}
             <div className="lp-promo-orb lp-promo-orb-1" />
             <div className="lp-promo-orb lp-promo-orb-2" />
 
-            {/* 헤드카피 */}
-            <h2 className="lp-promo-title">{renderTitle()}</h2>
+            {/* 헤드카피 — en 이미지 폴백 로케일 전용 (이미지에 자국어 헤드라인 없음) */}
+            {showHtmlTitle && <h2 className="lp-promo-title">{renderTitle()}</h2>}
+
+            {/* 완성형 프로모 카드 이미지 (헤드라인 + 폰 목업 포함) */}
+            <div className="lp-promo-img-wrap">
+              <img
+                src={imgSrc}
+                alt={`PronunFit promo ${idx + 1}`}
+                loading={idx === 0 ? 'eager' : 'lazy'}
+                className="lp-promo-img"
+              />
+            </div>
 
             {/* 서브카피 */}
             <p className="lp-promo-subtitle">
@@ -149,43 +152,6 @@ const LandingPage = ({ onStartFree, onLogin, onInstall, showInstall, onPrivacy, 
                 <span key={i}>{i > 0 && <br />}{line}</span>
               ))}
             </p>
-
-            {/* 폰 프레임 + 스크린샷 + 장식 */}
-            <div className="lp-phone-wrap">
-              {/* 돋보기 (Card3 - 다국어 동시학습) */}
-              {card.magnifier && (
-                <div className="lp-magnifier">
-                  <img
-                    src={imgSrc}
-                    alt="zoom"
-                    className="lp-magnifier-img"
-                  />
-                  <div className="lp-magnifier-handle" />
-                </div>
-              )}
-
-              <div className="lp-phone-frame">
-                <div className="lp-phone-inner">
-                  <img
-                    src={imgSrc}
-                    alt={`PronunFit ${card.id}`}
-                    loading={idx === 0 ? 'eager' : 'lazy'}
-                    className="lp-phone-screenshot"
-                  />
-                </div>
-
-                {/* 별표 (Card4 - 가성비) — phone-frame 기준 절대 배치 */}
-                {card.stars && STAR_POSITIONS.map((yRatio, i) => (
-                  <span
-                    key={i}
-                    className="lp-star"
-                    style={{ top: `${yRatio * 100}%` }}
-                  >
-                    ⭐
-                  </span>
-                ))}
-              </div>
-            </div>
 
             {/* 추천 대상 */}
             <div className="lp-recommend">
