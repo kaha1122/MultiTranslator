@@ -38,7 +38,9 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.TMDB_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// 번역 대상 9개 (10개 UI 언어 중 영어=소스/폴백만 제외). 저장 키는 클라 lang 코드와 동일.
+// 번역 대상 10개 (11개 UI 언어 중 영어=소스/폴백만 제외). 저장 키는 클라 lang 코드와 동일.
+// ⚠ 언어 추가 시: 여기에 한 줄 추가만 하면 됨 — 스킵 게이트가 metaLangs 기준이라 기존 완료
+//   문서도 자동 재처리되고, 저장 번역 재사용으로 새 언어만 Gemini/TMDB로 채운다(2026-07-16 id 추가).
 // ko(한국어): 원어라 대개 TMDB에 존재→무료 추출. 없는 작품만 영어→한국어 번역해 빈칸 메움
 // (한국도 주요 고객층 — TMDB에 한국어 줄거리 누락 시에도 한국어 보장).
 const TARGETS = [
@@ -51,6 +53,7 @@ const TARGETS = [
     { code: 'es', iso: 'es' },
     { code: 'ru', iso: 'ru' },
     { code: 'pt-BR', iso: 'pt', region: 'BR' },
+    { code: 'id', iso: 'id' }, // 2026-07-16 추가 — 광고 유입 75% 인도네시아, 클라 UI locale 승격과 동시
 ];
 
 async function tmdb(path, params = {}) {
@@ -157,10 +160,18 @@ async function processTitle(media, id, { force = false } = {}) {
     const markerRef = kcultureDb.doc(`titles/${id}`);
     if (!force) {
         const m = await markerRef.get();
-        if (m.exists && m.data()?.metaTranslated) {
-            // 이미 번역 완료. 검색 인덱스만 없으면 저비용 보강(Gemini 없이 — 기존 번역제목 재사용).
-            if (!m.data()?.searchLower) { try { await fillSearchIndex(media, id, markerRef); } catch { /* 보강 실패는 무시 */ } }
-            return { id, skipped: true, langs: 0, geminiUsed: 0 };
+        const md = m.exists ? m.data() : null;
+        if (md?.metaTranslated) {
+            // 스킵 게이트는 언어 목록 기준: 타깃 전부(metaLangs)를 이미 보유했을 때만 완료로 인정.
+            // TARGETS에 새 언어가 추가되면 기존 완료 문서도 자동 재처리 대상이 된다
+            // (아래 저장 번역 재사용으로 기존 언어는 Gemini 재호출 없이 새 언어만 채움).
+            const langs = md.metaLangs || [];
+            const hasAll = TARGETS.every((t) => langs.includes(t.code));
+            if (hasAll || md.metaNoSource) {
+                // 검색 인덱스만 없으면 저비용 보강(Gemini 없이 — 기존 번역제목 재사용).
+                if (!md.searchLower) { try { await fillSearchIndex(media, id, markerRef); } catch { /* 보강 실패는 무시 */ } }
+                return { id, skipped: true, langs: 0, geminiUsed: 0 };
+            }
         }
     }
 
@@ -178,6 +189,18 @@ async function processTitle(media, id, { force = false } = {}) {
             out[t.code] = { ...ex, source: 'tmdb' };
         }
         else missing.push(t);
+    }
+
+    // 기존 저장 번역 재사용 — 언어 추가 재처리(위 게이트)나 force 재실행에서 이미 번역된 언어의
+    // Gemini 재호출을 방지. 서브컬렉션 문서를 읽어 채우면 아래 Gemini 루프의 still 필터가 자동 제외.
+    if (missing.length) {
+        try {
+            const snaps = await kcultureDb.getAll(...missing.map((t) => kcultureDb.doc(`titles/${id}/translations/${t.code}`)));
+            snaps.forEach((s, i) => {
+                const d = s.exists ? s.data() : null;
+                if (d?.overview) out[missing[i].code] = { title: d.title || '', overview: d.overview, source: d.source || 'cache', cached: true };
+            });
+        } catch { /* 재사용 실패 — 전량 신규 경로(TMDB/Gemini)로 진행 */ }
     }
 
     // 번역 원본(피벗): 영어 → 원어(ko) → 아무 TMDB 네이티브. 영어 없는 마이너작도 누락 안 되게.
@@ -200,7 +223,7 @@ async function processTitle(media, id, { force = false } = {}) {
         }
     }
 
-    // ⚠ 완료 게이트: 9개 타깃이 모두 채워졌을 때만 metaTranslated=true.
+    // ⚠ 완료 게이트: 타깃 전 언어가 모두 채워졌을 때만 metaTranslated=true.
     //   일부만 성공(Gemini 일시 실패 등) → metaTranslated=false로 남겨 다음 실행이 자동 재시도(멱등 skip 안 됨).
     //   단, 번역 원본(영어/원어/네이티브 어느 것)도 전혀 없으면(번역 불가·영구) done 처리하되 사유 기록 → 무한 재시도 방지.
     const complete = TARGETS.every((t) => out[t.code]?.overview);
@@ -217,6 +240,7 @@ async function processTitle(media, id, { force = false } = {}) {
 
     const batch = kcultureDb.batch();
     for (const [code, v] of Object.entries(out)) {
+        if (v.cached) continue; // 기존 저장 번역 재사용분 — 동일 내용 재기록 생략(쓰기 절약)
         batch.set(kcultureDb.doc(`titles/${id}/translations/${code}`), {
             title: v.title || '', overview: v.overview || '', source: v.source, translatedAt: new Date(),
         });
@@ -224,7 +248,7 @@ async function processTitle(media, id, { force = false } = {}) {
     batch.set(markerRef, {
         media,
         metaTranslated: done,           // 완료(또는 원본없음)일 때만 → 부분실패는 false로 재시도 대상
-        metaComplete: complete,         // 9개 타깃 전부 채움 여부(감사/통계용)
+        metaComplete: complete,         // 타깃 전 언어 채움 여부(감사/통계용)
         metaLangs: Object.keys(out),
         poster_path: detail.poster_path || null,  // 검색 카드 썸네일용
         searchTitle,                    // {code: 번역제목} — 검색결과 표시

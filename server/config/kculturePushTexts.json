@@ -21,6 +21,17 @@
     "dreply_like": "{name}님이 회원님의 답글을 좋아합니다.",
     "review_like": "{name}님이 회원님의 평가를 좋아합니다."
   },
+  "id": {
+    "post_like": "{name} menyukai ulasan Anda.",
+    "post_comment": "{name} memulai diskusi di ulasan Anda.",
+    "comment_like": "{name} menyukai diskusi Anda.",
+    "comment_reply": "{name} membalas diskusi Anda.",
+    "reply_like": "{name} menyukai balasan Anda.",
+    "discussion_like": "{name} menyukai komentar Anda.",
+    "discussion_reply": "{name} membalas komentar Anda.",
+    "dreply_like": "{name} menyukai balasan Anda.",
+    "review_like": "{name} menyukai penilaian Anda."
+  },
   "es": {
     "post_like": "A {name} le gustó tu reseña.",
     "post_comment": "{name} inició un debate en tu reseña.",

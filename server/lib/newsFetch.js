@@ -5,7 +5,7 @@ const crypto = require('crypto');
 const { XMLParser } = require('fast-xml-parser');
 const { callGeminiJson } = require('../utils/geminiCall');
 
-// K-DramaAnyLang UI 10개 locale ↔ 언어별 네이티브 검색 피드 (Gemini 번역 불필요 = 비용 0)
+// K-DramaAnyLang UI 11개 locale ↔ 언어별 네이티브 검색 피드 (Gemini 번역 불필요 = 비용 0)
 const LANG_FEEDS = {
     ko: 'https://news.google.com/rss/search?q=%ED%95%9C%EA%B5%AD+%EB%93%9C%EB%9D%BC%EB%A7%88&hl=ko&gl=KR&ceid=KR:ko',
     en: 'https://news.google.com/rss/search?q=kdrama&hl=en-US&gl=US&ceid=US:en',
@@ -17,6 +17,7 @@ const LANG_FEEDS = {
     es: 'https://news.google.com/rss/search?q=dorama+coreano&hl=es-419&gl=MX&ceid=MX:es-419',
     ru: 'https://news.google.com/rss/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0&hl=ru&gl=RU&ceid=RU:ru',
     'pt-BR': 'https://news.google.com/rss/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
+    id: 'https://news.google.com/rss/search?q=drakor&hl=id&gl=ID&ceid=ID:id', // drakor = 인도네시아어 K-드라마 통칭 (2026-07-16)
 };
 const SOOMPI_FEED = 'https://www.soompi.com/feed'; // 검증된 RSS 2.0, 영어 K-드라마/K-pop 전문지
 
