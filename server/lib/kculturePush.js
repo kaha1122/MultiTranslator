@@ -22,10 +22,12 @@ function resolveLang(raw) {
 }
 
 // 클라 notifRoute(src/lib/notify.js)와 동일 매핑 — HashRouter 경로.
+// anchor가 있으면 쿼리로 부착 — 푸시 클릭 시에도 해당 댓글/평가로 스크롤(웹 SW·네이티브 공통).
 const POST_KINDS = new Set(['post_like', 'post_comment', 'comment_like', 'comment_reply', 'reply_like']);
-function notifUrl({ kind, postId, titleId, media }) {
-    if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}`;
-    if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}`;
+function notifUrl({ kind, postId, titleId, media, anchor }) {
+    const q = anchor ? `?anchor=${anchor}` : '';
+    if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}${q}`;
+    if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}${q}`;
     return '/#/notifications';
 }
 
