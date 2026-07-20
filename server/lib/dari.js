@@ -1,4 +1,4 @@
-// ── K-DramaAnyLang "Dari" AI 큐레이터 게시 코어 (CLI 스크립트 + /api/curation 라우트 공용) ──
+﻿// ── K-DramaAnyLang "Dari" AI 큐레이터 게시 코어 (CLI 스크립트 + /api/curation 라우트 공용) ──
 // 방영작 회차 토론 스레드(titles/{id}/discussion)와 큐레이터 리뷰 글(posts)을 kculture Firestore에
 // 게시한다. 문서 스키마는 클라이언트(d:\KCulture src/lib/discussion.js createComment /
 // src/lib/community.js createPost)가 만드는 문서와 필드 호환 — 클라 렌더러가 그대로 읽는다.
@@ -249,6 +249,54 @@ function seedTranslations(batch, docPath, body, translated) {
     }
 }
 
+// ── 헤드라인(제목) 전용 다국어 번역 — 본문 프롬프트(시그니처 규칙 등)와 분리해 오염 방지 ──
+// "Dari"는 브랜드명(번역·음차 금지 — "다리의 선택" 사고), 원문에 없는 문구 추가 금지.
+async function translateTitleMulti(title, codes, showTitles = null) {
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+    const targetList = codes.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n');
+    const titleRule = showTitles?.en
+        ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}"`,
+           ...(showTitles.original && showTitles.originalLang
+               ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST use its official original title "${showTitles.original}".`]
+               : ['  in every target language.'])]
+        : [];
+    const prompt = [
+        `Translate the short review HEADLINE below into EACH of these target languages:`,
+        targetList,
+        ``,
+        `[Rules — apply to every target language]`,
+        `- "Dari" is a BRAND NAME (an AI curator persona). NEVER translate or transliterate "Dari" — keep it exactly "Dari".`,
+        `- Keep the headline structure ("Dari's Take: <show title> — <tagline>") natural and complete in each language.`,
+        ...titleRule,
+        `- Do NOT add, append, or omit anything that is not in the source headline.`,
+        ``,
+        `Return ONLY one JSON object whose keys are these EXACT codes [${codes.map((c) => `"${c}"`).join(', ')}],`,
+        `each mapping to the translated headline (a plain string). No markdown.`,
+        ``,
+        `SOURCE HEADLINE:`,
+        title,
+    ].join('\n');
+    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+        label: 'dari-title',
+        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
+    });
+    if (r.error) { console.warn(`[Dari] 제목 번역 실패: ${r.error}`); return {}; }
+    const parsed = parseFirstJsonObject(r.text) || {};
+    const out = {};
+    for (const c of codes) {
+        if (typeof parsed[c] === 'string' && parsed[c].trim()) out[c] = parsed[c].trim();
+    }
+    return out;
+}
+
+// 헤드라인(제목) 시드 — 클라 translatePostTitle의 캐시 doc id(`{lang}__title`, { body: 제목 })와 동일 키.
+function seedTitleTranslations(batch, docPath, title, translatedTitles) {
+    batch.set(kcultureDb.doc(`${docPath}/translations/en__title`), { body: title, translatedAt: new Date() }, { merge: true });
+    for (const [code, text] of Object.entries(translatedTitles)) {
+        batch.set(kcultureDb.doc(`${docPath}/translations/${code}__title`), { body: text, translatedAt: new Date() }, { merge: true });
+    }
+}
+
 // ── 회차 토론 스레드 게시 ────────────────────────────────────────────────────
 // 멱등: doc id = dari_s{season}e{maxEp} — 존재 시 skip하고 기존 문서 반환.
 async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false }) {
@@ -377,9 +425,11 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
         return { dryRun: true, uid, titleId: id, media, titleName, title, body };
     }
 
-    const translated = await translateBodyMulti(body, SEED_LANGS, {
+    const showTitles = {
         en: titleName, original: detail.original_name || detail.original_title || null, originalLang: detail.original_language || null,
-    });
+    };
+    const translated = await translateBodyMulti(body, SEED_LANGS, showTitles);
+    const translatedTitles = await translateTitleMulti(title, SEED_LANGS, showTitles); // 헤드라인 — 자동 자국어 표시용
 
     const now = new Date();
     const postRef = kcultureDb.collection('posts').doc(); // 고유 id 자동
@@ -395,9 +445,38 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
         likeCount: 0, commentCount: 0, createdAt: now,
     });
     seedTranslations(batch, `posts/${postRef.id}`, body, translated);
+    seedTitleTranslations(batch, `posts/${postRef.id}`, title, translatedTitles);
     await batch.commit();
-    console.log(`[Dari] 리뷰 글 게시 완료: posts/${postRef.id} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
+    console.log(`[Dari] 리뷰 글 게시 완료: posts/${postRef.id} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length}, 제목 ${Object.keys(translatedTitles).length})`);
     return { postId: postRef.id, path: `posts/${postRef.id}`, uid, titleId: id, media, titleName, title, body, seededLangs: ['en', ...Object.keys(translated)] };
 }
 
-module.exports = { ensureDariAccount, createEpisodeThread, createReviewPost, SEED_LANGS };
+// 기존 리뷰 글 번역 재시드(본문+제목) — 프롬프트 개선·제목 시드 추가분 반영용.
+async function reseedReviewPost(postId) {
+    if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    const ref = kcultureDb.doc(`posts/${postId}`);
+    const snap = await ref.get();
+    if (!snap.exists) throw new Error(`posts/${postId} 없음`);
+    const data = snap.data();
+    let showTitles = null;
+    if (data.titleId && data.media) {
+        try {
+            const detail = await tmdb(`/${data.media}/${data.titleId}`, { language: 'en-US' });
+            showTitles = {
+                en: data.titleName || detail.name || detail.title,
+                original: detail.original_name || detail.original_title || null,
+                originalLang: detail.original_language || null,
+            };
+        } catch { /* 작품명 규칙 없이 진행 */ }
+    }
+    const translated = await translateBodyMulti(data.body, SEED_LANGS, showTitles);
+    const translatedTitles = data.title ? await translateTitleMulti(data.title, SEED_LANGS, showTitles) : {};
+    const batch = kcultureDb.batch();
+    seedTranslations(batch, `posts/${postId}`, data.body, translated);
+    if (data.title) seedTitleTranslations(batch, `posts/${postId}`, data.title, translatedTitles);
+    await batch.commit();
+    console.log(`[Dari] 리뷰 재시드: posts/${postId} (본문 ${Object.keys(translated).length}, 제목 ${Object.keys(translatedTitles).length})`);
+    return { postId, seededLangs: ['en', ...Object.keys(translated)] };
+}
+
+module.exports = { ensureDariAccount, createEpisodeThread, createReviewPost, reseedReviewPost, SEED_LANGS };
