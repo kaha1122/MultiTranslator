@@ -19,6 +19,7 @@ const episodes = (arg('episodes', '') || '').split(',').map((s) => parseInt(s.tr
 const season = parseInt(arg('season', '1'), 10);
 const dryRun = process.argv.includes('--dry');
 const reseed = process.argv.includes('--reseed');
+const backdate = arg('backdate', null); // 'auto' | 'YYYY-MM-DD' — 과거분 백필 시 createdAt 소급
 
 if (!Number.isInteger(tmdbId) || !episodes.length) {
     console.error('사용법: node scripts/dari-publish.js --title <tmdbId> --episodes 5,6 [--season 1] [--dry] [--reseed]');
@@ -30,7 +31,7 @@ const t0 = Date.now();
 (async () => {
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
-    const r = await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed });
+    const r = await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate });
     console.log('─'.repeat(60));
     console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : ''}`);
     console.log(`제목      : ${r.title || '(기존 문서)'}`);

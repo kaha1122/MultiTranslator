@@ -299,7 +299,23 @@ function seedTitleTranslations(batch, docPath, title, translatedTitles) {
 
 // ── 회차 토론 스레드 게시 ────────────────────────────────────────────────────
 // 멱등: doc id = dari_s{season}e{maxEp} — 존재 시 skip하고 기존 문서 반환.
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false }) {
+// 같은 작품의 모든 스레드에 형제 목록(prevThreads)을 재배포 — 과거분 백필 후에도 각 스레드의
+// "이전 토론" 칩이 전 회차를 가리키게 유지(자기 자신 제외, 회차 내림차순, 최대 5).
+async function refreshSiblingPrevThreads(titleId) {
+    const snap = await kcultureDb.collection('curation_threads').where('titleId', '==', titleId).get();
+    const all = snap.docs.map((d) => d.data()).filter((d) => d.tid)
+        .sort((a, b) => (b.episode || 0) - (a.episode || 0));
+    for (const cur of all) {
+        const prev = all.filter((x) => x.tid !== cur.tid)
+            .map((x) => ({ tid: x.tid, episode: x.episode || 0, title: x.title || '' }))
+            .slice(0, 5);
+        await kcultureDb.doc(`titles/${titleId}/discussion/${cur.tid}`).set({ prevThreads: prev }, { merge: true }).catch(() => {});
+    }
+}
+
+// backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이
+// 실제 방영 순서와 맞도록 createdAt을 소급(홈 최신 3장·전체 목록이 현재 방영분 우선 유지).
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null }) {
     if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
     }
@@ -379,7 +395,14 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
     });
 
-    const now = new Date();
+    let now = new Date();
+    if (backdate === 'auto') {
+        const lastAir = [...episodesMeta].reverse().find((e) => e.airDate)?.airDate;
+        if (lastAir) now = new Date(`${lastAir}T12:00:00Z`);
+    } else if (backdate) {
+        const d = new Date(`${backdate}T12:00:00Z`);
+        if (!Number.isNaN(d.getTime())) now = d;
+    }
     const batch = kcultureDb.batch();
     // 스레드 문서 — 클라 discussion 코멘트 필드 전부(createComment 참조) + Dari 확장 필드
     batch.set(threadRef, {
@@ -403,6 +426,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         lang: 'en', createdAt: now,
     });
     await batch.commit();
+    await refreshSiblingPrevThreads(id).catch((e) => console.warn(`[Dari] 형제 prevThreads 갱신 실패(무시): ${e.message}`));
     console.log(`[Dari] 스레드 게시 완료: ${docPath} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
     return { tid, path: docPath, uid, title, body, info, episodes: episodesMeta, prevThreads, seededLangs: ['en', ...Object.keys(translated)] };
 }
