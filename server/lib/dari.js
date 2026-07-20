@@ -196,10 +196,23 @@ async function generateThreadCopy({ showName, genres, synopsis, episodes }) {
     throw new Error('Dari 발제 생성 실패 (2회 시도 모두 빈값/길이 초과)');
 }
 
-// ── 본문 다국어 묶음 번역 (Gemini 1회) → 캐시 시드용 map {code: translatedBody} ──
+// ── 본문 다국어 묶음 번역 → 캐시 시드용 map {code: translatedBody} ──
 // showTitles: { en, original, originalLang } — 작품명 음차/의역 방지("에이전트 김 리액티베이티드" 사고).
 //   원어(콘텐츠 원산지) 타깃에는 공식 원어 제목을, 그 외 언어에는 영어 제목 그대로 쓰게 지시.
+// 장문 × 10언어 단일 호출은 응답 잘림으로 파싱 실패(0/10)가 잦아 5언어씩 분할 호출(2026-07-20).
 async function translateBodyMulti(body, codes, showTitles = null) {
+    const CHUNK = 5;
+    if (codes.length > CHUNK) {
+        const out = {};
+        for (let i = 0; i < codes.length; i += CHUNK) {
+            Object.assign(out, await translateBodyMulti(body, codes.slice(i, i + CHUNK), showTitles));
+        }
+        return out;
+    }
+    return translateBodyChunk(body, codes, showTitles);
+}
+
+async function translateBodyChunk(body, codes, showTitles = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const targetList = codes.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n');
     const titleRule = showTitles?.en
