@@ -51,6 +51,40 @@ function parseFirstJsonObject(text) {
     return null;
 }
 
+// 파싱 실패 구제 — flash-lite가 값 문자열을 닫은 뒤 마지막 조각을 중복 출력해 `}` 앞에 잔여
+// 텍스트가 끼면(2026-07-22 ar 시드 실측) 객체 전체 JSON.parse는 실패하지만 `"key": "값"` 리터럴
+// 자체는 온전하다 → 키별로 문자열 리터럴만 직접 추출해 살린다.
+function salvageStringValue(text, key) {
+    if (!text) return null;
+    const kIdx = text.indexOf(`"${key}"`);
+    if (kIdx < 0) return null;
+    const colon = text.indexOf(':', kIdx + key.length + 2);
+    if (colon < 0) return null;
+    const q = text.indexOf('"', colon);
+    if (q < 0) return null;
+    let esc = false;
+    for (let i = q + 1; i < text.length; i++) {
+        const c = text[i];
+        if (esc) { esc = false; continue; }
+        if (c === '\\') { esc = true; continue; }
+        if (c === '"') {
+            try { return JSON.parse(text.slice(q, i + 1)); } catch { return null; }
+        }
+    }
+    return null;
+}
+
+// 번역 응답 공통 수확: 정상 파스 → 키별 구제 폴백 순서로 요청 코드 전부 시도.
+function harvestCodes(text, codes) {
+    const parsed = parseFirstJsonObject(text) || {};
+    const out = {};
+    for (const c of codes) {
+        let v = (typeof parsed[c] === 'string' && parsed[c].trim()) ? parsed[c] : salvageStringValue(text, c);
+        if (typeof v === 'string' && v.trim()) out[c] = v.trim();
+    }
+    return out;
+}
+
 async function tmdb(path, params = {}) {
     const key = process.env.TMDB_API_KEY || '';
     if (!key) throw new Error('TMDB_API_KEY not set');
@@ -212,44 +246,48 @@ async function translateBodyMulti(body, codes, showTitles = null) {
     return translateBodyChunk(body, codes, showTitles);
 }
 
+// flash-lite 글리치 2종(값 뒤 중복 조각 / 깨진 \u 이스케이프 — 2026-07-22 ar 시드 실측) 대응:
+// 수확 실패 언어만 최대 3회 재시도(tmdbBackfill과 동일 발상 — 받은 언어는 재호출 안 함).
 async function translateBodyChunk(body, codes, showTitles = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-    const targetList = codes.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n');
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}" in every language`,
            ...(showTitles.original && showTitles.originalLang
                ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST use its official original title "${showTitles.original}".`]
                : ['  in every target language.'])]
         : [];
-    const prompt = [
-        `You are a professional translator for a multilingual community app.`,
-        `The SOURCE text below is in English. Translate it into EACH of these target languages:`,
-        targetList,
-        ``,
-        `[Rules — apply to every target language]`,
-        `- Each translation MUST be written 100% in that target language.`,
-        `- NEVER return, copy, paraphrase, or echo the English source. Returning English is a FAILURE.`,
-        `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
-        ...titleRule,
-        `- Keep the signature line "${DARI_SIGNATURE}" as-is except translate "your AI curator" naturally (keep "Dari" and the emoji).`,
-        `- Self-check before answering: if any value is still (even partly) in English, redo it fully in that target language.`,
-        ``,
-        `Return ONLY one JSON object whose keys are these EXACT codes [${codes.map((c) => `"${c}"`).join(', ')}],`,
-        `each mapping to the translated text (a plain string). No markdown.`,
-        ``,
-        `SOURCE:`,
-        body,
-    ].join('\n');
-    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
-        label: 'dari-translate',
-        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
-    });
-    if (r.error) { console.warn(`[Dari] 번역 시드 실패: ${r.error}`); return {}; }
-    const parsed = parseFirstJsonObject(r.text) || {};
     const out = {};
-    for (const c of codes) {
-        if (typeof parsed[c] === 'string' && parsed[c].trim()) out[c] = parsed[c].trim();
+    for (let attempt = 0; attempt < 3; attempt++) {
+        const still = codes.filter((c) => !out[c]);
+        if (!still.length) break;
+        const prompt = [
+            `You are a professional translator for a multilingual community app.`,
+            `The SOURCE text below is in English. Translate it into EACH of these target languages:`,
+            still.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n'),
+            ``,
+            `[Rules — apply to every target language]`,
+            `- Each translation MUST be written 100% in that target language.`,
+            `- NEVER return, copy, paraphrase, or echo the English source. Returning English is a FAILURE.`,
+            `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
+            ...titleRule,
+            `- Keep the signature line "${DARI_SIGNATURE}" as-is except translate "your AI curator" naturally (keep "Dari" and the emoji).`,
+            `- Self-check before answering: if any value is still (even partly) in English, redo it fully in that target language.`,
+            ``,
+            `Return ONLY one JSON object whose keys are these EXACT codes [${still.map((c) => `"${c}"`).join(', ')}],`,
+            `each mapping to the translated text (a plain string). No markdown.`,
+            ``,
+            `SOURCE:`,
+            body,
+        ].join('\n');
+        const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+            label: 'dari-translate',
+            genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
+        });
+        if (r.error) { console.warn(`[Dari] 번역 시드 실패(attempt${attempt + 1}): ${r.error}`); continue; }
+        Object.assign(out, harvestCodes(r.text, still)); // 정상 파스 → 키별 구제 폴백
     }
+    const miss = codes.filter((c) => !out[c]);
+    if (miss.length) console.warn(`[Dari] 번역 미수확 [${miss.join(',')}] — 재실행 시 재시도됨`);
     return out;
 }
 
@@ -266,38 +304,38 @@ function seedTranslations(batch, docPath, body, translated) {
 // "Dari"는 브랜드명(번역·음차 금지 — "다리의 선택" 사고), 원문에 없는 문구 추가 금지.
 async function translateTitleMulti(title, codes, showTitles = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
-    const targetList = codes.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n');
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}"`,
            ...(showTitles.original && showTitles.originalLang
                ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST use its official original title "${showTitles.original}".`]
                : ['  in every target language.'])]
         : [];
-    const prompt = [
-        `Translate the short review HEADLINE below into EACH of these target languages:`,
-        targetList,
-        ``,
-        `[Rules — apply to every target language]`,
-        `- If the word "Dari" appears, it is a BRAND NAME — NEVER translate or transliterate it; keep it exactly "Dari".`,
-        `- Translate the headline naturally and completely. Do NOT add any prefix, label, or words that are not in the source.`,
-        ...titleRule,
-        `- Do NOT add, append, or omit anything that is not in the source headline.`,
-        ``,
-        `Return ONLY one JSON object whose keys are these EXACT codes [${codes.map((c) => `"${c}"`).join(', ')}],`,
-        `each mapping to the translated headline (a plain string). No markdown.`,
-        ``,
-        `SOURCE HEADLINE:`,
-        title,
-    ].join('\n');
-    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
-        label: 'dari-title',
-        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
-    });
-    if (r.error) { console.warn(`[Dari] 제목 번역 실패: ${r.error}`); return {}; }
-    const parsed = parseFirstJsonObject(r.text) || {};
     const out = {};
-    for (const c of codes) {
-        if (typeof parsed[c] === 'string' && parsed[c].trim()) out[c] = parsed[c].trim();
+    for (let attempt = 0; attempt < 3; attempt++) { // 글리치 재시도 — translateBodyChunk와 동일
+        const still = codes.filter((c) => !out[c]);
+        if (!still.length) break;
+        const prompt = [
+            `Translate the short review HEADLINE below into EACH of these target languages:`,
+            still.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n'),
+            ``,
+            `[Rules — apply to every target language]`,
+            `- If the word "Dari" appears, it is a BRAND NAME — NEVER translate or transliterate it; keep it exactly "Dari".`,
+            `- Translate the headline naturally and completely. Do NOT add any prefix, label, or words that are not in the source.`,
+            ...titleRule,
+            `- Do NOT add, append, or omit anything that is not in the source headline.`,
+            ``,
+            `Return ONLY one JSON object whose keys are these EXACT codes [${still.map((c) => `"${c}"`).join(', ')}],`,
+            `each mapping to the translated headline (a plain string). No markdown.`,
+            ``,
+            `SOURCE HEADLINE:`,
+            title,
+        ].join('\n');
+        const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+            label: 'dari-title',
+            genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
+        });
+        if (r.error) { console.warn(`[Dari] 제목 번역 실패(attempt${attempt + 1}): ${r.error}`); continue; }
+        Object.assign(out, harvestCodes(r.text, still)); // 정상 파스 → 키별 구제 폴백
     }
     return out;
 }
@@ -516,4 +554,91 @@ async function reseedReviewPost(postId) {
     return { postId, seededLangs: ['en', ...Object.keys(translated)] };
 }
 
-module.exports = { ensureDariAccount, createEpisodeThread, createReviewPost, reseedReviewPost, SEED_LANGS };
+// ── 빠진 언어만 증분 시드 — SEED_LANGS에 새 언어 추가 시(예: 2026-07-22 ar) 기존 게시물 보강 ──
+// reseed(전량 재번역)와 달리 이미 시드된 언어는 건드리지 않는다 → 비용 = 빠진 언어만.
+// 대상: ① curation_threads 레지스트리의 전 스레드 ② posts에서 curator==true 전 리뷰(본문+제목).
+// 멱등 — 몇 번을 다시 돌려도 빠진 언어가 없으면 skip. 새 언어 추가 시 이 함수만 1회 실행하면 끝.
+async function seedMissingLangs({ dryRun = false } = {}) {
+    if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    const stat = { threads: 0, posts: 0, skipped: 0, errors: 0 };
+
+    // 작품당 TMDB detail 1회 캐시 — showTitles(작품명 음차/의역 방지 규칙)용
+    const detailCache = new Map();
+    const showTitlesOf = async (titleId, media = 'tv') => {
+        const key = `${media}:${titleId}`;
+        if (!detailCache.has(key)) {
+            try {
+                const detail = await tmdb(`/${media}/${titleId}`, { language: 'en-US' });
+                detailCache.set(key, {
+                    en: detail.name || detail.title || '',
+                    original: detail.original_name || detail.original_title || null,
+                    originalLang: detail.original_language || null,
+                });
+            } catch { detailCache.set(key, null); }
+        }
+        return detailCache.get(key);
+    };
+
+    // docPath의 translations 서브컬렉션에서 body가 비어 있는 SEED_LANGS 목록(suffix='__title'은 제목 시드)
+    const missingOf = async (docPath, suffix = '') => {
+        const snaps = await kcultureDb.getAll(...SEED_LANGS.map((c) => kcultureDb.doc(`${docPath}/translations/${c}${suffix}`)));
+        return SEED_LANGS.filter((c, i) => !(snaps[i].exists && (snaps[i].data()?.body || '').trim()));
+    };
+    const writeSeeds = (batch, docPath, suffix, translated) => {
+        for (const [code, text] of Object.entries(translated)) {
+            batch.set(kcultureDb.doc(`${docPath}/translations/${code}${suffix}`), { body: text, translatedAt: new Date() }, { merge: true });
+        }
+    };
+
+    // ① 스레드
+    const reg = await kcultureDb.collection('curation_threads').get();
+    for (const d of reg.docs) {
+        const { titleId, tid, media } = d.data();
+        if (!titleId || !tid) continue;
+        const docPath = `titles/${titleId}/discussion/${tid}`;
+        try {
+            const snap = await kcultureDb.doc(docPath).get();
+            const body = snap.exists ? snap.data()?.body : null;
+            if (!body) continue;
+            const missing = await missingOf(docPath);
+            if (!missing.length) { stat.skipped++; continue; }
+            console.log(`[Dari] 스레드 ${d.id}: 누락 [${missing.join(',')}]${dryRun ? ' (dry-run)' : ''}`);
+            if (dryRun) { stat.threads++; continue; }
+            const st = await showTitlesOf(titleId, media || 'tv');
+            const translated = await translateBodyMulti(body, missing,
+                st ? { en: snap.data().titleName || st.en, original: st.original, originalLang: st.originalLang } : null);
+            const b = kcultureDb.batch();
+            writeSeeds(b, docPath, '', translated);
+            await b.commit();
+            console.log(`[Dari]   → 시드 ${Object.keys(translated).length}/${missing.length}`);
+            stat.threads++;
+        } catch (e) { stat.errors++; console.warn(`[Dari] 스레드 ${d.id} 실패(계속): ${e.message}`); }
+    }
+
+    // ② 큐레이터 리뷰 글 (본문 + 제목)
+    const posts = await kcultureDb.collection('posts').where('curator', '==', true).get();
+    for (const d of posts.docs) {
+        const data = d.data();
+        const docPath = `posts/${d.id}`;
+        try {
+            if (!data.body) continue;
+            const missingBody = await missingOf(docPath);
+            const missingTitle = data.title ? await missingOf(docPath, '__title') : [];
+            if (!missingBody.length && !missingTitle.length) { stat.skipped++; continue; }
+            console.log(`[Dari] 리뷰 ${d.id}: 본문 누락 [${missingBody.join(',')}] 제목 누락 [${missingTitle.join(',')}]${dryRun ? ' (dry-run)' : ''}`);
+            if (dryRun) { stat.posts++; continue; }
+            const st = data.titleId ? await showTitlesOf(data.titleId, data.media || 'tv') : null;
+            const showTitles = st ? { en: data.titleName || st.en, original: st.original, originalLang: st.originalLang } : null;
+            const b = kcultureDb.batch();
+            if (missingBody.length) writeSeeds(b, docPath, '', await translateBodyMulti(data.body, missingBody, showTitles));
+            if (missingTitle.length) writeSeeds(b, docPath, '__title', await translateTitleMulti(data.title, missingTitle, showTitles));
+            await b.commit();
+            stat.posts++;
+        } catch (e) { stat.errors++; console.warn(`[Dari] 리뷰 ${d.id} 실패(계속): ${e.message}`); }
+    }
+
+    console.log(`[Dari] 증분 시드 완료 — 스레드 ${stat.threads} · 리뷰 ${stat.posts} · 완비 skip ${stat.skipped} · 오류 ${stat.errors}`);
+    return stat;
+}
+
+module.exports = { ensureDariAccount, createEpisodeThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };
