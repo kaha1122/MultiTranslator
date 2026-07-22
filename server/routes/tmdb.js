@@ -15,6 +15,7 @@ const TMDB_TOKEN = process.env.TMDB_ACCESS_TOKEN || '';    // v4 bearer (optiona
 const LANG_MAP = {
     ko: 'ko-KR', en: 'en-US', es: 'es-ES', ru: 'ru-RU', id: 'id-ID',
     'pt-BR': 'pt-BR', 'zh-CN': 'zh-CN', ja: 'ja-JP', vi: 'vi-VN', fr: 'fr-FR', de: 'de-DE',
+    ar: 'ar-SA',
 };
 const toTmdbLang = (l) => LANG_MAP[l] || l || 'en-US';
 

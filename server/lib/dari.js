@@ -25,7 +25,7 @@ const DARI_SIGNATURE = '— Dari, your AI curator 🌉';
 // ISO 코드 → 정식 언어명(Gemini가 코드보다 명칭에 정확). 지역코드는 베이스로 폴백(tmdbBackfill과 동일).
 const nameOf = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
 
-// 번역 시드 대상 = 메타 사전번역 로스터(en 제외 10개: ko,ja,zh-CN,vi,fr,de,es,ru,pt-BR,id).
+// 번역 시드 대상 = 메타 사전번역 로스터(en 제외 11개: ko,ja,zh-CN,vi,fr,de,es,ru,pt-BR,id,ar).
 const SEED_LANGS = TARGETS.map((t) => t.code);
 
 // flash-lite가 JSON 뒤에 중복 블록을 붙이는 글리치 대응: 첫 번째 완결 {…} 객체만 추출(tmdbBackfill과 동일).

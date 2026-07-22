@@ -38,7 +38,7 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.TMDB_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// 번역 대상 10개 (11개 UI 언어 중 영어=소스/폴백만 제외). 저장 키는 클라 lang 코드와 동일.
+// 번역 대상 11개 (12개 UI 언어 중 영어=소스/폴백만 제외). 저장 키는 클라 lang 코드와 동일.
 // ⚠ 언어 추가 시: 여기에 한 줄 추가만 하면 됨 — 스킵 게이트가 metaLangs 기준이라 기존 완료
 //   문서도 자동 재처리되고, 저장 번역 재사용으로 새 언어만 Gemini/TMDB로 채운다(2026-07-16 id 추가).
 // ko(한국어): 원어라 대개 TMDB에 존재→무료 추출. 없는 작품만 영어→한국어 번역해 빈칸 메움
@@ -54,6 +54,7 @@ const TARGETS = [
     { code: 'ru', iso: 'ru' },
     { code: 'pt-BR', iso: 'pt', region: 'BR' },
     { code: 'id', iso: 'id' }, // 2026-07-16 추가 — 광고 유입 75% 인도네시아, 클라 UI locale 승격과 동시
+    { code: 'ar', iso: 'ar' }, // 2026-07-22 추가 — 12번째 UI 언어(MENA), 클라 RTL 지원과 동시 승격
 ];
 
 async function tmdb(path, params = {}) {

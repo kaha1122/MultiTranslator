@@ -119,5 +119,16 @@
     "discussion_reply": "{name} respondeu ao seu comentário.",
     "dreply_like": "{name} curtiu sua resposta.",
     "review_like": "{name} curtiu sua avaliação."
+  },
+  "ar": {
+    "post_like": "أُعجب {name} بمراجعتك.",
+    "post_comment": "بدأ {name} نقاشًا على مراجعتك.",
+    "comment_like": "أُعجب {name} بنقاشك.",
+    "comment_reply": "ردّ {name} على نقاشك.",
+    "reply_like": "أُعجب {name} بردّك.",
+    "discussion_like": "أُعجب {name} بتعليقك.",
+    "discussion_reply": "ردّ {name} على تعليقك.",
+    "dreply_like": "أُعجب {name} بردّك.",
+    "review_like": "أُعجب {name} بتقييمك."
   }
 }
