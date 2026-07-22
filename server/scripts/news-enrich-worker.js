@@ -9,13 +9,13 @@
 //
 // 실행: NEWS_CRON_SECRET=<CRON_SECRET> node server/scripts/news-enrich-worker.js
 // env:  NEWS_API_BASE (기본 https://multitranslator.onrender.com)
-//       NEWS_LANGS    (기본 전체 10개, 콤마 구분)
+//       NEWS_LANGS    (기본 전체 12개, 콤마 구분)
 //       NEWS_DECODE_PER_LANG (기본 10)
 const crypto = require('crypto');
 
 const API = process.env.NEWS_API_BASE || 'https://multitranslator.onrender.com';
 const SECRET = process.env.NEWS_CRON_SECRET || process.env.CRON_SECRET;
-const LANGS = (process.env.NEWS_LANGS || 'ko,en,ja,zh-CN,vi,fr,de,es,ru,pt-BR').split(',');
+const LANGS = (process.env.NEWS_LANGS || 'ko,en,ja,zh-CN,vi,fr,de,es,ru,pt-BR,id,ar').split(',');
 const DECODE_PER_LANG = parseInt(process.env.NEWS_DECODE_PER_LANG || '10', 10);
 // 런당 전역 디코드 예산 — GH 러너 실측: ~37건(≈74요청)에서 429. 30건이면 매 런 무-429로
 // 종료하고, 언어 순서 회전과 합쳐 몇 런 안에 전 언어가 채워짐(2h 주기 × 30 = 360/일 ≫ 신규 기사량).

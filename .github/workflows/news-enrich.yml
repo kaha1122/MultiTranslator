@@ -26,12 +26,14 @@ jobs:
     timeout-minutes: 15
     strategy:
       fail-fast: false # 한 그룹 429/실패가 다른 그룹을 중단시키지 않음
+      # ⚠ 새 UI 언어 추가 시 여기 matrix에도 분배할 것(2026-07-22 id·ar 누락 사고 —
+      #   수집(Render LANG_FEEDS)은 자동 포함되지만 이 목록은 수동이라 이미지가 영영 안 붙음).
       matrix:
         include:
           - name: east   # 비영어 아시아권 — 전부 구글 경유라 디코드 수요 최대
-            langs: 'ko,ja,zh-CN'
+            langs: 'ko,ja,zh-CN,id'
           - name: west
-            langs: 'en,vi,fr,de'
+            langs: 'en,vi,fr,de,ar'
           - name: latam
             langs: 'es,ru,pt-BR'
     # 30분 주기 + 15분 타임아웃 — 지연 시 같은 그룹이 겹치지 않게 취소
