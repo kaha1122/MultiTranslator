@@ -71,6 +71,14 @@ async function decodeGoogleUrl(gUrl, circuit) {
     } catch (e) { console.warn('  decode: err', e.message); return null; }
 }
 
+// og:image 속성값의 HTML 엔티티 복원 — &amp;·&#x3D; 등이 남으면 쿼리스트링이 깨져
+// CDN이 400/404를 반환(2026-07-24 실측: naver scs-phinf `type&#x3D;w800`, elcomercio.pe
+// resizer `&amp;width=`). 저장 전 반드시 통과시킬 것.
+const decodeEntities = (s) => String(s || '')
+    .replace(/&#x([0-9a-f]+);/gi, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
+    .replace(/&amp;/g, '&');
+
 async function scrapeOgImage(url) {
     try {
         const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) });
@@ -78,7 +86,7 @@ async function scrapeOgImage(url) {
         const html = (await res.text()).slice(0, 200000);
         const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
             || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
-        return og && og[1].startsWith('http') ? og[1] : null;
+        return og && og[1].startsWith('http') ? decodeEntities(og[1]) : null;
     } catch { return null; }
 }
 
@@ -161,7 +169,8 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u ||
         const lang = ordered[li];
         let items;
         try {
-            const r = await fetch(`${API}/api/news?lang=${encodeURIComponent(lang)}&limit=40`, { signal: AbortSignal.timeout(30000) });
+            // all=1 — GET의 무이미지 제외 필터 우회(워커는 보강 대상을 전부 봐야 함)
+            const r = await fetch(`${API}/api/news?lang=${encodeURIComponent(lang)}&limit=40&all=1`, { signal: AbortSignal.timeout(30000) });
             items = (await r.json()).items || [];
         } catch (e) { console.warn(`[${lang}] api read fail:`, e.message); continue; }
 
@@ -207,8 +216,8 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u ||
                 await sleep(150);
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
-            } else if (it.image && !isLogoImage(it.image)) {
-                continue; // 이미 완성된 아이템
+            } else if (it.image && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image)) {
+                continue; // 이미 완성된 아이템 (엔티티 깨진 URL 저장분은 재스크레이프 대상)
             }
             let img = await scrapeOgImage(url);
             if (!img || isLogoImage(img)) {
