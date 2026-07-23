@@ -3,7 +3,8 @@
 //       서버는 디코드를 포기(decodeBudget 0). 이 워커가 다른 IP에서:
 //   ① GET /api/news?lang → 아직 구글 URL이거나 이미지 없는 아이템 수집
 //   ② 구글 원문 URL 디코드(2단계: 기사 페이지 sg/ts → batchexecute) — 직렬+간격+서킷
-//   ③ 원문 페이지 og:image 스크레이프
+//   ③ 원문 페이지 og:image 스크레이프 — 실패 시(퍼블리셔 WAF 403 등) 구글 뉴스
+//      '웹 검색' 페이지의 기사별 썸네일(/api/attachments → 302 → 공개 gstatic)로 폴백
 //   ④ POST /api/news/enrich 로 서버 캐시에 패치(x-cron-secret 인증)
 // 의존성 0 (Node 18+ 전역 fetch) — GH Actions에서 checkout+node 만으로 실행.
 //
@@ -81,6 +82,52 @@ async function scrapeOgImage(url) {
     } catch { return null; }
 }
 
+// ── 구글 뉴스 '웹 검색' 페이지 → 기사ID→썸네일 벌크 맵 (2026-07-24) ─────────────
+// 원문이 봇월(WP Engine 등 TLS 지문 403)이라 og:image를 못 긁는 소스가 존재
+// (실측: fr 피드 67%를 차지한 altselection.ouest-france.fr 전면 403). 같은 검색
+// 쿼리의 웹 페이지(rss/search→search)는 서버렌더 HTML에 기사별 썸네일이 실려 있고,
+//   · read/<id>의 id = RSS articles/<id>의 id (동일 문자열 — ko 캐시 40건 중 37건 조인 실측)
+//   · /api/attachments/<att>-w400-h224…는 무인증 302 → 공개 gstatic 이미지(핫링크 가능)
+// 라 스크레이프 불가 기사도 커버된다. 언어당 최대 1 fetch — 디코드와 동일 예산 계상.
+// ⚠ 쿼리는 서버 lib/newsFetch.js LANG_FEEDS와 수동 동기(피드 쿼리 변경 시 여기도).
+const SEARCH_PAGES = {
+    ko: 'https://news.google.com/search?q=%ED%95%9C%EA%B5%AD+%EB%93%9C%EB%9D%BC%EB%A7%88&hl=ko&gl=KR&ceid=KR:ko',
+    en: 'https://news.google.com/search?q=kdrama&hl=en-US&gl=US&ceid=US:en',
+    ja: 'https://news.google.com/search?q=%E9%9F%93%E5%9B%BD%E3%83%89%E3%83%A9%E3%83%9E&hl=ja&gl=JP&ceid=JP:ja',
+    'zh-CN': 'https://news.google.com/search?q=%E9%9F%A9%E5%89%A7&hl=zh-CN&gl=CN&ceid=CN:zh-Hans',
+    vi: 'https://news.google.com/search?q=phim+H%C3%A0n+Qu%E1%BB%91c&hl=vi&gl=VN&ceid=VN:vi',
+    fr: 'https://news.google.com/search?q=drama+cor%C3%A9en&hl=fr&gl=FR&ceid=FR:fr',
+    de: 'https://news.google.com/search?q=k-drama&hl=de&gl=DE&ceid=DE:de',
+    es: 'https://news.google.com/search?q=dorama+coreano&hl=es-419&gl=MX&ceid=MX:es-419',
+    ru: 'https://news.google.com/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0&hl=ru&gl=RU&ceid=RU:ru',
+    'pt-BR': 'https://news.google.com/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
+    id: 'https://news.google.com/search?q=drakor&hl=id&gl=ID&ceid=ID:id',
+    ar: 'https://news.google.com/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84+%D9%83%D9%88%D8%B1%D9%8A&hl=ar&gl=SA&ceid=SA:ar',
+};
+async function fetchThumbMap(lang, circuit) {
+    const pageUrl = SEARCH_PAGES[lang];
+    if (!pageUrl) return null;
+    try {
+        const res = await fetch(pageUrl, { headers: HEADERS, signal: AbortSignal.timeout(15000) });
+        if (!res.ok) {
+            if (res.status === 429) circuit.blocked = true;
+            console.warn(`  thumbMap: HTTP ${res.status}`);
+            return null;
+        }
+        const html = await res.text();
+        // 기사 블록당 read/<id> 뒤 ~525자 지점에 썸네일이 옴(블록 간격 ~24KB라 1500자 창이면 안전)
+        const imgs = [...html.matchAll(/\/api\/attachments\/([A-Za-z0-9_=-]+)-w400-h224/g)];
+        const map = new Map();
+        for (const m of html.matchAll(/read\/([A-Za-z0-9_-]{40,})/g)) {
+            if (map.has(m[1])) continue;
+            const near = imgs.find((im) => im.index > m.index && im.index - m.index < 1500);
+            if (near) map.set(m[1], `https://news.google.com/api/attachments/${near[1]}-w400-h224-p-df-rw`);
+        }
+        console.log(`  thumbMap: ${map.size} thumbs`);
+        return map;
+    } catch (e) { console.warn('  thumbMap: err', e.message); return null; }
+}
+
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
     const circuit = { blocked: false }; // 전 언어 공유 — 429 시 디코드 중단(스크레이프는 계속)
@@ -108,6 +155,17 @@ async function scrapeOgImage(url) {
         const langCap = Math.min(DECODE_PER_LANG,
             Math.ceil((GLOBAL_DECODE_BUDGET - globalDecodes) / (ordered.length - li)));
 
+        // 썸네일 맵은 필요해진 순간 언어당 1회만 fetch(lazy) — 전 아이템이 이미 완성이면 0회
+        let thumbMap;
+        const ensureThumbMap = async () => {
+            if (thumbMap !== undefined) return thumbMap;
+            if (circuit.blocked || globalDecodes >= GLOBAL_DECODE_BUDGET) return (thumbMap = null);
+            globalDecodes += 1; // news.google.com 요청 1회 — 디코드와 동일 예산 계상
+            thumbMap = await fetchThumbMap(lang, circuit);
+            await sleep(GAP_MS);
+            return thumbMap;
+        };
+
         const patches = [];
         let decodes = 0;
         for (const it of items) {
@@ -128,7 +186,12 @@ async function scrapeOgImage(url) {
             } else if (it.image) {
                 continue; // 이미 완성된 아이템
             }
-            const img = await scrapeOgImage(url);
+            let img = await scrapeOgImage(url);
+            if (!img) {
+                // 원문 스크레이프 실패(봇월 403·og:image 부재) → 구글 검색페이지 썸네일 폴백
+                const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
+                if (gid) img = (await ensureThumbMap())?.get(gid) || null;
+            }
             if (img) patch = { ...(patch || { srcUrl: key }), image: img };
             if (patch) patches.push(patch);
         }
