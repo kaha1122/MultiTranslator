@@ -128,6 +128,23 @@ async function fetchThumbMap(lang, circuit) {
     } catch (e) { console.warn('  thumbMap: err', e.message); return null; }
 }
 
+// attachment URL → 302 Location(공개 gstatic 직링크) 해석. 클라 <img>가 news.google.com을
+// 직접 치면 쿠키/동의/트래커 차단 등 브라우저 변수로 로드가 깨질 수 있어(2026-07-24 실측:
+// 데이터는 정상인데 앱에서 아이콘 폴백으로 강등) 워커가 미리 풀어 최종 이미지 URL만 저장.
+const isAttachUrl = (u) => String(u || '').startsWith('https://news.google.com/api/attachments/');
+async function resolveThumb(attUrl, circuit) {
+    try {
+        const res = await fetch(attUrl, { headers: HEADERS, redirect: 'manual', signal: AbortSignal.timeout(8000) });
+        if (res.status === 429) circuit.blocked = true;
+        const loc = res.headers.get('location');
+        return loc && loc.startsWith('http') ? loc : null;
+    } catch { return null; }
+}
+
+// og:image가 매체 로고/프로필 파일인 소스(예: edaily profile_edaily_512.png)는 기사 사진이
+// 아니므로 미스로 취급 → 구글 썸네일 폴백이 실사진을 채우게 한다.
+const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u || ''));
+
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
     const circuit = { blocked: false }; // 전 언어 공유 — 429 시 디코드 중단(스크레이프는 계속)
@@ -183,16 +200,29 @@ async function fetchThumbMap(lang, circuit) {
                 url = real;
                 patch = { srcUrl: key, url: real, id: sha1(real) };
                 try { patch.icon = `https://www.google.com/s2/favicons?domain=${new URL(real).hostname}&sz=64`; } catch { /* 유지 */ }
-            } else if (it.image) {
+            } else if (isAttachUrl(it.image)) {
+                // 과거 런이 news.google.com attachment URL을 저장한 아이템 — gstatic 직링크로
+                // 1회성 마이그레이션(브라우저에서 attachment 핫링크가 깨지는 문제).
+                const direct = await resolveThumb(it.image, circuit);
+                await sleep(150);
+                if (direct) patches.push({ srcUrl: key, image: direct });
+                continue;
+            } else if (it.image && !isLogoImage(it.image)) {
                 continue; // 이미 완성된 아이템
             }
             let img = await scrapeOgImage(url);
-            if (!img) {
-                // 원문 스크레이프 실패(봇월 403·og:image 부재) → 구글 검색페이지 썸네일 폴백
+            if (!img || isLogoImage(img)) {
+                // 원문 스크레이프 실패(봇월 403·og:image 부재) 또는 로고 파일 → 구글 썸네일 폴백
+                // (실패 시 로고라도 유지 — 없는 것보단 나음)
                 const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
-                if (gid) img = (await ensureThumbMap())?.get(gid) || null;
+                const att = gid && (await ensureThumbMap())?.get(gid);
+                if (att) {
+                    const direct = await resolveThumb(att, circuit);
+                    await sleep(150);
+                    if (direct) img = direct;
+                }
             }
-            if (img) patch = { ...(patch || { srcUrl: key }), image: img };
+            if (img && img !== it.image) patch = { ...(patch || { srcUrl: key }), image: img };
             if (patch) patches.push(patch);
         }
 
