@@ -231,7 +231,7 @@ const NOTIF_KINDS = new Set([
 ]);
 router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify', { perMinute: 60, perHour: 600 }), async (req, res) => {
     const actorUid = req.uid;
-    const { recipientUid, kind, postId, titleId, media, preview, actorName, actorPhoto } = req.body || {};
+    const { recipientUid, kind, postId, titleId, media, preview, actorName, actorPhoto, anchor } = req.body || {};
     if (!recipientUid || typeof recipientUid !== 'string' || recipientUid.length > 128) return res.status(400).json({ error: 'bad recipient' });
     if (!NOTIF_KINDS.has(kind)) return res.status(400).json({ error: 'bad kind' });
     if (recipientUid === actorUid) return res.json({ ok: true, skipped: 'self' }); // 자기 자신에겐 알림 안 함
@@ -246,6 +246,8 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
             postId: postId ? String(postId).slice(0, 64) : null,       // 이동 대상: 리뷰(게시글) 상세
             titleId: (titleId !== undefined && titleId !== null && titleId !== '') ? Number(titleId) : null, // 이동 대상: 작품 상세
             media: media === 'movie' ? 'movie' : (media === 'tv' ? 'tv' : null),
+            // 이동 앵커(r:{uid}|d:{cid}[:{rid}]|c:{cid}[:{rid}]) — 알림 탭 시 해당 댓글/평가로 스크롤(클라 notifRoute·푸시 notifUrl 공용).
+            anchor: (typeof anchor === 'string' && /^[rdc]:[A-Za-z0-9_-]{1,128}(:[A-Za-z0-9_-]{1,128})?$/.test(anchor)) ? anchor : null,
             preview: String(preview || '').slice(0, 140),              // 카드 미리보기(원문 스니펫)
             read: false,
             createdAt: new Date(),

@@ -35,6 +35,7 @@ app.use(require('./routes/cronTmdb')); // [신규] K-DramaLingo 신작 메타 �
 app.use(require('./routes/community')); // [신규] K-DramaLingo 커뮤니티 UGC 번역 (requireAuthAny)
 app.use(require('./routes/communityPoints')); // [신규] K-DramaAnyLang 포인트 일회성 구매 PayPal (requireAuthAny)
 app.use(require('./routes/news')); // [신규] K-DramaAnyLang K-뉴스 (public read + requireCronAuth refresh)
+app.use(require('./routes/curation')); // [신규] K-DramaAnyLang Dari AI 큐레이터 게시 (x-curation-secret, fail-closed)
 
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 app.get('/ping', (req, res) => {

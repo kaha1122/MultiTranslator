@@ -69,8 +69,15 @@ router.get('/api/news', rateLimit('news', { perMinute: 30, perHour: 300 }), asyn
     const lang = LANG_FEEDS[req.query.lang] ? req.query.lang : 'en';
     const limit = Math.min(parseInt(req.query.limit, 10) || 40, 40);
     const { items, ts } = await getLang(lang);
+    // 이미지 없는 기사는 표시에서 제외(2026-07-24 — 시각 일관성. MSN처럼 원문·구글 모두
+    // 이미지가 없는 소수만 해당, 신규 기사는 워커가 수 분 내 채움). 페일세이프: 보강이 대량
+    // 실패한 상태(이미지 10건 미만)면 원본 그대로 — 빈 피드 방지.
+    // ⚠ all=1(워커 전용)은 필터 없이 전체 반환 — 워커가 무이미지 아이템을 계속 봐야 보강됨.
+    const all = req.query.all === '1';
+    const withImg = items.filter((i) => i.image);
+    const list = (all || withImg.length < 10) ? items : withImg;
     res.set('Cache-Control', 'public, max-age=600');
-    res.json({ items: items.slice(0, limit), fetchedAt: ts });
+    res.json({ items: list.slice(0, limit), fetchedAt: ts });
 });
 
 // ── 갱신 직후 GH Actions enrich 워크플로우 즉시 기동 ──────────────────────────
@@ -150,6 +157,7 @@ router.post('/api/news/enrich', requireCronAuth, async (req, res) => {
         }
         if (p.icon && String(p.icon).startsWith('http')) it.icon = p.icon;
         if (p.image && String(p.image).startsWith('http')) it.image = p.image;
+        if (p.imgV) it.imgV = 1; // 워커의 실기기 로드 검증 통과 마커(재검증 생략용)
         applied += 1;
     }
     if (applied > 0) {

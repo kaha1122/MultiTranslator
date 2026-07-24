@@ -22,10 +22,12 @@ function resolveLang(raw) {
 }
 
 // 클라 notifRoute(src/lib/notify.js)와 동일 매핑 — HashRouter 경로.
+// anchor가 있으면 쿼리로 부착 — 푸시 클릭 시에도 해당 댓글/평가로 스크롤(웹 SW·네이티브 공통).
 const POST_KINDS = new Set(['post_like', 'post_comment', 'comment_like', 'comment_reply', 'reply_like']);
-function notifUrl({ kind, postId, titleId, media }) {
-    if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}`;
-    if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}`;
+function notifUrl({ kind, postId, titleId, media, anchor }) {
+    const q = anchor ? `?anchor=${anchor}` : '';
+    if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}${q}`;
+    if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}${q}`;
     return '/#/notifications';
 }
 
@@ -39,6 +41,9 @@ async function sendPushForNotif(recipientUid, notif) {
 
         const url = notifUrl(notif);
         const name = notif.actorName || 'User';
+        // 작성자 프로필 사진 — 웹은 알림 icon(push-sw.js), Android는 imageUrl(접힘 시 우측 썸네일).
+        // https만 허용(notify 라우트가 클라 입력을 그대로 저장하므로 여기서 한 번 더 가드).
+        const photo = (typeof notif.actorPhoto === 'string' && notif.actorPhoto.startsWith('https://')) ? notif.actorPhoto : null;
         const messages = [];
         const tokenDocs = [];
         for (const d of snap.docs) {
@@ -56,14 +61,17 @@ async function sendPushForNotif(recipientUid, notif) {
                     token: d.id,
                     data: { kind: notif.kind, url },
                     notification: { title, body },
-                    android: { ttl: 86400 * 1000, priority: 'normal' }, // 하루 지난 알림은 폐기(ms)
+                    android: {
+                        ttl: 86400 * 1000, priority: 'normal', // 하루 지난 알림은 폐기(ms)
+                        ...(photo ? { notification: { imageUrl: photo } } : {}), // 접힘 시 우측 썸네일(BigPicture)
+                    },
                 });
             } else {
                 messages.push({
                     token: d.id,
                     data: { kind: notif.kind, url },
                     webpush: {
-                        notification: { title, body },
+                        notification: { title, body, ...(photo ? { icon: photo } : {}) }, // icon = 작성자 프로필(push-sw.js가 소비)
                         headers: { Urgency: 'normal', TTL: '86400' }, // 하루 지난 알림은 폐기
                     },
                 });
