@@ -236,12 +236,16 @@ async function imageLoadable(url) {
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
             } else if (it.image && (it.imgV || isGoogleCdn(it.image))
-                && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image)) {
-                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템
+                && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
+                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http:// 저장분은 재처리)
             }
-            // 여기 도달: 이미지 없음 / 미검증 저장분 / 로고·엔티티 저장분 / 방금 디코드된 신규
+            // 여기 도달: 이미지 없음 / 미검증 저장분 / 로고·엔티티·http 저장분 / 방금 디코드된 신규
             const cleanStored = it.image && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image);
             let img = cleanStored ? it.image : await scrapeOgImage(url);
+            // https 앱에서 http:// 이미지는 mixed content로 브라우저가 무조건 차단(실측: sinaimg —
+            // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
+            // 승격이 안 먹는 CDN이면 검증 실패 → 구글 썸네일 교체.
+            if (img && img.startsWith('http://')) img = `https://${img.slice(7)}`;
             if (img && !isGoogleCdn(img) && !(await imageLoadable(img))) {
                 console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
                 img = null; // 실기기에서 깨지는 URL — 구글 썸네일 교체 대상
