@@ -157,6 +157,7 @@ router.post('/api/news/enrich', requireCronAuth, async (req, res) => {
         }
         if (p.icon && String(p.icon).startsWith('http')) it.icon = p.icon;
         if (p.image && String(p.image).startsWith('http')) it.image = p.image;
+        if (p.imgV) it.imgV = 1; // 워커의 실기기 로드 검증 통과 마커(재검증 생략용)
         applied += 1;
     }
     if (applied > 0) {

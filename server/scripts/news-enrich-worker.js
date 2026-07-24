@@ -153,6 +153,25 @@ async function resolveThumb(attUrl, circuit) {
 // 아니므로 미스로 취급 → 구글 썸네일 폴백이 실사진을 채우게 한다.
 const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u || ''));
 
+// ── 저장 전 이미지 실기기 검증 (2026-07-24) ─────────────────────────────────────
+// 퍼블리셔 CDN 핫링크 정책은 제각각이라 서버(curl류 UA)에서 200이어도 실제 앱 <img>
+// (브라우저 UA + no-referrer)에선 403이 나는 소스가 존재(실측: kinoafisha.info — 브라우저
+// UA + 무referer 403, curl UA 200). 앱과 동일 조건으로 GET해 통과한 것만 저장하고
+// 실패분은 구글 썸네일(gstatic — 핫링크 변수 없음)로 교체. 통과 아이템은 imgV 마커로
+// 재검증 생략(서버 enrich 라우트가 imgV를 캐시에 병합).
+const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
+const isGoogleCdn = (u) => /^https:\/\/(encrypted-tbn\d\.gstatic\.com|lh\d\.googleusercontent\.com)\//.test(String(u || ''));
+async function imageLoadable(url) {
+    try {
+        const res = await fetch(url, {
+            headers: { 'User-Agent': BROWSER_UA, Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8' },
+            signal: AbortSignal.timeout(6000),
+        });
+        try { await res.body?.cancel(); } catch { /* 본문 불필요 — 상태·타입만 */ }
+        return res.ok && /^image\//i.test(res.headers.get('content-type') || '');
+    } catch { return false; }
+}
+
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
     const circuit = { blocked: false }; // 전 언어 공유 — 429 시 디코드 중단(스크레이프는 계속)
@@ -216,13 +235,20 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u ||
                 await sleep(150);
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
-            } else if (it.image && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image)) {
-                continue; // 이미 완성된 아이템 (엔티티 깨진 URL 저장분은 재스크레이프 대상)
+            } else if (it.image && (it.imgV || isGoogleCdn(it.image))
+                && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image)) {
+                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템
             }
-            let img = await scrapeOgImage(url);
+            // 여기 도달: 이미지 없음 / 미검증 저장분 / 로고·엔티티 저장분 / 방금 디코드된 신규
+            const cleanStored = it.image && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image);
+            let img = cleanStored ? it.image : await scrapeOgImage(url);
+            if (img && !isGoogleCdn(img) && !(await imageLoadable(img))) {
+                console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
+                img = null; // 실기기에서 깨지는 URL — 구글 썸네일 교체 대상
+            }
             if (!img || isLogoImage(img)) {
-                // 원문 스크레이프 실패(봇월 403·og:image 부재) 또는 로고 파일 → 구글 썸네일 폴백
-                // (실패 시 로고라도 유지 — 없는 것보단 나음)
+                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고 파일
+                // → 구글 썸네일 폴백 (그마저 없으면 로고라도 유지 — 없는 것보단 나음)
                 const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
                 const att = gid && (await ensureThumbMap())?.get(gid);
                 if (att) {
@@ -231,7 +257,10 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u ||
                     if (direct) img = direct;
                 }
             }
-            if (img && img !== it.image) patch = { ...(patch || { srcUrl: key }), image: img };
+            if (img) {
+                patch = { ...(patch || { srcUrl: key }), imgV: 1 };
+                if (img !== it.image) patch.image = img;
+            }
             if (patch) patches.push(patch);
         }
 
