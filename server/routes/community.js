@@ -42,8 +42,8 @@ router.post('/api/community/client-error', rateLimit('kc-client-error', { perMin
 });
 
 // 번역 캐시 경로 검증 — admin SDK는 보안규칙을 우회하므로 translations 하위 doc만 read/write 허용(임의경로 차단).
-// 허용: (titles|posts)/…/translations/{targetLang}, 짝수 세그먼트(문서 경로), 세그먼트당 안전 문자만.
-const CACHE_ROOTS = new Set(['titles', 'posts']);
+// 허용: (titles|posts|lounge_threads)/…/translations/{targetLang}, 짝수 세그먼트(문서 경로), 세그먼트당 안전 문자만.
+const CACHE_ROOTS = new Set(['titles', 'posts', 'lounge_threads']); // lounge_threads: Dari's Lounge 메시지 ✨AI 번역(2026-07-24)
 function validCachePath(p, targetLang) {
     if (typeof p !== 'string' || p.length > 200) return false;
     const seg = p.split('/');
