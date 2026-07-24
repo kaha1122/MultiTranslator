@@ -98,6 +98,7 @@ async function tmdb(path, params = {}) {
 // kculture Auth에 Dari 계정이 없으면 생성(랜덤 강력 비밀번호 — 로그인 용도 아님, Auth uid 확보용),
 // users/{uid} 프로필 문서를 생성/보정. 반환: uid. 프로세스 내 1회만 실제 수행(memoize).
 let dariUidPromise = null;
+let dariPhotoURL = null; // users/{uid}.photoURL — 게시물 denormalize용(scripts/dari-set-avatar.js가 설정)
 function ensureDariAccount() {
     if (dariUidPromise) return dariUidPromise;
     dariUidPromise = (async () => {
@@ -122,6 +123,7 @@ function ensureDariAccount() {
         const ref = kcultureDb.doc(`users/${user.uid}`);
         const snap = await ref.get();
         const existing = snap.exists ? snap.data() : {};
+        dariPhotoURL = existing.photoURL || null;
         await ref.set({
             displayName: DARI_NAME,
             curator: true,
@@ -457,7 +459,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
     const batch = kcultureDb.batch();
     // 스레드 문서 — 클라 discussion 코멘트 필드 전부(createComment 참조) + Dari 확장 필드
     batch.set(threadRef, {
-        authorUid: uid, authorName: DARI_NAME, authorPhoto: null,
+        authorUid: uid, authorName: DARI_NAME, authorPhoto: dariPhotoURL,
         lang: 'en', body, episode: maxEp, spoiler: false, media: 'tv', likeCount: 0,
         images: [],
         titleName: showName, posterPath: detail.poster_path || null,
@@ -510,7 +512,7 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
     const postRef = kcultureDb.collection('posts').doc(); // 고유 id 자동
     const batch = kcultureDb.batch();
     batch.set(postRef, {
-        authorUid: uid, authorName: DARI_NAME, authorPhoto: null,
+        authorUid: uid, authorName: DARI_NAME, authorPhoto: dariPhotoURL,
         lang: 'en', title, body,
         titleId: id, titleName, media, posterPath: detail.poster_path || null,
         authorRating: null,
