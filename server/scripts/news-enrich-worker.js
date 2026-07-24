@@ -211,6 +211,14 @@ async function imageLoadable(url) {
             return thumbMap;
         };
 
+        // 사이트 기본 OGP 이미지 감지(2026-07-24): 서로 다른 기사 2개 이상이 같은 이미지를
+        // 쓰면 기사 사진이 아니라 사이트 공용 이미지(실측: ja KOARI shop500-28.png — 파일명
+        // 휴리스틱·로드 검증 모두 통과). 파일명 무관·내용 무관의 범용 판별이라 신규 매체도 자동.
+        const imgFreq = {};
+        items.forEach((o) => { if (o.image) imgFreq[o.image] = (imgFreq[o.image] || 0) + 1; });
+        // isOwn: u가 해당 아이템 자신의 저장 이미지면 자기 1회를 제외하고 판별
+        const isDupImage = (u, isOwn) => (imgFreq[u] || 0) >= (isOwn ? 2 : 1);
+
         const patches = [];
         let decodes = 0;
         for (const it of items) {
@@ -236,11 +244,12 @@ async function imageLoadable(url) {
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
             } else if (it.image && (it.imgV || isGoogleCdn(it.image))
-                && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
-                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http:// 저장분은 재처리)
+                && !isLogoImage(it.image) && !isDupImage(it.image, true)
+                && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
+                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http://·중복 저장분은 재처리)
             }
-            // 여기 도달: 이미지 없음 / 미검증 저장분 / 로고·엔티티·http 저장분 / 방금 디코드된 신규
-            const cleanStored = it.image && !isLogoImage(it.image) && !/&#|&amp;/.test(it.image);
+            // 여기 도달: 이미지 없음 / 미검증·로고·엔티티·http·중복 저장분 / 방금 디코드된 신규
+            const cleanStored = it.image && !isLogoImage(it.image) && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
             let img = cleanStored ? it.image : await scrapeOgImage(url);
             // https 앱에서 http:// 이미지는 mixed content로 브라우저가 무조건 차단(실측: sinaimg —
             // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
@@ -250,8 +259,8 @@ async function imageLoadable(url) {
                 console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
                 img = null; // 실기기에서 깨지는 URL — 구글 썸네일 교체 대상
             }
-            if (!img || isLogoImage(img)) {
-                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고 파일
+            if (!img || isLogoImage(img) || isDupImage(img, img === it.image)) {
+                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고/사이트 공용 이미지
                 // → 구글 썸네일 폴백 (그마저 없으면 로고라도 유지 — 없는 것보단 나음)
                 const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
                 const att = gid && (await ensureThumbMap())?.get(gid);
