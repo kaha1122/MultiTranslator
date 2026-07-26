@@ -304,7 +304,7 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                 // 원어 폴백 판정: name===original_name(TMDB 폴백 신호) 또는 사용자가 못 읽는 문자체계.
                 const clientLang = String(req.query.lang || 'en');
                 const isFallbackName = (p) => !!p.name && ((p.original_name && p.name === p.original_name) || isForeignScript(p.name, clientLang));
-                const needFix = [...cast, ...crew].some(isFallbackName);
+                const needFix = [...cast, ...crew, ...(data.created_by || [])].some(isFallbackName);
                 if (needFix) {
                     try {
                         const enCredits = await tmdbFetch(`/${media}/${id}/credits`, { language: 'en-US' });
@@ -317,8 +317,9 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                         cast.forEach(patch);
                         crew.forEach(patch);
                         // created_by(TV 크리에이터)는 TMDB가 언어 폴백 없이 원어명을 반환 — 같은 인물이
-                        // 크레딧에도 있으면 en 이름으로 통일(2026-07-25). original_name 부재 대비 name 비교만.
-                        (data.created_by || []).forEach((p) => { if (enName.get(p.id)) p.name = enName.get(p.id); });
+                        // 크레딧에도 있으면 en 이름으로 통일(2026-07-25). created_by엔 original_name이 없어
+                        // 문자체계 판정으로만 걸러낸다(2026-07-26 정합화): 사용자 언어의 실제 번역 이름은 보존.
+                        (data.created_by || []).forEach(patch);
                     } catch (e) { /* en 크레딧 실패 시 원래(원어) 이름 유지 */ }
                 }
             }
