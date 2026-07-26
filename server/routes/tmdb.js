@@ -278,7 +278,8 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
         if (!data) {
             data = await tmdbFetch(`/${media}/${id}`, {
                 language: lang,
-                append_to_response: 'credits,images,videos,watch/providers,translations',
+                // keywords·recommendations: 상세 보강(K-DramaAnyLang B/C안, 2026-07-25) — 호출 수 불변(append)
+                append_to_response: 'credits,images,videos,watch/providers,translations,keywords,recommendations',
                 // 이미지 후보를 메인 콘텐츠 언어·영어·무언어로 받아둠(아래 우선순위 선택에 사용)
                 include_image_language: `${PRIMARY_CONTENT_LANG},en,null`,
                 // 예고편도 언어 폴백: videos는 language로 필터되므로, 사용자 언어에 영상이 없으면
@@ -303,7 +304,7 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                 // 원어 폴백 판정: name===original_name(TMDB 폴백 신호) 또는 사용자가 못 읽는 문자체계.
                 const clientLang = String(req.query.lang || 'en');
                 const isFallbackName = (p) => !!p.name && ((p.original_name && p.name === p.original_name) || isForeignScript(p.name, clientLang));
-                const needFix = [...cast, ...crew].some(isFallbackName);
+                const needFix = [...cast, ...crew, ...(data.created_by || [])].some(isFallbackName);
                 if (needFix) {
                     try {
                         const enCredits = await tmdbFetch(`/${media}/${id}/credits`, { language: 'en-US' });
@@ -315,6 +316,10 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                         };
                         cast.forEach(patch);
                         crew.forEach(patch);
+                        // created_by(TV 크리에이터)는 TMDB가 언어 폴백 없이 원어명을 반환 — 같은 인물이
+                        // 크레딧에도 있으면 en 이름으로 통일(2026-07-25). created_by엔 original_name이 없어
+                        // 문자체계 판정으로만 걸러낸다(2026-07-26 정합화): 사용자 언어의 실제 번역 이름은 보존.
+                        (data.created_by || []).forEach(patch);
                     } catch (e) { /* en 크레딧 실패 시 원래(원어) 이름 유지 */ }
                 }
             }
@@ -323,6 +328,39 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
         res.json(data);
     } catch (e) {
         console.error('[tmdb/title]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// ── TV 시즌 상세 — 회차 리스트(부제·방영일·러닝타임·스틸)용. 필요 필드만 추려 응답 축소 ──
+// (K-DramaAnyLang 상세 B안, 2026-07-25. overview는 미포함 — 스포일러·용량 양쪽 이유)
+router.get('/api/tmdb/season/:id/:n', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    try {
+        const id = String(req.params.id).replace(/\D/g, '');
+        const n = parseInt(req.params.n, 10);
+        if (!id || !Number.isFinite(n) || n < 0 || n > 200) return res.status(400).json({ error: 'bad params' });
+        const lang = toTmdbLang(req.query.lang);
+        const key = `season:${id}:${n}:${lang}`;
+        let data = getCache(key);
+        if (!data) {
+            const raw = await tmdbFetch(`/tv/${id}/season/${n}`, { language: lang });
+            data = {
+                season_number: raw.season_number,
+                name: raw.name,
+                air_date: raw.air_date,
+                episodes: (raw.episodes || []).map((e) => ({
+                    episode_number: e.episode_number,
+                    name: e.name,
+                    air_date: e.air_date,
+                    runtime: e.runtime,
+                    still_path: e.still_path,
+                })),
+            };
+            setCache(key, data, 6 * 60 * 60 * 1000);
+        }
+        res.json(data);
+    } catch (e) {
+        console.error('[tmdb/season]', e.message);
         res.status(502).json({ error: 'tmdb_failed' });
     }
 });

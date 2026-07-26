@@ -131,6 +131,10 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     }
     console.log('[cron/news-refresh]', JSON.stringify(out), state.blocked ? '429-hit' : '');
     dispatchEnrichWorkflow(); // fire-and-forget — 갱신 완료 캐시를 워커가 바로 보강
+    // Dari's Lounge 일일 발행 체이닝(2026-07-24) — Render 대시보드 편집이 "Failed to fetch"로 불가해
+    // 별도 cron 대신 여기서 호출. 멱등(같은 날 skip)이라 2h 주기 12회 호출 무해, 00:00 UTC 실행분이 새 날을 연다.
+    // fire-and-forget — 라운지 실패가 뉴스 응답을 막지 않음(다음 주기 자동 재시도).
+    require('../lib/dariLounge').openDailyLounge().catch((e) => console.warn('[cron/news-refresh] lounge open fail:', e?.message));
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
