@@ -31,6 +31,33 @@ function pickImageByLang(arr, originalLang) {
     return (by(originalLang) || by('en'))?.file_path || null;
 }
 
+// ── 인물 이름 문자체계(script) 판정 ────────────────────────────────────
+// TMDB 인물 이름은 언어별 번역이 있을 때만 현지화되고, 없으면 원어 그대로(예: 한국인 → '이승영')
+// 내려온다. 사용자 언어로 읽을 수 없는 문자면 영어(로마자) 이름으로 폴백해야 한다(절대 규칙 #7: 텍스트는
+// 사용자 언어 → 영어 폴백, 원어 노출 금지).
+// 유니코드 속성 이스케이프(\p{Script=...}) — 문자 범위를 직접 쓰지 않아 소스 인코딩과 무관.
+const SCRIPT_RE = {
+    hangul: /\p{Script=Hangul}/u,
+    kana: /[\p{Script=Hiragana}\p{Script=Katakana}]/u,
+    cjk: /\p{Script=Han}/u,
+    cyrl: /\p{Script=Cyrillic}/u,
+    arab: /\p{Script=Arabic}/u,
+};
+
+// 각 UI 언어가 읽는 문자체계(라틴은 어느 언어나 읽으므로 목록에 없음 = 항상 허용)
+const LANG_SCRIPTS = {
+    ko: ['hangul', 'cjk'], ja: ['kana', 'cjk'], 'zh-CN': ['cjk'], 'zh-TW': ['cjk'],
+    ru: ['cyrl'], ar: ['arab'],
+};
+function isForeignScript(name, clientLang) {
+    if (!name) return false;
+    const ok = LANG_SCRIPTS[clientLang] || [];
+    for (const k of Object.keys(SCRIPT_RE)) {
+        if (SCRIPT_RE[k].test(name) && !ok.includes(k)) return true;
+    }
+    return false;
+}
+
 // 리스트/검색 제목 현지화: ① 사용자 언어 번역제목(우리 Firestore titles/{id}/translations/{clientLang}.title)
 //   ② 영어 폴백(TMDB가 원어=한국어로 폴백한 name===original 항목만, fetchEn()로 받음) ③ TMDB 원제 유지.
 //   원어(ko)·영어 사용자는 그대로(원제 OK / TMDB en-US가 이미 최선). tv=name, movie=title 자동 판별. person은 건너뜀.
@@ -273,13 +300,18 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
             if (lang !== 'en-US' && lang !== origLang) {
                 const cast = data.credits?.cast || [];
                 const crew = data.credits?.crew || [];
-                const needFix = [...cast, ...crew].some((p) => p.name && p.original_name && p.name === p.original_name);
+                // 원어 폴백 판정: name===original_name(TMDB 폴백 신호) 또는 사용자가 못 읽는 문자체계.
+                const clientLang = String(req.query.lang || 'en');
+                const isFallbackName = (p) => !!p.name && ((p.original_name && p.name === p.original_name) || isForeignScript(p.name, clientLang));
+                const needFix = [...cast, ...crew].some(isFallbackName);
                 if (needFix) {
                     try {
                         const enCredits = await tmdbFetch(`/${media}/${id}/credits`, { language: 'en-US' });
                         const enName = new Map([...(enCredits.cast || []), ...(enCredits.crew || [])].map((p) => [p.id, p.name]));
                         const patch = (p) => {
-                            if (p.name && p.original_name && p.name === p.original_name && enName.get(p.id)) p.name = enName.get(p.id);
+                            const en = enName.get(p.id);
+                            // en도 원어(로마자 표기 없는 항목: 원작 소설/웹툰 등)면 교체하지 않음.
+                            if (isFallbackName(p) && en && !isForeignScript(en, clientLang)) p.name = en;
                         };
                         cast.forEach(patch);
                         crew.forEach(patch);
@@ -332,16 +364,26 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
         let results = (data.results || []).filter((r) =>
             (r.media_type === 'tv' || r.media_type === 'movie') ? r.original_language === PRIMARY_CONTENT_LANG : r.media_type === 'person'
         );
+        // en-US 검색 결과(제목·인물이름 영어 폴백 공용) — 필요할 때만 1회, 10분 캐시.
+        const fetchEnResults = async () => {
+            const enKey = `search:en-US:${page}:${qLower}`;
+            let ed = getCache(enKey);
+            if (!ed) { ed = await tmdbFetch('/search/multi', { language: 'en-US', query: q, page: String(page), include_adult: 'false' }); setCache(enKey, ed, 10 * 60 * 1000); }
+            return ed.results || [];
+        };
         // 제목 현지화: 우리 번역제목(Firestore) → 영어 → 한국어 원제. (person은 helper가 건너뜀)
-        results = await localizeTitles(results, {
-            clientLang,
-            fetchEn: async () => {
-                const enKey = `search:en-US:${page}:${qLower}`;
-                let ed = getCache(enKey);
-                if (!ed) { ed = await tmdbFetch('/search/multi', { language: 'en-US', query: q, page: String(page), include_adult: 'false' }); setCache(enKey, ed, 10 * 60 * 1000); }
-                return ed.results || [];
-            },
-        });
+        results = await localizeTitles(results, { clientLang, fetchEn: fetchEnResults });
+        // 인물 이름: TMDB가 해당 언어 이름 번역이 없으면 원어(한글)로 내려줌 → 영어(로마자) 폴백.
+        if (lang !== 'en-US' && results.some((r) => r.media_type === 'person' && isForeignScript(r.name, clientLang))) {
+            try {
+                const enName = new Map((await fetchEnResults()).filter((r) => r.media_type === 'person').map((r) => [r.id, r.name]));
+                results = results.map((r) => {
+                    if (r.media_type !== 'person' || !isForeignScript(r.name, clientLang)) return r;
+                    const en = enName.get(r.id);
+                    return (en && !isForeignScript(en, clientLang)) ? { ...r, name: en } : r;
+                });
+            } catch { /* en 실패 → 원어 이름 유지 */ }
+        }
         // 캐시 접두검색 결과 병합: TMDB가 못 찾은 번역제목만 추가(중복은 TMDB 원본 우선 — 더 풍부).
         const cacheHits = await cachePromise;
         if (cacheHits.length) {
@@ -363,22 +405,64 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });
+        const clientLang = String(req.query.lang || 'en');
         const lang = toTmdbLang(req.query.lang);
+        // 최종 응답 캐시(현지화 후) — 재요청 시 Firestore·en 조회까지 생략.
+        const outKey = `personout:${id}:${lang}`;
+        const cachedOut = getCache(outKey);
+        if (cachedOut) return res.json(cachedOut);
+
         const key = `person:${id}:${lang}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits' }); setCache(key, data, 6 * 60 * 60 * 1000); }
         // 출연작: 메인 콘텐츠 언어 작품 + 포스터 있는 것만, 중복 제거, 인기순
         const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
         const seen = new Set();
-        const works = credits
+        let works = credits
             .filter((c) => c.original_language === PRIMARY_CONTENT_LANG && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
             .filter((c) => { const k = `${c.media_type}-${c.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
             .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-        res.json({
-            id: data.id, name: data.name, biography: data.biography,
+
+        // en-US 인물 응답(작품 제목·이름 영어 폴백 공용) — 필요할 때만 1회, 6h 캐시.
+        let enPerson = null;
+        const loadEnPerson = async () => {
+            if (enPerson) return enPerson;
+            const ek = `person:${id}:en-US`;
+            enPerson = getCache(ek);
+            if (!enPerson) {
+                enPerson = await tmdbFetch(`/person/${id}`, { language: 'en-US', append_to_response: 'combined_credits' });
+                setCache(ek, enPerson, 6 * 60 * 60 * 1000);
+            }
+            return enPerson;
+        };
+
+        // ① 작품 제목 현지화: 우리 번역제목(Firestore) → 영어 → 원제. discover/search와 동일 정책.
+        //    (미적용 시 TMDB 번역 없는 작품이 한국어 원제로 노출됨 — 절대 규칙 #7 위반)
+        works = await localizeTitles(works, {
+            clientLang,
+            fetchEn: async () => {
+                const ep = await loadEnPerson();
+                return [...(ep.combined_credits?.cast || []), ...(ep.combined_credits?.crew || [])];
+            },
+        });
+
+        // ② 인물 이름: TMDB는 해당 언어 이름 번역이 없으면 원어(한글)로 내려준다 → 사용자가 못 읽는
+        //    문자체계면 영어(로마자) 이름으로 폴백. 상세 화면 크레딧과 표기 일치.
+        let name = data.name;
+        if (lang !== 'en-US' && isForeignScript(name, clientLang)) {
+            try {
+                const ep = await loadEnPerson();
+                if (ep?.name && !isForeignScript(ep.name, clientLang)) name = ep.name;
+            } catch { /* en 조회 실패 → 원어 이름 유지 */ }
+        }
+
+        const out = {
+            id: data.id, name, biography: data.biography,
             profile_path: data.profile_path, known_for_department: data.known_for_department,
             works,
-        });
+        };
+        setCache(outKey, out, 6 * 60 * 60 * 1000);
+        res.json(out);
     } catch (e) {
         console.error('[tmdb/person]', e.message);
         res.status(502).json({ error: 'tmdb_failed' });
@@ -410,16 +494,37 @@ router.get('/api/tmdb/collection/:id', optionalAuthAny, rateLimit('tmdb', TMDB_R
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });
+        const clientLang = String(req.query.lang || 'en');
         const lang = toTmdbLang(req.query.lang);
         const key = `collection:${id}:${lang}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch(`/collection/${id}`, { language: lang }); setCache(key, data, 6 * 60 * 60 * 1000); }
         // 수록 영화: 포스터 있는 것 + 개봉일 순. media_type 부여(클라 라우팅용)
-        const parts = (data.parts || [])
+        let parts = (data.parts || [])
             .filter((p) => p.poster_path)
             .map((p) => ({ ...p, media_type: 'movie' }))
             .sort((a, b) => (a.release_date || '').localeCompare(b.release_date || ''));
-        res.json({ id: data.id, name: data.name, overview: data.overview, poster_path: data.poster_path, backdrop_path: data.backdrop_path, parts });
+
+        // en-US 컬렉션(제목 영어 폴백용) — 필요할 때만 1회, 6h 캐시.
+        let enCol = null;
+        const loadEnCol = async () => {
+            if (enCol) return enCol;
+            const ek = `collection:${id}:en-US`;
+            enCol = getCache(ek);
+            if (!enCol) { enCol = await tmdbFetch(`/collection/${id}`, { language: 'en-US' }); setCache(ek, enCol, 6 * 60 * 60 * 1000); }
+            return enCol;
+        };
+
+        // 수록작 제목 현지화(우리 번역제목 → 영어 → 원제) + 컬렉션 이름도 못 읽는 문자면 영어로.
+        parts = await localizeTitles(parts, { clientLang, fetchEn: async () => (await loadEnCol()).parts || [] });
+        let name = data.name;
+        if (lang !== 'en-US' && isForeignScript(name, clientLang)) {
+            try {
+                const ec = await loadEnCol();
+                if (ec?.name && !isForeignScript(ec.name, clientLang)) name = ec.name;
+            } catch { /* en 실패 → 원어 유지 */ }
+        }
+        res.json({ id: data.id, name, overview: data.overview, poster_path: data.poster_path, backdrop_path: data.backdrop_path, parts });
     } catch (e) {
         console.error('[tmdb/collection]', e.message);
         res.status(502).json({ error: 'tmdb_failed' });
