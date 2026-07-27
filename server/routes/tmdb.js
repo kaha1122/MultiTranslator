@@ -23,6 +23,10 @@ const toTmdbLang = (l) => LANG_MAP[l] || l || 'en-US';
 const { PRIMARY_CONTENT_LANG } = require('../config/contentLang');
 // 사전번역 제목 조회용 kculture Firestore(있을 때만 — service account 없으면 null → 폴백은 TMDB만).
 const { kcultureDb } = require('../config/firebaseKculture');
+// 숨김 작품(성인 에로물) 필터 — TMDB의 include_adult는 한국 소프트코어물을 성인물로 분류하지 않아
+// 그대로 통과시킨다(2026-07-27 실측: 13편 전부 adult=false). 판정·플래그는
+// scripts/flag-adult-titles.js가 하고 여기서는 결과 배열에서 빼기만 한다. 로드 실패 시 fail-open.
+const hiddenTitles = require('../lib/hiddenTitles');
 
 // 이미지 우선순위 선택: 콘텐츠 원어(original_language) → 영어. 없으면 null(호출측이 TMDB 기본값 유지).
 function pickImageByLang(arr, originalLang) {
@@ -244,6 +248,8 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
                 return ed.results || [];
             },
         });
+        await hiddenTitles.ready();
+        results = hiddenTitles.filterHidden(results);
         res.json({ media, page: data.page, totalPages: data.total_pages, results });
     } catch (e) {
         console.error('[tmdb/discover]', e.message);
@@ -431,6 +437,9 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
                 if (!seen.has(k)) { seen.add(k); results.push(c); }
             }
         }
+        // 숨김 작품 제거 — TMDB 검색 결과와 우리 번역제목 접두검색 결과를 **병합한 뒤** 한 번에 건다.
+        await hiddenTitles.ready();
+        results = hiddenTitles.filterHidden(results);
         res.json({ results, page: data.page, totalPages: data.total_pages });
     } catch (e) {
         console.error('[tmdb/search]', e.message);
@@ -493,6 +502,11 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
                 if (ep?.name && !isForeignScript(ep.name, clientLang)) name = ep.name;
             } catch { /* en 조회 실패 → 원어 이름 유지 */ }
         }
+
+        // 인물 크레딧에서도 숨김 작품 제거(출연작 목록으로 우회 노출되는 경로 차단).
+        // ⚠ outKey 캐시(6h)에 필터 결과가 담기므로, 플래그 배치 직후에는 최대 6시간 반영이 늦다.
+        await hiddenTitles.ready();
+        works = hiddenTitles.filterHidden(works);
 
         const out = {
             id: data.id, name, biography: data.biography,
@@ -562,6 +576,8 @@ router.get('/api/tmdb/collection/:id', optionalAuthAny, rateLimit('tmdb', TMDB_R
                 if (ec?.name && !isForeignScript(ec.name, clientLang)) name = ec.name;
             } catch { /* en 실패 → 원어 유지 */ }
         }
+        await hiddenTitles.ready();
+        parts = hiddenTitles.filterHidden(parts); // 컬렉션(시리즈 묶음) 수록작에서도 제외
         res.json({ id: data.id, name, overview: data.overview, poster_path: data.poster_path, backdrop_path: data.backdrop_path, parts });
     } catch (e) {
         console.error('[tmdb/collection]', e.message);
