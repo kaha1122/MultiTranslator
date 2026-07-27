@@ -19,12 +19,17 @@ let loadedAt = 0;
 let inflight = null;
 
 async function load() {
-    if (!kcultureDb) return ids;
-    const snap = await kcultureDb.collection('titles').where('hidden', '==', true).select().get();
+    if (!kcultureDb) { console.warn('[hiddenTitles] kcultureDb 없음 — 필터 미적용'); return ids; }
+    const t0 = Date.now();
+    // ⚠ select()를 인자 없이 부르지 말 것 — admin SDK 버전에 따라 거부된다.
+    //   필드 하나를 명시해도 전송량은 같고(문서당 수십 바이트) 호환성만 얻는다.
+    const snap = await kcultureDb.collection('titles').where('hidden', '==', true).select('hidden').get();
     const next = new Set();
     snap.forEach((d) => next.add(String(d.id)));
     ids = next;
     loadedAt = Date.now();
+    // 기동/갱신 때마다 남긴다 — 0이면 "필터가 왜 안 먹지"를 로그 한 줄로 판별할 수 있다.
+    console.log(`[hiddenTitles] ${ids.size}건 로드 (${Date.now() - t0}ms)`);
     return ids;
 }
 

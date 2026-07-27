@@ -439,7 +439,11 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
         }
         // 숨김 작품 제거 — TMDB 검색 결과와 우리 번역제목 접두검색 결과를 **병합한 뒤** 한 번에 건다.
         await hiddenTitles.ready();
+        const before = results.length;
         results = hiddenTitles.filterHidden(results);
+        // 진단 헤더(middleware.js의 x-kdl-mw와 같은 규약) — "필터가 왜 안 먹지"를 한 번에 판별한다.
+        // set=0 이면 숨김 목록 로드 실패(fail-open), set>0인데 cut=0이면 이 검색어에 숨김 대상이 없던 것.
+        res.set('x-kdl-hidden', `set=${hiddenTitles.size()};cut=${before - results.length}`);
         res.json({ results, page: data.page, totalPages: data.total_pages });
     } catch (e) {
         console.error('[tmdb/search]', e.message);
