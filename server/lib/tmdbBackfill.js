@@ -38,7 +38,7 @@ const TMDB_BASE = 'https://api.themoviedb.org/3';
 const TMDB_KEY = process.env.TMDB_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
-// 번역 대상 11개 (12개 UI 언어 중 영어=소스/폴백만 제외). 저장 키는 클라 lang 코드와 동일.
+// 번역 대상 = 12개 UI 언어 **전부**. 저장 키는 클라 lang 코드와 동일.
 // ⚠ 언어 추가 시: 여기에 한 줄 추가만 하면 됨 — 스킵 게이트가 metaLangs 기준이라 기존 완료
 //   문서도 자동 재처리되고, 저장 번역 재사용으로 새 언어만 Gemini/TMDB로 채운다(2026-07-16 id 추가).
 // ko(한국어): 원어라 대개 TMDB에 존재→무료 추출. 없는 작품만 영어→한국어 번역해 빈칸 메움
@@ -55,6 +55,13 @@ const TARGETS = [
     { code: 'pt-BR', iso: 'pt', region: 'BR' },
     { code: 'id', iso: 'id' }, // 2026-07-16 추가 — 광고 유입 75% 인도네시아, 클라 UI locale 승격과 동시
     { code: 'ar', iso: 'ar' }, // 2026-07-22 추가 — 12번째 UI 언어(MENA), 클라 RTL 지원과 동시 승격
+    // en: 2026-07-27 추가 — 오래 "소스/폴백이니 저장 불필요"로 제외했으나 **저장은 필요**했다.
+    //   ① SEO: middleware.js의 폴백 순서가 {lang} → en → 포기라, translations/en이 없으면 미번역 언어가
+    //      영어로 내려가지 못하고 크롤러에게 사이트 공통 셸이 나간다. /en/* 자체도 x-default인데 주입 0이었다.
+    //   ② 화면: TMDB에 영어 줄거리가 없는 작품이 **약 40%**(2026-07-27 표본 40편 실측) — 영어 사용자는
+    //      그 작품들의 줄거리를 아예 못 보고 있었다. 여기 채우면 클라(metaCache)가 그걸 읽어 표시한다.
+    //   비용: 60%는 TMDB에서 무료 추출(아래 en 보강 가드), 나머지만 Gemini가 같은 호출에 한 언어 더 얹는다.
+    { code: 'en', iso: 'en' },
 ];
 
 async function tmdb(path, params = {}) {
@@ -190,6 +197,17 @@ async function processTitle(media, id, { force = false } = {}) {
             out[t.code] = { ...ex, source: 'tmdb' };
         }
         else missing.push(t);
+    }
+
+    // en 보강 — 'en'은 번역 대상이기 이전에 **추출 대상**이다.
+    // detail은 language=en-US로 받았으므로 영어 줄거리가 있으면 detail.overview에 이미 들어 있다
+    // (pickEnglish가 detail → translations의 en 레코드 순으로 집는다). extractTmdb가 놓친 경우를 여기서 메워
+    // Gemini를 태우지 않는다. 영어가 아예 없는 작품(실측 약 40%)만 missing에 남아 아래 Gemini 루프가
+    // 피벗(원어)에서 영어를 만들어 채운다 — 다른 언어와 같은 호출에 얹히므로 추가 호출은 없다.
+    if (!out.en?.overview && en?.overview) {
+        out.en = { ...en, source: 'tmdb' };
+        const i = missing.findIndex((t) => t.code === 'en');
+        if (i >= 0) missing.splice(i, 1);
     }
 
     // 기존 저장 번역 재사용 — 언어 추가 재처리(위 게이트)나 force 재실행에서 이미 번역된 언어의
