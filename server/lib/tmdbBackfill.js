@@ -79,7 +79,7 @@ const SCRIPT_RE = {
     ru: /[Ѐ-ӿ]/,
     ar: /[؀-ۿ]/,
 };
-function validOverview(code, s) {
+function validOverview(code, s, srcLen = Infinity) {
     const t = norm(s);
     // 최소 길이 5 — 10으로 잡았다가 실패 사례(2026-07-28): 원문 줄거리가 한 문장인 작품의 중국어
     // 번역("真的，真的恭喜你" 8자)이 거부돼 영구 partial이 됐다. CJK는 라틴계보다 밀도가 높다.
@@ -92,8 +92,14 @@ function validOverview(code, s) {
         const h = (t.match(new RegExp(PRIMARY_SCRIPT.source, 'g')) || []).length;
         if (h > 15 || h > t.length * 0.2) return false;
     }
+    // 문자 체계 기대치는 **출력·원문 둘 다 40자 이상일 때만** 적용(2026-07-29).
+    //   · 출력<40: "ITZY VLOG"류 라틴 고유명사 번역은 ja/ru에서도 라틴 그대로가 정답
+    //     (136513 실측 — 누락 언어가 정확히 SCRIPT_RE 대상 4개였다)
+    //   · 원문<40: "엔하이픈 컴백쇼 DIMENSION : DILEMMA 사전녹화!"(28자)처럼 고유명사가 지배하는
+    //     짧은 원문은 출력이 40자를 넘어도 대부분 라틴이라 검사가 성립하지 않는다(137854 실측)
+    //   긴 원문→긴 출력의 영어 에코(진짜 미번역)는 여전히 걸린다.
     const re = SCRIPT_RE[code];
-    if (re && !re.test(t)) return false;              // ja/zh/ru/ar/ko는 해당 문자가 있어야 함
+    if (re && t.length >= 40 && srcLen >= 40 && !re.test(t)) return false;
     return true;
 }
 
@@ -238,16 +244,19 @@ async function processTitle(media, id, { force = false } = {}) {
     const koRec = tmdbRecord(trs, TARGETS.find((t) => t.code === PRIMARY_CODE));
     let koOv = norm(detail.overview) || norm(koRec?.overview);
     if (koOv && PRIMARY_SCRIPT && !PRIMARY_SCRIPT.test(koOv)) koOv = '';
+    if (koOv.length < 5) koOv = ''; // 쓰레기 소스 차단 — 아래 en과 동일 사유
 
     // en 줄거리 — TMDB 공식(사람 작성) 우선, 없으면 기존 저장분(과거 Gemini 생성 포함) 재사용.
     const enRec = tmdbRecord(trs, TARGETS.find((t) => t.code === 'en'));
     let enOv = norm(enRec?.overview);
+    if (enOv.length < 5) enOv = ''; // TMDB en 레코드에 "."(1자)만 있는 쓰레기 실재(44615) —
+                                    // 피벗으로 삼으면 11개 언어 번역이 전부 실패해 영구 partial이 된다
     let enOvSrc = enOv ? 'tmdb' : null;
     if (!enOv) {
         try {
             const s = await kcultureDb.doc(`titles/${id}/translations/en`).get();
             const prev = s.exists ? norm(s.data()?.overview) : '';
-            if (prev && !PRIMARY_SCRIPT?.test(prev)) { enOv = prev; enOvSrc = 'cache'; }
+            if (prev.length >= 5 && !PRIMARY_SCRIPT?.test(prev)) { enOv = prev; enOvSrc = 'cache'; }
         } catch { /* 재사용 실패 — en도 Gemini 경로로 */ }
     }
 
@@ -298,7 +307,7 @@ async function processTitle(media, id, { force = false } = {}) {
             }
             if (pivot && !cur.overview) {
                 const o = norm(v.overview);
-                if (validOverview(t.code, o)) { cur.overview = o; cur.oSrc = 'gemini'; geminiUsed++; got++; }
+                if (validOverview(t.code, o, pivot.text.length)) { cur.overview = o; cur.oSrc = 'gemini'; geminiUsed++; got++; }
             }
         }
         if (got === 0) break; // 진전 없으면 더 돌려도 무의미 — 마커 미완료로 남겨 다음 실행이 재시도

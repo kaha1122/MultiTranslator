@@ -88,8 +88,11 @@ const norm = (s) => String(s || '').replace(/\s+/g, ' ').trim();
                     const h = (ov.match(/[가-힣]/g) || []).length;
                     if (h > 15 || h > ov.length * 0.2) add('O2:줄거리한글', t.id, tg.code, ov.slice(0, 60));
                 }
+                // 출력·원문(ko) 둘 다 40자 이상일 때만 — 라틴 고유명사-온리("ITZY VLOG"·엔하이픈 쇼)의
+                // 정당한 라틴 번역을 오탐하지 않기 위함(게이트와 동일 기준. ko는 TARGETS 첫 항목이라 먼저 채워짐)
                 const re = SCRIPT_RE[tg.code];
-                if (geminiOv && re && !re.test(ov)) add('O3:문자체계', t.id, tg.code, ov.slice(0, 60));
+                const koLen = (ovs.ko || '').length;
+                if (geminiOv && re && ov.length >= 40 && koLen >= 40 && !re.test(ov)) add('O3:문자체계', t.id, tg.code, ov.slice(0, 60));
             }
             // 검색 인덱스 정합
             const st = (t.searchTitle || {})[tg.code] || '';
