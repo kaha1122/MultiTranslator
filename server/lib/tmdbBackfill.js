@@ -2,14 +2,42 @@
 // 작품별로: ① TMDB translations에서 언어별 번역 추출(무료) ② 없는 언어만 Gemini 묶음 번역
 //           ③ kculture Firestore(titles/{id}/translations/{code})에 저장 + 마커.
 // 멱등: 마커(titles/{id}.metaTranslated)가 있으면 skip → 재실행/중단복구 안전.
+//
+// ⚠ 제목(title)은 줄거리(overview)와 **독립적으로** 결손될 수 있다 — TMDB translations 레코드가
+//   줄거리만 담고 name이 빈 경우가 흔하다. 2026-07-28 이전 버전은 그런 언어를 "추출 성공"으로 처리해
+//   Gemini 대상에서 빼고, 완료 게이트도 줄거리만 검사해서 **title:'' 문서가 완료로 굳었다**.
+//   재실행은 물론 --force로도 복구되지 않는 상태였다(실측 약 6.7%, 인니어 김부장 사례).
+//   지금은 ① 제목만 없는 언어도 Gemini 대상 ② 완료 게이트가 제목까지 검사 ③ 스킵 게이트가
+//   searchTitle 맵으로 제목 결손을 감지 → **어느 러너로 방문하든 자동 복구**된다.
 const { callGeminiText, callOnce } = require('../utils/geminiCall');
 const { FALLBACK_MODEL } = require('../config/gemini');
 const { kcultureDb } = require('../config/firebaseKculture');
 const { PRIMARY_CONTENT_LANG } = require('../config/contentLang'); // 메인 콘텐츠 언어 — 'ko' 하드코딩 금지
 const { LANG_NAMES } = require('../config/langGuide'); // ISO → 정식 언어명(Gemini가 코드보다 명칭에 정확)
+// 사람이 삭제 판정한 작품의 재유입 차단 — discover 열거는 지운 id를 다음 실행에서 그대로 다시 물어온다.
+const excluded = require('./excludedTitles');
 
 // ISO 코드 → 정식 언어명. 지역코드(zh-CN 등)는 그대로, 없으면 베이스(zh)로 폴백, 최후 코드 그대로.
 const nameOf = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
+
+// ── 원어 제목 오염 감지 (2026-07-28) ──────────────────────────────────────────
+// 다른 언어 문서에 **메인 콘텐츠 언어의 제목이 그대로 새어 들어간 것**을 문자 체계로 잡는다.
+// 경로 두 개: ① TMDB는 language=en-US 요청에도 영어 제목이 없으면 원제를 돌려준다(옛 코드가 이걸
+// translations/en.title에 저장 → en은 전 언어 폴백 소스라 12개 로케일로 번짐) ② Gemini가 제목을
+// 번역하지 않고 그대로 에코. 빈 제목과 달리 **값이 있어서 "완비"로 보이는 게** 이 오염의 악질적인 점.
+// PRIMARY_CONTENT_LANG이 바뀌면 이 표에 한 줄만 추가한다(절대 규칙 #7 — 'ko' 하드코딩 금지).
+const PRIMARY_SCRIPT = {
+    ko: /[가-힣]/,                    // 한글 음절
+    ja: /[぀-ゟ゠-ヿ]/,       // 히라가나·가타카나
+    zh: /[一-鿿]/,                    // 한자
+}[String(PRIMARY_CONTENT_LANG).split('-')[0]] || null;
+
+// 이 언어 문서에 들어가면 안 되는 제목인가(원어 자신은 당연히 예외).
+function titleTainted(code, title) {
+    if (!title || !PRIMARY_SCRIPT) return false;
+    if (String(code).split('-')[0] === String(PRIMARY_CONTENT_LANG).split('-')[0]) return false;
+    return PRIMARY_SCRIPT.test(title);
+}
 
 // flash-lite가 JSON 뒤에 중복 블록을 붙이는 글리치 대응: 첫 번째 완결 {…} 객체만 추출.
 function parseFirstJsonObject(text) {
@@ -125,6 +153,11 @@ async function geminiMulti(srcTitle, srcOverview, codes, srcLangName = 'English'
         `- NEVER return, copy, paraphrase, or echo the source language. Returning the source language is a FAILURE.`,
         `- Translate the overview naturally and idiomatically, faithfully preserving meaning, tone and nuance. Do not add notes, commentary, or information not in the source.`,
         `- Title: translate it naturally for each language; keep proper nouns and person names natural. Do not invent a title.`,
+        // 2026-07-28 추가 — 실측 518편에서 제목에 원어(한글)가 통째로/조각으로 남아 있었다.
+        // ja "サッカー野球 말고" · zh-CN "뽕숭아学堂" · id "Panggil! K-캅 Film" 같은 결과물이 실제로 저장돼 있었다.
+        `- Title script: write the title ENTIRELY in the writing system used by that target language.`,
+        `  Never leave source-language characters (e.g. Hangul) inside a title — not even one word.`,
+        `  Transliterate proper nouns into the target script (Japanese → katakana, Chinese → hanzi, Latin-script languages → romanization).`,
         `- Self-check before answering: if any value is still (even partly) in the source language, redo it fully in that target language.`,
         ``,
         `Return ONLY one JSON object whose keys are these EXACT codes [${codes.map((c) => `"${c}"`).join(', ')}],`,
@@ -151,6 +184,7 @@ async function geminiMulti(srcTitle, srcOverview, codes, srcLangName = 'English'
 // 검색 인덱스 저비용 보강: 이미 번역 완료된 작품(스킵 대상)에 searchLower/searchTitle 맵이 없을 때,
 // 저장돼 있는 번역 subcollection(titles/{id}/translations/{code}.title)만으로 인덱스를 재구성(Gemini 재호출 0).
 // 포스터는 검색 카드 썸네일용으로 TMDB 1회(무료)만 조회. 한 번 채우면 다음 실행부터 재조회 안 함.
+// 반환: searchTitle 맵({code: 제목}) — 호출측 스킵 게이트가 **제목 결손 검출기**로 그대로 쓴다.
 async function fillSearchIndex(media, id, markerRef) {
     const snap = await kcultureDb.collection(`titles/${id}/translations`).get();
     const searchTitle = {}, searchLower = {};
@@ -161,23 +195,56 @@ async function fillSearchIndex(media, id, markerRef) {
     let poster_path = null;
     try { const det = await tmdb(`/${media}/${id}`, { language: 'en-US' }); poster_path = det.poster_path || null; } catch { /* 포스터 실패는 무시(제목 폴백 카드) */ }
     await markerRef.set({ poster_path, searchTitle, searchLower, searchIndexedAt: new Date() }, { merge: true });
+    return searchTitle;
+}
+
+// 진짜 영어 제목만 고른다 — detail은 language=en-US 요청이라 **영어 제목이 없으면 TMDB가 원제를
+// 그대로 돌려준다**. 그 값을 en 제목으로 저장하면 translations/en에 원어(한국어) 제목이 박히고,
+// en은 전 언어의 폴백 소스(클라 metaCache·middleware)라 오염이 12개 로케일로 번진다(2026-07-28).
+// 영어 원작(original_language=en)은 원제가 곧 영어 제목이므로 예외.
+function pickEnglishTitle(detail, trs) {
+    const orig = (detail.original_title || detail.original_name || '').trim();
+    const shown = (detail.title || detail.name || '').trim();
+    if ((detail.original_language || '') === 'en') return shown || orig;
+    // ⚠ 여기서 오염을 걸러야 한다. TMDB의 영어 제목에도 원어가 섞여 있는 경우가 실제로 있고
+    //   (예: "Go Baek (고백) - …", "K-캅 The Movie"), 이 값은 아래에서 **전 언어의 제목 폴백 원본**으로
+    //   쓰인다. 걸러내지 않으면 폴백이 오염을 다시 심고 → 다음 스캔이 또 잡아 무한 재처리가 된다.
+    //   비우면 Gemini가 원제에서 깨끗한 영어 제목을 만든다.
+    const clean = (s) => (s && !titleTainted('en', s) ? s : '');
+    if (shown && shown !== orig) { const c = clean(shown); if (c) return c; }
+    const rec = trs.find((x) => x.iso_639_1 === 'en')?.data;
+    const fromRec = (rec?.title || rec?.name || '').trim();
+    if (fromRec && fromRec !== orig) { const c = clean(fromRec); if (c) return c; }
+    return ''; // 쓸 만한 영어 제목 없음 → 아래 Gemini가 만든다
 }
 
 async function processTitle(media, id, { force = false } = {}) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    // ⚠ 삭제 판정된 작품은 여기서 끊는다 — force여도 예외 없음.
+    //   id 열거가 TMDB discover 기반이라, 이 가드가 없으면 지운 작품이 다음 배치에서 그대로 부활한다.
+    await excluded.ready();
+    if (excluded.isExcluded(id)) return { id, skipped: true, excluded: true, langs: 0, geminiUsed: 0 };
     const markerRef = kcultureDb.doc(`titles/${id}`);
     if (!force) {
         const m = await markerRef.get();
         const md = m.exists ? m.data() : null;
         if (md?.metaTranslated) {
-            // 스킵 게이트는 언어 목록 기준: 타깃 전부(metaLangs)를 이미 보유했을 때만 완료로 인정.
-            // TARGETS에 새 언어가 추가되면 기존 완료 문서도 자동 재처리 대상이 된다
-            // (아래 저장 번역 재사용으로 기존 언어는 Gemini 재호출 없이 새 언어만 채움).
+            // 스킵 게이트는 **언어 목록 + 제목 보유** 둘 다 본다.
+            //   · 언어: 타깃 전부(metaLangs)를 보유해야 완료. TARGETS에 새 언어가 추가되면 기존 완료
+            //     문서도 자동 재처리 대상이 된다(아래 저장 번역 재사용으로 새 언어만 채움).
+            //   · 제목: searchTitle 맵은 **빈 제목을 제외하고** 만들어지므로(아래 인덱스 생성부)
+            //     그 자체가 정확한 제목 결손 검출기다 — 추가 읽기 0. 2026-07-28 추가: 예전 게이트가
+            //     줄거리만 봐서 title:'' 문서가 완료로 굳었고, 재실행·--force로도 영원히 안 채워졌다.
             const langs = md.metaLangs || [];
-            const hasAll = TARGETS.every((t) => langs.includes(t.code));
-            if (hasAll || md.metaNoSource) {
-                // 검색 인덱스만 없으면 저비용 보강(Gemini 없이 — 기존 번역제목 재사용).
-                if (!md.searchLower) { try { await fillSearchIndex(media, id, markerRef); } catch { /* 보강 실패는 무시 */ } }
+            const hasAllLangs = TARGETS.every((t) => langs.includes(t.code));
+            // 검색 인덱스가 없는 구(舊) 문서는 서브컬렉션에서 재구성한 뒤 판정(Gemini 없이 — 기존 번역제목 재사용).
+            let st = md.searchTitle;
+            if (hasAllLangs && !md.searchLower) { try { st = await fillSearchIndex(media, id, markerRef); } catch { /* 보강 실패는 무시 — 아래에서 미보유로 판정 */ } }
+            // 제목은 **있기만 해선 안 되고 오염되지 않아야** 한다 — 원제가 박힌 문서는 값이 있어서
+            // 예전 판정으로는 영원히 "완비"였다(2026-07-28). metaNoTitle = 깨끗한 제목을 못 만든
+            // 영구 케이스(아래 완료 게이트에서 기록) → 무한 재처리 방지.
+            const hasAllTitles = !!md.metaNoTitle || (st ? TARGETS.every((t) => st[t.code] && !titleTainted(t.code, st[t.code])) : false);
+            if ((hasAllLangs && hasAllTitles) || md.metaNoSource) {
                 return { id, skipped: true, langs: 0, geminiUsed: 0 };
             }
         }
@@ -186,6 +253,7 @@ async function processTitle(media, id, { force = false } = {}) {
     const detail = await tmdb(`/${media}/${id}`, { language: 'en-US', append_to_response: 'translations' });
     const trs = detail.translations?.translations || [];
     const en = pickEnglish(detail, trs);
+    const enTitle = pickEnglishTitle(detail, trs); // 원제 오염 없는 진짜 영어 제목(없으면 '')
 
     const out = {};
     const missing = [];
@@ -194,6 +262,7 @@ async function processTitle(media, id, { force = false } = {}) {
         if (ex) {
             // TMDB 번역 레코드가 줄거리만 있고 제목이 빈 경우가 흔함(특히 ko) — 타깃이 원어면 원제가 곧 그 언어 제목.
             if (!ex.title && t.iso === detail.original_language) ex.title = detail.original_title || detail.original_name || '';
+            if (!ex.title && t.code === 'en') ex.title = enTitle; // en은 detail에서 바로(Gemini 절약)
             out[t.code] = { ...ex, source: 'tmdb' };
         }
         else missing.push(t);
@@ -205,47 +274,104 @@ async function processTitle(media, id, { force = false } = {}) {
     // Gemini를 태우지 않는다. 영어가 아예 없는 작품(실측 약 40%)만 missing에 남아 아래 Gemini 루프가
     // 피벗(원어)에서 영어를 만들어 채운다 — 다른 언어와 같은 호출에 얹히므로 추가 호출은 없다.
     if (!out.en?.overview && en?.overview) {
-        out.en = { ...en, source: 'tmdb' };
+        out.en = { title: enTitle, overview: en.overview, source: 'tmdb' }; // ⚠ en.title 그대로 쓰면 원제 오염
         const i = missing.findIndex((t) => t.code === 'en');
         if (i >= 0) missing.splice(i, 1);
     }
 
     // 기존 저장 번역 재사용 — 언어 추가 재처리(위 게이트)나 force 재실행에서 이미 번역된 언어의
     // Gemini 재호출을 방지. 서브컬렉션 문서를 읽어 채우면 아래 Gemini 루프의 still 필터가 자동 제외.
-    if (missing.length) {
+    // ⚠ 이미 out에 있는 언어(이번 실행에서 TMDB로 확보)는 덮지 않는다 — 덮으면 cached 플래그가 붙어
+    //   제목 보강분이 저장에서 빠진다.
+    const needFetch = missing.filter((t) => !out[t.code]?.overview);
+    if (needFetch.length) {
         try {
-            const snaps = await kcultureDb.getAll(...missing.map((t) => kcultureDb.doc(`titles/${id}/translations/${t.code}`)));
+            const snaps = await kcultureDb.getAll(...needFetch.map((t) => kcultureDb.doc(`titles/${id}/translations/${t.code}`)));
             snaps.forEach((s, i) => {
                 const d = s.exists ? s.data() : null;
-                if (d?.overview) out[missing[i].code] = { title: d.title || '', overview: d.overview, source: d.source || 'cache', cached: true };
+                if (d?.overview) out[needFetch[i].code] = { title: d.title || '', overview: d.overview, source: d.source || 'cache', cached: true };
             });
         } catch { /* 재사용 실패 — 전량 신규 경로(TMDB/Gemini)로 진행 */ }
+    }
+
+    // ⭐ 제목이 없거나 **원어로 오염된** 언어를 Gemini 대상에 올린다(2026-07-28).
+    //   TMDB translations 레코드가 줄거리만 담고 name이 빈 경우가 있는데(id·zh-CN·en 등에서 실측),
+    //   예전엔 "추출 성공"으로 처리돼 missing에 안 들어가 **제목이 영원히 빈 채로 굳었다**.
+    //   오염(원제가 박힌 문서)도 값이 있다는 이유로 통과했다. 둘 다 여기서 잡는다.
+    //   줄거리는 TMDB 원문을 그대로 두고 제목만 채운다(아래 병합부).
+    for (const t of TARGETS) {
+        const ti = out[t.code]?.title;
+        if (out[t.code]?.overview && (!ti || titleTainted(t.code, ti)) && !missing.includes(t)) missing.push(t);
     }
 
     // 번역 원본(피벗): 영어 → 원어(ko) → 아무 TMDB 네이티브. 영어 없는 마이너작도 누락 안 되게.
     const src = pickSource(en, trs);
 
     let geminiUsed = 0;
+    let geminiTried = false, geminiDead = false; // 아래 제목 폴백의 안전장치(전면 장애 구분)
     if (missing.length && src) {
         // 빠진 언어를 한 번에 번역. flash-lite 일시 오류·부분 JSON 글리치 대비 최대 2회까지
         // "아직도 빠진 언어만" 재시도(이미 받은 언어는 재호출 안 함 → 비용 최소·누락 방지).
         for (let attempt = 0; attempt < 2; attempt++) {
-            const still = missing.filter((m) => !out[m.code]?.overview);
+            // 줄거리가 없는 언어 + **제목이 없거나 오염된 언어** 둘 다 대상(같은 호출에 얹히므로 추가 비용 0).
+            const still = missing.filter((m) => !out[m.code]?.overview || !out[m.code]?.title || titleTainted(m.code, out[m.code].title));
             if (!still.length) break;
             const g = await geminiMulti(src.title, src.overview, still.map((m) => m.code), src.langName);
+            geminiTried = true;
+            // 응답이 통째로 비면 전면 장애(키 없음·API 오류·안전필터) — 언어별 실패와 구분해 기록한다.
+            // 이 경우 아래 영어 제목 폴백을 **적용하지 않는다**(장애 때 영어로 굳히면 제대로 된 번역
+            // 제목을 받을 기회가 영영 사라진다 — 미완으로 남겨 다음 실행이 재시도하게 둔다).
+            if (!g || !Object.keys(g).length) { geminiDead = true; break; }
             let got = 0;
             for (const m of still) {
                 const v = g[m.code];
-                if (v && v.overview) { out[m.code] = { title: v.title || '', overview: v.overview, source: 'gemini' }; geminiUsed++; got++; }
+                if (!v) continue;
+                const cur = out[m.code];
+                // 모델이 제목을 번역 안 하고 원어를 그대로 에코하는 경우가 있다 → 받지 않는다(오염 재생산 방지).
+                const gTitle = titleTainted(m.code, v.title) ? '' : (v.title || '');
+                if (cur?.overview) {
+                    // 제목만 결손·오염 — 사람이 쓴 TMDB 줄거리를 Gemini 것으로 갈아치우지 않는다. 제목만 채우고
+                    // cached 플래그를 떼어(새 객체) 저장 대상으로 되돌린다.
+                    if (gTitle) { out[m.code] = { title: gTitle, overview: cur.overview, source: `${cur.source}+gemini-title` }; geminiUsed++; got++; }
+                } else if (v.overview) {
+                    out[m.code] = { title: gTitle, overview: v.overview, source: 'gemini' }; geminiUsed++; got++;
+                }
             }
             if (got === 0) break; // 진전 없으면(키없음/전면실패) 더 돌려도 무의미 — 마커 미완료로 남겨 다음 실행이 재시도
+        }
+    }
+
+    // ── 제목 마감 ────────────────────────────────────────────────────────────
+    // 규칙 하나로 요약: **오염된 제목은 절대 저장하지 않는다. 빈 제목은 저장해도 안전하다.**
+    //   빈 제목 → 클라(metaCache)·middleware가 영어로 폴백하므로 화면·SEO 모두 정상.
+    //   원어 제목 → 폴백 자체를 무력화해 화면에 한국어가 그대로 뜬다(이번 버그의 실제 증상).
+    // 폴백 원본은 영어 제목: TMDB의 진짜 영어 제목 → 이번 실행에서 Gemini가 만든 영어 제목 순.
+    const fallbackTitle = enTitle
+        || (out.en?.title && !titleTainted('en', out.en.title) ? out.en.title : '');
+    // geminiDead(전면 장애)면 손대지 않는다 — 미완으로 남겨 다음 실행이 제대로 재시도.
+    if (geminiTried && !geminiDead) {
+        for (const t of TARGETS) {
+            const v = out[t.code];
+            if (!v?.overview) continue;
+            if (v.title && !titleTainted(t.code, v.title)) continue; // 이미 깨끗함
+            out[t.code] = {
+                title: fallbackTitle,
+                overview: v.overview,
+                source: `${v.source}${fallbackTitle ? '+en-title' : '+no-title'}`,
+            };
         }
     }
 
     // ⚠ 완료 게이트: 타깃 전 언어가 모두 채워졌을 때만 metaTranslated=true.
     //   일부만 성공(Gemini 일시 실패 등) → metaTranslated=false로 남겨 다음 실행이 자동 재시도(멱등 skip 안 됨).
     //   단, 번역 원본(영어/원어/네이티브 어느 것)도 전혀 없으면(번역 불가·영구) done 처리하되 사유 기록 → 무한 재시도 방지.
-    const complete = TARGETS.every((t) => out[t.code]?.overview);
+    //   2026-07-28: 게이트에 **제목**을 추가. 예전엔 줄거리만 봐서 title:''·원제 오염 문서가 완료로 굳었다.
+    //   위 마감을 거쳤는데도 제목이 빈 언어가 남으면 = 영어 제목도 Gemini 제목도 못 만든 작품 →
+    //   metaNoTitle로 기록해 완료 처리한다(빈 제목은 안전한 종착 상태 · 스킵 게이트가 이 마커를
+    //   인정 → 무한 재처리 방지). Gemini 전면 장애(geminiDead) 때는 마킹하지 않아 다음 실행이 재시도한다.
+    const titlesDone = TARGETS.every((t) => !out[t.code]?.overview || out[t.code].title);
+    const noTitleSource = !titlesDone && geminiTried && !geminiDead;
+    const complete = TARGETS.every((t) => out[t.code]?.overview) && (titlesDone || noTitleSource);
     const noSource = !src;
     const done = complete || noSource;
 
@@ -273,6 +399,9 @@ async function processTitle(media, id, { force = false } = {}) {
         searchTitle,                    // {code: 번역제목} — 검색결과 표시
         searchLower,                    // {code: 번역제목 소문자} — 접두 범위질의 키
         ...(noSource && !complete ? { metaNoSource: true } : {}),
+        metaNoTitle: noTitleSource,     // 제목 원본 없음(영구) — 스킵 게이트가 인정. 조건부가 아니라 항상
+                                        // 기록한다 — 나중에 TMDB에 제목이 생기면 false로 덮여 자동 복구되게.
+
         updatedAt: new Date(),
     }, { merge: true });
     await batch.commit();
@@ -372,4 +501,5 @@ async function runRetry({ limit = 100, concurrency = 3 } = {}) {
     return stat;
 }
 
-module.exports = { runBackfill, runIncremental, runRetry, processTitle, enumerateIds, TARGETS };
+// titleTainted: 보수 스크립트(fill-missing-langs.js)가 **같은 판정**으로 대상을 고르게 공개.
+module.exports = { runBackfill, runIncremental, runRetry, processTitle, enumerateIds, TARGETS, titleTainted };
