@@ -84,7 +84,14 @@ function validOverview(code, s) {
     // 최소 길이 5 — 10으로 잡았다가 실패 사례(2026-07-28): 원문 줄거리가 한 문장인 작품의 중국어
     // 번역("真的，真的恭喜你" 8자)이 거부돼 영구 partial이 됐다. CJK는 라틴계보다 밀도가 높다.
     if (!t || t.length < 5) return false;
-    if (titleTainted(code, t)) return false;          // 비원어 줄거리에 한글 잔류 금지
+    // 한글 잔류 — **미세 잔류는 허용**(2026-07-29). 전부 거부로 잡았더니 인명 하나("유리博士")가
+    // 한글로 남은 99% 정상 번역이 통째로 거부돼 영구 partial 루프가 됐다(122871 터닝메카드 실측).
+    // 짧고 노출이 큰 제목은 계속 전면 금지지만, 줄거리의 고유명사 몇 글자는 공식 en 원문의
+    // 괄호 한글과 같은 급으로 취급한다. 실질 미번역(한글 다량)만 거른다.
+    if (PRIMARY_SCRIPT && baseLang(code) !== baseLang(PRIMARY_CONTENT_LANG)) {
+        const h = (t.match(new RegExp(PRIMARY_SCRIPT.source, 'g')) || []).length;
+        if (h > 15 || h > t.length * 0.2) return false;
+    }
     const re = SCRIPT_RE[code];
     if (re && !re.test(t)) return false;              // ja/zh/ru/ar/ko는 해당 문자가 있어야 함
     return true;
@@ -176,6 +183,8 @@ async function geminiMulti({ srcTitle, srcOverview, srcOverviewLang, codes, over
             `[Overview rules]`,
             `- SOURCE OVERVIEW below is in ${srcOverviewLang}. Translate it naturally and idiomatically into each target language, faithfully preserving meaning, tone and nuance.`,
             `- Each overview MUST be written 100% in its target language. Do not add notes, commentary, or information not in the source.`,
+            // 2026-07-29 추가 — 인명 하나를 한글로 남기는 사례 실측("유리博士") → 줄거리에도 음역 지시.
+            `- Transliterate ALL proper nouns (person names, group names, show titles) into the target script or romanization — never leave ${nameOf(PRIMARY_CONTENT_LANG)} characters inside an overview.`,
         ] : []),
         ``,
         `- NEVER return, copy, or echo the source language where a translation is required. Returning source-language text is a FAILURE.`,
