@@ -88,6 +88,17 @@ const STRONG_FLOOR = 100;  // softcore인데 평점수 100 이상이면 사람 �
 const ADULT_CERTS = new Set(['18', '19', '19+', '청소년관람불가', 'R18', 'X']);
 const VOTE_FLOOR = 10;   // 이 미만 = 상업 개봉작으로 보기 어려움(실측: 정상 개봉작 최소 267)
 
+// ── 제목 어휘 (2026-07-28 추가) — **자동 숨김에 쓰지 않는다. 검수 후보 추출 전용.** ──────
+// 배경: 「여대생: 스폰 찾기」「만취한 척 배꼽노출 젖어있는 여대생」처럼 TMDB에 키워드·등급·제작사·
+//   러닝타임이 **전부 비어 있는** 성인물이 R3(보류)로 빠져 검색에 노출됐다. 남은 신호는 제목뿐이다.
+// 그런데 제목 매칭만으로 숨기면 오탐이 난다(실측):
+//   「핑크퐁! 호기의 탐정사무소」·「공정사회」 ← '정사'가 부분문자열로 걸림(아래 lookbehind로 차단)
+//   「원나잇 푸드트립: 원픽로드」 ← 정상 예능 / 「정사」(1998 이재용) ← 정상 개봉작
+//   한국어는 띄어쓰기 경계가 약해 이런 충돌이 구조적으로 생긴다.
+// → 적중분은 HTML 리포트 맨 위 섹션으로만 올리고, 사람이 체크한 것만 adult-manual.json의 hide로 간다.
+const TITLE_LEX = /(노출|젖어|젖은|애무|(?<![탐공])정사(?!회)|섹스|야동|19금|스폰서?\s*찾|몸종|유부녀|새엄마|형수님|처제|시누이|올케|안마방|룸싸롱|색녀|음란|후배위|가슴\s*큰|밤일|욕정|스와핑|불륜|외도|맨살|아랫도리|성인영화|에로)/;
+const titleHit = (s) => (TITLE_LEX.exec(String(s || '')) || [])[0] || null;
+
 const matchKw = (kws, re) => (kws || []).find((k) => re.test(String(k || '')));
 // 성인 등급이 실제로 무엇이었는지 반환 — 사유 표기용(certs[0]을 쓰면 ['15','19'] 같은 경우
 // "cert:15"로 잘못 찍혀 검수 때 혼란을 준다).
@@ -160,11 +171,15 @@ async function collect() {
         const m = x.meta || {};
         const kws = (m.keywords || []).map((k) => k?.name).filter(Boolean);
         const votes = Number(m.vote_count || 0);
+        // 제목 어휘 매칭은 **모든 언어 제목**을 대상으로 한다 — 성인물 신호는 한국어 제목에만
+        // 있는 경우가 대부분이고(searchTitle.ko), TMDB 영어 제목은 밋밋하게 번역돼 안 걸린다.
+        const allTitles = [m.title, ...Object.values(x.searchTitle || {})].filter(Boolean).join(' ');
         const info = {
             title: m.title || x.searchTitle?.en || Object.values(x.searchTitle || {})[0] || '',
+            ko: x.searchTitle?.ko || '',
             year: String(m.release_date || m.first_air_date || '').slice(0, 4),
             overview: m.overview || '',
-            votes, certs: [], kws,
+            votes, certs: [], kws, allTitles,
         };
 
         let local = null; // null이면 TMDB 조회 필요(등급 확인)
@@ -202,13 +217,15 @@ function suspicionScore(info) {
 
 const SUSPECT_SHOW = 400;   // 후보 표시 상한 — 의심 점수 상위만. 전체는 실행 로그에 남는다.
 
-function writeHtml(file, hidden, suspectsAll) {
+function writeHtml(file, hidden, titleSuspects, suspectsAll) {
     const suspects = suspectsAll.slice(0, SUSPECT_SHOW);
     const suspectMore = suspectsAll.length - suspects.length;
+    // 한국어 제목을 함께 보여준다 — 성인물 여부는 대개 한국어 제목에서만 판별된다
+    // (TMDB 영어 제목은 밋밋하게 번역돼 있어 그것만 보면 판단이 안 선다).
     const row = (r, i) => `<tr>
   <td class="n">${i + 1}</td>
   <td class="id"><label><input type="checkbox" class="pick" value="${esc(r.id)}"> ${esc(r.id)}</label></td>
-  <td><b>${esc(r.info.title || '(제목 없음)')}</b>${r.info.year ? ` <span class="y">(${esc(r.info.year)})</span>` : ''}
+  <td><b>${esc(r.info.ko || r.info.title || '(제목 없음)')}</b>${r.info.ko && r.info.title && r.info.ko !== r.info.title ? ` <span class="y">/ ${esc(r.info.title)}</span>` : ''}${r.info.year ? ` <span class="y">(${esc(r.info.year)})</span>` : ''}
       <div class="ov">${esc((r.info.overview || '(줄거리 없음)').slice(0, 400))}</div></td>
   <td class="m">${esc(r.media)}</td>
   <td class="v">${r.info.votes}</td>
@@ -246,6 +263,14 @@ function writeHtml(file, hidden, suspectsAll) {
  <div><button onclick="collect()">체크한 id 모으기</button></div>
  <textarea id="out" placeholder='["123","456"]'></textarea>
 </div>
+
+<h2>🔎 제목 어휘 적중 ${titleSuspects.length}편 — <span class="y">지금 볼 것</span></h2>
+<div class="sub">TMDB에 키워드·등급이 <b>전혀 없어</b> 자동 판정이 불가능했지만 <b>제목에 성인물 어휘</b>가 있는 것들입니다.
+ 「여대생: 스폰 찾기」처럼 메타데이터가 빈 성인물이 검색에 노출되던 경로가 여기입니다.
+ <b>자동으로 숨기지 않습니다</b> — 「공정사회」·「핑크퐁 탐정사무소」처럼 부분문자열로 걸리는 오탐이 섞이기 때문입니다.
+ 성인물이면 체크 → <code>hide</code>로.</div>
+<table><thead><tr><th></th><th>id</th><th>제목 / 줄거리</th><th>종류</th><th>평점수</th><th>판정 근거</th><th></th></tr></thead>
+<tbody>${titleSuspects.map(row).join('\n')}</tbody></table>
 
 <h2>🚫 숨김 판정 ${hidden.length}편</h2>
 <div class="sub">아래는 앱 검색·탐색·색인에서 제외됩니다. 정상 작품이 섞여 있으면 체크 → <code>allow</code>로.</div>
@@ -312,8 +337,8 @@ async function main() {
     log('');
 
     const t0 = Date.now();
-    const stat = { hide: 0, keep: 0, suspect: 0, changed: 0, errors: 0 };
-    const hiddenList = [], suspectList = [];
+    const stat = { hide: 0, keep: 0, suspect: 0, titleSuspect: 0, changed: 0, errors: 0 };
+    const hiddenList = [], suspectList = [], titleSuspectList = [];
     let idx = 0, counted = 0;
 
     async function decide(r) {
@@ -327,10 +352,16 @@ async function main() {
             try {
                 const { verdict, reason, info } = await decide(r);
                 counted++;
-                const rec = { id: r.id, media: r.media, reason, info: info || r.info };
-                if (verdict === 'suspect') { stat.suspect++; suspectList.push(rec); }
-                else if (verdict === 'hide') { stat.hide++; hiddenList.push(rec); }
-                else stat.keep++;
+                // 원격 판정(info)엔 한국어 제목이 없다 — 어휘 매칭은 스캔에서 만든 allTitles로 한다.
+                const rec = { id: r.id, media: r.media, reason, info: { ...(info || {}), ...r.info, ...(info || {}), ko: r.info.ko, allTitles: r.info.allTitles } };
+                if (verdict === 'hide') { stat.hide++; hiddenList.push(rec); }
+                else {
+                    // 숨김이 아닌 것 중 제목에 성인 어휘가 있으면 **별도 검수 후보**로 올린다(자동 숨김 아님).
+                    const hit = titleHit(rec.info.allTitles);
+                    if (hit) { stat.titleSuspect++; titleSuspectList.push({ ...rec, reason: `title:${hit}${reason ? ` · ${reason}` : ''}` }); }
+                    else if (verdict === 'suspect') { stat.suspect++; suspectList.push(rec); }
+                    else stat.keep++;
+                }
 
                 const shouldHide = verdict === 'hide';
                 if (shouldHide !== r.hidden) {
@@ -358,7 +389,8 @@ async function main() {
 
     log('');
     log(bold('══════════════ 요약 ══════════════'));
-    log(`  판정 — 숨김 ${bold(stat.hide)} · 유지 ${stat.keep} · 후보(수동검토) ${stat.suspect} · 오류 ${stat.errors}`);
+    log(`  판정 — 숨김 ${bold(stat.hide)} · 유지 ${stat.keep} · 오류 ${stat.errors}`);
+    log(`  검수 대기 — ${yellow(`제목 어휘 적중 ${stat.titleSuspect}편`)} · 일반 후보 ${stat.suspect}편`);
     log(`  ${opts.dry ? yellow('DRY — 실제 변경 없음. 바뀔 문서') : '변경된 문서'} ${bold(stat.changed)}건 · ${Math.round((Date.now() - t0) / 1000)}초`);
 
     if (opts.html) {
@@ -368,7 +400,7 @@ async function main() {
         // 후보는 의심 점수 내림차순 — 위쪽만 봐도 되게(놓친 성인물 찾기가 목적).
         const byScore = (a, b) => suspicionScore(b.info) - suspicionScore(a.info)
             || String(a.info.title).localeCompare(String(b.info.title));
-        writeHtml(htmlFile, hiddenList.sort(byTitle), suspectList.sort(byScore));
+        writeHtml(htmlFile, hiddenList.sort(byTitle), titleSuspectList.sort(byTitle), suspectList.sort(byScore));
         log('');
         log(bold(`  📄 검수용 목록: ${htmlFile}`));
         log(dim('     브라우저로 열어 제목·줄거리를 직접 확인하고, 오탐은 체크 → adult-manual.json 에 반영하세요.'));
