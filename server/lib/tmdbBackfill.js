@@ -81,7 +81,9 @@ const SCRIPT_RE = {
 };
 function validOverview(code, s) {
     const t = norm(s);
-    if (!t || t.length < 10) return false;
+    // 최소 길이 5 — 10으로 잡았다가 실패 사례(2026-07-28): 원문 줄거리가 한 문장인 작품의 중국어
+    // 번역("真的，真的恭喜你" 8자)이 거부돼 영구 partial이 됐다. CJK는 라틴계보다 밀도가 높다.
+    if (!t || t.length < 5) return false;
     if (titleTainted(code, t)) return false;          // 비원어 줄거리에 한글 잔류 금지
     const re = SCRIPT_RE[code];
     if (re && !re.test(t)) return false;              // ja/zh/ru/ar/ko는 해당 문자가 있어야 함
