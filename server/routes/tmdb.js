@@ -257,6 +257,22 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
     }
 });
 
+// ── 배포 확인용 (public, 인증 없음) ──────────────────────────────────────────
+// 2026-07-28 추가. 오늘 "배포가 됐는지"를 두 번 오판했다(브랜치 착각 1회, 반영 지연 1회).
+// 밖에서 커밋 해시를 확인할 방법이 없으면 매번 같은 혼선이 반복된다.
+// RENDER_GIT_COMMIT은 Render가 빌드 시 주입한다(로컬에선 'local').
+// 필터 적재 건수도 함께 노출해 "코드는 올라갔는데 목록이 비었다"까지 한 번에 판별한다.
+router.get('/api/kdl/version', async (req, res) => {
+    await hiddenTitles.ready().catch(() => {});
+    res.json({
+        commit: (process.env.RENDER_GIT_COMMIT || 'local').slice(0, 7),
+        branch: process.env.RENDER_GIT_BRANCH || null,
+        startedAt: new Date(Date.now() - Math.round(process.uptime() * 1000)).toISOString(),
+        uptimeSec: Math.round(process.uptime()),
+        filteredTitles: hiddenTitles.size(),   // 숨김 + 삭제 합집합
+    });
+});
+
 // ── 장르 목록 ──
 router.get('/api/tmdb/genres', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
@@ -278,6 +294,10 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
         const media = req.params.media === 'movie' ? 'movie' : 'tv';
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });
+        // 숨김·삭제 작품은 상세도 막는다 — 목록에서만 빼면 링크를 아는 사람에겐 그대로 열린다.
+        // 404를 주면 크롤러에게도 "없는 페이지"로 정확히 전달돼 소프트 404가 쌓이지 않는다.
+        await hiddenTitles.ready();
+        if (hiddenTitles.isHidden(id)) return res.status(404).json({ error: 'not_found' });
         const lang = toTmdbLang(req.query.lang);
         const key = `title:${media}:${id}:${lang}`;
         let data = getCache(key);

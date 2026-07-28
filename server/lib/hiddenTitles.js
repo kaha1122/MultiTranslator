@@ -21,15 +21,24 @@ let inflight = null;
 async function load() {
     if (!kcultureDb) { console.warn('[hiddenTitles] kcultureDb 없음 — 필터 미적용'); return ids; }
     const t0 = Date.now();
+    // ⚠ 두 목록의 합집합이다 — 어느 하나만으로는 앱에서 사라지지 않는다.
+    //   ① titles.hidden=true : 카탈로그에 남겨두되 숨기는 작품(성인물 등)
+    //   ② excluded_titles    : 카탈로그에서 **삭제**한 작품
+    //      삭제해도 검색·탐색은 TMDB 프록시라 TMDB가 계속 결과에 실어 보낸다(2026-07-28 실측:
+    //      지운 「B타임의 정사 3」이 검색에 그대로 노출). 우리 DB에서 지우는 것과 앱에서 감추는 것은
+    //      별개의 일이고, 후자는 이 필터가 유일한 수단이다.
     // ⚠ select()를 인자 없이 부르지 말 것 — admin SDK 버전에 따라 거부된다.
-    //   필드 하나를 명시해도 전송량은 같고(문서당 수십 바이트) 호환성만 얻는다.
-    const snap = await kcultureDb.collection('titles').where('hidden', '==', true).select('hidden').get();
+    const [hid, exc] = await Promise.all([
+        kcultureDb.collection('titles').where('hidden', '==', true).select('hidden').get(),
+        kcultureDb.collection('excluded_titles').select('reason').get(),
+    ]);
     const next = new Set();
-    snap.forEach((d) => next.add(String(d.id)));
+    hid.forEach((d) => next.add(String(d.id)));
+    exc.forEach((d) => next.add(String(d.id)));
     ids = next;
     loadedAt = Date.now();
     // 기동/갱신 때마다 남긴다 — 0이면 "필터가 왜 안 먹지"를 로그 한 줄로 판별할 수 있다.
-    console.log(`[hiddenTitles] ${ids.size}건 로드 (${Date.now() - t0}ms)`);
+    console.log(`[hiddenTitles] ${ids.size}건 로드 (숨김 ${hid.size} + 삭제 ${exc.size}, ${Date.now() - t0}ms)`);
     return ids;
 }
 
