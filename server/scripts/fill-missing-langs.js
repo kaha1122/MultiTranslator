@@ -9,10 +9,21 @@
 //   1950~2026 전 연도를 다 돌린 뒤에도 228편이 미완으로 남았던 이유이며, 날짜가 아예 없는
 //   문서는 원리적으로 영원히 안 걸린다. 이 스크립트는 그 구멍을 정확히 메운다.
 //
-// 무엇을 대상으로 하나
-//   `metaLangs`가 TARGETS(12개 UI 언어) 전부를 갖지 못한 문서. 단 아래는 제외한다:
+// 무엇을 대상으로 하나 (2026-07-28 확장 — 언어 결손 + **제목 결손**)
+//   ① `metaLangs`가 TARGETS(12개 UI 언어) 전부를 갖지 못한 문서 = 줄거리째 없는 언어가 있음
+//   ② `searchTitle` 맵에 그 언어 키가 없는 문서 = **줄거리는 있는데 제목이 빈** 언어가 있음
+//      searchTitle은 빈 제목을 제외하고 만들어지므로 그 자체가 정확한 검출기다(추가 읽기 0).
+//      ⚠ ②는 오래 방치돼 있었다 — 예전 파이프라인은 TMDB가 줄거리만 준 언어를 "완료"로 처리해
+//      제목을 영원히 안 채웠고, 화면엔 원어(한국어) 제목이 그대로 노출됐다(인니어 김부장 사례).
+//   ③ `searchTitle[lang]`에 **원어(메인 콘텐츠 언어) 제목이 그대로 박힌** 문서 = 제목 오염
+//      TMDB는 language=en-US 요청에도 영어 제목이 없으면 원제를 돌려주는데 옛 코드가 그걸
+//      translations/en.title에 저장했다. en은 전 언어의 폴백 소스라 오염이 12개 로케일로 번진다.
+//      ②와 달리 **값이 있어서 "완비"로 보인다** — 어떤 재실행에도 안 걸리던 부류다(2026-07-28).
+//      판정은 lib/tmdbBackfill.js의 titleTainted()를 그대로 쓴다(스크립트와 코어가 같은 기준).
+//   단 아래는 제외한다:
 //     · metaNoSource=true → TMDB에 번역 원본(영어·원어·네이티브) 자체가 없어 **영구 불가**.
 //       재시도해도 못 채우고 TMDB·Gemini 호출만 낭비한다(2026-07-27 기준 228편).
+//     · metaNoTitle=true → 제목 원본(영어 제목·피벗 제목)이 없어 제목만 영구 불가.
 //     · media 없음 → /{media}/{id} 조회가 불가능.
 //
 // 비용: 열거는 필드 마스크(select) 덕에 문서당 수십 바이트다. 2.4만 문서 스캔 ≈ Firestore 읽기
@@ -28,12 +39,14 @@
 //   --concurrency 4     동시 처리 수 (기본 4)
 //   --limit N           처리 상한 (시범용)
 //   --include-nosource  metaNoSource 문서도 재시도(TMDB에 원문이 새로 생겼을 때만 의미)
+//   --langs-only        언어 결손(①)만 처리 — 제목 결손(②)은 건너뜀
+//   --titles-only       제목 결손(②)만 처리 — 기존 완비 카탈로그의 제목 보수 전용
 //
 // 멱등 — 중단·재실행 안전. 로그: 터미널 + scripts/logs/fill-missing-*.log
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-const { processTitle, TARGETS } = require('../lib/tmdbBackfill');
+const { processTitle, TARGETS, titleTainted } = require('../lib/tmdbBackfill');
 const { kcultureDb } = require('../config/firebaseKculture');
 
 // ── 인자 파싱 ────────────────────────────────────────────────────────────────
@@ -43,6 +56,8 @@ const opts = {
     limit: arg('limit') ? parseInt(arg('limit'), 10) : 0,
     dry: process.argv.includes('--dry'),
     includeNoSource: process.argv.includes('--include-nosource'),
+    langsOnly: process.argv.includes('--langs-only'),
+    titlesOnly: process.argv.includes('--titles-only'),
 };
 
 // ── 색상 (터미널만, 로그 파일엔 ANSI 제거 후 기록) ───────────────────────────
@@ -73,25 +88,46 @@ async function collectTargets() {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     log(dim('  Firestore titles 스캔 중… (필드 마스크 — 문서당 수십 바이트)'));
     const snap = await kcultureDb.collection('titles')
-        .select('metaLangs', 'media', 'metaNoSource', 'metaTranslated', 'searchTitle')
+        .select('metaLangs', 'media', 'metaNoSource', 'metaNoTitle', 'metaTranslated', 'searchTitle')
         .get();
 
     const targets = [];
-    const stat = { total: 0, complete: 0, noSource: 0, noMedia: 0 };
+    const stat = { total: 0, complete: 0, noSource: 0, noTitle: 0, noMedia: 0, noIndex: 0, tainted: 0 };
     snap.forEach((d) => {
         stat.total++;
         const x = d.data() || {};
         const langs = x.metaLangs || [];
-        if (TARGETS.every((t) => langs.includes(t.code))) { stat.complete++; return; }
+        const st = x.searchTitle;
+        // ① 언어 결손 = 줄거리째 없는 언어
+        const missLangs = opts.titlesOnly ? [] : TARGETS.filter((t) => !langs.includes(t.code)).map((t) => t.code);
+        // ② 제목 결손 = 언어는 보유했는데 searchTitle에 그 키가 없음(searchTitle은 빈 제목을 제외해 만들어짐).
+        //    metaNoTitle=true는 제목 원본 자체가 없어 영구 불가 → 제외.
+        //    searchTitle 맵이 아예 없는 구(舊) 문서는 판정 불가라 대상에 넣는다 — processTitle이
+        //    서브컬렉션에서 인덱스를 재구성(Gemini 0)한 뒤 다시 판정해 필요 없으면 skip으로 빠진다.
+        const noIndex = !st && langs.length > 0;
+        const missTitles = opts.langsOnly ? []
+            : (noIndex ? ['?'] : TARGETS.filter((t) => langs.includes(t.code) && !st[t.code]).map((t) => t.code));
+        // ③ 제목 오염 = 값은 있는데 **원어(메인 콘텐츠 언어) 제목이 그대로 박힌** 언어.
+        //    빈 제목과 달리 "값이 있으니 완비"로 보여 어떤 재실행에도 안 걸리던 부류다(2026-07-28).
+        const badTitles = (opts.langsOnly || noIndex) ? []
+            : TARGETS.filter((t) => st?.[t.code] && titleTainted(t.code, st[t.code])).map((t) => t.code);
+
+        if (!missLangs.length && !missTitles.length && !badTitles.length) { stat.complete++; return; }
+        // 제목을 끝내 만들지 못한 문서 — 제목 결손만 남았다면 대상에서 뺀다(오염은 항상 고친다).
+        if (x.metaNoTitle && !missLangs.length && !badTitles.length) { stat.noTitle++; return; }
+        if (noIndex) stat.noIndex++;
+        if (badTitles.length) stat.tainted++;
         if (x.metaNoSource && !opts.includeNoSource) { stat.noSource++; return; }
         if (x.media !== 'tv' && x.media !== 'movie') { stat.noMedia++; return; }
         targets.push({
             id: d.id,
             media: x.media,
             have: langs.length,
-            missing: TARGETS.filter((t) => !langs.includes(t.code)).map((t) => t.code),
+            missing: missLangs,
+            missingTitles: missTitles,
+            badTitles,
             // 표시용 이름 — searchTitle은 {lang: 제목} 맵. 영어 우선, 없으면 아무 언어나.
-            name: x.searchTitle?.en || Object.values(x.searchTitle || {})[0] || '(제목 미상)',
+            name: st?.en || Object.values(st || {})[0] || '(제목 미상)',
         });
     });
     return { targets, stat };
@@ -116,16 +152,33 @@ async function main() {
     log('');
     log(bold('━━━━━━━━━━ 스캔 결과 ━━━━━━━━━━'));
     log(`  전체 ${stat.total}편`);
-    log(`  ${green('완비')} ${stat.complete}편 (12개 언어 전부)`);
+    log(`  ${green('완비')} ${stat.complete}편 (12개 언어 × 줄거리+제목)`);
     log(`  ${dim('제외')} 번역불가(metaNoSource) ${stat.noSource}편` + dim(' — TMDB에 원본 자체가 없어 영구 불가'));
+    if (stat.noTitle) log(`  ${dim('제외')} 제목불가(metaNoTitle) ${stat.noTitle}편` + dim(' — 영어·피벗 제목이 없어 영구 불가'));
     if (stat.noMedia) log(`  ${dim('제외')} media 없음 ${stat.noMedia}편`);
     log(`  ${yellow('대상')} ${bold(targets.length)}편`);
 
     if (targets.length) {
+        // 결손 유형 분해 — 언어(줄거리째 없음) vs 제목(줄거리는 있는데 제목만 빔)
+        const langGap = targets.filter((t) => t.missing.length).length;
+        const titleGap = targets.filter((t) => t.missingTitles.length).length;
+        const taintGap = targets.filter((t) => t.badTitles.length).length;
+        log(`    ${dim('·')} 언어 결손 ${langGap}편` + dim(' (줄거리째 없는 언어 보유)'));
+        log(`    ${dim('·')} 제목 결손 ${titleGap}편` + dim(' (줄거리는 있는데 제목만 빔)'));
+        log(`    ${dim('·')} ${red('제목 오염')} ${taintGap}편` + dim(' (원어 제목이 그대로 박힘 — 화면에 한국어로 노출 중)'));
+        if (stat.noIndex) log(dim(`    · 그중 검색인덱스 없는 구 문서 ${stat.noIndex}편 — 인덱스 재구성 후 재판정(대개 skip)`));
+
         // 어떤 언어가 얼마나 비었는지 — 파이프라인 어디가 새는지 보는 지표
-        const byLang = {};
-        for (const t of targets) for (const c of t.missing) byLang[c] = (byLang[c] || 0) + 1;
-        log(dim(`  누락 언어: ${Object.entries(byLang).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(' · ')}`));
+        const byLang = {}, byTitle = {}, byBad = {};
+        for (const t of targets) {
+            for (const c of t.missing) byLang[c] = (byLang[c] || 0) + 1;
+            for (const c of t.missingTitles) byTitle[c] = (byTitle[c] || 0) + 1;
+            for (const c of t.badTitles) byBad[c] = (byBad[c] || 0) + 1;
+        }
+        const fmt = (o) => Object.entries(o).sort((a, b) => b[1] - a[1]).map(([c, n]) => `${c} ${n}`).join(' · ');
+        if (langGap) log(dim(`  누락 언어: ${fmt(byLang)}`));
+        if (titleGap) log(dim(`  누락 제목: ${fmt(byTitle)}`) + dim(stat.noIndex ? '  (?=인덱스없음)' : ''));
+        if (taintGap) log(`  ${red('오염 제목')}: ${fmt(byBad)}`);
     }
 
     if (!targets.length) { log(''); log(green('  채울 것이 없습니다 — 이미 전부 완비.')); return; }
@@ -134,7 +187,9 @@ async function main() {
         log('');
         log(bold('  DRY — 상위 30편 미리보기'));
         for (const t of targets.slice(0, 30)) {
-            log(`    ${t.id} 「${t.name}」 ${t.media} · 보유 ${t.have} · 누락 ${t.missing.join(',')}`);
+            const gaps = [t.missing.length ? `언어 ${t.missing.join(',')}` : '', t.missingTitles.length ? `제목 ${t.missingTitles.join(',')}` : '',
+                t.badTitles.length ? red(`오염 ${t.badTitles.join(',')}`) : ''].filter(Boolean).join(' · ');
+            log(`    ${t.id} 「${t.name}」 ${t.media} · 보유 ${t.have} · ${gaps}`);
         }
         if (targets.length > 30) log(dim(`    … 외 ${targets.length - 30}편`));
         log('');
@@ -167,7 +222,9 @@ async function main() {
                     const secs = ((Date.now() - ts) / 1000).toFixed(1);
                     const mark = r.complete ? green('✔') : yellow('⚠');
                     const note = r.complete ? '' : yellow(' (부분 — 원본 부족 가능성, 재실행 시 자동 재시도)');
-                    log(`  ${mark} [${counted}/${capped.length}] ${it.id} 「${it.name}」 ${dim(`누락 ${it.missing.join(',')} →`)} langs=${r.langs} gemini=${r.geminiUsed} ${dim(secs + 's')}${note}`);
+                    const gaps = [it.missing.length ? `언어 ${it.missing.join(',')}` : '', it.missingTitles.length ? `제목 ${it.missingTitles.join(',')}` : '',
+                        it.badTitles.length ? `오염 ${it.badTitles.join(',')}` : ''].filter(Boolean).join(' · ');
+                    log(`  ${mark} [${counted}/${capped.length}] ${it.id} 「${it.name}」 ${dim(`${gaps} →`)} langs=${r.langs} gemini=${r.geminiUsed} ${dim(secs + 's')}${note}`);
                 }
             } catch (e) {
                 counted++; s.errors++;
