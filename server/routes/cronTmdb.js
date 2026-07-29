@@ -10,7 +10,7 @@
 //        전체 열거라 수 분 소요 → 백그라운드(fire-and-forget)로 돌리고 202 즉시 응답. 멱등이라 중단 시 다음 주 재개.
 const express = require('express');
 const { requireCronAuth } = require('../middleware/auth');
-const { runIncremental, runRetry, runBackfill } = require('../lib/tmdbBackfill');
+const { runIncremental, runRetry, runBackfill, refreshOfficialTitles } = require('../lib/tmdbBackfill');
 
 const router = express.Router();
 
@@ -22,7 +22,15 @@ router.post('/api/cron/tmdb-pretranslate', requireCronAuth, async (req, res) => 
         const retryLimit = Math.min(parseInt(req.body?.retryLimit, 10) || 100, 500);
         const incremental = await runIncremental({ days, maxTitles });
         const retry = await runRetry({ limit: retryLimit });
-        const out = { ok: true, incremental, retry };
+        // ③ 공식 제목 뒤늦은 반영 — TMDB는 신작의 언어별 제목을 방영 후에 채운다. 그동안 우리가
+        //    원제→Gemini로 만들어 둔 제목을 공식 제목으로 갈아끼운다(Gemini 호출 0).
+        //    ⚠ ①로는 안 된다 — discover가 그 작품을 물어와도 processTitle이 완비된 작품을
+        //      skip하기 때문(정상 동작). 실제로 「오싹한 연애」(298610)가 그 상태였다.
+        const titles = await refreshOfficialTitles({
+            days: Math.min(parseInt(req.body?.titleDays, 10) || 400, 2000),
+            maxTitles: Math.min(parseInt(req.body?.titleMax, 10) || 300, 1000),
+        });
+        const out = { ok: true, incremental, retry, titles };
         console.log('[cron/tmdb-pretranslate]', JSON.stringify(out));
         res.json(out);
     } catch (e) {

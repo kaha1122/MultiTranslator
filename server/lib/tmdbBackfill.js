@@ -367,6 +367,12 @@ async function processTitle(media, id, { force = false } = {}) {
         searchLower,
         metaNoSource: !pivot,           // 줄거리 원본 자체가 없음(ko·en 모두) — 항상 기록해 복구도 자동
         metaNoTitle,                    // 제목 원본·번역 모두 불가 — 항상 기록해 복구도 자동
+        // 제목 출처 맵 + 갱신 대기 플래그 — refreshOfficialTitles가 이 두 필드만 보고 대상을 고른다.
+        // TMDB는 신작의 언어별 공식 제목을 **방영 후에 뒤늦게 채운다**. 그때 우리 Gemini 제목을
+        // 공식 제목으로 갈아끼우기 위한 것이고, 이 맵이 없으면 대상을 찾으려 매번 11개 서브문서를
+        // 다 읽어야 한다(작품당 11 read × 1.8만 = 20만 read).
+        metaTitleSrc: Object.fromEntries(TARGETS.map((t) => [t.code, out[t.code].tSrc || '-'])),
+        metaOfficialPending: TARGETS.some((t) => t.code !== PRIMARY_CODE && out[t.code].tSrc !== 'official'),
         updatedAt: new Date(),
     }, { merge: true });
     await batch.commit();
@@ -452,6 +458,105 @@ async function runIncremental({ days = 14, maxTitles = 200, concurrency = 3 } = 
     return stat;
 }
 
+// ── 공식 제목 뒤늦은 반영 (A안, 2026-07-29) ─────────────────────────────────
+// TMDB는 신작의 **언어별 공식 제목을 방영 후에 뒤늦게 채운다.** 우리는 그때까지 없는 언어를
+// 원제→Gemini로 만들어 두는데, 나중에 공식 제목이 등록되면 그걸로 갈아끼워야 한다.
+// 예: 「오싹한 연애」(2026, 298610)의 ja·id가 현재 우리 생성분 — TMDB에 아직 없어서.
+//
+// ⚠ **processTitle로는 안 된다.** 그 함수는 metaV=2 + 전 언어 완비면 skip한다(정상 동작).
+//   실제로 298610은 discover가 물어와도 skip돼 제목이 영원히 갱신되지 않는다.
+//   그래서 제목만 손대는 별도 경로가 필요하다 — Gemini는 부르지 않는다.
+//
+// 비용: 루트 스캔 1회(필드 마스크, 1.8만 read ≈ $0.011) + 대상당 TMDB 1회. Gemini 0.
+//   서브문서는 **실제로 교체되는 언어만** 읽고 쓴다(대개 0~2개).
+//
+// 대상 선정: 최근 days 이내 방영·개봉 + 방영 중(Returning Series/In Production)
+//   구작은 제외한다 — 표본 실측(2026-07-29) 결과 우리 제목의 83%는 TMDB에 그 언어가 아예 없고,
+//   수년 지난 마이너 한국 작품의 번역이 새로 채워질 가능성은 낮다. 신작에만 실효가 있다.
+async function refreshOfficialTitles({ days = 400, maxTitles = 300, concurrency = 6, dry = false } = {}) {
+    if (!kcultureDb) throw new Error('kcultureDb 없음');
+    const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
+    const AIRING = new Set(['Returning Series', 'In Production', 'Planned', 'Post Production']);
+
+    const snap = await kcultureDb.collection('titles')
+        .select('media', 'searchTitle', 'searchLower', 'metaOfficialPending', 'titleCheckedAt',
+            'meta.first_air_date', 'meta.release_date', 'meta.status')
+        .get();
+
+    const cand = [];
+    snap.forEach((d) => {
+        const x = d.data() || {};
+        if (x.media !== 'tv' && x.media !== 'movie') return;
+        // 이미 전 언어가 공식이면 볼 것이 없다. 필드가 없는 구(舊) 문서는 판정 불가 → 대상에 포함.
+        if (x.metaOfficialPending === false) return;
+        const date = (x.meta?.first_air_date || x.meta?.release_date || '');
+        if (!(date >= since || AIRING.has(x.meta?.status))) return;
+        cand.push({
+            id: d.id, media: x.media, st: x.searchTitle || {}, sl: x.searchLower || {},
+            // 오래 안 본 것부터 — 매 실행이 같은 앞자리만 반복하지 않게 회전시킨다.
+            at: x.titleCheckedAt?.toMillis?.() || 0,
+        });
+    });
+    cand.sort((a, b) => a.at - b.at);
+    const capped = cand.slice(0, maxTitles);
+
+    const stat = { candidates: cand.length, scanned: capped.length, upgraded: 0, langs: 0, errors: 0, changes: [] };
+    let idx = 0;
+    async function worker() {
+        while (idx < capped.length) {
+            const p = capped[idx++];
+            try {
+                const detail = await tmdb(`/${p.media}/${p.id}`, { language: 'en-US', append_to_response: 'translations' });
+                const trs = detail.translations?.translations || [];
+                const koOv = null; // validTitle의 줄거리 접두 검사용 — 여기선 제목만 보므로 생략
+                const ups = [];    // [{code, title}]
+                let pending = false;
+                for (const t of TARGETS) {
+                    if (t.code === PRIMARY_CODE) continue;      // 원제는 갱신 대상이 아니다
+                    const rec = tmdbRecord(trs, t);
+                    const cand2 = norm(rec?.title || rec?.name || '');
+                    const ours = norm(p.st[t.code] || '');
+                    if (!cand2 || !validTitle(t.code, cand2, rec?.overview, koOv)) { pending = true; continue; }
+                    if (cand2 !== ours) ups.push({ code: t.code, title: cand2 });
+                }
+                if (!dry && ups.length) {
+                    // 교체되는 언어의 기존 source만 읽어 줄거리 출처(oSrc)를 보존한다.
+                    const refs = ups.map((u) => kcultureDb.doc(`titles/${p.id}/translations/${u.code}`));
+                    const cur = await kcultureDb.getAll(...refs);
+                    const batch = kcultureDb.batch();
+                    const st = {}, sl = {}, tsrc = {};
+                    ups.forEach((u, k) => {
+                        const oSrc = String(cur[k]?.data()?.source || '-').split('+')[1] || '-';
+                        batch.set(refs[k], { title: u.title, source: `official+${oSrc}`, titleRefreshedAt: new Date() }, { merge: true });
+                        st[u.code] = u.title; sl[u.code] = u.title.toLowerCase(); tsrc[u.code] = 'official';
+                    });
+                    batch.set(kcultureDb.doc(`titles/${p.id}`), {
+                        searchTitle: st, searchLower: sl, metaTitleSrc: tsrc,   // merge:true → 맵 키 병합
+                        metaOfficialPending: pending, titleCheckedAt: new Date(),
+                    }, { merge: true });
+                    await batch.commit();
+                } else if (!dry) {
+                    // 바뀐 게 없어도 확인 시각·pending은 남긴다(회전 + 다음 실행 대상 축소).
+                    await kcultureDb.doc(`titles/${p.id}`).set(
+                        { metaOfficialPending: pending, titleCheckedAt: new Date() }, { merge: true },
+                    );
+                }
+                if (ups.length) {
+                    stat.upgraded++; stat.langs += ups.length;
+                    if (stat.changes.length < 20) {
+                        stat.changes.push(`${p.id}: ${ups.map((u) => `${u.code}="${u.title}"`).join(' ')}`);
+                    }
+                }
+            } catch (e) {
+                stat.errors++;
+                if (stat.errors <= 3) console.warn(`[refreshOfficialTitles] ${p.id}: ${e.message}`);
+            }
+        }
+    }
+    await Promise.all(Array.from({ length: concurrency }, worker));
+    return stat;
+}
+
 // 부분 실패 재시도: metaTranslated=false 문서만 인덱스 쿼리로 집어 재처리(전체 스캔 아님 → 저비용).
 // 단일필드 자동 인덱스라 복합인덱스 불필요. 미처리작(필드 없음)은 매칭 안 됨 → runIncremental 담당.
 async function runRetry({ limit = 100, concurrency = 3 } = {}) {
@@ -472,6 +577,6 @@ async function runRetry({ limit = 100, concurrency = 3 } = {}) {
 
 // titleTainted·validTitle·validOverview: 러너/테스트가 같은 판정을 쓰도록 공개.
 module.exports = {
-    runBackfill, runIncremental, runRetry, processTitle, enumerateIds,
+    runBackfill, runIncremental, runRetry, refreshOfficialTitles, processTitle, enumerateIds,
     TARGETS, titleTainted, validTitle, validOverview,
 };
