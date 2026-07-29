@@ -12,6 +12,11 @@ const app = express();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 
+// 라우트별 응답 바이트 계측 — Render 대역폭 소비처 진단(2026-07-30). 라우트보다 **먼저** 등록해야
+// 모든 응답의 finish를 잡는다. 조회는 GET /api/kdl/bw, 그리고 1시간마다 [bw] 로그.
+const { bwMeter, bwReport } = require('./middleware/bwMeter');
+app.use(bwMeter);
+
 // ── 라우트 모듈 등록 ─────────────────────────────────────────────────────────
 app.use(require('./routes/analyze'));
 app.use(require('./routes/video'));
@@ -41,6 +46,12 @@ app.use(require('./routes/cronLounge')); // [신규] K-DramaAnyLang Dari's Loung
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
 app.get('/ping', (req, res) => {
     res.status(200).json({ status: 'ok', message: 'Server is awake!' });
+});
+
+// 대역폭 소비처 조회(public — /api/kdl/version과 동일 규약). 노출 정보는 라우트 경로·건수뿐이라
+// 비밀 없음. 값은 프로세스 부팅 이후 누적이므로 sinceISO/uptimeHours와 함께 읽을 것.
+app.get('/api/kdl/bw', (req, res) => {
+    res.json(bwReport(Math.min(parseInt(req.query.top, 10) || 20, 50)));
 });
 
 // 세션 시작 로그 — 클라가 앱 실행/로그인 직후(프로필 로드 후) 세션당 1회 호출.
