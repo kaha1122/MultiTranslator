@@ -35,32 +35,13 @@ function pickImageByLang(arr, originalLang) {
     return (by(originalLang) || by('en'))?.file_path || null;
 }
 
-// ── 인물 이름 문자체계(script) 판정 ────────────────────────────────────
-// TMDB 인물 이름은 언어별 번역이 있을 때만 현지화되고, 없으면 원어 그대로(예: 한국인 → '이승영')
-// 내려온다. 사용자 언어로 읽을 수 없는 문자면 영어(로마자) 이름으로 폴백해야 한다(절대 규칙 #7: 텍스트는
-// 사용자 언어 → 영어 폴백, 원어 노출 금지).
-// 유니코드 속성 이스케이프(\p{Script=...}) — 문자 범위를 직접 쓰지 않아 소스 인코딩과 무관.
-const SCRIPT_RE = {
-    hangul: /\p{Script=Hangul}/u,
-    kana: /[\p{Script=Hiragana}\p{Script=Katakana}]/u,
-    cjk: /\p{Script=Han}/u,
-    cyrl: /\p{Script=Cyrillic}/u,
-    arab: /\p{Script=Arabic}/u,
-};
-
-// 각 UI 언어가 읽는 문자체계(라틴은 어느 언어나 읽으므로 목록에 없음 = 항상 허용)
-const LANG_SCRIPTS = {
-    ko: ['hangul', 'cjk'], ja: ['kana', 'cjk'], 'zh-CN': ['cjk'], 'zh-TW': ['cjk'],
-    ru: ['cyrl'], ar: ['arab'],
-};
-function isForeignScript(name, clientLang) {
-    if (!name) return false;
-    const ok = LANG_SCRIPTS[clientLang] || [];
-    for (const k of Object.keys(SCRIPT_RE)) {
-        if (SCRIPT_RE[k].test(name) && !ok.includes(k)) return true;
-    }
-    return false;
-}
+// ── 인물 이름 문자체계(script) 판정 — lib/personNames.js로 이관(2026-07-29) ────
+// TMDB 인물 이름은 언어별 번역이 있을 때만 현지화되고, 없으면 **인물 기본명**이 그대로 내려온다.
+// 기본명은 인물마다 로마자/한글 제각각이라(오싹한 연애 실측: 연출=Lee Min-soo·각본=최정미) 뷰어
+// 언어와 무관하게 표기가 뒤섞인다. 해석 규칙(뷰어 표기 → 로마자 → RR 로마자 생성)은 lib에 단일화.
+const {
+    isForeignScript, hasNativeScript, LANG_SCRIPTS, resolveCreditNames, pickPersonName,
+} = require('../lib/personNames');
 
 // 리스트/검색 제목 현지화: ① 사용자 언어 번역제목(우리 Firestore titles/{id}/translations/{clientLang}.title)
 //   ② 영어 폴백(TMDB가 원어=한국어로 폴백한 name===original 항목만, fetchEn()로 받음) ③ TMDB 원제 유지.
@@ -320,15 +301,17 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
             if (poster) data.poster_path = poster;
             if (backdrop) data.backdrop_path = backdrop;
 
-            // 배우/스태프 이름: TMDB가 사용자 언어 이름이 없으면 원어(예: 한국어)로 폴백함(name===original_name).
-            // 사용자가 콘텐츠 원어를 못 읽는 경우(원어≠사용자언어, 영어도 아님) → 영어(로마자) 이름으로 폴백.
-            // (콘텐츠 원어 사용자·영어 사용자는 그대로 둠.)
+            // 배우/스태프 이름 현지화 — 2단 처리(2026-07-29 전면 개편, 오싹한 연애 실측 후).
+            // 규칙: 뷰어 언어 표기 → 영어(로마자) → RR 로마자 생성 폴백. **전 언어 뷰어 대상**(예전엔
+            // 비영어·비원어 뷰어만 처리해서 ① 영어 뷰어가 한글 기본명(최정미)을 ② 원어 뷰어가 로마자
+            // 기본명(Lee Min-soo, 한글은 aka에만)을 그대로 봤다).
             const origLang = toTmdbLang(ol);
+            const clientLang = String(req.query.lang || 'en');
+            const cast = data.credits?.cast || [];
+            const crew = data.credits?.crew || [];
+            // ①(값싼 경로) 비영어·비원어 뷰어: en 크레딧 1회로 일괄 교체 — 대부분 여기서 끝난다.
             if (lang !== 'en-US' && lang !== origLang) {
-                const cast = data.credits?.cast || [];
-                const crew = data.credits?.crew || [];
                 // 원어 폴백 판정: name===original_name(TMDB 폴백 신호) 또는 사용자가 못 읽는 문자체계.
-                const clientLang = String(req.query.lang || 'en');
                 const isFallbackName = (p) => !!p.name && ((p.original_name && p.name === p.original_name) || isForeignScript(p.name, clientLang));
                 const needFix = [...cast, ...crew, ...(data.created_by || [])].some(isFallbackName);
                 if (needFix) {
@@ -349,6 +332,12 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                     } catch (e) { /* en 크레딧 실패 시 원래(원어) 이름 유지 */ }
                 }
             }
+            // ②(인물 단위 해석) ①로도 남는 케이스 — 영어 뷰어의 한글 기본명(en 크레딧에도 한글),
+            //    원어/CJK 뷰어의 로마자 기본명 승격(aka의 "이민수"), 로마자가 TMDB에 아예 없는 인물의
+            //    RR 생성까지. 인물 조회는 7일 메모 + 작품당 20명 캡, 결과는 아래 setCache(6h)에 실림.
+            try {
+                await resolveCreditNames([cast, crew, data.created_by], clientLang);
+            } catch (e) { /* 해석 실패 → 기존 이름 유지(fail-open) */ }
             setCache(key, data, 6 * 60 * 60 * 1000);
         }
         res.json(data);
@@ -485,7 +474,7 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
 
         const key = `person:${id}:${lang}`;
         let data = getCache(key);
-        if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits' }); setCache(key, data, 6 * 60 * 60 * 1000); }
+        if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits,translations' }); setCache(key, data, 6 * 60 * 60 * 1000); }
         // 출연작: 메인 콘텐츠 언어 작품 + 포스터 있는 것만, 중복 제거, 인기순
         const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
         const seen = new Set();
@@ -517,14 +506,22 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
             },
         });
 
-        // ② 인물 이름: TMDB는 해당 언어 이름 번역이 없으면 원어(한글)로 내려준다 → 사용자가 못 읽는
-        //    문자체계면 영어(로마자) 이름으로 폴백. 상세 화면 크레딧과 표기 일치.
+        // ② 인물 이름 — 상세 크레딧과 동일 규칙(lib/personNames.js, 2026-07-29 통일):
+        //    뷰어 언어 표기(번역·aka) → 영어(로마자) → RR 로마자 생성. 영어 뷰어의 한글 기본명,
+        //    원어 뷰어의 로마자 기본명(한글은 aka에만) 케이스까지 커버. 데이터는 이미 응답에 있음(추가 호출 0).
         let name = data.name;
-        if (lang !== 'en-US' && isForeignScript(name, clientLang)) {
-            try {
-                const ep = await loadEnPerson();
-                if (ep?.name && !isForeignScript(ep.name, clientLang)) name = ep.name;
-            } catch { /* en 조회 실패 → 원어 이름 유지 */ }
+        {
+            const trs = {};
+            for (const t of (data.translations?.translations || [])) {
+                const n = (t.data?.name || '').trim();
+                if (n) trs[t.iso_639_1] = n;
+            }
+            const lite = { name: data.name, aka: data.also_known_as || [], trs };
+            const lb = String(clientLang).split('-')[0];
+            if (isForeignScript(name, clientLang) || (LANG_SCRIPTS[lb] && !hasNativeScript(name, lb))) {
+                const better = pickPersonName(lite, clientLang);
+                if (better) name = better;
+            }
         }
 
         // 인물 크레딧에서도 숨김 작품 제거(출연작 목록으로 우회 노출되는 경로 차단).
