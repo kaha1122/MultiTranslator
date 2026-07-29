@@ -32,6 +32,13 @@ const HEADERS = {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
 const isGoogle = (u) => String(u || '').includes('news.google.com');
+// 구 디코더가 남긴 잘린 URL 판별 — 쿼리스트링이 있는데 `=`가 하나도 없는 형태
+// (`view.php?no`, `articleView.html?idxno`). 정상 URL에서는 사실상 나오지 않는다.
+// ⚠ `?` 자체가 없는 URL(대부분의 매체)은 대상 아님 — 멀쩡한 아이템을 재디코드하면 구글 쿼터만 태운다.
+const isTruncatedUrl = (u) => {
+    const q = String(u || '').split('?')[1];
+    return q !== undefined && q.length > 0 && !q.includes('=');
+};
 
 // 구글 뉴스 링크 → 원문 URL (서버 lib/newsFetch.js decodeGoogleUrl과 동일 기법)
 async function decodeGoogleUrl(gUrl, circuit) {
@@ -66,9 +73,25 @@ async function decodeGoogleUrl(gUrl, circuit) {
             return null;
         }
         const text = await res.text();
-        const um = text.match(/garturlres\\",\\"(https?:[^\\"]+)/) || text.match(/"garturlres","(https?:[^"]+)"/);
-        return um ? um[1].replace(/\\u003d/gi, '=').replace(/\\\//g, '/') : null;
+        return extractGarturl(text);
     } catch (e) { console.warn('  decode: err', e.message); return null; }
+}
+
+// ── batchexecute 응답 → 원문 URL 추출 (2026-07-29 수리) ─────────────────────
+// 🚨 구 코드 `(https?:[^\\"]+)`는 백슬래시에서 끊기는데 응답의 `=`는 `\\u003d`(백슬래시 2개)로
+//    와서 쿼리스트링 URL이 전부 첫 `=`에서 잘렸다(실측 480건 중 20건). 잘린 URL은 원문 링크가
+//    깨질 뿐 아니라 og:image 스크레이프를 실패시켜 저화질 구글 썸네일 폴백을 유발했다.
+// ⚠ lib/newsFetch.js에 **동일 사본** — 한쪽만 고치지 말 것(이 워커는 무의존 단독 실행이라 공유 불가).
+// 이스케이프 해제 순서 주의: 이중(`\\`) → 단일로 먼저 접고 나서 `\uXXXX`를 푼다.
+function extractGarturl(text) {
+    const um = text.match(/garturlres\\",\\"(https?:.+?)\\"/) || text.match(/"garturlres","(https?:[^"]+)"/);
+    if (!um) { console.warn('  decode: no garturlres'); return null; }
+    const url = um[1]
+        .replace(/\\\\/g, '\\')
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+        .replace(/\\\//g, '/');
+    if (!/^https?:\/\/[^\s"\\<>]+$/.test(url)) { console.warn('  decode: unescape residue'); return null; }
+    return url;
 }
 
 // og:image 속성값의 HTML 엔티티 복원 — &amp;·&#x3D; 등이 남으면 쿼리스트링이 깨져
@@ -221,18 +244,36 @@ async function imageLoadable(url) {
 
         const patches = [];
         let decodes = 0;
+        // 잘린 URL 복구는 신규 기사 디코드와 같은 구글 쿼터를 쓴다 → 언어당 런 상한을 둬서
+        // 백로그(실측 20건/12언어)가 신규 기사 처리를 굶기지 않게 한다. 2h 주기면 며칠 안에 소진되고,
+        // 복구가 계속 실패하는 아이템이 있어도 런당 낭비가 이 상한으로 묶인다.
+        const REPAIR_CAP = 3;
+        let repairs = 0;
         for (const it of items) {
             const key = it.srcUrl || it.url;
             let url = it.url;
             let patch = null;
-            if (isGoogle(url)) {
+            // 구 디코더 버그(위 extractGarturl 주석)로 쿼리스트링이 잘린 채 굳은 아이템은 이미
+            // non-google URL이라 아래 "완성" 분기에서 영구 skip된다 → 여기서 재디코드로 복구.
+            // 복구 대상은 srcUrl(구글 RSS 링크, 불변 키)로 다시 푼다.
+            const repair = !isGoogle(url) && isTruncatedUrl(url) && isGoogle(it.srcUrl) && repairs < REPAIR_CAP;
+            let redecoded = false;
+            if (isGoogle(url) || repair) {
                 // 디코드는 구글 쿼터 소비 — 서킷/언어당(공정 분배)/전역 예산 안에서만. 초과 시 이
                 // 아이템만 skip(뒤의 직접 URL 아이템 og:image 스크레이프는 구글 무관이라 계속).
                 if (circuit.blocked || decodes >= langCap || globalDecodes >= GLOBAL_DECODE_BUDGET) continue;
                 decodes += 1; globalDecodes += 1;
-                const real = await decodeGoogleUrl(url, circuit);
+                if (repair) repairs += 1;
+                const real = await decodeGoogleUrl(repair ? it.srcUrl : url, circuit);
                 await sleep(GAP_MS);
                 if (!real) continue;
+                if (repair) {
+                    // 디코드 결과가 저장값과 같으면 잘린 게 아니라 원래 그런 URL(`?amp` 등 드묾).
+                    // 이미지 재처리 없이 통과 — 매 런 og 재스크레이프를 도는 것을 막는다.
+                    if (real === it.url) continue;
+                    console.log(`  [${lang}] repaired truncated url: ${url} → ${real}`);
+                    redecoded = true; // 저장된 구글 썸네일 대신 원문 og:image를 다시 긁게 한다
+                }
                 url = real;
                 patch = { srcUrl: key, url: real, id: sha1(real) };
                 try { patch.icon = `https://www.google.com/s2/favicons?domain=${new URL(real).hostname}&sz=64`; } catch { /* 유지 */ }
@@ -250,7 +291,9 @@ async function imageLoadable(url) {
             }
             // 여기 도달: 이미지 없음 / 미검증·로고·엔티티·http·중복 저장분 / 방금 디코드된 신규
             const cleanStored = it.image && !isLogoImage(it.image) && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
-            let img = cleanStored ? it.image : await scrapeOgImage(url);
+            // redecoded(잘린 URL 복구분)는 저장 이미지가 **그 버그 때문에** 강등된 구글 썸네일이므로
+            // 신뢰하지 않고 원문에서 다시 긁는다. 실패하면 아래 폴백이 다시 구글 썸네일로 되돌린다.
+            let img = (cleanStored && !redecoded) ? it.image : await scrapeOgImage(url);
             // https 앱에서 http:// 이미지는 mixed content로 브라우저가 무조건 차단(실측: sinaimg —
             // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
             // 승격이 안 먹는 CDN이면 검증 실패 → 구글 썸네일 교체.

@@ -103,6 +103,35 @@ async function filterContentNews(items) {
 // 비공식 내부 API — 실패는 조용히 null(파비콘 폴백 유지). 형식 변경 시 이 함수만 수리.
 // state.blocked: 429 서킷브레이커 — 한 번 걸리면 이번 실행의 남은 디코드 전부 생략
 // (계속 두드리면 차단이 길어짐. 이전 캐시 재사용 덕에 다음 크론에서 자연 회복.)
+// ── batchexecute 응답 → 원문 URL 추출 (2026-07-29 수리) ─────────────────────
+// 🚨 사고: 구 코드는 `(https?:[^\\"]+)` — **백슬래시에서 매칭이 끊긴다.** 그런데 응답의 `=`는
+//    `\\u003d`(백슬래시 2개, 이중 이스케이프)로 오므로 쿼리스트링이 있는 URL은 전부 첫 `=`에서
+//    잘렸다. 실측: `view.php?no=81807` → `view.php?no`. 뒤따르던 `.replace(/\\u003d/g,'=')`도
+//    한 개짜리 백슬래시를 노려서 애초에 틀린 패턴이었다(잘리지 않았어도 복원 실패).
+//    피해는 링크 파손에 그치지 않는다 — 잘린 URL은 og:image 스크레이프가 실패해 워커가
+//    구글 썸네일(201×251 원본을 자른 저화질)로 폴백했고, 그게 앱에서 "기사 사진 얼굴 잘림"으로
+//    나타났다. 실측(2026-07-29): 12개 언어 캐시 480건 중 20건이 잘린 URL.
+// ⚠ 이 함수는 scripts/news-enrich-worker.js에도 **동일 사본**이 있다(워커는 이 lib을 import하지
+//    않는 무의존 단독 실행 파일). 한쪽만 고치지 말 것.
+// 이스케이프 해제는 **순서가 중요**하다: 이중(`\\`)을 단일로 먼저 접은 뒤 `\uXXXX`를 푼다.
+// 반대로 하면 `\\u003d` → `\=` 같은 잔여 백슬래시가 남는다.
+function extractGarturl(text) {
+    // 닫는 `\"` 까지 lazy 매칭 — 이스케이프를 문자클래스로 배제하지 않는 것이 수리의 핵심.
+    const um = text.match(/garturlres\\",\\"(https?:.+?)\\"/) || text.match(/"garturlres","(https?:[^"]+)"/);
+    if (!um) { console.warn('[news] decode: no garturlres (len', text.length, ')'); return null; }
+    const url = um[1]
+        .replace(/\\\\/g, '\\')
+        .replace(/\\u([0-9a-fA-F]{4})/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+        .replace(/\\\//g, '/');
+    // 이스케이프가 덜 풀린 URL을 캐시에 넣으면 링크·이미지가 조용히 깨진 채 굳는다 → 차라리 null
+    // (구글 URL로 남아 다음 런에서 재시도된다).
+    if (!/^https?:\/\/[^\s"\\<>]+$/.test(url)) {
+        console.warn('[news] decode: unescape residue', url.slice(0, 80));
+        return null;
+    }
+    return url;
+}
+
 async function decodeGoogleUrl(gUrl, state) {
     try {
         const m = gUrl.match(/articles\/([^?]+)/);
@@ -145,9 +174,7 @@ async function decodeGoogleUrl(gUrl, state) {
             return null;
         }
         const text = await res.text();
-        const um = text.match(/garturlres\\",\\"(https?:[^\\"]+)/) || text.match(/"garturlres","(https?:[^"]+)"/);
-        if (!um) { console.warn('[news] decode: no garturlres (len', text.length, ')'); return null; }
-        return um[1].replace(/\\u003d/gi, '=').replace(/\\\//g, '/');
+        return extractGarturl(text);
     } catch (e) { console.warn('[news] decode: err', e.message); return null; }
 }
 
