@@ -268,12 +268,12 @@ async function processTitle(media, id, { force = false } = {}) {
         let ai = null;
         if (j.ai) {
             ai = await judgeAdultAI(media, detail, { koTitle: origTitle });
-            // unsure도 숨긴다 — 신작은 "1차 자동 제외 후 사람이 판단"이 운영 방침이고,
-            // hiddenBy로 구분해 두면 검수 화면에서 unsure부터 먼저 보게 정렬할 수 있다.
-            if (ai && (ai.verdict === 'adult' || ai.verdict === 'unsure')) {
+            // **명백한 성인물만 숨긴다**(2026-07-30 사용자 결정). 애매하면 노출이 기본값이다 —
+            // 중간 등급을 두면 메타가 빈 정상 작품이 그 칸에 쌓여 사실상 숨김이 되기 때문.
+            if (ai?.verdict === 'adult') {
                 j.hide = true;
-                j.reason = `ai:${ai.verdict}(${ai.confidence.toFixed(2)})`;
-                j.by = ai.verdict === 'unsure' ? 'auto:ai-unsure' : 'auto:ai';
+                j.reason = `ai:adult(${ai.confidence.toFixed(2)})`;
+                j.by = 'auto:ai';
             }
         }
         if (j.hide) {
@@ -283,8 +283,7 @@ async function processTitle(media, id, { force = false } = {}) {
                 hidden: true,
                 hiddenReason: reason,
                 // 사람 미검수 큐 마커 — apply-adult-verdicts가 'manual'로 바꾼다.
-                //   auto:ai-unsure(정보 부족) → auto:ai(AI가 성인물로 봄) → auto:cron(규칙) 순으로
-                //   검수 우선순위가 높다.
+                //   auto:ai(문맥 판정) / auto:cron(규칙·수동목록)
                 hiddenBy: j.by || 'auto:cron',
                 isVideo: detail.video === true,   // 유통 형태 기록(차단 근거는 아님 — 판정 힌트·감사용)
                 // AI 판정 결과를 그대로 남긴다 — 재실행 시 재호출을 막고(멱등), 검수 화면이

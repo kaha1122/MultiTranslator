@@ -54,11 +54,16 @@ const SYSTEM = [
     '   - Family/workplace relation words (sister-in-law, stepmother, cousin, boss) combined with situational innuendo',
     '   - Numbered sequels of the same erotic series (e.g. "애마부인 12")',
     '   - Straight-to-video release with no theatrical history',
-    '4. If the available information is not enough to decide, you MUST answer "unsure".',
-    '   Do NOT guess "adult". "unsure" is routed to a human reviewer, so it is the safe answer.',
+    '4. Answer "adult" ONLY when the evidence clearly shows adult erotic content.',
+    '   This is a binary decision with a deliberate bias: **anything not clearly adult is "clean".**',
+    '   Sparse metadata (missing overview, no company, no votes) is a supporting signal, NEVER a',
+    '   sufficient reason on its own — plenty of legitimate small releases have empty metadata.',
+    '   If you are hesitating, answer "clean". Do not hedge, do not invent a middle category.',
     '',
     '[Output] Return ONLY this JSON object. No markdown, no commentary.',
-    '{"verdict":"adult|clean|unsure","confidence":0.0-1.0,"reason":"<one sentence IN KOREAN stating the basis>","signals":["<field names you relied on>"]}',
+    '"confidence" = how sure you are OF THE VERDICT YOU CHOSE (not "how adult it is").',
+    'A confident "clean" is 0.9, not 0.1.',
+    '{"verdict":"adult|clean","confidence":0.0-1.0,"reason":"<one sentence IN KOREAN stating the basis>","signals":["<field names you relied on>"]}',
 ].join('\n');
 
 const cut = (s, n) => (s == null ? '' : String(s).slice(0, n));
@@ -110,7 +115,11 @@ function parseFirstJsonObject(text) {
     return null;
 }
 
-const VERDICTS = new Set(['adult', 'clean', 'unsure']);
+// 2단 판정만 둔다(2026-07-30 사용자 결정) — **명백한 성인물만 adult, 나머지는 전부 clean.**
+//   중간 등급(unsure)을 두면 메타가 빈 정상 작품(아동 애니 「깡다구 화이터」, K-pop 예능 「트레저맵」)이
+//   대량으로 그 칸에 쌓여 사실상 숨김이 된다 — 표본 18편에서 28%가 unsure였다.
+//   모델이 unsure류 값을 돌려주면 clean으로 접는다(중간 카테고리를 스스로 만들지 못하게).
+const VERDICTS = new Set(['adult', 'clean']);
 
 // 판정. 실패는 throw하지 않고 null을 반환한다 — 호출측이 **규칙 판정으로 폴백**해야 하며,
 // "AI를 못 불렀다"가 "노출해도 된다"로 해석되면 안 된다(fail-open 금지).
@@ -133,9 +142,11 @@ async function judgeAdultAI(media, detail, extra = {}) {
             if (!fb.error) out = parseFirstJsonObject(fb.raw);
         } catch { /* 폴백도 실패 → null */ }
     }
-    if (!out || !VERDICTS.has(out.verdict)) return null;
+    if (!out || typeof out.verdict !== 'string') return null;
+    // adult가 아닌 모든 응답은 clean으로 접는다 — unsure·maybe 같은 값을 모델이 만들어내도 마찬가지.
+    const verdict = VERDICTS.has(out.verdict) ? out.verdict : 'clean';
     return {
-        verdict: out.verdict,
+        verdict,
         confidence: Math.max(0, Math.min(1, Number(out.confidence) || 0)),
         reason: cut(out.reason, 300),
         signals: Array.isArray(out.signals) ? out.signals.slice(0, 8).map((s) => cut(s, 40)) : [],

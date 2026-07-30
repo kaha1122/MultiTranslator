@@ -69,7 +69,7 @@ async function main() {
     console.log(dim(`  전체 숨김 ${snap.size}편 중 대상 ${rows.length}편 (사람 판정·수동목록·판정완료 제외)`));
     console.log(dim(`  동시 ${opts.concurrency} · 작품당 TMDB 1회 + Gemini 1회\n`));
 
-    const stat = { adult: 0, unsure: 0, clean: 0, failed: 0, unhidden: 0 };
+    const stat = { adult: 0, clean: 0, failed: 0, unhidden: 0 };
     let i = 0, done = 0;
     const t0 = Date.now();
 
@@ -90,15 +90,15 @@ async function main() {
                     continue;
                 }
                 stat[ai.verdict]++;
-                const keepHidden = ai.verdict !== 'clean';
-                const mark = ai.verdict === 'adult' ? red('🚫 성인물')
-                    : ai.verdict === 'unsure' ? yellow('❓ 불확실') : green('👁 해제');
+                // 명백한 성인물만 숨김 유지. 그 외는 전부 노출로 되돌린다(중간 등급 없음).
+                const keepHidden = ai.verdict === 'adult';
+                const mark = keepHidden ? red('🚫 성인물') : green('👁 해제');
                 console.log(`  ${mark} ${r.id.padEnd(9)} ${ko.slice(0, 26).padEnd(28)} ${dim(`${ai.confidence.toFixed(2)} · ${ai.reason.slice(0, 60)}`)}`);
                 if (!opts.dry) {
                     const patch = { adultAI: { ...ai, model: 'gemini', at: new Date() } };
                     if (keepHidden) {
-                        patch.hiddenBy = ai.verdict === 'unsure' ? 'auto:ai-unsure' : 'auto:ai';
-                        patch.hiddenReason = `ai:${ai.verdict}(${ai.confidence.toFixed(2)})`;
+                        patch.hiddenBy = 'auto:ai';
+                        patch.hiddenReason = `ai:adult(${ai.confidence.toFixed(2)})`;
                     } else {
                         // 해제 — hidden 관련 필드를 모두 정리한다. metaTranslated=false로 남아 있으므로
                         // 다음 cron runRetry가 11개 언어 번역을 자동으로 채운다.
@@ -120,7 +120,7 @@ async function main() {
     await Promise.all(Array.from({ length: opts.concurrency }, worker));
 
     console.log(`\n${bold('══════ 요약 ══════')}`);
-    console.log(`  성인물 ${red(stat.adult)} · 불확실 ${yellow(stat.unsure)} · 정상(해제) ${green(stat.clean)} · 판정실패 ${stat.failed}`);
+    console.log(`  성인물 ${red(stat.adult)} · 정상(해제) ${green(stat.clean)} · 판정실패 ${stat.failed}`);
     console.log(`  ${opts.dry ? yellow('DRY — 실제 변경 없음') : `실제 해제 ${bold(stat.unhidden)}편`} · ${Math.round((Date.now() - t0) / 1000)}초`);
 
     if (!opts.dry && opts.refresh) {
