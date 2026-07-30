@@ -28,6 +28,8 @@ const { LANG_NAMES } = require('../config/langGuide'); // ISO → 정식 언어�
 const { cacheTitleMeta } = require('./tmdbMetaBackfill'); // 신작의 meta(출연·연도…)도 함께 채움
 // 사람이 삭제 판정한 작품의 재유입 차단 — discover 열거는 지운 id를 다음 실행에서 그대로 다시 물어온다.
 const excluded = require('./excludedTitles');
+// 신작 성인물 자동 판정 — 규칙은 scripts/flag-adult-titles.js와 **같은 모듈을 공유**한다(복제 금지).
+const adultRules = require('./adultRules');
 
 // ISO 코드 → 정식 언어명. 지역코드(zh-CN 등)는 그대로, 없으면 베이스(zh)로 폴백, 최후 코드 그대로.
 const nameOf = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
@@ -231,11 +233,52 @@ async function processTitle(media, id, { force = false } = {}) {
     if (!force && md?.metaV === 2 && md.metaTranslated) return { id, skipped: true, langs: 0, geminiUsed: 0 };
 
     // ① 소스 확보 — 원어 기준 상세 + 공식 번역 레코드
+    //   keywords + 한국 등급(movie=release_dates / tv=content_ratings)을 같은 호출에 얹는다 —
+    //   아래 성인물 게이트가 쓰는 신호이고, append이므로 **TMDB 호출 수는 그대로 1회**다.
+    //   ⚠ 이 append를 지우면 게이트가 조용히 무력화된다(kws·certs가 빈 배열 → 규칙 불발 = 통과).
     const detail = await tmdb(`/${media}/${id}`, {
-        language: toTmdbLang(PRIMARY_CONTENT_LANG), append_to_response: 'translations',
+        language: toTmdbLang(PRIMARY_CONTENT_LANG),
+        append_to_response: `translations,keywords,${media === 'movie' ? 'release_dates' : 'content_ratings'}`,
     });
     const trs = detail.translations?.translations || [];
     const origTitle = norm(detail.original_title || detail.original_name);
+
+    // ①-b 성인물 자동 판정 게이트 (2026-07-30) ────────────────────────────────
+    // **사전번역보다 앞에 둔다** — 성인물에 Gemini 11개 언어 번역 비용을 쓰지 않기 위해서다.
+    //   이 게이트가 없던 동안 신작 성인물은 번역까지 다 되고 앱·sitemap에 노출됐다.
+    //
+    // 대상은 **신작(문서가 아직 없는 작품)뿐**이다 — 기존 카탈로그 재판정은 수동 배치
+    // (scripts/flag-adult-titles.js)의 일이다. 자동이 기존 1.8만 편을 건드리면 사람이 검수해
+    // 유지 결정한 작품까지 규칙으로 덮을 수 있다.
+    //
+    // 삭제가 아니라 **숨김**이다. 오탐이면 플래그만 내리면 복구되고, 문서를 metaTranslated=false로
+    // 남기므로 구제(allow) 후 다음 cron runRetry가 11개 언어를 자동으로 채운다.
+    //
+    // 판정 정책(video 전량 숨김·제목 어휘·vote 조건 제외)은 adultRules.judgeNewTitle에 있다 —
+    // 구작용 규칙보다 공격적이다. 근거는 그 함수 주석 참조.
+    if (!md) {
+        const j = adultRules.judgeNewTitle(media, detail, {
+            manual: adultRules.loadManual(),
+            allTitles: [origTitle, detail.title, detail.name].filter(Boolean).join(' '),
+        });
+        if (j.hide) {
+            const reason = j.reason;
+            await markerRef.set({
+                media,
+                hidden: true,
+                hiddenReason: reason,
+                hiddenBy: 'auto:cron',        // 사람 미검수 큐 마커 — apply-adult-verdicts가 'manual'로 바꾼다
+                metaTranslated: false,        // 구제되면 runRetry가 자동으로 번역을 채운다
+                poster_path: detail.poster_path || null,
+                // 원제만 남긴다 — 번역을 하지 않았으므로 검색 인덱스도 만들지 않는다.
+                ...(origTitle ? { searchTitle: { [PRIMARY_CODE]: origTitle } } : {}),
+                updatedAt: new Date(),
+            }, { merge: true });
+            console.log(`[tmdb-backfill] 🚫 자동 숨김 ${media}/${id} 「${origTitle || detail.title || detail.name || ''}」 ${reason}`);
+            return { id, skipped: true, adultHidden: true, reason, langs: 0, geminiUsed: 0 };
+        }
+    }
+
     // 카탈로그 전제(2026-07-28 재정비): 원제 보유작만 남겼다. 원제가 없으면 침묵 생성하지 말고 드러낸다.
     if (!origTitle) throw new Error(`원제 없음 — ${media}/${id}`);
 
@@ -394,11 +437,23 @@ async function* enumerateIds(media, yearFrom, yearTo) {
         do {
             const d = await tmdb(`/discover/${media}`, {
                 with_original_language: PRIMARY_CONTENT_LANG, sort_by: 'popularity.desc', include_adult: 'false',
+                // ⚠ include_video (2026-07-30) — TMDB discover의 기본값은 false이고, 그러면
+                //   `video:true`(direct-to-video) 작품이 응답에서 통째로 빠진다. 한국 소프트코어
+                //   에로물이 정확히 그 자리에 있어서 **판정 대상조차 되지 못했다**
+                //   (1015975 「의자매 섹스 스캔들」: original_language=ko·KR 19+인데 카탈로그 밖).
+                //   실측 2019~2026 한국영화 6,177 → 6,629건(+452, 6.8%)이 이 플래그로 가려져 있었다.
+                //   → 열거는 켜고, 유입된 video:true는 게이트가 전량 숨김 처리한다(adultRules.judgeNewTitle).
+                include_video: 'true',
                 [`${dateField}.gte`]: `${y}-01-01`, [`${dateField}.lte`]: `${y}-12-31`, page: String(page),
             });
             totalPages = Math.min(d.total_pages || 1, 500);
             // name: 연도별 러너(backfill-by-year.js) 로그 표시용 — runBackfill은 id만 사용(무해 additive)
-            for (const it of (d.results || [])) yield { id: it.id, name: it.name || it.title || '' };
+            // 모수 조건(2026-07-30): original_language=PRIMARY_CONTENT_LANG(discover 파라미터) +
+            //   **원제 있음**. 원제 없는 엔트리는 processTitle이 어차피 throw하므로 여기서 거른다.
+            for (const it of (d.results || [])) {
+                if (!norm(it.original_title || it.original_name)) continue;
+                yield { id: it.id, name: it.name || it.title || '' };
+            }
             page++;
         } while (page <= totalPages);
     }
@@ -415,7 +470,8 @@ async function runBackfill({ media = 'both', yearFrom = 1950, yearTo, concurrenc
     if (!yearTo) yearTo = new Date().getFullYear();
     const medias = media === 'both' ? ['tv', 'movie'] : [media];
     // partial = 일부 언어 누락(metaTranslated=false로 남음) → 재실행으로 메운다. 침묵 누락 방지 가시화.
-    const stat = { done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0 };
+    // adultHidden = 신작 성인물 자동 숨김(게이트 적중). 0이 아니면 호출측이 숨김 인덱스를 재생성한다.
+    const stat = { done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0, adultHidden: 0 };
     for (const m of medias) {
         const ids = [];
         for await (const it of enumerateIds(m, yearFrom, yearTo)) ids.push(it);
@@ -423,7 +479,8 @@ async function runBackfill({ media = 'both', yearFrom = 1950, yearTo, concurrenc
         await runPool(capped, concurrency, async ({ id }, i) => {
             try {
                 const r = await processTitle(m, id, { force });
-                if (r.skipped) stat.skipped++; else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; }
+                if (r.skipped) { stat.skipped++; if (r.adultHidden) stat.adultHidden++; }
+                else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; }
             } catch { stat.errors++; }
             if (onProgress && (i % 50 === 0)) onProgress({ media: m, total: capped.length, ...stat });
         });
@@ -442,18 +499,26 @@ async function runIncremental({ days = 14, maxTitles = 200, concurrency = 3 } = 
         do {
             const d = await tmdb(`/discover/${media}`, {
                 with_original_language: PRIMARY_CONTENT_LANG, sort_by: `${dateField}.desc`,
+                include_video: 'true',   // enumerateIds와 동일 사유 — direct-to-video 누락 방지
                 [`${dateField}.gte`]: since, page: String(page),
             });
             totalPages = Math.min(d.total_pages || 1, 5);
-            for (const it of (d.results || [])) items.push({ media, id: it.id });
+            // 모수: original_language=ko(위 파라미터) + 원제 있음
+            for (const it of (d.results || [])) {
+                if (!norm(it.original_title || it.original_name)) continue;
+                items.push({ media, id: it.id });
+            }
             page++;
         } while (page <= totalPages && items.length < maxTitles);
     }
     const capped = items.slice(0, maxTitles);
-    const stat = { scanned: capped.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0 };
+    const stat = { scanned: capped.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0, adultHidden: 0 };
     await runPool(capped, concurrency, async ({ media, id }) => {
-        try { const r = await processTitle(media, id); if (r.skipped) stat.skipped++; else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; } }
-        catch { stat.errors++; }
+        try {
+            const r = await processTitle(media, id);
+            if (r.skipped) { stat.skipped++; if (r.adultHidden) stat.adultHidden++; }
+            else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; }
+        } catch { stat.errors++; }
     });
     return stat;
 }
@@ -567,10 +632,13 @@ async function runRetry({ limit = 100, concurrency = 3 } = {}) {
         .get();
     const items = [];
     snap.forEach((d) => { const md = d.data()?.media; if (md) items.push({ media: md, id: d.id }); });
-    const stat = { scanned: items.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0 };
+    const stat = { scanned: items.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0, adultHidden: 0 };
     await runPool(items, concurrency, async ({ media, id }) => {
-        try { const r = await processTitle(media, id); if (r.skipped) stat.skipped++; else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; } }
-        catch { stat.errors++; }
+        try {
+            const r = await processTitle(media, id);
+            if (r.skipped) { stat.skipped++; if (r.adultHidden) stat.adultHidden++; }
+            else { stat.done++; stat.gemini += r.geminiUsed; if (!r.complete) stat.partial++; }
+        } catch { stat.errors++; }
     });
     return stat;
 }

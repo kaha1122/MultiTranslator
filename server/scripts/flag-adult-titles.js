@@ -71,57 +71,14 @@ function log(line = '') {
     if (logFile) { try { fs.appendFileSync(logFile, stripAnsi(line) + '\n'); } catch { /* 무시 */ } }
 }
 
-function loadManual() {
-    try {
-        const j = JSON.parse(fs.readFileSync(MANUAL_FILE, 'utf8'));
-        return { hide: new Set((j.hide || []).map(String)), allow: new Set((j.allow || []).map(String)) };
-    } catch { return { hide: new Set(), allow: new Set() }; }
-}
-
-// ── 판정 기준 ───────────────────────────────────────────────────────────────
-// ⚠ 키워드는 강·약으로 나눈다 (2026-07-27 전수 dry-run에서 오탐 발견)
-//   초안은 erotic 계열을 전부 무조건 숨김으로 잡았는데, 그 결과 「아가씨」(vote 4401, 칸 초청작)
-//   「하녀」(384) 「섬」(371) 「나쁜 남자」(306) 「사마리아」(267) 「뫼비우스」(265)가 전부 숨겨졌다.
-//   `eroticism`은 **한국 예술영화에 흔히 붙는 주제 태그**라 성인물 판별에 쓸 수 없다.
-//   반면 `softcore`는 실측상 정확도가 높다(vote 70·59·45짜리도 전부 실제 에로물).
-//   → STRONG은 하한을 높게(100) 둬서 어지간한 평점수에도 숨기고,
-//     WEAK은 일반 하한(10)을 적용해 상업 개봉작을 살린다.
-const KW_STRONG = /^(softcore|sexploitation|pornograph)/i;   // 성인물 전용 태그 — 정확도 높음
-const KW_WEAK = /^(erotic|erotica|erotic movie|nudity|sex film)/i; // 예술영화에도 붙음 — 표본 조건 필수
-const STRONG_FLOOR = 100;  // softcore인데 평점수 100 이상이면 사람 눈으로 확인(검수 목록에 남김)
-const ADULT_CERTS = new Set(['18', '19', '19+', '청소년관람불가', 'R18', 'X']);
-const VOTE_FLOOR = 10;   // 이 미만 = 상업 개봉작으로 보기 어려움(실측: 정상 개봉작 최소 267)
-
-// ── 제목 어휘 (2026-07-28 추가) — **자동 숨김에 쓰지 않는다. 검수 후보 추출 전용.** ──────
-// 배경: 「여대생: 스폰 찾기」「만취한 척 배꼽노출 젖어있는 여대생」처럼 TMDB에 키워드·등급·제작사·
-//   러닝타임이 **전부 비어 있는** 성인물이 R3(보류)로 빠져 검색에 노출됐다. 남은 신호는 제목뿐이다.
-// 그런데 제목 매칭만으로 숨기면 오탐이 난다(실측):
-//   「핑크퐁! 호기의 탐정사무소」·「공정사회」 ← '정사'가 부분문자열로 걸림(아래 lookbehind로 차단)
-//   「원나잇 푸드트립: 원픽로드」 ← 정상 예능 / 「정사」(1998 이재용) ← 정상 개봉작
-//   한국어는 띄어쓰기 경계가 약해 이런 충돌이 구조적으로 생긴다.
-// → 적중분은 HTML 리포트 맨 위 섹션으로만 올리고, 사람이 체크한 것만 adult-manual.json의 hide로 간다.
-const TITLE_LEX = /(노출|젖어|젖은|애무|(?<![탐공])정사(?!회)|섹스|야동|19금|스폰서?\s*찾|몸종|유부녀|새엄마|형수님|처제|시누이|올케|안마방|룸싸롱|색녀|음란|후배위|가슴\s*큰|밤일|욕정|스와핑|불륜|외도|맨살|아랫도리|성인영화|에로)/;
-const titleHit = (s) => (TITLE_LEX.exec(String(s || '')) || [])[0] || null;
-
-const matchKw = (kws, re) => (kws || []).find((k) => re.test(String(k || '')));
-// 성인 등급이 실제로 무엇이었는지 반환 — 사유 표기용(certs[0]을 쓰면 ['15','19'] 같은 경우
-// "cert:15"로 잘못 찍혀 검수 때 혼란을 준다).
-const adultCert = (certs) => (certs || []).map((c) => String(c).trim()).find((c) => ADULT_CERTS.has(c));
-
-// 공통 판정 — 로컬(meta)·원격(TMDB) 양쪽이 같은 규칙을 쓰도록 한 곳에 모은다.
-// certs를 못 구한 경로(로컬 선판정)는 null을 넘기면 등급 규칙은 건너뛴다.
-function decideBy(kws, certs, votes) {
-    const strong = matchKw(kws, KW_STRONG);
-    if (strong && votes < STRONG_FLOOR) return { verdict: 'hide', reason: `kw:${strong}+vote${votes}` };
-    const weak = matchKw(kws, KW_WEAK);
-    if (weak && votes < VOTE_FLOOR) return { verdict: 'hide', reason: `kw:${weak}+vote${votes}` };
-    if (certs) {
-        const c = adultCert(certs);
-        if (c && votes < VOTE_FLOOR) return { verdict: 'hide', reason: `cert:${c}+vote${votes}` };
-        if (!certs.length && votes < 3) return { verdict: 'suspect', reason: `no-cert+vote${votes}` };
-    }
-    return null;
-}
+// ── 판정 규칙 = lib/adultRules.js (단일 출처) ───────────────────────────────
+// 2026-07-30: 규칙 본문을 lib으로 이관했다. cron 자동 판정(lib/tmdbBackfill.js processTitle)이
+// **같은 함수**를 써야 하기 때문 — 여기에 복제해 두면 두 경로의 판정이 갈라진다.
+// 규칙의 근거(강·약 키워드 분리, 등급+표본 조건, 제목 어휘를 자동 차단에 쓰지 않는 이유)는
+// 전부 lib/adultRules.js 주석에 있다.
+const {
+    VOTE_FLOOR, titleHit, decideBy, classifyRemote: classifyRemoteBase, loadManual,
+} = require('../lib/adultRules');
 
 async function tmdb(p, params = {}) {
     const u = new URLSearchParams({ api_key: TMDB_KEY, ...params });
@@ -131,37 +88,17 @@ async function tmdb(p, params = {}) {
 }
 
 // TMDB 조회 판정 — 등급(movie=release_dates KR / tv=content_ratings KR)까지 확인해야 할 때만 호출.
-async function classifyRemote(media, id) {
-    const append = media === 'movie' ? 'keywords,release_dates' : 'keywords,content_ratings';
-    const d = await tmdb(`/${media}/${id}`, { language: 'en-US', append_to_response: append });
-
-    const kws = (d.keywords?.keywords || d.keywords?.results || []).map((k) => String(k.name || ''));
-    let certs = [];
-    if (media === 'movie') {
-        const kr = (d.release_dates?.results || []).find((r) => r.iso_3166_1 === 'KR');
-        certs = (kr?.release_dates || []).map((x) => x.certification).filter(Boolean);
-    } else {
-        const cr = (d.content_ratings?.results || []).find((r) => r.iso_3166_1 === 'KR');
-        if (cr?.rating) certs = [cr.rating];
-    }
-    const votes = Number(d.vote_count || 0);
-    const info = {
-        title: d.title || d.name || '',
-        year: String(d.release_date || d.first_air_date || '').slice(0, 4),
-        overview: d.overview || '',
-        votes, certs: [...new Set(certs)], kws,
-    };
-
-    const d2 = decideBy(kws, [...new Set(certs)], votes);
-    return d2 ? { ...d2, info } : { verdict: 'keep', reason: '', info };
-}
+const classifyRemote = (media, id) => classifyRemoteBase(media, id, tmdb);
 
 // ── 대상 수집 + 로컬 선판정 ─────────────────────────────────────────────────
 // meta(keywords·vote_count)로 결론이 나는 건 TMDB를 치지 않는다. 마스크로 필요한 필드만 받는다 —
 // meta 통째로 받으면 문서당 평균 5.7KB라 2.4만 건에 140MB가 된다.
 async function collect() {
     const snap = await kcultureDb.collection('titles')
-        .select('media', 'hidden', 'searchTitle',
+        // hiddenBy: 'auto:cron'(신작 자동 판정·사람 미검수) / 'manual'(검수 완료) — 리포트의
+        //   "🤖 자동 숨김 · 미검수" 블록을 만드는 데 쓴다. 이게 없으면 자동 판정분이 기존 숨김
+        //   6천 건에 섞여 사람이 무엇을 새로 봐야 하는지 알 수 없다.
+        .select('media', 'hidden', 'hiddenBy', 'searchTitle',
             'meta.keywords', 'meta.vote_count', 'meta.title', 'meta.overview',
             'meta.release_date', 'meta.first_air_date', 'metaCachedAt')
         .get();
@@ -194,7 +131,7 @@ async function collect() {
             // 표본이 충분하고 강한 키워드도 없으면 더 볼 것이 없다 → 조회 없이 유지 확정.
             else if (votes >= VOTE_FLOOR) local = { verdict: 'keep', reason: '', info };
         }
-        rows.push({ id: d.id, media: x.media, hidden: x.hidden === true, local, info });
+        rows.push({ id: d.id, media: x.media, hidden: x.hidden === true, hiddenBy: x.hiddenBy || null, local, info });
     });
     return rows;
 }
@@ -221,7 +158,7 @@ function suspicionScore(info) {
 
 const SUSPECT_SHOW = 400;   // 후보 표시 상한 — 의심 점수 상위만. 전체는 실행 로그에 남는다.
 
-function writeHtml(file, hidden, titleSuspects, suspectsAll) {
+function writeHtml(file, hidden, titleSuspects, suspectsAll, autoUnreviewed = []) {
     const suspects = suspectsAll.slice(0, SUSPECT_SHOW);
     const suspectMore = suspectsAll.length - suspects.length;
     // 한국어 제목을 함께 보여준다 — 성인물 여부는 대개 한국어 제목에서만 판별된다
@@ -268,6 +205,15 @@ function writeHtml(file, hidden, titleSuspects, suspectsAll) {
  <textarea id="out" placeholder='["123","456"]'></textarea>
 </div>
 
+${autoUnreviewed.length ? `<h2>🤖 자동 숨김 · 사람 미검수 ${autoUnreviewed.length}편 — <span class="y">가장 먼저 볼 것</span></h2>
+<div class="sub">신작 cron이 <b>규칙만으로 자동 숨김</b>한 것들입니다(현재 앱에서 안 보임). 신작 판정은 구작보다
+ 공격적입니다 — 평점 참여수 조건을 빼고, <code>video:true</code>(direct-to-video)는 전량 숨기며,
+ 제목 어휘도 차단 근거로 씁니다. <b>정상 작품이 섞여 있을 수 있으니</b> 훑어보고 정상이면 체크 →
+ <code>allow</code>로 옮기세요(구제하면 다음 cron이 11개 언어 번역을 자동으로 채웁니다).<br>
+ 검수 후 <code>apply-adult-verdicts.js</code>를 돌리면 이 목록에서 자동으로 빠집니다.</div>
+<table><thead><tr><th></th><th>id</th><th>제목 / 줄거리</th><th>종류</th><th>평점수</th><th>판정 근거</th><th></th></tr></thead>
+<tbody>${autoUnreviewed.map(row).join('\n')}</tbody></table>
+` : ''}
 <h2>🔎 제목 어휘 적중 ${titleSuspects.length}편 — <span class="y">지금 볼 것</span></h2>
 <div class="sub">TMDB에 키워드·등급이 <b>전혀 없어</b> 자동 판정이 불가능했지만 <b>제목에 성인물 어휘</b>가 있는 것들입니다.
  「여대생: 스폰 찾기」처럼 메타데이터가 빈 성인물이 검색에 노출되던 경로가 여기입니다.
@@ -362,8 +308,10 @@ async function main() {
     log('');
 
     const t0 = Date.now();
-    const stat = { hide: 0, keep: 0, suspect: 0, titleSuspect: 0, changed: 0, errors: 0 };
-    const hiddenList = [], suspectList = [], titleSuspectList = [];
+    // autoUnreviewed = cron이 자동으로 숨긴 뒤 아직 사람이 안 본 것(hiddenBy='auto:cron').
+    //   기존 숨김 더미에 섞이면 "이번에 새로 볼 것"이 무엇인지 알 수 없어 따로 센다.
+    const stat = { hide: 0, keep: 0, suspect: 0, titleSuspect: 0, autoUnreviewed: 0, changed: 0, errors: 0 };
+    const hiddenList = [], suspectList = [], titleSuspectList = [], autoList = [];
     let idx = 0, counted = 0;
 
     async function decide(r) {
@@ -388,12 +336,27 @@ async function main() {
                     else stat.keep++;
                 }
 
+                // 자동 판정(cron)으로 숨겨졌고 아직 사람이 안 본 것 — 리포트 전용 블록으로 올린다.
+                //   ⚠ 규칙이 같은 결론을 내면 아래 write가 일어나지 않아 hiddenBy가 'auto:cron'으로
+                //     남는다(= 큐에 유지). 큐에서 빠지는 건 apply-adult-verdicts.js가 'manual'로
+                //     바꿀 때뿐이다 — 즉 **사람이 실제로 검수했을 때만** 소멸한다.
+                if (r.hidden && r.hiddenBy === 'auto:cron') {
+                    stat.autoUnreviewed++;
+                    autoList.push({ ...rec, reason: `auto:cron · ${r.local?.reason || reason || '—'}` });
+                }
+
                 const shouldHide = verdict === 'hide';
                 if (shouldHide !== r.hidden) {
                     stat.changed++;
                     if (!opts.dry) {
                         await kcultureDb.doc(`titles/${r.id}`).set(
-                            { hidden: shouldHide, hiddenReason: shouldHide ? reason : null },
+                            {
+                                hidden: shouldHide,
+                                hiddenReason: shouldHide ? reason : null,
+                                // 기존 출처는 보존한다 — 'auto:cron'을 'batch'로 덮으면 사람이 검수하지
+                                // 않았는데도 미검수 큐에서 사라진다. 해제할 때는 함께 지운다.
+                                hiddenBy: shouldHide ? (r.hiddenBy || 'batch') : null,
+                            },
                             { merge: true },
                         );
                     }
@@ -415,7 +378,7 @@ async function main() {
     log('');
     log(bold('══════════════ 요약 ══════════════'));
     log(`  판정 — 숨김 ${bold(stat.hide)} · 유지 ${stat.keep} · 오류 ${stat.errors}`);
-    log(`  검수 대기 — ${yellow(`제목 어휘 적중 ${stat.titleSuspect}편`)} · 일반 후보 ${stat.suspect}편`);
+    log(`  검수 대기 — ${yellow(`자동 숨김 미검수 ${stat.autoUnreviewed}편`)} · ${yellow(`제목 어휘 적중 ${stat.titleSuspect}편`)} · 일반 후보 ${stat.suspect}편`);
     log(`  ${opts.dry ? yellow('DRY — 실제 변경 없음. 바뀔 문서') : '변경된 문서'} ${bold(stat.changed)}건 · ${Math.round((Date.now() - t0) / 1000)}초`);
 
     if (opts.html) {
@@ -425,7 +388,8 @@ async function main() {
         // 후보는 의심 점수 내림차순 — 위쪽만 봐도 되게(놓친 성인물 찾기가 목적).
         const byScore = (a, b) => suspicionScore(b.info) - suspicionScore(a.info)
             || String(a.info.title).localeCompare(String(b.info.title));
-        writeHtml(htmlFile, hiddenList.sort(byTitle), titleSuspectList.sort(byTitle), suspectList.sort(byScore));
+        writeHtml(htmlFile, hiddenList.sort(byTitle), titleSuspectList.sort(byTitle), suspectList.sort(byScore),
+            autoList.sort(byTitle));
         log('');
         log(bold(`  📄 검수용 목록: ${htmlFile}`));
         log(dim('     브라우저로 열어 제목·줄거리를 직접 확인하고, 오탐은 체크 → adult-manual.json 에 반영하세요.'));

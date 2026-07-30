@@ -11,8 +11,26 @@
 const express = require('express');
 const { requireCronAuth } = require('../middleware/auth');
 const { runIncremental, runRetry, runBackfill, refreshOfficialTitles } = require('../lib/tmdbBackfill');
+// 신작 성인물 자동 숨김이 발생하면 숨김 목록 인덱스를 다시 만들어야 한다 — 안 하면 이 프로세스와
+// 다른 인스턴스가 최대 TTL(12시간)까지 그 작품을 계속 노출한다.
+const hiddenTitles = require('../lib/hiddenTitles');
 
 const router = express.Router();
+
+// 자동 숨김분을 화면에 즉시 먹인다. 적중이 0이면 아무것도 하지 않는다(원본 전량 스캔 1회를 아낀다).
+//   ⚠ 실패해도 cron 전체를 실패로 만들지 않는다 — 번역 작업은 이미 끝났고, 못 해도 TTL이 받아준다.
+async function syncHiddenIndex(counts) {
+    const n = counts.reduce((a, c) => a + (c || 0), 0);
+    if (!n) return null;
+    try {
+        const r = await hiddenTitles.rebuildIndex();   // 이 프로세스의 메모리 Set도 함께 갱신된다
+        console.log(`[cron/tmdb] 자동 숨김 ${n}건 → 인덱스 재생성 ${r.count}건`);
+        return { adultHidden: n, index: r.count };
+    } catch (e) {
+        console.warn(`[cron/tmdb] 자동 숨김 ${n}건이나 인덱스 재생성 실패(TTL로 반영): ${e.message}`);
+        return { adultHidden: n, index: null, error: e.message };
+    }
+}
 
 // DAILY — 신규 + 부분실패 재시도. 동기 처리(바운드라 빠름).
 router.post('/api/cron/tmdb-pretranslate', requireCronAuth, async (req, res) => {
@@ -30,7 +48,9 @@ router.post('/api/cron/tmdb-pretranslate', requireCronAuth, async (req, res) => 
             days: Math.min(parseInt(req.body?.titleDays, 10) || 400, 2000),
             maxTitles: Math.min(parseInt(req.body?.titleMax, 10) || 300, 1000),
         });
-        const out = { ok: true, incremental, retry, titles };
+        // 신작 성인물 자동 숨김분 즉시 반영(적중 0이면 no-op)
+        const hidden = await syncHiddenIndex([incremental.adultHidden, retry.adultHidden]);
+        const out = { ok: true, incremental, retry, titles, hidden };
         console.log('[cron/tmdb-pretranslate]', JSON.stringify(out));
         res.json(out);
     } catch (e) {
@@ -49,7 +69,10 @@ router.post('/api/cron/tmdb-sweep', requireCronAuth, (req, res) => {
     res.status(202).json({ ok: true, started: true, media, yearFrom, note: 'sweep running in background' });
     // 응답 후 백그라운드 실행 (await 안 함) — 완료/오류는 로그로만 추적.
     runBackfill({ media, yearFrom, concurrency, onProgress: (p) => console.log('[cron/tmdb-sweep]', JSON.stringify(p)) })
-        .then((r) => console.log('[cron/tmdb-sweep] DONE', JSON.stringify(r)))
+        .then(async (r) => {
+            console.log('[cron/tmdb-sweep] DONE', JSON.stringify(r));
+            await syncHiddenIndex([r.adultHidden]);   // sweep도 신작 문서를 만들므로 게이트가 발화한다
+        })
         .catch((e) => console.error('[cron/tmdb-sweep] FAIL', e.message));
 });
 

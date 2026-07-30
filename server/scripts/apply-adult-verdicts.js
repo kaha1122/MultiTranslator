@@ -85,8 +85,13 @@ async function main() {
     for (let i = 0; i < changes.length; i += 400) {
         const batch = kcultureDb.batch();
         for (const c of changes.slice(i, i + 400)) {
-            batch.set(kcultureDb.doc(`titles/${c.id}`),
-                { hidden: c.want, hiddenReason: c.want ? opts.reason : null }, { merge: true });
+            batch.set(kcultureDb.doc(`titles/${c.id}`), {
+                hidden: c.want,
+                hiddenReason: c.want ? opts.reason : null,
+                // hiddenBy='manual' — 이 한 줄이 "자동 숨김 · 미검수" 큐에서 빼는 유일한 장치다.
+                //   cron이 붙인 'auto:cron'을 사람이 실제로 검수했을 때만 덮어쓴다(리포트에서 자동 소멸).
+                hiddenBy: c.want ? 'manual' : null,
+            }, { merge: true });
         }
         await batch.commit();
         done += Math.min(400, changes.length - i);
