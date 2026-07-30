@@ -33,7 +33,10 @@
 //   node scripts/flag-adult-titles.js --dry      # 판정만(쓰기 없음) + HTML 리포트 — 먼저 이걸 권장
 //   node scripts/flag-adult-titles.js            # 실행(+ HTML 리포트)
 //   node scripts/flag-adult-titles.js --unflag 123 456   # 특정 id 숨김 해제
-// 옵션: --concurrency 20 · --limit N · --media tv|movie|both · --no-html
+// 옵션: --concurrency 20 · --limit N · --media tv|movie|both · --no-html · --no-refresh
+//
+// ⚠ 실행 끝에 서버 숨김 필터를 즉시 갱신한다(refresh-hidden-filter.js — 인덱스 재생성 + 서버 알림).
+//   이게 없으면 hidden을 찍어도 검색·탐색은 TMDB 프록시라 서버 메모리 Set이 갱신될 때까지 노출된다.
 //
 // 산출물: scripts/logs/flag-adult-*.log (실행 로그)
 //         scripts/logs/adult-review-*.html (**사람이 직접 검수하는 목록** — 제목·줄거리·근거·TMDB 링크)
@@ -52,6 +55,7 @@ const opts = {
     media: arg('media', 'both'),
     dry: process.argv.includes('--dry'),
     html: !process.argv.includes('--no-html'),
+    refresh: !process.argv.includes('--no-refresh'),
 };
 
 const tty = process.stdout.isTTY;
@@ -300,6 +304,27 @@ async function unflag(idList) {
         await kcultureDb.doc(`titles/${id}`).set({ hidden: false, hiddenReason: null }, { merge: true });
         log(green(`  ✔ ${id} 숨김 해제`));
     }
+    // 해제도 즉시 반영해야 한다 — 인덱스에서 id가 빠져야 다시 노출된다.
+    await refreshFilter();
+}
+
+// 숨김 필터 즉시 반영(인덱스 재생성 + 서버 알림). 없으면 서버 TTL(12시간)까지 화면이 안 바뀐다.
+async function refreshFilter() {
+    if (!opts.refresh) {
+        log(yellow('\n  ⚠ --no-refresh — 판정 반영이 최대 12시간 늦는다(서버 TTL). '
+            + '즉시 반영: node scripts/refresh-hidden-filter.js'));
+        return;
+    }
+    log(`\n${bold('▶ 숨김 필터 반영')}`);
+    const { refreshHiddenFilter } = require('./refresh-hidden-filter');
+    // quiet — 이 스크립트는 log()로 파일에 미러링하므로 출력을 직접 만든다.
+    const r = await refreshHiddenFilter({ quiet: true });
+    if (r.rebuilt) {
+        log(`  ${green('✔')} 인덱스 ${bold(r.rebuilt.count.toLocaleString())}건`
+            + dim(` (숨김 ${r.rebuilt.hidden.toLocaleString()} + 삭제 ${r.rebuilt.excluded.toLocaleString()} · ${r.rebuilt.ms}ms)`));
+    }
+    if (r.notified) log(`  ${green('✔')} 서버 반영 — 적재 ${bold(Number(r.server?.count || 0).toLocaleString())}건`);
+    if (r.error) log(`  ${yellow('⚠')} ${r.error}`);
 }
 
 async function main() {
@@ -405,6 +430,8 @@ async function main() {
         log(bold(`  📄 검수용 목록: ${htmlFile}`));
         log(dim('     브라우저로 열어 제목·줄거리를 직접 확인하고, 오탐은 체크 → adult-manual.json 에 반영하세요.'));
     }
+    // 판정을 화면에 먹이는 마지막 단계 — dry에는 바꾼 게 없으니 건너뛴다.
+    if (!opts.dry) await refreshFilter();
     log(dim(`  실행 로그: ${logFile}`));
     log('');
 }

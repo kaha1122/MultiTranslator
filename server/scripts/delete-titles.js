@@ -7,6 +7,10 @@
 //   ② 차단: excluded_titles/{id} 등록. **삭제보다 먼저** 해야 한다 — 삭제와 등록 사이에
 //           다른 배치가 돌면 지운 작품이 곧바로 되살아난다.
 //   ③ 삭제: recursiveDelete로 문서 + 하위 translations 함께 제거.
+//   ④ 반영: 숨김 인덱스 재생성 + 서버 즉시 반영(refresh-hidden-filter.js).
+//           ⚠ 이게 없으면 삭제해도 검색 결과에서 사라지지 않는다 — 검색·탐색은 TMDB 프록시라
+//             TMDB가 계속 그 작품을 실어 보내고, 감추는 수단은 서버 메모리 Set뿐이다.
+//             건너뛰려면 --no-refresh (서버는 TTL 12시간 후 자동 반영).
 //
 // ⚠ 재유입 차단의 실제 효력은 lib/tmdbBackfill.js의 processTitle 진입 가드가 담당한다.
 //   사전번역 배치는 TMDB discover로 id를 열거하므로, 차단 목록만 있고 가드가 없으면 소용없다.
@@ -16,7 +20,7 @@
 //   node scripts/delete-titles.js --file logs/FINAL_ID.MD           # 실제 삭제
 //   node scripts/delete-titles.js --file logs/FINAL_ID.MD --verdict N --no-delete
 //        → 삭제 없이 차단 목록에만 등록(번역 제외용)
-// 옵션: --verdict D · --limit N · --concurrency 8 · --no-backup(권장하지 않음)
+// 옵션: --verdict D · --limit N · --concurrency 8 · --no-backup(권장하지 않음) · --no-refresh
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
@@ -31,6 +35,7 @@ const opts = {
     dry: process.argv.includes('--dry'),
     backup: !process.argv.includes('--no-backup'),
     del: !process.argv.includes('--no-delete'),
+    refresh: !process.argv.includes('--no-refresh'),
 };
 
 const tty = process.stdout.isTTY;
@@ -120,6 +125,17 @@ async function main() {
     const left = await kcultureDb.collection('titles').select().get();
     const blocked = await kcultureDb.collection('excluded_titles').select().get();
     console.log(`\n  남은 titles ${bold(left.size.toLocaleString())}편 · 차단목록 ${blocked.size.toLocaleString()}건`);
+
+    // ④ 숨김 필터 즉시 반영 — 지운 작품이 검색에 남아 있는 창을 0으로 만든다.
+    if (opts.refresh) {
+        console.log(`\n${bold('▶ 숨김 필터 반영')}`);
+        const { refreshHiddenFilter } = require('./refresh-hidden-filter');
+        await refreshHiddenFilter();
+    } else {
+        console.log(yellow('\n  ⚠ --no-refresh — 지운 작품이 검색에 최대 12시간 남는다(서버 TTL). '
+            + '즉시 반영: node scripts/refresh-hidden-filter.js'));
+    }
+
     console.log(dim('  ※ sitemap 반영: KCulture에서 npm run sitemap:refresh 후 커밋·푸시'));
     console.log(dim('  ※ 복구는 백업 JSONL로 가능(excluded_titles의 해당 id도 함께 삭제해야 함)\n'));
 }

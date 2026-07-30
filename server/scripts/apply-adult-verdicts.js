@@ -15,6 +15,10 @@
 // 사용법:
 //   node scripts/apply-adult-verdicts.js --file logs/Adult_F.MD --dry   # 변경량만 확인
 //   node scripts/apply-adult-verdicts.js --file logs/Adult_F.MD         # 실제 반영
+// 옵션: --reason <사유> · --no-refresh(서버 즉시 반영 생략 — TTL 12시간 대기)
+//
+// ⚠ 반영 후 서버 숨김 필터를 즉시 갱신한다(refresh-hidden-filter.js). 이게 없으면 판정을 고쳐도
+//   검색·탐색은 TMDB 프록시라 서버 메모리 Set이 갱신될 때까지 그대로 노출된다.
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
@@ -25,6 +29,7 @@ const opts = {
     file: arg('file', path.join(__dirname, 'logs', 'Adult_F.MD')),
     dry: process.argv.includes('--dry'),
     reason: arg('reason', 'manual:final'),   // hiddenReason에 남길 사유
+    refresh: !process.argv.includes('--no-refresh'),
 };
 
 const tty = process.stdout.isTTY;
@@ -106,7 +111,16 @@ async function main() {
     // ③ 최종 확인
     const cnt = await kcultureDb.collection('titles').where('hidden', '==', true).select('hidden').get();
     console.log(`\n  ${bold('현재 hidden=true')} ${cnt.size.toLocaleString()}편`);
-    console.log(dim('  ※ 서버는 30분 TTL로 숨김 목록을 다시 읽습니다(즉시 반영하려면 재배포).'));
+
+    // ④ 숨김 필터 즉시 반영 — 없으면 판정이 화면에 먹히기까지 서버 TTL(12시간)을 기다려야 한다.
+    if (opts.refresh) {
+        console.log(`\n${bold('▶ 숨김 필터 반영')}`);
+        const { refreshHiddenFilter } = require('./refresh-hidden-filter');
+        await refreshHiddenFilter();
+    } else {
+        console.log(yellow('\n  ⚠ --no-refresh — 판정 반영이 최대 12시간 늦는다(서버 TTL). '
+            + '즉시 반영: node scripts/refresh-hidden-filter.js'));
+    }
     console.log(dim('  ※ sitemap 반영은 KCulture에서 npm run sitemap:refresh 후 커밋·푸시.\n'));
 }
 

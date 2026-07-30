@@ -3,6 +3,7 @@
 // 인메모리 TTL 캐시로 TMDB 호출량 절감. 인증은 requireAuthAny(kculture/PronunFit 토큰 모두 허용).
 const express = require('express');
 const { optionalAuthAny } = require('../middleware/authAny');
+const { requireCronAuth } = require('../middleware/auth');
 const { rateLimit } = require('../middleware/rateLimit');
 
 const router = express.Router();
@@ -252,6 +253,28 @@ router.get('/api/kdl/version', async (req, res) => {
         uptimeSec: Math.round(process.uptime()),
         filteredTitles: hiddenTitles.size(),   // 숨김 + 삭제 합집합
     });
+});
+
+// ── 숨김 목록 즉시 반영 (운영자·스크립트 전용, requireCronAuth) ─────────────
+// 2026-07-30 추가. 숨김 목록의 TTL은 12시간이지만 그건 **백스톱**이고, 실제 반영은 이 라우트가 한다.
+//   왜 필요한가: 우리 DB에서 지워도 검색·탐색은 TMDB 프록시라 TMDB가 계속 결과에 실어 보낸다.
+//   화면에서 감추는 수단은 서버 메모리 Set이 유일하므로, 새로 판정·삭제한 성인물은 서버가 그 사실을
+//   알기 전까지 검색 결과에 그대로 노출된다. 목록을 바꾼 스크립트가 끝나자마자 이걸 때려 창을 0으로 만든다.
+// body: { rebuild: true } → 원본 두 목록을 스캔해 파생 인덱스부터 다시 만든다.
+//   스크립트가 이미 만들었으면 생략(기본) — 그때는 인덱스 1 read로 끝난다.
+router.post('/api/kdl/hidden-titles/refresh', requireCronAuth, async (req, res) => {
+    const t0 = Date.now();
+    try {
+        const before = hiddenTitles.size();
+        const rebuilt = req.body?.rebuild ? await hiddenTitles.rebuildIndex() : null;
+        const count = await hiddenTitles.reload();
+        const out = { ok: true, before, count, rebuilt, ms: Date.now() - t0 };
+        console.log('[hiddenTitles/refresh]', JSON.stringify(out));
+        res.json(out);
+    } catch (e) {
+        console.error('[hiddenTitles/refresh]', e.message);
+        res.status(500).json({ error: e.message });
+    }
 });
 
 // ── 장르 목록 ──
