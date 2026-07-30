@@ -268,6 +268,10 @@ async function processTitle(media, id, { force = false } = {}) {
                 hidden: true,
                 hiddenReason: reason,
                 hiddenBy: 'auto:cron',        // 사람 미검수 큐 마커 — apply-adult-verdicts가 'manual'로 바꾼다
+                // ⚠ video 플래그를 문서에 남긴다 — 수동 배치(flag-adult-titles)는 TMDB의 video를
+                //   모르는 채 키워드·등급만으로 재판정하므로, 이게 없으면 여기서 숨긴 direct-to-video
+                //   작품을 "성인물 아님"으로 보고 **해제해버린다**(hidden=false로 되돌림).
+                isVideo: detail.video === true,
                 metaTranslated: false,        // 구제되면 runRetry가 자동으로 번역을 채운다
                 poster_path: detail.poster_path || null,
                 // 원제만 남긴다 — 번역을 하지 않았으므로 검색 인덱스도 만들지 않는다.

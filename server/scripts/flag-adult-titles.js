@@ -98,7 +98,7 @@ async function collect() {
         // hiddenBy: 'auto:cron'(신작 자동 판정·사람 미검수) / 'manual'(검수 완료) — 리포트의
         //   "🤖 자동 숨김 · 미검수" 블록을 만드는 데 쓴다. 이게 없으면 자동 판정분이 기존 숨김
         //   6천 건에 섞여 사람이 무엇을 새로 봐야 하는지 알 수 없다.
-        .select('media', 'hidden', 'hiddenBy', 'searchTitle',
+        .select('media', 'hidden', 'hiddenBy', 'isVideo', 'searchTitle',
             'meta.keywords', 'meta.vote_count', 'meta.title', 'meta.overview',
             'meta.release_date', 'meta.first_air_date', 'metaCachedAt')
         .get();
@@ -131,7 +131,10 @@ async function collect() {
             // 표본이 충분하고 강한 키워드도 없으면 더 볼 것이 없다 → 조회 없이 유지 확정.
             else if (votes >= VOTE_FLOOR) local = { verdict: 'keep', reason: '', info };
         }
-        rows.push({ id: d.id, media: x.media, hidden: x.hidden === true, hiddenBy: x.hiddenBy || null, local, info });
+        rows.push({
+            id: d.id, media: x.media, hidden: x.hidden === true, hiddenBy: x.hiddenBy || null,
+            isVideo: x.isVideo === true, local, info,
+        });
     });
     return rows;
 }
@@ -295,9 +298,14 @@ async function main() {
     if (opts.limit) rows = rows.slice(0, opts.limit);
 
     // 수동 보정이 규칙보다 우선 — TMDB 조회도 생략된다.
+    // isVideo(direct-to-video)는 규칙보다 위, 사람 판정보다 아래에 둔다.
+    //   ⚠ 이 줄이 없으면 이 배치가 cron이 숨긴 direct-to-video 작품을 **해제해버린다** —
+    //     여기서 쓰는 규칙(키워드·등급)은 video 플래그를 모르기 때문에 "성인물 아님"으로 판정한다.
+    //     정상 단편·다큐라면 adult-manual.json의 allow로 올려서 구제한다(그게 유일한 해제 경로).
     for (const r of rows) {
         if (manual.allow.has(r.id)) r.local = { verdict: 'keep', reason: 'manual:allow', info: r.info };
         else if (manual.hide.has(r.id)) r.local = { verdict: 'hide', reason: 'manual:hide', info: r.info };
+        else if (r.isVideo) r.local = { verdict: 'hide', reason: 'video:direct', info: r.info };
     }
 
     const needProbe = rows.filter((r) => !r.local);
