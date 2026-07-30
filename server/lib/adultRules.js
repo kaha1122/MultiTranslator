@@ -112,30 +112,34 @@ function judgeDetail(media, detail) {
 // 판정 순서(위에서 걸리면 종료):
 //   ① manual.allow  — 사람 판정이 규칙보다 항상 우선. 무조건 노출.
 //   ② manual.hide   — 사람이 지정한 성인물.
-//   ③ video:true    — TMDB의 direct-to-video 플래그. **전량 숨김**(사용자 결정).
-//        discover는 include_video 기본값이 false라 이 작품군을 응답에서 통째로 빼왔고, 그래서
-//        우리 카탈로그에 한 번도 들어온 적이 없다(「의자매 섹스 스캔들」 1015975가 그 사례).
-//        한국 소프트코어 에로물이 사는 자리가 정확히 여기다 → 열거는 켜되(include_video=true)
-//        판정 없이 일단 전부 감춘다. 정상 단편·다큐가 섞이면 검수에서 allow로 올린다.
-//   ④ 제목 어휘     — 키워드·등급이 텅 빈 성인물의 유일한 신호(메타데이터 없는 저품질 엔트리).
-//   ⑤ R1·R2 규칙    — vote 조건 제외(ignoreVotes)로 적용.
+//   ③ 제목 어휘     — 키워드·등급이 텅 빈 성인물의 신호(메타데이터 없는 저품질 엔트리).
+//   ④ R1·R2 규칙    — vote 조건 제외(ignoreVotes)로 적용.
+//   ⑤ 그 외         → { hide:false, ai:true } — **Gemini 문맥 판정으로 넘긴다**(lib/adultJudge.js).
+//        규칙만으로는 부족하다는 게 실측으로 확인됐다: 사람이 성인물로 판정한 2,496편 중
+//        어휘 규칙에 걸리는 건 15%뿐이고, 나머지는 완곡어 제목이라 문자열 매칭이 원리적으로 못 잡는다.
+//
+// ⚠ video:true(direct-to-video)는 **차단 근거가 아니다** — 2026-07-30에 전량 숨김으로 넣었다가
+//   BTS·SMTOWN·ITZY·임영웅 공연 실황 645편이 함께 숨겨졌다(678편 중 성인 신호가 있던 건 33편뿐).
+//   K-Contents 앱에서 K-pop 공연물은 핵심 자산이므로 정책을 철회했다. 유통 형태는 이제
+//   adultJudge 프롬프트의 정황 힌트로만 들어간다.
+//
 // 'suspect'는 자동 숨김하지 않는다(전수의 절반이 여기 걸린다 — 무명 독립영화·다큐).
 function judgeNewTitle(media, detail, { manual, allTitles = '' } = {}) {
     const id = String(detail?.id ?? '');
     const man = manual || { hide: new Set(), allow: new Set() };
-    if (man.allow.has(id)) return { hide: false, reason: 'manual:allow' };
-    if (man.hide.has(id)) return { hide: true, reason: 'manual:hide' };
-    if (detail?.video === true) return { hide: true, reason: 'video:direct' };
+    if (man.allow.has(id)) return { hide: false, reason: 'manual:allow', ai: false };
+    if (man.hide.has(id)) return { hide: true, reason: 'manual:hide', ai: false };
 
     const names = [allTitles, detail?.original_title, detail?.original_name, detail?.title, detail?.name]
         .filter(Boolean).join(' ');
     const hit = titleHit(names);
-    if (hit) return { hide: true, reason: `title:${hit}` };
+    if (hit) return { hide: true, reason: `title:${hit}`, ai: false };
 
     const sig = extractSignals(media, detail);
     const d = decideBy(sig.kws, sig.certs, sig.votes, { ignoreVotes: true });
-    if (d?.verdict === 'hide') return { hide: true, reason: d.reason };
-    return { hide: false, reason: d?.reason || '' };
+    if (d?.verdict === 'hide') return { hide: true, reason: d.reason, ai: false };
+    // 규칙으로는 결론이 안 난다 → AI 판정 필요(호출측이 adultJudge를 부른다).
+    return { hide: false, reason: d?.reason || '', ai: true };
 }
 
 // TMDB를 직접 조회해 판정(등급 확인 필요할 때). tmdbFn(path, params) → json 을 주입받는다.

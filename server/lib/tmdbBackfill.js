@@ -30,6 +30,8 @@ const { cacheTitleMeta } = require('./tmdbMetaBackfill'); // 신작의 meta(출�
 const excluded = require('./excludedTitles');
 // 신작 성인물 자동 판정 — 규칙은 scripts/flag-adult-titles.js와 **같은 모듈을 공유**한다(복제 금지).
 const adultRules = require('./adultRules');
+// 규칙이 못 잡는 완곡어 제목을 문맥으로 판정(신작 전용, 작품당 1회). 실패 시 규칙 결과 유지.
+const { judgeAdultAI } = require('./adultJudge');
 
 // ISO 코드 → 정식 언어명. 지역코드(zh-CN 등)는 그대로, 없으면 베이스(zh)로 폴백, 최후 코드 그대로.
 const nameOf = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
@@ -261,17 +263,33 @@ async function processTitle(media, id, { force = false } = {}) {
             manual: adultRules.loadManual(),
             allTitles: [origTitle, detail.title, detail.name].filter(Boolean).join(' '),
         });
+        // 규칙으로 결론이 안 나면 Gemini 문맥 판정(작품당 1회). 실패(null)는 규칙 결과 유지 —
+        // "AI를 못 불렀다"를 "노출해도 된다"로 해석하지 않는다.
+        let ai = null;
+        if (j.ai) {
+            ai = await judgeAdultAI(media, detail, { koTitle: origTitle });
+            // unsure도 숨긴다 — 신작은 "1차 자동 제외 후 사람이 판단"이 운영 방침이고,
+            // hiddenBy로 구분해 두면 검수 화면에서 unsure부터 먼저 보게 정렬할 수 있다.
+            if (ai && (ai.verdict === 'adult' || ai.verdict === 'unsure')) {
+                j.hide = true;
+                j.reason = `ai:${ai.verdict}(${ai.confidence.toFixed(2)})`;
+                j.by = ai.verdict === 'unsure' ? 'auto:ai-unsure' : 'auto:ai';
+            }
+        }
         if (j.hide) {
             const reason = j.reason;
             await markerRef.set({
                 media,
                 hidden: true,
                 hiddenReason: reason,
-                hiddenBy: 'auto:cron',        // 사람 미검수 큐 마커 — apply-adult-verdicts가 'manual'로 바꾼다
-                // ⚠ video 플래그를 문서에 남긴다 — 수동 배치(flag-adult-titles)는 TMDB의 video를
-                //   모르는 채 키워드·등급만으로 재판정하므로, 이게 없으면 여기서 숨긴 direct-to-video
-                //   작품을 "성인물 아님"으로 보고 **해제해버린다**(hidden=false로 되돌림).
-                isVideo: detail.video === true,
+                // 사람 미검수 큐 마커 — apply-adult-verdicts가 'manual'로 바꾼다.
+                //   auto:ai-unsure(정보 부족) → auto:ai(AI가 성인물로 봄) → auto:cron(규칙) 순으로
+                //   검수 우선순위가 높다.
+                hiddenBy: j.by || 'auto:cron',
+                isVideo: detail.video === true,   // 유통 형태 기록(차단 근거는 아님 — 판정 힌트·감사용)
+                // AI 판정 결과를 그대로 남긴다 — 재실행 시 재호출을 막고(멱등), 검수 화면이
+                // "왜 숨겼는지"를 사람 말로 보여줄 수 있다.
+                ...(ai ? { adultAI: { ...ai, model: 'gemini', at: new Date() } } : {}),
                 metaTranslated: false,        // 구제되면 runRetry가 자동으로 번역을 채운다
                 poster_path: detail.poster_path || null,
                 // 원제만 남긴다 — 번역을 하지 않았으므로 검색 인덱스도 만들지 않는다.
