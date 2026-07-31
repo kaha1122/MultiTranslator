@@ -231,6 +231,13 @@ async function processTitle(media, id, { force = false } = {}) {
     const markerRef = kcultureDb.doc(`titles/${id}`);
     const m = await markerRef.get();
     const md = m.exists ? m.data() : null;
+    // 숨김 작품은 번역하지 않는다 (2026-07-31 — 게이트 도입 다음날 발견한 구멍).
+    //   숨김 문서는 metaTranslated:false로 남는데 그게 정확히 runRetry의 재시도 조건이라,
+    //   다음 cron이 숨긴 성인물에 11개 언어 번역을 채우고 있었다(45건 중 18건 실측 — merge:true
+    //   덕에 hidden은 유지돼 노출 사고는 없었지만 "숨김 = 번역 비용 0" 설계가 깨진다).
+    //   구제 경로는 그대로다: allow 반영 시 hidden=false가 되므로 이 가드를 통과해 runRetry가 채운다.
+    //   force여도 건너뛴다 — 숨김 문서를 번역할 정당한 경우가 없다(구제가 먼저다).
+    if (md?.hidden === true) return { id, skipped: true, hiddenSkip: true, langs: 0, geminiUsed: 0 };
     // 스킵 게이트 — V2 마커 기준. V1 문서(metaV 없음)는 전부 재처리 대상(카탈로그 재구축의 핵심).
     if (!force && md?.metaV === 2 && md.metaTranslated) return { id, skipped: true, langs: 0, geminiUsed: 0 };
 
@@ -653,12 +660,20 @@ async function refreshOfficialTitles({ days = 400, maxTitles = 300, concurrency 
 // 단일필드 자동 인덱스라 복합인덱스 불필요. 미처리작(필드 없음)은 매칭 안 됨 → runIncremental 담당.
 async function runRetry({ limit = 100, concurrency = 3 } = {}) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    // select — media·hidden만 받는다(마스크 없으면 문서 전문이 내려와 이그레스 낭비).
     const snap = await kcultureDb.collection('titles')
         .where('metaTranslated', '==', false)
+        .select('media', 'hidden')
         .limit(limit)
         .get();
     const items = [];
-    snap.forEach((d) => { const md = d.data()?.media; if (md) items.push({ media: md, id: d.id }); });
+    snap.forEach((d) => {
+        const x = d.data() || {};
+        // 숨김 작품 제외 — metaTranslated:false로 남는 게 숨김의 정상 상태라 매 실행 큐에 잡힌다.
+        // processTitle에도 가드가 있지만, 여기서 걸러야 limit(재시도 예산)을 잡아먹지 않는다.
+        if (x.hidden === true) return;
+        if (x.media) items.push({ media: x.media, id: d.id });
+    });
     const stat = { scanned: items.length, done: 0, partial: 0, skipped: 0, gemini: 0, errors: 0, adultHidden: 0 };
     await runPool(items, concurrency, async ({ media, id }) => {
         try {
