@@ -256,24 +256,29 @@ async function processTitle(media, id, { force = false } = {}) {
     // 삭제가 아니라 **숨김**이다. 오탐이면 플래그만 내리면 복구되고, 문서를 metaTranslated=false로
     // 남기므로 구제(allow) 후 다음 cron runRetry가 11개 언어를 자동으로 채운다.
     //
-    // 판정 정책(video 전량 숨김·제목 어휘·vote 조건 제외)은 adultRules.judgeNewTitle에 있다 —
-    // 구작용 규칙보다 공격적이다. 근거는 그 함수 주석 참조.
+    // 판정 정책(2026-07-31): 사람 판정(manual) 제외 전부 **Gemini 단일 판정** — 규칙·어휘는
+    // 적확도가 낮아 게이트에서 뺐다(Gemini 호출 실패 시 비상 폴백으로만). adultRules.judgeNewTitle 주석 참조.
     if (!md) {
         const j = adultRules.judgeNewTitle(media, detail, {
             manual: adultRules.loadManual(),
             allTitles: [origTitle, detail.title, detail.name].filter(Boolean).join(' '),
         });
-        // 규칙으로 결론이 안 나면 Gemini 문맥 판정(작품당 1회). 실패(null)는 규칙 결과 유지 —
-        // "AI를 못 불렀다"를 "노출해도 된다"로 해석하지 않는다.
         let ai = null;
         if (j.ai) {
             ai = await judgeAdultAI(media, detail, { koTitle: origTitle });
-            // **명백한 성인물만 숨긴다**(2026-07-30 사용자 결정). 애매하면 노출이 기본값이다 —
-            // 중간 등급을 두면 메타가 빈 정상 작품이 그 칸에 쌓여 사실상 숨김이 되기 때문.
             if (ai?.verdict === 'adult') {
+                // **명백한 성인물만 숨긴다**(2026-07-30 사용자 결정). 애매하면 노출이 기본값 —
+                // 중간 등급을 두면 메타가 빈 정상 작품이 그 칸에 쌓여 사실상 숨김이 되기 때문.
                 j.hide = true;
                 j.reason = `ai:adult(${ai.confidence.toFixed(2)})`;
                 j.by = 'auto:ai';
+            } else if (!ai && j.suspect) {
+                // Gemini 호출 자체가 실패(재시도+폴백 모델까지 전부) — 판정자가 부재중이다.
+                // 규칙·어휘가 의심 신호를 낸 작품만 보수적으로 숨겨 검수 대기로 보낸다.
+                // "AI를 못 불렀다"를 "노출해도 된다"로 해석하지 않기 위한 비상 잠금장치.
+                j.hide = true;
+                j.reason = `fallback:${j.suspect}`;
+                j.by = 'auto:cron';
             }
         }
         if (j.hide) {
@@ -463,7 +468,8 @@ async function* enumerateIds(media, yearFrom, yearTo) {
                 //   에로물이 정확히 그 자리에 있어서 **판정 대상조차 되지 못했다**
                 //   (1015975 「의자매 섹스 스캔들」: original_language=ko·KR 19+인데 카탈로그 밖).
                 //   실측 2019~2026 한국영화 6,177 → 6,629건(+452, 6.8%)이 이 플래그로 가려져 있었다.
-                //   → 열거는 켜고, 유입된 video:true는 게이트가 전량 숨김 처리한다(adultRules.judgeNewTitle).
+                //   → 열거는 켜고, 유입분은 게이트의 Gemini 판정이 성인물만 가려 숨긴다
+                //     (전량 숨김은 K-pop 공연물 645편 오탐으로 철회 — adultRules.judgeNewTitle 주석).
                 include_video: 'true',
                 [`${dateField}.gte`]: `${y}-01-01`, [`${dateField}.lte`]: `${y}-12-31`, page: String(page),
             });

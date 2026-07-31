@@ -101,45 +101,46 @@ function judgeDetail(media, detail) {
     return { hide: d?.verdict === 'hide', verdict: d?.verdict || 'keep', reason: d?.reason || '', ...sig };
 }
 
-// ── 신작 게이트 정책 (2026-07-30) ───────────────────────────────────────────
+// ── 신작 게이트 정책 (2026-07-31 확정 — Gemini 단일 판정자) ──────────────────
 // cron이 **문서를 새로 만들기 직전**에 부른다. 여기서 hide면 사전번역(Gemini 11개 언어)을 아예
 // 하지 않고 hidden=true로 문서만 만든다 — 비용을 쓰지 않고 노출도 0.
 //
-// 운영 방침: **1차로 자동 제외하고, 사람이 나중에 하나하나 판단한다.**
-//   그래서 구작(수동 재판정)보다 공격적이다 — 오탐은 노출 사고가 아니라 "검수 대기"일 뿐이고,
-//   구제는 adult-manual.json의 allow 한 줄이면 된다. 반대로 놓친 성인물은 스토어 심사 리스크다.
-//
 // 판정 순서(위에서 걸리면 종료):
-//   ① manual.allow  — 사람 판정이 규칙보다 항상 우선. 무조건 노출.
-//   ② manual.hide   — 사람이 지정한 성인물.
-//   ③ 제목 어휘     — 키워드·등급이 텅 빈 성인물의 신호(메타데이터 없는 저품질 엔트리).
-//   ④ R1·R2 규칙    — vote 조건 제외(ignoreVotes)로 적용.
-//   ⑤ 그 외         → { hide:false, ai:true } — **Gemini 문맥 판정으로 넘긴다**(lib/adultJudge.js).
-//        규칙만으로는 부족하다는 게 실측으로 확인됐다: 사람이 성인물로 판정한 2,496편 중
-//        어휘 규칙에 걸리는 건 15%뿐이고, 나머지는 완곡어 제목이라 문자열 매칭이 원리적으로 못 잡는다.
+//   ① manual.allow  — 사람 판정이 항상 최우선. 무조건 노출.
+//   ② manual.hide   — 사람이 지정한 성인물. 무조건 숨김.
+//   ③ 그 외 전부    → **Gemini 문맥 판정**(lib/adultJudge.js). adult면 숨김, clean이면 노출.
+//
+// 왜 규칙·어휘를 게이트에서 뺐나 (2026-07-31 사용자 결정 — 도입 하루 만에 교정)
+//   · 제목 어휘: 「지금 불륜이 문제가 아닙니다」(2026-07-31 방영 JTBC 드라마)가 '불륜'으로 걸렸다.
+//     정상 드라마 제목에 이 단어들이 충분히 쓰인다 — 문자열 매칭은 적확도가 원리적으로 낮다.
+//   · R1·R2: 신작은 vote가 0이라 표본 조건이 무력해 키워드·등급 단독 판정이 되는데, eroticism은
+//     예술영화에도 붙고(「스캔들」 사례) 19금은 정상 상업작도 받는다.
+//   · 반면 Gemini는 제목+줄거리+장르+제작사+러닝타임을 함께 보고 「불륜은 비즈니스다」(줄거리
+//     없음·79분·제작사 없음)와 정상 드라마를 실제로 구분해냈다(2026-07-30 678편 재판정 실측).
+//   → 판정자는 Gemini 하나. TITLE_LEX·decideBy는 이제 게이트에서 안 쓰며, 다음 두 곳에만 남는다:
+//     ⓐ 수동 배치(flag-adult-titles.js)의 검수 후보 추출 ⓑ **Gemini 호출 실패 시 비상 폴백**
+//     (호출측 처리 — 의심 신호가 있는데 판정을 못 받았으면 노출이 아니라 검수 대기가 안전하다).
+//   정기 보정은 사람이 월 1회 rejudge-hidden.js·export-adult-judgments.js로 검수한다.
 //
 // ⚠ video:true(direct-to-video)는 **차단 근거가 아니다** — 2026-07-30에 전량 숨김으로 넣었다가
 //   BTS·SMTOWN·ITZY·임영웅 공연 실황 645편이 함께 숨겨졌다(678편 중 성인 신호가 있던 건 33편뿐).
 //   K-Contents 앱에서 K-pop 공연물은 핵심 자산이므로 정책을 철회했다. 유통 형태는 이제
 //   adultJudge 프롬프트의 정황 힌트로만 들어간다.
-//
-// 'suspect'는 자동 숨김하지 않는다(전수의 절반이 여기 걸린다 — 무명 독립영화·다큐).
 function judgeNewTitle(media, detail, { manual, allTitles = '' } = {}) {
     const id = String(detail?.id ?? '');
     const man = manual || { hide: new Set(), allow: new Set() };
     if (man.allow.has(id)) return { hide: false, reason: 'manual:allow', ai: false };
     if (man.hide.has(id)) return { hide: true, reason: 'manual:hide', ai: false };
 
+    // 여기서부터는 판정하지 않는다 — Gemini가 판정자다. 아래 값들은 호출측이
+    // **Gemini 호출 실패 시에만** 쓰는 비상 폴백 신호(suspect)로 함께 실어 보낸다.
     const names = [allTitles, detail?.original_title, detail?.original_name, detail?.title, detail?.name]
         .filter(Boolean).join(' ');
     const hit = titleHit(names);
-    if (hit) return { hide: true, reason: `title:${hit}`, ai: false };
-
     const sig = extractSignals(media, detail);
     const d = decideBy(sig.kws, sig.certs, sig.votes, { ignoreVotes: true });
-    if (d?.verdict === 'hide') return { hide: true, reason: d.reason, ai: false };
-    // 규칙으로는 결론이 안 난다 → AI 판정 필요(호출측이 adultJudge를 부른다).
-    return { hide: false, reason: d?.reason || '', ai: true };
+    const suspect = hit ? `title:${hit}` : (d?.verdict === 'hide' ? d.reason : null);
+    return { hide: false, reason: '', ai: true, suspect };
 }
 
 // TMDB를 직접 조회해 판정(등급 확인 필요할 때). tmdbFn(path, params) → json 을 주입받는다.
