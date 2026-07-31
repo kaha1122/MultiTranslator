@@ -113,7 +113,15 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     const cacheDoc = (kcultureDb && validCachePath(cachePath, targetLang)) ? kcultureDb.doc(cachePath) : null;
     const scopeLabel = scope ? String(scope).slice(0, 12) : (cacheDoc ? 'tx' : 'nocache');
 
+    const targetName = langName(targetLang);
+    // 속도 #3(2026-08-02): 캐시 확인과 컨텍스트 조회를 병렬 시작 — HIT면 컨텍스트 read는 버려지고
+    // (소액), MISS면 컨텍스트 지연이 캐시 확인 뒤에 직렬로 붙지 않는다.
+    const ctxPromise = cacheDoc
+        ? buildTranslationContext(cachePath, targetLang, targetName).catch(() => [])
+        : Promise.resolve([]);
+
     // 캐시 HIT → Gemini 미호출(무과금). (TTS의 [AzureTTS] DURABLE-HIT 대응)
+    // (클라도 2026-08-02부터 같은 문서를 선조회 — 여기 도달한 HIT는 클라 read 실패/구버전 클라 케이스)
     if (cacheDoc) {
         try {
             const snap = await cacheDoc.get();
@@ -124,14 +132,12 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
             }
         } catch (e) { /* 캐시 read 실패 → MISS로 진행(번역은 계속) */ }
     }
-
-    const targetName = langName(targetLang);
     // 선택적 길이 제약(KCulture 한줄평 등 고정 박스용). optional이라 미전송 호출(PronunFit 포함)엔 무영향.
     const lenRule = (Number.isFinite(maxChars) && maxChars > 0)
         ? `5. Length limit: keep the "translated" value within about ${maxChars} characters. If a faithful translation would be longer, condense naturally (preserve the core meaning, drop redundancy) — never cut off mid-sentence.`
         : null;
-    // 위치·작품 컨텍스트(fail-open) — 검증된 캐시 경로가 있을 때만(임의 경로로 read 유발 방지)
-    const ctxLines = cacheDoc ? await buildTranslationContext(cachePath, targetLang, targetName) : [];
+    // 위치·작품 컨텍스트(fail-open) — 위에서 병렬 시작한 결과 수확
+    const ctxLines = await ctxPromise;
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         ``,
@@ -181,8 +187,9 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
 
     let translated = (r.text || '').trim();
     if (parsed && typeof parsed.translated === 'string') translated = parsed.translated;
-    // 캐시에 저장(다음 사람·재조회 재사용) — best-effort, 실패해도 응답엔 영향 없음.
-    if (cacheDoc) { try { await cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }); } catch (e) { /* best-effort */ } }
+    // 캐시에 저장(다음 사람·재조회 재사용) — fire-and-forget(속도 #2, 2026-08-02): 응답을 저장 완료에
+    // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
+    if (cacheDoc) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     res.json({ translated });
 });
