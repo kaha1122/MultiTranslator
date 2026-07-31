@@ -173,9 +173,12 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
             page: String(page),
             include_adult: 'false',
         };
-        // 콘텐츠 타입별 기본 장르 필터 (드라마=Drama / 예능=Reality·Talk) + 사용자 장르(AND)
+        // 콘텐츠 타입별 기본 장르 필터 + 사용자 장르(AND)
+        // 드라마 = "예능·토크·뉴스·다큐·애니·키즈가 아닌 한국 시리즈 전부"(without_genres 방식, 2026-07-31 사용자 결정).
+        //   구방식(with_genres=18 필수)은 TMDB가 Drama 태그 없이 범죄·코미디로만 태깅한 K-드라마를
+        //   전 탭에서 증발시켰다(「지금 불륜이 문제가 아닙니다」= 범죄·코미디 온리 사례).
         const genreParts = [];
-        if (kind === 'drama') genreParts.push('18');
+        if (kind === 'drama') params.without_genres = '10764,10767,10763,99,16,10762';
         else if (kind === 'variety') genreParts.push('10764|10767');
         if (req.query.genre) genreParts.push(String(req.query.genre));
         if (genreParts.length) params.with_genres = genreParts.join(',');
