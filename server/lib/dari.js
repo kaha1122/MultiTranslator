@@ -232,25 +232,48 @@ async function generateThreadCopy({ showName, genres, synopsis, episodes }) {
     throw new Error('Dari 발제 생성 실패 (2회 시도 모두 빈값/길이 초과)');
 }
 
+// ── 고유명사 보호 규칙(2026-08-01) — Esom→손숙(다른 실존 배우로 치환)·hackberry→해바라기·
+// Room 19→룸 19 사고 대응. glossary(선택): { "원문 표현": "타깃 확정 표기" } — 리뷰 초안 JSON의
+// glossary 필드로 전달, 조사 단계에서 확정한 고유명사를 사전에 못박는다(사후 ko 패치 → 사전 예방).
+// 값이 문자열이면 한국어 확정 표기(그 외 언어는 원문 기준 음역), 객체면 {lang: 표기} 언어별 지정.
+function properNounRules(glossary = null) {
+    const rules = [
+        `- Person names (actors, directors, characters): convert only if you are CERTAIN of the established spelling in that target language; otherwise keep the original spelling as-is or transliterate it. NEVER substitute a different real person's name.`,
+        `- Unfamiliar proper nouns (place names, in-show objects or terms): if unsure, keep them as-is — never replace them with a generic or different word.`,
+        `- Quoted titles of books, films or shows inside the text: use the official release title in that target language if certain; otherwise keep the original title unchanged.`,
+    ];
+    if (glossary && typeof glossary === 'object') {
+        const entries = Object.entries(glossary).filter(([k]) => k);
+        if (entries.length) {
+            rules.push(`- MANDATORY glossary — when these terms appear, use exactly these renderings:`);
+            for (const [src, tgt] of entries) {
+                if (typeof tgt === 'string') rules.push(`    "${src}" → Korean: "${tgt}" (other languages: transliterate from the source; never a different person or word)`);
+                else if (tgt && typeof tgt === 'object') rules.push(`    "${src}" → ${Object.entries(tgt).map(([l, v]) => `${l}: "${v}"`).join(', ')}`);
+            }
+        }
+    }
+    return rules;
+}
+
 // ── 본문 다국어 묶음 번역 → 캐시 시드용 map {code: translatedBody} ──
 // showTitles: { en, original, originalLang } — 작품명 음차/의역 방지("에이전트 김 리액티베이티드" 사고).
 //   원어(콘텐츠 원산지) 타깃에는 공식 원어 제목을, 그 외 언어에는 영어 제목 그대로 쓰게 지시.
 // 장문 × 10언어 단일 호출은 응답 잘림으로 파싱 실패(0/10)가 잦아 5언어씩 분할 호출(2026-07-20).
-async function translateBodyMulti(body, codes, showTitles = null) {
+async function translateBodyMulti(body, codes, showTitles = null, glossary = null) {
     const CHUNK = 5;
     if (codes.length > CHUNK) {
         const out = {};
         for (let i = 0; i < codes.length; i += CHUNK) {
-            Object.assign(out, await translateBodyMulti(body, codes.slice(i, i + CHUNK), showTitles));
+            Object.assign(out, await translateBodyMulti(body, codes.slice(i, i + CHUNK), showTitles, glossary));
         }
         return out;
     }
-    return translateBodyChunk(body, codes, showTitles);
+    return translateBodyChunk(body, codes, showTitles, glossary);
 }
 
 // flash-lite 글리치 2종(값 뒤 중복 조각 / 깨진 \u 이스케이프 — 2026-07-22 ar 시드 실측) 대응:
 // 수확 실패 언어만 최대 3회 재시도(tmdbBackfill과 동일 발상 — 받은 언어는 재호출 안 함).
-async function translateBodyChunk(body, codes, showTitles = null) {
+async function translateBodyChunk(body, codes, showTitles = null, glossary = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}" in every language`,
@@ -272,6 +295,7 @@ async function translateBodyChunk(body, codes, showTitles = null) {
             `- NEVER return, copy, paraphrase, or echo the English source. Returning English is a FAILURE.`,
             `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
             ...titleRule,
+            ...properNounRules(glossary),
             `- Keep the signature line "${DARI_SIGNATURE}" as-is except translate "your AI curator" naturally (keep "Dari" and the emoji).`,
             `- Self-check before answering: if any value is still (even partly) in English, redo it fully in that target language.`,
             ``,
@@ -304,7 +328,7 @@ function seedTranslations(batch, docPath, body, translated) {
 
 // ── 헤드라인(제목) 전용 다국어 번역 — 본문 프롬프트(시그니처 규칙 등)와 분리해 오염 방지 ──
 // "Dari"는 브랜드명(번역·음차 금지 — "다리의 선택" 사고), 원문에 없는 문구 추가 금지.
-async function translateTitleMulti(title, codes, showTitles = null) {
+async function translateTitleMulti(title, codes, showTitles = null, glossary = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}"`,
@@ -324,6 +348,7 @@ async function translateTitleMulti(title, codes, showTitles = null) {
             `- If the word "Dari" appears, it is a BRAND NAME — NEVER translate or transliterate it; keep it exactly "Dari".`,
             `- Translate the headline naturally and completely. Do NOT add any prefix, label, or words that are not in the source.`,
             ...titleRule,
+            ...properNounRules(glossary),
             `- Do NOT add, append, or omit anything that is not in the source headline.`,
             ``,
             `Return ONLY one JSON object whose keys are these EXACT codes [${still.map((c) => `"${c}"`).join(', ')}],`,
@@ -487,7 +512,8 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
 // ── 큐레이터 리뷰 글 게시 (posts) ────────────────────────────────────────────
 // 본문은 호출자가 제공(자동 생성 아님 — 운영자/Claude가 초안 작성). 고유 id 자동 → 멱등 불필요.
 // 필드는 클라 createPost(src/lib/community.js)와 동일 + { curator:true, authorRating:null }.
-async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null, dryRun = false }) {
+// glossary(선택): 초안 JSON의 { "원문 표현": "확정 표기" } — 번역 시 강제 대응표(properNounRules 참조).
+async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null, glossary = null, dryRun = false }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     if (!title || !body) throw new Error('title/body 필수');
     if (!['tv', 'movie'].includes(media)) throw new Error("media: 'tv' | 'movie'");
@@ -505,8 +531,8 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
     const showTitles = {
         en: titleName, original: detail.original_name || detail.original_title || null, originalLang: detail.original_language || null,
     };
-    const translated = await translateBodyMulti(body, SEED_LANGS, showTitles);
-    const translatedTitles = await translateTitleMulti(title, SEED_LANGS, showTitles); // 헤드라인 — 자동 자국어 표시용
+    const translated = await translateBodyMulti(body, SEED_LANGS, showTitles, glossary);
+    const translatedTitles = await translateTitleMulti(title, SEED_LANGS, showTitles, glossary); // 헤드라인 — 자동 자국어 표시용
 
     const now = new Date();
     const postRef = kcultureDb.collection('posts').doc(); // 고유 id 자동
@@ -528,8 +554,8 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
     return { postId: postRef.id, path: `posts/${postRef.id}`, uid, titleId: id, media, titleName, title, body, seededLangs: ['en', ...Object.keys(translated)] };
 }
 
-// 기존 리뷰 글 번역 재시드(본문+제목) — 프롬프트 개선·제목 시드 추가분 반영용.
-async function reseedReviewPost(postId) {
+// 기존 리뷰 글 번역 재시드(본문+제목) — 프롬프트 개선·제목 시드 추가분 반영용. glossary 선택.
+async function reseedReviewPost(postId, glossary = null) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const ref = kcultureDb.doc(`posts/${postId}`);
     const snap = await ref.get();
@@ -546,8 +572,8 @@ async function reseedReviewPost(postId) {
             };
         } catch { /* 작품명 규칙 없이 진행 */ }
     }
-    const translated = await translateBodyMulti(data.body, SEED_LANGS, showTitles);
-    const translatedTitles = data.title ? await translateTitleMulti(data.title, SEED_LANGS, showTitles) : {};
+    const translated = await translateBodyMulti(data.body, SEED_LANGS, showTitles, glossary);
+    const translatedTitles = data.title ? await translateTitleMulti(data.title, SEED_LANGS, showTitles, glossary) : {};
     const batch = kcultureDb.batch();
     seedTranslations(batch, `posts/${postId}`, data.body, translated);
     if (data.title) seedTitleTranslations(batch, `posts/${postId}`, data.title, translatedTitles);

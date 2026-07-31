@@ -54,6 +54,55 @@ function validCachePath(p, targetLang) {
     return seg.every((s) => /^[A-Za-z0-9_-]+$/.test(s));
 }
 
+// ── 번역 컨텍스트 주입(2026-08-01 사용자 결정) ─────────────────────────────
+// "이 글이 앱의 어디에 쓰인 글인지"(위치) + "어떤 작품에 대한 글인지"(작품명 3종: 원제·영문·타깃 현지화)를
+// 프롬프트에 명시 — 제목 언급 시 타깃 언어권 통용 제목을 쓰고, 제목의 말장난·중의성이 글의 논지면
+// 통용 제목 + 괄호 병기. cachePath 구조에서 위치를 판정한다(추가 read: posts 1 + titles 1, MISS 시에만).
+// 실패는 전부 fail-open(컨텍스트 없이 번역 — 번역 자체를 막지 않는다).
+async function buildTranslationContext(cachePath, targetLang, targetName) {
+    try {
+        if (!kcultureDb || typeof cachePath !== 'string') return [];
+        const seg = cachePath.split('/');
+        let location = null;
+        let titleId = null;
+        if (seg[0] === 'titles') {
+            titleId = seg[1];
+            location = seg.includes('replies')
+                ? `a reply to a viewer's comment on a show's page`
+                : `a viewer's comment on a show's page`;
+        } else if (seg[0] === 'posts') {
+            location = seg[2] === 'comments'
+                ? (seg.includes('replies')
+                    ? 'a reply in the discussion under a community review post'
+                    : 'a discussion comment under a community review post')
+                : 'a community review post (long-form)';
+            const p = await kcultureDb.doc(`posts/${seg[1]}`).get();
+            if (p.exists) titleId = p.data().titleId || null;
+        } else if (seg[0] === 'lounge_threads') {
+            location = seg.includes('replies')
+                ? `a reply in the app's daily free-chat lounge (casual chat — it may reference any show)`
+                : `a casual message in the app's daily free-chat lounge (it may reference any show)`;
+        }
+        const lines = [];
+        if (location) lines.push(`- Where this text appears: ${location}.`);
+        if (titleId) {
+            const t = await kcultureDb.doc(`titles/${titleId}`).get();
+            const st = t.exists ? (t.data().searchTitle || {}) : {};
+            const ko = st.ko;
+            const en = st.en;
+            const loc = st[targetLang];
+            if (ko || en) {
+                lines.push(`- The show being discussed: original Korean title 「${ko || '?'}」`
+                    + (en ? `, English title "${en}"` : '')
+                    + (loc && loc !== en ? `, ${targetName} title "${loc}"` : '') + '.');
+                lines.push(`- When the text refers to this show's title, use the ${targetName} title given above${loc ? '' : ' (or the English title)'} — do NOT invent a new translation of the title.`);
+                lines.push(`- If the writer's point plays on the title's wordplay or double meaning, keep the common title and add its literal meaning in parentheses once.`);
+            }
+        }
+        return lines.length ? ['', '[Context]', ...lines] : [];
+    } catch { return []; }
+}
+
 router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
     const { text, targetLang, maxChars, cachePath, scope } = req.body || {};
     if (!text || !targetLang) return res.status(400).json({ error: 'missing fields' });
@@ -81,10 +130,13 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     const lenRule = (Number.isFinite(maxChars) && maxChars > 0)
         ? `5. Length limit: keep the "translated" value within about ${maxChars} characters. If a faithful translation would be longer, condense naturally (preserve the core meaning, drop redundancy) — never cut off mid-sentence.`
         : null;
+    // 위치·작품 컨텍스트(fail-open) — 검증된 캐시 경로가 있을 때만(임의 경로로 read 유발 방지)
+    const ctxLines = cacheDoc ? await buildTranslationContext(cachePath, targetLang, targetName) : [];
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         ``,
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
+        ...ctxLines,
         ``,
         `[Rules — read carefully, apply in order]`,
         `1. Determine the source language of the TEXT below using these decisive cues:`,
@@ -95,6 +147,9 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         `   - NEVER return, copy, paraphrase, or echo the source-language text. Returning the source language is a FAILURE.`,
         `   - NEVER mix languages. No notes, commentary, romanization, or surrounding quotes.`,
         `   - Translate naturally and idiomatically, faithfully preserving meaning, nuance, tone, register (formality / slang / emotion), emoji and line breaks.`,
+        `   - Person names (actors, directors, characters): convert only if you are CERTAIN of the established ${targetName} spelling; otherwise keep the original spelling as-is or transliterate it. NEVER substitute a different real person's name.`,
+        `   - Unfamiliar proper nouns (place names, in-show objects or terms): if unsure, keep them as-is — never replace them with a generic or different word.`,
+        `   - Quoted titles of books, films or shows: use the official ${targetName} release title if you are certain of it; otherwise keep the original title unchanged.`,
         `4. Self-check before answering: if your "translated" value is still (even partly) in the source language, you FAILED — redo it fully in ${targetName}.`,
         ...(lenRule ? [lenRule] : []),
         ``,
