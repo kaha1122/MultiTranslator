@@ -601,7 +601,7 @@ async function refreshOfficialTitles({ days = 400, maxTitles = 500, concurrency 
 
     const snap = await kcultureDb.collection('titles')
         .select('media', 'searchTitle', 'searchLower', 'metaOfficialPending', 'titleCheckedAt', 'hidden',
-            'meta.first_air_date', 'meta.release_date', 'meta.status')
+            'metaTitleSrc', 'meta.first_air_date', 'meta.release_date', 'meta.status')
         .get();
 
     const recent = [], rest = [];
@@ -615,6 +615,7 @@ async function refreshOfficialTitles({ days = 400, maxTitles = 500, concurrency 
         const pool = (date >= since || AIRING.has(x.meta?.status)) ? recent : rest;
         pool.push({
             id: d.id, media: x.media, st: x.searchTitle || {}, sl: x.searchLower || {},
+            tsrc: x.metaTitleSrc || {},   // 언어별 제목 출처 — en-fallback 복사본 동기화 판정용
             // 오래 안 본 것부터 — 매 실행이 같은 앞자리만 반복하지 않게 회전시킨다.
             at: x.titleCheckedAt?.toMillis?.() || 0,
         });
@@ -633,15 +634,28 @@ async function refreshOfficialTitles({ days = 400, maxTitles = 500, concurrency 
                 const detail = await tmdb(`/${p.media}/${p.id}`, { language: 'en-US', append_to_response: 'translations' });
                 const trs = detail.translations?.translations || [];
                 const koOv = null; // validTitle의 줄거리 접두 검사용 — 여기선 제목만 보므로 생략
-                const ups = [];    // [{code, title}]
+                const ups = [];    // [{code, title, src}] — src: 'official' | 'en-fallback'(영어 원본 변경 동기화)
                 let pending = false;
+                // 현재 시점의 영어 제목 — en-fallback 복사본의 동기화 기준(공식 en 레코드 > en-US 응답).
+                // TMDB가 영어 제목을 나중에 바꾸면(국제 배급 전 개명) 각 언어에 복사된 옛 영어가
+                // 화석화되는 것을 여기서 막는다(2026-08-01 영어 폴백 정책의 정합성 유지).
+                const enRec = tmdbRecord(trs, TARGETS.find((x) => x.code === 'en'));
+                const enNow = [norm(enRec?.title || enRec?.name || ''), norm(detail.title || detail.name || '')]
+                    .find((s) => s && validTitle('en', s, enRec?.overview, koOv)) || '';
                 for (const t of TARGETS) {
                     if (t.code === PRIMARY_CODE) continue;      // 원제는 갱신 대상이 아니다
                     const rec = tmdbRecord(trs, t);
                     const cand2 = norm(rec?.title || rec?.name || '');
                     const ours = norm(p.st[t.code] || '');
-                    if (!cand2 || !validTitle(t.code, cand2, rec?.overview, koOv)) { pending = true; continue; }
-                    if (cand2 !== ours) ups.push({ code: t.code, title: cand2 });
+                    if (cand2 && validTitle(t.code, cand2, rec?.overview, koOv)) {
+                        if (cand2 !== ours) ups.push({ code: t.code, title: cand2, src: 'official' });
+                        continue;
+                    }
+                    pending = true;
+                    // 공식 제목 없음 + 우리 값이 영어 폴백 → TMDB 영어 제목이 바뀌었으면 복사본도 따라간다.
+                    if (enNow && p.tsrc[t.code] === 'en-fallback' && ours !== enNow) {
+                        ups.push({ code: t.code, title: enNow, src: 'en-fallback' });
+                    }
                 }
                 if (!dry && ups.length) {
                     // 교체되는 언어의 기존 source만 읽어 줄거리 출처(oSrc)를 보존한다.
@@ -651,8 +665,8 @@ async function refreshOfficialTitles({ days = 400, maxTitles = 500, concurrency 
                     const st = {}, sl = {}, tsrc = {};
                     ups.forEach((u, k) => {
                         const oSrc = String(cur[k]?.data()?.source || '-').split('+')[1] || '-';
-                        batch.set(refs[k], { title: u.title, source: `official+${oSrc}`, titleRefreshedAt: new Date() }, { merge: true });
-                        st[u.code] = u.title; sl[u.code] = u.title.toLowerCase(); tsrc[u.code] = 'official';
+                        batch.set(refs[k], { title: u.title, source: `${u.src}+${oSrc}`, titleRefreshedAt: new Date() }, { merge: true });
+                        st[u.code] = u.title; sl[u.code] = u.title.toLowerCase(); tsrc[u.code] = u.src;
                     });
                     batch.set(kcultureDb.doc(`titles/${p.id}`), {
                         searchTitle: st, searchLower: sl, metaTitleSrc: tsrc,   // merge:true → 맵 키 병합
