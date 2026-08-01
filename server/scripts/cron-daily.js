@@ -32,12 +32,13 @@ const retryLimit = parseInt(arg('retryLimit', '100'), 10);
     const retry = await runRetry({ limit: retryLimit });
     console.log('[cron-daily] retry', JSON.stringify(retry));
 
-    // ③ 공식 제목 뒤늦은 반영 — TMDB는 신작의 언어별 제목을 방영 후에 채운다. 그동안 우리가
-    //    원제→Gemini로 만들어 둔 제목을 공식 제목으로 갈아끼운다(Gemini 호출 0).
+    // ③ 공식 제목 뒤늦은 반영 — 공식 제목이 없는 언어는 영어 폴백을 들고 있으므로(2026-08-01 정책:
+    //    현지어 제목 발명 금지), TMDB에 공식 현지어 제목이 등록되는 대로 갈아끼운다(Gemini 호출 0).
+    //    예산 절반은 신작·방영중, 나머지는 전 카탈로그 순환(구작에 뒤늦게 등록돼도 승격).
     //    ⚠ ①로는 안 된다 — discover가 물어와도 processTitle이 완비된 작품을 skip하기 때문.
     const titles = await refreshOfficialTitles({
         days: parseInt(arg('titleDays', '400'), 10),
-        maxTitles: parseInt(arg('titleMax', '300'), 10),
+        maxTitles: parseInt(arg('titleMax', '500'), 10),
     });
     console.log('[cron-daily] titles', JSON.stringify(titles));
 

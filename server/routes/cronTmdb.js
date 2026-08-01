@@ -40,13 +40,13 @@ router.post('/api/cron/tmdb-pretranslate', requireCronAuth, async (req, res) => 
         const retryLimit = Math.min(parseInt(req.body?.retryLimit, 10) || 100, 500);
         const incremental = await runIncremental({ days, maxTitles });
         const retry = await runRetry({ limit: retryLimit });
-        // ③ 공식 제목 뒤늦은 반영 — TMDB는 신작의 언어별 제목을 방영 후에 채운다. 그동안 우리가
-        //    원제→Gemini로 만들어 둔 제목을 공식 제목으로 갈아끼운다(Gemini 호출 0).
+        // ③ 공식 제목 뒤늦은 반영 — 공식 제목이 없는 언어는 영어 폴백을 들고 있으므로(2026-08-01
+        //    정책), TMDB에 공식 현지어 제목이 등록되는 대로 갈아끼운다(Gemini 호출 0, 전 카탈로그 회전).
         //    ⚠ ①로는 안 된다 — discover가 그 작품을 물어와도 processTitle이 완비된 작품을
         //      skip하기 때문(정상 동작). 실제로 「오싹한 연애」(298610)가 그 상태였다.
         const titles = await refreshOfficialTitles({
             days: Math.min(parseInt(req.body?.titleDays, 10) || 400, 2000),
-            maxTitles: Math.min(parseInt(req.body?.titleMax, 10) || 300, 1000),
+            maxTitles: Math.min(parseInt(req.body?.titleMax, 10) || 500, 1000),
         });
         // 신작 성인물 자동 숨김분 즉시 반영(적중 0이면 no-op)
         const hidden = await syncHiddenIndex([incremental.adultHidden, retry.adultHidden]);

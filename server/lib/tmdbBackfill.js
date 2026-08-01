@@ -10,7 +10,12 @@
 // V2 파이프라인(작품당 TMDB 1회 + Gemini 최대 2회):
 //   ① TMDB 상세(language=ko + translations append) → 원제(original_title)·ko 줄거리·en 줄거리·공식 제목들
 //   ② 제목: ko = 원제 그대로. 그 외 11개 언어 = **엄격 검증을 통과한 TMDB 공식 제목 우선**
-//      (Agent Kim Reactivated 같은 공식 제목은 검색 자산), 없거나 불합격이면 원제→Gemini 번역.
+//      (Agent Kim Reactivated 같은 공식 제목은 검색 자산), 없으면 **영어 제목 그대로**(en-fallback).
+//      🚫 현지어 제목을 Gemini로 발명하지 않는다(2026-08-01 정책 — 「유부녀 킬러」가 7개 언어에서
+//      "아내 살해범"으로 오역된 사건. 제목은 설명이 아니라 **이름**이라 배급사·커뮤니티가 부여하기
+//      전엔 존재하지 않고, 발명 제목은 검색 수요 0 + 오역 시 신뢰 훼손만 남는다). Gemini 제목 생성은
+//      **en이 없을 때 en 1개만**(국제 통용 식별자라 성격이 다름). TMDB에 공식 현지어 제목이 뒤늦게
+//      등록되면 refreshOfficialTitles가 자동 승격한다(전 카탈로그 회전).
 //   ③ 줄거리: 피벗 = ko 줄거리(없으면 en 줄거리 — 이 경우 ko 포함 전 언어를 en에서 한 번에 번역해
 //      이중번역을 피한다). en 줄거리는 TMDB 공식이 있으면 그대로(사람 작성 보존), 없으면 ko→en.
 //      나머지 10개 언어 = 피벗에서 Gemini 번역.
@@ -173,21 +178,31 @@ function tmdbRecord(trs, t) {
 // ── Gemini 묶음 번역 (작품당 1회 호출로 필요한 언어 전부) ─────────────────────
 // 소스가 둘이다: 제목은 **항상 한국어 원제**, 줄거리는 피벗(한국어 또는 영어) — 따로 명시한다.
 // overviewMode=false(줄거리 원본 자체가 없는 작품)면 제목만 요청해 모델이 줄거리를 지어내지 못하게 한다.
-async function geminiMulti({ srcTitle, srcOverview, srcOverviewLang, codes, overviewMode }) {
+// titleCodes(2026-08-01): 제목을 요청할 언어 부분집합 — 현행 파이프라인은 en뿐(현지어 제목 발명 금지).
+//   codes 중 titleCodes 밖의 언어는 {"overview"}만 받는다.
+async function geminiMulti({ srcTitle, srcOverview, srcOverviewLang, codes, titleCodes = codes, overviewMode }) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+    const wantTitle = new Set(titleCodes);
     const targetList = codes.map((c) => `  - "${c}" → ${nameOf(c)}`).join('\n');
-    const shape = overviewMode ? '{"title":"...","overview":"..."}' : '{"title":"..."}';
+    const shapeOf = (c) => (wantTitle.has(c)
+        ? (overviewMode ? '{"title":"...","overview":"..."}' : '{"title":"..."}')
+        : '{"overview":"..."}');
     const prompt = [
         `You are a professional translator localizing Korean movie/TV catalog metadata for a multilingual app.`,
         `Translate for EACH of these target languages:`,
         targetList,
         ``,
-        `[Title rules]`,
-        `- SOURCE TITLE below is in ${nameOf(PRIMARY_CONTENT_LANG)}. Translate it naturally for each target language.`,
-        `- Write the title ENTIRELY in the writing system used by that target language.`,
-        `  Never leave ${nameOf(PRIMARY_CONTENT_LANG)} characters inside a title — not even one word.`,
-        `  Transliterate proper nouns and person names into the target script (Japanese → katakana, Chinese → hanzi, Latin-script languages → romanization).`,
-        `- Do not invent a different title, and do not append qualifiers that are not in the source (no season numbers, no country names, no genre words).`,
+        ...(wantTitle.size ? [
+            `[Title rules — apply only to languages whose shape below includes "title"]`,
+            `- SOURCE TITLE below is in ${nameOf(PRIMARY_CONTENT_LANG)}. Translate it naturally for each target language.`,
+            `- The source title may be ambiguous. Use the SOURCE OVERVIEW (when provided) to resolve the intended`,
+            `  meaning and translate THAT meaning — e.g. distinguish "a killer who is a married woman" from`,
+            `  "a killer who targets married women".`,
+            `- Write the title ENTIRELY in the writing system used by that target language.`,
+            `  Never leave ${nameOf(PRIMARY_CONTENT_LANG)} characters inside a title — not even one word.`,
+            `  Transliterate proper nouns and person names into the target script (Japanese → katakana, Chinese → hanzi, Latin-script languages → romanization).`,
+            `- Do not invent a different title, and do not append qualifiers that are not in the source (no season numbers, no country names, no genre words).`,
+        ] : []),
         ...(overviewMode ? [
             ``,
             `[Overview rules]`,
@@ -200,8 +215,9 @@ async function geminiMulti({ srcTitle, srcOverview, srcOverviewLang, codes, over
         `- NEVER return, copy, or echo the source language where a translation is required. Returning source-language text is a FAILURE.`,
         `- Self-check before answering: if any value is still (even partly) in the source language, redo it fully in that target language.`,
         ``,
-        `Return ONLY one JSON object whose keys are these EXACT codes [${codes.map((c) => `"${c}"`).join(', ')}],`,
-        `each mapping to ${shape}. No markdown.`,
+        `Return ONLY one JSON object with these EXACT keys, each mapping to the shape shown:`,
+        ...codes.map((c) => `  "${c}": ${shapeOf(c)}`),
+        `No markdown.`,
         ``,
         `SOURCE TITLE (${nameOf(PRIMARY_CONTENT_LANG)}): ${srcTitle}`,
         ...(overviewMode ? [`SOURCE OVERVIEW (${srcOverviewLang}): ${srcOverview}`] : []),
@@ -357,16 +373,18 @@ async function processTitle(media, id, { force = false } = {}) {
         out[t.code] = { title, overview, tSrc, oSrc };
     }
 
-    // ③ Gemini — 제목이 없는 언어 ∪ (피벗 있으면) 줄거리가 없는 언어. 한 호출에 전부 얹는다.
+    // ③ Gemini — 제목은 **en만** 생성(2026-08-01: 현지어 제목 발명 금지 — 파일 헤더 ② 참조),
+    //    줄거리는 (피벗 있으면) 없는 언어 전부. 한 호출에 전부 얹는다.
     let geminiUsed = 0, geminiTried = false, geminiDead = false;
     for (let attempt = 0; attempt < 2; attempt++) {
-        const need = TARGETS.filter((t) => !out[t.code].title || (pivot && !out[t.code].overview));
+        const need = TARGETS.filter((t) => (t.code === 'en' && !out.en.title) || (pivot && !out[t.code].overview));
         if (!need.length) break;
         const g = await geminiMulti({
             srcTitle: origTitle,
             srcOverview: pivot?.text || '',
             srcOverviewLang: pivot?.langName || '',
             codes: need.map((t) => t.code),
+            titleCodes: !out.en.title ? ['en'] : [],
             overviewMode: !!pivot,
         });
         geminiTried = true;
@@ -377,7 +395,7 @@ async function processTitle(media, id, { force = false } = {}) {
             const v = g[t.code];
             if (!v) continue;
             const cur = out[t.code];
-            if (!cur.title) {
+            if (t.code === 'en' && !cur.title) {   // 제목 수용도 en만 — 다른 언어는 ④ 영어 폴백이 종착
                 const c = norm(v.title);
                 if (validTitle(t.code, c, v.overview, pivot?.text)) { cur.title = c; cur.tSrc = 'gemini'; geminiUsed++; got++; }
             }
@@ -389,11 +407,13 @@ async function processTitle(media, id, { force = false } = {}) {
         if (got === 0) break; // 진전 없으면 더 돌려도 무의미 — 마커 미완료로 남겨 다음 실행이 재시도
     }
 
-    // ④ 제목 최후 폴백 — Gemini가 정상 응답했는데도 못 만든 언어는 검증된 영어 제목으로.
+    // ④ 영어 폴백 — 공식 제목이 없는 언어의 **설계된 종착값**(2026-08-01, 종전 "최후 폴백"에서 승격).
+    //    사이트가 현지어 제목을 발명하지 않으므로, 공식 현지어 제목이 생기기 전까지는 영어 제목이
+    //    그 작품의 국제 통용 이름이다(refreshOfficialTitles가 등록 시 자동 승격).
     //    원어 제목으로 채우면 절대 규칙 #7 위반 + 클라의 "빈 제목→영어 폴백" 보정 무력화라 영어만.
-    //    전면 장애(geminiDead) 때는 적용 안 함 — 제대로 된 번역 기회를 지운다.
+    //    전면 장애(geminiDead) 때는 어차피 translations를 쓰지 않는다(⑥ 참조).
     const enT = out.en.title && !titleTainted('en', out.en.title) ? out.en.title : '';
-    if (geminiTried && !geminiDead && enT) {
+    if (!geminiDead && enT) {
         for (const t of TARGETS) {
             if (!out[t.code].title) { out[t.code].title = enT; out[t.code].tSrc = 'en-fallback'; }
         }
@@ -569,37 +589,42 @@ async function runIncremental({ days = 14, maxTitles = 200, concurrency = 3 } = 
 // 비용: 루트 스캔 1회(필드 마스크, 1.8만 read ≈ $0.011) + 대상당 TMDB 1회. Gemini 0.
 //   서브문서는 **실제로 교체되는 언어만** 읽고 쓴다(대개 0~2개).
 //
-// 대상 선정: 최근 days 이내 방영·개봉 + 방영 중(Returning Series/In Production)
-//   구작은 제외한다 — 표본 실측(2026-07-29) 결과 우리 제목의 83%는 TMDB에 그 언어가 아예 없고,
-//   수년 지난 마이너 한국 작품의 번역이 새로 채워질 가능성은 낮다. 신작에만 실효가 있다.
-async function refreshOfficialTitles({ days = 400, maxTitles = 300, concurrency = 6, dry = false } = {}) {
+// 대상 선정(2026-08-01 전 카탈로그로 확장 — 종전 "신작 400일 한정"에서 변경):
+//   영어 폴백 정책과 세트다. 공식 제목이 없는 언어는 이제 영어 제목을 들고 있으므로, TMDB에
+//   공식 현지어 제목이 **언제** 등록되든(구작 포함) 그걸로 승격해야 한다(사용자 요건).
+//   예산 배분 — 절반은 신작·방영중(공식 제목이 실제로 채워지는 구간이라 빠른 회전), 나머지는
+//   전체 카탈로그 순환(titleCheckedAt 오래된 순 — 하루 ~250편 × 전 카탈로그 ≈ 2~3개월 주기).
+async function refreshOfficialTitles({ days = 400, maxTitles = 500, concurrency = 6, dry = false } = {}) {
     if (!kcultureDb) throw new Error('kcultureDb 없음');
     const since = new Date(Date.now() - days * 86400000).toISOString().slice(0, 10);
     const AIRING = new Set(['Returning Series', 'In Production', 'Planned', 'Post Production']);
 
     const snap = await kcultureDb.collection('titles')
-        .select('media', 'searchTitle', 'searchLower', 'metaOfficialPending', 'titleCheckedAt',
+        .select('media', 'searchTitle', 'searchLower', 'metaOfficialPending', 'titleCheckedAt', 'hidden',
             'meta.first_air_date', 'meta.release_date', 'meta.status')
         .get();
 
-    const cand = [];
+    const recent = [], rest = [];
     snap.forEach((d) => {
         const x = d.data() || {};
         if (x.media !== 'tv' && x.media !== 'movie') return;
+        if (x.hidden === true) return; // 숨김 작품은 노출이 없으니 제목 갱신도 불필요(구제 시 자연 편입)
         // 이미 전 언어가 공식이면 볼 것이 없다. 필드가 없는 구(舊) 문서는 판정 불가 → 대상에 포함.
         if (x.metaOfficialPending === false) return;
         const date = (x.meta?.first_air_date || x.meta?.release_date || '');
-        if (!(date >= since || AIRING.has(x.meta?.status))) return;
-        cand.push({
+        const pool = (date >= since || AIRING.has(x.meta?.status)) ? recent : rest;
+        pool.push({
             id: d.id, media: x.media, st: x.searchTitle || {}, sl: x.searchLower || {},
             // 오래 안 본 것부터 — 매 실행이 같은 앞자리만 반복하지 않게 회전시킨다.
             at: x.titleCheckedAt?.toMillis?.() || 0,
         });
     });
-    cand.sort((a, b) => a.at - b.at);
-    const capped = cand.slice(0, maxTitles);
+    const byAt = (a, b) => a.at - b.at;
+    recent.sort(byAt); rest.sort(byAt);
+    const half = Math.min(recent.length, Math.ceil(maxTitles / 2));
+    const capped = [...recent.slice(0, half), ...rest.slice(0, Math.max(0, maxTitles - half))];
 
-    const stat = { candidates: cand.length, scanned: capped.length, upgraded: 0, langs: 0, errors: 0, changes: [] };
+    const stat = { candidates: recent.length + rest.length, recent: recent.length, scanned: capped.length, upgraded: 0, langs: 0, errors: 0, changes: [] };
     let idx = 0;
     async function worker() {
         while (idx < capped.length) {
