@@ -275,10 +275,12 @@ async function translateBodyMulti(body, codes, showTitles = null, glossary = nul
 // 수확 실패 언어만 최대 3회 재시도(tmdbBackfill과 동일 발상 — 받은 언어는 재호출 안 함).
 async function translateBodyChunk(body, codes, showTitles = null, glossary = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+    // ⚠ titleRule은 properNounRules의 일반 인용 규칙("확신 없으면 원문 유지")보다 뒤에 배치하고
+    //   명시적 우선권을 준다 — 일반 규칙이 이겨서 ko 제목에 영문 작품명이 남던 회귀(2026-08-02).
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}" in every language`,
            ...(showTitles.original && showTitles.originalLang
-               ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST use its official original title "${showTitles.original}".`]
+               ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST replace it with its official original title "${showTitles.original}" — this show-title rule OVERRIDES every other rule about keeping titles unchanged.`]
                : ['  in every target language.'])]
         : [];
     const out = {};
@@ -294,8 +296,8 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
             `- Each translation MUST be written 100% in that target language.`,
             `- NEVER return, copy, paraphrase, or echo the English source. Returning English is a FAILURE.`,
             `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
-            ...titleRule,
             ...properNounRules(glossary),
+            ...titleRule,
             `- Keep the signature line "${DARI_SIGNATURE}" as-is except translate "your AI curator" naturally (keep "Dari" and the emoji).`,
             `- Self-check before answering: if any value is still (even partly) in English, redo it fully in that target language.`,
             ``,
@@ -333,7 +335,7 @@ async function translateTitleMulti(title, codes, showTitles = null, glossary = n
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}"`,
            ...(showTitles.original && showTitles.originalLang
-               ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST use its official original title "${showTitles.original}".`]
+               ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST replace it with its official original title "${showTitles.original}" — this show-title rule OVERRIDES every other rule about keeping titles unchanged.`]
                : ['  in every target language.'])]
         : [];
     const out = {};
@@ -347,8 +349,8 @@ async function translateTitleMulti(title, codes, showTitles = null, glossary = n
             `[Rules — apply to every target language]`,
             `- If the word "Dari" appears, it is a BRAND NAME — NEVER translate or transliterate it; keep it exactly "Dari".`,
             `- Translate the headline naturally and completely. Do NOT add any prefix, label, or words that are not in the source.`,
-            ...titleRule,
             ...properNounRules(glossary),
+            ...titleRule,
             `- Do NOT add, append, or omit anything that is not in the source headline.`,
             ``,
             `Return ONLY one JSON object whose keys are these EXACT codes [${still.map((c) => `"${c}"`).join(', ')}],`,
