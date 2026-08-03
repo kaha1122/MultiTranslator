@@ -10,6 +10,8 @@ const { LANG_NAMES } = require('../config/langGuide');
 const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/langDetect'); // same 판정을 detect와 동일 단서로 통합(SSOT)
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
+const txGlossary = require('../lib/txGlossary'); // 최근작 제목·배우 확정 표기(매칭 게이트 주입, 2026-08-04)
+const { nuanceLines } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -54,14 +56,16 @@ function validCachePath(p, targetLang) {
     return seg.every((s) => /^[A-Za-z0-9_-]+$/.test(s));
 }
 
-// ── 번역 컨텍스트 주입(2026-08-01 사용자 결정) ─────────────────────────────
-// "이 글이 앱의 어디에 쓰인 글인지"(위치) + "어떤 작품에 대한 글인지"(작품명 3종: 원제·영문·타깃 현지화)를
-// 프롬프트에 명시 — 제목 언급 시 타깃 언어권 통용 제목을 쓰고, 제목의 말장난·중의성이 글의 논지면
-// 통용 제목 + 괄호 병기. cachePath 구조에서 위치를 판정한다(추가 read: posts 1 + titles 1, MISS 시에만).
+// ── 번역 컨텍스트 주입(2026-08-01 사용자 결정 · 2026-08-04 캐스트 표 확장) ────
+// "이 글이 앱의 어디에 쓰인 글인지"(위치) + "어떤 작품에 대한 글인지"(작품명 3종: 원제·영문·타깃 현지화)
+// + **캐스트 표**(배우 확정 표기 + 배역 — "부장님이 미쳤다" 같은 이름 없는 지칭·대명사 정확도)를
+// 프롬프트에 명시. cachePath 구조에서 위치를 판정한다(추가 read: posts 1 + titles 1, MISS 시에만).
+// ⚠ titles/{id} 통읽기 금지 — meta 포함 수십 KB(김부장 실측 15KB). getAll 필드 마스크로 필요분만.
 // 실패는 전부 fail-open(컨텍스트 없이 번역 — 번역 자체를 막지 않는다).
+// @returns { lines, titleId } — titleId는 용어집 매칭의 anchored dedup용(라우트에서 사용)
 async function buildTranslationContext(cachePath, targetLang, targetName) {
     try {
-        if (!kcultureDb || typeof cachePath !== 'string') return [];
+        if (!kcultureDb || typeof cachePath !== 'string') return { lines: [], titleId: null };
         const seg = cachePath.split('/');
         let location = null;
         let titleId = null;
@@ -76,7 +80,7 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                     ? 'a reply in the discussion under a community review post'
                     : 'a discussion comment under a community review post')
                 : 'a community review post (long-form)';
-            const p = await kcultureDb.doc(`posts/${seg[1]}`).get();
+            const [p] = await kcultureDb.getAll(kcultureDb.doc(`posts/${seg[1]}`), { fieldMask: ['titleId'] });
             if (p.exists) titleId = p.data().titleId || null;
         } else if (seg[0] === 'lounge_threads') {
             location = seg.includes('replies')
@@ -86,8 +90,9 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
         const lines = [];
         if (location) lines.push(`- Where this text appears: ${location}.`);
         if (titleId) {
-            const t = await kcultureDb.doc(`titles/${titleId}`).get();
-            const st = t.exists ? (t.data().searchTitle || {}) : {};
+            const [t] = await kcultureDb.getAll(kcultureDb.doc(`titles/${titleId}`), { fieldMask: ['searchTitle', 'meta.credits.cast'] });
+            const data = t.exists ? (t.data() || {}) : {};
+            const st = data.searchTitle || {};
             const ko = st.ko;
             const en = st.en;
             const loc = st[targetLang];
@@ -98,9 +103,13 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                 lines.push(`- When the text refers to this show's title, use the ${targetName} title given above${loc ? '' : ' (or the English title)'} — do NOT invent a new translation of the title.`);
                 lines.push(`- If the writer's point plays on the title's wordplay or double meaning, keep the common title and add its literal meaning in parentheses once.`);
             }
+            // 캐스트 표(L4) — 배우 확정 표기(personNames)·배역. 실패해도 나머지 컨텍스트는 유지.
+            try {
+                lines.push(...await txGlossary.castContextLines(data.meta?.credits?.cast, targetLang));
+            } catch { /* fail-open */ }
         }
-        return lines.length ? ['', '[Context]', ...lines] : [];
-    } catch { return []; }
+        return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId };
+    } catch { return { lines: [], titleId: null }; }
 }
 
 router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
@@ -117,8 +126,10 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // 속도 #3(2026-08-02): 캐시 확인과 컨텍스트 조회를 병렬 시작 — HIT면 컨텍스트 read는 버려지고
     // (소액), MISS면 컨텍스트 지연이 캐시 확인 뒤에 직렬로 붙지 않는다.
     const ctxPromise = cacheDoc
-        ? buildTranslationContext(cachePath, targetLang, targetName).catch(() => [])
-        : Promise.resolve([]);
+        ? buildTranslationContext(cachePath, targetLang, targetName).catch(() => ({ lines: [], titleId: null }))
+        : Promise.resolve({ lines: [], titleId: null });
+    // 용어집 풀 준비도 병렬(첫 요청만 실제 대기, 이후 SWR — 인메모리라 0ms)
+    const glossaryReady = txGlossary.ready().catch(() => { /* fail-open */ });
 
     // 캐시 HIT → Gemini 미호출(무과금). (TTS의 [AzureTTS] DURABLE-HIT 대응)
     // (클라도 2026-08-02부터 같은 문서를 선조회 — 여기 도달한 HIT는 클라 read 실패/구버전 클라 케이스)
@@ -137,12 +148,21 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         ? `5. Length limit: keep the "translated" value within about ${maxChars} characters. If a faithful translation would be longer, condense naturally (preserve the core meaning, drop redundancy) — never cut off mid-sentence.`
         : null;
     // 위치·작품 컨텍스트(fail-open) — 위에서 병렬 시작한 결과 수확
-    const ctxLines = await ctxPromise;
+    const ctx = await ctxPromise;
+    // 고유명사 용어집(2026-08-04) — 원문에 실제 등장하는 최근작 제목·배우만 매칭 주입.
+    // anchored 작품(ctx.titleId)은 캐스트 표가 담당하므로 매칭에서 제외(중복 지시 방지).
+    await glossaryReady;
+    const hits = txGlossary.matchText(text, { anchoredTitleId: ctx.titleId });
+    const glossaryLines = await txGlossary.buildGlossaryLines(hits, targetLang, targetName).catch(() => []);
+    // 뉘앙스(문체·웃음/울음 마커·팬덤 관용어) — 정적 감지, read 0
+    const styleLines = nuanceLines(text, targetLang, targetName, scope);
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         ``,
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
-        ...ctxLines,
+        ...ctx.lines,
+        ...glossaryLines,
+        ...styleLines,
         ``,
         `[Rules — read carefully, apply in order]`,
         `1. Determine the source language of the TEXT below using these decisive cues:`,
@@ -190,7 +210,9 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // 캐시에 저장(다음 사람·재조회 재사용) — fire-and-forget(속도 #2, 2026-08-02): 응답을 저장 완료에
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     if (cacheDoc) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
-    console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
+    // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
+    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}` || '-';
+    console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     res.json({ translated });
 });
 
@@ -246,9 +268,18 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
 
     const payload = items.map((it) => ({ id: String(it.id), text: String(it.text || '') }));
     const targetName = langName(targetLang);
+    // 용어집·뉘앙스(2026-08-04) — 전 아이템 연결 텍스트로 매칭(지시는 프롬프트 전역이라 아이템별 분리 불필요).
+    // 레지스터 기준선은 생략(register:false) — 글·댓글이 섞인 묶음이라 단일 기준선이 무의미.
+    await txGlossary.ready().catch(() => { /* fail-open */ });
+    const joined = payload.map((it) => it.text).join('\n');
+    const batchHits = txGlossary.matchText(joined, {});
+    const batchGlossary = await txGlossary.buildGlossaryLines(batchHits, targetLang, targetName).catch(() => []);
+    const batchStyle = nuanceLines(joined, targetLang, targetName, 'batch', { register: false });
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         `Translate each item's text into ${targetName} (ISO code "${targetLang}").`,
+        ...batchGlossary,
+        ...batchStyle,
         ``,
         `[Judging each item's source language — apply these decisive cues]`,
         LANG_SCRIPT_CUES,
