@@ -23,10 +23,12 @@ const LAUGH = {
 };
 const TEARS = {
     en: '"😭" or a phrase like "I\'m crying"', ko: '"ㅠㅠ"', es: '"TT" / "😭"', ja: '"😭" or "（泣）"',
+    id: '"huhu" / "😭"', vi: '"huhu" / "😭"', // 주력 시장(2026-08-04) — 인니·베트남 공통 울음 표기
 };
-// 감지: 한글 자모 마커 + 주요 라틴/키릴 웃음(원문이 타 언어 → ko 번역 방향도 커버)
-const LAUGH_RE = /ㅋㅋ+|ㅎㅎ+|(?:ja){2,}|(?:ha){3,}|(?:wk){2,}|\bk{4,}\b|(?:ах|ха){2,}|w{3,}(?![\w.:/])/i;
-const TEARS_RE = /[ㅠㅜ]{2,}|T[_.]T|😭|🥲/;
+// 감지: 한글 자모 마커 + 주요 언어권 웃음(원문이 타 언어 → ko 번역 방향도 커버).
+// 주력 시장 보강(2026-08-04): 아랍 ههه · 베트남 =))/:)) · haha 2회(인니·베트남 통용) · 인니 wkwk.
+const LAUGH_RE = /ㅋㅋ+|ㅎㅎ+|(?:ja){2,}|(?:ha){2,}|(?:wk){2,}|\bk{4,}\b|(?:ах|ха){2,}|ه{3,}|[=:]\){2,}|w{3,}(?![\w.:/])/i;
+const TEARS_RE = /[ㅠㅜ]{2,}|T[_.]T|😭|🥲|\b(?:hu){2,}h?\b|\bhiks\b/i;
 
 // ── 문체 신호 ────────────────────────────────────────────────────────────────
 const SLANG_RE = /[ㄱ-ㅎ]{2,}|존잼|존버|개꿀|꿀잼|노잼|핵잼|핵노잼|쩐다|쩔어|미쳤|미침|ㄹㅇ|실화냐|찢었/;
@@ -115,10 +117,28 @@ function nuanceLines(text, targetLang, targetName, scope, { register = true } = 
 
     // ④ 팬 호칭 로마자 유지(대상어 등장 시)
     if (hangul && KIN_RE.test(t)) {
-        lines.push(`- Fan-address/fandom terms (오빠, 언니, 누나, 형, 막내, 애교, 대박): when used as affectionate fan speech rather than literal family relations, keep the romanized forms established among global K-fans — oppa, unnie, nuna, hyung, maknae, aegyo, daebak (in Japanese/Chinese use the established fan forms like オッパ / 欧巴). Do NOT translate them into kinship words.`);
+        lines.push(`- Fan-address/fandom terms (오빠, 언니, 누나, 형, 막내, 애교, 대박): when used as affectionate fan speech rather than literal family relations, keep the romanized forms established among global K-fans — oppa, unnie, nuna, hyung, maknae, aegyo, daebak (in Japanese/Chinese/Arabic use the established fan transliterations like オッパ / 欧巴 / أوبا). Do NOT translate them into kinship words.`);
     }
 
     return lines.length > 2 ? lines : (register ? lines : []); // 헤더뿐이면(신호 0 + 기준선 생략) 통째 생략
 }
 
-module.exports = { nuanceLines, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };
+// ── 번역 결과 후처리 — 한글 자모 마커 잔존 스크럽(결정적 가드, 2026-08-04) ─────
+// 프롬프트 지시만으로는 flash-lite가 ㅋㅋㅋ를 가끔 원문 그대로 남긴다(id 타깃 실측 — vi·ar는
+// 변환했는데 id만 불복종한 샘플). 비한국어 번역문에 한글 자모가 남는 것은 어떤 경우든 오출력에
+// 가까우므로(예외: "ㅋㅋㅋ가 무슨 뜻?" 같은 메타 인용 — 희귀 케이스, 감수) 서버가 확정 치환한다.
+// 웃음(ㅋ/ㅎ)·울음(ㅠ/ㅜ) 연쇄만 대상 — 그 외 자모(ㄹㅇ 등)는 의미가 달라 건드리지 않는다.
+const SCRUB_LAUGH = {
+    en: 'lol', es: 'jajaja', pt: 'kkkk', 'pt-BR': 'kkkk', ja: 'www', id: 'wkwkwk',
+    ru: 'ахаха', fr: 'mdr', de: 'haha', vi: '=))', zh: '哈哈哈', 'zh-CN': '哈哈哈', 'zh-TW': '哈哈哈', ar: 'ههههه',
+};
+function scrubMarkers(translated, targetLang) {
+    if (!translated || base(targetLang) === 'ko') return translated;
+    const laugh = pick(SCRUB_LAUGH, targetLang) || 'haha';
+    // 한국어 습관대로 단어 끝에 붙어 나오면("maratonㅋㅋㅋ") 공백을 넣어 치환
+    return String(translated)
+        .replace(/(\S)?[ㅋㅎ]{2,}/g, (m, pre) => (pre ? `${pre} ` : '') + laugh)
+        .replace(/(\S)?[ㅠㅜ]{2,}/g, (m, pre) => (pre ? `${pre} ` : '') + '😭');
+}
+
+module.exports = { nuanceLines, scrubMarkers, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };

@@ -11,7 +11,7 @@ const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/l
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
 const txGlossary = require('../lib/txGlossary'); // 최근작 제목·배우 확정 표기(매칭 게이트 주입, 2026-08-04)
-const { nuanceLines } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04)
+const { nuanceLines, scrubMarkers } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -207,6 +207,7 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
 
     let translated = (r.text || '').trim();
     if (parsed && typeof parsed.translated === 'string') translated = parsed.translated;
+    translated = scrubMarkers(translated, targetLang); // ㅋㅋㅋ/ㅠㅠ 잔존 확정 치환(비ko 타깃)
     // 캐시에 저장(다음 사람·재조회 재사용) — fire-and-forget(속도 #2, 2026-08-02): 응답을 저장 완료에
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     if (cacheDoc) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
@@ -308,6 +309,9 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         return res.status(r.status || 502).json({ error: r.userMsg || r.error });
     }
     const map = parseFirstJsonObject(r.text) || {};
+    for (const k of Object.keys(map)) { // ㅋㅋㅋ/ㅠㅠ 잔존 확정 치환(비ko 타깃) — 단건 라우트와 동일
+        if (typeof map[k] === 'string') map[k] = scrubMarkers(map[k], targetLang);
+    }
     console.log(`[CommunityTx] uid=${uid} target=${targetLang} batch items=${items.length} chars=${total} model=${r.modelUsed || '?'} → Gemini 배치번역(과금 발생)`);
     res.json({ results: map });
 });
