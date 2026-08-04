@@ -197,4 +197,8 @@ async function castContextLines(cast, targetLang) {
     ];
 }
 
-module.exports = { ready, matchText, buildGlossaryLines, castContextLines, poolSize: () => shows.length };
+module.exports = {
+    ready, matchText, buildGlossaryLines, castContextLines,
+    poolSize: () => shows.length,
+    getShows: () => shows, // 스크립트용(purge-stale-tx-cache) — 풀 재구현 금지(이중 관리 함정)
+};
