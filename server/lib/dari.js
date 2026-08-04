@@ -185,6 +185,27 @@ async function fetchShowInfo(tmdbId, season) {
     return { detail, seasonEps, info };
 }
 
+// 영화 정보 블록 — fetchShowInfo의 movie 변형(2026-08-04, 와일드 씽 사례로 영화 스레드 지원).
+// info 필드는 ThreadScreen 렌더러와 호환(값 없는 행 숨김): network·episodesTotal 없음, runtimeMin 추가.
+async function fetchMovieInfo(tmdbId) {
+    const detail = await tmdb(`/movie/${tmdbId}`, {
+        language: 'en-US',
+        append_to_response: 'credits,watch/providers',
+    });
+    const crew = detail.credits?.crew || [];
+    const info = {
+        premiereDate: detail.release_date || null,
+        runtimeMin: detail.runtime || null,
+        genres: (detail.genres || []).map((g) => g.name),
+        providers: topProviders(detail['watch/providers']),
+        director: crew.find((c) => c.job === 'Director')?.name || null,
+        writer: crew.find((c) => ['Writer', 'Screenplay'].includes(c.job))?.name || null,
+        cast: (detail.credits?.cast || []).slice(0, 5).map((c) => ({ name: c.name, role: c.character || '' })),
+        synopsis: detail.overview || '',
+    };
+    return { detail, info };
+}
+
 // ── Gemini 발제 생성 (근거를 제목·장르·시놉시스로 제한 → 회차 스포일러 구조적 차단) ──
 function epLabel(episodes) {
     const sorted = [...episodes].sort((a, b) => a - b);
@@ -391,6 +412,102 @@ async function refreshSiblingPrevThreads(titleId) {
             .slice(0, 5);
         await kcultureDb.doc(`titles/${titleId}/discussion/${cur.tid}`).set({ prevThreads: prev }, { merge: true }).catch(() => {});
     }
+}
+
+// ── 영화 토론 스레드 게시(2026-08-04) — 회차 없는 전편형. tid='dari_movie', 포인터 id={id}_movie ──
+// 클라 호환: episode 0·episodes [] → 회차 라벨·방영일 미표시, 코멘트는 episode 0(작품 상세와 동일 풀).
+async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
+    if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    const id = Number(tmdbId);
+    if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
+    const tid = 'dari_movie';
+    const docPath = `titles/${id}/discussion/${tid}`;
+    const threadRef = kcultureDb.doc(docPath);
+
+    if (!dryRun) {
+        const existing = await threadRef.get();
+        if (existing.exists) {
+            console.log(`[Dari] 영화 스레드 이미 존재 → skip: ${docPath}`);
+            return { skipped: true, tid, path: docPath, ...existing.data() };
+        }
+    }
+
+    const uid = await ensureDariAccount();
+    const { detail, info } = await fetchMovieInfo(id);
+    const showName = detail.title || detail.original_title || `#${id}`;
+
+    // 발제 — 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
+    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+    const prompt = [
+        `You are Dari, the AI curator of KdramaAnyLang — a warm, thoughtful host of a multilingual K-drama community.`,
+        `Write a short discussion-thread opener (in English) for a Korean FILM.`,
+        ``,
+        `[What you know — this is ALL you may rely on. Do NOT invent or recall anything else about this film.]`,
+        `- Film title: ${showName}`,
+        `- Genres: ${info.genres.join(', ') || 'N/A'}`,
+        `- Synopsis: ${info.synopsis || 'N/A'}`,
+        ``,
+        `[Hard rules]`,
+        `- ABSOLUTELY NO SPOILERS: no plot events, no character fates, no twists.`,
+        `- Body: about 100 words. Warm and inviting, never hype-y.`,
+        `- Include EXACTLY two questions: 1) a surface-level question about viewers' feelings after watching,`,
+        `  2) an interpretive "why" question inviting deeper reflection — without referencing any specific plot event.`,
+        `- Include exactly one line: "no spoilers in this post — please mark spoilers in replies" (natural phrasing fine).`,
+        `- End the body with this exact signature on its own line: "${DARI_SIGNATURE}"`,
+        ``,
+        `Return ONLY one JSON object, no markdown:`,
+        `  {"title": "${showName}", "body": "<the opener>"}`,
+    ].join('\n');
+    let body = '';
+    for (let attempt = 0; attempt < 2; attempt++) {
+        const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+            label: 'dari-movie-thread',
+            genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
+        });
+        if (r.error) { console.warn(`[Dari] 영화 발제 생성 실패(attempt ${attempt + 1}): ${r.error}`); continue; }
+        const parsed = parseFirstJsonObject(r.text);
+        const b = (parsed?.body || '').trim();
+        if (b && b.length <= 1200) { body = b; break; }
+    }
+    if (!body) throw new Error('Dari 영화 발제 생성 실패');
+    const title = showName;
+
+    if (dryRun) {
+        console.log(`[Dari] dry-run — 쓰기 없음: ${docPath}`);
+        return { dryRun: true, tid, path: docPath, uid, title, body, info };
+    }
+
+    const translated = await translateBodyMulti(body, SEED_LANGS, {
+        en: showName, original: detail.original_title || null, originalLang: detail.original_language || null,
+    });
+
+    let now = new Date();
+    if (backdate && backdate !== 'auto') {
+        const d = new Date(`${backdate}T12:00:00Z`);
+        if (!Number.isNaN(d.getTime())) now = d;
+    }
+    const batch = kcultureDb.batch();
+    batch.set(threadRef, {
+        authorUid: uid, authorName: DARI_NAME, authorPhoto: dariPhotoURL,
+        lang: 'en', body, episode: 0, spoiler: false, media: 'movie', likeCount: 0,
+        images: [],
+        titleName: showName, posterPath: detail.poster_path || null,
+        threadRoot: true, curator: true,
+        title, srcLang: 'en',
+        episodes: [],
+        info,
+        prevThreads: [],
+        createdAt: now,
+    });
+    seedTranslations(batch, docPath, body, translated);
+    batch.set(kcultureDb.doc(`curation_threads/${id}_movie`), {
+        titleId: id, media: 'movie', episode: 0, episodes: [], tid,
+        title, titleName: showName, posterPath: detail.poster_path || null,
+        lang: 'en', createdAt: now,
+    });
+    await batch.commit();
+    console.log(`[Dari] 영화 스레드 게시 완료: ${docPath} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
+    return { tid, path: docPath, uid, title, body, info, seededLangs: ['en', ...Object.keys(translated)] };
 }
 
 // backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이
@@ -671,4 +788,4 @@ async function seedMissingLangs({ dryRun = false } = {}) {
     return stat;
 }
 
-module.exports = { ensureDariAccount, createEpisodeThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };
+module.exports = { ensureDariAccount, createEpisodeThread, createMovieThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };

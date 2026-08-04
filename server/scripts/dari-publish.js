@@ -10,7 +10,7 @@
 // 멱등: 같은 스레드(doc id dari_s{season}e{maxEp})가 이미 있으면 skip하고 기존 문서를 출력.
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-const { ensureDariAccount, createEpisodeThread } = require('../lib/dari');
+const { ensureDariAccount, createEpisodeThread, createMovieThread } = require('../lib/dari');
 
 function arg(name, def) { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : def; }
 
@@ -21,17 +21,22 @@ const dryRun = process.argv.includes('--dry');
 const reseed = process.argv.includes('--reseed');
 const backdate = arg('backdate', null); // 'auto' | 'YYYY-MM-DD' — 과거분 백필 시 createdAt 소급
 
-if (!Number.isInteger(tmdbId) || !episodes.length) {
+const isMovie = arg('media', 'tv') === 'movie' || process.argv.includes('--movie'); // 영화 전편형 스레드(2026-08-04)
+
+if (!Number.isInteger(tmdbId) || (!isMovie && !episodes.length)) {
     console.error('사용법: node scripts/dari-publish.js --title <tmdbId> --episodes 5,6 [--season 1] [--dry] [--reseed]');
+    console.error('  영화: node scripts/dari-publish.js --title <tmdbId> --movie [--dry] [--backdate YYYY-MM-DD]');
     process.exit(1);
 }
 
-console.log('[dari-publish] start', { tmdbId, season, episodes, dryRun, reseed });
+console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed });
 const t0 = Date.now();
 (async () => {
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
-    const r = await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate });
+    const r = isMovie
+        ? await createMovieThread({ tmdbId, dryRun, backdate })
+        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate });
     console.log('─'.repeat(60));
     console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : ''}`);
     console.log(`제목      : ${r.title || '(기존 문서)'}`);
