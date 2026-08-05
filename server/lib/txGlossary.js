@@ -71,6 +71,16 @@ async function load() {
             seen.add(k);
             aliases.push({ k, d: titles[lang] || low });
         }
+        // 관사 생략 변형(2026-08-05) — 'The Apartment Job'을 'Apartment Job'으로 쓴 라운지 글이
+        // 매칭을 빗나가 '아파트 취업'으로 직역된 사고. 남는 부분이 2단어 이상일 때만 추가
+        // ('The Husband'→'husband' 같은 초일반 명사 1단어 변형의 오매칭 방지).
+        for (const a of [...aliases]) {
+            const m = a.k.match(/^(the|a|an)\s+(.+)$/);
+            if (m && m[2].includes(' ') && !seen.has(m[2])) {
+                seen.add(m[2]);
+                aliases.push({ k: m[2], d: a.d });
+            }
+        }
         next.push({
             id: d.id,
             titles,
