@@ -103,7 +103,7 @@
 - [feedback_deploy.md](feedback_deploy.md) — **🚨 배포 2대 원칙**: (1) staging만 push, main은 production 요청 시에만 (2) 클라이언트 산출물(dist/aab/ipa)에 API 비밀 키 절대 금지 + 빌드 후 grep 검증 필수 (2026-04-24 GCP 정지 사고 후 강화)
 - [feedback_commit_heredoc.md](feedback_commit_heredoc.md) — 🚫 **Bash 도구 git commit에 PowerShell `@'...'@` 힙독 금지** (메시지에 `@` 섞여 매번 재커밋). Bash는 heredoc→`git commit -F` 사용, 커밋 후 `git log -1 --format=%B | cat -A`로 확인
 - [feedback_capgo_verify.md](feedback_capgo_verify.md) — Capgo bundle upload 후 **반드시** `channel currentBundle <ch>` 명령으로 채널 포인터 일치 검증 (과거 누락 반복됨, v1.4.24 staging 링크 유실 사례)
-- [reference-capgo-cli-auth.md](reference-capgo-cli-auth.md) — **Capgo CLI 인증 방식 변경 (2026-05-27)**: v7.111.7+ 부터 `~/.capgo` 파일 인증 거부됨. `CAPGO_TOKEN` User env + `--apikey $env:CAPGO_TOKEN` 옵션 필수. CLI 버전 `@7.111.2` 핀 권장. 환경변수 변경 후 IDE/process 재시작 필요
+- [reference-capgo-cli-auth.md](reference-capgo-cli-auth.md) — Capgo CLI 인증(`CAPGO_TOKEN` env + `--apikey` 필수, CLI 8.2.0). **2026-08-11 연결끊김 복구**: K-Drama 신규앱 설정 중 토큰 교체+마이그로 PronunFit "does not exist"→재등록(빈 레코드)→2.1.22 재업로드+`channel set --state default --self-assign`로 복구. 진단 첫걸음=`capgo app list`. 現 PronunFit+K-Drama 동일계정 통합
 - [feedback_no_secrets_in_git.md](feedback_no_secrets_in_git.md) — 🚨 절대 금지 4종: Git 커밋/클라빌드(VITE_)/chat·스크린샷/하드코딩 어디에도 API 비밀 금지. 위반 시 즉시 폐기+재발급+환경 청소 (2026-04-24 4차 사고로 GCP 통째 정지)
 - [feedback_no_secrets_in_chat.md](feedback_no_secrets_in_chat.md) — **🚨 chat·AI·스크린샷에도 키 평문 공유 금지**, 스크린샷은 값 컬럼 마스킹(👁️ 아이콘) 필수, 변수명만 OK
 - [feedback_env_var_hygiene.md](feedback_env_var_hygiene.md) — **VITE_ 접두사 변수는 클라이언트 빌드에 평문 inline됨**, 비밀은 절대 VITE_로 정의 금지, 사용 안 하는 변수는 즉시 삭제(dead variable이 미래 유출 경로)
