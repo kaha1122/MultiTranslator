@@ -65,10 +65,21 @@ const FANDOM = [
     { re: /본방\s?사수/, s: '본방사수', g: 'watching the broadcast live as it airs (not later on VOD)', t: { en: 'watching it live' } },
     { re: /(\d+)\s*회차\s*(?:째|정주행|시청|감상|돌|중)/, s: 'N회차', g: 'watching for the Nth time (rewatch count) — only when it means repeat viewings, not an episode number', t: { en: 'my Nth rewatch' } },
     { re: /스포(?![츠일츠])/, s: '스포', g: 'short for spoiler(스포일러)', t: { en: 'spoiler' } },
+    // ── 다의어 고정(2026-08-16, D:\Thread\TRANSLATION-NOTES.md 유형 B) ──────────
+    // 한 단어가 여러 뜻을 갖는 표현은 "흔한 쪽"으로 번역이 기울어 의미가 뒤집힌다.
+    // 실측: (액션) 합 → choreography → 역번역 "안무". 양방향(한→외, 외→한) 패턴을 함께 둔다.
+    { re: /(?:액션|무술|타격)\s*합|합(?:이|을|은)\s*(?:좋|훌륭|미쳤|깔끔|정교|살아|매끄)/, s: '합(액션 합)', g: 'FIGHT choreography — the staging of combat/stunt action, NOT dance. Always keep the "fight/action" qualifier so it cannot be read as dance choreography', t: { en: 'fight choreography', es: 'coreografía de lucha', fr: 'chorégraphie des combats', de: 'Kampfchoreografie', id: 'koreografi laga', vi: 'các pha hành động', ru: 'постановка боёв', ja: 'アクションの殺陣', zh: '动作设计', ar: 'تصميم مشاهد القتال' } },
+    { re: /\bchoreograph/i, s: 'choreography', g: 'in a K-drama/action context this means FIGHT choreography (combat staging), NOT dance choreography — translate it as the combat-staging term of the target language', t: { ko: '액션 합', ja: '殺陣', zh: '动作设计' } },
+    { re: /\bchemistry\b/i, s: 'chemistry', g: 'on-screen chemistry between actors/characters — never the science subject', t: { ko: '케미', ja: 'ケミ', zh: '化学反应（CP感）' } },
+    { re: /떡밥\s*(?:회수|풀)|복선\s*(?:회수|풀)/, s: '떡밥 회수', g: 'paying off earlier foreshadowing — the setup finally lands. NOT literal recovery/collection', t: { en: 'the setup pays off', es: 'el planteamiento se resuelve', id: 'petunjuk awalnya terbayar', vi: 'thu hồi phục bút' } },
 ];
 
 // 팬 호칭·팬덤어 — 로마자 유지 정책 대상. 형(단독)은 형사·형태 등 오매칭이 심해 제외(조사 결합형만).
 const KIN_RE = /오빠|언니|누나|막내|애교|대박|형(?=이|아|님|은|도)/;
+
+// 로마자 유지 대상 팬덤어 — 이미 로마자로 쓰인 채 들어온 경우(makjang·sageuk…)를 일반 단어로
+// 풀어버리는 회귀 방어(2026-08-16). 실측: makjang → soap → 역번역 "드라마"로 폄하 뉘앙스 증발.
+const ROMANIZED_RE = /\b(makjang|sageuk|chemi|goguma|daebak|aegyo|oppa|unnie|nuna|hyung|maknae|jjinjja)\b/i;
 
 // ── 조립 ────────────────────────────────────────────────────────────────────
 // @param opts.register false면 scope 기준선 생략(batch — 이질적 아이템 묶음이라 단일 기준선이 무의미)
@@ -113,6 +124,11 @@ function nuanceLines(text, targetLang, targetName, scope, { register = true } = 
         const loc = pick(f.t, targetLang);
         lines.push(`- "${f.s}" here means: ${f.g}${loc ? ` — natural ${targetName} rendering: "${loc}"` : ''}. Translate the meaning, never the literal words.`);
         n++;
+    }
+
+    // ④' 이미 로마자로 쓰인 팬덤어 — 그대로 유지(일반 단어로 풀면 뉘앙스 소실 + 역번역 불가)
+    if (ROMANIZED_RE.test(t)) {
+        lines.push(`- The text already uses romanized K-fandom terms (e.g. makjang, sageuk, chemi, daebak, oppa). KEEP them romanized exactly as written — do NOT replace them with generic words like "soap opera", "period drama" or "chemistry"${base(targetLang) === 'ko' ? ', except when translating INTO Korean, where you should use the Korean original (makjang → 막장, sageuk → 사극, chemi → 케미)' : ''}. You may add a 2-3 word gloss in parentheses once if the meaning would otherwise be unclear.`);
     }
 
     // ④ 팬 호칭 로마자 유지(대상어 등장 시)

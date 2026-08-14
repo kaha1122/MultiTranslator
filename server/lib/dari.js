@@ -262,6 +262,9 @@ function properNounRules(glossary = null) {
         `- Person names (actors, directors, characters): convert only if you are CERTAIN of the established spelling in that target language; otherwise keep the original spelling as-is or transliterate it. NEVER substitute a different real person's name.`,
         `- Unfamiliar proper nouns (place names, in-show objects or terms): if unsure, keep them as-is — never replace them with a generic or different word.`,
         `- Quoted titles of books, films or shows inside the text: use the official release title in that target language if certain; otherwise keep the original title unchanged.`,
+        // 2026-08-16 — D:\Thread\TRANSLATION-NOTES.md 유형 A·B 대응(막장→soap→"드라마", 합→choreography→"안무")
+        `- Romanized K-fandom terms (makjang, sageuk, chemi, daebak, oppa, unnie, maknae…): keep them romanized; do NOT flatten them into generic words. When the target IS Korean, use the Korean original instead (makjang → 막장, sageuk → 사극, chemi → 케미).`,
+        `- Craft terms must keep their film/TV meaning, never the everyday one: "fight choreography" = combat staging (Korean 액션 합 / 殺陣), never dance; "chemistry" = on-screen rapport, never the science; "arc" = story arc; "beat" = story beat; "run" = a show's broadcast period.`,
     ];
     if (glossary && typeof glossary === 'object') {
         const entries = Object.entries(glossary).filter(([k]) => k);
