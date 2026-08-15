@@ -7,8 +7,12 @@
 //   --season 1          시즌 (기본 1)
 //   --dry               Firestore 쓰기 없이 생성 결과만 출력 (Gemini 발제 1회는 호출됨)
 //   --reseed            기존 스레드의 번역 시드 재생성(번역 프롬프트 개선 반영용)
+//   --hook "<요약>"      회차 훅(2026-08-15): 공식 선공개/예고 클립 요약 2~3문장(영어 권장) — 발제가 회차 밀착이 됨.
+//   --hook-file <경로>   훅을 파일에서 읽음(긴 요약·따옴표 이슈 회피)
+//   --rehook            기존 스레드의 발제 본문을 --hook 반영으로 재생성 + 번역 재시드(제목·댓글·공감 유지)
 // 멱등: 같은 스레드(doc id dari_s{season}e{maxEp})가 이미 있으면 skip하고 기존 문서를 출력.
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { ensureDariAccount, createEpisodeThread, createMovieThread } = require('../lib/dari');
 
@@ -20,6 +24,11 @@ const season = parseInt(arg('season', '1'), 10);
 const dryRun = process.argv.includes('--dry');
 const reseed = process.argv.includes('--reseed');
 const backdate = arg('backdate', null); // 'auto' | 'YYYY-MM-DD' — 과거분 백필 시 createdAt 소급
+const rehook = process.argv.includes('--rehook');
+let hook = arg('hook', null);
+const hookFile = arg('hook-file', null);
+if (!hook && hookFile) hook = fs.readFileSync(hookFile, 'utf8').trim();
+if (rehook && !hook) { console.error('--rehook 은 --hook 또는 --hook-file 이 필요합니다'); process.exit(1); }
 
 const isMovie = arg('media', 'tv') === 'movie' || process.argv.includes('--movie'); // 영화 전편형 스레드(2026-08-04)
 
@@ -29,16 +38,16 @@ if (!Number.isInteger(tmdbId) || (!isMovie && !episodes.length)) {
     process.exit(1);
 }
 
-console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed });
+console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed, rehook, hook: hook ? `${hook.slice(0, 60)}…` : null });
 const t0 = Date.now();
 (async () => {
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
     const r = isMovie
         ? await createMovieThread({ tmdbId, dryRun, backdate })
-        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate });
+        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook });
     console.log('─'.repeat(60));
-    console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : ''}`);
+    console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : r.rehooked ? '  (rehook — 발제 교체·재시드 완료)' : ''}`);
     console.log(`제목      : ${r.title || '(기존 문서)'}`);
     console.log('본문      :');
     console.log(r.body || '(기존 문서 — 본문은 Firestore 참조)');

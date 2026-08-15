@@ -212,7 +212,7 @@ function epLabel(episodes) {
     return sorted.length > 1 ? `EP ${sorted[0]}-${sorted[sorted.length - 1]}` : `EP ${sorted[0]}`;
 }
 
-async function generateThreadCopy({ showName, genres, synopsis, episodes }) {
+async function generateThreadCopy({ showName, genres, synopsis, episodes, hook = null }) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const expectedTitle = `${showName} [${epLabel(episodes)}]`;
     const prompt = [
@@ -224,12 +224,20 @@ async function generateThreadCopy({ showName, genres, synopsis, episodes }) {
         `- Genres: ${genres.join(', ') || 'N/A'}`,
         `- Synopsis: ${synopsis || 'N/A'}`,
         `- Episodes being discussed: ${epLabel(episodes)}`,
+        // 회차 훅(2026-08-15): 방송사가 공개한 선공개/예고 클립 요약 — 발제를 회차 밀착으로 만드는 유일한 회차별 근거.
+        // 공식 마케팅 자료라 언급해도 스포일러가 아니지만, 클립 밖 추측·결말 암시는 아래 규칙으로 차단.
+        ...(hook ? [
+            `- Officially released preview/teaser for these episodes (public marketing material — safe to reference): ${hook}`,
+        ] : []),
         ``,
         `[Hard rules]`,
-        `- ABSOLUTELY NO SPOILERS: do not mention, guess, or hint at anything that happens in any episode. No plot events, no character fates, no twists.`,
+        `- ABSOLUTELY NO SPOILERS: do not mention, guess, or hint at anything that happens in any episode beyond what the preview above states. No plot events, no character fates, no twists.`,
+        ...(hook ? [
+            `- The preview summary is the ONLY episode-specific material you may reference. Never guess what happens beyond it, and never present it as resolved — previews show setups, not outcomes.`,
+        ] : []),
         `- Body: about 100 words. Warm and inviting, never hype-y, never provocative or divisive.`,
         `- Include EXACTLY two questions, in this ladder:`,
-        `  1) one surface-level question about viewers' feelings/emotions watching these episodes,`,
+        `  1) one surface-level question about viewers' feelings/emotions watching these episodes${hook ? ' — anchor this question in ONE concrete element from the preview above (a scene, a line, a situation), so the thread feels specific to these episodes' : ''},`,
         `  2) one interpretive "why" question inviting deeper reflection (themes, choices, direction) — still without referencing any specific plot event.`,
         `- Include exactly one line: "no spoilers in this post — please mark spoilers in replies" (natural phrasing around it is fine).`,
         `- End the body with this exact signature on its own line: "${DARI_SIGNATURE}"`,
@@ -515,7 +523,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
 
 // backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이
 // 실제 방영 순서와 맞도록 createdAt을 소급(홈 최신 3장·전체 목록이 현재 방영분 우선 유지).
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null }) {
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false }) {
     if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
     }
@@ -532,6 +540,25 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         const existing = await threadRef.get();
         if (existing.exists) {
             const data = existing.data();
+            // --rehook(2026-08-15): 기존 스레드의 발제 본문을 회차 훅(선공개 요약) 반영으로 재생성 + 번역 재시드.
+            // 제목·info·댓글·공감은 그대로 — Dari 본인 발제 본문만 교체.
+            if (rehook && hook) {
+                const { detail, info } = await fetchShowInfo(id, season);
+                const seasonSuffix = season >= 2 ? ` ${season}` : '';
+                const showName = (detail.name || detail.original_name || `#${id}`) + seasonSuffix;
+                const { body } = await generateThreadCopy({
+                    showName, genres: info.genres, synopsis: info.synopsis, episodes, hook,
+                });
+                const translated = await translateBodyMulti(body, SEED_LANGS, {
+                    en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
+                });
+                const b = kcultureDb.batch();
+                b.set(threadRef, { body }, { merge: true });
+                seedTranslations(b, docPath, body, translated);
+                await b.commit();
+                console.log(`[Dari] rehook 완료: ${docPath} (번역 재시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
+                return { rehooked: true, tid, path: docPath, title: data.title, body, seededLangs: ['en', ...Object.keys(translated)] };
+            }
             // 자가치유: info 백필(2026-07-20 저장 누락 버그) / --reseed: 번역 시드 재생성(프롬프트 개선 반영)
             if (!data.info || reseed) {
                 try {
@@ -565,9 +592,9 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
     const seasonSuffix = season >= 2 ? ` ${season}` : '';
     const showName = (detail.name || detail.original_name || `#${id}`) + seasonSuffix;
 
-    // 발제 생성 (근거: 제목·장르·시놉시스만)
+    // 발제 생성 (근거: 제목·장르·시놉시스 + 선택적 회차 훅=공식 선공개 요약)
     const { title, body } = await generateThreadCopy({
-        showName, genres: info.genres, synopsis: info.synopsis, episodes,
+        showName, genres: info.genres, synopsis: info.synopsis, episodes, hook,
     });
 
     const episodesMeta = [...episodes].sort((a, b) => a - b).map((n) => ({
