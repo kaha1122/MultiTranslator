@@ -561,7 +561,9 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
 
     const uid = await ensureDariAccount();
     const { detail, seasonEps, info } = await fetchShowInfo(id, season);
-    const showName = detail.name || detail.original_name || `#${id}`;
+    // 시즌 2+는 표시명에 시즌 번호를 붙인다(TMDB name엔 없음 — "Flex X Cop [EP 3-4]"가 시즌1로 오인되던 문제, 2026-08-15)
+    const seasonSuffix = season >= 2 ? ` ${season}` : '';
+    const showName = (detail.name || detail.original_name || `#${id}`) + seasonSuffix;
 
     // 발제 생성 (근거: 제목·장르·시놉시스만)
     const { title, body } = await generateThreadCopy({
