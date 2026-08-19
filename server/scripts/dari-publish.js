@@ -10,6 +10,9 @@
 //   --hook "<요약>"      회차 훅(2026-08-15): 공식 선공개/예고 클립 요약 2~3문장(영어 권장) — 발제가 회차 밀착이 됨.
 //   --hook-file <경로>   훅을 파일에서 읽음(긴 요약·따옴표 이슈 회피)
 //   --rehook            기존 스레드의 발제 본문을 --hook 반영으로 재생성 + 번역 재시드(제목·댓글·공감 유지)
+//   --clip <videoId>    선공개 클립 유튜브 영상 id(11자) — 스레드 화면 썸네일+온디맨드 재생(2026-08-19, DECISIONS.md §11).
+//                       신규 게시 시 저장, **기존 스레드에 주면 클립만 소급 주입**(발제·번역 무변경 — Gemini 미호출).
+//   --clip-ep <N>       클립 대상 회차(라벨 "EP N" 표시용, 선택)
 // 멱등: 같은 스레드(doc id dari_s{season}e{maxEp})가 이미 있으면 skip하고 기존 문서를 출력.
 const path = require('path');
 const fs = require('fs');
@@ -29,6 +32,9 @@ let hook = arg('hook', null);
 const hookFile = arg('hook-file', null);
 if (!hook && hookFile) hook = fs.readFileSync(hookFile, 'utf8').trim();
 if (rehook && !hook) { console.error('--rehook 은 --hook 또는 --hook-file 이 필요합니다'); process.exit(1); }
+const clipId = arg('clip', null); // 선공개 클립 videoId — 형식 검증은 dari.js normClip
+const clipEp = parseInt(arg('clip-ep', ''), 10);
+const clip = clipId ? { videoId: clipId, ...(Number.isInteger(clipEp) && clipEp > 0 ? { ep: clipEp } : {}) } : null;
 
 const isMovie = arg('media', 'tv') === 'movie' || process.argv.includes('--movie'); // 영화 전편형 스레드(2026-08-04)
 
@@ -38,16 +44,17 @@ if (!Number.isInteger(tmdbId) || (!isMovie && !episodes.length)) {
     process.exit(1);
 }
 
-console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed, rehook, hook: hook ? `${hook.slice(0, 60)}…` : null });
+console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed, rehook, clip, hook: hook ? `${hook.slice(0, 60)}…` : null });
 const t0 = Date.now();
 (async () => {
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
     const r = isMovie
         ? await createMovieThread({ tmdbId, dryRun, backdate })
-        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook });
+        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook, clip });
     console.log('─'.repeat(60));
-    console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : r.rehooked ? '  (rehook — 발제 교체·재시드 완료)' : ''}`);
+    console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : r.rehooked ? '  (rehook — 발제 교체·재시드 완료)' : r.clipped ? '  (기존 스레드 — 클립만 주입)' : ''}`);
+    if (r.clip) console.log(`클립      : ${r.clip.videoId}${r.clip.ep ? ` (EP ${r.clip.ep})` : ''}`);
     console.log(`제목      : ${r.title || '(기존 문서)'}`);
     console.log('본문      :');
     console.log(r.body || '(기존 문서 — 본문은 Firestore 참조)');

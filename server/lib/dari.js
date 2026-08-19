@@ -206,6 +206,18 @@ async function fetchMovieInfo(tmdbId) {
     return { detail, info };
 }
 
+// ── 선공개 클립 (2026-08-19, KCulture DECISIONS.md §11) ─────────────────────
+// 스레드 화면 썸네일+온디맨드 재생용. videoId만 저장(URL·썸네일 조립은 클라) —
+// 발제 본문 밖 별도 필드라 번역 파이프라인과 무관(URL 변형 위험 0).
+// 입력: 'videoId' 문자열 또는 { videoId, ep }. ep = 클립 대상 회차(라벨 표시용, 선택).
+function normClip(clip) {
+    if (!clip) return null;
+    const videoId = typeof clip === 'string' ? clip : clip.videoId;
+    if (!/^[A-Za-z0-9_-]{11}$/.test(videoId || '')) throw new Error(`clip.videoId: 유튜브 영상 id(11자) 형식이 아님: ${videoId}`);
+    const ep = (typeof clip === 'object' && Number.isInteger(clip.ep) && clip.ep > 0) ? clip.ep : null;
+    return { videoId, ...(ep ? { ep } : {}) };
+}
+
 // ── Gemini 발제 생성 (근거를 제목·장르·시놉시스로 제한 → 회차 스포일러 구조적 차단) ──
 function epLabel(episodes) {
     const sorted = [...episodes].sort((a, b) => a - b);
@@ -523,17 +535,19 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
 
 // backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이
 // 실제 방영 순서와 맞도록 createdAt을 소급(홈 최신 3장·전체 목록이 현재 방영분 우선 유지).
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false }) {
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null }) {
     if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
     }
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
+    const clipData = normClip(clip); // 선공개 클립(선택) — 형식 오류는 여기서 즉시 실패
     const maxEp = Math.max(...episodes);
     const tid = `dari_s${season}e${maxEp}`;
     const docPath = `titles/${id}/discussion/${tid}`;
     const threadRef = kcultureDb.doc(docPath);
+    const pointerRef = kcultureDb.doc(`curation_threads/${id}_s${season}e${maxEp}`);
 
     // 멱등 게이트 (dryRun은 통과 — 미리보기 용도)
     if (!dryRun) {
@@ -553,7 +567,8 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                     en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
                 });
                 const b = kcultureDb.batch();
-                b.set(threadRef, { body }, { merge: true });
+                b.set(threadRef, { body, ...(clipData ? { clip: clipData } : {}) }, { merge: true });
+                if (clipData) b.set(pointerRef, { clip: clipData }, { merge: true });
                 seedTranslations(b, docPath, body, translated);
                 await b.commit();
                 console.log(`[Dari] rehook 완료: ${docPath} (번역 재시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
@@ -580,6 +595,15 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                         console.log(`[Dari] 번역 재시드: ${docPath} (${Object.keys(translated).length}/${SEED_LANGS.length})`);
                     }
                 } catch (e) { console.warn(`[Dari] 자가치유/재시드 실패(무시): ${e.message}`); }
+            }
+            // --clip 소급 주입(2026-08-19): 기존 스레드에 선공개 클립만 추가/교체 — 발제·번역 무변경.
+            if (clipData) {
+                const b = kcultureDb.batch();
+                b.set(threadRef, { clip: clipData }, { merge: true });
+                b.set(pointerRef, { clip: clipData }, { merge: true });
+                await b.commit();
+                console.log(`[Dari] 기존 스레드에 클립 주입: ${docPath} ← ${clipData.videoId}${clipData.ep ? ` (EP ${clipData.ep})` : ''}`);
+                return { clipped: true, tid, path: docPath, clip: clipData, ...data };
             }
             console.log(`[Dari] 스레드 이미 존재 → skip: ${docPath}`);
             return { skipped: true, tid, path: docPath, ...data };
@@ -645,13 +669,15 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         episodes: episodesMeta,
         info, // 정보 블록(TMDB 원값) — ThreadScreen이 i18n 라벨로 렌더
         prevThreads,
+        ...(clipData ? { clip: clipData } : {}), // 선공개 클립 — 썸네일+온디맨드 재생(DECISIONS.md §11)
         createdAt: now,
     });
     seedTranslations(batch, docPath, body, translated);
     // 큐레이션 레지스트리 (prevThreads 조회·운영 현황용)
-    batch.set(kcultureDb.doc(`curation_threads/${id}_s${season}e${maxEp}`), {
+    batch.set(pointerRef, {
         titleId: id, media: 'tv', episode: maxEp, episodes: episodesMeta, tid,
         title, titleName: showName, posterPath: detail.poster_path || null,
+        ...(clipData ? { clip: clipData } : {}),
         lang: 'en', createdAt: now,
     });
     await batch.commit();
