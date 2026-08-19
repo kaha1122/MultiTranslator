@@ -137,7 +137,9 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     require('../lib/dariLounge').openDailyLounge().catch((e) => console.warn('[cron/news-refresh] lounge open fail:', e?.message));
     // 자동 소감 게시 체이닝(2026-08-18) — 큐(sogam_queue)에서 KST 09/17/21/01 슬롯에만 1건 게시.
     // 라운지와 동일 패턴: 멱등(슬롯당 1회)·fire-and-forget(실패해도 뉴스 응답 무영향, 다음 주기 재시도).
-    require('../lib/sogam').runAutopost().catch((e) => console.warn('[cron/news-refresh] sogam autopost fail:', e?.message));
+    require('../lib/sogam').runAutopost()
+        .then((r) => { if (r && !r.posted && !String(r.skipped || '').startsWith('offslot')) console.log('[cron/news-refresh] sogam:', JSON.stringify(r)); })
+        .catch((e) => console.warn('[cron/news-refresh] sogam autopost fail:', e?.message));
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
