@@ -135,6 +135,9 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     // 별도 cron 대신 여기서 호출. 멱등(같은 날 skip)이라 2h 주기 12회 호출 무해, 00:00 UTC 실행분이 새 날을 연다.
     // fire-and-forget — 라운지 실패가 뉴스 응답을 막지 않음(다음 주기 자동 재시도).
     require('../lib/dariLounge').openDailyLounge().catch((e) => console.warn('[cron/news-refresh] lounge open fail:', e?.message));
+    // 자동 소감 게시 체이닝(2026-08-18) — 큐(sogam_queue)에서 KST 09/17/21/01 슬롯에만 1건 게시.
+    // 라운지와 동일 패턴: 멱등(슬롯당 1회)·fire-and-forget(실패해도 뉴스 응답 무영향, 다음 주기 재시도).
+    require('../lib/sogam').runAutopost().catch((e) => console.warn('[cron/news-refresh] sogam autopost fail:', e?.message));
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
