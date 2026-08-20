@@ -603,7 +603,8 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                 b.set(pointerRef, { clip: clipData }, { merge: true });
                 await b.commit();
                 console.log(`[Dari] 기존 스레드에 클립 주입: ${docPath} ← ${clipData.videoId}${clipData.ep ? ` (EP ${clipData.ep})` : ''}`);
-                return { clipped: true, tid, path: docPath, clip: clipData, ...data };
+                // ...data를 먼저 펼친다 — 뒤에 두면 data.clip(구 값)이 방금 쓴 clipData를 덮어 CLI 출력이 낡은 값을 보여줌(2026-08-20 실측)
+                return { ...data, clipped: true, tid, path: docPath, clip: clipData };
             }
             console.log(`[Dari] 스레드 이미 존재 → skip: ${docPath}`);
             return { skipped: true, tid, path: docPath, ...data };
