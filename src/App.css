@@ -255,7 +255,8 @@ html.admob-active.platform-native::after {
  * --admob-floor: Android는 100px(ADAPTIVE 미스리포트 보호), iOS는 0px(보고값 신뢰).
  *                JS 미설정 시 100px fallback (기존 Android 동작 보존). */
 .admob-active .app-container {
-  padding-bottom: calc(39px + max(var(--admob-bottom, 0px), var(--admob-floor, 100px)) + 4px);
+  /* 49px = 기존 39px + tab-nav 오클릭 데드존 패딩 10px (아래 .admob-active .tab-nav 참조) */
+  padding-bottom: calc(49px + max(var(--admob-bottom, 0px), var(--admob-floor, 100px)) + 4px);
 }
 
 .app-container::-webkit-scrollbar {
@@ -1990,9 +1991,14 @@ html.admob-active.platform-native::after {
 }
 /* 광고 있을 때: 배너 위에 4px gap 두고 배치 (iOS는 setOffset에서 safe-area 합산됨)
  * --admob-floor: Android 100px(ADAPTIVE 미스리포트 보호), iOS 0px(보고값 신뢰).
- *                JS 미설정 시 100px fallback (기존 Android 동작 보존). */
+ *                JS 미설정 시 100px fallback (기존 Android 동작 보존).
+ * padding-bottom 14px(기본 4px+10px): 탭바 바닥면을 두껍게 만들어 탭을 노린 저조준
+ * 터치가 배너 대신 탭바 흰 배경(무동작)에 떨어지게 하는 오클릭 데드존.
+ * AdMob '우발적 클릭 방지' 정책 — 밀착 배치로 인한 무효클릭 계정정지(2026-08-15) 재발 방지.
+ * 탭바가 10px 두꺼워지므로 .admob-active .app-container padding도 39px→49px(위쪽 참조). */
 .admob-active .tab-nav {
   bottom: calc(max(var(--admob-bottom, 0px), var(--admob-floor, 100px)) + 4px);
+  padding-bottom: 14px;
 }
 
 .tab-nav__btn {
