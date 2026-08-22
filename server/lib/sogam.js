@@ -9,7 +9,7 @@
 const crypto = require('crypto');
 const { kcultureDb, kcultureAuth } = require('../config/firebaseKculture');
 
-const SLOT_HOURS_KST = [9, 17, 21, 1]; // 사용자 지정(2026-08-18) — news-refresh 2h 그리드(KST 홀수시)의 부분집합
+const SLOT_HOURS_KST = [1, 5, 9, 17, 21]; // 2026-08-24 사용자 재배치(05시 추가) — news-refresh 2h 그리드(KST 홀수시)의 부분집합
 const LANGS = ['ko', 'en', 'id', 'ru', 'es', 'ar'];
 const ACCOUNT_EMAIL = (lang) => `sogam-${lang}@kdramaanylang.com`;
 

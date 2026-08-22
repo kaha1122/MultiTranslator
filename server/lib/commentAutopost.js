@@ -13,8 +13,8 @@
 const { kcultureDb } = require('../config/firebaseKculture');
 const { ensureSogamAccount, PERSONAS } = require('./sogam');
 
-const SLOT_HOURS_KST = [11, 19, 23, 3]; // 소감(09/17/21/01) +2h — news-refresh 그리드(KST 홀수시) 위
-const POSTS_PER_SLOT = 2;               // 하루 4슬롯 × 2건 = 8댓글 (2026-08-22 사용자 지정)
+const SLOT_HOURS_KST = [3, 11, 13, 15, 19, 23]; // 2026-08-24 사용자 재배치 — 방송후 댓글은 신선도가 생명이라 낮 시간대 확대
+const POSTS_PER_SLOT = 2;               // 하루 6슬롯 × 2건 = 12댓글 (2026-08-24 사용자 지정 시간표)
 
 function kstNow() {
     return new Date(Date.now() + 9 * 3600 * 1000); // UTC+9 — getUTC*로 읽는다 (sogam과 동일)
