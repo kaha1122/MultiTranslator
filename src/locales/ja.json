@@ -1024,6 +1024,8 @@
     "card5Recommend4": "毎日新しいコンテンツで学びたい"
   },
   "reward": {
+    "dailyCapReached": "本日の広告視聴の上限に達しました。また明日ご利用ください！",
+    "cooldownWait": "次の広告まで少々（約1分）お待ちください。",
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",
     "watchForProns": "+5 発音",

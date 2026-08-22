@@ -1060,11 +1060,41 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.uid]);
 
+  // [2026-08-22] 무효 트래픽 방지 — 보상형 광고 사전 게이트 (AdSense/AdMob 계정 정지 8/15 대응).
+  //   서버(adReward.js)는 '보상 지급'만 막고 광고 '재생'은 못 막는다 — 상한 소진 후에도 버튼을 누르면
+  //   실광고가 계속 재생돼 "보상 없는 노출"이 무한 반복될 수 있었다(무효 노출 패턴 + 유저 기만).
+  //   광고를 틀기 전에 클라에서 일일 상한·쿨다운을 먼저 확인해 노출 자체를 차단한다.
+  //   ⚠ 상수는 server/routes/adReward.js(DAILY_CAP·COOLDOWN_MS·PRON_ALLOWANCE×CAP)와 수동 동기.
+  const AD_REWARD_DAILY_CAP = 5;
+  const AD_REWARD_COOLDOWN_MS = 60_000;
+  const PRON_AD_BONUS_MAX = 50; // = PRON_ALLOWANCE(10) × PRON_ALLOWANCE_CAP(5)
+  const lastRewardedShowAtRef = useRef(0); // 두 보상형 유닛 공통 로컬 쿨다운(광고 show 시각)
+  // 렌더 파생값 — 버튼 비활성화용(profile은 AuthContext onSnapshot으로 서버 카운터와 동기)
+  const bonusAdCapReached =
+    (profile?.adRewardCountDate === utcDateStr() ? (profile?.adRewardCount || 0) : 0) >= AD_REWARD_DAILY_CAP;
+  const pronAdCapReached = (todayPronBonus || 0) >= PRON_AD_BONUS_MAX;
+  // 재생 전 공통 게이트 — 막히면 사유 alert 후 false. capped는 호출부가 유닛별 조건으로 판정.
+  const rewardedAdGate = (capped, serverLastMs = 0) => {
+    if (capped) {
+      alert(getT(sourceLang, 'reward.dailyCapReached'));
+      return false;
+    }
+    const lastMs = Math.max(lastRewardedShowAtRef.current, serverLastMs);
+    if (Date.now() - lastMs < AD_REWARD_COOLDOWN_MS) {
+      alert(getT(sourceLang, 'reward.cooldownWait'));
+      return false;
+    }
+    lastRewardedShowAtRef.current = Date.now();
+    return true;
+  };
+
   // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
   //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
   const handleRewardedAd = async () => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
+    // 무효 트래픽 게이트: 서버 가드(지급)와 동일 조건을 재생 전에 검사 — 걸리면 광고 자체를 안 튼다.
+    if (!rewardedAdGate(bonusAdCapReached, profile?.lastAdRewardAt?.toMillis?.() || 0)) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
@@ -1099,6 +1129,7 @@ function App() {
       });
     } catch (e) {
       console.error('[RewardedAd] 실패:', e);
+      lastRewardedShowAtRef.current = 0; // 재생 실패(로드/표시 실패) — 노출이 없었으니 쿨다운 해제
       alert(`광고 오류: ${e.message}`);
     } finally {
       setRewardAdLoading(false);
@@ -1115,6 +1146,8 @@ function App() {
   const handlePronAllowanceAd = async () => {
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
+    // 무효 트래픽 게이트: 오늘 발음 보너스 상한(+50) 도달 또는 쿨다운이면 광고를 틀지 않는다.
+    if (!rewardedAdGate(pronAdCapReached)) return;
     setRewardAdLoading(true);
     const handles = [];
     try {
@@ -1145,6 +1178,7 @@ function App() {
       });
     } catch (e) {
       console.error('[PronAllowanceAd] 실패:', e);
+      lastRewardedShowAtRef.current = 0; // 재생 실패 — 노출이 없었으니 쿨다운 해제
       alert(`광고 오류: ${e.message}`);
     } finally {
       setRewardAdLoading(false);
@@ -4328,12 +4362,14 @@ function App() {
                   </p>
                   <button
                     onClick={() => handleRewardedAd()}
-                    disabled={rewardAdLoading}
+                    disabled={rewardAdLoading || bonusAdCapReached}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
-                      border: '1px solid #bbf7d0', cursor: 'pointer', textAlign: 'left',
+                      border: '1px solid #bbf7d0', textAlign: 'left',
+                      cursor: (rewardAdLoading || bonusAdCapReached) ? 'default' : 'pointer',
+                      opacity: bonusAdCapReached ? 0.55 : 1,
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
@@ -4341,20 +4377,23 @@ function App() {
                         {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +20'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20'}
+                        {bonusAdCapReached
+                          ? getT(sourceLang, 'reward.dailyCapReached')
+                          : (getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20')}
                       </div>
                     </div>
                   </button>
                   {/* #4/#5: bonus02 광고 → 오늘 발음 허용량 +10 (당일 한정, 포인트 아님) */}
                   <button
                     onClick={() => handlePronAllowanceAd()}
-                    disabled={rewardAdLoading}
+                    disabled={rewardAdLoading || pronAdCapReached}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #fff7ed, #ffedd5)',
-                      border: '1px solid #fed7aa', cursor: rewardAdLoading ? 'default' : 'pointer',
-                      opacity: rewardAdLoading ? 0.6 : 1, textAlign: 'left',
+                      border: '1px solid #fed7aa',
+                      cursor: (rewardAdLoading || pronAdCapReached) ? 'default' : 'pointer',
+                      opacity: (rewardAdLoading || pronAdCapReached) ? 0.6 : 1, textAlign: 'left',
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎤</span>
                     <div>
@@ -4362,7 +4401,9 @@ function App() {
                         {getT(sourceLang, 'trial.pronAllowanceAd') || '발음 한도(광고) +10'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#fb923c' }}>
-                        {getT(sourceLang, 'trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)'}
+                        {pronAdCapReached
+                          ? getT(sourceLang, 'reward.dailyCapReached')
+                          : (getT(sourceLang, 'trial.pronAllowanceDesc') || '오늘 하루만 발음 한도 +10 (포인트 아님)')}
                       </div>
                     </div>
                   </button>

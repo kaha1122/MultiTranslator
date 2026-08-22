@@ -1024,6 +1024,8 @@
     "card5Recommend4": "希望每天都有新内容"
   },
   "reward": {
+    "dailyCapReached": "今天的广告观看次数已达上限，请明天再来！",
+    "cooldownWait": "请稍候（约1分钟）再观看下一个广告。",
     "watchForCards": "+5 张卡片",
     "watchAd": "看广告获得5张卡片",
     "watchForProns": "+5 发音",

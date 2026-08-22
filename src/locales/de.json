@@ -1024,6 +1024,8 @@
     "card5Recommend4": "Du willst jeden Tag neuen Stoff"
   },
   "reward": {
+    "dailyCapReached": "Das heutige Werbelimit ist erreicht. Bitte morgen wiederkommen!",
+    "cooldownWait": "Bitte einen Moment (ca. 1 Minute) bis zur nächsten Werbung warten.",
     "watchForCards": "+5 Karten",
     "watchAd": "Werbung ansehen für 5 Karten",
     "watchForProns": "+5 Aussprache",

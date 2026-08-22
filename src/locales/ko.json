@@ -1030,6 +1030,8 @@
     "card5Recommend4": "매일 새로운 콘텐츠로 공부하고 싶어요"
   },
   "reward": {
+    "dailyCapReached": "오늘 광고 시청 한도에 도달했어요. 내일 다시 이용해주세요!",
+    "cooldownWait": "다음 광고까지 잠시(약 1분) 기다려주세요.",
     "watchForCards": "+5 카드",
     "watchAd": "광고 시청 후 카드 5개 추가",
     "watchForProns": "+5 발음",

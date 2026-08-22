@@ -1024,6 +1024,8 @@
     "card5Recommend4": "Quieres contenido nuevo cada día"
   },
   "reward": {
+    "dailyCapReached": "Has alcanzado el límite de anuncios de hoy. ¡Vuelve mañana!",
+    "cooldownWait": "Espera un momento (aprox. 1 minuto) antes del siguiente anuncio.",
     "watchForCards": "+5 tarjetas",
     "watchAd": "Ver anuncio por 5 tarjetas extra",
     "watchForProns": "+5 Pronunciación",
