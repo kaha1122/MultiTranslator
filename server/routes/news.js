@@ -140,6 +140,11 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     require('../lib/sogam').runAutopost()
         .then((r) => { if (r && !r.posted && !String(r.skipped || '').startsWith('offslot')) console.log('[cron/news-refresh] sogam:', JSON.stringify(r)); })
         .catch((e) => console.warn('[cron/news-refresh] sogam autopost fail:', e?.message));
+    // 자동 스레드 댓글 게시 체이닝(2026-08-22) — 큐(comment_queue)에서 KST 11/19/23/03 슬롯(소감 +2h)에 2건 게시.
+    // 소감과 동일 패턴: 멱등(슬롯당 1회)·fire-and-forget.
+    require('../lib/commentAutopost').runCommentAutopost()
+        .then((r) => { if (r && !r.posted && !String(r.skipped || '').startsWith('offslot')) console.log('[cron/news-refresh] comment:', JSON.stringify(r)); })
+        .catch((e) => console.warn('[cron/news-refresh] comment autopost fail:', e?.message));
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
