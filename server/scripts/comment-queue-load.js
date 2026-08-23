@@ -39,10 +39,13 @@ async function tmdbDetail(media, id) {
             console.warn('필드 누락 스킵:', JSON.stringify(it).slice(0, 80)); skipped++; continue;
         }
         if (!PERSONAS[it.lang]) { console.warn(`미지원 언어 스킵(소감 6계정 밖): ${it.lang}`); skipped++; continue; }
+        // 중복 판정은 pending/posted만 — 취소(cancelled-*)된 문서는 재적재 허용(2026-08-23: 재작성 배치가 자기
+        // 자신의 취소분에 막혀 5건 스킵된 사고).
         const dup = await kcultureDb.collection('comment_queue')
             .where('titleId', '==', Number(it.titleId)).where('lang', '==', it.lang)
-            .where('episode', '==', Number(it.episode)).limit(1).get();
-        if (!dup.empty) { console.log(`중복 스킵: ${it.titleId} ep${it.episode} ${it.lang}`); skipped++; continue; }
+            .where('episode', '==', Number(it.episode)).get();
+        const live = dup.docs.some((d) => ['pending', 'posted'].includes(d.data().status));
+        if (live) { console.log(`중복 스킵: ${it.titleId} ep${it.episode} ${it.lang}`); skipped++; continue; }
         const ck = `${it.media || 'tv'}/${it.titleId}`;
         if (!metaCache.has(ck)) metaCache.set(ck, await tmdbDetail(it.media || 'tv', it.titleId));
         const d = metaCache.get(ck);
