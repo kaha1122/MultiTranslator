@@ -1,6 +1,6 @@
 ---
 name: capgo-cli-auth
-description: "Capgo CLI 인증 — CAPGO_TOKEN 환경변수 + --apikey 옵션 필수. 2026-06-12 전역 CLI 8.2.0. 2026-08-11 토큰이 K-Drama 계정으로 바뀌며 PronunFit 연결 끊김→재등록·재연결 복구."
+description: "Capgo CLI 인증 — CAPGO_TOKEN 환경변수 + --apikey 옵션 필수. 2026-06-12 전역 CLI 8.2.0으로 업그레이드(--apikey 명시하면 정상). 7.111.2 핀 더는 불필요."
 metadata: 
   node_type: memory
   type: reference
@@ -56,27 +56,6 @@ capgo channel currentBundle production --apikey $env:CAPGO_TOKEN
 - v1.5.64 production 배포 (2026-05-26): CLI v7.111.2 + 파일 인증
 - v1.5.71 production 배포 (2026-05-27): CLI v7.111.2 + `--apikey $env:CAPGO_TOKEN` (신규 token 사용)
 - 2026-06-12: 전역 CLI 8.2.0 업그레이드 + `--apikey`로 read-only 조회 검증. 핀 폐기.
-
-## 🚨 2026-08-11 PronunFit 연결 끊김 → 재연결 복구
-증상: "앱이 Capgo 연결 끊긴 듯". `channel currentBundle`가 `App com.arigems.pronunfit does not exist`.
-
-근본 원인 (2가지 겹침):
-1. **토큰이 다른 계정으로 바뀜** — 같은 날 신규 앱 **K-DramaAnyLang**(`com.arigems.kdramaanylang`) 설정 과정에서 `CAPGO_TOKEN`이 그 계정 토큰으로 교체됨. 그 계정엔 PronunFit이 없어 전부 "does not exist".
-2. **Capgo 대규모 업데이트로 PronunFit 앱 레코드 소실** — 재등록하니 **빈 레코드**(채널 0·번들 0)로 새로 생성됨(원래 번들/통계 이력 미승계).
-
-진단 순서 (재발 시 그대로): `capgo app list --apikey $env:CAPGO_TOKEN` → 토큰에 어떤 앱이 붙어있나 확인이 첫 단추. PronunFit이 목록에 없으면 토큰/계정 문제 확정.
-
-복구 절차 (실행 완료):
-1. 앱 재등록 (`capgo app add` 또는 대시보드) → 이후 **K-DramaAnyLang과 PronunFit이 같은 Capgo 계정에 공존**.
-2. `npm run build && npm run check-secrets` (PASS: Firebase Web 키만, onrender prod 호스트만 inline).
-3. `capgo bundle upload --channel production --bundle 2.1.22 --path dist --apikey $env:CAPGO_TOKEN` → production 채널 자동 생성.
-4. `capgo channel set production com.arigems.pronunfit --state default --self-assign --apikey $env:CAPGO_TOKEN` → **Public ✅ + Device Self Set ✅** (capacitor.config `channel:"production"` self-assign 요청 정합에 필수. 이거 안 하면 업로드해도 디바이스 배정 안 됨).
-5. 검증: `channel currentBundle production` = 2.1.22, `channel list`에서 Public/Device Self Set/prod 모두 ✅.
-
-미결/주의:
-- 원래 PronunFit 전용 Capgo 계정이 따로 있었는지 사용자 미확정 — 현재는 K-Drama 계정에 통합된 상태. 되돌릴 계획이면 재검토.
-- `staging` 채널은 아직 없음 (다음 `--channel staging` 첫 업로드 시 자동 생성).
-- 교훈: **신규 앱 설정으로 CAPGO_TOKEN을 바꾸면 기존 앱 조회가 전부 깨진다.** 여러 앱을 한 계정에서 관리하거나, 앱별 토큰을 구분해 관리할 것.
 
 ## 향후 권장
 - 전역 `capgo` (8.2.0) 사용 + 항상 `--apikey $env:CAPGO_TOKEN` 명시
