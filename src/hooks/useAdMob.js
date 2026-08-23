@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { resetIOSViewport } from '../utils/resetIOSViewport';
+import { ADS_ENABLED } from '../config/ads';
 
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 const isIOS = () => window.Capacitor?.getPlatform?.() === 'ios';
@@ -37,6 +38,7 @@ const AD_UNITS = IS_TESTING ? AD_UNITS_TEST : (isIOS() ? AD_UNITS_IOS : AD_UNITS
 export { AD_UNITS, IS_TESTING };
 
 export async function showInterstitialAd() {
+    if (!ADS_ENABLED) return false; // [2026-08-23] AdMob 블랙아웃 — 전면광고 차단
     if (!isNativePlatform()) return false;
     try {
         await loadAdMob();
@@ -196,6 +198,21 @@ export const useAdMob = (tier) => {
     // Trial 시 배너 표시
     useEffect(() => {
         if (!isNativePlatform() || isPaid) return;
+        // [2026-08-23] AdMob 블랙아웃 — 배너 요청 자체를 하지 않는다.
+        //   setOffset(false) 로 admob-active/--admob-bottom 를 확실히 정리해 "빈 광고칸"을
+        //   없애고 Pro/Premium 과 동일한 레이아웃(탭바 하단 밀착)으로 떨어뜨린다.
+        //   removeBanner 는 Capgo OTA in-process reload 대비 — JS 컨텍스트는 새로 뜨지만
+        //   네이티브 배너 뷰는 살아남아 탭바 위에 잔류한다. _adMob 은 이 분기에선 항상 null
+        //   이므로 모듈을 한 번 로드한 뒤 회수한다(SDK initialize 는 하지 않음).
+        if (!ADS_ENABLED) {
+            setOffset(false);
+            _bannerShowing = false;
+            (async () => {
+                await loadAdMob();
+                await _adMob?.removeBanner?.().catch(() => {});
+            })();
+            return;
+        }
         if (!isReady) return; // profile 미로드 상태에서는 ATT/AdMob 초기화 보류
         if (_bannerShowing || _bannerSetupInFlight) return; // 동시 setup 진입 차단
 

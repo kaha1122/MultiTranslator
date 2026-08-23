@@ -1,4 +1,5 @@
 import { showInterstitialAd as showNativeInterstitial } from '../hooks/useAdMob';
+import { ADS_ENABLED } from '../config/ads';
 
 const isNativePlatform = () => window.Capacitor?.isNativePlatform?.() === true;
 
@@ -12,12 +13,14 @@ const getWebAdProvider = () => {
 
 // 현재 플랫폼에서 전면광고가 가용한지 여부. 점수 누적 자체를 스킵할지 판단용.
 export const adsReady = () => {
+  if (!ADS_ENABLED) return false; // [2026-08-23] AdMob 블랙아웃 — 점수형 광고 누적도 스킵
   if (isNativePlatform()) return true;
   return !!getWebAdProvider();
 };
 
 // 전면광고 표시. 성공 시 true, 실패/미가용 시 false. 호출자는 실패 시 점수 롤백에 사용한다.
 export const showInterstitial = async () => {
+  if (!ADS_ENABLED) return false; // [2026-08-23] AdMob 블랙아웃
   try {
     if (isNativePlatform()) {
       const ok = await showNativeInterstitial();

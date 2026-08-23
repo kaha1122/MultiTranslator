@@ -72,6 +72,7 @@ import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
+import { ADS_ENABLED } from './config/ads';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import AppGuide from './components/AppGuide';
 import LandingPage from './components/LandingPage';
@@ -721,6 +722,9 @@ function App() {
   // ATT(광고 추적) 승인 상태를 Firestore에 저장 (iOS, 1회)
   React.useEffect(() => {
     if (!user || Capacitor.getPlatform() !== 'ios') return;
+    // [2026-08-23] AdMob 블랙아웃 — ATT 프롬프트 자체를 안 띄우므로 __attStatus 가 영영 안 채워진다.
+    //   가드 없으면 auth 변경마다 1초 × 10틱 폴링을 헛돌린다(발열 규칙6).
+    if (!ADS_ENABLED) return;
     // useAdMob에서 ATT 결과를 window.__attStatus에 저장 → 여기서 Firestore에 기록
     const checkAtt = setInterval(() => {
       if (window.__attStatus) {
@@ -915,6 +919,9 @@ function App() {
   //   본체 전체를 try/catch 로 감싸 어떤 예외도 호출자(재생 경로)에 전파되지 않게 한다.
   const bumpTtsPoint = (source, langCode) => {
     try {
+      // [2026-08-23] AdMob 블랙아웃 — 광고 프롬프트 자체를 발화시키지 않는다.
+      //   X 닫기 경로가 인터스티셜을 강제 호출하므로(handleTtsAdClose) 게이트가 필수.
+      if (!ADS_ENABLED) return;
       if (!window.Capacitor?.isNativePlatform?.()) return; // 광고 없는 웹은 nudge 무의미
       if (tier !== 'trial') return;                          // Pro/Premium 은 광고 면제
       const today = getToday();
@@ -1091,6 +1098,7 @@ function App() {
   // 2026-06-07 개편: 보상광고 시청 → 통합 포인트 풀 +5 (서버 검증 경유, 클라 직접 increment 금지).
   //   type 인자 제거 — 단일 "보너스 충전" 버튼. AdMob unit은 기존 rewardedCards 재사용.
   const handleRewardedAd = async () => {
+    if (!ADS_ENABLED) return; // [2026-08-23] AdMob 블랙아웃 — 보상형 광고 차단(호출 경로 방어)
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
     // 무효 트래픽 게이트: 서버 가드(지급)와 동일 조건을 재생 전에 검사 — 걸리면 광고 자체를 안 튼다.
@@ -1144,6 +1152,7 @@ function App() {
   // #4(2026-06-15): bonus02(rewardedProns) 광고 → 오늘 발음 허용량 +10 (서버 검증, 클라 직접 증가 금지).
   //   발음 한도(10/day)에 막혀 학습 못할 때 광고로 당일 한도만 확장(다음날 자동 리셋).
   const handlePronAllowanceAd = async () => {
+    if (!ADS_ENABLED) return; // [2026-08-23] AdMob 블랙아웃 — 보상형 광고 차단(호출 경로 방어)
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
     // 무효 트래픽 게이트: 오늘 발음 보너스 상한(+50) 도달 또는 쿨다운이면 광고를 틀지 않는다.
@@ -4355,11 +4364,14 @@ function App() {
               </button>
 
               {/* 보너스포인트 충전 (Trial 전용 + 네이티브) — 2026-06-07 개편: 단일 충전 버튼 */}
-              {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (
+              {/* [2026-08-23] AdMob 블랙아웃 — 광고 버튼 2개 숨김. 포인트 구매만 남으면
+                  구매 버튼이 있을 때만 섹션(헤더 포함)을 렌더해 빈 헤더가 남지 않게 한다. */}
+              {tier === 'trial' && window.Capacitor?.isNativePlatform?.() && (ADS_ENABLED || pointsPriceString) && (
                 <div style={{ padding: '8px 12px 4px' }}>
                   <p style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, margin: '0 0 6px 4px', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
                     {getT(sourceLang, 'nav.studyMore') || (['ko', 'ja', 'zh-CN'].includes(sourceLang) ? '추가 학습' : 'Study More')}
                   </p>
+                  {ADS_ENABLED && (<>
                   <button
                     onClick={() => handleRewardedAd()}
                     disabled={rewardAdLoading || bonusAdCapReached}
@@ -4412,6 +4424,7 @@ function App() {
                       {getT(sourceLang, 'reward.loading') || '광고 로딩 중...'}
                     </p>
                   )}
+                  </>)}
                   {/* 보너스포인트 구매 (+1000, 인앱 결제) — 가격 조회 성공 시에만 표시 */}
                   {pointsPriceString && (
                     <button
@@ -5845,13 +5858,13 @@ function App() {
           reason={trialLimitReason}
           capFeature={trialLimitFeature}
           bonusPoints={bonusPoints}
-          onCharge={handleRewardedAd}
+          onCharge={ADS_ENABLED ? handleRewardedAd : null}
           rewardAdLoading={rewardAdLoading}
           onBuyPoints={handleBuyPoints}
           buyingPoints={buyingPoints}
           pointsPriceString={pointsPriceString}
           pronLimit={effectivePronLimit}
-          onPronAllowanceAd={handlePronAllowanceAd}
+          onPronAllowanceAd={ADS_ENABLED ? handlePronAllowanceAd : null}
           onReferral={() => {
             setShowTrialLimitModal(false);
             if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReferralModal(true);
