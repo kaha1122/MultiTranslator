@@ -373,15 +373,17 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
     }
 });
 
-// ── TV 시즌 상세 — 회차 리스트(부제·방영일·러닝타임·스틸)용. 필요 필드만 추려 응답 축소 ──
-// (K-DramaAnyLang 상세 B안, 2026-07-25. overview는 미포함 — 스포일러·용량 양쪽 이유)
+// ── TV 시즌 상세 — 회차 리스트(부제·방영일·러닝타임·스틸·줄거리)용. 필요 필드만 추려 응답 축소 ──
+// (K-DramaAnyLang 상세 B안, 2026-07-25. overview는 2026-08-27 상세 '에피소드' 탭 신설로 포함 전환 —
+//  종전 "스포일러·용량" 제외 사유는 회차 부제 리스트 용도 기준이었고, 에피소드 탭은 줄거리 3줄이 스펙.
+//  캐시 키 season2: — overview 없는 구 캐시(6h TTL) 잔존과의 충돌 방지)
 router.get('/api/tmdb/season/:id/:n', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         const n = parseInt(req.params.n, 10);
         if (!id || !Number.isFinite(n) || n < 0 || n > 200) return res.status(400).json({ error: 'bad params' });
         const lang = toTmdbLang(req.query.lang);
-        const key = `season:${id}:${n}:${lang}`;
+        const key = `season2:${id}:${n}:${lang}`;
         let data = getCache(key);
         if (!data) {
             const raw = await tmdbFetch(`/tv/${id}/season/${n}`, { language: lang });
@@ -395,6 +397,7 @@ router.get('/api/tmdb/season/:id/:n', optionalAuthAny, rateLimit('tmdb', TMDB_RL
                     air_date: e.air_date,
                     runtime: e.runtime,
                     still_path: e.still_path,
+                    overview: e.overview || null,
                 })),
             };
             setCache(key, data, 6 * 60 * 60 * 1000);
