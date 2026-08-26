@@ -218,6 +218,18 @@ function normClip(clip) {
     return { videoId, ...(ep ? { ep } : {}) };
 }
 
+// 선공개 클립을 작품 문서에도 미러(2026-08-27) — 앱 상세 '에피소드' 탭이 회차별 클립을 1 read로 조회.
+// titles/{id}/media/clips { eps: { "s{season}e{ep}": videoId } } — set-merge라 스레드를 열 때마다
+// 회차별로 누적된다(작품이 선공개 URL 카탈로그를 갖게 되는 지점). ep 미지정 클립은 스레드 상한 회차로 귀속.
+// 루트 titles/{id}가 아닌 별도 소문서인 이유: 루트는 meta 백필로 수십~수백 KB인데 클라 SDK는 필드마스크가 없다.
+function mirrorClipToTitle(batch, id, season, clipData, fallbackEp) {
+    const ep = clipData.ep || fallbackEp;
+    if (!ep) return;
+    batch.set(kcultureDb.doc(`titles/${id}/media/clips`), {
+        eps: { [`s${season}e${ep}`]: clipData.videoId }, updatedAt: new Date(),
+    }, { merge: true });
+}
+
 // ── Gemini 발제 생성 (근거를 제목·장르·시놉시스로 제한 → 회차 스포일러 구조적 차단) ──
 function epLabel(episodes) {
     const sorted = [...episodes].sort((a, b) => a - b);
@@ -568,7 +580,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                 });
                 const b = kcultureDb.batch();
                 b.set(threadRef, { body, ...(clipData ? { clip: clipData } : {}) }, { merge: true });
-                if (clipData) b.set(pointerRef, { clip: clipData }, { merge: true });
+                if (clipData) { b.set(pointerRef, { clip: clipData }, { merge: true }); mirrorClipToTitle(b, id, season, clipData, maxEp); }
                 seedTranslations(b, docPath, body, translated);
                 await b.commit();
                 console.log(`[Dari] rehook 완료: ${docPath} (번역 재시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
@@ -601,6 +613,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                 const b = kcultureDb.batch();
                 b.set(threadRef, { clip: clipData }, { merge: true });
                 b.set(pointerRef, { clip: clipData }, { merge: true });
+                mirrorClipToTitle(b, id, season, clipData, maxEp);
                 await b.commit();
                 console.log(`[Dari] 기존 스레드에 클립 주입: ${docPath} ← ${clipData.videoId}${clipData.ep ? ` (EP ${clipData.ep})` : ''}`);
                 // ...data를 먼저 펼친다 — 뒤에 두면 data.clip(구 값)이 방금 쓴 clipData를 덮어 CLI 출력이 낡은 값을 보여줌(2026-08-20 실측)
@@ -681,6 +694,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         ...(clipData ? { clip: clipData } : {}),
         lang: 'en', createdAt: now,
     });
+    if (clipData) mirrorClipToTitle(batch, id, season, clipData, maxEp);
     await batch.commit();
     await refreshSiblingPrevThreads(id).catch((e) => console.warn(`[Dari] 형제 prevThreads 갱신 실패(무시): ${e.message}`));
     console.log(`[Dari] 스레드 게시 완료: ${docPath} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
