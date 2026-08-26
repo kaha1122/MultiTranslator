@@ -725,7 +725,8 @@ async function runRetry({ limit = 100, concurrency = 3 } = {}) {
 }
 
 // titleTainted·validTitle·validOverview: 러너/테스트가 같은 판정을 쓰도록 공개.
+// parseFirstJsonObject: seasonTx(회차 줄거리 read-through 번역)가 같은 글리치 대응을 쓰도록 공개(2026-08-27).
 module.exports = {
     runBackfill, runIncremental, runRetry, refreshOfficialTitles, processTitle, enumerateIds,
-    TARGETS, titleTainted, validTitle, validOverview,
+    TARGETS, titleTainted, validTitle, validOverview, parseFirstJsonObject,
 };

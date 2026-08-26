@@ -28,6 +28,8 @@ const { kcultureDb } = require('../config/firebaseKculture');
 // 그대로 통과시킨다(2026-07-27 실측: 13편 전부 adult=false). 판정·플래그는
 // scripts/flag-adult-titles.js가 하고 여기서는 결과 배열에서 빼기만 한다. 로드 실패 시 fail-open.
 const hiddenTitles = require('../lib/hiddenTitles');
+// 회차 줄거리 read-through 번역(에피소드 탭, 2026-08-27) — 시즌 라우트에서만 사용
+const { fillSeasonOverviews } = require('../lib/seasonTx');
 
 // 이미지 우선순위 선택: 콘텐츠 원어(original_language) → 영어. 없으면 null(호출측이 TMDB 기본값 유지).
 function pickImageByLang(arr, originalLang) {
@@ -377,6 +379,8 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
 // (K-DramaAnyLang 상세 B안, 2026-07-25. overview는 2026-08-27 상세 '에피소드' 탭 신설로 포함 전환 —
 //  종전 "스포일러·용량" 제외 사유는 회차 부제 리스트 용도 기준이었고, 에피소드 탭은 줄거리 3줄이 스펙.
 //  캐시 키 season2: — overview 없는 구 캐시(6h TTL) 잔존과의 충돌 방지)
+// read-through 번역(lib/seasonTx.js): TMDB에 없는 언어의 회차 줄거리를 ko 피벗 Gemini 번역으로
+//  보충·영구 캐시. ?noTx=1(크롤러·미들웨어)은 Gemini 미호출 — 기번역분만 병합(봇발 비용 차단).
 router.get('/api/tmdb/season/:id/:n', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const id = String(req.params.id).replace(/\D/g, '');
@@ -402,6 +406,16 @@ router.get('/api/tmdb/season/:id/:n', optionalAuthAny, rateLimit('tmdb', TMDB_RL
             };
             setCache(key, data, 6 * 60 * 60 * 1000);
         }
+        // 결측 줄거리 보충(대상 언어가 아니거나 결측 0이면 즉시 null) — 실패는 fail-open(미번역 반환).
+        // 채워지면 인메모리 캐시도 갱신해 다음 요청은 Firestore read조차 없이 완성본을 받는다.
+        try {
+            const filled = await fillSeasonOverviews({
+                id, season: n, clientLang: req.query.lang, episodes: data.episodes,
+                allowTx: req.query.noTx !== '1',
+                fetchPivot: (plang) => tmdbFetch(`/tv/${id}/season/${n}`, { language: plang }).then((r) => r.episodes || []),
+            });
+            if (filled) { data = { ...data, episodes: filled }; setCache(key, data, 6 * 60 * 60 * 1000); }
+        } catch (e) { console.warn('[tmdb/season] tx fill 실패(무시):', e.message); }
         res.json(data);
     } catch (e) {
         console.error('[tmdb/season]', e.message);
