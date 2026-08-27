@@ -19,6 +19,7 @@ const { FALLBACK_MODEL } = require('../config/gemini');
 const { LANG_NAMES } = require('../config/langGuide');
 const { PRIMARY_CONTENT_LANG } = require('../config/contentLang');
 const { parseFirstJsonObject } = require('./tmdbBackfill');
+const { isForeignScript, LANG_SCRIPTS, SCRIPT_RE } = require('./personNames');
 
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 
@@ -31,10 +32,48 @@ const inflight = new Map(); // `${id}:${n}:${lang}` → Promise — 동시 첫 �
 
 const nameOf = (c) => LANG_NAMES[c] || c;
 
-async function geminiEpisodeBatch(srcLangCode, targetLang, srcMap) {
+// ── 출력 언어 검증 (2026-08-27 오염 사고 대응) ─────────────────────────────
+// Gemini(flash-lite)가 타깃 언어 지시를 무시하고 **영어로** 번역한 사고 실측:
+// Queen of Tears(215720) S1 id — 16회차 전부 ko→en 번역이 영구 캐시에 저장돼 인니어 사용자
+// 전원에게 영어 노출(종전 검증이 "빈 문자열 아님"뿐이라 통과). 캐시는 영구 + 결측이 채워진
+// 것으로 보여 재시도도 안 됨 → 저장 전 언어 검증이 필수다.
+//
+// 라틴 표기 타깃(id·vi·es·fr·de·pt-BR)용 영어 판정 마커 — 타깃 언어와 철자가 충돌하지 않는
+// 영어 고빈도 기능어만 채택(예: 'in'·'an'·'was'·'will'은 독일어, 'on'은 프랑스어와 충돌 → 제외.
+// 'but'(fr 명사)·'he'(es 조동사)류 저빈도 충돌은 비율 판정이라 무해). 판정은 단어 비율:
+// 영어 산문은 이 집합이 15~35%를 차지하고, 타깃 언어 텍스트는 우연 일치가 1~2%에 그친다.
+const EN_MARKERS = new Set([
+    'the', 'of', 'and', 'is', 'are', 'were', 'that', 'this', 'these', 'those', 'with', 'from',
+    'they', 'their', 'them', 'she', 'he', 'his', 'her', 'him', 'it', 'its', 'has', 'have', 'had',
+    'but', 'who', 'whom', 'which', 'what', 'when', 'while', 'after', 'before', 'into', 'about',
+    'because', 'would', 'been', 'not', 'for', 'to', 'you', 'be', 'by',
+]);
+function looksEnglish(text) {
+    const words = String(text).toLowerCase().match(/[a-z']+/g) || [];
+    if (words.length < 5) return false; // 너무 짧으면 판정 보류(허용) — 오거부 방지
+    const hits = words.reduce((n, w) => n + (EN_MARKERS.has(w) ? 1 : 0), 0);
+    // 영어 산문은 15~35%, 타깃 언어의 우연 일치는 1~4% — 10%는 양쪽에서 충분히 먼 경계
+    return hits >= 2 && hits / words.length >= 0.10;
+}
+
+// 번역 출력이 타깃 언어로 보이는가. src(피벗 원문)와의 그대로 에코도 거부.
+function isValidTargetOutput(text, targetLang, src = null) {
+    if (!text || !String(text).trim()) return false;
+    const t = String(text).trim();
+    if (src && t === String(src).trim()) return false;                       // 원문 에코
+    // ja·zh-CN·ru·ar: 고유 문자체계 포함 필수 (⚠ hasNativeScript는 baseLang만 봐서 zh-CN 미매칭 — 직접 판정)
+    if (LANG_SCRIPTS[targetLang]) return LANG_SCRIPTS[targetLang].some((k) => SCRIPT_RE[k].test(t));
+    if (isForeignScript(t, targetLang)) return false;                        // 라틴 타깃에 한글·키릴 등 잔존
+    return !looksEnglish(t);                                                 // 라틴 타깃의 영어 출력 거부
+}
+
+async function geminiEpisodeBatch(srcLangCode, targetLang, srcMap, { strict = false } = {}) {
     const prompt = [
         `You are a professional translator localizing Korean TV episode synopses for a multilingual app.`,
         `Translate EACH episode synopsis below from ${nameOf(srcLangCode)} into ${nameOf(targetLang)} ("${targetLang}").`,
+        ...(strict ? [
+            `!! A PREVIOUS ATTEMPT RETURNED THE WRONG LANGUAGE (e.g. English). Every output value MUST be written in ${nameOf(targetLang)} — outputting English or any other language is a HARD FAILURE.`,
+        ] : []),
         `- Natural and idiomatic, faithfully preserving meaning, tone and nuance. Each value 100% in ${nameOf(targetLang)}.`,
         `- Transliterate ALL proper nouns (person/character names) into the target script or romanization — never leave ${nameOf(PRIMARY_CONTENT_LANG)} characters.`,
         `- Do not add information, notes, or commentary. NEVER echo the source language — that is a FAILURE.`,
@@ -108,7 +147,20 @@ async function fillSeasonOverviews({ id, season, clientLang, episodes, allowTx =
                     const keys = Object.keys(srcAll);
                     for (let i = 0; i < keys.length; i += CHUNK) {
                         const chunk = Object.fromEntries(keys.slice(i, i + CHUNK).map((k) => [k, srcAll[k]]));
-                        Object.assign(translated, await geminiEpisodeBatch(srcLang, clientLang, chunk));
+                        const out = await geminiEpisodeBatch(srcLang, clientLang, chunk);
+                        // 출력 언어 검증 — 실패분만 strict 프롬프트로 1회 재시도, 그래도 실패하면
+                        // 캐시하지 않는다(fail-open: 미번역 표시, 다음 조회가 자동 재시도).
+                        const bad = Object.keys(out).filter((k) => !isValidTargetOutput(out[k], clientLang, chunk[k]));
+                        if (bad.length) {
+                            console.warn(`[seasonTx] ${id} S${season} ${clientLang}: 언어 검증 실패 ${bad.length}/${Object.keys(out).length}건 — strict 재시도`);
+                            const retry = await geminiEpisodeBatch(srcLang, clientLang,
+                                Object.fromEntries(bad.map((k) => [k, chunk[k]])), { strict: true });
+                            for (const k of bad) {
+                                if (isValidTargetOutput(retry[k], clientLang, chunk[k])) out[k] = retry[k];
+                                else delete out[k];
+                            }
+                        }
+                        Object.assign(translated, out);
                     }
                 }
                 if (Object.keys(translated).length) {
@@ -130,4 +182,4 @@ async function fillSeasonOverviews({ id, season, clientLang, episodes, allowTx =
     ));
 }
 
-module.exports = { fillSeasonOverviews, TX_LANGS };
+module.exports = { fillSeasonOverviews, TX_LANGS, isValidTargetOutput };
