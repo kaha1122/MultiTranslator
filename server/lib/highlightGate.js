@@ -10,6 +10,13 @@
 // 공식 채널 allowlist — oEmbed author_name 과 "정규화 후 완전 일치"로 비교.
 // (부분 일치는 "tvN DRAMA 명장면"류 팬 채널 오인 위험 → 완전 일치만.)
 // 새 공식 채널을 발견하면 여기 한 줄 추가한다(에이전트 절차: 공식 여부 확인 후 추가).
+// ⚠ 공식이어도 **회차별 편성이 아닌 채널은 넣지 않는다**(2026-08-28 검토) — 단일 회차 귀속이
+//   불가해 오귀속만 만든다. 제외 확정분:
+//   · 'DRAMA Voyage'(@DRAMAVoyage, JTBC 공식 "드라마봐야지") — 설명문이 "아파트 - 1,2,3,4회"처럼
+//     여러 회차 묶음. 제목엔 회차가 없고 설명문 "1,2,3,4회"는 epMatch가 4회 단독으로 오인한다.
+//   · '스튜디오지니'(@Studio_Genie, KT 제작사 공식) — "EP.N-1/N-2" 부분 클립 + "EP.09~10" 범위
+//     묶음(BUNDLE_RE가 화/회 없는 'EP.09~10' 형태를 못 잡음)이라 최장 정렬 시 묶음이 1순위가 된다.
+//     같은 작품은 'ENA DRAMA'가 회차별 풀 하이라이트를 올리므로 손실도 없다.
 const OFFICIAL_CHANNELS = [
   // SBS
   'SBS 스브스 Drama', 'SBS Catch', 'SBS', 'SBS NOW 스브스나우', 'SBS Drama',
@@ -22,8 +29,8 @@ const OFFICIAL_CHANNELS = [
   // JTBC
   'JTBC Drama', 'JTBC', 'JTBC Voyage',
   // 기타 채널·플랫폼
-  'ENA', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
-  'MBN', 'MBN 드라마', '쿠팡플레이', 'Coupang Play 쿠팡플레이',
+  'ENA', 'ENA DRAMA', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
+  'MBN', 'MBN 드라마', '쿠팡플레이', 'Coupang Play 쿠팡플레이', '쿠팡플레이 Coupang Play',
   'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'Wavve', '웨이브',
 ];
 
