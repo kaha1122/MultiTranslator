@@ -39,6 +39,7 @@ app.use(require('./routes/tmdb')); // [신규] K-DramaLingo TMDB 프록시 (requ
 app.use(require('./routes/cronTmdb')); // [신규] K-DramaLingo 신작 메타 번역 증분 (requireCronAuth)
 app.use(require('./routes/community')); // [신규] K-DramaLingo 커뮤니티 UGC 번역 (requireAuthAny)
 app.use(require('./routes/communityPoints')); // [신규] K-DramaAnyLang 포인트 일회성 구매 PayPal (requireAuthAny)
+app.use(require('./routes/restoreCredential')); // [신규] K-DramaAnyLang Zero-Tap 로그인 복원 토큰 (kculture 전용 인증 + 비인증 redeem)
 app.use(require('./routes/news')); // [신규] K-DramaAnyLang K-뉴스 (public read + requireCronAuth refresh)
 app.use(require('./routes/curation')); // [신규] K-DramaAnyLang Dari AI 큐레이터 게시 (x-curation-secret, fail-closed)
 app.use(require('./routes/cronLounge')); // [신규] K-DramaAnyLang Dari's Lounge 일일 발행 (requireCronAuth, 결정적 — Gemini 0)
