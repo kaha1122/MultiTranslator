@@ -8,6 +8,7 @@
 // 사용법 (server/.env 에 KCULTURE_SERVICE_ACCOUNT_BASE64 + TMDB_API_KEY 필요, yt-dlp 설치):
 //   node scripts/find-title-highlights.js                  # 스레드 전 작품(방영분 결측 회차만)
 //   node scripts/find-title-highlights.js --title 296206   # 한 작품만(에이전트 운영 기본 — 회차당 검색 1~2회)
+//     └ --title 명시 시엔 스레드 미개설 작품도 진행(운영자 지정 — 경고만). --season N(기본 1)
 //   node scripts/find-title-highlights.js --dry            # 판정만, 저장·리포트 안 함
 // 자동 저장 조건(전부 충족 — 하나라도 애매하면 후보 리포트로):
 //   공식 채널(allowlist) + 회차 번호 단일 귀속(제목, 없으면 설명문) + 길이 4~30분
@@ -23,6 +24,7 @@ const { isOfficialChannel, gateHighlight, saveHighlight } = require('../lib/high
 const TMDB_KEY = process.env.TMDB_API_KEY;
 const DRY = process.argv.includes('--dry');
 const onlyTitle = (() => { const i = process.argv.indexOf('--title'); return i > -1 ? String(process.argv[i + 1]).replace(/\D/g, '') : null; })();
+const argSeason = (() => { const i = process.argv.indexOf('--season'); return i > -1 ? parseInt(process.argv[i + 1], 10) : null; })();
 
 const SEARCH_N = 6;              // 검색당 후보 수(전량 메타 추출이라 크게 잡으면 느려짐)
 const DUR_MIN = 240, DUR_MAX = 1800; // 회차 요약본 길이대(4~30분) — 장면 클립·풀버전 배제
@@ -99,7 +101,13 @@ async function tmdb(pathname) {
     if (!id || (onlyTitle && id !== onlyTitle)) continue;
     targets.set(`${id}|${m[1]}`, true);
   }
-  console.log(`대상: 스레드 개설 작품·시즌 ${targets.size}건${onlyTitle ? ` (--title ${onlyTitle})` : ''} · ${DRY ? 'dry-run' : '자동 저장 모드'}`);
+  // --title 명시 = 운영자 지정 — 스레드 미개설 작품도 진행(기본 실행의 스코프는 스레드 작품만)
+  if (onlyTitle && !targets.size) {
+    const season = Number.isInteger(argSeason) && argSeason > 0 ? argSeason : 1;
+    console.log(`⚠ ${onlyTitle}: Dari 스레드 미개설 작품 — --title 명시라 진행(S${season})`);
+    targets.set(`${onlyTitle}|${season}`, true);
+  }
+  console.log(`대상: 작품·시즌 ${targets.size}건${onlyTitle ? ` (--title ${onlyTitle})` : ' (Dari 스레드 개설분)'} · ${DRY ? 'dry-run' : '자동 저장 모드'}`);
 
   const saved = [], ambiguous = [], notfound = [];
   for (const key of targets.keys()) {
