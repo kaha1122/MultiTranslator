@@ -11,7 +11,7 @@ const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/l
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
 const txGlossary = require('../lib/txGlossary'); // 최근작 제목·배우 확정 표기(매칭 게이트 주입, 2026-08-04)
-const { nuanceLines, scrubMarkers, isTonelessVietnamese } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04) + 베트남어 무성조(2026-08-29)
+const { nuanceLines, scrubMarkers, isTonelessVietnamese, normalizeTonelessVietnamese } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04) + 베트남어 무성조(2026-08-29)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
@@ -166,12 +166,28 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // 베트남어 무성조 감지 시 응답에 "restored"(성조 복원문) 필드를 먼저 쓰게 한다 — 복원을 강제하는 것이
     // 효과의 핵심(지시만 6/12 → restored 동반 9/12). 파서는 translated만 읽으므로 추가 필드는 무해.
     const viToneless = isTonelessVietnamese(text);
-    const prompt = [
+    // 무성조 베트남어는 접속사 자리의 ma→mà를 결정적으로 고친 원문을 넘긴다(작품 컨텍스트가 "귀신" 읽기를
+    // 밀어도 무관 — txNuance MA_CONJ_RE 주석). 로그·캐시 키는 원문 기준이라 영향 없음.
+    const srcText = viToneless ? normalizeTonelessVietnamese(text) : text;
+    const prompt = buildTxPrompt({ text: srcText, targetLang, targetName, ctxLines: ctx.lines, glossaryLines, styleLines, lenRule, viToneless });
+
+    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
+        label: 'community-translate',
+        model: KDL_TX_MODEL, // KDL UGC 전용(상단 주석) — 폴백은 geminiCall이 교차 처리
+        // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높아 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형.
+        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
+    });
+    return finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless });
+});
+
+// 단건 UGC 번역 프롬프트 조립 — 라우트와 scripts/test-vi-toneless.js(회귀)가 같은 함수를 쓴다(미러 드리프트 방지, 2026-08-29).
+function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLines = [], styleLines = [], lenRule = null, viToneless = false }) {
+    return [
         `You are a professional translator for a multilingual community app.`,
         ``,
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
         APP_NATURE_LINE,
-        ...ctx.lines,
+        ...ctxLines,
         ...glossaryLines,
         ...styleLines,
         ``,
@@ -198,13 +214,10 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         `TEXT:`,
         text,
     ].join('\n');
+}
 
-    const r = await callGeminiText(prompt, GEMINI_API_KEY, {
-        label: 'community-translate',
-        model: KDL_TX_MODEL, // KDL UGC 전용(상단 주석) — 폴백은 geminiCall이 교차 처리
-        // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높아 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형.
-        genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
-    });
+// 단건 라우트 후반부(응답 파싱·same 판정·스크럽·캐시 저장·로그) — 위 라우트에서만 호출
+function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless }) {
     // 여기 도달 = 캐시 MISS(또는 무캐시) → Gemini 실호출(과금). (TTS의 [AzureTTS] MISS 대응)
     if (r.error) {
         console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
@@ -228,8 +241,8 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
     const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}` || '-'; // V=베트남어 무성조 지시+restored
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
-    res.json({ translated });
-});
+    return res.json({ translated });
+}
 
 // ── 언어 감지 (배지용) — 번역이 아닌 ISO 코드만 반환 → 출력 토큰 극소 = 저비용 ──────
 // 작성 시 1회 호출해 글의 실제 언어를 판별(작성자 UI 언어가 아닌 텍스트 기준). 실패/모호 시 클라가 UI 언어로 폴백.
@@ -281,7 +294,8 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
     if (total > 12000) return res.status(413).json({ error: 'too long' });
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
 
-    const payload = items.map((it) => ({ id: String(it.id), text: String(it.text || '') }));
+    // 무성조 베트남어 아이템은 접속사 ma→mà 정규화(단건 라우트와 동일 — 감지 안 되면 원문 그대로)
+    const payload = items.map((it) => ({ id: String(it.id), text: normalizeTonelessVietnamese(String(it.text || '')) }));
     const targetName = langName(targetLang);
     // 용어집·뉘앙스(2026-08-04) — 전 아이템 연결 텍스트로 매칭(지시는 프롬프트 전역이라 아이템별 분리 불필요).
     // 레지스터 기준선은 생략(register:false) — 글·댓글이 섞인 묶음이라 단일 기준선이 무의미.
@@ -378,3 +392,5 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
 });
 
 module.exports = router;
+// 회귀 테스트(scripts/test-vi-toneless.js)용 — 실제 프롬프트·컨텍스트·모델을 그대로 재현
+module.exports._tx = { buildTxPrompt, buildTranslationContext, KDL_TX_MODEL, APP_NATURE_LINE, langName };

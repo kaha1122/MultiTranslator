@@ -112,6 +112,19 @@ function isTonelessVietnamese(text) {
     return score >= 2 && score >= Math.ceil(words / 50);
 }
 
+// ── 결정적 전처리: 접속사 자리의 무성조 "ma" → "mà" ─────────────────────────────
+// 프롬프트 지시만으로는 못 잡는 케이스가 있다(2026-08-29 실측): 태그 작품이 호텔 델루나(귀신 드라마)면
+// [Context]가 "phim ma"(귀신 영화) 읽기를 밀어 3.1-lite도 0/3. 작품 컨텍스트를 빼면 3/3 → 컨텍스트가 원인.
+// "ma" 바로 뒤에 접속사 뒤에만 올 수 있는 말(chỉ·không/ko·lại·còn·cũng·vẫn·sao)이 오면 문법상 mà가
+// 확정이므로 원문을 먼저 고쳐서 넘긴다 → 컨텍스트 유무·모델 불문 4/4. "ma lắm"(진짜 귀신 영화)은 불변.
+// ⚠ \b는 비ASCII(chỉ)에서 무효 — 유니코드 문자 경계(\p{L}\p{M})를 쓴다. u 플래그 필수.
+const MA_CONJ_RE = /(?<![\p{L}\p{M}])ma(?![\p{L}\p{M}])(?=\s+(?:chỉ|chi|ko|k|không|khong|lại|lai|còn|con|cũng|cung|cx|vẫn|van|sao)(?![\p{L}\p{M}]))/giu;
+function normalizeTonelessVietnamese(text) {
+    const t = String(text || '');
+    if (!isTonelessVietnamese(t)) return t;
+    return t.replace(MA_CONJ_RE, (m) => (m[0] === 'M' ? 'Mà' : 'mà'));
+}
+
 // 프롬프트 지시(영문). 검증된 문안 — 수정 시 scripts/test-vi-toneless.js 로 회귀 확인.
 function tonelessVietnameseLines() {
     return [
@@ -203,4 +216,4 @@ function scrubMarkers(translated, targetLang) {
         .replace(/(\S)?[ㅠㅜ]{2,}/g, (m, pre) => (pre ? `${pre} ` : '') + '😭');
 }
 
-module.exports = { nuanceLines, scrubMarkers, isTonelessVietnamese, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };
+module.exports = { nuanceLines, scrubMarkers, isTonelessVietnamese, normalizeTonelessVietnamese, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };
