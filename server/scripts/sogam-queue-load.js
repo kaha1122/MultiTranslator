@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { kcultureDb } = require('../config/firebaseKculture');
+const { collectQuietly } = require('../lib/collectHighlights');
 
 function arg(name, def) { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : def; }
 const file = arg('file', '');
@@ -28,6 +29,7 @@ async function tmdbDetail(media, id) {
     const last = await kcultureDb.collection('sogam_queue').orderBy('order', 'desc').limit(1).get();
     let order = last.empty ? 0 : (last.docs[0].data().order || 0);
     let loaded = 0, skipped = 0;
+    const seenTitles = new Map(); // titleId → {media, season} — 적재 후 하이라이트 수집 대상(중복 제거)
     for (const it of items) {
         if (!it.titleId || !it.lang || !it.body) { console.warn('필드 누락 스킵:', JSON.stringify(it).slice(0, 80)); skipped++; continue; }
         const dup = await kcultureDb.collection('sogam_queue')
@@ -44,8 +46,25 @@ async function tmdbDetail(media, id) {
         };
         console.log(`${dry ? '[dry] ' : ''}적재 #${order}: ${doc.titleName} (${doc.titleId}) ${doc.lang} tone=${doc.tone} img=${doc.backdropPath ? 'O' : 'X'}`);
         if (!dry) await kcultureDb.collection('sogam_queue').add(doc);
+        if (!seenTitles.has(doc.titleId)) seenTitles.set(doc.titleId, { media: doc.media, season: Number(it.season) > 0 ? Number(it.season) : 1 });
         loaded++;
     }
     console.log(`[sogam-queue-load] DONE — 적재 ${loaded} / 스킵 ${skipped}${dry ? ' (dry)' : ''}`);
+
+    // ── 회차 하이라이트 자동 수집 (2026-08-28 사용자 지시) ──────────────────────
+    // 소감을 쓴 작품은 그 자리에서 에피소드 탭 하이라이트까지 채운다.
+    // · **적재가 끝난 뒤** 별도 단계로 돈다 — 수집이 큐 적재를 지연시키거나 막으면 안 된다.
+    // · media !== 'tv' 는 자동 건너뜀(소감은 영화 비중이 크다 — 회차 개념 없음).
+    // · 이미 저장된 회차는 멱등 스킵. 실패해도 무시하고 종료 코드는 성공.
+    // · 20화짜리 신규 작품이면 수 분 걸린다. 끄려면 --no-highlights.
+    // ⚠ 다시즌 작품은 배치 JSON 항목에 season 을 넣을 것(없으면 S1).
+    if (!dry && !process.argv.includes('--no-highlights') && seenTitles.size) {
+        console.log(`\n[highlights] 대상 작품 ${seenTitles.size}건 — 수집 시작`);
+        for (const [titleId, meta] of seenTitles) {
+            const h = await collectQuietly(kcultureDb, { titleId, season: meta.season, media: meta.media, tag: `sogam-${titleId}` });
+            if (h.skipped) console.log(`[highlights] ${titleId} 건너뜀 — ${h.skipped}`);
+            else console.log(`[highlights] ${titleId} — 저장 ${h.saved.length} / 검토 ${h.ambiguous.length} / 없음 ${h.notfound.length}`);
+        }
+    }
     process.exit(0);
 })().catch((e) => { console.error('[sogam-queue-load] FAIL', e); process.exit(1); });

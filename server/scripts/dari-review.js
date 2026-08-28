@@ -7,6 +7,8 @@ const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { ensureDariAccount, createReviewPost, reseedReviewPost } = require('../lib/dari');
+const { kcultureDb } = require('../config/firebaseKculture');
+const { collectQuietly } = require('../lib/collectHighlights');
 
 function arg(name, def) { const i = process.argv.indexOf(`--${name}`); return i >= 0 ? process.argv[i + 1] : def; }
 
@@ -38,6 +40,18 @@ async function main() {
     console.log(`제목      : ${r.title}`);
     if (r.seededLangs) console.log(`번역 시드 : ${r.seededLangs.join(', ')}`);
     console.log('─'.repeat(60));
+
+    // ── 회차 하이라이트 자동 수집 (2026-08-28 사용자 지시) ──────────────────────
+    // 리뷰를 쓴 작품은 그 자리에서 에피소드 탭 하이라이트까지 채운다.
+    // 부가 기능이므로 **실패해도 게시는 성공으로 둔다**(collectQuietly 는 throw 하지 않는다).
+    // 시즌은 초안 JSON 의 season(선택, 기본 1) — ⚠ 다시즌 작품은 반드시 넣을 것.
+    if (!dryRun && !process.argv.includes('--no-highlights')) {
+        const season = Number(draft.season) > 0 ? Number(draft.season) : 1;
+        console.log(`[dari-review] 하이라이트 수집 시작 — ${r.titleId} S${season} (${r.media})`);
+        const h = await collectQuietly(kcultureDb, { titleId: r.titleId, season, media: r.media, tag: `review-${r.titleId}` });
+        if (h.skipped) console.log(`[dari-review] 하이라이트 건너뜀 — ${h.skipped}`);
+        else console.log(`[dari-review] 하이라이트 — 저장 ${h.saved.length} / 검토 ${h.ambiguous.length} / 없음 ${h.notfound.length}`);
+    }
 }
 
 main()
