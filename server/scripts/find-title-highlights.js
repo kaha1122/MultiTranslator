@@ -25,6 +25,31 @@ const TMDB_KEY = process.env.TMDB_API_KEY;
 const DRY = process.argv.includes('--dry');
 const onlyTitle = (() => { const i = process.argv.indexOf('--title'); return i > -1 ? String(process.argv[i + 1]).replace(/\D/g, '') : null; })();
 const argSeason = (() => { const i = process.argv.indexOf('--season'); return i > -1 ? parseInt(process.argv[i + 1], 10) : null; })();
+const NO_SKIP = process.argv.includes('--no-skip');
+
+// ── 수집 제외 작품 (2026-08-28 실측) ─────────────────────────────────────────────
+// 공식 회차 하이라이트를 **공급하지 않는 편성**은 매 실행마다 회차 수만큼 헛검색한다
+// (1회 전수 실행에서 60회차가 "후보 없음"으로 소모됨). 실측 근거를 남기고 건너뛴다.
+// 해제 조건: 아래 사유가 사라졌다고 판단되면 `--no-skip`으로 1회 재확인 후 항목 제거.
+const SKIP_TITLES = {
+  // ① OTT 오리지널 — 공식 채널이 "회차 번호 없는 장면 클립"만 올린다. 같은 영상 1~2개가
+  //    전 회차 후보로 잡혀 귀속이 원리적으로 불가(동궁 실측: E1~E7 후보가 동일 영상 2개).
+  279323: 'Netflix 오리지널 — 회차 미표기 장면 클립만(귀속 불가)',
+  290193: 'Netflix 오리지널 — 회차 미표기 장면 클립만(귀속 불가)',
+  291496: 'Netflix 오리지널 — 회차 미표기 장면 클립만(귀속 불가)',
+  215072: 'Disney+ 오리지널 — 공식 채널은 74~166초 예고·프로모만(회차 요약본 없음)',
+  // ② 해외 OTT 편성 BL — 공식 채널 클립 자체가 없고 해외 재업로드만 잡힌다.
+  322055: 'GagaOOLala/iQIYI 편성 — 공식 채널 클립 없음(해외 재업로드만)',
+  329635: 'iQIYI 편성 — 공식 채널 클립 없음(해외 재업로드만)',
+  // ③ 공식 채널은 있으나 그 채널이 allowlist 제외 확정 → 공급원이 없다.
+  //    (JTBC 'DRAMA Voyage'는 회차 묶음이라 lib/highlightGate.js 주석에서 제외 확정)
+  300727: 'JTBC — 유일 공급 채널 DRAMA Voyage가 묶음 편성이라 allowlist 제외 확정',
+  // ④ 포맷 미지원(구조적 불가가 아님 — 파이프라인 보강 시 해제 대상).
+  //    KBS Drama는 회차 요약본이 아니라 3~4분(200~230초) 장면 클립을 "KBS 260809 방송"
+  //    형식으로 올린다 → 길이 하한(240초) 미달 + 제목에 회차 없음(방송일로만 귀속 가능).
+  300954: 'KBS Drama 포맷(3~4분 장면 클립·방송일 표기) — 현 길이·귀속 규칙 미지원',
+  276470: 'KBS Drama 포맷(3~4분 장면 클립·방송일 표기) — 현 길이·귀속 규칙 미지원',
+};
 
 const SEARCH_N = 6;              // 검색당 후보 수(전량 메타 추출이라 크게 잡으면 느려짐)
 const DUR_MIN = 240, DUR_MAX = 1800; // 회차 요약본 길이대(4~30분) — 장면 클립·풀버전 배제
@@ -106,6 +131,13 @@ async function tmdb(pathname) {
     const season = Number.isInteger(argSeason) && argSeason > 0 ? argSeason : 1;
     console.log(`⚠ ${onlyTitle}: Dari 스레드 미개설 작품 — --title 명시라 진행(S${season})`);
     targets.set(`${onlyTitle}|${season}`, true);
+  }
+  // 제외 목록 적용 — --title 명시(운영자 지정)나 --no-skip 이면 건너뛰지 않는다.
+  if (!onlyTitle && !NO_SKIP) {
+    for (const key of [...targets.keys()]) {
+      const id = Number(key.split('|')[0]);
+      if (SKIP_TITLES[id]) { targets.delete(key); console.log(`⏭ ${id} 제외 — ${SKIP_TITLES[id]}`); }
+    }
   }
   console.log(`대상: 작품·시즌 ${targets.size}건${onlyTitle ? ` (--title ${onlyTitle})` : ' (Dari 스레드 개설분)'} · ${DRY ? 'dry-run' : '자동 저장 모드'}`);
 
