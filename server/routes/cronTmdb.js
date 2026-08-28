@@ -50,7 +50,13 @@ router.post('/api/cron/tmdb-pretranslate', requireCronAuth, async (req, res) => 
         });
         // 신작 성인물 자동 숨김분 즉시 반영(적중 0이면 no-op)
         const hidden = await syncHiddenIndex([incremental.adultHidden, retry.adultHidden]);
-        const out = { ok: true, incremental, retry, titles, hidden };
+        // ⑤ 관련작(related) 증분 — cron-daily.js ⑤와 동일(이중 관리 지점: 한쪽만 고치지 말 것)
+        let related = null;
+        try {
+            const { runRelatedBackfill } = require('../scripts/backfill-related');
+            related = await runRelatedBackfill({ limit: 500 });
+        } catch (e) { related = { error: e.message }; }
+        const out = { ok: true, incremental, retry, titles, hidden, related };
         console.log('[cron/tmdb-pretranslate]', JSON.stringify(out));
         res.json(out);
     } catch (e) {

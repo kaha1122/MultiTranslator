@@ -59,6 +59,17 @@ const retryLimit = parseInt(arg('retryLimit', '100'), 10);
         }
     }
 
+    // ⑤ 관련작(related) 증분 — relatedAt 없는 신작만 TMDB recommendations 수집(멱등, 통상 수십 건).
+    //    KCulture middleware의 작품→작품 크롤 링크가 이 필드를 읽는다(2026-08 색인 붕괴 대응).
+    //    실패해도 cron 전체를 실패시키지 않는다 — 다음 실행이 자동 재시도.
+    try {
+        const { runRelatedBackfill } = require('./backfill-related');
+        const rel = await runRelatedBackfill({ limit: 500 });
+        console.log('[cron-daily] related', JSON.stringify(rel));
+    } catch (e) {
+        console.warn(`[cron-daily] related 백필 실패(다음 실행 재시도): ${e.message}`);
+    }
+
     console.log(`[cron-daily] DONE in ${Math.round((Date.now() - t0) / 1000)}s`);
     process.exit(0);
 })().catch((e) => { console.error('[cron-daily] FAIL', e); process.exit(1); });
