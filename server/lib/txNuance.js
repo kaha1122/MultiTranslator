@@ -81,6 +81,41 @@ const KIN_RE = /오빠|언니|누나|막내|애교|대박|형(?=이|아|님|은|
 // 풀어버리는 회귀 방어(2026-08-16). 실측: makjang → soap → 역번역 "드라마"로 폄하 뉘앙스 증발.
 const ROMANIZED_RE = /\b(makjang|sageuk|chemi|goguma|daebak|aegyo|oppa|unnie|nuna|hyung|maknae|jjinjja)\b/i;
 
+// ── 베트남어 무성조(không dấu) 감지 — 2026-08-29 ──────────────────────────────
+// 사고: 베트남 광고 댓글 "sao cái này ko phải phim ma chỉ có ghi hữ vay"(= 영화가 아니라 글만 있네요)를
+// "공포 영화가 아니라…"로 오역. 성조 없는 ma(귀신)/mà(그런데)/má(엄마)가 표기상 같고, 원문에 성조가
+// *부분적으로* 있어 무성조 ma가 의도적으로 보인 것이 원인. 실측(4문장×3~4회): 지시만으로는 6/12→9/12,
+// 원 댓글은 2.5-flash-lite로는 어떤 프롬프트로도 0/4 → 3.1-flash-lite + 이 지시 + restored 필드로 4/4.
+// (모델 지정은 routes/community.js KDL_TX_MODEL.) 앞뒤 댓글 맥락 주입은 효과 0이라 채택 안 함.
+//
+// 감지는 정규식(read 0). "성조 부호가 없다"만으로는 못 잡으므로(부분 성조가 오히려 위험) 베트남 고유
+// SMS 축약 + "정서법상 부호가 있어야 하는데 없는 단어"를 센다. 인니어(gak/yg/dgn)·영어와 겹치지 않는
+// 토큰만 골라 오발동을 막는다. 2점 이상이면 발동.
+const NON_LATIN_RE = /[\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\p{Script=Arabic}\p{Script=Cyrillic}\p{Script=Thai}]/u;
+// 베트남 채팅 축약(뜻은 프롬프트 사전과 동기): ko/k/hok/hong=không, dc/đc=được, ntn=như thế nào, cx=cũng, nhiu=nhiều
+const VI_SHORTHAND_RE = /\b(?:ko|hok|hong|dc|đc|ntn|cx|nhiu|nhìu|bik|zậy|zay|hem)\b/gi;
+// 부호가 빠진 베트남 단어·구(정서법: không·phải·cái này·vậy·lắm·quá·rồi·nữa·được·mình·tôi·thế nào·tại sao·trời ơi)
+const VI_TONELESS_RE = /\b(?:khong|phai|cai nay|cai do|vay|lam|qua|roi|nua|duoc|minh|toi|the nao|tai sao|troi oi|ko co|ko phai|hay qua|dep qua|chi co)\b/gi;
+
+function isTonelessVietnamese(text) {
+    const t = String(text || '');
+    if (!t || NON_LATIN_RE.test(t)) return false;
+    const score = (t.match(VI_SHORTHAND_RE) || []).length + (t.match(VI_TONELESS_RE) || []).length;
+    return score >= 2;
+}
+
+// 프롬프트 지시(영문). 검증된 문안 — 수정 시 scripts/test-vi-toneless.js 로 회귀 확인.
+function tonelessVietnameseLines() {
+    return [
+        '',
+        '[Vietnamese typed without (full) tone marks]',
+        '- This Vietnamese text is typed casually: some or all words are MISSING their diacritics/tone marks, typos are common, and texting shorthand is used (ko/k/hok = không, dc/đc = được, vay = vậy, ms = mới, j = gì, r = rồi, ng = người, ntn = như thế nào, cx = cũng). A word without tone marks next to words that have them is still just a fast-typed word — never treat it as deliberately toneless.',
+        '- FIRST silently restore the full diacritics of the whole sentence, choosing the reading under which the WHOLE sentence is grammatical and coherent, THEN translate the restored sentence. Restoration means ADDING marks to existing words only — never insert extra words to make a reading work.',
+        '- Classic ambiguity "ma": "mà" (but / conjunction) vs "ma" (ghost) vs "má" (mom). If the sentence has "không phải/ko phải … ma … chỉ (có) …", that "ma" IS the conjunction "mà" ("not X, but only Y") — do not read it as "ghost" and do not add a second "mà". "phim ma" = ghost/horror film ONLY when the sentence still works without a conjunction there.',
+        '- Do not introduce a meaning ("horror", "ghost", "mom") that exists under only one tone reading unless the rest of the sentence requires it.',
+    ];
+}
+
 // ── 조립 ────────────────────────────────────────────────────────────────────
 // @param opts.register false면 scope 기준선 생략(batch — 이질적 아이템 묶음이라 단일 기준선이 무의미)
 // @returns string[] 프롬프트 라인. register=true면 최소 scope 기준선 1줄, false면 신호 없을 때 [].
@@ -136,7 +171,10 @@ function nuanceLines(text, targetLang, targetName, scope, { register = true } = 
         lines.push(`- Fan-address/fandom terms (오빠, 언니, 누나, 형, 막내, 애교, 대박): when used as affectionate fan speech rather than literal family relations, keep the romanized forms established among global K-fans — oppa, unnie, nuna, hyung, maknae, aegyo, daebak (in Japanese/Chinese/Arabic use the established fan transliterations like オッパ / 欧巴 / أوبا). Do NOT translate them into kinship words.`);
     }
 
-    return lines.length > 2 ? lines : (register ? lines : []); // 헤더뿐이면(신호 0 + 기준선 생략) 통째 생략
+    // ⑤ 베트남어 무성조 — 자체 헤더 블록(위 [Tone & style]과 별개 섹션). ko 타깃 포함 모든 타깃에 적용.
+    const viToneless = isTonelessVietnamese(t);
+    const out = lines.length > 2 ? lines : (register ? lines : []); // 헤더뿐이면(신호 0 + 기준선 생략) 통째 생략
+    return viToneless ? [...out, ...tonelessVietnameseLines()] : out;
 }
 
 // ── 번역 결과 후처리 — 한글 자모 마커 잔존 스크럽(결정적 가드, 2026-08-04) ─────
@@ -157,4 +195,4 @@ function scrubMarkers(translated, targetLang) {
         .replace(/(\S)?[ㅠㅜ]{2,}/g, (m, pre) => (pre ? `${pre} ` : '') + '😭');
 }
 
-module.exports = { nuanceLines, scrubMarkers, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };
+module.exports = { nuanceLines, scrubMarkers, isTonelessVietnamese, LAUGH_RE, TEARS_RE, SLANG_RE, POLITE_RE };

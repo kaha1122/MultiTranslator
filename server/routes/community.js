@@ -11,10 +11,17 @@ const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/l
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
 const txGlossary = require('../lib/txGlossary'); // 최근작 제목·배우 확정 표기(매칭 게이트 주입, 2026-08-04)
-const { nuanceLines, scrubMarkers } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04)
+const { nuanceLines, scrubMarkers, isTonelessVietnamese } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04) + 베트남어 무성조(2026-08-29)
 
 const router = express.Router();
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// KDL UGC 번역 전용 모델(2026-08-29). 베트남어 무성조 댓글("… ko phải phim ma chỉ có ghi chữ …")을
+// 2.5-flash-lite는 어떤 프롬프트로도 0/4 오독(phim ma=공포 영화) → 3.1-flash-lite + 무성조 지시로 4/4.
+// 이 라우트 2곳(translate·translate-batch)만 지정 — PronunFit·백필·Dari 등은 전역 PRIMARY_MODEL 그대로.
+// 단가 2.5x/3.75x이나 KDL UGC 번역은 월 ~100건이라 센트 단위. Render env KDL_TX_MODEL_ID로 즉시 되돌림.
+const KDL_TX_MODEL = process.env.KDL_TX_MODEL_ID || 'gemini-3.1-flash-lite';
+// 앱 성격 1줄(정적, read 0) — "영상이 아니라 글만 있다"류 불만 댓글의 해석 근거(2026-08-29 실측 소폭 효과).
+const APP_NATURE_LINE = `- About the app: a K-content information & community app (metadata, ratings, reviews, comments). It does NOT stream or host video — users sometimes complain that they expected to watch a show but found only text/info.`;
 
 // ISO 코드 → 정식 언어명(Gemini가 코드보다 명칭에 훨씬 정확). 지역코드는 베이스로 폴백.
 const langName = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
@@ -156,10 +163,14 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     const glossaryLines = await txGlossary.buildGlossaryLines(hits, targetLang, targetName).catch(() => []);
     // 뉘앙스(문체·웃음/울음 마커·팬덤 관용어) — 정적 감지, read 0
     const styleLines = nuanceLines(text, targetLang, targetName, scope);
+    // 베트남어 무성조 감지 시 응답에 "restored"(성조 복원문) 필드를 먼저 쓰게 한다 — 복원을 강제하는 것이
+    // 효과의 핵심(지시만 6/12 → restored 동반 9/12). 파서는 translated만 읽으므로 추가 필드는 무해.
+    const viToneless = isTonelessVietnamese(text);
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         ``,
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
+        APP_NATURE_LINE,
         ...ctx.lines,
         ...glossaryLines,
         ...styleLines,
@@ -180,7 +191,9 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
         ...(lenRule ? [lenRule] : []),
         ``,
         `Respond with ONLY one JSON object, no markdown:`,
-        `  {"translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`,
+        viToneless
+            ? `  {"restored": "<the source text with full diacritics restored and shorthand expanded, in the SOURCE language>", "translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`
+            : `  {"translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`,
         ``,
         `TEXT:`,
         text,
@@ -188,6 +201,7 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
 
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate',
+        model: KDL_TX_MODEL, // KDL UGC 전용(상단 주석) — 폴백은 geminiCall이 교차 처리
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높아 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });
@@ -212,7 +226,7 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     if (cacheDoc) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
     // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
-    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}` || '-';
+    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}` || '-'; // V=베트남어 무성조 지시+restored
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     res.json({ translated });
 });
@@ -279,6 +293,7 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
     const prompt = [
         `You are a professional translator for a multilingual community app.`,
         `Translate each item's text into ${targetName} (ISO code "${targetLang}").`,
+        APP_NATURE_LINE,
         ...batchGlossary,
         ...batchStyle,
         ``,
@@ -298,8 +313,10 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         JSON.stringify(payload),
     ].join('\n');
 
+    // 무성조 베트남어 지시는 nuanceLines가 배치에도 붙인다(restored 필드는 id 맵 형식이라 배치에선 생략).
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate-batch',
+        model: KDL_TX_MODEL, // KDL UGC 전용
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높음). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });

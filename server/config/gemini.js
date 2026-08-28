@@ -5,9 +5,13 @@
  *   PRIMARY_MODEL 1~3회 retry 후 fail 시 FALLBACK_MODEL 1회 escalate.
  *
  * 2026-06-29 — FALLBACK_MODEL 기본값을 'gemini-2.5-flash'(비용 ~5x) → 'gemini-3.1-flash-lite' 로 변경.
- *   3.1-flash-lite 는 2.5-flash-lite 와 동급 가격대의 신형 lite 모델로, 2.5-flash-lite outage 시
- *   비용 부담 없이 escalate 가능. 평소 ~1x, outage 시에도 ~1x 유지(기존 5x 대비 대폭 절감).
  *   Render env GEMINI_FALLBACK_MODEL_ID 로 언제든 오버라이드(예: 비상 시 'gemini-2.5-flash').
+ *   ⚠ 가격 정정(2026-08-29 실측 단가): 3.1-flash-lite 는 2.5-flash-lite "동급"이 아니다.
+ *     2.5-flash-lite $0.10/$0.40 (입력/출력 per 1M) · 3.1-flash-lite $0.25/$1.50 (2.5x/3.75x)
+ *     · 2.5-flash $0.30/$2.50. 즉 3.1-lite 는 2.5-flash 에 가까운 가격대 — 폴백(outage 한정)으로는
+ *     여전히 타당하지만, 전역 PRIMARY 를 3.1로 올리면 청구액이 ~3배가 된다.
+ *   → 품질이 필요한 호출만 utils/geminiCall.js 의 opts.model 로 개별 지정(예: KDL UGC 번역
+ *     routes/community.js KDL_TX_MODEL — 베트남어 무성조 오독 대응). PronunFit 라우트는 전역 유지.
  *
  * 2026-05-22 — 운영자 토글 GEMINI_MODE (Render env 로 즉시 변경 가능):
  *   'auto'  (기본) : Flash-Lite(2.5) 3회 + FALLBACK escalate   ← 평소 운영
