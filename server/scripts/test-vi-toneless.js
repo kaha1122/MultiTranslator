@@ -43,6 +43,9 @@ const DETECT = [
     ['이 드라마 진짜 ㅋㅋ', false, '한국어'],
     ['Làm thế nào để mở phim xem', false, '성조 완비 베트남어(지시 불필요)'],
     ['sao cái này ko phải phim ma chỉ có ghi hữ vay', true, '사고 원문'],
+    ['Ko Yoon-jung and Hong Hae-in were great, Ko really shines', false, '한국 성씨 Ko/Hong(2026-08-29 퍼지 오발동)'],
+    ['Linh hồn một đầu bếp nam nhập vào thân xác một vương phi triều Joseon, qua đó Hong trở thành', false, '정식 베트남어 + qua(정상 단어)'],
+    ['ko biet dien vien nay la ai, ma dep qua', true, '문두 소문자 ko + dep qua'],
 ];
 
 const LANG = { ko: 'Korean', en: 'English', vi: 'Vietnamese', id: 'Indonesian' };

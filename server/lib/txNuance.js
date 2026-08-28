@@ -92,16 +92,24 @@ const ROMANIZED_RE = /\b(makjang|sageuk|chemi|goguma|daebak|aegyo|oppa|unnie|nun
 // SMS 축약 + "정서법상 부호가 있어야 하는데 없는 단어"를 센다. 인니어(gak/yg/dgn)·영어와 겹치지 않는
 // 토큰만 골라 오발동을 막는다. 2점 이상이면 발동.
 const NON_LATIN_RE = /[\p{Script=Hangul}\p{Script=Hiragana}\p{Script=Katakana}\p{Script=Han}\p{Script=Arabic}\p{Script=Cyrillic}\p{Script=Thai}]/u;
-// 베트남 채팅 축약(뜻은 프롬프트 사전과 동기): ko/k/hok/hong=không, dc/đc=được, ntn=như thế nào, cx=cũng, nhiu=nhiều
-const VI_SHORTHAND_RE = /\b(?:ko|hok|hong|dc|đc|ntn|cx|nhiu|nhìu|bik|zậy|zay|hem)\b/gi;
+// 베트남 채팅 축약(뜻은 프롬프트 사전과 동기): ko=không, dc/đc=được, ntn=như thế nào, cx=cũng, nhiu=nhiều
+// ⚠ 소문자만(대소문자 구분) — "Ko Yoon-jung"·"Hong Hae-in"처럼 한국 성씨가 영어·스페인어 글에서 걸린
+//   실측 오발동(2026-08-29 퍼지 dry-run: 영어 Dari 글·스페인어 글이 후보로 잡힘). hong은 아예 제외.
+const VI_SHORTHAND_RE = /\b(?:ko|hok|dc|đc|ntn|cx|nhiu|nhìu|bik|zậy|zay|hem)\b/g;
 // 부호가 빠진 베트남 단어·구(정서법: không·phải·cái này·vậy·lắm·quá·rồi·nữa·được·mình·tôi·thế nào·tại sao·trời ơi)
 const VI_TONELESS_RE = /\b(?:khong|phai|cai nay|cai do|vay|lam|qua|roi|nua|duoc|minh|toi|the nao|tai sao|troi oi|ko co|ko phai|hay qua|dep qua|chi co)\b/gi;
+// "강한" 신호 — 부호 없이 쓰면 베트남어가 아니고서는 나올 수 없는 형태(qua·vay·roi·lam·toi는 정식 단어/이름과 겹쳐 약한 신호).
+const VI_STRONG_RE = /\b(?:khong|phai|duoc|cai nay|cai do|ko phai|ko co|the nao|tai sao|troi oi|chi co|hay qua|dep qua|nua)\b|\b(?:ko|dc|đc|ntn|cx)\b/g;
 
 function isTonelessVietnamese(text) {
     const t = String(text || '');
     if (!t || NON_LATIN_RE.test(t)) return false;
+    const strong = (t.match(VI_STRONG_RE) || []).length;
+    if (!strong) return false;
     const score = (t.match(VI_SHORTHAND_RE) || []).length + (t.match(VI_TONELESS_RE) || []).length;
-    return score >= 2;
+    // 밀도 조건: 긴 글일수록 우연 매칭이 누적되므로 단어 50개당 1점 이상을 요구(10단어 댓글은 2점이면 발동)
+    const words = (t.match(/\S+/g) || []).length;
+    return score >= 2 && score >= Math.ceil(words / 50);
 }
 
 // 프롬프트 지시(영문). 검증된 문안 — 수정 시 scripts/test-vi-toneless.js 로 회귀 확인.
