@@ -31,6 +31,20 @@ const NO_SKIP = process.argv.includes('--no-skip');
 // 공식 회차 하이라이트를 **공급하지 않는 편성**은 매 실행마다 회차 수만큼 헛검색한다
 // (1회 전수 실행에서 60회차가 "후보 없음"으로 소모됨). 실측 근거를 남기고 건너뛴다.
 // 해제 조건: 아래 사유가 사라졌다고 판단되면 `--no-skip`으로 1회 재확인 후 항목 제거.
+// 편성 플랫폼 기반 자동 제외 (2026-08-28 파일럿 실측) — ID 하드코딩보다 우선한다.
+// 이 플랫폼들의 공식 채널은 **회차 번호 없는 장면 클립·프로모**만 올려 회차 귀속이 원리적으로
+// 불가하다. 신작이 들어와도 자동으로 걸러지도록 TMDB networks 로 판정한다.
+//   실측: 폭싹 속았수다(Netflix 최대 흥행작) 16회 전부 187~274초 씬 클립·회차 표기 없음.
+//         동궁(Netflix) 동일 영상 2개가 E1~E7 전 회차 후보. 킬러들의 쇼핑몰2(Disney+) 74~166초 프로모만.
+//   ⚠ 쿠팡플레이는 넣지 않는다 — 회차 하이라이트를 실제로 올린다(지금 불륜 6회 저장 실적).
+const SKIP_NETWORKS = [
+  'Netflix', 'Disney+', 'Disney Plus', 'iQIYI', 'iQIYI International',
+  'GagaOOLala', 'Apple TV+', 'Prime Video', 'Amazon Prime Video',
+];
+const normNet = (s) => String(s || '').toLowerCase().replace(/[\s+.-]+/g, '');
+const SKIP_NET_SET = new Set(SKIP_NETWORKS.map(normNet));
+const blockedNetwork = (networks) => (networks || []).map((n) => n.name).find((n) => SKIP_NET_SET.has(normNet(n)));
+
 const SKIP_TITLES = {
   // ① OTT 오리지널 — 공식 채널이 "회차 번호 없는 장면 클립"만 올린다. 같은 영상 1~2개가
   //    전 회차 후보로 잡혀 귀속이 원리적으로 불가(동궁 실측: E1~E7 후보가 동일 영상 2개).
@@ -99,13 +113,24 @@ function fetchDescription(videoId) {
 const normText = (s) => String(s || '').toLowerCase().replace(/[^0-9a-z가-힣]+/g, '');
 
 // 회차 귀속 — "N화"/"N회"/"EP N" 단일 표기(다른 숫자 회차 표기 동반 시 실패)
+// 텍스트가 "명시적으로 주장하는" 회차 번호들 — "N화/N회"와 "EPnn" 두 표기를 모두 본다.
+// ⚠ EP 표기를 빼면 안 된다(2026-08-28 실사고): 풀하우스 `[EP16-02]` 영상의 **설명문에
+//   `[EP15-02]`가 섞여 있어** 설명문 기반 귀속이 E15로 뒤집혔다 — 시청자에게 다음 회차
+//   스포일러를 노출하는 오귀속이다.
+function claimedEps(text) {
+  const out = new Set();
+  for (const m of String(text || '').matchAll(/(\d{1,3})\s*(?:화|회)/g)) out.add(Number(m[1]));
+  for (const m of String(text || '').matchAll(/EP\.?\s*(\d{1,3})/gi)) out.add(Number(m[1]));
+  return [...out].filter((n) => n > 0 && n <= 200);
+}
+
 function epMatch(text, ep) {
   if (!text) return false;
   if (BUNDLE_RE.test(text)) return false;
   const re = new RegExp(`(?:^|[^0-9])${ep}\\s*(?:화|회)(?![0-9])|EP\\.?\\s*0?${ep}(?![0-9])`, 'i');
   if (!re.test(text)) return false;
   // 다른 회차 번호가 함께 표기되면(하이라이트 모음 등) 귀속 불가
-  const others = [...text.matchAll(/(\d{1,3})\s*(?:화|회)/g)].map((m) => Number(m[1])).filter((n) => n !== ep && n <= 200);
+  const others = claimedEps(text).filter((n) => n !== ep);
   return others.length === 0;
 }
 
@@ -153,6 +178,13 @@ async function tmdb(pathname) {
     try {
       const detail = await tmdb(`/tv/${id}?language=ko-KR`);
       koName = detail.name || detail.original_name;
+      // 플랫폼 제외 — 회차 검색(작품당 수십 회)에 들어가기 전에 끊어 낭비를 없앤다.
+      const bad = NO_SKIP ? null : blockedNetwork(detail.networks);
+      if (bad) {
+        // --title 은 운영자 지정이라 경고만 하고 진행(강제 확인용). 일괄 실행은 건너뛴다.
+        if (!onlyTitle) { console.log(`⏭ ${koName} (${id}) 제외 — ${bad} 오리지널(회차 미표기 클립만 공급)`); continue; }
+        console.log(`⚠ ${koName} (${id}) — ${bad} 오리지널이라 수확 기대 낮음(--title 명시라 진행)`);
+      }
       const s = await tmdb(`/tv/${id}/season/${season}?language=ko-KR`);
       airedEps = (s.episodes || []).filter((e) => e.air_date && e.air_date <= today)
         .map((e) => ({ ep: e.episode_number, air: e.air_date }));
@@ -169,32 +201,47 @@ async function tmdb(pathname) {
     if (!missing.length) continue;
 
     for (const { ep, air } of missing) {
-      // ④ 검색(1차: 하이라이트, 공식 후보 없으면 2차: N회)
-      let cands = [];
-      try {
-        cands = searchVideos(`${koName} ${ep}화 하이라이트`);
-        if (!cands.some((v) => isOfficialChannel(v.channel))) {
-          cands = cands.concat(searchVideos(`${koName} ${ep}회`));
-        }
-      } catch (e) { console.warn(`  E${ep}: 검색 실패 — ${e.message}`); continue; }
-
-      // ⑤ 기본 필터(길이·제외어·업로드일) — 채널 무관 공통
+      // ④~⑥ 검색 → 필터 → 귀속. 질의를 단계적으로 늘리되 **귀속이 성립하면 즉시 멈춘다**
+      //   (자동화율 ↑ / 검색 낭비 ↓). 3차 "N화 몰아보기"는 tvN 구작의 회차 요약 명칭이다
+      //   (2026-08-28 파일럿: "[#도깨비] 5화 12분 만에 몰아보기" — 1·2차에서 상위 노출이 밀리는 경우가 있다).
+      const QUERIES = [`${koName} ${ep}화 하이라이트`, `${koName} ${ep}회`, `${koName} ${ep}화 몰아보기`];
       const airMin = air ? Number(air.replace(/-/g, '')) - 2 : 0; // YYYYMMDD 근사 비교(월경계 오차는 -2일 여유로 흡수)
-      const viable = cands.filter((v) => v.duration >= DUR_MIN && v.duration <= DUR_MAX
-        && !EXCLUDE_RE.test(v.title) && !BUNDLE_RE.test(v.title)
-        && (!v.upload || !airMin || Number(v.upload) >= airMin));
-
-      // ⑥ 공식 채널 + 작품명 대조 + 회차 귀속(제목 → 설명문) → 자동 저장 후보
       const normShow = normText(koName);
-      const official = viable.filter((v) => isOfficialChannel(v.channel));
-      const attributed = [];
-      for (const v of official) {
-        if (epMatch(v.title, ep) && normText(v.title).includes(normShow)) { attributed.push(v); continue; }
-        // 제목에 회차·작품명 없는 시리즈(습드첵류: 설명문에 "N회", 해시태그에 작품명) — 설명문 보강
-        const desc = fetchDescription(v.id);
-        const full = `${v.title}\n${desc}`;
-        if ((epMatch(v.title, ep) || epMatch(desc, ep)) && normText(full).includes(normShow)) attributed.push(v);
+      const seen = new Set();      // videoId 중복 제거 — 설명문 재조회(fetchDescription) 낭비 방지
+      const descCache = new Map();
+      let cands = [], viable = [], official = [], attributed = [], searchFailed = false;
+
+      for (let qi = 0; qi < QUERIES.length; qi++) {
+        let batch;
+        try { batch = searchVideos(QUERIES[qi]); } catch (e) {
+          if (!qi) { console.warn(`  E${ep}: 검색 실패 — ${e.message}`); searchFailed = true; }
+          break;
+        }
+        for (const v of batch) { if (!seen.has(v.id)) { seen.add(v.id); cands.push(v); } }
+
+        // ⑤ 기본 필터(길이·제외어·업로드일) — 채널 무관 공통
+        viable = cands.filter((v) => v.duration >= DUR_MIN && v.duration <= DUR_MAX
+          && !EXCLUDE_RE.test(v.title) && !BUNDLE_RE.test(v.title)
+          && (!v.upload || !airMin || Number(v.upload) >= airMin));
+
+        // ⑥ 공식 채널 + 작품명 대조 + 회차 귀속(제목 → 설명문) → 자동 저장 후보
+        official = viable.filter((v) => isOfficialChannel(v.channel));
+        attributed = [];
+        for (const v of official) {
+          if (epMatch(v.title, ep) && normText(v.title).includes(normShow)) { attributed.push(v); continue; }
+          // 🚨 제목이 **다른 회차를 명시**하면 설명문으로 뒤집지 않는다(풀하우스 EP16 영상의 설명문에
+          //    EP15가 섞여 E15로 오귀속된 실사고 — 다음 회차 스포일러가 된다).
+          const claimed = claimedEps(v.title);
+          if (claimed.length && !claimed.includes(ep)) continue;
+          // 제목에 회차·작품명 없는 시리즈(습드첵류: 설명문에 "N회", 해시태그에 작품명) — 설명문 보강
+          if (!descCache.has(v.id)) descCache.set(v.id, fetchDescription(v.id));
+          const desc = descCache.get(v.id);
+          const full = `${v.title}\n${desc}`;
+          if ((epMatch(v.title, ep) || epMatch(desc, ep)) && normText(full).includes(normShow)) attributed.push(v);
+        }
+        if (attributed.length) break; // 귀속 성립 — 추가 질의 불필요
       }
+      if (searchFailed) continue;
 
       if (attributed.length) {
         attributed.sort((a, b) => b.duration - a.duration); // 회차 전체 요약(긴 것) 우선

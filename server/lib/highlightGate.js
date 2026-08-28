@@ -25,11 +25,14 @@ const OFFICIAL_CHANNELS = [
   // MBC
   'MBCdrama', 'MBC 드라마 파밍', '드라마 파밍', 'MBCentertainment',
   // KBS
-  'KBS Drama', 'KBS 드라마 클래식 : KBS Drama Classic', 'KBS WORLD TV', 'KBS한국방송',
+  // ⚠ 'KBS Drama Classic' — oEmbed author_name 실측값은 한글 접두어가 **없다**(2026-08-28 파일럿).
+  //    'KBS 드라마 클래식 : KBS Drama Classic'만 있던 탓에 정규화 완전 일치에 걸려 구작 회차 클립이
+  //    전부 비공식으로 떨어졌다(풀하우스 E5~E16 실측). 표기 변형은 둘 다 남긴다.
+  'KBS Drama', 'KBS Drama Classic', 'KBS 드라마 클래식 : KBS Drama Classic', 'KBS WORLD TV', 'KBS한국방송',
   // JTBC
   'JTBC Drama', 'JTBC', 'JTBC Voyage',
   // 기타 채널·플랫폼
-  'ENA', 'ENA DRAMA', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
+  'ENA', 'ENA DRAMA', 'ENA 이엔에이', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
   'MBN', 'MBN 드라마', '쿠팡플레이', 'Coupang Play 쿠팡플레이', '쿠팡플레이 Coupang Play',
   'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'Wavve', '웨이브',
 ];
