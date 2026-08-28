@@ -34,7 +34,12 @@ const OFFICIAL_CHANNELS = [
   // 기타 채널·플랫폼
   'ENA', 'ENA DRAMA', 'ENA 이엔에이', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
   'MBN', 'MBN 드라마', '쿠팡플레이', 'Coupang Play 쿠팡플레이', '쿠팡플레이 Coupang Play',
-  'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'Wavve', '웨이브',
+  // ⚠ 'wavve 웨이브' — oEmbed author_name 실측값은 **영문+한글이 한 덩어리**다(2026-08-28).
+  //    'Wavve'와 '웨이브'를 따로 넣어 두면 정규화 완전 일치에 걸려 전부 비공식으로 떨어진다
+  //    (약한영웅 Class 1 실측: 1~4화 하이라이트가 존재하는데 8회 전량 "공식 채널 후보 없음").
+  //    → 채널을 추가할 땐 반드시 oEmbed author_name 을 그대로 넣을 것. 세 번째 같은 사고다
+  //    (DRAMA Voyage / KBS Drama Classic / wavve 웨이브).
+  'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'wavve 웨이브', 'Wavve', '웨이브',
 ];
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
