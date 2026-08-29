@@ -22,6 +22,85 @@ const DARI_EMAIL = 'dari@kdramaanylang.com';
 const DARI_NAME = 'Dari';
 const DARI_SIGNATURE = '— Dari, your AI curator 🌉';
 
+// ── 꼬리 2줄(서명 + Note) 고정 테이블 — 2026-08-29 전량 검수에서 도입 ────────────────
+// 내용이 매 글 동일한데도 게시마다 12개 언어로 재번역돼 왔고, 그래서 매번 다르게 틀렸다:
+//   · Dari가 음역됨(ko 다리 / ja ダリ / ru Дари / ar داري) — 브랜드명 소실, 34편 중 거의 전편
+//   · Note 줄이 통째로 사라짐(2026-08-26 5개 언어) / 서명만 영어 원문으로 남음
+// 프롬프트 지시를 늘리는 대신 **번역 대상에서 아예 제외**하고 검증된 문구를 결정적으로 주입한다
+// (사용자 원칙 2026-08-29 — 지시가 컨텍스트에 밀리면 결정적 수단을 찾을 것).
+// 문구 출처: QA 완료된 2026-08-26·28·29 게시분에서 언어별 최빈값을 채택.
+const TAIL_BY_LANG = {
+    en: { sig: DARI_SIGNATURE, note: "Note: this is Dari's AI perspective, separate from user ratings." },
+    ko: { sig: '— Dari, 당신의 AI 큐레이터 🌉', note: '참고: 이것은 Dari의 AI 관점이며 사용자 평가와는 별개입니다.' },
+    ja: { sig: '— Dari、あなたのAIキュレーター 🌉', note: '注：これはDariのAIとしての見解であり、ユーザー評価とは別です。' },
+    'zh-CN': { sig: '— Dari, 你的AI策展人 🌉', note: '注：这是Dari的AI视角，与用户评分无关。' },
+    vi: { sig: '— Dari, AI curator của bạn 🌉', note: 'Lưu ý: đây là góc nhìn AI của Dari, tách biệt với đánh giá của người dùng.' },
+    fr: { sig: '— Dari, votre curateur IA 🌉', note: 'Note : ceci est la perspective IA de Dari, distincte des évaluations des utilisateurs.' },
+    de: { sig: '— Dari, deine KI-Kuratorin 🌉', note: 'Hinweis: Dies ist die KI-Perspektive von Dari, getrennt von Benutzerbewertungen.' },
+    es: { sig: '— Dari, tu curadora de IA 🌉', note: 'Nota: esta es la perspectiva de IA de Dari, separada de las calificaciones de los usuarios.' },
+    ru: { sig: '— Dari, ваш ИИ-куратор 🌉', note: 'Примечание: это ИИ-взгляд Dari, отдельный от пользовательских оценок.' },
+    'pt-BR': { sig: '— Dari, sua curadora de IA 🌉', note: 'Nota: esta é a perspectiva de IA de Dari, separada das avaliações dos usuários.' },
+    id: { sig: '— Dari, kurator AI Anda 🌉', note: 'Catatan: ini adalah perspektif AI Dari, terpisah dari peringkat pengguna.' },
+    ar: { sig: '— Dari، منسقة الذكاء الاصطناعي الخاصة بك 🌉', note: 'ملاحظة: هذا هو منظور Dari للذكاء الاصطناعي، منفصل عن تقييمات المستخدمين.' },
+};
+
+// 본문에서 꼬리(서명 줄부터 끝까지)를 잘라낸다. 서명이 없으면 hasSig=false로 원문 그대로.
+// 서명 표기 흔들림(em dash/hyphen, 공백)을 허용하되 "Dari," 직후 형태만 인정한다.
+// ⚠ **마지막** 서명 줄을 기준으로 자른다 — 본문 중간에 같은 패턴이 나오면(인용 등) 앞쪽에서 잘라
+//   뒷 내용을 통째로 날린다. 첫 매치를 쓰던 초판의 결함(2026-08-29 반영 직전 발견).
+// ⚠ 쉼표는 언어별로 다르다 — ASCII `,` / 아랍 `،` / 일본 `、` / 전각 `，`. ASCII만 인정하면 ja 서명을
+//   못 잘라 고정 꼬리가 **덧붙어 중복**된다(2026-08-29 P0 반영 중 5편에서 실제 발생, 문단중복 검출로 포착).
+const SIG_LINE_RE = /^[ \t]*[—–-][ \t]*Dari[,،、，]/;
+function splitTail(body) {
+    const src = String(body || '');
+    const lines = src.split('\n');
+    let idx = -1;
+    for (let i = lines.length - 1; i >= 0; i--) { if (SIG_LINE_RE.test(lines[i])) { idx = i; break; } }
+    if (idx < 0) return { head: src, hasSig: false, hasNote: false };
+    return {
+        head: lines.slice(0, idx).join('\n').replace(/\s+$/, ''),
+        hasSig: true,
+        hasNote: lines.slice(idx + 1).some((l) => /^\s*Note\s*:/i.test(l)),
+    };
+}
+
+// ── Dari 음역 스크럽(결정적) — 헤더 "🌉 Dari's take"가 언어별로 음역되는 것을 되돌린다 ──
+// ⚠ ko의 '다리'는 "기다리는"·"다리를 건너"처럼 정상 어휘와 충돌하므로 **Dari 문맥에서만** 치환한다
+//   (2026-08-29 검수에서 단어 경계 없는 매칭이 대량 오탐을 낸 것을 확인).
+const DARI_TRANSLIT = {
+    ko: [/다리(?=의\s*(?:생각|관점|시선|견해|AI))/g, /(?<=[—–-]\s*)다리(?=[,،])/g],
+    ja: [/ダリ/g],
+    'zh-CN': [/达里|達里/g],
+    ru: [/Дари(?![а-яё])/g],
+    ar: [/داري/g],
+};
+function scrubDariTranslit(text, code) {
+    let out = String(text || '');
+    for (const re of DARI_TRANSLIT[code] || []) out = out.replace(re, 'Dari');
+    return out;
+}
+
+// 꼬리가 여러 겹 쌓인 경우(중복 부착 사고 복구)까지 전부 제거한다 — splitTail은 한 겹만 벗긴다.
+function stripAllTails(text) {
+    let head = String(text || '');
+    for (let i = 0; i < 4; i++) {
+        const s = splitTail(head);
+        if (!s.hasSig) break;
+        head = s.head;
+    }
+    return head;
+}
+
+// 번역 결과에 고정 꼬리를 붙인다 — 모델이 만든 꼬리는 잘라내고 테이블 값으로 교체.
+function applyFixedTail(text, code, hasSig, hasNote) {
+    // ⚠ 순서 중요 — 스크럽을 먼저 한다. 모델이 서명까지 음역하면("— 다리, …") SIG_LINE_RE가 못 잡아
+    //   꼬리가 제거되지 않고 고정 꼬리가 덧붙어 **중복**된다(회귀 테스트 [2] '꼬리 중복 없음').
+    const head = stripAllTails(scrubDariTranslit(text, code));
+    if (!hasSig) return head;
+    const t = TAIL_BY_LANG[code] || TAIL_BY_LANG.en;
+    return `${head}\n\n${t.sig}${hasNote ? `\n${t.note}` : ''}`;
+}
+
 // ISO 코드 → 정식 언어명(Gemini가 코드보다 명칭에 정확). 지역코드는 베이스로 폴백(tmdbBackfill과 동일).
 const nameOf = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
 
@@ -303,7 +382,10 @@ function properNounRules(glossary = null) {
         if (entries.length) {
             rules.push(`- MANDATORY glossary — when these terms appear, use exactly these renderings:`);
             for (const [src, tgt] of entries) {
-                if (typeof tgt === 'string') rules.push(`    "${src}" → Korean: "${tgt}" (other languages: transliterate from the source; never a different person or word)`);
+                // ⚠ 2026-08-29 — 종전 문구 `Korean: "…" (other languages: transliterate)` 는 원문이 이미
+                //   영문인 고유명사에서 무력했고, 모델이 **한국어 값을 ja/zh-CN/fr/vi 본문에 그대로 삽입**했다
+                //   (`"Good Data Corporation": "굿데이터코퍼레이션"` → 4개 언어에 한글 유출). ko 한정을 명시한다.
+                if (typeof tgt === 'string') rules.push(`    "${src}" → in KOREAN ONLY, render it as "${tgt}". In EVERY OTHER language keep "${src}" exactly as written in the source — NEVER insert the Korean form "${tgt}" into a non-Korean translation.`);
                 else if (tgt && typeof tgt === 'object') rules.push(`    "${src}" → ${Object.entries(tgt).map(([l, v]) => `${l}: "${v}"`).join(', ')}`);
             }
         }
@@ -315,16 +397,25 @@ function properNounRules(glossary = null) {
 // showTitles: { en, original, originalLang } — 작품명 음차/의역 방지("에이전트 김 리액티베이티드" 사고).
 //   원어(콘텐츠 원산지) 타깃에는 공식 원어 제목을, 그 외 언어에는 영어 제목 그대로 쓰게 지시.
 // 장문 × 10언어 단일 호출은 응답 잘림으로 파싱 실패(0/10)가 잦아 5언어씩 분할 호출(2026-07-20).
+// 꼬리 2줄은 번역시키지 않는다 — head만 Gemini에 보내고 TAIL_BY_LANG로 결정적으로 재조립(위 주석).
 async function translateBodyMulti(body, codes, showTitles = null, glossary = null) {
+    const { head, hasSig, hasNote } = splitTail(body);
+    const raw = await translateHeadMulti(head, codes, showTitles, glossary);
+    const out = {};
+    for (const [code, text] of Object.entries(raw)) out[code] = applyFixedTail(text, code, hasSig, hasNote);
+    return out;
+}
+
+async function translateHeadMulti(head, codes, showTitles = null, glossary = null) {
     const CHUNK = 5;
     if (codes.length > CHUNK) {
         const out = {};
         for (let i = 0; i < codes.length; i += CHUNK) {
-            Object.assign(out, await translateBodyMulti(body, codes.slice(i, i + CHUNK), showTitles, glossary));
+            Object.assign(out, await translateHeadMulti(head, codes.slice(i, i + CHUNK), showTitles, glossary));
         }
         return out;
     }
-    return translateBodyChunk(body, codes, showTitles, glossary);
+    return translateBodyChunk(head, codes, showTitles, glossary);
 }
 
 // flash-lite 글리치 2종(값 뒤 중복 조각 / 깨진 \u 이스케이프 — 2026-07-22 ar 시드 실측) 대응:
@@ -354,7 +445,9 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
             `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
             ...properNounRules(glossary),
             ...titleRule,
-            `- Keep the signature line "${DARI_SIGNATURE}" as-is except translate "your AI curator" naturally (keep "Dari" and the emoji).`,
+            // 서명·Note 줄은 애초에 SOURCE에서 잘라내고 보낸다(TAIL_BY_LANG 결정적 주입) → 덧붙이지 못하게 막는다.
+            `- "Dari" is a BRAND NAME: NEVER translate or transliterate it (not 다리, ダリ, Дари, داري, 达里) — keep the Latin spelling "Dari" in every language.`,
+            `- Do NOT add a closing signature, sign-off, or disclaimer line — the source ends where it ends.`,
             `- Self-check before answering: if any value is still (even partly) in English, redo it fully in that target language.`,
             ``,
             `Return ONLY one JSON object whose keys are these EXACT codes [${still.map((c) => `"${c}"`).join(', ')}],`,
@@ -422,6 +515,8 @@ async function translateTitleMulti(title, codes, showTitles = null, glossary = n
         if (r.error) { console.warn(`[Dari] 제목 번역 실패(attempt${attempt + 1}): ${r.error}`); continue; }
         Object.assign(out, harvestCodes(r.text, still)); // 정상 파스 → 키별 구제 폴백
     }
+    // 제목에도 Dari 음역 스크럽 적용(브랜드명 규칙을 프롬프트에만 맡기지 않는다 — 2026-08-29).
+    for (const [code, text] of Object.entries(out)) out[code] = scrubDariTranslit(text, code);
     return out;
 }
 
@@ -862,3 +957,5 @@ async function seedMissingLangs({ dryRun = false } = {}) {
 }
 
 module.exports = { ensureDariAccount, createEpisodeThread, createMovieThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };
+// QA·회귀 테스트용 내부 노출(community.js `_tx`와 동일 패턴) — 프로덕션 호출부는 위 공개 API만 쓴다.
+module.exports._qa = { splitTail, stripAllTails, applyFixedTail, scrubDariTranslit, TAIL_BY_LANG, properNounRules };
