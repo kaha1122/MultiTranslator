@@ -17,6 +17,12 @@ const { TARGETS } = require('./tmdbBackfill'); // 번역 대상 언어 로스터
 
 const TMDB_BASE = 'https://api.themoviedb.org/3';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
+// ── Dari 번역 시드 전용 모델(2026-08-29) ─────────────────────────────────────────────
+// 기본은 전역 PRIMARY(2.5-flash-lite)를 그대로 쓴다(미지정 = 종전 동작). Render env
+// DARI_TX_MODEL_ID 로 승격 가능 — KDL UGC 번역이 `KDL_TX_MODEL`로 3.1-flash-lite를 쓰는 것과 같은 발상
+// (베트남어 무성조 사고: 2.5-lite는 어떤 프롬프트로도 0/4, 3.1-lite는 4/4). 전량 검수에서 34편 전부
+// 2.5-lite로 시드된 것이 의미 오역 297건의 공통 배경으로 확인됐다.
+const DARI_TX_MODEL = process.env.DARI_TX_MODEL_ID || null;
 
 const DARI_EMAIL = 'dari@kdramaanylang.com';
 const DARI_NAME = 'Dari';
@@ -398,29 +404,29 @@ function properNounRules(glossary = null) {
 //   원어(콘텐츠 원산지) 타깃에는 공식 원어 제목을, 그 외 언어에는 영어 제목 그대로 쓰게 지시.
 // 장문 × 10언어 단일 호출은 응답 잘림으로 파싱 실패(0/10)가 잦아 5언어씩 분할 호출(2026-07-20).
 // 꼬리 2줄은 번역시키지 않는다 — head만 Gemini에 보내고 TAIL_BY_LANG로 결정적으로 재조립(위 주석).
-async function translateBodyMulti(body, codes, showTitles = null, glossary = null) {
+async function translateBodyMulti(body, codes, showTitles = null, glossary = null, model = null) {
     const { head, hasSig, hasNote } = splitTail(body);
-    const raw = await translateHeadMulti(head, codes, showTitles, glossary);
+    const raw = await translateHeadMulti(head, codes, showTitles, glossary, model);
     const out = {};
     for (const [code, text] of Object.entries(raw)) out[code] = applyFixedTail(text, code, hasSig, hasNote);
     return out;
 }
 
-async function translateHeadMulti(head, codes, showTitles = null, glossary = null) {
+async function translateHeadMulti(head, codes, showTitles = null, glossary = null, model = null) {
     const CHUNK = 5;
     if (codes.length > CHUNK) {
         const out = {};
         for (let i = 0; i < codes.length; i += CHUNK) {
-            Object.assign(out, await translateHeadMulti(head, codes.slice(i, i + CHUNK), showTitles, glossary));
+            Object.assign(out, await translateHeadMulti(head, codes.slice(i, i + CHUNK), showTitles, glossary, model));
         }
         return out;
     }
-    return translateBodyChunk(head, codes, showTitles, glossary);
+    return translateBodyChunk(head, codes, showTitles, glossary, model);
 }
 
 // flash-lite 글리치 2종(값 뒤 중복 조각 / 깨진 \u 이스케이프 — 2026-07-22 ar 시드 실측) 대응:
 // 수확 실패 언어만 최대 3회 재시도(tmdbBackfill과 동일 발상 — 받은 언어는 재호출 안 함).
-async function translateBodyChunk(body, codes, showTitles = null, glossary = null) {
+async function translateBodyChunk(body, codes, showTitles = null, glossary = null, model = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     // ⚠ titleRule은 properNounRules의 일반 인용 규칙("확신 없으면 원문 유지")보다 뒤에 배치하고
     //   명시적 우선권을 준다 — 일반 규칙이 이겨서 ko 제목에 영문 작품명이 남던 회귀(2026-08-02).
@@ -458,6 +464,7 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
         ].join('\n');
         const r = await callGeminiText(prompt, GEMINI_API_KEY, {
             label: 'dari-translate',
+            ...((model || DARI_TX_MODEL) ? { model: model || DARI_TX_MODEL } : {}),
             genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
         });
         if (r.error) { console.warn(`[Dari] 번역 시드 실패(attempt${attempt + 1}): ${r.error}`); continue; }
@@ -479,7 +486,7 @@ function seedTranslations(batch, docPath, body, translated) {
 
 // ── 헤드라인(제목) 전용 다국어 번역 — 본문 프롬프트(시그니처 규칙 등)와 분리해 오염 방지 ──
 // "Dari"는 브랜드명(번역·음차 금지 — "다리의 선택" 사고), 원문에 없는 문구 추가 금지.
-async function translateTitleMulti(title, codes, showTitles = null, glossary = null) {
+async function translateTitleMulti(title, codes, showTitles = null, glossary = null, model = null) {
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const titleRule = showTitles?.en
         ? [`- The show title "${showTitles.en}" is a PROPER NOUN. Do NOT translate or transliterate it: keep it exactly "${showTitles.en}"`,
@@ -510,6 +517,7 @@ async function translateTitleMulti(title, codes, showTitles = null, glossary = n
         ].join('\n');
         const r = await callGeminiText(prompt, GEMINI_API_KEY, {
             label: 'dari-title',
+            ...((model || DARI_TX_MODEL) ? { model: model || DARI_TX_MODEL } : {}),
             genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
         });
         if (r.error) { console.warn(`[Dari] 제목 번역 실패(attempt${attempt + 1}): ${r.error}`); continue; }
@@ -959,3 +967,17 @@ async function seedMissingLangs({ dryRun = false } = {}) {
 module.exports = { ensureDariAccount, createEpisodeThread, createMovieThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };
 // QA·회귀 테스트용 내부 노출(community.js `_tx`와 동일 패턴) — 프로덕션 호출부는 위 공개 API만 쓴다.
 module.exports._qa = { splitTail, stripAllTails, applyFixedTail, scrubDariTranslit, TAIL_BY_LANG, properNounRules };
+// 특정 언어만 재번역하는 운영 스크립트용(scripts/reseed-dari-lang.js) — 게시 경로와 동일 규칙 보장.
+// ⚠ seedMissingLangs 안의 showTitlesOf는 그 함수의 지역 변수라 여기서 참조할 수 없다(모듈 로드 시
+//   ReferenceError로 서버가 죽는다 — 2026-08-29 반영 직전 발견). 모듈 스코프 구현을 따로 둔다.
+async function showTitlesOfStandalone(titleId, media = 'tv') {
+    try {
+        const detail = await tmdb(`/${media}/${titleId}`, { language: 'en-US' });
+        return {
+            en: detail.name || detail.title || '',
+            original: detail.original_name || detail.original_title || null,
+            originalLang: detail.original_language || null,
+        };
+    } catch { return null; }
+}
+module.exports._reseed = { translateBodyMulti, translateTitleMulti, showTitlesOf: showTitlesOfStandalone };
