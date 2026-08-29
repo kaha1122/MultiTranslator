@@ -14,7 +14,7 @@ const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
 const { kcultureDb } = require('../config/firebaseKculture');
 const { SEED_LANGS } = require('../lib/dari');
-const { stripAllTails, scrubDariTranslit, TAIL_BY_LANG } = require('../lib/dari')._qa;
+const { stripAllTails, scrubDariTranslit, scrubHangulGloss, TAIL_BY_LANG } = require('../lib/dari')._qa;
 
 const LANGS = ['en', ...SEED_LANGS];
 const arg = (n, d) => { const i = process.argv.indexOf(`--${n}`); return i >= 0 ? process.argv[i + 1] : d; };
@@ -29,7 +29,7 @@ function tailExpectation(enBody) {
 
 // 한 언어 본문을 정규형으로 — 음역 스크럽 → 꼬리 제거 → 고정 꼬리 재부착
 function normalize(body, lang, expect) {
-    const scrubbed = scrubDariTranslit(String(body || ''), lang);
+    const scrubbed = scrubHangulGloss(scrubDariTranslit(String(body || ''), lang), lang);
     if (!expect.sig) return scrubbed; // base에 서명이 없으면 꼬리를 손대지 않는다
     const head = stripAllTails(scrubbed); // 겹쳐 붙은 꼬리까지 전부 제거(2026-08-29 ja 중복 사고 복구)
     const t = TAIL_BY_LANG[lang] || TAIL_BY_LANG.en;

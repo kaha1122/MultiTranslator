@@ -57,6 +57,8 @@ const TAIL_BY_LANG = {
 // ⚠ 쉼표는 언어별로 다르다 — ASCII `,` / 아랍 `،` / 일본 `、` / 전각 `，`. ASCII만 인정하면 ja 서명을
 //   못 잘라 고정 꼬리가 **덧붙어 중복**된다(2026-08-29 P0 반영 중 5편에서 실제 발생, 문단중복 검출로 포착).
 const SIG_LINE_RE = /^[ \t]*[—–-][ \t]*Dari[,،、，]/;
+// 리뷰 템플릿 섹션 표식 — 번역 완결성 판정에 쓴다(원문에 있으면 번역에도 있어야 한다).
+const SECTION_MARKS = ['📌', '🌉', '✅', '⚠', '🎯', '💬'];
 function splitTail(body) {
     const src = String(body || '');
     const lines = src.split('\n');
@@ -80,6 +82,15 @@ const DARI_TRANSLIT = {
     ru: [/Дари(?![а-яё])/g],
     ar: [/داري/g],
 };
+// 한글 + 로마자/타깃문자 주석 패턴 정리 — 모델이 고유명사를 "의병 (Righteous Army)"처럼
+// 한글과 함께 쓰는 일이 있다. ko 외 독자에게 한글은 읽히지 않고 괄호 안이 이미 같은 뜻을 담고
+// 있으므로 한글쪽을 떼고 주석만 남긴다(주석이 비한글일 때만 — 아니면 손대지 않는다).
+function scrubHangulGloss(text, code) {
+    if (code === 'ko') return String(text || '');
+    return String(text || '').replace(/[가-힣][가-힣\s]*\s*\(([^()]{2,60})\)/g,
+        (m, gloss) => (/[A-Za-zЀ-ӿ؀-ۿ぀-ヿ一-鿿]/.test(gloss) && !/[가-힣]/.test(gloss) ? gloss : m));
+}
+
 function scrubDariTranslit(text, code) {
     let out = String(text || '');
     for (const re of DARI_TRANSLIT[code] || []) out = out.replace(re, 'Dari');
@@ -101,7 +112,7 @@ function stripAllTails(text) {
 function applyFixedTail(text, code, hasSig, hasNote) {
     // ⚠ 순서 중요 — 스크럽을 먼저 한다. 모델이 서명까지 음역하면("— 다리, …") SIG_LINE_RE가 못 잡아
     //   꼬리가 제거되지 않고 고정 꼬리가 덧붙어 **중복**된다(회귀 테스트 [2] '꼬리 중복 없음').
-    const head = stripAllTails(scrubDariTranslit(text, code));
+    const head = stripAllTails(scrubHangulGloss(scrubDariTranslit(text, code), code));
     if (!hasSig) return head;
     const t = TAIL_BY_LANG[code] || TAIL_BY_LANG.en;
     return `${head}\n\n${t.sig}${hasNote ? `\n${t.note}` : ''}`;
@@ -468,7 +479,16 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
             genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
         });
         if (r.error) { console.warn(`[Dari] 번역 시드 실패(attempt${attempt + 1}): ${r.error}`); continue; }
-        Object.assign(out, harvestCodes(r.text, still)); // 정상 파스 → 키별 구제 폴백
+        // ⚠ 완결성 검사 — 응답이 잘려도 harvestCodes는 **부분 문자열을 성공으로 수확**한다. 그대로 두면
+        //   재시도가 걸리지 않고 본문 절반이 잘린 번역이 그대로 게시된다(2026-08-29 벌크 재시드에서
+        //   vi 13편·ko 1편이 이렇게 잘렸다 — 비율 0.19~0.80). 원문에 있던 섹션 표식이 번역에 전부
+        //   있어야 수확으로 인정한다(언어 무관·결정적).
+        const harvested = harvestCodes(r.text, still);
+        for (const [code, text] of Object.entries(harvested)) {
+            const lack = SECTION_MARKS.filter((m) => body.includes(m) && !String(text).includes(m));
+            if (lack.length) { console.warn(`[Dari] ${code} 응답 잘림(섹션 ${lack.join('')} 없음) — 재시도`); continue; }
+            out[code] = text;
+        }
     }
     const miss = codes.filter((c) => !out[c]);
     if (miss.length) console.warn(`[Dari] 번역 미수확 [${miss.join(',')}] — 재실행 시 재시도됨`);
@@ -966,7 +986,7 @@ async function seedMissingLangs({ dryRun = false } = {}) {
 
 module.exports = { ensureDariAccount, createEpisodeThread, createMovieThread, createReviewPost, reseedReviewPost, seedMissingLangs, SEED_LANGS };
 // QA·회귀 테스트용 내부 노출(community.js `_tx`와 동일 패턴) — 프로덕션 호출부는 위 공개 API만 쓴다.
-module.exports._qa = { splitTail, stripAllTails, applyFixedTail, scrubDariTranslit, TAIL_BY_LANG, properNounRules };
+module.exports._qa = { splitTail, stripAllTails, applyFixedTail, scrubDariTranslit, scrubHangulGloss, TAIL_BY_LANG, properNounRules };
 // 특정 언어만 재번역하는 운영 스크립트용(scripts/reseed-dari-lang.js) — 게시 경로와 동일 규칙 보장.
 // ⚠ seedMissingLangs 안의 showTitlesOf는 그 함수의 지역 변수라 여기서 참조할 수 없다(모듈 로드 시
 //   ReferenceError로 서버가 죽는다 — 2026-08-29 반영 직전 발견). 모듈 스코프 구현을 따로 둔다.

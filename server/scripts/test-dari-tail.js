@@ -2,7 +2,7 @@
 // Gemini 미호출(순수 함수만). 실행: cd server && node scripts/test-dari-tail.js
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });
-const { splitTail, applyFixedTail, scrubDariTranslit, TAIL_BY_LANG, properNounRules } = require('../lib/dari')._qa;
+const { splitTail, applyFixedTail, scrubDariTranslit, scrubHangulGloss, TAIL_BY_LANG, properNounRules } = require('../lib/dari')._qa;
 
 let pass = 0, fail = 0;
 const t = (name, cond, extra = '') => { if (cond) { pass++; console.log(`  ok   ${name}`); } else { fail++; console.log(`  FAIL ${name}${extra ? ` — ${extra}` : ''}`); } };
@@ -84,6 +84,19 @@ console.log('\n[3] scrubDariTranslit — 음역 복원(오탐 없이)');
     t('ar داري → Dari', scrubDariTranslit('رأي داري', 'ar') === 'رأي Dari');
     t('zh-CN 达里 → Dari', scrubDariTranslit('达里的看法', 'zh-CN') === 'Dari的看法');
     t('en 무변경', scrubDariTranslit("Dari's take", 'en') === "Dari's take");
+}
+
+console.log('\n[3b] scrubHangulGloss — 한글+주석 정리');
+{
+    // 모델이 고유명사를 한글과 함께 쓰는 경우 — ko 외 독자에게 한글은 읽히지 않는다(2026-08-29 de 사례)
+    t('de 의병 (Righteous Army) → 주석만',
+        scrubHangulGloss('geht es um die 의병 (Righteous Army) – die', 'de') === 'geht es um die Righteous Army – die');
+    t('id 수라간 (royal kitchen) → 주석만',
+        scrubHangulGloss('dapur 수라간 (royal kitchen) raja', 'id') === 'dapur royal kitchen raja');
+    t('ko는 무변경', scrubHangulGloss('의병 (Righteous Army)', 'ko') === '의병 (Righteous Army)');
+    // 괄호 안이 한글이면 손대지 않는다(정보 손실 방지)
+    t('주석도 한글이면 불변', scrubHangulGloss('의병 (의병운동)', 'de') === '의병 (의병운동)');
+    t('한글 없으면 불변', scrubHangulGloss('die Righteous Army (1907)', 'de') === 'die Righteous Army (1907)');
 }
 
 console.log('\n[4] properNounRules — glossary 문자열 값은 ko 한정');
