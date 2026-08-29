@@ -2,7 +2,14 @@
 // 초안은 운영자/Claude가 작성(자동 생성 아님 — DECISIONS.md §8 STEP D 반자동 파이프라인).
 // 사용: cd server && node scripts/dari-review.js --file <초안.json> [--dry]
 //       cd server && node scripts/dari-review.js --reseed <postId>   (기존 글 번역 재시드 — 본문+제목)
-// 초안 JSON: { "tmdbId": 123, "media": "movie"|"tv", "title": "...", "body": "...", "spoilerBody": null }
+// 초안 JSON v2(2026-08-29— 권장): 12개 언어를 Claude가 직접 작성해 넣는다 → **Gemini 미호출**
+//   { "tmdbId": 123, "media": "tv",
+//     "titles": { "en": "...", "ko": "...", ... 12개 },
+//     "bodies": { "en": "...", "ko": "...", ... 12개 },
+//     "glossary": {...}, "spoilerBody": null }
+//   → 누락 언어가 있으면 게시 전에 에러로 멈춘다(부분 게시 방지).
+// 초안 JSON v1(종전 — 회차 스레드·라운지와 동일한 Gemini 시드 경로):
+//   { "tmdbId": 123, "media": "movie"|"tv", "title": "...", "body": "...", "spoilerBody": null }
 const path = require('path');
 const fs = require('fs');
 require('dotenv').config({ path: path.join(__dirname, '..', '.env') });

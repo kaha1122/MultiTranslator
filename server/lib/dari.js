@@ -836,8 +836,20 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
 // 본문은 호출자가 제공(자동 생성 아님 — 운영자/Claude가 초안 작성). 고유 id 자동 → 멱등 불필요.
 // 필드는 클라 createPost(src/lib/community.js)와 동일 + { curator:true, authorRating:null }.
 // glossary(선택): 초안 JSON의 { "원문 표현": "확정 표기" } — 번역 시 강제 대응표(properNounRules 참조).
-async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null, glossary = null, dryRun = false }) {
+// bodies/titles(12개 언어 직접 작성분)가 오면 **Gemini를 전혀 호출하지 않고** 그대로 시드한다(2026-08-29 전환).
+// 없으면 종전대로 body/title 1개를 번역해 시드한다(회차 스레드·라운지는 계속 이 경로).
+async function createReviewPost({ tmdbId, media, title, body, bodies = null, titles = null, spoilerBody = null, glossary = null, dryRun = false }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
+    const direct = !!(bodies && Object.keys(bodies).length);
+    if (direct) {
+        title = titles?.en || title;
+        body = bodies.en || body;
+        const missing = SEED_LANGS.filter((c) => !bodies[c]);
+        if (!bodies.en) throw new Error('bodies.en 필수(base 영문)');
+        if (missing.length) throw new Error(`bodies 누락 언어: ${missing.join(', ')} — 12개 언어를 전부 넣을 것`);
+        const missingT = titles ? SEED_LANGS.filter((c) => !titles[c]) : SEED_LANGS;
+        if (missingT.length) throw new Error(`titles 누락 언어: ${missingT.join(', ')}`);
+    }
     if (!title || !body) throw new Error('title/body 필수');
     if (!['tv', 'movie'].includes(media)) throw new Error("media: 'tv' | 'movie'");
     const id = Number(tmdbId);
@@ -854,8 +866,22 @@ async function createReviewPost({ tmdbId, media, title, body, spoilerBody = null
     const showTitles = {
         en: titleName, original: detail.original_name || detail.original_title || null, originalLang: detail.original_language || null,
     };
-    const translated = await translateBodyMulti(body, SEED_LANGS, showTitles, glossary);
-    const translatedTitles = await translateTitleMulti(title, SEED_LANGS, showTitles, glossary); // 헤드라인 — 자동 자국어 표시용
+    let translated; let translatedTitles;
+    if (direct) {
+        // 직접 작성 경로 — 번역 호출 없음. 꿀리 2줄과 음역 스크럽은 그대로 거친다
+        // (사람이 써도 34편과 표기를 통일해야 하고, 실수로 꿀리를 직접 써넣은 경우까지 흡수한다).
+        const { hasSig, hasNote } = splitTail(body);
+        translated = {};
+        translatedTitles = {};
+        for (const code of SEED_LANGS) {
+            translated[code] = applyFixedTail(bodies[code], code, hasSig, hasNote);
+            translatedTitles[code] = scrubDariTranslit(titles[code], code);
+        }
+        console.log(`[Dari] 직접 작성분 ${SEED_LANGS.length}개 언어 — Gemini 미호출`);
+    } else {
+        translated = await translateBodyMulti(body, SEED_LANGS, showTitles, glossary);
+        translatedTitles = await translateTitleMulti(title, SEED_LANGS, showTitles, glossary); // 헤드라인 — 자동 자국어 표시용
+    }
 
     const now = new Date();
     const postRef = kcultureDb.collection('posts').doc(); // 고유 id 자동
