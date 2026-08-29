@@ -447,6 +447,13 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
                ? [`  EXCEPT in ${nameOf(showTitles.originalLang)}, where you MUST replace it with its official original title "${showTitles.original}" — this show-title rule OVERRIDES every other rule about keeping titles unchanged.`]
                : ['  in every target language.'])]
         : [];
+    // ⚠ 제목 불변 규칙의 예외 — 원문이 **제목의 뜻을 설명**하거나 극중 용어로 쓴 경우까지 영어를
+    //   강제하면 문장이 무의미해진다. 2026-08-29 실측: 「군체」 fr/vi/ja가 `"gunche" means colony`를
+    //   `"Colony" signifie colonie`(Colony는 colony를 뜻한다)로, 「환혼」 5개 언어가 극중 주술명을
+    //   영어 그대로 남겨 독자가 뜻을 알 수 없게 됐다.
+    const titleExceptionRule = showTitles?.en
+        ? [`- EXCEPTION to the show-title rule: when the SOURCE is explaining what the title MEANS (e.g. '"gunche" means colony'), or uses the phrase as an in-story term rather than as the show's name (lower-case, or introduced as a spell/technique/concept), TRANSLATE the meaning into the target language. A sentence that defines a word must not leave that word untranslated — the reader would learn nothing.`]
+        : [];
     const out = {};
     for (let attempt = 0; attempt < 3; attempt++) {
         const still = codes.filter((c) => !out[c]);
@@ -462,6 +469,7 @@ async function translateBodyChunk(body, codes, showTitles = null, glossary = nul
             `- Translate naturally and idiomatically, faithfully preserving meaning, warm tone, questions, emoji and line breaks.`,
             ...properNounRules(glossary),
             ...titleRule,
+            ...titleExceptionRule,
             // 서명·Note 줄은 애초에 SOURCE에서 잘라내고 보낸다(TAIL_BY_LANG 결정적 주입) → 덧붙이지 못하게 막는다.
             `- "Dari" is a BRAND NAME: NEVER translate or transliterate it (not 다리, ダリ, Дари, داري, 达里) — keep the Latin spelling "Dari" in every language.`,
             `- Do NOT add a closing signature, sign-off, or disclaimer line — the source ends where it ends.`,
