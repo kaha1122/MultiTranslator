@@ -23,7 +23,7 @@ const OFFICIAL_CHANNELS = [
   // tvN / CJ ENM
   'tvN DRAMA', 'tvN', 'tvN D ENT', '디글 :Diggle', '디글 클래식 :Diggle Classic', 'TVING', '티빙',
   // MBC
-  'MBCdrama', 'MBC 드라마 파밍', '드라마 파밍', 'MBCentertainment',
+  'MBCdrama', 'MBC 드라마 파밍', '드라마 파밍', '드파밍', 'MBCentertainment',
   // KBS
   // ⚠ 'KBS Drama Classic' — oEmbed author_name 실측값은 한글 접두어가 **없다**(2026-08-28 파일럿).
   //    'KBS 드라마 클래식 : KBS Drama Classic'만 있던 탓에 정규화 완전 일치에 걸려 구작 회차 클립이
