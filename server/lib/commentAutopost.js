@@ -3,7 +3,7 @@
 //       스레드를 살아있는 대화면으로 만든다(소감 자동화의 댓글판).
 // 구조: Claude 세션이 방송후 모드 배치로 댓글을 창작해 comment_queue에 적재
 //       (scripts/comment-queue-load.js) → 이 모듈이 news-refresh 체이닝(2h 주기, KST 홀수시
-//       그리드)으로 호출되어 지정 슬롯(KST 11/19/23/03 = 소감 슬롯 +2h)에 슬롯당 2건 게시.
+//       그리드)으로 호출되어 지정 슬롯(KST 03/09/11/13/15/19/23)에 슬롯당 2건 게시.
 // 계정: 소감 자동화의 언어별 고정 페르소나 6계정 재사용(lib/sogam.js ensureSogamAccount —
 //       ko/en/id/ru/es/ar). 계정 생성·users 문서 규칙은 그쪽 주석 참조.
 // 저장: titles/{id}/discussion 일반 문서 — 앱 createComment(src/lib/discussion.js)와 동일
@@ -13,8 +13,8 @@
 const { kcultureDb } = require('../config/firebaseKculture');
 const { ensureSogamAccount, PERSONAS } = require('./sogam');
 
-const SLOT_HOURS_KST = [3, 11, 13, 15, 19, 23]; // 2026-08-24 사용자 재배치 — 방송후 댓글은 신선도가 생명이라 낮 시간대 확대
-const POSTS_PER_SLOT = 2;               // 하루 6슬롯 × 2건 = 12댓글 (2026-08-24 사용자 지정 시간표)
+const SLOT_HOURS_KST = [3, 9, 11, 13, 15, 19, 23]; // 2026-08-31 사용자 지시로 09시 추가(오전 공백) — 2026-08-24 재배치(낮 시간대 확대)의 연장
+const POSTS_PER_SLOT = 2;               // 하루 7슬롯 × 2건 = 14댓글 (2026-08-31 09시 슬롯 추가로 12→14)
 
 function kstNow() {
     return new Date(Date.now() + 9 * 3600 * 1000); // UTC+9 — getUTC*로 읽는다 (sogam과 동일)
