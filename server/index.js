@@ -55,6 +55,15 @@ app.get('/api/kdl/bw', (req, res) => {
     res.json(bwReport(Math.min(parseInt(req.query.top, 10) || 20, 50)));
 });
 
+// 공식 유튜브 채널 allowlist 조회(public — 채널명 목록뿐, 비밀 없음). SSOT는 lib/highlightGate.js OFFICIAL_CHANNELS.
+// 소비처: KCulture scripts/clip-scout.mjs(에이전트 공용 클립 파이프라인, 2026-08-30) — 리포 두 곳에 목록을
+// 복사하지 않기 위한 라우트. 채널 추가는 highlightGate.js 한 곳에서만(oEmbed author_name 그대로).
+app.get('/api/kdl/official-channels', (req, res) => {
+    const { OFFICIAL_CHANNELS } = require('./lib/highlightGate');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.json({ channels: OFFICIAL_CHANNELS, count: OFFICIAL_CHANNELS.length, source: 'server/lib/highlightGate.js' });
+});
+
 // 세션 시작 로그 — 클라가 앱 실행/로그인 직후(프로필 로드 후) 세션당 1회 호출.
 //   목적: 로그만으로 "이 UID 유저가 접속을 시작했다"(신규/기존)를 추적. DB write 없음(로그 전용)
 //   → users 본문 write로 인한 onSnapshot 재렌더/iOS 발열과 무관(CLAUDE.md 규칙6 안전).
