@@ -40,6 +40,8 @@ const OFFICIAL_CHANNELS = [
   //    → 채널을 추가할 땐 반드시 oEmbed author_name 을 그대로 넣을 것. 세 번째 같은 사고다
   //    (DRAMA Voyage / KBS Drama Classic / wavve 웨이브).
   'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'wavve 웨이브', 'Wavve', '웨이브',
+  // 공개 전 티저(upcoming-research) 실측 author_name — 2026-08-30 첫 실행(재혼 황후 CDhtpYWNEuk / 인턴 dtpyrKDJPRg)
+  'Disney Plus Korea 디즈니 플러스 코리아', 'Warner Bros. Korea',
 ];
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
