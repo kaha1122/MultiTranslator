@@ -42,6 +42,13 @@ const OFFICIAL_CHANNELS = [
   'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'wavve 웨이브', 'Wavve', '웨이브',
   // 공개 전 티저(upcoming-research) 실측 author_name — 2026-08-30 첫 실행(재혼 황후 CDhtpYWNEuk / 인턴 dtpyrKDJPRg)
   'Disney Plus Korea 디즈니 플러스 코리아', 'Warner Bros. Korea',
+  // 제작사 공식 채널 — 방송사 채널이 회차 클립을 올리지 않아 제작사가 직접 올리는 경우(2026-09-01 추가).
+  // '캔버스엔'(Canvas N) = 「그래, 이혼하자」(276470) 제작사. 회차 예고를 이 채널만 올리며
+  // (KBS Drama 채널엔 없다), 제목이 "[N화 예고] … ＜그래, 이혼하자＞ 9월 2일 밤 11시 방송" 형태라
+  // 회차 단일 귀속이 명확하다(§13의 제외 사유인 묶음 편성이 아니다). oEmbed author_name 실측값 그대로.
+  // ⚠ 이 채널이 올리는 것은 30~40초 예고라 하이라이트 길이 게이트(4~30분)에 애초에 걸리지 않는다 —
+  //   find-title-highlights가 예고를 하이라이트로 오인할 위험은 없다.
+  '캔버스엔',
 ];
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
