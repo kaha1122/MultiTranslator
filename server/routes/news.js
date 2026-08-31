@@ -145,6 +145,11 @@ router.post('/api/cron/news-refresh', requireCronAuth, async (req, res) => {
     require('../lib/commentAutopost').runCommentAutopost()
         .then((r) => { if (r && !r.posted && !String(r.skipped || '').startsWith('offslot')) console.log('[cron/news-refresh] comment:', JSON.stringify(r)); })
         .catch((e) => console.warn('[cron/news-refresh] comment autopost fail:', e?.message));
+    // 소감·리뷰 답글 게시 체이닝(2026-09-01) — reply_queue에서 notBefore(적재 시 랜덤 오프셋)가 지난 건만
+    // 회당 최대 2건 게시. 슬롯이 아니라 due 기반이라 offslot 개념 없음. 소감·댓글과 동일 패턴: fire-and-forget.
+    require('../lib/replyAutopost').runReplyAutopost()
+        .then((r) => { if (r && r.posted) console.log('[cron/news-refresh] reply:', JSON.stringify(r)); })
+        .catch((e) => console.warn('[cron/news-refresh] reply autopost fail:', e?.message));
     res.json({ ok: true, counts: out, decodeBlocked: state.blocked });
 });
 
