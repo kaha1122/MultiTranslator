@@ -174,7 +174,22 @@ async function resolveThumb(attUrl, circuit) {
 
 // og:image가 매체 로고/프로필 파일인 소스(예: edaily profile_edaily_512.png)는 기사 사진이
 // 아니므로 미스로 취급 → 구글 썸네일 폴백이 실사진을 채우게 한다.
-const isLogoImage = (u) => /logo|profile|favicon|default[_.-]/i.test(String(u || ''));
+// `-fb.` 추가(2026-09-01): 퍼블리셔가 사진 없는 글에 붙이는 **섹션/커뮤니티 단위 자동 생성
+// OG 카드**(실측: ru T—Ж 커뮤니티 글 dorama-fb.jpg·readers-write-fb.*.jpg — 로고 카드인데
+// 파일명 무해·로드 정상·배치 내 1건이라 빈도 감지(isDupImage)의 해상도 아래로 들어옴).
+// T—Ж의 `-fb`는 Facebook 공유 카드 관례라 실사진 오탐 위험이 낮다.
+const isLogoImage = (u) => /logo|profile|favicon|default[_.-]|-fb\./i.test(String(u || ''));
+
+// ── 가변 차단 CDN — og:image가 멀쩡해도 구글 썸네일을 우선 채택 (2026-09-01) ──────
+// 검증 시점·IP에선 200인데 사용자 기기(모바일망 IP 등)에서 WAF가 조건부 403을 내는 매체.
+// imgV는 검증 환경 ≠ 실사용 환경이라 원리적으로 못 잡는다. 실측(kinoafisha.info):
+//   · 2026-07-24 워커 실측 — 브라우저 UA+무referer 403, curl UA 200 (imgV 도입 계기)
+//   · 2026-09-01 브로드밴드 — 같은 조건 전부 200, 단 Referer: https://localhost(Capacitor
+//     origin)는 403. 같은 시각 SKT 모바일 기기에선 로드 실패 → 파비콘 폴백 강등(실스크린샷).
+//   → 조건이 IP 평판·시점에 따라 바뀌는 WAF. 이 도메인들은 gstatic(핫링크 변수 없음)으로 교체.
+// 폴백을 못 구한 런에서는 원본을 유지하고 다음 런에 재시도한다(로고 유지 원칙과 동일).
+const FLAKY_IMAGE_HOSTS = /(^|\.)kinoafisha\.info$/i;
+const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(u || '')).hostname); } catch { return false; } };
 
 // ── 저장 전 이미지 실기기 검증 (2026-07-24) ─────────────────────────────────────
 // 퍼블리셔 CDN 핫링크 정책은 제각각이라 서버(curl류 UA)에서 200이어도 실제 앱 <img>
@@ -285,9 +300,9 @@ async function imageLoadable(url) {
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
             } else if (it.image && (it.imgV || isGoogleCdn(it.image))
-                && !isLogoImage(it.image) && !isDupImage(it.image, true)
+                && !isLogoImage(it.image) && !isDupImage(it.image, true) && !isFlakyHost(it.image)
                 && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
-                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http://·중복 저장분은 재처리)
+                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http://·중복·로고·가변차단 저장분은 재처리)
             }
             // 여기 도달: 이미지 없음 / 미검증·로고·엔티티·http·중복 저장분 / 방금 디코드된 신규
             const cleanStored = it.image && !isLogoImage(it.image) && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
@@ -302,9 +317,9 @@ async function imageLoadable(url) {
                 console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
                 img = null; // 실기기에서 깨지는 URL — 구글 썸네일 교체 대상
             }
-            if (!img || isLogoImage(img) || isDupImage(img, img === it.image)) {
-                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고/사이트 공용 이미지
-                // → 구글 썸네일 폴백 (그마저 없으면 로고라도 유지 — 없는 것보단 나음)
+            if (!img || isLogoImage(img) || isDupImage(img, img === it.image) || isFlakyHost(img)) {
+                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고/사이트 공용 이미지·
+                // 가변 차단 CDN → 구글 썸네일 폴백 (그마저 없으면 원본이라도 유지 — 없는 것보단 나음)
                 const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
                 const att = gid && (await ensureThumbMap())?.get(gid);
                 if (att) {
