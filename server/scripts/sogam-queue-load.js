@@ -41,6 +41,7 @@ async function tmdbDetail(media, id) {
             tone: it.tone != null ? it.tone : null,
             title: it.title || null, body: it.body,
             titleName: d.name || d.title || null,
+            titleOriginal: d.original_name || d.original_title || null, // 원제(한국 작품이면 한국어) — 푸시 제목·표시용(2026-09-04)
             posterPath: d.poster_path || null, backdropPath: d.backdrop_path || null,
             status: 'pending', order: ++order, createdAt: new Date(),
         };

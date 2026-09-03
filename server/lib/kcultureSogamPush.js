@@ -45,9 +45,25 @@ function pickPost(rows, lang, nowMs, rnd = Math.random) {
     return null;
 }
 
-function buildTitleBody(post, lang) {
+// 작품명 — 수신자 언어 제목(titles/{id}.searchTitle[lang]) → 원제(meta.original_title / post.titleOriginal) → 영문(post.titleName).
+// 한국어 수신자에게는 원제(한국어)가, 다른 언어 수신자에게는 그 언어 공식 제목이 간다(2026-09-04 사용자 결정 — "원제가 좋겠어").
+// titles 문서는 실행당 작품별 1회만 읽어 캐시.
+async function titleFor(post, lang, cache) {
+    const key = `${post.media || 'tv'}/${post.titleId}`;
+    if (!cache.has(key)) {
+        let doc = null;
+        try { const s = await kcultureDb.collection('titles').doc(String(post.titleId)).get(); doc = s.exists ? s.data() : null; } catch { doc = null; }
+        cache.set(key, doc);
+    }
+    const doc = cache.get(key);
+    const byLang = doc?.searchTitle && typeof doc.searchTitle === 'object' ? doc.searchTitle[lang] : null;
+    return byLang || doc?.meta?.original_title || post.titleOriginal || post.titleName || '';
+}
+
+async function buildTitleBody(post, lang, cache) {
     const tpl = (TEXTS[lang] && TEXTS[lang].sogam_new) || TEXTS[FALLBACK].sogam_new;
-    const title = tpl.replaceAll('{name}', post.authorName || 'Dari').replaceAll('{title}', post.titleName || '');
+    const titleName = await titleFor(post, lang, cache);
+    const title = tpl.replaceAll('{name}', post.authorName || 'Dari').replaceAll('{title}', titleName);
     const body = String(post.title || post.body || '').replace(/\s+/g, ' ').trim().slice(0, 100);
     return { title, body };
 }
@@ -61,6 +77,7 @@ async function runSogamPushHourly(now = new Date(), { dryRun = false } = {}) {
     if (!rows.length) return { skipped: 'no-sogam' };
 
     const messages = []; const refs = []; const marks = [];
+    const titleCache = new Map(); // titles/{id} 문서 — 작품별 1회 read
     let candidates = 0, dup = 0, off = 0, optout = 0;
     for (const d of snap.docs) {
         const t = d.data() || {};
@@ -73,7 +90,7 @@ async function runSogamPushHourly(now = new Date(), { dryRun = false } = {}) {
         candidates++;
         const post = pickPost(rows, lang, now.getTime());
         if (!post) continue;
-        const { title, body } = buildTitleBody(post, lang);
+        const { title, body } = await buildTitleBody(post, lang, titleCache);
         messages.push(buildTokenMessage(d, {
             title, body,
             data: { kind: 'sogam_new', url: `/#/community/post/${post.id}`, postId: post.id },
@@ -99,4 +116,4 @@ async function runSogamPushHourly(now = new Date(), { dryRun = false } = {}) {
     return { candidates, sent, total: messages.length, pruned, dup, off, optout };
 }
 
-module.exports = { runSogamPushHourly, SLOT_HOURS, DEFAULT_TZ_BY_LANG, localParts, pickPost };
+module.exports = { runSogamPushHourly, SLOT_HOURS, DEFAULT_TZ_BY_LANG, localParts, pickPost, titleFor, buildTitleBody };

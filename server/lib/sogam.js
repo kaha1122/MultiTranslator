@@ -89,6 +89,7 @@ async function runAutopost({ force = false } = {}) {
         authorUid: uid, authorName: name, authorPhoto: null,
         lang: item.lang, title: item.title || null, body: item.body,
         titleId: Number(item.titleId), titleName: item.titleName || null,
+        titleOriginal: item.titleOriginal || null, // 원제 — 소감 푸시 제목에 사용(kcultureSogamPush.titleFor)
         media: item.media || 'tv', posterPath: item.posterPath || null,
         authorRating: null,
         images: item.backdropPath ? [`https://image.tmdb.org/t/p/w780${item.backdropPath}`] : [],
