@@ -701,6 +701,17 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
         }
 
         console.log(`[Reengagement] ${dryRun ? 'DRY' : 'SEND'} ranAt=${now.toISOString()} re=${totals.sent}/${totals.candidates} streakRisk=${streakRiskTotals.sent}/${streakRiskTotals.candidates} streakReminder=${streakReminderTotals.sent}/${streakReminderTotals.candidates}`);
+        // ── K-DramaAnyLang 체이닝(2026-09-04) — 같은 매시간 트리거 재사용(Render Cron 추가 없음). fire-and-forget:
+        //   ① 소감 푸시: 수신자 현지 09/20시 토큰에 최근 소감 1건(같은 언어 우선, 없으면 랜덤). ② 사일런트 탐침: 현지 04시, iOS 삭제 추정·죽은 토큰 정리.
+        //   kcultureApp(별도 Firebase 앱)만 쓰므로 PronunFit 발송·집계에 영향 없음. dryRun 쿼리는 그대로 전달.
+        if (!onlyUid) {
+            require('../lib/kcultureSogamPush').runSogamPushHourly(now, { dryRun })
+                .then((r) => { if (r && (r.sent || r.candidates || r.would)) console.log('[cron/reengagement] kc-sogam-push:', JSON.stringify(r)); })
+                .catch((e) => console.warn('[cron/reengagement] kc-sogam-push fail:', e?.message));
+            require('../lib/kculturePushProbe').runPushProbeHourly(now, { dryRun })
+                .then((r) => { if (r && r.candidates) console.log('[cron/reengagement] kc-push-probe:', JSON.stringify(r)); })
+                .catch((e) => console.warn('[cron/reengagement] kc-push-probe fail:', e?.message));
+        }
         return res.json(summary);
     } catch (e) {
         console.error('[Reengagement] cron failed:', e);
