@@ -10,7 +10,7 @@
 // 죽은 토큰은 kculturePush.pruneDeadTokens로 즉시 삭제.
 const admin = require('firebase-admin');
 const { kcultureApp, kcultureDb } = require('../config/firebaseKculture');
-const { buildTokenMessage, pruneDeadTokens, resolveLang, TEXTS, FALLBACK } = require('./kculturePush');
+const { buildTokenMessage, pruneDeadTokens, resolveLang, getPushFlags, TEXTS, FALLBACK } = require('./kculturePush');
 
 const SLOT_HOURS = [9, 20]; // 수신자 현지 시각(24h)
 const DEFAULT_TZ_BY_LANG = {
@@ -54,6 +54,7 @@ function buildTitleBody(post, lang) {
 
 async function runSogamPushHourly(now = new Date(), { dryRun = false } = {}) {
     if (!kcultureDb || !kcultureApp) return { skipped: 'no-db' };
+    if (!(await getPushFlags()).sogamEnabled) return { skipped: 'disabled(config/kc_push.sogamEnabled)' }; // 킬스위치 — 검증 후 켠다
     const snap = await kcultureDb.collectionGroup('pushTokens').get();
     if (snap.empty) return { skipped: 'no-tokens' };
     const rows = await loadRecentSogam();

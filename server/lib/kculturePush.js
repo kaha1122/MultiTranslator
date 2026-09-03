@@ -66,6 +66,16 @@ function buildTokenMessage(tokenDoc, { title, body, data = {}, imageUrl = null }
     };
 }
 
+// 운영 스위치 — Firestore config/kc_push { sogamEnabled, probeEnabled } (기본 false = 발송 안 함).
+// 검증 전 자동 발송을 막는 킬스위치(2026-09-04). 서버 스크립트 scripts/kc-push-flags.js 또는 콘솔에서 토글.
+async function getPushFlags() {
+    try {
+        const snap = await kcultureDb.doc('config/kc_push').get();
+        const d = snap.exists ? (snap.data() || {}) : {};
+        return { sogamEnabled: d.sogamEnabled === true, probeEnabled: d.probeEnabled === true };
+    } catch { return { sogamEnabled: false, probeEnabled: false }; }
+}
+
 // sendEach 결과에서 죽은 토큰 문서를 삭제. 삭제 건수 반환.
 async function pruneDeadTokens(result, tokenRefs) {
     const deletions = [];
@@ -109,4 +119,4 @@ async function sendPushForNotif(recipientUid, notif) {
     }
 }
 
-module.exports = { sendPushForNotif, buildTokenMessage, pruneDeadTokens, resolveLang, notifUrl, TEXTS, FALLBACK, DEAD };
+module.exports = { sendPushForNotif, buildTokenMessage, pruneDeadTokens, resolveLang, notifUrl, getPushFlags, TEXTS, FALLBACK, DEAD };

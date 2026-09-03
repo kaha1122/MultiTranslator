@@ -10,7 +10,7 @@
 //   그 전 바이너리에서도 "토큰 무효 판정"은 APNs 단계에서 나므로 삭제 추정 자체는 동작한다.
 const admin = require('firebase-admin');
 const { kcultureApp, kcultureDb } = require('../config/firebaseKculture');
-const { resolveLang, DEAD } = require('./kculturePush');
+const { resolveLang, getPushFlags, DEAD } = require('./kculturePush');
 const { localParts, DEFAULT_TZ_BY_LANG } = require('./kcultureSogamPush');
 
 const PROBE_HOUR = 4; // 현지 04시 — 사용자 방해 최소·크론 부하 분산
@@ -27,6 +27,7 @@ function probeMessage(token, platform) {
 
 async function runPushProbeHourly(now = new Date(), { dryRun = false } = {}) {
     if (!kcultureDb || !kcultureApp) return { skipped: 'no-db' };
+    if (!(await getPushFlags()).probeEnabled) return { skipped: 'disabled(config/kc_push.probeEnabled)' }; // 킬스위치
     const snap = await kcultureDb.collectionGroup('pushTokens').get();
     if (snap.empty) return { skipped: 'no-tokens' };
 
