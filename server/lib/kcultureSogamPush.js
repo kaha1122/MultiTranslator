@@ -60,11 +60,13 @@ async function titleFor(post, lang, cache) {
     return byLang || doc?.meta?.original_title || post.titleOriginal || post.titleName || '';
 }
 
+// 알림 구성(2026-09-04 사용자 확정): 제목 = 드라마 제목(수신자 언어) · 본문 = 현지어 문장 "{name}님이 「{title}」의 리뷰를 남기셨습니다."
+// 리뷰(소감)의 제목·본문 텍스트는 싣지 않는다 — 원문 언어가 수신자와 다를 수 있고, 내용은 탭 후 앱에서(AI 번역) 읽는다.
 async function buildTitleBody(post, lang, cache) {
     const tpl = (TEXTS[lang] && TEXTS[lang].sogam_new) || TEXTS[FALLBACK].sogam_new;
     const titleName = await titleFor(post, lang, cache);
-    const title = tpl.replaceAll('{name}', post.authorName || 'Dari').replaceAll('{title}', titleName);
-    const body = String(post.title || post.body || '').replace(/\s+/g, ' ').trim().slice(0, 100);
+    const title = titleName || (post.titleName || '');
+    const body = tpl.replaceAll('{name}', post.authorName || 'Dari').replaceAll('{title}', titleName);
     return { title, body };
 }
 

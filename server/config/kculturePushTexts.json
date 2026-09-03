@@ -9,7 +9,7 @@
     "discussion_reply": "{name} replied to your comment.",
     "dreply_like": "{name} liked your reply.",
     "review_like": "{name} liked your rating.",
-    "sogam_new": "{name} shared a new take on {title}"
+    "sogam_new": "{name} left a review of {title}."
   },
   "ko": {
     "post_like": "{name}님이 회원님의 리뷰를 좋아합니다.",
@@ -21,7 +21,7 @@
     "discussion_reply": "{name}님이 회원님의 코멘트에 답글을 남겼어요.",
     "dreply_like": "{name}님이 회원님의 답글을 좋아합니다.",
     "review_like": "{name}님이 회원님의 평가를 좋아합니다.",
-    "sogam_new": "{name}님이 {title} 소감을 올렸어요"
+    "sogam_new": "{name}님이 「{title}」의 리뷰를 남기셨습니다."
   },
   "id": {
     "post_like": "{name} menyukai ulasan Anda.",
@@ -33,7 +33,7 @@
     "discussion_reply": "{name} membalas komentar Anda.",
     "dreply_like": "{name} menyukai balasan Anda.",
     "review_like": "{name} menyukai penilaian Anda.",
-    "sogam_new": "{name} membagikan ulasan baru tentang {title}"
+    "sogam_new": "{name} meninggalkan ulasan tentang {title}."
   },
   "es": {
     "post_like": "A {name} le gustó tu reseña.",
@@ -45,7 +45,7 @@
     "discussion_reply": "{name} respondió a tu comentario.",
     "dreply_like": "A {name} le gustó tu respuesta.",
     "review_like": "A {name} le gustó tu valoración.",
-    "sogam_new": "{name} compartió una nueva reseña de {title}"
+    "sogam_new": "{name} dejó una reseña de {title}."
   },
   "ja": {
     "post_like": "{name}さんがあなたのレビューにいいねしました。",
@@ -57,7 +57,7 @@
     "discussion_reply": "{name}さんがあなたのコメントに返信しました。",
     "dreply_like": "{name}さんがあなたの返信にいいねしました。",
     "review_like": "{name}さんがあなたの評価にいいねしました。",
-    "sogam_new": "{name}さんが『{title}』の感想を投稿しました"
+    "sogam_new": "{name}さんが『{title}』のレビューを残しました。"
   },
   "zh-CN": {
     "post_like": "{name} 赞了你的评论。",
@@ -69,7 +69,7 @@
     "discussion_reply": "{name} 回复了你的短评。",
     "dreply_like": "{name} 赞了你的回复。",
     "review_like": "{name} 赞了你的评分。",
-    "sogam_new": "{name} 发布了《{title}》的观后感"
+    "sogam_new": "{name} 留下了《{title}》的评论。"
   },
   "vi": {
     "post_like": "{name} đã thích bài đánh giá của bạn.",
@@ -81,7 +81,7 @@
     "discussion_reply": "{name} đã trả lời bình luận của bạn.",
     "dreply_like": "{name} đã thích phản hồi của bạn.",
     "review_like": "{name} đã thích lượt đánh giá của bạn.",
-    "sogam_new": "{name} vừa chia sẻ cảm nhận mới về {title}"
+    "sogam_new": "{name} đã để lại bài đánh giá về {title}."
   },
   "fr": {
     "post_like": "{name} a aimé votre critique.",
@@ -93,7 +93,7 @@
     "discussion_reply": "{name} a répondu à votre commentaire.",
     "dreply_like": "{name} a aimé votre réponse.",
     "review_like": "{name} a aimé votre note.",
-    "sogam_new": "{name} a publié un nouvel avis sur {title}"
+    "sogam_new": "{name} a laissé un avis sur {title}."
   },
   "de": {
     "post_like": "{name} gefällt deine Rezension.",
@@ -105,7 +105,7 @@
     "discussion_reply": "{name} hat auf deinen Kommentar geantwortet.",
     "dreply_like": "{name} gefällt deine Antwort.",
     "review_like": "{name} gefällt deine Bewertung.",
-    "sogam_new": "{name} hat eine neue Rezension zu {title} geteilt"
+    "sogam_new": "{name} hat eine Rezension zu {title} hinterlassen."
   },
   "ru": {
     "post_like": "{name} оценил(а) вашу рецензию.",
@@ -117,7 +117,7 @@
     "discussion_reply": "{name} ответил(а) на ваш комментарий.",
     "dreply_like": "{name} оценил(а) ваш ответ.",
     "review_like": "{name} оценил(а) вашу оценку.",
-    "sogam_new": "{name} поделился(ась) отзывом о «{title}»"
+    "sogam_new": "{name} оставил(а) отзыв о «{title}»."
   },
   "pt-BR": {
     "post_like": "{name} curtiu sua crítica.",
@@ -129,7 +129,7 @@
     "discussion_reply": "{name} respondeu ao seu comentário.",
     "dreply_like": "{name} curtiu sua resposta.",
     "review_like": "{name} curtiu sua avaliação.",
-    "sogam_new": "{name} publicou uma nova resenha de {title}"
+    "sogam_new": "{name} deixou uma resenha de {title}."
   },
   "ar": {
     "post_like": "أُعجب {name} بمراجعتك.",
@@ -141,6 +141,6 @@
     "discussion_reply": "ردّ {name} على تعليقك.",
     "dreply_like": "أُعجب {name} بردّك.",
     "review_like": "أُعجب {name} بتقييمك.",
-    "sogam_new": "نشر {name} انطباعًا جديدًا عن {title}"
+    "sogam_new": "ترك {name} مراجعة لـ {title}."
   }
 }
