@@ -32,6 +32,7 @@ async function requireAuthAny(req, res, next) {
         return res.status(401).json({ error: 'Invalid or expired token' });
     }
     req.uid = decoded.uid;
+    req.authProvider = decoded.firebase?.sign_in_provider || null; // 'anonymous' | 'google.com' | 'password' … (과금 라우트의 게스트 차단용)
     next();
 }
 

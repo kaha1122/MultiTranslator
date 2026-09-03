@@ -252,6 +252,8 @@ router.post('/api/community/points/toss/prepare', requireAuthAny, rateLimit('kc-
     const pkg = PACKAGES[packageId];
     if (!pkg || pkg.method !== 'toss') return res.status(400).json({ error: `unknown toss package: ${packageId}` });
     if (req.uid === 'dev-user') return res.status(403).json({ error: 'auth required' });
+    // 게스트(익명) 차단 — 익명 세션은 기기를 잃으면 복구 불가라 유료 포인트를 귀속시키지 않는다(클라 모달도 같은 게이트).
+    if (req.authProvider === 'anonymous') return res.status(403).json({ error: 'guest cannot purchase', code: 'GUEST_NOT_ALLOWED' });
     try {
         const orderId = newTossOrderId();
         await kcultureDb.collection('pointOrders').doc(orderId).set({
@@ -285,6 +287,7 @@ router.post('/api/community/points/toss/confirm', requireAuthAny, rateLimit('kc-
     const amount = Number(req.body?.amount);
     if (!paymentKey || !orderId || !Number.isFinite(amount)) return res.status(400).json({ error: 'missing fields' });
     if (paymentKey.length > 200 || orderId.length > 64) return res.status(400).json({ error: 'invalid fields' });
+    if (req.authProvider === 'anonymous') return res.status(403).json({ error: 'guest cannot purchase', code: 'GUEST_NOT_ALLOWED' });
 
     const orderRef = kcultureDb.collection('pointOrders').doc(orderId);
     const snap = await orderRef.get();
