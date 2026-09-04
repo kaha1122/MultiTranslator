@@ -684,19 +684,22 @@ function withSignature(text) {
     return t.includes(DARI_SIGNATURE) ? t : `${t}\n\n${DARI_SIGNATURE}`;
 }
 
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null, bodyOverride = null, rebody = false }) {
-    if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
+// pre(2026-09-04 사용자 결정): **선공개 스레드**는 회차 스레드와 분리한다 — tid `dari_s{S}pre`, episode 0, episodes [],
+// 제목 "{작품명} [Pre-release]"(클라가 뷰어 언어 라벨 [선공개]로 조립), 본문은 Dari 정보 브리핑(bodyOverride). 첫 방송일에 [EP 1-2]를 정규 개설한다.
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null, bodyOverride = null, rebody = false, pre = false }) {
+    if (pre) episodes = []; // 선공개: 회차 없음
+    else if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
     }
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
     const clipData = normClip(clip); // 선공개 클립(선택) — 형식 오류는 여기서 즉시 실패
-    const maxEp = Math.max(...episodes);
-    const tid = `dari_s${season}e${maxEp}`;
+    const maxEp = pre ? 0 : Math.max(...episodes);
+    const tid = pre ? `dari_s${season}pre` : `dari_s${season}e${maxEp}`;
     const docPath = `titles/${id}/discussion/${tid}`;
     const threadRef = kcultureDb.doc(docPath);
-    const pointerRef = kcultureDb.doc(`curation_threads/${id}_s${season}e${maxEp}`);
+    const pointerRef = kcultureDb.doc(pre ? `curation_threads/${id}_s${season}pre` : `curation_threads/${id}_s${season}e${maxEp}`);
 
     // 멱등 게이트 (dryRun은 통과 — 미리보기 용도)
     if (!dryRun) {
@@ -770,8 +773,9 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
 
     // 발제 생성 (근거: 제목·장르·시놉시스 + 선택적 회차 훅=공식 선공개 요약)
     // --body-file(정보 브리핑)이 있으면 그 본문을 그대로 쓴다 — 제목 규칙은 동일, Gemini 발제 호출 없음(2026-09-04).
+    if (pre && !bodyOverride) throw new Error('--pre 선공개 스레드는 --body-file(정보 브리핑)이 필요합니다');
     const { title, body } = bodyOverride
-        ? { title: `${showName} [${epLabel(episodes)}]`, body: withSignature(bodyOverride) }
+        ? { title: pre ? `${showName} [Pre-release]` : `${showName} [${epLabel(episodes)}]`, body: withSignature(bodyOverride) }
         : await generateThreadCopy({ showName, genres: info.genres, synopsis: info.synopsis, episodes, hook });
 
     const episodesMeta = [...episodes].sort((a, b) => a - b).map((n) => ({
@@ -820,6 +824,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
         threadRoot: true, curator: true,
         title, srcLang: 'en',
         episodes: episodesMeta,
+        ...(pre ? { pre: true } : {}), // 선공개 스레드 표식 — 클라 threadDisplayName이 [선공개] 라벨로 조립
         info, // 정보 블록(TMDB 원값) — ThreadScreen이 i18n 라벨로 렌더
         prevThreads,
         ...(clipData ? { clip: clipData } : {}), // 선공개 클립 — 썸네일+온디맨드 재생(DECISIONS.md §11)
@@ -829,11 +834,12 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
     // 큐레이션 레지스트리 (prevThreads 조회·운영 현황용)
     batch.set(pointerRef, {
         titleId: id, media: 'tv', episode: maxEp, episodes: episodesMeta, tid,
+        ...(pre ? { pre: true } : {}),
         title, titleName: showName, posterPath: detail.poster_path || null,
         ...(clipData ? { clip: clipData } : {}),
         lang: 'en', createdAt: now,
     });
-    if (clipData) mirrorClipToTitle(batch, id, season, clipData, maxEp);
+    if (clipData) mirrorClipToTitle(batch, id, season, clipData, pre ? (clipData.ep || 1) : maxEp);
     await batch.commit();
     await refreshSiblingPrevThreads(id).catch((e) => console.warn(`[Dari] 형제 prevThreads 갱신 실패(무시): ${e.message}`));
     console.log(`[Dari] 스레드 게시 완료: ${docPath} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);

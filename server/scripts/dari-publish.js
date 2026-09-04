@@ -12,6 +12,8 @@
 //   --body-file <경로>   발제 본문을 파일(영어 마크다운)에서 그대로 사용 — Gemini 발제 생성 생략, 번역 시드는 수행(2026-09-04 선공개 정보 브리핑용).
 //                       서명 줄이 없으면 자동으로 붙인다. 제목은 "{작품명} [EP a-b]" 규칙 그대로.
 //   --rebody            기존 스레드의 발제 본문을 --body-file 내용으로 교체 + 번역 재시드(제목·댓글·공감 유지) — 10일·20일 브리핑 업데이트용.
+//   --pre               선공개 스레드(2026-09-04): --episodes 불필요. tid dari_s{S}pre · episode 0 · 제목 "{작품} [Pre-release]" · --body-file 필수 · --clip 필수(공식 티저).
+//                       첫 방송일에는 이 옵션 없이 --episodes 1,2 로 정규 회차 스레드를 따로 연다.
 //   --rehook            기존 스레드의 발제 본문을 --hook 반영으로 재생성 + 번역 재시드(제목·댓글·공감 유지)
 //   --clip <videoId>    선공개 클립 유튜브 영상 id(11자) — 스레드 화면 썸네일+온디맨드 재생(2026-08-19, DECISIONS.md §11).
 //                       신규 게시 시 저장, **기존 스레드에 주면 클립만 소급 주입**(발제·번역 무변경 — Gemini 미호출).
@@ -45,21 +47,23 @@ const clipEp = parseInt(arg('clip-ep', ''), 10);
 const clip = clipId ? { videoId: clipId, ...(Number.isInteger(clipEp) && clipEp > 0 ? { ep: clipEp } : {}) } : null;
 
 const isMovie = arg('media', 'tv') === 'movie' || process.argv.includes('--movie'); // 영화 전편형 스레드(2026-08-04)
+const pre = process.argv.includes('--pre'); // 선공개 스레드(2026-09-04)
+if (pre && !bodyOverride) { console.error('--pre 는 --body-file 이 필요합니다'); process.exit(1); }
 
-if (!Number.isInteger(tmdbId) || (!isMovie && !episodes.length)) {
+if (!Number.isInteger(tmdbId) || (!isMovie && !pre && !episodes.length)) {
     console.error('사용법: node scripts/dari-publish.js --title <tmdbId> --episodes 5,6 [--season 1] [--dry] [--reseed]');
     console.error('  영화: node scripts/dari-publish.js --title <tmdbId> --movie [--dry] [--backdate YYYY-MM-DD]');
     process.exit(1);
 }
 
-console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, dryRun, reseed, rehook, rebody, clip, hook: hook ? `${hook.slice(0, 60)}…` : null, bodyOverride: bodyOverride ? `${bodyOverride.length} chars` : null });
+console.log('[dari-publish] start', { tmdbId, media: isMovie ? 'movie' : 'tv', season, episodes, pre, dryRun, reseed, rehook, rebody, clip, hook: hook ? `${hook.slice(0, 60)}…` : null, bodyOverride: bodyOverride ? `${bodyOverride.length} chars` : null });
 const t0 = Date.now();
 (async () => {
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
     const r = isMovie
         ? await createMovieThread({ tmdbId, dryRun, backdate })
-        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook, clip, bodyOverride, rebody });
+        : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook, clip, bodyOverride, rebody, pre });
     console.log('─'.repeat(60));
     console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : r.rehooked ? '  (rehook — 발제 교체·재시드 완료)' : r.clipped ? '  (기존 스레드 — 클립만 주입)' : ''}`);
     if (r.clip) console.log(`클립      : ${r.clip.videoId}${r.clip.ep ? ` (EP ${r.clip.ep})` : ''}`);
