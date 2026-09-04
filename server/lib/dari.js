@@ -678,7 +678,13 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
 
 // backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이
 // 실제 방영 순서와 맞도록 createdAt을 소급(홈 최신 3장·전체 목록이 현재 방영분 우선 유지).
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null }) {
+// 본문 직접 지정(2026-09-04 — 선공개 정보 브리핑): 서명이 없으면 붙인다. Note 줄은 applyFixedTail이 언어별로 처리.
+function withSignature(text) {
+    const t = String(text || '').trim();
+    return t.includes(DARI_SIGNATURE) ? t : `${t}\n\n${DARI_SIGNATURE}`;
+}
+
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null, bodyOverride = null, rebody = false }) {
     if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
     }
@@ -699,13 +705,14 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
             const data = existing.data();
             // --rehook(2026-08-15): 기존 스레드의 발제 본문을 회차 훅(선공개 요약) 반영으로 재생성 + 번역 재시드.
             // 제목·info·댓글·공감은 그대로 — Dari 본인 발제 본문만 교체.
-            if (rehook && hook) {
+            if ((rehook && hook) || (rebody && bodyOverride)) {
                 const { detail, info } = await fetchShowInfo(id, season);
                 const seasonSuffix = season >= 2 ? ` ${season}` : '';
                 const showName = (detail.name || detail.original_name || `#${id}`) + seasonSuffix;
-                const { body } = await generateThreadCopy({
-                    showName, genres: info.genres, synopsis: info.synopsis, episodes, hook,
-                });
+                // --rebody(2026-09-04): 브리핑 본문을 파일에서 그대로(Gemini 발제 생략) / --rehook: 훅 반영 재생성
+                const body = (rebody && bodyOverride)
+                    ? withSignature(bodyOverride)
+                    : (await generateThreadCopy({ showName, genres: info.genres, synopsis: info.synopsis, episodes, hook })).body;
                 const translated = await translateBodyMulti(body, SEED_LANGS, {
                     en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
                 });
@@ -762,9 +769,10 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
     const showName = (detail.name || detail.original_name || `#${id}`) + seasonSuffix;
 
     // 발제 생성 (근거: 제목·장르·시놉시스 + 선택적 회차 훅=공식 선공개 요약)
-    const { title, body } = await generateThreadCopy({
-        showName, genres: info.genres, synopsis: info.synopsis, episodes, hook,
-    });
+    // --body-file(정보 브리핑)이 있으면 그 본문을 그대로 쓴다 — 제목 규칙은 동일, Gemini 발제 호출 없음(2026-09-04).
+    const { title, body } = bodyOverride
+        ? { title: `${showName} [${epLabel(episodes)}]`, body: withSignature(bodyOverride) }
+        : await generateThreadCopy({ showName, genres: info.genres, synopsis: info.synopsis, episodes, hook });
 
     const episodesMeta = [...episodes].sort((a, b) => a - b).map((n) => ({
         n,
