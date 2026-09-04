@@ -53,6 +53,10 @@ const OFFICIAL_CHANNELS = [
   // 추석 개봉작 4편이 화제성이 아니라 allowlist 부재로 전량 탈락했다). 전부 oEmbed author_name 실측 일치 확인.
   // 영화는 회차 개념이 없어 하이라이트 회차 오귀속 위험이 없다.
   '롯데엔터테인먼트', 'CJ ENM Movie', '플레이그램', 'hivemedia_corp',
+  // '스튜디오지니'(KT Studio Genie, 지니 TV 오리지널 제작사, UCXmRJfZ3atLVLDiO5Ufycvw) — 2026-09-02 추가.
+  // 「연애박사」 무드티저 2편을 Disney Plus Korea·ENA DRAMA보다 하루 먼저(08-31) 올려 teaser-watch가 하루 늦게 잡았다.
+  // oEmbed author_name 실측값 '스튜디오지니' 그대로. 제작사 채널이라 회차 클립도 올릴 수 있다 — 하이라이트 오귀속이 보이면 재검토.
+  '스튜디오지니',
   // ⚠ '너에게 다이브'(작품 전용 공식 채널)는 **보류**한다 — 작품 단위 채널이라 회차 귀속 규칙이 다르고,
   //   현재 올라온 것도 티저가 아니라 대본리딩 영상이다. 실제 티저가 올라오면 그때 판단한다.
 ];
