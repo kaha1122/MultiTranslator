@@ -834,7 +834,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
     // 큐레이션 레지스트리 (prevThreads 조회·운영 현황용)
     batch.set(pointerRef, {
         titleId: id, media: 'tv', episode: maxEp, episodes: episodesMeta, tid,
-        ...(pre ? { pre: true } : {}),
+        ...(pre ? { pre: true, premiereDate: seasonEps.map((e) => e.air_date).filter(Boolean).sort()[0] || null } : {}), // premiereDate: featured 자동 배치(D-7 우선) 판정용
         title, titleName: showName, posterPath: detail.poster_path || null,
         ...(clipData ? { clip: clipData } : {}),
         lang: 'en', createdAt: now,

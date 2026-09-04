@@ -711,6 +711,10 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             require('../lib/kculturePushProbe').runPushProbeHourly(now, { dryRun })
                 .then((r) => { if (r && r.candidates) console.log('[cron/reengagement] kc-push-probe:', JSON.stringify(r)); })
                 .catch((e) => console.warn('[cron/reengagement] kc-push-probe fail:', e?.message));
+            // ③ 홈 Dari featured 자동 선정(2026-09-04): KST 05시 1회, 방영분 3 + 선공개 3 (lib/kcultureFeatured.js). dryRun이면 쓰기 없음.
+            require('../lib/kcultureFeatured').runFeaturedDaily(now, { dryRun })
+                .then((r) => { if (r && !r.skipped) console.log('[cron/reengagement] kc-featured:', JSON.stringify(r.featured?.map((f) => f.id))); })
+                .catch((e) => console.warn('[cron/reengagement] kc-featured fail:', e?.message));
         }
         return res.json(summary);
     } catch (e) {
