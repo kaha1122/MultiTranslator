@@ -79,6 +79,12 @@ async function runReplyAutopost({ force = false } = {}) {
     if (!kcultureDb) return { skipped: 'no-db' };
     const now = Date.now();
 
+    // 2026-09-05 사용자 결정: 답글 자동 게시 폐지(수동 게시 모드 — 배치는 글만 만들고 사용자가 페르소나 계정으로 직접 게시).
+    // config/reply_autopost.enabled === true 일 때만 동작(기본 OFF). --force 수동 검증은 그대로 우회.
+    // 같은 결정: 댓글 lib/commentAutopost.js(2026-09-04) · 소감 lib/sogam.js(2026-09-05).
+    const state = (await kcultureDb.doc('config/reply_autopost').get()).data() || {};
+    if (!force && state.enabled !== true) return { skipped: 'disabled(manual-mode 2026-09-05)' };
+
     // status 단일 조건 + 메모리 필터·정렬 — 복합 인덱스 회피(큐는 상시 수십 건 규모, sogam과 동일)
     const q = await kcultureDb.collection('reply_queue')
         .where('status', '==', 'pending').limit(100).get();
