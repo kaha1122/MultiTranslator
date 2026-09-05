@@ -21,6 +21,11 @@ const DECODE_PER_LANG = parseInt(process.env.NEWS_DECODE_PER_LANG || '10', 10);
 // 런당 전역 디코드 예산 — GH 러너 실측: ~37건(≈74요청)에서 429. 30건이면 매 런 무-429로
 // 종료하고, 언어 순서 회전과 합쳐 몇 런 안에 전 언어가 채워짐(2h 주기 × 30 = 360/일 ≫ 신규 기사량).
 const GLOBAL_DECODE_BUDGET = parseInt(process.env.NEWS_GLOBAL_DECODE || '30', 10);
+// 구글 썸네일(gstatic) 저장분 승격 시도 상한(언어·런당) — 2026-09-05. 과거 런이 폴백으로 남긴
+// gstatic 아이템(ru 실측 20/40)을 원문 og/본문 이미지로 1회 재탐색한다. 매체 사이트 fetch라
+// 구글 429와 무관하지만 15분 잡 타임아웃 안에서 백로그를 나눠 소화하도록 런당 상한을 둔다.
+const UPGRADE_PER_LANG = parseInt(process.env.NEWS_UPGRADE_PER_LANG || '8', 10);
+const DRY = process.env.NEWS_DRY === '1'; // 패치를 서버에 보내지 않고 로그만(로컬 검증용)
 const GAP_MS = 600;
 
 const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
@@ -102,16 +107,87 @@ const decodeEntities = (s) => String(s || '')
     .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(parseInt(n, 10)))
     .replace(/&amp;/g, '&');
 
-async function scrapeOgImage(url) {
+// ── 프로그램 생성 og:image 감지 (2026-09-05) ──────────────────────────────────
+// 일부 매체는 og:image를 기사 사진이 아니라 "제목 텍스트 + 로고" 공유 카드로 자동 생성한다
+// (실측: filmpro.ru `/__og-image__/image/materials/79825/og.png` — nuxt-og-image. 앱 ru 뉴스
+// 카드에 제목만 큼직하게 박힌 카드가 사진 자리에 떴다). 이 카드는 로드 검증·중복 판별을 전부
+// 통과하고, 구글 썸네일 폴백(gstatic)도 같은 카드의 축소판이라 폴백으로도 해결이 안 된다.
+// → 생성 카드로 판정되면 og를 버리고 본문 실이미지(아래 scrapePage.candidates)를 우선 채택.
+//   패턴은 보수적으로: nuxt-og-image(__og-image__) · vercel/og(/api/og) · Next.js opengraph-image
+//   · og-image 서비스 호스트 · 파일명이 og.png/og-image.* 인 것(사이트 공용 카드).
+const GENERATED_OG = /__og-image__|\/api\/og(?:[/?]|$)|opengraph-image|og-image\.vercel\.app|\/og(?:-image)?\.(?:png|jpe?g|webp)(?:\?|$)/i;
+const isGeneratedOg = (u) => GENERATED_OG.test(String(u || ''));
+
+// 본문 이미지 후보에서 제외할 URL 패턴 — 로고·아바타·플레이스홀더·트래킹·광고·벡터/움짤.
+const NON_ARTICLE_IMG = /logo|avatar|favicon|icon|placeholder|pixel|badge|emoji|sprite|banner|button|widget|profile|default[_.-]|-fb\.|\/ads?\/|doubleclick|counter|tracker|1x1|blank|spacer|\.svg|\.gif/i;
+const IMG_EXT = /^https?:\/\/[^\s"'<>()\\]+?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>()\\]*)?$/i;
+
+// 등록 도메인(naive): a.b.co.kr → b.co.kr, cdn.filmpro.ru → filmpro.ru. 본문 후보 정렬용.
+function siteDomain(u) {
+    try {
+        const parts = new URL(u).hostname.toLowerCase().split('.');
+        if (parts.length <= 2) return parts.join('.');
+        const sld = parts[parts.length - 2];
+        const n = (/^(co|com|net|org|gov|ac|ne|or|go)$/.test(sld) && parts[parts.length - 1].length === 2) ? 3 : 2;
+        return parts.slice(-n).join('.');
+    } catch { return ''; }
+}
+
+// 기사 페이지 1회 fetch → { og, candidates }. candidates = 본문 실이미지 후보(문서 순, 같은 사이트
+// CDN 우선, 최대 6). <img> 태그는 속성(작은 width/height·아바타 class)으로 거르고, Nuxt/Next처럼
+// <img src>가 플레이스홀더뿐인 SSR 페이지(실측 filmpro.ru)는 HTML 전체의 이미지 URL을 훑는다.
+// 호출자는 후보를 순서대로 imageLoadable로 확인해 첫 통과분을 쓴다(핫링크 정책은 매체마다 달라서).
+async function scrapePage(url) {
+    const out = { og: null, candidates: [] };
+    let html;
     try {
         const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) });
-        if (!res.ok) return null;
-        const html = (await res.text()).slice(0, 200000);
-        const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
-            || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
-        return og && og[1].startsWith('http') ? decodeEntities(og[1]) : null;
-    } catch { return null; }
+        if (!res.ok) return out;
+        html = (await res.text()).slice(0, 400000); // 본문 이미지까지 보려면 og 스캔(200K)보다 넉넉히
+    } catch { return out; }
+    const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
+        || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
+    out.og = og && og[1].startsWith('http') ? decodeEntities(og[1]) : null;
+
+    const site = siteDomain(url);
+    // 사이트 브랜드 이미지 배제: 파일명이 사이트명을 담고 있으면(실측 md-eksperiment.org/img/eksperiment.png —
+    // 'logo'란 글자가 없어 NON_ARTICLE_IMG를 통과) 기사 사진이 아니라 사이트 공용 이미지다.
+    const siteKey = site.split('.')[0].replace(/[^a-z0-9]/g, '');
+    const isBrandFile = (u) => {
+        const base = (u.split('?')[0].split('/').pop() || '').replace(/\.[a-z0-9]+$/i, '').toLowerCase().replace(/[^a-z0-9]/g, '');
+        return base.length >= 4 && siteKey.length >= 4 && (siteKey.includes(base) || base.includes(siteKey));
+    };
+    const seen = new Set();
+    const bad = new Set(); // <img> 태그 문맥상 아바타/아이콘으로 판정된 URL — 원문 스캔에서도 제외
+    const push = (u) => {
+        u = decodeEntities(u);
+        if (!IMG_EXT.test(u) || NON_ARTICLE_IMG.test(u) || seen.has(u) || bad.has(u) || u === out.og || isBrandFile(u)) return;
+        const dim = u.match(/(\d{2,4})x(\d{2,4})/);
+        if (dim && (parseInt(dim[1], 10) < 200 || parseInt(dim[2], 10) < 200)) return; // 썸네일 크기 힌트
+        seen.add(u);
+        out.candidates.push(u);
+    };
+    // ① <img> 태그 — 속성 문맥으로 아바타·아이콘 배제
+    for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
+        const tag = m[0];
+        const src = tag.match(/\b(?:data-src|data-lazy-src|src)=["']([^"']+)["']/i)?.[1];
+        if (!src || !/^https?:\/\//i.test(src)) continue;
+        const w = parseInt(tag.match(/\bwidth=["']?(\d+)/i)?.[1] || '0', 10);
+        const h = parseInt(tag.match(/\bheight=["']?(\d+)/i)?.[1] || '0', 10);
+        const cls = tag.match(/\bclass=["']([^"']*)["']/i)?.[1] || '';
+        if ((w && w < 200) || (h && h < 200) || /avatar|rounded-full|logo|icon|thumb-xs|emoji/i.test(cls)) { bad.add(decodeEntities(src)); continue; }
+        push(src);
+    }
+    // ② 원문 전체의 이미지 URL(SSR 페이로드·srcset·preload) — 같은 사이트 CDN 우선
+    const raw = [];
+    for (const m of html.matchAll(/https?:\/\/[^\s"'<>()\\]+?\.(?:jpe?g|png|webp)(?:\?[^\s"'<>()\\]*)?(?=["'\s<>)\\,])/gi)) raw.push(m[0]);
+    const same = raw.filter((u) => site && siteDomain(u) === site);
+    for (const u of [...same, ...raw]) { if (out.candidates.length >= 12) break; push(u); }
+    out.candidates = out.candidates.slice(0, 6);
+    return out;
 }
+
+async function scrapeOgImage(url) { return (await scrapePage(url)).og; }
 
 // ── 구글 뉴스 '웹 검색' 페이지 → 기사ID→썸네일 벌크 맵 (2026-07-24) ─────────────
 // 원문이 봇월(WP Engine 등 TLS 지문 403)이라 og:image를 못 긁는 소스가 존재
@@ -199,16 +275,21 @@ const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(
 // 재검증 생략(서버 enrich 라우트가 imgV를 캐시에 병합).
 const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
 const isGoogleCdn = (u) => /^https:\/\/(encrypted-tbn\d\.gstatic\.com|lh\d\.googleusercontent\.com)\//.test(String(u || ''));
-async function imageLoadable(url) {
+// minBytes: 본문 후보용 최소 크기(Content-Length가 있을 때만 판정) — 로고·아이콘류는 수 KB라
+// 사진(수십 KB~)과 갈린다. og:image 검증은 종전대로 0(크기 무관).
+async function imageLoadable(url, minBytes = 0) {
     try {
         const res = await fetch(url, {
             headers: { 'User-Agent': BROWSER_UA, Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8' },
             signal: AbortSignal.timeout(6000),
         });
         try { await res.body?.cancel(); } catch { /* 본문 불필요 — 상태·타입만 */ }
-        return res.ok && /^image\//i.test(res.headers.get('content-type') || '');
+        if (!res.ok || !/^image\//i.test(res.headers.get('content-type') || '')) return false;
+        const len = parseInt(res.headers.get('content-length') || '0', 10);
+        return !(minBytes && len && len < minBytes);
     } catch { return false; }
 }
+const ARTICLE_IMG_MIN_BYTES = 15000;
 
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
@@ -264,6 +345,7 @@ async function imageLoadable(url) {
         // 복구가 계속 실패하는 아이템이 있어도 런당 낭비가 이 상한으로 묶인다.
         const REPAIR_CAP = 3;
         let repairs = 0;
+        let upgrades = 0; // gstatic 저장분 승격 시도(UPGRADE_PER_LANG)
         for (const it of items) {
             const key = it.srcUrl || it.url;
             let url = it.url;
@@ -299,27 +381,48 @@ async function imageLoadable(url) {
                 await sleep(150);
                 if (direct) patches.push({ srcUrl: key, image: direct });
                 continue;
-            } else if (it.image && (it.imgV || isGoogleCdn(it.image))
-                && !isLogoImage(it.image) && !isDupImage(it.image, true) && !isFlakyHost(it.image)
+            } else if (it.image && it.imgV
+                && !isLogoImage(it.image) && !isGeneratedOg(it.image) && !isDupImage(it.image, true) && !isFlakyHost(it.image)
                 && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
-                continue; // 검증 통과(imgV) 또는 구글 CDN — 완성 아이템 (http://·중복·로고·가변차단 저장분은 재처리)
+                continue; // 검증 통과(imgV) — 완성 아이템 (http://·중복·로고·생성카드·가변차단 저장분은 재처리)
             }
-            // 여기 도달: 이미지 없음 / 미검증·로고·엔티티·http·중복 저장분 / 방금 디코드된 신규
-            const cleanStored = it.image && !isLogoImage(it.image) && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
+            // 구글 썸네일(gstatic) 저장분 승격(2026-09-05): 종전엔 gstatic이면 무조건 완성으로 봤지만,
+            // 원문 og가 생성 카드(제목 텍스트)이거나 스크레이프가 일시 실패했던 아이템은 gstatic도
+            // 같은 카드/저화질이라 사진이 없다. imgV 없는 gstatic은 원문에서 1회 더 나은 이미지를 찾고
+            // (og 실사진 → 본문 이미지), 없으면 gstatic을 유지한 채 imgV를 찍어 재시도를 막는다.
+            const upgrading = !!it.image && isGoogleCdn(it.image) && !it.imgV && !redecoded;
+            if (upgrading && upgrades >= UPGRADE_PER_LANG) continue; // 런당 상한 — 다음 런에서 이어감
+            if (upgrading) upgrades += 1;
+            // 여기 도달: 이미지 없음 / 미검증·로고·생성카드·엔티티·http·중복 저장분 / 방금 디코드된 신규 / gstatic 승격
+            const cleanStored = it.image && !isLogoImage(it.image) && !isGeneratedOg(it.image) && !isGoogleCdn(it.image)
+                && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
             // redecoded(잘린 URL 복구분)는 저장 이미지가 **그 버그 때문에** 강등된 구글 썸네일이므로
             // 신뢰하지 않고 원문에서 다시 긁는다. 실패하면 아래 폴백이 다시 구글 썸네일로 되돌린다.
-            let img = (cleanStored && !redecoded) ? it.image : await scrapeOgImage(url);
+            let page = null;
+            let img = (cleanStored && !redecoded) ? it.image : null;
+            if (!img) { page = await scrapePage(url); img = page.og; }
+            // 채택 불가 판정 — 없음·로고·생성 카드·사이트 공용(중복)·가변 차단 CDN
+            const unusable = (u) => !u || isLogoImage(u) || isGeneratedOg(u) || isDupImage(u, u === it.image) || isFlakyHost(u);
             // https 앱에서 http:// 이미지는 mixed content로 브라우저가 무조건 차단(실측: sinaimg —
             // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
             // 승격이 안 먹는 CDN이면 검증 실패 → 구글 썸네일 교체.
             if (img && img.startsWith('http://')) img = `https://${img.slice(7)}`;
-            if (img && !isGoogleCdn(img) && !(await imageLoadable(img))) {
+            if (img && !unusable(img) && !isGoogleCdn(img) && !(await imageLoadable(img))) {
                 console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
-                img = null; // 실기기에서 깨지는 URL — 구글 썸네일 교체 대상
+                img = null; // 실기기에서 깨지는 URL — 본문 이미지·구글 썸네일 교체 대상
             }
-            if (!img || isLogoImage(img) || isDupImage(img, img === it.image) || isFlakyHost(img)) {
-                // 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고/사이트 공용 이미지·
-                // 가변 차단 CDN → 구글 썸네일 폴백 (그마저 없으면 원본이라도 유지 — 없는 것보단 나음)
+            if (unusable(img)) {
+                // ① 본문 실이미지 후보 — og가 생성 카드/로고/부재일 때 기사 안의 첫 로드 가능 사진.
+                //    (og 스크레이프 자체가 봇월 403이면 페이지도 못 읽어 후보 0 → ②로.)
+                if (!page) page = await scrapePage(url);
+                for (const c of page.candidates) {
+                    if (unusable(c)) continue;
+                    if (await imageLoadable(c, ARTICLE_IMG_MIN_BYTES)) { img = c; console.log(`  [${lang}] article image ← ${c.slice(0, 70)}`); break; }
+                }
+            }
+            if (unusable(img)) {
+                // ② 원문 스크레이프 실패(봇월 403·og:image 부재)·기기 로드 불가·로고/사이트 공용 이미지·
+                //    가변 차단 CDN → 구글 썸네일 폴백 (그마저 없으면 원본이라도 유지 — 없는 것보단 나음)
                 const gid = String(it.srcUrl || '').match(/articles\/([A-Za-z0-9_-]+)/)?.[1];
                 const att = gid && (await ensureThumbMap())?.get(gid);
                 if (att) {
@@ -328,6 +431,8 @@ async function imageLoadable(url) {
                     if (direct) img = direct;
                 }
             }
+            // 승격 시도에서 더 나은 것이 없으면 저장된 gstatic 유지 + imgV — 매 런 재탐색 방지
+            if (upgrading && (!img || isGoogleCdn(img))) img = it.image;
             if (img) {
                 patch = { ...(patch || { srcUrl: key }), imgV: 1 };
                 if (img !== it.image) patch.image = img;
@@ -335,7 +440,10 @@ async function imageLoadable(url) {
             if (patch) patches.push(patch);
         }
 
-        if (patches.length) {
+        if (patches.length && DRY) {
+            console.log(`[${lang}] DRY — patches ${patches.length} (미전송)`);
+            patches.forEach((p) => console.log('   ', JSON.stringify(p).slice(0, 220)));
+        } else if (patches.length) {
             try {
                 const r = await fetch(`${API}/api/news/enrich`, {
                     method: 'POST',
