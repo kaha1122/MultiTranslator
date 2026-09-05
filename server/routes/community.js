@@ -119,11 +119,33 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
     } catch { return { lines: [], titleId: null }; }
 }
 
+// ── 번역할 글자가 없는 텍스트 가드 (2026-09-05 실사고) ──────────────────────────────
+// 클라 서식 토큰(>!스포일러!< **굵게** _기울임_ [텍스트](url))만 있고 글자가 없는 입력을 Gemini에 넘기면 문장을 지어낸다.
+// 실측: 빈 스포일러 ">!!<" → "Wait, I can't watch the show here? I thought this was a streaming app. This is so disappointing."
+// 가 실사용자 이름의 한줄평으로 게시되고 1pt 차감(2건, 서로 다른 사용자 — 같은 환각 문장). 글자·숫자 2개 미만이면
+// 호출 없이 422 → 클라(composeTranslate)는 null 처리해 원문 게시·차감 없음. 클라에도 같은 가드(lib/markupText.js).
+const UGC_MARKUP_RE = /\[([^\]\n]+)\]\((https?:\/\/[^\s)]+)\)|\*\*([^\n]*?)\*\*|_([^_\n]*)_|>!([^\n]*?)!</g;
+const translatableChars = (s) => {
+    let t = String(s || '');
+    for (let i = 0; i < 3; i += 1) {
+        const next = t.replace(UGC_MARKUP_RE, (m, link, _url, bold, italic, spoiler) => link ?? bold ?? italic ?? spoiler ?? '');
+        if (next === t) break;
+        t = next;
+    }
+    return (t.match(/[\p{L}\p{N}]/gu) || []).length;
+};
+// 프롬프트 공통 규칙 — 서식 토큰 보존 + 없는 내용 창작 금지(단건·배치 동일)
+const MARKUP_RULE = `   - Inline markup tokens in the text (>!spoiler!<, **bold**, _italic_, [text](url)) are formatting: keep each token exactly where it is and translate only the words inside it. If a token is empty (e.g. ">!!<"), keep it empty. Never add sentences, opinions or content that are not in the source text.`;
+
 router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
     const { text, targetLang, maxChars, cachePath, scope } = req.body || {};
     if (!text || !targetLang) return res.status(400).json({ error: 'missing fields' });
     if (text.length > 5000) return res.status(413).json({ error: 'too long (max 5000)' });
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
+    if (translatableChars(text) < 2) {
+        console.log(`[CommunityTx] uid=${req.uid ? String(req.uid).slice(0, 8) : 'anon'} scope=${scope || '-'} target=${targetLang} chars=${text.length} → NO-TRANSLATABLE-TEXT(호출 안 함, 차감 없음)`);
+        return res.status(422).json({ error: 'no_translatable_text' });
+    }
 
     const uid = req.uid ? String(req.uid).slice(0, 8) : 'anon';
     const cacheDoc = (kcultureDb && validCachePath(cachePath, targetLang)) ? kcultureDb.doc(cachePath) : null;
@@ -203,6 +225,7 @@ function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLi
         `   - Person names (actors, directors, characters): convert only if you are CERTAIN of the established ${targetName} spelling; otherwise keep the original spelling as-is or transliterate it. NEVER substitute a different real person's name.`,
         `   - Unfamiliar proper nouns (place names, in-show objects or terms): if unsure, keep them as-is — never replace them with a generic or different word.`,
         `   - Quoted titles of books, films or shows: use the official ${targetName} release title if you are certain of it; otherwise keep the original title unchanged.`,
+        MARKUP_RULE,
         `4. Self-check before answering: if your "translated" value is still (even partly) in the source language, you FAILED — redo it fully in ${targetName}.`,
         ...(lenRule ? [lenRule] : []),
         ``,
@@ -295,7 +318,12 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
 
     // 무성조 베트남어 아이템은 접속사 ma→mà 정규화(단건 라우트와 동일 — 감지 안 되면 원문 그대로)
-    const payload = items.map((it) => ({ id: String(it.id), text: normalizeTonelessVietnamese(String(it.text || '')) }));
+    // 번역할 글자가 없는 아이템(서식 토큰·이모지·기호뿐)은 Gemini에 넘기지 않고 원문 그대로 돌려준다(환각 방지, 2026-09-05).
+    const passthrough = {};
+    const payload = items
+        .filter((it) => { const ok = translatableChars(it.text) >= 2; if (!ok) passthrough[String(it.id)] = String(it.text || ''); return ok; })
+        .map((it) => ({ id: String(it.id), text: normalizeTonelessVietnamese(String(it.text || '')) }));
+    if (!payload.length) return res.json({ results: passthrough });
     const targetName = langName(targetLang);
     // 용어집·뉘앙스(2026-08-04) — 전 아이템 연결 텍스트로 매칭(지시는 프롬프트 전역이라 아이템별 분리 불필요).
     // 레지스터 기준선은 생략(register:false) — 글·댓글이 섞인 묶음이라 단일 기준선이 무의미.
@@ -319,6 +347,7 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         `- NEVER return, copy, paraphrase, or echo the source language. Returning the source language is a FAILURE.`,
         `- Keep an item as-is ONLY IF it is genuinely already in ${targetName} by the cues above. If it is in any other language — even if it mentions ${targetName} topics — you MUST translate it.`,
         `- Translate naturally and idiomatically, faithfully preserving meaning, nuance, tone, register, emoji and line breaks. No notes or commentary.`,
+        MARKUP_RULE.trim(),
         `- Self-check: if any value is still in the source language, redo it fully in ${targetName}.`,
         ``,
         `Return ONLY a JSON object mapping each id to its ${targetName} translation: {"<id>":"<translated>"}.`,
@@ -339,9 +368,9 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
         console.log(`[CommunityTx] uid=${uid} target=${targetLang} batch items=${items.length} chars=${total} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
         return res.status(r.status || 502).json({ error: r.userMsg || r.error });
     }
-    const map = parseFirstJsonObject(r.text) || {};
+    const map = { ...passthrough, ...(parseFirstJsonObject(r.text) || {}) };
     for (const k of Object.keys(map)) { // ㅋㅋㅋ/ㅠㅠ 잔존 확정 치환(비ko 타깃) — 단건 라우트와 동일
-        if (typeof map[k] === 'string') map[k] = scrubMarkers(map[k], targetLang);
+        if (typeof map[k] === 'string' && !(k in passthrough)) map[k] = scrubMarkers(map[k], targetLang);
     }
     console.log(`[CommunityTx] uid=${uid} target=${targetLang} batch items=${items.length} chars=${total} model=${r.modelUsed || '?'} → Gemini 배치번역(과금 발생)`);
     res.json({ results: map });
