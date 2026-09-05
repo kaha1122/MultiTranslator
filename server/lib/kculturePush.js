@@ -37,6 +37,7 @@ function notifUrl({ kind, postId, titleId, media, anchor }) {
 //   android: 시스템 트레이 알림(notification) + data.url — 탭 시 클라 NativePushHandler가 라우팅. imageUrl = BigPicture 썸네일.
 //   ios:     notification + apns(aps.sound) — 탭 라우팅은 같은 플러그인 이벤트. imageUrl은 fcm_options.image(Notification Service Extension 없으면 무시 — 무해).
 //   web:     webpush.notification(icon = imageUrl) — public/push-sw.js가 소비.
+const ANDROID_CHANNEL_ID = 'kdl_default'; // 클라 src/lib/push.js ensureAndroidChannel과 동일 값 — 바꿀 때 양쪽 동기
 function buildTokenMessage(tokenDoc, { title, body, data = {}, imageUrl = null }) {
     const platform = tokenDoc.get('platform') || 'web';
     const image = (typeof imageUrl === 'string' && imageUrl.startsWith('https://')) ? imageUrl : null;
@@ -46,7 +47,9 @@ function buildTokenMessage(tokenDoc, { title, body, data = {}, imageUrl = null }
             token: tokenDoc.id, data: strData, notification: { title, body },
             // priority high(2026-09-05): normal은 Doze 절전 중 배치 지연이 걸려 "현지 09/20시" 알림이 늦게·묶여 도착한다.
             // 사용자 대상 알림 메시지는 FCM 기본값도 high — 종전 normal 명시가 오히려 하향이었다(안드로이드 테스트 미수신 조사 중 확인).
-            android: { ttl: 86400 * 1000, priority: 'high', notification: { sound: 'default', ...(image ? { imageUrl: image } : {}) } },
+            // channelId(2026-09-05): 클라(push.js)가 만든 명시 채널 'kdl_default'(중요도 HIGH·헤드업). 채널이 없는 구 번들 기기에선
+            // FCM SDK가 기본 채널(Miscellaneous)로 폴백하므로 안전. 안드로이드 미수신 진단 중 채널·권한을 명시화.
+            android: { ttl: 86400 * 1000, priority: 'high', notification: { channelId: ANDROID_CHANNEL_ID, sound: 'default', ...(image ? { imageUrl: image } : {}) } },
         };
     }
     if (platform === 'ios') {
