@@ -73,6 +73,10 @@ async function runAutopost({ force = false } = {}) {
 
     const stateRef = kcultureDb.doc('config/sogam_autopost');
     const state = (await stateRef.get()).data() || {};
+    // 2026-09-05 사용자 결정: 소감 자동 게시 폐지(수동 게시 모드 — 배치는 글만 만들고 사용자가 페르소나 계정으로 직접 게시).
+    // config/sogam_autopost.enabled === true 일 때만 동작(기본 OFF). --force 수동 검증은 그대로 우회.
+    // 같은 결정의 댓글판은 lib/commentAutopost.js(2026-09-04, config/comment_autopost.enabled).
+    if (!force && state.enabled !== true) return { skipped: 'disabled(manual-mode 2026-09-05)' };
     if (!force && state.lastSlotKey === slotKey) return { skipped: `dup-slot(${slotKey})` };
 
     // status 단일 조건 + 메모리 정렬 — where+orderBy 복합 인덱스 회피(큐는 상시 수십 건 규모)
