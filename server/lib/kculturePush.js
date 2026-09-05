@@ -44,7 +44,9 @@ function buildTokenMessage(tokenDoc, { title, body, data = {}, imageUrl = null }
     if (platform === 'android') {
         return {
             token: tokenDoc.id, data: strData, notification: { title, body },
-            android: { ttl: 86400 * 1000, priority: 'normal', ...(image ? { notification: { imageUrl: image } } : {}) },
+            // priority high(2026-09-05): normal은 Doze 절전 중 배치 지연이 걸려 "현지 09/20시" 알림이 늦게·묶여 도착한다.
+            // 사용자 대상 알림 메시지는 FCM 기본값도 high — 종전 normal 명시가 오히려 하향이었다(안드로이드 테스트 미수신 조사 중 확인).
+            android: { ttl: 86400 * 1000, priority: 'high', notification: { sound: 'default', ...(image ? { imageUrl: image } : {}) } },
         };
     }
     if (platform === 'ios') {
