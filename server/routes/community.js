@@ -6,7 +6,7 @@ const express = require('express');
 const { requireAuthAny } = require('../middleware/authAny');
 const { rateLimit } = require('../middleware/rateLimit');
 const { callGeminiText } = require('../utils/geminiCall');
-const { LANG_NAMES } = require('../config/langGuide');
+const { LANG_NAMES, txModelFor } = require('../config/langGuide');
 const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/langDetect'); // same 판정을 detect와 동일 단서로 통합(SSOT)
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
@@ -19,6 +19,8 @@ const GEMINI_API_KEY = process.env.GEMINI_API_KEY;
 // 2.5-flash-lite는 어떤 프롬프트로도 0/4 오독(phim ma=공포 영화) → 3.1-flash-lite + 무성조 지시로 4/4.
 // 이 라우트 2곳(translate·translate-batch)만 지정 — PronunFit·백필·Dari 등은 전역 PRIMARY_MODEL 그대로.
 // 단가 2.5x/3.75x이나 KDL UGC 번역은 월 ~100건이라 센트 단위. Render env KDL_TX_MODEL_ID로 즉시 되돌림.
+// 2026-09-07 — 여기에 더해 **언어별 승격**(config/langGuide.js `txModelFor`)이 이 기본값을 덮어쓴다.
+// 맵에 없는 언어는 이 상수 그대로라 기존 동작 무변경.
 const KDL_TX_MODEL = process.env.KDL_TX_MODEL_ID || 'gemini-3.1-flash-lite';
 // 앱 성격 1줄(정적, read 0) — "영상이 아니라 글만 있다"류 불만 댓글의 해석 근거(2026-08-29 실측 소폭 효과).
 const APP_NATURE_LINE = `- About the app: a K-content information & community app (metadata, ratings, reviews, comments). It does NOT stream or host video — users sometimes complain that they expected to watch a show but found only text/info.`;
@@ -195,7 +197,8 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
 
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate',
-        model: KDL_TX_MODEL, // KDL UGC 전용(상단 주석) — 폴백은 geminiCall이 교차 처리
+        // 언어별 승격(config/langGuide.js TX_MODEL_BY_LANG)이 있으면 그 모델, 없으면 KDL 기본.
+        model: txModelFor(targetLang, KDL_TX_MODEL), // KDL UGC 전용(상단 주석) — 폴백은 geminiCall이 교차 처리
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높아 의역·드리프트·원문 에코 유발). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });
@@ -359,7 +362,7 @@ router.post('/api/community/translate-batch', requireAuthAny, rateLimit('communi
     // 무성조 베트남어 지시는 nuanceLines가 배치에도 붙인다(restored 필드는 id 맵 형식이라 배치에선 생략).
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate-batch',
-        model: KDL_TX_MODEL, // KDL UGC 전용
+        model: txModelFor(targetLang, KDL_TX_MODEL), // KDL UGC 전용 + 언어별 승격
         // 번역 충실도 → 낮은 temperature(기본 ~1.0은 너무 높음). 0.3 = 충실+자연스러움 균형.
         genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
     });

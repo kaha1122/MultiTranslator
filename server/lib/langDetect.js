@@ -14,6 +14,7 @@ const LANG_SCRIPT_CUES = [
     `- Contains any Hangul (가–힣) → "ko" (Korean).`,
     `- Contains any Japanese kana, hiragana (ぁ–ゖ) or katakana (ァ–ヶ) → "ja" (Japanese), even if Han/Kanji characters are also present.`,
     `- Han/Chinese characters only, with NO kana and NO Hangul → "zh-CN" (Simplified) or "zh-TW" (Traditional).`,
+    `- Indic scripts are mutually exclusive — judge by the script block: Devanagari (U+0900–U+097F) → "hi" (Hindi); Bengali script (U+0980–U+09FF) → "bn" (Bengali); Telugu script (U+0C00–U+0C7F) → "te" (Telugu).`,
     `- Judge by the SCRIPT and GRAMMAR, NOT by the topic. Text that is ABOUT a country/person is NOT necessarily written in that country's language (e.g. Japanese text mentioning "韓国"/Korea is still "ja").`,
 ].join('\n');
 
