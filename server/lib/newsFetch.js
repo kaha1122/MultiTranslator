@@ -5,7 +5,8 @@ const crypto = require('crypto');
 const { XMLParser } = require('fast-xml-parser');
 const { callGeminiJson } = require('../utils/geminiCall');
 
-// K-DramaAnyLang UI 12개 locale ↔ 언어별 네이티브 검색 피드 (Gemini 번역 불필요 = 비용 0)
+// K-DramaAnyLang UI locale ↔ 언어별 네이티브 검색 피드 (Gemini 번역 불필요 = 비용 0)
+// 검색어는 그 언어권의 **실제 통칭**을 쓴다(직역 금지 — id `drakor`, ar `مسلسل كوري`, th `ซีรีส์เกาหลี` 선례). 추가 전 RSS 실측 필수.
 const LANG_FEEDS = {
     ko: 'https://news.google.com/rss/search?q=%ED%95%9C%EA%B5%AD+%EB%93%9C%EB%9D%BC%EB%A7%88&hl=ko&gl=KR&ceid=KR:ko',
     en: 'https://news.google.com/rss/search?q=kdrama&hl=en-US&gl=US&ceid=US:en',
@@ -19,6 +20,8 @@ const LANG_FEEDS = {
     'pt-BR': 'https://news.google.com/rss/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
     id: 'https://news.google.com/rss/search?q=drakor&hl=id&gl=ID&ceid=ID:id', // drakor = 인도네시아어 K-드라마 통칭 (2026-07-16)
     ar: 'https://news.google.com/rss/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84+%D9%83%D9%88%D8%B1%D9%8A&hl=ar&gl=SA&ceid=SA:ar', // مسلسل كوري = 한국 드라마 (2026-07-22)
+    it: 'https://news.google.com/rss/search?q=serie+coreane&hl=it&gl=IT&ceid=IT:it', // serie coreane = 이탈리아어 한국 드라마 통칭 (2026-09-08 실측: 100건·매체 42곳으로 후보 3개 중 매체 다양성 1위, k-drama 20곳·drama coreano 25곳)
+    th: 'https://news.google.com/rss/search?q=%E0%B8%8B%E0%B8%B5%E0%B8%A3%E0%B8%B5%E0%B8%AA%E0%B9%8C%E0%B9%80%E0%B8%81%E0%B8%B2%E0%B8%AB%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th', // ซีรีส์เกาหลี = 태국어 한국 드라마(시리즈) 통칭 (2026-09-08 실측: 매체 20곳·최근 7일 16건. 표기 변형 ซีรี่ย์เกาหลี는 15곳, ละครเกาหลี는 28곳이나 영화 기사 혼입, OR 병합은 최신성이 11건으로 하락해 단일 표기 채택)
 };
 const SOOMPI_FEED = 'https://www.soompi.com/feed'; // 검증된 RSS 2.0, 영어 K-드라마/K-pop 전문지
 

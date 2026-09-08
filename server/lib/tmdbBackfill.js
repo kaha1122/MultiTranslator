@@ -155,6 +155,8 @@ const TARGETS = [
     { code: 'id', iso: 'id' }, // 2026-07-16 추가 — 광고 유입 75% 인도네시아
     { code: 'ar', iso: 'ar' }, // 2026-07-22 추가 — 12번째 UI 언어(MENA), RTL
     { code: 'en', iso: 'en' }, // 2026-07-27 추가 — 전 언어 폴백 소스라 저장 필요
+    { code: 'it', iso: 'it' }, // 2026-09-08 추가 — UI 승격 1단계
+    { code: 'th', iso: 'th' }, // 2026-09-08 추가 — UI 승격 1단계
 ];
 const PRIMARY_CODE = TARGETS.find((t) => baseLang(t.code) === baseLang(PRIMARY_CONTENT_LANG))?.code || 'ko';
 
@@ -255,7 +257,13 @@ async function processTitle(media, id, { force = false } = {}) {
     //   force여도 건너뛴다 — 숨김 문서를 번역할 정당한 경우가 없다(구제가 먼저다).
     if (md?.hidden === true) return { id, skipped: true, hiddenSkip: true, langs: 0, geminiUsed: 0 };
     // 스킵 게이트 — V2 마커 기준. V1 문서(metaV 없음)는 전부 재처리 대상(카탈로그 재구축의 핵심).
-    if (!force && md?.metaV === 2 && md.metaTranslated) return { id, skipped: true, langs: 0, geminiUsed: 0 };
+    // 결측 언어 채우기(2026-09-08 — TARGETS에 언어를 추가했을 때의 경로).
+    //   종전엔 완료 문서를 통째로 skip해, 로스터에 새 언어를 넣어도 **기존 문서는 영원히 옛 언어 수**로 남았다.
+    //   --force는 반대로 전 언어를 처음부터 다시 만들어 낭비다. 그래서 metaLangs에 없는 코드만 채운다:
+    //   이미 있는 언어는 아래 ②-b에서 저장분을 그대로 얹어 Gemini 대상(need)에서 빠진다.
+    const missingLangs = TARGETS.filter((t) => !(md?.metaLangs || []).includes(t.code)).map((t) => t.code);
+    const fillMode = !force && md?.metaV === 2 && !!md.metaTranslated && missingLangs.length > 0;
+    if (!force && md?.metaV === 2 && md.metaTranslated && !fillMode) return { id, skipped: true, langs: 0, geminiUsed: 0 };
 
     // ① 소스 확보 — 원어 기준 상세 + 공식 번역 레코드
     //   keywords + 한국 등급(movie=release_dates / tv=content_ratings)을 같은 호출에 얹는다 —
@@ -371,6 +379,25 @@ async function processTitle(media, id, { force = false } = {}) {
         if (t.code === PRIMARY_CODE && koOv) { overview = koOv; oSrc = 'tmdb'; }
         else if (t.code === 'en' && enOv) { overview = enOv; oSrc = enOvSrc; }
         out[t.code] = { title, overview, tSrc, oSrc };
+    }
+
+    // ②-b 결측 언어 채우기 모드: 이미 있는 언어는 **저장분을 그대로 얹는다**(2026-09-08).
+    //   이렇게 해야 아래 need 필터가 새 언어만 남기고, 기존 11~12개 언어를 다시 번역하지 않는다.
+    //   출처 표기(tSrc/oSrc)도 저장분의 source 문자열에서 복원한다 — 'cache'로 덮으면
+    //   refreshOfficialTitles가 나중에 공식 제목으로 갈아끼울 대상(gemini 제목)을 못 찾는다.
+    if (fillMode) {
+        const keep = TARGETS.filter((t) => !missingLangs.includes(t.code));
+        try {
+            const snaps = await kcultureDb.getAll(...keep.map((t) => kcultureDb.doc(`titles/${id}/translations/${t.code}`)));
+            snaps.forEach((snap, i) => {
+                if (!snap.exists) return;
+                const d = snap.data() || {};
+                const cur = out[keep[i].code];
+                const [pt, po] = String(d.source || '-+-').split('+');
+                if (!cur.title && d.title) { cur.title = d.title; cur.tSrc = pt && pt !== '-' ? pt : 'cache'; }
+                if (!cur.overview && d.overview) { cur.overview = d.overview; cur.oSrc = po && po !== '-' ? po : 'cache'; }
+            });
+        } catch (e) { console.warn('[backfill] fillMode seed 실패 — 전체 재번역 방지 위해 중단:', id, e?.message); return { id, skipped: true, langs: 0, geminiUsed: 0 }; }
     }
 
     // ③ Gemini — 제목은 **en만** 생성(2026-08-01: 현지어 제목 발명 금지 — 파일 헤더 ② 참조),
