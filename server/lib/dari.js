@@ -860,7 +860,7 @@ async function createReviewPost({ tmdbId, media, title, body, bodies = null, tit
         body = bodies.en || body;
         const missing = SEED_LANGS.filter((c) => !bodies[c]);
         if (!bodies.en) throw new Error('bodies.en 필수(base 영문)');
-        if (missing.length) throw new Error(`bodies 누락 언어: ${missing.join(', ')} — 12개 언어를 전부 넣을 것`);
+        if (missing.length) throw new Error(`bodies 누락 언어: ${missing.join(', ')} — ${SEED_LANGS.length}개 언어를 전부 넣을 것`);
         const missingT = titles ? SEED_LANGS.filter((c) => !titles[c]) : SEED_LANGS;
         if (missingT.length) throw new Error(`titles 누락 언어: ${missingT.join(', ')}`);
     }
