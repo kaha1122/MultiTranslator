@@ -142,5 +142,29 @@
     "dreply_like": "أُعجب {name} بردّك.",
     "review_like": "أُعجب {name} بتقييمك.",
     "sogam_new": "ترك {name} مراجعة لـ {title}."
+  },
+  "it": {
+    "post_like": "A {name} piace la tua recensione.",
+    "post_comment": "{name} ha avviato una discussione sulla tua recensione.",
+    "comment_like": "A {name} piace la tua discussione.",
+    "comment_reply": "{name} ha risposto alla tua discussione.",
+    "reply_like": "A {name} piace la tua risposta.",
+    "discussion_like": "A {name} piace il tuo commento.",
+    "discussion_reply": "{name} ha risposto al tuo commento.",
+    "dreply_like": "A {name} piace la tua risposta.",
+    "review_like": "A {name} piace il tuo voto.",
+    "sogam_new": "{name} ha lasciato una recensione di {title}."
+  },
+  "th": {
+    "post_like": "{name} ถูกใจรีวิวของคุณ",
+    "post_comment": "{name} เริ่มพูดคุยในรีวิวของคุณ",
+    "comment_like": "{name} ถูกใจการพูดคุยของคุณ",
+    "comment_reply": "{name} ตอบกลับการพูดคุยของคุณ",
+    "reply_like": "{name} ถูกใจการตอบกลับของคุณ",
+    "discussion_like": "{name} ถูกใจความคิดเห็นของคุณ",
+    "discussion_reply": "{name} ตอบกลับความคิดเห็นของคุณ",
+    "dreply_like": "{name} ถูกใจการตอบกลับของคุณ",
+    "review_like": "{name} ถูกใจคะแนนของคุณ",
+    "sogam_new": "{name} เขียนรีวิวเรื่อง {title}"
   }
 }
