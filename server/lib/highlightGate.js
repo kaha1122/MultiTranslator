@@ -22,6 +22,7 @@ const OFFICIAL_CHANNELS = [
   'SBS 스브스 Drama', 'SBS Catch', 'SBS', 'SBS NOW 스브스나우', 'SBS Drama',
   // tvN / CJ ENM
   'tvN DRAMA', 'tvN', 'tvN D ENT', '디글 :Diggle', '디글 클래식 :Diggle Classic', 'TVING', '티빙',
+  'TVING 티빙', // @TVING_official 의 실제 oEmbed author_name (2026-09-09 클라우드 루틴 실측 — 'TVING'·'티빙'만으론 완전 일치 실패)
   // MBC
   'MBCdrama', 'MBC 드라마 파밍', '드라마 파밍', '드파밍', 'MBCentertainment',
   // KBS
