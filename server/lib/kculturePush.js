@@ -26,9 +26,10 @@ function resolveLang(raw) {
 // 클라 notifRoute(src/lib/notify.js)와 동일 매핑 — 해시 경로(네이티브 HashRouter 그대로, 웹은 main.jsx가 레거시 해시를 흡수).
 // anchor가 있으면 쿼리로 부착 — 푸시 클릭 시에도 해당 댓글/평가로 스크롤(웹 SW·네이티브 공통).
 const POST_KINDS = new Set(['post_like', 'post_comment', 'comment_like', 'comment_reply', 'reply_like']);
-function notifUrl({ kind, postId, titleId, media, anchor }) {
+function notifUrl({ kind, postId, titleId, media, dayId, anchor }) {
     const q = anchor ? `?anchor=${anchor}` : '';
     if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}${q}`;
+    if (kind === 'lounge_reply' && dayId) return `/#/lounge/${dayId}${q}`; // 라운지 답글(2026-09-11) — 클라 notifRoute와 동일
     if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}${q}`;
     return '/#/notifications';
 }
