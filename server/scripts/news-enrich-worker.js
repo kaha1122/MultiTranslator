@@ -37,6 +37,10 @@ const HEADERS = {
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const sha1 = (s) => crypto.createHash('sha1').update(s).digest('hex');
 const isGoogle = (u) => String(u || '').includes('news.google.com');
+// 디코드 결과 호스트 교정(2026-09-11): 구글이 Рамблер 기사를 `news.rambler.ua`(우크라이나 미러)로 돌려주는데
+// 이 호스트는 TLS 핸드셰이크 자체가 실패(스크레이프 불가·사용자 클릭도 실패). `.ru`는 kino.rambler.ru로
+// 정상 리다이렉트되고 og:image(사진 깔린 제목 카드)도 온다. 저장분·신규 디코드 양쪽에 적용.
+const normalizeArticleUrl = (u) => String(u || '').replace(/^https?:\/\/news\.rambler\.ua\//i, 'https://news.rambler.ru/');
 // 구 디코더가 남긴 잘린 URL 판별 — 쿼리스트링이 있는데 `=`가 하나도 없는 형태
 // (`view.php?no`, `articleView.html?idxno`). 정상 URL에서는 사실상 나오지 않는다.
 // ⚠ `?` 자체가 없는 URL(대부분의 매체)은 대상 아님 — 멀쩡한 아이템을 재디코드하면 구글 쿼터만 태운다.
@@ -378,6 +382,12 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             const key = it.srcUrl || it.url;
             let url = it.url;
             let patch = null;
+            // 저장된 원문 URL이 교정 대상 호스트면 링크·id를 바로잡고 아래 스크레이프도 교정 URL로 돈다.
+            if (!isGoogle(url) && normalizeArticleUrl(url) !== url) {
+                url = normalizeArticleUrl(url);
+                patch = { srcUrl: key, url, id: sha1(url) };
+                console.log(`  [${lang}] host fixed: ${it.url} → ${url}`);
+            }
             // 구 디코더 버그(위 extractGarturl 주석)로 쿼리스트링이 잘린 채 굳은 아이템은 이미
             // non-google URL이라 아래 "완성" 분기에서 영구 skip된다 → 여기서 재디코드로 복구.
             // 복구 대상은 srcUrl(구글 RSS 링크, 불변 키)로 다시 푼다.
@@ -389,9 +399,10 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
                 if (circuit.blocked || decodes >= langCap || globalDecodes >= GLOBAL_DECODE_BUDGET) continue;
                 decodes += 1; globalDecodes += 1;
                 if (repair) repairs += 1;
-                const real = await decodeGoogleUrl(repair ? it.srcUrl : url, circuit);
+                let real = await decodeGoogleUrl(repair ? it.srcUrl : url, circuit);
                 await sleep(GAP_MS);
                 if (!real) continue;
+                real = normalizeArticleUrl(real);
                 if (repair) {
                     // 디코드 결과가 저장값과 같으면 잘린 게 아니라 원래 그런 URL(`?amp` 등 드묾).
                     // 이미지 재처리 없이 통과 — 매 런 og 재스크레이프를 도는 것을 막는다.
