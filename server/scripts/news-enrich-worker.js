@@ -10,13 +10,13 @@
 //
 // 실행: NEWS_CRON_SECRET=<CRON_SECRET> node server/scripts/news-enrich-worker.js
 // env:  NEWS_API_BASE (기본 https://multitranslator.onrender.com)
-//       NEWS_LANGS    (기본 전체 12개, 콤마 구분)
+//       NEWS_LANGS    (기본 전체 14개, 콤마 구분 — ⚠ 서버 LANG_FEEDS·news-enrich.yml matrix와 수동 동기)
 //       NEWS_DECODE_PER_LANG (기본 10)
 const crypto = require('crypto');
 
 const API = process.env.NEWS_API_BASE || 'https://multitranslator.onrender.com';
 const SECRET = process.env.NEWS_CRON_SECRET || process.env.CRON_SECRET;
-const LANGS = (process.env.NEWS_LANGS || 'ko,en,ja,zh-CN,vi,fr,de,es,ru,pt-BR,id,ar').split(',');
+const LANGS = (process.env.NEWS_LANGS || 'ko,en,ja,zh-CN,vi,fr,de,es,ru,pt-BR,id,ar,it,th').split(',');
 const DECODE_PER_LANG = parseInt(process.env.NEWS_DECODE_PER_LANG || '10', 10);
 // 런당 전역 디코드 예산 — GH 러너 실측: ~37건(≈74요청)에서 429. 30건이면 매 런 무-429로
 // 종료하고, 언어 순서 회전과 합쳐 몇 런 안에 전 언어가 채워짐(2h 주기 × 30 = 360/일 ≫ 신규 기사량).
@@ -210,6 +210,9 @@ const SEARCH_PAGES = {
     'pt-BR': 'https://news.google.com/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
     id: 'https://news.google.com/search?q=drakor&hl=id&gl=ID&ceid=ID:id',
     ar: 'https://news.google.com/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84+%D9%83%D9%88%D8%B1%D9%8A&hl=ar&gl=SA&ceid=SA:ar',
+    // 2026-09-11 it·th — 피드(3c7a79e)만 추가되고 이 표·NEWS_LANGS·GH matrix가 빠져 3일간 이미지 0건(id·ar 2026-07-22 사고 재발)
+    it: 'https://news.google.com/search?q=serie+coreane&hl=it&gl=IT&ceid=IT:it',
+    th: 'https://news.google.com/search?q=%E0%B8%8B%E0%B8%B5%E0%B8%A3%E0%B8%B5%E0%B8%AA%E0%B9%8C%E0%B9%80%E0%B8%81%E0%B8%B2%E0%B8%AB%E0%B8%A5%E0%B8%B5&hl=th&gl=TH&ceid=TH:th',
 };
 async function fetchThumbMap(lang, circuit) {
     const pageUrl = SEARCH_PAGES[lang];
