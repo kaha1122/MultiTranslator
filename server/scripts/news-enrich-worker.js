@@ -267,9 +267,11 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]|-fb\./i.test(Strin
 //     origin)는 403. 같은 시각 SKT 모바일 기기에선 로드 실패 → 파비콘 폴백 강등(실스크린샷).
 //   → 조건이 IP 평판·시점에 따라 바뀌는 WAF. 이 도메인들은 gstatic(핫링크 변수 없음)으로 교체.
 // 폴백을 못 구한 런에서는 원본을 유지하고 다음 런에 재시도한다(로고 유지 원칙과 동일).
-//   · 2026-09-11 thestandard.co(태국, Cloudflare) — 브로드밴드 실측 UA 3종·Referer(무/localhost/capacitor/사이트)
-//     전부 200, CF 캐시 HIT·베이스라인 JPEG 64KB. 같은 시각 SKT 모바일 기기(안드로이드)에선 로드 실패 →
-//     파비콘 강등(실스크린샷). PC에선 재현 불가 — kinoafisha 9/1과 같은 증거 조합이라 동일 처리.
+//   · 2026-09-11 thestandard.co(태국) — WAF가 아니라 응답 헤더 `Cross-Origin-Resource-Policy: same-origin`.
+//     curl·주소창 직접 열기는 200이지만 브라우저·웹뷰의 크로스사이트 <img>는 전부 차단(앱·웹·PC 동일 실측).
+//     이후 imageLoadable이 CORP를 판정하므로 신규 아이템은 자동으로 gstatic 폴백을 타지만, 이미 imgV=1로
+//     저장된 아이템은 "완성" 게이트를 통과해 재검증되지 않는다 → 여기 넣어 강제 재처리(같은 호스트 본문
+//     이미지도 같은 헤더라 og→본문 승격은 무의미, 구글 썸네일만 답).
 const FLAKY_IMAGE_HOSTS = /(^|\.)(kinoafisha\.info|thestandard\.co)$/i;
 const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(u || '')).hostname); } catch { return false; } };
 
@@ -291,6 +293,9 @@ async function imageLoadable(url, minBytes = 0) {
         });
         try { await res.body?.cancel(); } catch { /* 본문 불필요 — 상태·타입만 */ }
         if (!res.ok || !/^image\//i.test(res.headers.get('content-type') || '')) return false;
+        // CORP same-origin/same-site(2026-09-11 thestandard.co 실측): 서버는 200을 주지만 브라우저가
+        // 크로스사이트 <img>를 차단(ERR_BLOCKED_BY_RESPONSE). fetch 응답에는 헤더가 그대로 오므로 여기서 판정.
+        if (/^same-(origin|site)$/i.test((res.headers.get('cross-origin-resource-policy') || '').trim())) return false;
         const len = parseInt(res.headers.get('content-length') || '0', 10);
         return !(minBytes && len && len < minBytes);
     } catch { return false; }
