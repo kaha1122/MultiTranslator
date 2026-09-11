@@ -267,7 +267,10 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]|-fb\./i.test(Strin
 //     origin)는 403. 같은 시각 SKT 모바일 기기에선 로드 실패 → 파비콘 폴백 강등(실스크린샷).
 //   → 조건이 IP 평판·시점에 따라 바뀌는 WAF. 이 도메인들은 gstatic(핫링크 변수 없음)으로 교체.
 // 폴백을 못 구한 런에서는 원본을 유지하고 다음 런에 재시도한다(로고 유지 원칙과 동일).
-const FLAKY_IMAGE_HOSTS = /(^|\.)kinoafisha\.info$/i;
+//   · 2026-09-11 thestandard.co(태국, Cloudflare) — 브로드밴드 실측 UA 3종·Referer(무/localhost/capacitor/사이트)
+//     전부 200, CF 캐시 HIT·베이스라인 JPEG 64KB. 같은 시각 SKT 모바일 기기(안드로이드)에선 로드 실패 →
+//     파비콘 강등(실스크린샷). PC에선 재현 불가 — kinoafisha 9/1과 같은 증거 조합이라 동일 처리.
+const FLAKY_IMAGE_HOSTS = /(^|\.)(kinoafisha\.info|thestandard\.co)$/i;
 const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(u || '')).hostname); } catch { return false; } };
 
 // ── 저장 전 이미지 실기기 검증 (2026-07-24) ─────────────────────────────────────
