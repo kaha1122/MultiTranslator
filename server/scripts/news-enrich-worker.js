@@ -28,7 +28,10 @@ const UPGRADE_PER_LANG = parseInt(process.env.NEWS_UPGRADE_PER_LANG || '8', 10);
 const DRY = process.env.NEWS_DRY === '1'; // 패치를 서버에 보내지 않고 로그만(로컬 검증용)
 const GAP_MS = 600;
 
-const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36';
+// ⚠ 브라우저 버전은 주기적으로 올릴 것(2026-09-12): altselection.ouest-france.fr(fr 피드 27/40건)의 WAF가
+//   Chrome/120 UA에만 403(128·140·안드로이드·curl·빈 UA는 전부 200) — 낡은 버전 문자열을 봇으로 본다.
+//   같은 이유로 매체 스크레이프가 403이면 scrapePage가 모바일 UA(BROWSER_UA)로 1회 재시도한다.
+const UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36';
 const HEADERS = {
     'User-Agent': UA,
     'Accept-Language': 'en-US,en;q=0.9',
@@ -145,7 +148,12 @@ async function scrapePage(url) {
     const out = { og: null, candidates: [] };
     let html;
     try {
-        const res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) });
+        let res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) });
+        if (res.status === 403) {
+            // UA 기반 WAF(버전 블록리스트 등) — 모바일 UA로 1회 재시도(2026-09-12 altselection.ouest-france.fr)
+            try { await res.body?.cancel(); } catch { /* 무시 */ }
+            res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(6000) });
+        }
         if (!res.ok) return out;
         html = (await res.text()).slice(0, 400000); // 본문 이미지까지 보려면 og 스캔(200K)보다 넉넉히
     } catch { return out; }
@@ -296,7 +304,7 @@ const isCorpHost = (u) => {
 // UA + 무referer 403, curl UA 200). 앱과 동일 조건으로 GET해 통과한 것만 저장하고
 // 실패분은 구글 썸네일(gstatic — 핫링크 변수 없음)로 교체. 통과 아이템은 imgV 마커로
 // 재검증 생략(서버 enrich 라우트가 imgV를 캐시에 병합).
-const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 14; SM-S921B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Mobile Safari/537.36';
+const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36';
 const isGoogleCdn = (u) => /^https:\/\/(encrypted-tbn\d\.gstatic\.com|lh\d\.googleusercontent\.com)\//.test(String(u || ''));
 // minBytes: 본문 후보용 최소 크기(Content-Length가 있을 때만 판정) — 로고·아이콘류는 수 KB라
 // 사진(수십 KB~)과 갈린다. og:image 검증은 종전대로 0(크기 무관).
