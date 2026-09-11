@@ -220,7 +220,10 @@ async function fetchThumbMap(lang, circuit) {
     try {
         const res = await fetch(pageUrl, { headers: HEADERS, signal: AbortSignal.timeout(15000) });
         if (!res.ok) {
-            if (res.status === 429) circuit.blocked = true;
+            // 2026-09-11: 검색 페이지는 google.com/sorry(캡차)로 302→429가 상시화(GH 러너·가정용 IP 모두 첫
+            // 요청부터). 종전엔 이 429가 디코드 서킷(circuit.blocked)까지 열어 런 전체가 "decodes 1/30"로
+            // 죽었다 — 기사 페이지·batchexecute는 같은 시각 정상. 썸네일 전용 서킷으로 분리해 디코드는 계속.
+            if (res.status === 429) circuit.thumbBlocked = true;
             console.warn(`  thumbMap: HTTP ${res.status}`);
             return null;
         }
@@ -245,7 +248,7 @@ const isAttachUrl = (u) => String(u || '').startsWith('https://news.google.com/a
 async function resolveThumb(attUrl, circuit) {
     try {
         const res = await fetch(attUrl, { headers: HEADERS, redirect: 'manual', signal: AbortSignal.timeout(8000) });
-        if (res.status === 429) circuit.blocked = true;
+        if (res.status === 429) circuit.thumbBlocked = true;
         const loc = res.headers.get('location');
         return loc && loc.startsWith('http') ? loc : null;
     } catch { return null; }
@@ -304,7 +307,10 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
 
 (async () => {
     if (!SECRET) { console.error('NEWS_CRON_SECRET(=서버 CRON_SECRET) 필요'); process.exit(1); }
-    const circuit = { blocked: false }; // 전 언어 공유 — 429 시 디코드 중단(스크레이프는 계속)
+    // 전 언어 공유. blocked = 기사 페이지/batchexecute 429 → 디코드 중단(스크레이프는 계속).
+    // thumbBlocked = 검색 페이지/attachments 429 → 구글 썸네일 폴백만 중단(2026-09-11 분리 — 결합돼 있던
+    // 동안 검색 페이지 캡차 429 한 번에 런 전체 디코드가 죽어 전 언어 이미지가 굶었다).
+    const circuit = { blocked: false, thumbBlocked: false };
     let totalPatched = 0;
     let globalDecodes = 0;
 
@@ -334,7 +340,7 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
         let thumbMap;
         const ensureThumbMap = async () => {
             if (thumbMap !== undefined) return thumbMap;
-            if (circuit.blocked || globalDecodes >= GLOBAL_DECODE_BUDGET) return (thumbMap = null);
+            if (circuit.thumbBlocked || globalDecodes >= GLOBAL_DECODE_BUDGET) return (thumbMap = null);
             globalDecodes += 1; // news.google.com 요청 1회 — 디코드와 동일 예산 계상
             thumbMap = await fetchThumbMap(lang, circuit);
             await sleep(GAP_MS);
@@ -470,5 +476,6 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             console.log(`[${lang}] nothing to patch${circuit.blocked ? ' (429)' : ''}`);
         }
     }
-    console.log('[worker] done — applied', totalPatched, '| decodes', globalDecodes + '/' + GLOBAL_DECODE_BUDGET, circuit.blocked ? '| 429 circuit opened' : '');
+    console.log('[worker] done — applied', totalPatched, '| decodes', globalDecodes + '/' + GLOBAL_DECODE_BUDGET,
+        circuit.blocked ? '| 429 decode circuit opened' : '', circuit.thumbBlocked ? '| 429 thumb circuit opened' : '');
 })();
