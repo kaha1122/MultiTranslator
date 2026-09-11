@@ -175,7 +175,11 @@ router.post('/api/news/enrich', requireCronAuth, async (req, res) => {
             if (p.id) it.id = p.id;
         }
         if (p.icon && String(p.icon).startsWith('http')) it.icon = p.icon;
-        if (p.image && String(p.image).startsWith('http')) it.image = p.image;
+        if (p.image === '') {
+            // 워커가 확정 불가(CORP same-origin 헤더 — 브라우저 크로스사이트 <img> 전면 차단)로 판정하고
+            // 폴백도 못 구한 이미지: 유지해봐야 절대 안 뜨므로 비워서 GET의 무이미지 제외 규칙에 태운다(2026-09-11).
+            delete it.image; delete it.imgV;
+        } else if (p.image && String(p.image).startsWith('http')) it.image = p.image;
         if (p.imgV) it.imgV = 1; // 워커의 실기기 로드 검증 통과 마커(재검증 생략용)
         applied += 1;
     }

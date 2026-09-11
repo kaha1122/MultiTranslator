@@ -270,13 +270,21 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]|-fb\./i.test(Strin
 //     origin)는 403. 같은 시각 SKT 모바일 기기에선 로드 실패 → 파비콘 폴백 강등(실스크린샷).
 //   → 조건이 IP 평판·시점에 따라 바뀌는 WAF. 이 도메인들은 gstatic(핫링크 변수 없음)으로 교체.
 // 폴백을 못 구한 런에서는 원본을 유지하고 다음 런에 재시도한다(로고 유지 원칙과 동일).
-//   · 2026-09-11 thestandard.co(태국) — WAF가 아니라 응답 헤더 `Cross-Origin-Resource-Policy: same-origin`.
-//     curl·주소창 직접 열기는 200이지만 브라우저·웹뷰의 크로스사이트 <img>는 전부 차단(앱·웹·PC 동일 실측).
-//     이후 imageLoadable이 CORP를 판정하므로 신규 아이템은 자동으로 gstatic 폴백을 타지만, 이미 imgV=1로
-//     저장된 아이템은 "완성" 게이트를 통과해 재검증되지 않는다 → 여기 넣어 강제 재처리(같은 호스트 본문
-//     이미지도 같은 헤더라 og→본문 승격은 무의미, 구글 썸네일만 답).
-const FLAKY_IMAGE_HOSTS = /(^|\.)(kinoafisha\.info|thestandard\.co)$/i;
+const FLAKY_IMAGE_HOSTS = /(^|\.)kinoafisha\.info$/i;
 const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(u || '')).hostname); } catch { return false; } };
+
+// ── CORP 차단 호스트 — 확정 불가(가변 아님) (2026-09-11 thestandard.co 실측) ──────────
+// 응답 헤더 `Cross-Origin-Resource-Policy: same-origin`이면 curl·주소창 직접 열기는 200이지만 브라우저·
+// 웹뷰의 크로스사이트 <img>는 전부 차단(앱·모바일 웹·PC 웹 동일). 같은 호스트 본문 이미지도 같은 헤더라
+// og→본문 승격은 무의미하고 구글 썸네일만 답인데, 그것도 못 구하면 원본을 유지해봐야 절대 안 뜬다 →
+// 이미지를 비워(patch image:'') GET의 무이미지 제외 규칙으로 카드 자체를 내린다(가변 차단의 "원본 유지"와 다름).
+// 시드 정규식 + imageLoadable이 헤더로 발견한 호스트(런 중 동적 추가). 시드는 이미 imgV=1로 저장된
+// 아이템을 완성 게이트에서 빼내 재처리시키는 용도.
+const CORP_IMAGE_HOSTS = /(^|\.)thestandard\.co$/i;
+const corpHostsSeen = new Set();
+const isCorpHost = (u) => {
+    try { const h = new URL(String(u || '')).hostname; return CORP_IMAGE_HOSTS.test(h) || corpHostsSeen.has(h); } catch { return false; }
+};
 
 // ── 저장 전 이미지 실기기 검증 (2026-07-24) ─────────────────────────────────────
 // 퍼블리셔 CDN 핫링크 정책은 제각각이라 서버(curl류 UA)에서 200이어도 실제 앱 <img>
@@ -298,7 +306,10 @@ async function imageLoadable(url, minBytes = 0) {
         if (!res.ok || !/^image\//i.test(res.headers.get('content-type') || '')) return false;
         // CORP same-origin/same-site(2026-09-11 thestandard.co 실측): 서버는 200을 주지만 브라우저가
         // 크로스사이트 <img>를 차단(ERR_BLOCKED_BY_RESPONSE). fetch 응답에는 헤더가 그대로 오므로 여기서 판정.
-        if (/^same-(origin|site)$/i.test((res.headers.get('cross-origin-resource-policy') || '').trim())) return false;
+        if (/^same-(origin|site)$/i.test((res.headers.get('cross-origin-resource-policy') || '').trim())) {
+            try { corpHostsSeen.add(new URL(url).hostname); } catch { /* 무시 */ }
+            return false;
+        }
         const len = parseInt(res.headers.get('content-length') || '0', 10);
         return !(minBytes && len && len < minBytes);
     } catch { return false; }
@@ -400,8 +411,8 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
                 continue;
             } else if (it.image && it.imgV
                 && !isLogoImage(it.image) && !isGeneratedOg(it.image) && !isDupImage(it.image, true) && !isFlakyHost(it.image)
-                && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
-                continue; // 검증 통과(imgV) — 완성 아이템 (http://·중복·로고·생성카드·가변차단 저장분은 재처리)
+                && !isCorpHost(it.image) && !/&#|&amp;/.test(it.image) && !it.image.startsWith('http://')) {
+                continue; // 검증 통과(imgV) — 완성 아이템 (http://·중복·로고·생성카드·가변차단·CORP 저장분은 재처리)
             }
             // 구글 썸네일(gstatic) 저장분 승격(2026-09-05): 종전엔 gstatic이면 무조건 완성으로 봤지만,
             // 원문 og가 생성 카드(제목 텍스트)이거나 스크레이프가 일시 실패했던 아이템은 gstatic도
@@ -419,7 +430,7 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             let img = (cleanStored && !redecoded) ? it.image : null;
             if (!img) { page = await scrapePage(url); img = page.og; }
             // 채택 불가 판정 — 없음·로고·생성 카드·사이트 공용(중복)·가변 차단 CDN
-            const unusable = (u) => !u || isLogoImage(u) || isGeneratedOg(u) || isDupImage(u, u === it.image) || isFlakyHost(u);
+            const unusable = (u) => !u || isLogoImage(u) || isGeneratedOg(u) || isDupImage(u, u === it.image) || isFlakyHost(u) || isCorpHost(u);
             // https 앱에서 http:// 이미지는 mixed content로 브라우저가 무조건 차단(실측: sinaimg —
             // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
             // 승격이 안 먹는 CDN이면 검증 실패 → 구글 썸네일 교체.
@@ -450,9 +461,15 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             }
             // 승격 시도에서 더 나은 것이 없으면 저장된 gstatic 유지 + imgV — 매 런 재탐색 방지
             if (upgrading && (!img || isGoogleCdn(img))) img = it.image;
+            // CORP 호스트 이미지는 폴백을 못 구했어도 절대 뜨지 않으므로 유지 대신 비운다(카드 제외).
+            // ⚠ 가변 차단(flaky)의 "원본 유지"와 구분 — 저 쪽은 IP·시점에 따라 뜰 수도 있다.
+            if (img && isCorpHost(img)) img = null;
             if (img) {
                 patch = { ...(patch || { srcUrl: key }), imgV: 1 };
                 if (img !== it.image) patch.image = img;
+            } else if (it.image && isCorpHost(it.image)) {
+                patch = { ...(patch || { srcUrl: key }), image: '' };
+                console.log(`  [${lang}] CORP-blocked image cleared: ${String(it.image).slice(0, 70)}`);
             }
             if (patch) patches.push(patch);
         }
