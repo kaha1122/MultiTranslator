@@ -16,7 +16,7 @@ const LANG_FEEDS = {
     fr: 'https://news.google.com/rss/search?q=drama+cor%C3%A9en&hl=fr&gl=FR&ceid=FR:fr',
     de: 'https://news.google.com/rss/search?q=k-drama&hl=de&gl=DE&ceid=DE:de',
     es: 'https://news.google.com/rss/search?q=dorama+coreano&hl=es-419&gl=MX&ceid=MX:es-419',
-    ru: 'https://news.google.com/rss/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0+-site:vk.com+-site:vk.ru&hl=ru&gl=RU&ceid=RU:ru', // -site:vk.com(2026-09-12): VK 동영상 재게시 글("Видео от Легко о Дорамах")이 100건 중 28건 — vk.ru 미러까지 제외 시 VK 28→0, 매체 22→33곳, 최근 7일 23→13건(VK 제외분이 최신 글 위주). VK og:image는 파이어폭스 로고(실화면 확인)
+    ru: 'https://news.google.com/rss/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0+-site:vk.com+-site:vk.ru+-site:vkvideo.ru&hl=ru&gl=RU&ceid=RU:ru', // -site:vk.com(2026-09-12): VK 동영상 재게시 글("Видео от Легко о Дорамах")이 100건 중 28건 — vk.ru 미러까지 제외 시 VK 28→0, 매체 22→33곳, 최근 7일 23→13건(VK 제외분이 최신 글 위주). VK og:image는 파이어폭스 로고(실화면 확인). vkvideo.ru(VK 동영상 도메인)도 제외 — 디코드 후 이미지 0. 인스타그램 릴 9건은 남김(이미지 없어 자동 제외됨)
     'pt-BR': 'https://news.google.com/rss/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
     id: 'https://news.google.com/rss/search?q=drakor&hl=id&gl=ID&ceid=ID:id', // drakor = 인도네시아어 K-드라마 통칭 (2026-07-16)
     ar: 'https://news.google.com/rss/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84+%D9%83%D9%88%D8%B1%D9%8A&hl=ar&gl=SA&ceid=SA:ar', // مسلسل كوري = 한국 드라마 (2026-07-22)
