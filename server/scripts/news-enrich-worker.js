@@ -210,7 +210,7 @@ const SEARCH_PAGES = {
     fr: 'https://news.google.com/search?q=drama+cor%C3%A9en&hl=fr&gl=FR&ceid=FR:fr',
     de: 'https://news.google.com/search?q=k-drama&hl=de&gl=DE&ceid=DE:de',
     es: 'https://news.google.com/search?q=dorama+coreano&hl=es-419&gl=MX&ceid=MX:es-419',
-    ru: 'https://news.google.com/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0&hl=ru&gl=RU&ceid=RU:ru',
+    ru: 'https://news.google.com/search?q=%D0%B4%D0%BE%D1%80%D0%B0%D0%BC%D0%B0+-site:vk.com+-site:vk.ru&hl=ru&gl=RU&ceid=RU:ru', // LANG_FEEDS와 동기(2026-09-12 -site:vk.com -site:vk.ru)
     'pt-BR': 'https://news.google.com/search?q=dorama+coreano&hl=pt-BR&gl=BR&ceid=BR:pt-419',
     id: 'https://news.google.com/search?q=drakor&hl=id&gl=ID&ceid=ID:id',
     ar: 'https://news.google.com/search?q=%D9%85%D8%B3%D9%84%D8%B3%D9%84+%D9%83%D9%88%D8%B1%D9%8A&hl=ar&gl=SA&ceid=SA:ar',
