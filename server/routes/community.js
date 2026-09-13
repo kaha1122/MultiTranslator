@@ -151,7 +151,8 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
     // 원문 언어 힌트(2026-09-13, 선택): 게시 시 감지된 문서의 lang. 짧은 단어("Vero"·"Pavitra")는 문맥이 없어
     // 모델이 언어를 못 정하고 고유명사로 취급(음차·원문 유지)하던 문제의 핵심 단서. 대상 언어와 같으면 무시.
-    const srcLang = (typeof srcLangRaw === 'string' && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(srcLangRaw) && srcLangRaw !== targetLang) ? srcLangRaw : null;
+    const validLang = (v) => (typeof v === 'string' && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(v) && v !== targetLang) ? v : null;
+    let srcLang = validLang(srcLangRaw);
     if (translatableChars(text) < 2) {
         console.log(`[CommunityTx] uid=${req.uid ? String(req.uid).slice(0, 8) : 'anon'} scope=${scope || '-'} target=${targetLang} chars=${text.length} → NO-TRANSLATABLE-TEXT(호출 안 함, 차감 없음)`);
         return res.status(422).json({ error: 'no_translatable_text' });
@@ -181,6 +182,15 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
                 return res.json({ translated: body, cached: true });
             }
         } catch (e) { /* 캐시 read 실패 → MISS로 진행(번역은 계속) */ }
+    }
+    // 원문 언어 힌트 서버 보강(2026-09-13): 클라가 srcLang을 안 보내면(OTA 전 구버전) cachePath의 원문 문서에서
+    // srcLang(EN 게시 원문 언어) || lang(게시 시 감지)을 읽는다. 실측: "Bella"(it)는 힌트 없으면 이름(벨라), 있으면 좋아요.
+    if (!srcLang && cacheDoc) {
+        try {
+            const parentPath = cachePath.split('/').slice(0, -2).join('/');
+            const [p] = await kcultureDb.getAll(kcultureDb.doc(parentPath), { fieldMask: ['srcLang', 'lang'] });
+            if (p.exists) { const d = p.data() || {}; srcLang = validLang(d.srcLang) || validLang(d.lang); }
+        } catch { /* fail-open — 힌트 없이 진행 */ }
     }
     // 선택적 길이 제약(KCulture 한줄평 등 고정 박스용). optional이라 미전송 호출(PronunFit 포함)엔 무영향.
     const lenRule = (Number.isFinite(maxChars) && maxChars > 0)
