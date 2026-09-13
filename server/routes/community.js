@@ -145,10 +145,13 @@ const translatableChars = (s) => {
 const MARKUP_RULE = `   - Inline markup tokens in the text (>!spoiler!<, **bold**, _italic_, [text](url)) are formatting: keep each token exactly where it is and translate only the words inside it. If a token is empty (e.g. ">!!<"), keep it empty. Never add sentences, opinions or content that are not in the source text.`;
 
 router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
-    const { text, targetLang, maxChars, cachePath, scope } = req.body || {};
+    const { text, targetLang, maxChars, cachePath, scope, srcLang: srcLangRaw } = req.body || {};
     if (!text || !targetLang) return res.status(400).json({ error: 'missing fields' });
     if (text.length > 5000) return res.status(413).json({ error: 'too long (max 5000)' });
     if (!GEMINI_API_KEY) return res.status(500).json({ error: 'Gemini not configured' });
+    // 원문 언어 힌트(2026-09-13, 선택): 게시 시 감지된 문서의 lang. 짧은 단어("Vero"·"Pavitra")는 문맥이 없어
+    // 모델이 언어를 못 정하고 고유명사로 취급(음차·원문 유지)하던 문제의 핵심 단서. 대상 언어와 같으면 무시.
+    const srcLang = (typeof srcLangRaw === 'string' && /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/.test(srcLangRaw) && srcLangRaw !== targetLang) ? srcLangRaw : null;
     if (translatableChars(text) < 2) {
         console.log(`[CommunityTx] uid=${req.uid ? String(req.uid).slice(0, 8) : 'anon'} scope=${scope || '-'} target=${targetLang} chars=${text.length} → NO-TRANSLATABLE-TEXT(호출 안 함, 차감 없음)`);
         return res.status(422).json({ error: 'no_translatable_text' });
@@ -198,7 +201,7 @@ router.post('/api/community/translate', requireAuthAny, rateLimit('community-tra
     // 무성조 베트남어는 접속사 자리의 ma→mà를 결정적으로 고친 원문을 넘긴다(작품 컨텍스트가 "귀신" 읽기를
     // 밀어도 무관 — txNuance MA_CONJ_RE 주석). 로그·캐시 키는 원문 기준이라 영향 없음.
     const srcText = viToneless ? normalizeTonelessVietnamese(text) : text;
-    const prompt = buildTxPrompt({ text: srcText, targetLang, targetName, ctxLines: ctx.lines, glossaryLines, styleLines, lenRule, viToneless });
+    const prompt = buildTxPrompt({ text: srcText, targetLang, targetName, ctxLines: ctx.lines, glossaryLines, styleLines, lenRule, viToneless, srcLang });
 
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate',
@@ -241,11 +244,15 @@ function looksLikeAnswer(raw) {
 }
 
 // 단건 UGC 번역 프롬프트 조립 — 라우트와 scripts/test-vi-toneless.js(회귀)가 같은 함수를 쓴다(미러 드리프트 방지, 2026-08-29).
-function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLines = [], styleLines = [], lenRule = null, viToneless = false }) {
+function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLines = [], styleLines = [], lenRule = null, viToneless = false, srcLang = null }) {
+    // 짧은 텍스트(단어 1~3개·감탄사) — 문맥이 없어 고유명사로 오인되기 쉬움. 규칙 3에 명시 지시를 추가한다.
+    const shortText = (text.match(/\S+/g) || []).length <= 3 && text.length <= 24;
+    const srcHint = srcLang ? `[Source language] The author wrote this in ${langName(srcLang)} (ISO "${srcLang}", detected when it was posted). Read the TEXT as ${langName(srcLang)} unless its script clearly contradicts that.` : null;
     return [
         `You are a professional translator for a multilingual community app.`,
         ``,
         `[Target language] ${targetName} (ISO code "${targetLang}")`,
+        ...(srcHint ? [srcHint] : []),
         APP_NATURE_LINE,
         ...ctxLines,
         ...glossaryLines,
@@ -263,6 +270,7 @@ function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLi
         `   - Person names (actors, directors, characters): convert only if you are CERTAIN of the established ${targetName} spelling; otherwise keep the original spelling as-is or transliterate it. NEVER substitute a different real person's name.`,
         `   - Unfamiliar proper nouns (place names, in-show objects or terms): if unsure, keep them as-is — never replace them with a generic or different word.`,
         `   - Quoted titles of books, films or shows: use the official ${targetName} release title if you are certain of it; otherwise keep the original title unchanged.`,
+        ...(shortText ? [`   - SHORT TEXT: the TEXT is only a word or a few words. In a fan community such a short reaction is almost always a common word, adjective or interjection in the source language (e.g. Italian "Vero" = "true/right", Hindi "Pavitra" = "pure", Indonesian "Bagus" = "great", "Wow"), NOT a person's name — translate its MEANING into ${targetName}. Do not transliterate it and do not leave it unchanged. Treat it as a name only if it is a well-known real person, place or title.`] : []),
         MARKUP_RULE,
         NO_ANSWER_RULE,
         `4. Self-check before answering: if your "translated" value is still (even partly) in the source language, or if it is a reply to the TEXT rather than a translation of it, you FAILED — redo it as a faithful translation fully in ${targetName}.`,
