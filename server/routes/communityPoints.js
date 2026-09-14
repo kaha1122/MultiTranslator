@@ -29,11 +29,18 @@ const router = express.Router();
 // 금액/포인트는 절대 클라 body에서 도출하지 않는다.
 // 2026-07-05: 150pt→1,000pt/$0.99 통일(웹 PayPal·네이티브 IAP) — 보상형 광고 5회=150pt와
 // $1이 등가면 구매 유인이 없어 6.7배 가치로 조정. POINTS_ENABLED=false 기간이라 유통 주문 0.
+// 2026-09-14: 전 팩 1,000→100pt(POINTS_ECONOMY_V2 §131). IAP SKU는 스토어·RC 등록 ID kdrama_points_100으로 교체
+//   (구 kdrama_points_1000은 스토어 비활성 — 유통 주문 0이라 전환 키 불필요). pt_pp_100·pt_toss_100으로 키도 통일 —
+//   구 키(pt_pp_1000·pt_toss_1000)는 OTA 전 구클라 호환용 별칭(같은 객체·100pt). 클라 전량 갱신 후 제거.
+const PKG_PP = { method: 'paypal', points: 100, usd: '0.99', name: 'K-DramaAnyLang 100 Points' };
+// 토스페이먼츠(웹, KRW). 금액은 여기가 유일한 권위 — 클라 tossPay.js TOSS_PACKAGE.krw는 표시용(동기 필수).
+const PKG_TOSS = { method: 'toss', points: 100, krw: 1500, name: 'K-DramaAnyLang 100 Points' };
 const PACKAGES = {
-    pt_pp_1000: { method: 'paypal', points: 1000, usd: '0.99', name: 'K-DramaAnyLang 1,000 Points' },
-    kdrama_points_1000: { method: 'iap', points: 1000, usd: '0.99', name: 'K-DramaAnyLang 1,000 Points (IAP)' },
-    // 토스페이먼츠(웹, KRW). 금액은 여기가 유일한 권위 — 클라 tossPay.js TOSS_PACKAGE.krw는 표시용(동기 필수).
-    pt_toss_1000: { method: 'toss', points: 1000, krw: 1500, name: 'K-DramaAnyLang 1,000 Points' },
+    pt_pp_100: PKG_PP,
+    kdrama_points_100: { method: 'iap', points: 100, usd: '0.99', name: 'K-DramaAnyLang 100 Points (IAP)' },
+    pt_toss_100: PKG_TOSS,
+    pt_pp_1000: PKG_PP,     // legacy alias
+    pt_toss_1000: PKG_TOSS, // legacy alias
 };
 
 // ── 보상형 광고 지급 정책(서버 권위) ─────────────────────────────────────────
@@ -233,7 +240,7 @@ router.post('/api/community/points/confirm-iap', requireAuthAny, rateLimit('kc-p
     const txId = String(req.body?.txId || '').trim();
     if (!txId || txId.length > 200) return res.status(400).json({ error: 'txId required' });
     try {
-        const result = await creditPoints(req.uid, 'kdrama_points_1000', `iap_${txId}`, { method: 'iap', txId });
+        const result = await creditPoints(req.uid, 'kdrama_points_100', `iap_${txId}`, { method: 'iap', txId });
         console.log(`[KC/Points] iap credited: ${req.uid} +${result.points}pt (${txId}${result.already ? ', idempotent' : ''})`);
         return res.json({ success: true, points: result.points, alreadyGranted: result.already });
     } catch (err) {
