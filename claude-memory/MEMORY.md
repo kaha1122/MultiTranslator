@@ -103,7 +103,7 @@
 - [decision_ios_capgo_ota_reactivation.md](decision_ios_capgo_ota_reactivation.md) — **2026-05-07: iOS Capgo OTA 비활성화 룰 폐기** — autoUpdate=true 유지, Android와 동일 자동화. 0402-session2/0403의 비활성화 기록은 historical only — 다시 false로 patch 금지
 - [feedback_deploy.md](feedback_deploy.md) — **🚨 배포 2대 원칙**: (1) staging만 push, main은 production 요청 시에만 (2) 클라이언트 산출물(dist/aab/ipa)에 API 비밀 키 절대 금지 + 빌드 후 grep 검증 필수 (2026-04-24 GCP 정지 사고 후 강화)
 - [feedback_commit_heredoc.md](feedback_commit_heredoc.md) — 🚫 **Bash 도구 git commit에 PowerShell `@'...'@` 힙독 금지** (메시지에 `@` 섞여 매번 재커밋). Bash는 heredoc→`git commit -F` 사용, 커밋 후 `git log -1 --format=%B | cat -A`로 확인
-- [feedback_capgo_verify.md](feedback_capgo_verify.md) — Capgo bundle upload 후 **반드시** `channel currentBundle <ch>` 명령으로 채널 포인터 일치 검증 (과거 누락 반복됨, v1.4.24 staging 링크 유실 사례)
+- [feedback_capgo_verify.md](feedback_capgo_verify.md) — Capgo upload 후 **반드시** `channel currentBundle <ch>` 포인터 검증(누락 반복). CLI 가 "Cannot get permissions for organization" 이면 REST(`api.capgo.app/channel`) 로 조회·배정 우회(2026-09-16)
 - [reference-capgo-cli-auth.md](reference-capgo-cli-auth.md) — **Capgo CLI 인증 방식 변경 (2026-05-27)**: v7.111.7+ 부터 `~/.capgo` 파일 인증 거부됨. `CAPGO_TOKEN` User env + `--apikey $env:CAPGO_TOKEN` 옵션 필수. CLI 버전 `@7.111.2` 핀 권장. 환경변수 변경 후 IDE/process 재시작 필요
 - [feedback_no_secrets_in_git.md](feedback_no_secrets_in_git.md) — 🚨 절대 금지 4종: Git 커밋/클라빌드(VITE_)/chat·스크린샷/하드코딩 어디에도 API 비밀 금지. 위반 시 즉시 폐기+재발급+환경 청소 (2026-04-24 4차 사고로 GCP 통째 정지)
 - [feedback_no_secrets_in_chat.md](feedback_no_secrets_in_chat.md) — **🚨 chat·AI·스크린샷에도 키 평문 공유 금지**, 스크린샷은 값 컬럼 마스킹(👁️ 아이콘) 필수, 변수명만 OK
