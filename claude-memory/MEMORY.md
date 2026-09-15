@@ -9,7 +9,7 @@
 - **번역엔진**: Gemini 2.5 Flash-Lite (전 탭 서버경유, `server/routes/translate.js` 포함)
 
 ## 🔔 활성 알림 (Active Reminders)
-- [reminder-admob-blackout-restore.md](reminder-admob-blackout-restore.md) — ⏳ **2026-09-15 이후 AdMob 재개**: 계정 정지로 `src/config/ads.js` `ADS_ENABLED=false` 전 광고 차단 중. 노출 재개 확인 후에만 true→OTA (날짜 자동해제 없음)
+- [reminder-admob-blackout-restore.md](reminder-admob-blackout-restore.md) — ⏳ **AdMob 재개 대기(9/16 기준 계정 정지 지속)**: `ADS_ENABLED=false` 유지. 재개 순서 = 정지해제 확인 → SSV URL 4개 등록 → main push → true→OTA
 - [changes-0611-security.md](changes-0611-security.md) — ⏳ **firestore.rules dailyTopUpLegacy() 예외 제거 — 기한 없음, 조건 기준**: Capgo 2.0.28+ 보급 ~95% 확인 시(`node server/_deploy-firestore-rules.js --release`). 방치해도 기능 문제 0, 리스크=포인트 자가적립 소형(실비용은 rate limit 캡, 2026-06-12 사용자 합의)
 - [reminder-azure-speech-s0-cache-check.md](reminder-azure-speech-s0-cache-check.md) — **2026-04-25 체크**: F0→S0 업그레이드 후 "1차 실패/2차 성공" 패턴 자연 해소 여부. 미해소 시 **Key 재생성**(Azure Portal + Render env 교체)
 - [reminder-ios-push-post-approval.md](reminder-ios-push-post-approval.md) — iOS 출시 후 대기: ① Push Notifications Xcode 통합 ② Meta 대시보드 iPhone Store ID(`6761342764`) 등록
