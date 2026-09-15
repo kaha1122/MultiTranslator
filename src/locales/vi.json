@@ -1025,6 +1025,7 @@
   },
   "reward": {
     "dailyCapReached": "Bạn đã đạt giới hạn xem quảng cáo hôm nay. Hãy quay lại vào ngày mai!",
+    "enoughPoints": "Bạn đã đủ điểm. Có thể nạp thêm khi dưới 10 điểm.",
     "cooldownWait": "Vui lòng đợi một chút (khoảng 1 phút) trước quảng cáo tiếp theo.",
     "watchForCards": "+5 thẻ",
     "watchAd": "Xem quảng cáo để thêm 5 thẻ",

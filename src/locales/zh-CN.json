@@ -1025,6 +1025,7 @@
   },
   "reward": {
     "dailyCapReached": "今天的广告观看次数已达上限，请明天再来！",
+    "enoughPoints": "积分已足够。低于 10 分时可再充值。",
     "cooldownWait": "请稍候（约1分钟）再观看下一个广告。",
     "watchForCards": "+5 张卡片",
     "watchAd": "看广告获得5张卡片",

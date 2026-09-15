@@ -32,6 +32,7 @@ app.use(require('./routes/webhook'));
 app.use(require('./routes/referral'));
 app.use(require('./routes/reviewBonus'));
 app.use(require('./routes/adReward'));
+app.use(require('./routes/admobSsv')); // AdMob 보상형 SSV 콜백 — 서명 검증 기반 지급 권위 (2026-09-16)
 app.use(require('./routes/streak'));
 app.use(require('./routes/reengagement'));
 app.use(require('./routes/converse'));

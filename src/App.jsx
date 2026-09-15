@@ -72,7 +72,7 @@ import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
 import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
-import { ADS_ENABLED } from './config/ads';
+import { ADS_ENABLED, AD_TOPUP_POINT_THRESHOLD } from './config/ads';
 import { resetIOSViewport } from './utils/resetIOSViewport';
 import AppGuide from './components/AppGuide';
 import LandingPage from './components/LandingPage';
@@ -1080,6 +1080,10 @@ function App() {
   const bonusAdCapReached =
     (profile?.adRewardCountDate === utcDateStr() ? (profile?.adRewardCount || 0) : 0) >= AD_REWARD_DAILY_CAP;
   const pronAdCapReached = (todayPronBonus || 0) >= PRON_AD_BONUS_MAX;
+  // [2026-09-16] 포인트 보유 임계 — 충분히 남았으면 광고를 틀지 않는다(무효 노출 억제).
+  //   서버(SSV)에는 같은 조건을 넣지 않는다: 이미 광고를 끝까지 본 유저가 그 사이 포인트를
+  //   획득했다는 이유로 보상을 못 받으면 "광고만 보고 손해"가 되기 때문. 노출 억제는 클라 몫.
+  const bonusAdPointsEnough = (bonusPoints || 0) >= AD_TOPUP_POINT_THRESHOLD;
   // 재생 전 공통 게이트 — 막히면 사유 alert 후 false. capped는 호출부가 유닛별 조건으로 판정.
   const rewardedAdGate = (capped, serverLastMs = 0) => {
     if (capped) {
@@ -1101,6 +1105,11 @@ function App() {
     if (!ADS_ENABLED) return; // [2026-08-23] AdMob 블랙아웃 — 보상형 광고 차단(호출 경로 방어)
     if (!window.Capacitor?.isNativePlatform?.()) return;
     if (!user) return;
+    // 포인트가 충분하면 광고를 틀지 않는다 — 필요 없는 노출이 무효 트래픽으로 집계되는 것 차단.
+    if (bonusAdPointsEnough) {
+      alert(getT(sourceLang, 'reward.enoughPoints'));
+      return;
+    }
     // 무효 트래픽 게이트: 서버 가드(지급)와 동일 조건을 재생 전에 검사 — 걸리면 광고 자체를 안 튼다.
     if (!rewardedAdGate(bonusAdCapReached, profile?.lastAdRewardAt?.toMillis?.() || 0)) return;
     setRewardAdLoading(true);
@@ -1110,30 +1119,50 @@ function App() {
       const adId = AD_UNITS.rewardedCards;
 
       await new Promise(async (resolve, reject) => {
+        // [thermal-ios 2026-09-16] 이 Promise 는 "광고가 화면에서 사라진 시점"에만 settle 해야 한다.
+        //   finally 에서 BluetoothAudio.endAudioSession(setActive=false) 을 호출하는데, 광고가
+        //   아직 재생 중이면 AVAudioSession 이 busy 라 네이티브가 조용히 실패하고(plugin 은 에러를
+        //   throw 하지 않음) 그 시점엔 Dismissed 리스너도 이미 remove 된 뒤라 재해제 기회가 없다.
+        //   → mediaserverd awake 잔류 = 2026-06-17 "광고 후 발열" 재현. 그래서 Rewarded 에서는
+        //   settle 하지 않고 Dismissed 만 settle 한다. (과거엔 Rewarded 핸들러의 서버 왕복 await 가
+        //   우연히 지연 버퍼 역할을 했는데, SSV 전환으로 그 await 가 사라져 결함이 드러났다.)
+        let safety = null;
+        const clearSafety = () => { if (safety) { clearTimeout(safety); safety = null; } };
+        const finish = () => { clearSafety(); resolve(); };
+        const fail = (e) => { clearSafety(); reject(e); };
+
         // 리스너를 prepare 전에 먼저 등록
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          // 서버 검증 엔드포인트 경유 +5 충전 (쿨다운/일일상한 가드). 클라 직접 increment 금지(위변조).
-          try {
-            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            await authFetch(`${SERVER_URL}/api/bonus/ad-reward`, { method: 'POST' });
-          } catch (e) { console.error('[RewardedAd] 충전 실패:', e); }
-          resolve();
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+          // [2026-09-16 SSV] 지급은 AdMob → 서버(/api/admob-ssv) 서명 콜백이 수행한다.
+          //   클라가 "봤다"고 호출하던 경로는 무효 트래픽 통로였으므로 제거(계정정지 재발 방지).
+          //   포인트 반영은 users 문서 onSnapshot(AuthContext)으로 수 초 내 자동 표시된다.
+          console.log('[RewardedAd] Rewarded — SSV 콜백 대기(서버 지급)');
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => {
-          // 보상광고 dismiss 시 별도 처리 없음. (과거 v1.5.82 triggerForcedIdle 강제
-          // idle 호출은 진입 애니메이션을 멈춰 UX 회귀를 일으켜 폐기됐고, idle 로직 제거됨.)
-          resolve();
+          // 광고가 닫힌 뒤 settle → finally 의 endAudioSession 이 실제로 성공한다.
+          finish();
         }));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) =>
-          reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
+          fail(new Error(`로드 실패: ${JSON.stringify(e)}`))));
         handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) =>
-          reject(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+          fail(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+        // 안전망 — Dismissed 가 끝내 오지 않으면(플러그인/OS 엣지) Promise 가 영구 pending 이 되어
+        //   리스너도 오디오 세션도 정리되지 않는다. 3분 후 강제 종료해 정리 경로를 보장.
+        safety = setTimeout(() => {
+          console.warn('[RewardedAd] Dismissed 미수신 — 안전 종료');
+          finish();
+        }, 180_000);
 
         try {
-          await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
+          // ssv: Google 이 우리 서버로 보내는 콜백에 실릴 식별자. userId=지급 대상 uid,
+          //   customData=보상 종류. 서명 대상에 포함되므로 중간 변조가 불가능하다.
+          await AdMob.prepareRewardVideoAd({
+            adId, isTesting: IS_TESTING,
+            ssv: { userId: user.uid, customData: JSON.stringify({ t: 'bonus' }) },
+          });
           setRewardAdLoading(false); // 로드 완료 → 로딩 표시 끔
           await AdMob.showRewardVideoAd();
-        } catch (e) { reject(e); }
+        } catch (e) { fail(e); } // fail() 경유 — 안전망 타이머까지 정리(고아 타이머/오해 로그 방지)
       });
     } catch (e) {
       console.error('[RewardedAd] 실패:', e);
@@ -1163,27 +1192,39 @@ function App() {
       const { AdMob, RewardAdPluginEvents } = await import('@capacitor-community/admob');
       const adId = AD_UNITS.rewardedProns; // bonus02
       await new Promise(async (resolve, reject) => {
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, async () => {
-          try {
-            const SERVER_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
-            const now = new Date();
-            const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-            await authFetch(`${SERVER_URL}/api/bonus/pron-allowance`, {
-              method: 'POST', headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ date: localDate }),
-            });
-            await reloadDaily(); // pronBonus 갱신 → 유효 한도 즉시 반영
-          } catch (e) { console.error('[PronAllowanceAd] 충전 실패:', e); }
-          resolve();
+        // [thermal-ios] settle 시점 규칙은 handleRewardedAd 와 동일 — Dismissed 에서만 settle.
+        let safety = null;
+        const clearSafety = () => { if (safety) { clearTimeout(safety); safety = null; } };
+        const finish = () => { clearSafety(); resolve(); };
+        const fail = (e) => { clearSafety(); reject(e); };
+
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Rewarded, () => {
+          // [2026-09-16 SSV] 지급은 서버 콜백이 수행. dailyProgress 는 onSnapshot 구독이 아니라
+          //   명시 로드라서, 콜백 도착 시점차(수백ms~수초)를 감안해 지연 재조회 2회로 반영한다.
+          //   (매 호출 재조회가 아니라 광고 1회당 2회 — 발열 규칙6 범위 내)
+          console.log('[PronAllowanceAd] Rewarded — SSV 콜백 대기(서버 지급)');
+          setTimeout(() => { reloadDaily?.(); }, 2000);
+          setTimeout(() => { reloadDaily?.(); }, 6000);
         }));
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => resolve()));
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) => reject(new Error(`로드 실패: ${JSON.stringify(e)}`))));
-        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) => reject(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.Dismissed, () => finish()));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToLoad, (e) => fail(new Error(`로드 실패: ${JSON.stringify(e)}`))));
+        handles.push(await AdMob.addListener(RewardAdPluginEvents.FailedToShow, (e) => fail(new Error(`표시 실패: ${JSON.stringify(e)}`))));
+        safety = setTimeout(() => {
+          console.warn('[PronAllowanceAd] Dismissed 미수신 — 안전 종료');
+          finish();
+        }, 180_000);
         try {
-          await AdMob.prepareRewardVideoAd({ adId, isTesting: IS_TESTING });
+          // customData.d = 클라 로컬 날짜 — 서버가 같은 키의 dailyProgress 문서에 적립해야
+          //   클라가 읽는 문서와 일치한다(서버 UTC 기준으로 쓰면 자정 근처에 어긋남).
+          const now = new Date();
+          const localDate = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+          await AdMob.prepareRewardVideoAd({
+            adId, isTesting: IS_TESTING,
+            ssv: { userId: user.uid, customData: JSON.stringify({ t: 'pron', d: localDate }) },
+          });
           setRewardAdLoading(false);
           await AdMob.showRewardVideoAd();
-        } catch (e) { reject(e); }
+        } catch (e) { fail(e); } // fail() 경유 — 안전망 타이머까지 정리(고아 타이머/오해 로그 방지)
       });
     } catch (e) {
       console.error('[PronAllowanceAd] 실패:', e);
@@ -4374,14 +4415,14 @@ function App() {
                   {ADS_ENABLED && (<>
                   <button
                     onClick={() => handleRewardedAd()}
-                    disabled={rewardAdLoading || bonusAdCapReached}
+                    disabled={rewardAdLoading || bonusAdCapReached || bonusAdPointsEnough}
                     style={{
                       width: '100%', display: 'flex', alignItems: 'center', gap: '10px',
                       padding: '10px 12px', marginBottom: '4px', borderRadius: '12px',
                       background: 'linear-gradient(135deg, #f0fdf4, #dcfce7)',
                       border: '1px solid #bbf7d0', textAlign: 'left',
-                      cursor: (rewardAdLoading || bonusAdCapReached) ? 'default' : 'pointer',
-                      opacity: bonusAdCapReached ? 0.55 : 1,
+                      cursor: (rewardAdLoading || bonusAdCapReached || bonusAdPointsEnough) ? 'default' : 'pointer',
+                      opacity: (bonusAdCapReached || bonusAdPointsEnough) ? 0.55 : 1,
                     }}>
                     <span style={{ fontSize: '1.2rem' }}>🎬</span>
                     <div>
@@ -4389,9 +4430,11 @@ function App() {
                         {getT(sourceLang, 'reward.topUpBonus') || '보너스포인트 (광고) +20'}
                       </div>
                       <div style={{ fontSize: '0.72rem', color: '#4ade80' }}>
-                        {bonusAdCapReached
-                          ? getT(sourceLang, 'reward.dailyCapReached')
-                          : (getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20')}
+                        {bonusAdPointsEnough
+                          ? getT(sourceLang, 'reward.enoughPoints')
+                          : bonusAdCapReached
+                            ? getT(sourceLang, 'reward.dailyCapReached')
+                            : (getT(sourceLang, 'reward.topUpBonusDesc') || '광고 시청 후 포인트 +20')}
                       </div>
                     </div>
                   </button>
@@ -5846,7 +5889,9 @@ function App() {
         </nav>
       )}
 
-      {/* Trial 한도 도달 모달 */}
+      {/* Trial 한도 도달 모달.
+          onCharge: 포인트 임계(10pt) 이상이면 모달에서도 충전 버튼을 숨긴다(사이드바와 동일 정책).
+          모달 자체가 포인트 부족 시 뜨므로 평소엔 해당 없고, 포인트 변동 race 대비 방어다. */}
       {showTrialLimitModal && (
         <TrialLimitModal
           sourceLang={sourceLang}
@@ -5858,7 +5903,7 @@ function App() {
           reason={trialLimitReason}
           capFeature={trialLimitFeature}
           bonusPoints={bonusPoints}
-          onCharge={ADS_ENABLED ? handleRewardedAd : null}
+          onCharge={ADS_ENABLED && !bonusAdPointsEnough ? handleRewardedAd : null}
           rewardAdLoading={rewardAdLoading}
           onBuyPoints={handleBuyPoints}
           buyingPoints={buyingPoints}

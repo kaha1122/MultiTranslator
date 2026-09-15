@@ -1025,6 +1025,7 @@
   },
   "reward": {
     "dailyCapReached": "本日の広告視聴の上限に達しました。また明日ご利用ください！",
+    "enoughPoints": "ポイントは十分です。10pt未満になるとチャージできます。",
     "cooldownWait": "次の広告まで少々（約1分）お待ちください。",
     "watchForCards": "+5 カード",
     "watchAd": "広告を見てカード5枚追加",

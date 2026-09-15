@@ -1031,6 +1031,7 @@
   },
   "reward": {
     "dailyCapReached": "오늘 광고 시청 한도에 도달했어요. 내일 다시 이용해주세요!",
+    "enoughPoints": "포인트가 충분해요. 10pt 아래로 내려가면 충전할 수 있어요.",
     "cooldownWait": "다음 광고까지 잠시(약 1분) 기다려주세요.",
     "watchForCards": "+5 카드",
     "watchAd": "광고 시청 후 카드 5개 추가",

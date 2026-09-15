@@ -15,3 +15,11 @@ export const ADS_ENABLED = false;
 
 // 복구 시점 판단용 메모 (코드 동작에는 영향 없음)
 export const ADS_BLACKOUT_NOTE = '2026-08-15 AdMob account suspension; review ETA 2026-09-15';
+
+// [2026-09-16] 보상형 "보너스포인트 충전" 광고 노출 임계.
+//   보유 포인트가 이 값 이상이면 광고를 틀지 않는다 — "쓸 포인트가 남았는데도 광고를 반복 시청"
+//   하는 패턴은 AdMob 이 보는 전형적 무효 노출이고, 2026-08-15 계정 정지의 유력 원인군이었다.
+//   값 선정: 최대 단일 차감액(Free Talking 10pt) 기준. 5pt 로 잡으면 6pt 보유 유저가
+//   FT(10pt)를 실행도 못 하고 충전도 막히는 데드락이 생긴다.
+//   ⚠ 발음 한도 광고(bonus02)는 포인트가 아니라 "오늘 발음 횟수" 자원이라 이 임계와 무관.
+export const AD_TOPUP_POINT_THRESHOLD = 10;

@@ -1025,6 +1025,7 @@
   },
   "reward": {
     "dailyCapReached": "Has alcanzado el límite de anuncios de hoy. ¡Vuelve mañana!",
+    "enoughPoints": "Ya tienes suficientes puntos. Podrás recargar por debajo de 10 pt.",
     "cooldownWait": "Espera un momento (aprox. 1 minuto) antes del siguiente anuncio.",
     "watchForCards": "+5 tarjetas",
     "watchAd": "Ver anuncio por 5 tarjetas extra",

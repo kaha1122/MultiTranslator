@@ -1,18 +1,25 @@
 // 보상광고 보너스 충전 — 1회 +20pt (사이드바 "보너스포인트 충전" 버튼)
 //   (2026-06-09: native TTS 항상-차감 보정으로 +5→+10 / 2026-06-15: 듣기 차감 강화 보정으로 +10→+20 상향)
 // 어뷰즈 방어: 쿨다운 60s(lastAdRewardAt) + 일일 상한(adRewardCount/adRewardCountDate) + Pro/Premium 자동 skip
-// 주: AdMob SSV 미적용 → 클라가 광고 시청 없이 호출 가능하나, 쿨다운+일일상한으로 보수적 방어.
+// 주: 2026-09-16 SSV 전환 완료 — 지급 권위는 routes/admobSsv.js. 이 파일의 광고 엔드포인트는
+//     ADMOB_SSV_ENFORCED=0 롤백용으로만 남아 있다(기본 차단).
 const express = require('express');
 const { admin, adminDb } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { rateLimit } = require('../middleware/rateLimit');
 const { grantBonusPoints } = require('../utils/bonusPoints');
+const L = require('../config/adRewardLimits');
 
 const router = express.Router();
 
-const AD_REWARD_AMOUNT = 20;
-const COOLDOWN_MS = 60_000;     // 광고 1회 최소 간격
-const DAILY_CAP = 5;           // 하루 충전 횟수 상한
+const { AD_REWARD_AMOUNT, COOLDOWN_MS, DAILY_CAP } = L;
+
+// [2026-09-16] SSV 전환 — 보상 지급 권위를 클라 호출에서 AdMob SSV 콜백(admobSsv.js)으로 이관.
+//   아래 두 광고 엔드포인트(/api/bonus/ad-reward, /api/bonus/pron-allowance)는 "광고를 봤다"는
+//   클라 주장만으로 지급하던 경로라, 봇/조작 클라의 무효 트래픽 통로였다(2026-08-15 계정 정지 원인).
+//   기본값 enforced=true 로 지급을 중단하고, 구버전 번들이 호출해도 에러 대신 pending 을 준다.
+//   ⚠ 롤백은 Render 환경변수 ADMOB_SSV_ENFORCED=0 + 재시작 (코드 배포 불필요).
+const SSV_ENFORCED = process.env.ADMOB_SSV_ENFORCED !== '0';
 
 // UTC 날짜 키 (어뷰즈 가드용 — 유저 TZ 정밀도 불필요)
 function utcDateStr() {
@@ -23,6 +30,11 @@ function utcDateStr() {
 router.post('/api/bonus/ad-reward', requireAuth, async (req, res) => {
     if (!admin.apps.length) return res.status(500).json({ error: 'Firebase Admin not initialized' });
     const uid = req.uid;
+    // SSV 가 권위 — 클라 주장 기반 지급 차단. 200 + pending 으로 구버전 클라의 에러 alert 회피.
+    if (SSV_ENFORCED) {
+        console.warn(`[AdReward] legacy client grant blocked (SSV enforced) uid=${uid}`);
+        return res.json({ success: false, pending: true, reason: 'ssv_enforced' });
+    }
 
     try {
         const userRef = adminDb.collection('users').doc(uid);
@@ -126,11 +138,15 @@ router.post('/api/bonus/daily-topup', requireAuth, rateLimit('daily-topup', { pe
 // 2026-06-15 #4: Daily 발음 한도(10/day)에 막혀 학습 못하는 경우 → 광고 시청으로 오늘 발음 +10.
 //   dailyProgress/{date}.pronBonus 누적(다음날 자동 리셋). 쿨다운 + 하루 캡(최대 5회=+50).
 //   body: { date:'YYYY-MM-DD' } 클라 로컬 날짜(=클라가 읽는 dailyProgress 문서와 동일 키).
-const PRON_ALLOWANCE = 10;
-const PRON_ALLOWANCE_CAP = 5;
+const { PRON_ALLOWANCE, PRON_ALLOWANCE_CAP } = L;
 router.post('/api/bonus/pron-allowance', requireAuth, rateLimit('pron-allowance', { perMinute: 4, perHour: 30 }), async (req, res) => {
     if (!admin.apps.length) return res.status(500).json({ error: 'Firebase Admin not initialized' });
     const uid = req.uid;
+    // SSV 가 권위 — 위 ad-reward 와 동일 정책.
+    if (SSV_ENFORCED) {
+        console.warn(`[PronAllowance] legacy client grant blocked (SSV enforced) uid=${uid}`);
+        return res.json({ success: false, pending: true, reason: 'ssv_enforced' });
+    }
     const clientDate = String(req.body?.date || '');
     if (!/^\d{4}-\d{2}-\d{2}$/.test(clientDate)) return res.status(400).json({ error: 'invalid_date' });
     const clientMs = Date.parse(`${clientDate}T00:00:00Z`);

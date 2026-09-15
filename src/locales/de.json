@@ -1025,6 +1025,7 @@
   },
   "reward": {
     "dailyCapReached": "Das heutige Werbelimit ist erreicht. Bitte morgen wiederkommen!",
+    "enoughPoints": "Du hast genug Punkte. Aufladen ab unter 10 Pkt. möglich.",
     "cooldownWait": "Bitte einen Moment (ca. 1 Minute) bis zur nächsten Werbung warten.",
     "watchForCards": "+5 Karten",
     "watchAd": "Werbung ansehen für 5 Karten",
