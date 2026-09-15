@@ -969,7 +969,11 @@ function App() {
     beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial', count: ttsPointRef.current });
     setShowTtsAdPrompt(false);
     markAdWatchedToday();
-    try { await showInterstitialAd(); } catch {}
+    try { await showInterstitialAd(); }
+    catch {}
+    // [thermal-ios 2026-09-16] 전면광고도 비디오면 AdMob SDK 가 AVAudioSession 을 켠다 — 보상형과 동일하게
+    //   종료 후 iOS 한정 세션 해제(규칙6). showInterstitialAd 는 Dismissed/실패 시 resolve 하므로 여기서 안전.
+    finally { if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {}); }
   };
   // X 닫기 → 인터스티셜 강제 발화(빠져나갈 수 없음). 일관성: 어떤 경로든 오늘 재발화 안 함
   //   (ttsAdPromptShownDate 는 발화 시점에, adRewardDate 미러는 여기서 마킹).
@@ -978,7 +982,11 @@ function App() {
     beaconTtsRoute('tts-ad-prompt', 'tts-ad', undefined, { reason: 'interstitial-forced', count: ttsPointRef.current });
     setShowTtsAdPrompt(false);
     markAdWatchedToday();
-    try { await showInterstitialAd(); } catch {}
+    try { await showInterstitialAd(); }
+    catch {}
+    // [thermal-ios 2026-09-16] 전면광고도 비디오면 AdMob SDK 가 AVAudioSession 을 켠다 — 보상형과 동일하게
+    //   종료 후 iOS 한정 세션 해제(규칙6). showInterstitialAd 는 Dismissed/실패 시 resolve 하므로 여기서 안전.
+    finally { if (Capacitor.getPlatform() === 'ios') BluetoothAudio.endAudioSession?.().catch(() => {}); }
   };
 
   // ── 보상형 광고 (Trial 전용, Firestore 영구 적립) ─────────────────────────
