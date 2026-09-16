@@ -517,7 +517,8 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
 
         const key = `person:${id}:${lang}`;
         let data = getCache(key);
-        if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits,translations' }); setCache(key, data, 6 * 60 * 60 * 1000); }
+        // images: 인물 사진 갤러리(profiles[]) — 2026-09-16 인물 페이지 갤러리. 같은 호출에 붙어 추가 요청 0.
+        if (!data) { data = await tmdbFetch(`/person/${id}`, { language: lang, append_to_response: 'combined_credits,translations,images' }); setCache(key, data, 6 * 60 * 60 * 1000); }
         // 출연작: 메인 콘텐츠 언어 작품 + 포스터 있는 것만, 중복 제거, 인기순
         const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
         const seen = new Set();
@@ -572,10 +573,27 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
         await hiddenTitles.ready();
         works = hiddenTitles.filterHidden(works);
 
+        // ③ 소개글 — TMDB는 인물 biography를 언어별로 따로 보유하며 대부분 영어만 있다(ko 등은 빈 문자열).
+        //    뷰어 언어 → translations의 같은 언어 → 영어 폴백. 현지어 생성 번역(Gemini)은 미적용(비용 — 별도 결정).
+        let biography = (data.biography || '').trim();
+        let biographyLang = biography ? clientLang : null;
+        if (!biography) {
+            const lb = String(clientLang).split('-')[0];
+            const trs = data.translations?.translations || [];
+            const pick = (code) => (trs.find((t) => t.iso_639_1 === code && (t.data?.biography || '').trim())?.data?.biography || '').trim();
+            biography = pick(lb);
+            if (biography) biographyLang = lb;
+            else { biography = pick('en') || (await loadEnPerson().catch(() => null))?.biography || ''; biographyLang = biography ? 'en' : null; }
+        }
+        // ④ 갤러리 — 프로필 사진 최대 12장(투표수 순, 대표 사진 제외 없이 그대로). 클라가 w342/original로 표시.
+        const images = (data.images?.profiles || [])
+            .slice().sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
+            .slice(0, 12).map((im) => ({ file_path: im.file_path, aspect_ratio: im.aspect_ratio || 0.667 }));
+
         const out = {
-            id: data.id, name, biography: data.biography,
+            id: data.id, name, biography, biographyLang,
             profile_path: data.profile_path, known_for_department: data.known_for_department,
-            works,
+            images, works,
         };
         setCache(outKey, out, 6 * 60 * 60 * 1000);
         res.json(out);
