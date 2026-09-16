@@ -68,11 +68,14 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
             const lib = lSnap.exists ? lSnap.data() : {};
             const cur = Number(uSnap.data().points) || 0;
             if (lib.paid === true) return { already: true, points: cur };
-            if (cur < cost) return { reject: 402, error: 'insufficient', points: cur };
+            // Pro 구독(2026-09-16 확정: 광고 제거 + 포인트 무제한) — 비용 0으로 paid만 마킹(만료 후 재과금 없음).
+            const proUntil = uSnap.data().pro?.until?.toMillis?.() || 0;
+            const effCost = proUntil > Date.now() ? 0 : cost;
+            if (cur < effCost) return { reject: 402, error: 'insufficient', points: cur };
 
             const now = FV.serverTimestamp();
             tx.set(libRef, {
-                paid: true, paidAt: now, paidCost: cost,
+                paid: true, paidAt: now, paidCost: effCost, ...(effCost === 0 && cost > 0 ? { paidVia: 'pro' } : {}),
                 // 하트로만 생긴 문서(state null)나 새 문서는 '볼 예정'으로 시작 — 모달에서 바로 바꿀 수 있다.
                 state: lib.state ?? 'plan',
                 episodesWatched: lib.episodesWatched ?? 0,
@@ -87,13 +90,14 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
                 ...(lib.addedAt ? {} : { addedAt: now }),
                 updatedAt: now,
             }, { merge: true });
-            if (cost > 0) tx.update(userRef, { points: FV.increment(-cost) });
-            tx.set(ledgerRef, { uid: req.uid, type: 'add_to_my', tmdbId, media, delta: -cost, at: now });
-            return { already: false, points: cur - cost };
+            if (effCost > 0) tx.update(userRef, { points: FV.increment(-effCost) });
+            tx.set(ledgerRef, { uid: req.uid, type: 'add_to_my', tmdbId, media, delta: -effCost, ...(effCost === 0 && cost > 0 ? { via: 'pro' } : {}), at: now });
+            return { already: false, points: cur - effCost, cost: effCost };
         });
         if (out.reject) return res.status(out.reject).json({ error: out.error, ...(out.points != null ? { points: out.points } : {}) });
-        if (!out.already) console.log(`[KC/AddToMy] ${req.uid} ${media}/${tmdbId} -${cost}pt → ${out.points}`);
-        return res.json({ ok: true, already: out.already, cost, points: out.points });
+        const charged = out.cost ?? cost;
+        if (!out.already) console.log(`[KC/AddToMy] ${req.uid} ${media}/${tmdbId} -${charged}pt${charged === 0 && cost > 0 ? ' (pro)' : ''} → ${out.points}`);
+        return res.json({ ok: true, already: out.already, cost: charged, points: out.points });
     } catch (err) {
         console.error('[KC/AddToMy] error:', err.message);
         return res.status(500).json({ error: err.message });
