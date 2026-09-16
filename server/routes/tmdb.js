@@ -590,10 +590,12 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
             .slice().sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
             .slice(0, 12).map((im) => ({ file_path: im.file_path, aspect_ratio: im.aspect_ratio || 0.667 }));
 
+        // ⑤ 헤더 배경 — TMDB 인물에는 backdrop이 없어 **대표작(인기순 첫 작품)의 backdrop**을 쓴다(작품 상세 헤더와 같은 16:9). 없으면 null.
+        const backdrop_path = works.find((w) => w.backdrop_path)?.backdrop_path || null;
         const out = {
             id: data.id, name, biography, biographyLang,
             profile_path: data.profile_path, known_for_department: data.known_for_department,
-            images, works,
+            backdrop_path, images, works,
         };
         setCache(outKey, out, 6 * 60 * 60 * 1000);
         res.json(out);
