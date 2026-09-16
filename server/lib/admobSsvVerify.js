@@ -37,17 +37,25 @@ function base64UrlToBuffer(s) {
 async function verifySignature(rawQuery, keyId, signature) {
     const idx = rawQuery.indexOf('&signature=');
     if (idx < 0) return { ok: false, reason: 'no_signature_param' };
-    const signedContent = rawQuery.slice(0, idx); // signature/key_id 앞까지가 서명 원문
+    const rawContent = rawQuery.slice(0, idx); // signature/key_id 앞까지가 서명 원문
+    // 🚨 2026-09-16 실콜백으로 확정: Google은 쿼리를 **URL 디코딩한 문자열**에 서명한다(custom_data={"app":"kdl"} 처럼 %7B%22가 풀린 형태).
+    //   인코딩된 원문으로 검증하면 인코딩이 필요한 문자가 하나라도 있으면 전부 bad_signature(KDL 내부 테스트 5회 연속 거절).
+    //   디코딩본을 먼저, 실패 시 인코딩 원문도 시도(인코딩 필요 문자가 없는 콜백은 둘이 같다). 디코딩 실패(잘못된 %)는 원문만.
+    let decodedContent = null;
+    try { decodedContent = decodeURIComponent(rawContent); } catch { decodedContent = null; }
+    const contents = [...new Set([decodedContent, rawContent].filter((c) => typeof c === 'string'))];
     const sigBuf = base64UrlToBuffer(signature);
 
     const tryVerify = async (force) => {
         const keys = await loadVerifierKeys(force);
         const pem = keys.get(String(keyId));
         if (!pem) return null; // 키 미보유 → 상위에서 force 재시도
-        const v = crypto.createVerify('SHA256');
-        v.update(signedContent, 'utf8');
-        v.end();
-        return v.verify(pem, sigBuf);
+        for (const content of contents) {
+            try {
+                if (crypto.verify('sha256', Buffer.from(content, 'utf8'), { key: pem, dsaEncoding: 'der' }, sigBuf)) return true;
+            } catch { /* 키 파싱·형식 오류 → 다음 후보 */ }
+        }
+        return false;
     };
 
     let result = await tryVerify(false);
