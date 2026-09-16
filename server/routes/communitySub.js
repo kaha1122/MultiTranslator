@@ -1,6 +1,7 @@
 // ── K-DramaAnyLang(kculture-f96d8) Pro 연간 구독 ───────────────────────────────
 // 계획·결정: KCulture docs/SUBSCRIPTION_PLAN.md (2026-09-16). 광고 제거 전용, 포인트와 별개.
-//   네이티브(iOS/Android) = RevenueCat 자동갱신 구독(entitlement `pro`, 상품 kdrama_pro_yearly)
+//   네이티브(iOS/Android) = RevenueCat 자동갱신 구독(entitlement `Pro`(대문자 — RC 콘솔 등록값), 상품 kdrama_subscription01
+//   — Android는 RC가 `kdrama_subscription01:annual…`(상품:기본요금제) 형식으로 보내므로 prefix 매칭)
 //   웹 = 토스(₩31,000)·PayPal($22.99) **연 1회 단건, 자동갱신 없음** — 결제 시 pro.until을 +365일 연장.
 //
 // 자격 SSOT: users/{uid}.pro = { until(Timestamp), source:'rc'|'toss'|'paypal', productId, willRenew, updatedAt }
@@ -25,12 +26,13 @@ const router = express.Router();
 // ── 서버 권위 상품 테이블(단일 출처) — 클라 sub.js 표시값은 여기와 수동 동기 ─────────
 const YEAR_MS = 365 * 24 * 60 * 60 * 1000;
 const SUB_PACKAGES = {
-    kdrama_pro_yearly: { method: 'iap', usd: '22.99', name: 'K-DramaAnyLang Pro (1 year)' },
+    kdrama_subscription01: { method: 'iap', usd: '22.99', name: 'K-DramaAnyLang Pro (1 year)' },
     sub_pp_yearly: { method: 'paypal', usd: '22.99', name: 'K-DramaAnyLang Pro (1 year)' },
     sub_toss_yearly: { method: 'toss', krw: 31000, name: 'K-DramaAnyLang Pro 1년' },
 };
-const RC_PRO_ENTITLEMENT = 'pro';
-const RC_PRO_PRODUCTS = new Set(['kdrama_pro_yearly']);
+const RC_PRO_ENTITLEMENT = 'Pro';
+const RC_PRO_PRODUCT_PREFIX = 'kdrama_subscription01';
+const isProProduct = (pid) => typeof pid === 'string' && (pid === RC_PRO_PRODUCT_PREFIX || pid.startsWith(RC_PRO_PRODUCT_PREFIX + ':'));
 
 // ── 자격증명(전부 KCULTURE_ 접두 — PronunFit 것과 분리) ─────────────────────────
 const PAYPAL_CLIENT_ID = process.env.KCULTURE_PAYPAL_CLIENT_ID;
@@ -211,7 +213,7 @@ router.post('/api/community/sub/rc-webhook', verifyRcWebhook, async (req, res) =
     if (!type || !uid) return res.status(400).json({ error: 'missing event type or app_user_id' });
 
     const productId = ev.product_id || null;
-    const isPro = RC_PRO_PRODUCTS.has(productId) || (Array.isArray(ev.entitlement_ids) && ev.entitlement_ids.includes(RC_PRO_ENTITLEMENT));
+    const isPro = isProProduct(productId) || (Array.isArray(ev.entitlement_ids) && ev.entitlement_ids.includes(RC_PRO_ENTITLEMENT));
     if (!isPro) return res.json({ ok: true, ignored: 'not pro product' });
     if (type === 'TEST') return res.json({ ok: true, test: true });
 
