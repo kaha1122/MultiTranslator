@@ -32,7 +32,7 @@ async function main() {
     const file = arg('file', '');
     const dryRun = process.argv.includes('--dry');
     if (!file || !fs.existsSync(file)) {
-        console.error('사용법: node scripts/dari-review.js --file <초안.json> [--dry] | --reseed <postId>');
+        console.error('사용법: node scripts/dari-review.js --file <초안.json> [--dry] [--force] | --reseed <postId>');
         process.exit(1);
     }
     const draft = JSON.parse(fs.readFileSync(file, 'utf8'));
@@ -40,7 +40,12 @@ async function main() {
     console.log('[dari-review] start', { tmdbId: draft.tmdbId, media: draft.media, dryRun });
     const uid = await ensureDariAccount();
     console.log(`[dari-review] Dari uid=${uid}`);
-    const r = await createReviewPost({ ...draft, dryRun });
+    const r = await createReviewPost({ ...draft, dryRun, force: process.argv.includes('--force') });
+    if (r.skipped) {
+        // 작품당 1편 가드에 걸림 — 같은 작품 리뷰가 이미 있다(재실행·중복 게시 방지).
+        console.log(`[dari-review] SKIP(이미 존재): ${r.path} — 그래도 새로 쓰려면 --force`);
+        return;
+    }
     console.log('─'.repeat(60));
     console.log(`문서 경로 : ${r.path || '(dry-run — 미기록)'}`);
     console.log(`작품      : ${r.titleName} (${r.media} ${r.titleId})`);

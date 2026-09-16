@@ -847,12 +847,16 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
 }
 
 // ── 큐레이터 리뷰 글 게시 (posts) ────────────────────────────────────────────
-// 본문은 호출자가 제공(자동 생성 아님 — 운영자/Claude가 초안 작성). 고유 id 자동 → 멱등 불필요.
+// 본문은 호출자가 제공(자동 생성 아님 — 운영자/Claude가 초안 작성).
+// ⚠ 문서 id가 자동 생성이라 **호출 자체는 멱등이 아니다** — 같은 페이로드를 두 번 보내면 리뷰가
+//   두 벌 생긴다(2026-09-16 「연모」 사고: 배치가 응답을 다시 보려고 publish를 한 번 더 POST).
+//   그래서 작품당 1편 가드를 둔다 — 같은 (curator, titleId, media) 글이 이미 있으면 skipped로 반환하고
+//   아무것도 쓰지 않는다. 의도적 2편째(전면 재집필 등)는 force로만. createEpisodeThread의 존재 SKIP과 동형.
 // 필드는 클라 createPost(src/lib/community.js)와 동일 + { curator:true, authorRating:null }.
 // glossary(선택): 초안 JSON의 { "원문 표현": "확정 표기" } — 번역 시 강제 대응표(properNounRules 참조).
 // bodies/titles(12개 언어 직접 작성분)가 오면 **Gemini를 전혀 호출하지 않고** 그대로 시드한다(2026-08-29 전환).
 // 없으면 종전대로 body/title 1개를 번역해 시드한다(회차 스레드·라운지는 계속 이 경로).
-async function createReviewPost({ tmdbId, media, title, body, bodies = null, titles = null, spoilerBody = null, glossary = null, dryRun = false }) {
+async function createReviewPost({ tmdbId, media, title, body, bodies = null, titles = null, spoilerBody = null, glossary = null, dryRun = false, force = false }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const direct = !!(bodies && Object.keys(bodies).length);
     if (direct) {
@@ -868,6 +872,18 @@ async function createReviewPost({ tmdbId, media, title, body, bodies = null, tit
     if (!['tv', 'movie'].includes(media)) throw new Error("media: 'tv' | 'movie'");
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
+
+    // 중복 게시 가드 — Gemini·TMDB를 부르기 전에 먼저 본다(재호출 비용 0).
+    if (!force) {
+        const dup = await kcultureDb.collection('posts')
+            .where('curator', '==', true).where('titleId', '==', id).where('media', '==', media)
+            .limit(1).get();
+        if (!dup.empty) {
+            const d = dup.docs[0];
+            console.log(`[Dari] 리뷰 중복 SKIP: posts/${d.id} 이미 존재 (${media} ${id}) — 다시 쓰려면 force`);
+            return { skipped: 'exists', postId: d.id, path: `posts/${d.id}`, titleId: id, media, titleName: d.data().titleName || null, title: d.data().title || null };
+        }
+    }
 
     const uid = await ensureDariAccount();
     const detail = await tmdb(`/${media}/${id}`, { language: 'en-US' });

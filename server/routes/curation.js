@@ -15,6 +15,9 @@
 //     episode_thread  createEpisodeThread 전 옵션 통과 (clip·clipEp·pre·body·rebody·hook·rehook·reseed·backdate)
 //     review          v1 — title/body → Gemini 시드 (종전 그대로)
 //     review_v2       bodies/titles/glossary — 14개 언어 직접 집필, Gemini 미호출
+//   ⚠ review·review_v2는 **작품당 1편 가드**가 있다(2026-09-16 중복 게시 사고) — 같은 (titleId, media)의
+//     curator 글이 있으면 `result.skipped:'exists'` + 기존 postId를 돌려주고 아무것도 쓰지 않는다.
+//     응답을 다시 보고 싶어서 같은 페이로드를 재전송해도 이제 안전하다. 의도적 2편째만 `force:true`.
 //     feature         dari-feature.js 동형: list · config · auto · targets · auto-on/off · pin/unpin · rank/clear
 const express = require('express');
 const crypto = require('crypto');
@@ -88,8 +91,9 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
                 spoilerBody: b.spoilerBody || null,
                 glossary: b.glossary || null,
                 dryRun: !!b.dryRun,
+                force: !!b.force,
             });
-            console.log(`[Curation] review tmdbId=${b.tmdbId} media=${b.media} → ${r.dryRun ? 'DRY' : `OK posts/${r.postId}`}`);
+            console.log(`[Curation] review tmdbId=${b.tmdbId} media=${b.media} → ${r.skipped ? `SKIP(존재) posts/${r.postId}` : r.dryRun ? 'DRY' : `OK posts/${r.postId}`}`);
             return res.json({ ok: true, result: r });
         }
 
@@ -108,8 +112,9 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
                 spoilerBody: b.spoilerBody || null,
                 glossary: b.glossary || null,
                 dryRun: !!b.dryRun,
+                force: !!b.force,
             });
-            console.log(`[Curation] review_v2 tmdbId=${b.tmdbId} media=${b.media} langs=${Object.keys(b.bodies).length} → ${r.dryRun ? 'DRY' : `OK posts/${r.postId}`}`);
+            console.log(`[Curation] review_v2 tmdbId=${b.tmdbId} media=${b.media} langs=${Object.keys(b.bodies).length} → ${r.skipped ? `SKIP(존재) posts/${r.postId}` : r.dryRun ? 'DRY' : `OK posts/${r.postId}`}`);
             return res.json({ ok: true, result: r });
         }
 
