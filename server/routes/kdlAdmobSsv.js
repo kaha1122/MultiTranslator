@@ -78,7 +78,11 @@ router.get('/api/kdl/admob-ssv', async (req, res) => {
     let verified;
     try { verified = await verifySignature(rawQuery, q.key_id, q.signature); }
     catch (e) { console.error('[KDL/AdMobSSV] verify error (retryable):', e.message); return res.status(503).send('verify_unavailable'); }
-    if (!verified.ok) { console.warn(`[KDL/AdMobSSV] REJECT ${verified.reason} tx=${txId} uid=${uid}`); return res.status(403).send(verified.reason); }
+    if (!verified.ok) {
+        // 진단(2026-09-16): 실콜백이 bad_signature로 거절되는 사고 — 원문 쿼리를 남겨 로컬에서 구글 공개키로 재검증할 수 있게 한다(비밀 없음: 광고 메타·uid·서명만).
+        console.warn(`[KDL/AdMobSSV] REJECT ${verified.reason} tx=${txId} uid=${uid} raw=${rawQuery.slice(0, 1200)}`);
+        return res.status(403).send(verified.reason);
+    }
 
     if (isStale(q.timestamp)) { console.warn(`[KDL/AdMobSSV] stale tx=${txId}`); return res.status(200).send('stale'); }
     if (!uid) { console.warn(`[KDL/AdMobSSV] no user_id tx=${txId} — ssv.userId 미설정 클라`); return res.status(200).send('no_user'); }
