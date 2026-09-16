@@ -204,7 +204,8 @@ const RC_EVENTS_ACTIVATE = new Set(['INITIAL_PURCHASE', 'RENEWAL', 'UNCANCELLATI
 const RC_EVENTS_KEEP_UNTIL = new Set(['CANCELLATION', 'BILLING_ISSUE', 'SUBSCRIPTION_PAUSED']); // 자격은 만료일까지 유지, willRenew만 false
 const RC_EVENTS_EXPIRE = new Set(['EXPIRATION']);
 
-router.post('/api/community/sub/rc-webhook', verifyRcWebhook, async (req, res) => {
+// 경로 2개 수용(2026-09-16 실사고): RC 콘솔에 `/api/community/sub/rc`로 등록돼 404로 전부 유실 — 별칭을 열어 RC의 재시도까지 흡수한다.
+router.post(['/api/community/sub/rc-webhook', '/api/community/sub/rc'], verifyRcWebhook, async (req, res) => {
     if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
     const ev = req.body?.event || {};
     const type = ev.type;
