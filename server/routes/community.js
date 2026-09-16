@@ -59,7 +59,7 @@ router.post('/api/community/client-error', rateLimit('kc-client-error', { perMin
 
 // 번역 캐시 경로 검증 — admin SDK는 보안규칙을 우회하므로 translations 하위 doc만 read/write 허용(임의경로 차단).
 // 허용: (titles|posts|lounge_threads)/…/translations/{targetLang}, 짝수 세그먼트(문서 경로), 세그먼트당 안전 문자만.
-const CACHE_ROOTS = new Set(['titles', 'posts', 'lounge_threads']); // lounge_threads: Dari's Lounge 메시지 ✨AI 번역(2026-07-24)
+const CACHE_ROOTS = new Set(['titles', 'posts', 'lounge_threads', 'people']); // lounge_threads: Dari's Lounge 메시지 ✨AI 번역(2026-07-24) · people: 인물 평가·코멘트(2026-09-16)
 function validCachePath(p, targetLang) {
     if (typeof p !== 'string' || p.length > 200) return false;
     const seg = p.split('/');
@@ -96,6 +96,13 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                 : 'a community review post (long-form)';
             const [p] = await kcultureDb.getAll(kcultureDb.doc(`posts/${seg[1]}`), { fieldMask: ['titleId'] });
             if (p.exists) titleId = p.data().titleId || null;
+        } else if (seg[0] === 'people') {
+            // 인물(배우·감독) 페이지 UGC(2026-09-16) — 작품 컨텍스트 없음. 인물명은 문서가 없어 주입 불가(fail-open).
+            location = seg[2] === 'reviews'
+                ? `a fan's one-line rating comment on an actor/director's profile page`
+                : (seg.includes('replies')
+                    ? `a reply to a fan comment on an actor/director's profile page`
+                    : `a fan comment on an actor/director's profile page`);
         } else if (seg[0] === 'lounge_threads') {
             location = seg.includes('replies')
                 ? `a reply in the app's daily free-chat lounge (casual chat — it may reference any show)`

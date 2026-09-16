@@ -45,7 +45,9 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
     if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
     const tmdbId = String(req.body?.tmdbId ?? '').trim();
     if (!/^\d{1,12}$/.test(tmdbId)) return res.status(400).json({ error: 'bad_tmdb_id' });
-    const media = req.body?.media === 'movie' ? 'movie' : 'tv';
+    // media:'person' = 팬 등록(2026-09-16) — users/{uid}/fans/{personId}에 같은 paid 규약으로 기록(작품 보관함과 별개 컬렉션).
+    const media = req.body?.media === 'movie' ? 'movie' : req.body?.media === 'person' ? 'person' : 'tv';
+    const isPerson = media === 'person';
     const m = req.body?.meta || {};
     const meta = {
         titleName: str(m.titleName, 200),
@@ -57,7 +59,7 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
 
     const cost = await getAddToMyCost();
     const userRef = kcultureDb.collection('users').doc(req.uid);
-    const libRef = userRef.collection('library').doc(tmdbId);
+    const libRef = userRef.collection(isPerson ? 'fans' : 'library').doc(tmdbId);
     const ledgerRef = kcultureDb.collection('pointLedger').doc();
     const FV = admin.firestore.FieldValue;
 
@@ -74,7 +76,16 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
             if (cur < effCost) return { reject: 402, error: 'insufficient', points: cur };
 
             const now = FV.serverTimestamp();
-            tx.set(libRef, {
+            if (isPerson) {
+                // 팬 문서 — 상태·회차 없음. personName/profilePath는 마이탭 팬 목록 표시용 비정규화.
+                tx.set(libRef, {
+                    paid: true, paidAt: now, paidCost: effCost, ...(effCost === 0 && cost > 0 ? { paidVia: 'pro' } : {}),
+                    ...(lib.personName ? {} : meta.titleName ? { personName: meta.titleName } : {}),
+                    ...(lib.profilePath ? {} : meta.posterPath ? { profilePath: meta.posterPath } : {}),
+                    ...(lib.addedAt ? {} : { addedAt: now }),
+                    updatedAt: now,
+                }, { merge: true });
+            } else tx.set(libRef, {
                 paid: true, paidAt: now, paidCost: effCost, ...(effCost === 0 && cost > 0 ? { paidVia: 'pro' } : {}),
                 // 하트로만 생긴 문서(state null)나 새 문서는 '볼 예정'으로 시작 — 모달에서 바로 바꿀 수 있다.
                 state: lib.state ?? 'plan',
@@ -91,7 +102,7 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
                 updatedAt: now,
             }, { merge: true });
             if (effCost > 0) tx.update(userRef, { points: FV.increment(-effCost) });
-            tx.set(ledgerRef, { uid: req.uid, type: 'add_to_my', tmdbId, media, delta: -effCost, ...(effCost === 0 && cost > 0 ? { via: 'pro' } : {}), at: now });
+            tx.set(ledgerRef, { uid: req.uid, type: isPerson ? 'fan_add' : 'add_to_my', tmdbId, media, delta: -effCost, ...(effCost === 0 && cost > 0 ? { via: 'pro' } : {}), at: now });
             return { already: false, points: cur - effCost, cost: effCost };
         });
         if (out.reject) return res.status(out.reject).json({ error: out.error, ...(out.points != null ? { points: out.points } : {}) });
