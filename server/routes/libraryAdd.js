@@ -55,6 +55,7 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
         totalEpisodes: num(m.totalEpisodes),
         runtimeMin: num(m.runtimeMin),
         tmdbRating: num(m.tmdbRating),
+        department: str(m.department, 60), // 인물(media:'person') 소속 — 마이탭 카드 표기
     };
 
     const cost = await getAddToMyCost();
@@ -82,6 +83,7 @@ router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add'
                     paid: true, paidAt: now, paidCost: effCost, ...(effCost === 0 && cost > 0 ? { paidVia: 'pro' } : {}),
                     ...(lib.personName ? {} : meta.titleName ? { personName: meta.titleName } : {}),
                     ...(lib.profilePath ? {} : meta.posterPath ? { profilePath: meta.posterPath } : {}),
+                    ...(lib.department ? {} : meta.department ? { department: meta.department } : {}),
                     ...(lib.addedAt ? {} : { addedAt: now }),
                     updatedAt: now,
                 }, { merge: true });
