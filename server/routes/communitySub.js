@@ -196,7 +196,11 @@ function verifyRcWebhook(req, res, next) {
         return res.status(503).json({ error: 'Webhook auth not configured' });
     }
     const token = String(req.headers['authorization'] || '').replace(/^Bearer\s+/i, '');
-    if (token !== RC_WEBHOOK_AUTH) return res.status(401).json({ error: 'Unauthorized' });
+    if (token !== RC_WEBHOOK_AUTH) {
+        // 진단(2026-09-16): RC 콘솔 값과 Render env 불일치를 눈으로 대조할 수 있게 길이·앞 4자만 남긴다(비밀 전체는 로그 금지).
+        console.warn(`[KC/Sub] webhook 401 — recv len=${token.length} head=${token.slice(0, 4)}… / env len=${RC_WEBHOOK_AUTH.length} head=${RC_WEBHOOK_AUTH.slice(0, 4)}… type=${req.body?.event?.type || '-'}`);
+        return res.status(401).json({ error: 'Unauthorized' });
+    }
     next();
 }
 
