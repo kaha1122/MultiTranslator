@@ -43,10 +43,14 @@ const PACKAGES = {
     pt_toss_1000: PKG_TOSS, // legacy alias
 };
 
-// ── 보상형 광고 지급 정책(서버 권위) ─────────────────────────────────────────
-const AD_REWARD_AMOUNT = 30;      // 시청 1회 지급
-const AD_COOLDOWN_MS = 60_000;    // 60초 쿨다운
-const AD_DAILY_CAP = 5;           // 일 5회(UTC) → 일 최대 +150pt
+// ── 보상형 광고 지급 정책(서버 권위) — config/kdlAdRewardLimits.js 공유(2026-09-16: 30→10pt, 잔액<10 게이트) ──
+const KL = require('../config/kdlAdRewardLimits');
+const AD_REWARD_AMOUNT = KL.AD_REWARD_AMOUNT;
+const AD_COOLDOWN_MS = KL.COOLDOWN_MS;
+const AD_DAILY_CAP = KL.DAILY_CAP;
+// [2026-09-16] SSV 전환 — 지급 권위는 routes/kdlAdmobSsv.js(AdMob 서명 콜백). 아래 클라 호출형 ad-reward는
+//   KDL_ADMOB_SSV_ENFORCED=0(Render env)일 때만 열리는 롤백 경로. 기본 차단(410 ssv_required).
+const KDL_SSV_ENFORCED = process.env.KDL_ADMOB_SSV_ENFORCED !== '0';
 const utcDateStr = () => new Date().toISOString().slice(0, 10);
 
 // PayPal — KCulture 전용 자격증명. 없으면 라우트 503.
@@ -203,6 +207,8 @@ router.post('/api/community/points/paypal/capture', requireAuthAny, rateLimit('k
 // ⚠ assertReady() 미사용 — PayPal env와 무관(kcultureDb만 필요).
 router.post('/api/community/points/ad-reward', requireAuthAny, rateLimit('kc-ad-reward', { perMinute: 4, perHour: 40 }), async (req, res) => {
     if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
+    if (KDL_SSV_ENFORCED) return res.status(410).json({ error: 'ssv_required' }); // 지급은 SSV 콜백으로만(kdlAdmobSsv.js)
+    if (req.authProvider === 'anonymous') return res.status(403).json({ error: 'guest_not_allowed' });
     const userRef = kcultureDb.collection('users').doc(req.uid);
     const today = utcDateStr();
     try {
@@ -210,6 +216,7 @@ router.post('/api/community/points/ad-reward', requireAuthAny, rateLimit('kc-ad-
             const snap = await tx.get(userRef);
             if (!snap.exists) return { reject: 404, error: 'user_not_found' };
             const d = snap.data();
+            if ((Number(d.points) || 0) >= KL.MIN_BALANCE) return { reject: 409, error: 'balance_high' };
             const lastAt = d.lastAdRewardAt?.toMillis?.() || 0;
             if (Date.now() - lastAt < AD_COOLDOWN_MS) return { reject: 429, error: 'cooldown' };
             const todayCount = d.adRewardCountDate === today ? (d.adRewardCount || 0) : 0;

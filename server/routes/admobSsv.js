@@ -22,54 +22,7 @@ const L = require('../config/adRewardLimits');
 
 const router = express.Router();
 
-const VERIFIER_KEYS_URL = 'https://gstatic.com/admob/reward/verifier-keys.json';
-const KEY_CACHE_TTL_MS = 24 * 60 * 60 * 1000;
-// 콜백 신선도 — 재전송 공격 방어의 본체는 transaction_id 멱등이고, 이건 보조 가드.
-// AdMob 재시도 윈도우를 넉넉히 덮도록 24h.
-const MAX_AGE_MS = 24 * 60 * 60 * 1000;
-
-let _keys = { fetchedAt: 0, map: new Map() };
-
-// Google 공개키 조회 + 캐싱. key_id 미스 시 force 로 1회 강제 갱신(키 로테이션 대응).
-async function loadVerifierKeys(force = false) {
-    const fresh = Date.now() - _keys.fetchedAt < KEY_CACHE_TTL_MS;
-    if (!force && fresh && _keys.map.size) return _keys.map;
-    const { data } = await axios.get(VERIFIER_KEYS_URL, { timeout: 8000 });
-    const map = new Map();
-    for (const k of data?.keys || []) {
-        if (k?.keyId != null && k?.pem) map.set(String(k.keyId), k.pem);
-    }
-    if (!map.size) throw new Error('verifier-keys empty');
-    _keys = { fetchedAt: Date.now(), map };
-    console.log(`[AdMobSSV] verifier keys loaded: ${[...map.keys()].join(',')}`);
-    return map;
-}
-
-function base64UrlToBuffer(s) {
-    return Buffer.from(String(s).replace(/-/g, '+').replace(/_/g, '/'), 'base64');
-}
-
-async function verifySignature(rawQuery, keyId, signature) {
-    const idx = rawQuery.indexOf('&signature=');
-    if (idx < 0) return { ok: false, reason: 'no_signature_param' };
-    const signedContent = rawQuery.slice(0, idx); // signature/key_id 앞까지가 서명 원문
-    const sigBuf = base64UrlToBuffer(signature);
-
-    const tryVerify = async (force) => {
-        const keys = await loadVerifierKeys(force);
-        const pem = keys.get(String(keyId));
-        if (!pem) return null; // 키 미보유 → 상위에서 force 재시도
-        const v = crypto.createVerify('SHA256');
-        v.update(signedContent, 'utf8');
-        v.end();
-        return v.verify(pem, sigBuf);
-    };
-
-    let result = await tryVerify(false);
-    if (result === null) result = await tryVerify(true); // 키 로테이션 → 강제 갱신 후 1회 재시도
-    if (result === null) return { ok: false, reason: 'unknown_key_id' };
-    return { ok: result === true, reason: result ? 'ok' : 'bad_signature' };
-}
+const { verifySignature, MAX_AGE_MS } = require('../lib/admobSsvVerify'); // [2026-09-16] KDL과 공유하도록 분리
 
 function utcDateStr() {
     const d = new Date();
