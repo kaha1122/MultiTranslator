@@ -70,6 +70,19 @@ const retryLimit = parseInt(arg('retryLimit', '100'), 10);
         console.warn(`[cron-daily] related 백필 실패(다음 실행 재시도): ${e.message}`);
     }
 
+    // ⑥ 번역 용어집 카탈로그 인덱스(2026-09-19) — 인기 상위 N편의 12개 언어 공식 제목 스냅샷.
+    //    UGC 번역 프롬프트가 "글에 실제로 등장하는 작품 제목"을 공식 표기로 못박는 데 쓴다
+    //    (종전 풀은 최근 30일 방영작 ~12편뿐이라 구작 제목이 직역됐다 — 「스캔들」→"Scandal" 사고).
+    //    ⚠ 새 cron을 만들지 않고 여기에 얹는다(사용자 결정). 웹 서버는 이 인덱스를 24h TTL로 읽는다.
+    //    실패해도 cron 전체를 실패시키지 않는다 — 다음 실행이 덮어쓰고, 그동안은 직전 인덱스가 유효하다.
+    try {
+        const titleGlossaryIndex = require('../lib/titleGlossaryIndex');
+        const gi = await titleGlossaryIndex.rebuild({ limit: parseInt(arg('glossaryTop', '3000'), 10) });
+        console.log('[cron-daily] glossary', JSON.stringify(gi));
+    } catch (e) {
+        console.warn(`[cron-daily] 용어집 인덱스 재생성 실패(직전 인덱스 유지): ${e.message}`);
+    }
+
     console.log(`[cron-daily] DONE in ${Math.round((Date.now() - t0) / 1000)}s`);
     process.exit(0);
 })().catch((e) => { console.error('[cron-daily] FAIL', e); process.exit(1); });

@@ -83,6 +83,7 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
         const seg = cachePath.split('/');
         let location = null;
         let titleId = null;
+        let personId = null;
         if (seg[0] === 'titles') {
             titleId = seg[1];
             location = seg.includes('replies')
@@ -97,7 +98,10 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
             const [p] = await kcultureDb.getAll(kcultureDb.doc(`posts/${seg[1]}`), { fieldMask: ['titleId'] });
             if (p.exists) titleId = p.data().titleId || null;
         } else if (seg[0] === 'people') {
-            // 인물(배우·감독) 페이지 UGC(2026-09-16) — 작품 컨텍스트 없음. 인물명은 문서가 없어 주입 불가(fail-open).
+            // 인물(배우·감독) 페이지 UGC(2026-09-16) — 작품 컨텍스트는 없지만 **누구 이야기인지**는 특정된다.
+            // 2026-09-19: personId로 TMDB 인물을 조회해 확정 표기를 주입한다(7일 메모 캐시라 대개 비용 0).
+            //   종전엔 "이 배우 연기 좋다"류 글에 컨텍스트가 하나도 없어 대명사·호칭이 흔들렸다.
+            personId = seg[1] || null;
             location = seg[2] === 'reviews'
                 ? `a fan's one-line rating comment on an actor/director's profile page`
                 : (seg.includes('replies')
@@ -127,6 +131,12 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
             // 캐스트 표(L4) — 배우 확정 표기(personNames)·배역. 실패해도 나머지 컨텍스트는 유지.
             try {
                 lines.push(...await txGlossary.castContextLines(data.meta?.credits?.cast, targetLang));
+            } catch { /* fail-open */ }
+        }
+        if (personId) {
+            // 인물 페이지 — 그 인물의 확정 표기(앱 크레딧 화면과 같은 personNames 규칙)를 못박는다.
+            try {
+                lines.push(...await txGlossary.personContextLines(personId, targetLang, targetName));
             } catch { /* fail-open */ }
         }
         return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId };

@@ -23,12 +23,41 @@
 // SWR 캐시 패턴: TTL 만료여도 현재 데이터로 즉시 응답하고 뒤에서 갱신.
 const { kcultureDb } = require('../config/firebaseKculture');
 const { fetchPersonLite, pickPersonName, romanizeKorean } = require('./personNames');
+const titleGlossaryIndex = require('./titleGlossaryIndex');
 
-const TTL = 6 * 60 * 60 * 1000;      // 6시간 — 풀 소스(curation_threads)는 하루 1~2건 변동
+const TTL = 24 * 60 * 60 * 1000;     // 24시간 — 카탈로그 인덱스를 cron-daily가 하루 1회 재생성하므로
+                                      //   그보다 자주 돌 이유가 없다(2026-09-19 사용자 결정).
 const POOL_DAYS = 30;                 // "최근 방영작"의 정의(사용자 결정)
 const MAX_SHOWS = 20;                 // 폭주 방지(실측 12편)
 const CAST_PER_SHOW = 8;              // 매칭 대상 배우 수(주연급)
 const HANGUL_RE = /\p{Script=Hangul}/u;
+
+// ── 별칭(매칭키) 생성 — 두 풀이 공유 ────────────────────────────────────────
+// min: 오매칭 소음을 막는 최소 길이. 최근작 풀은 편수가 적어 느슨해도 되지만(한글 2자),
+//   카탈로그 풀(수천 편)은 「그녀」「봄날」류 일반명사 제목이 평범한 문장에 걸리므로 엄격하게 잡는다.
+function buildAliases(titles, lowers, { minHangul, minLatin }) {
+    const seen = new Set();
+    const aliases = [];
+    const src = lowers && Object.keys(lowers).length ? lowers : titles;
+    for (const [lang, v] of Object.entries(src)) {
+        const k = String(v || '').trim().toLowerCase();
+        if (!k || seen.has(k)) continue;
+        if (HANGUL_RE.test(k) ? k.length < minHangul : k.length < minLatin) continue;
+        seen.add(k);
+        aliases.push({ k, d: titles[lang] || k });
+    }
+    // 관사 생략 변형(2026-08-05) — 'The Apartment Job'을 'Apartment Job'으로 쓴 라운지 글이
+    // 매칭을 빗나가 '아파트 취업'으로 직역된 사고. 남는 부분이 2단어 이상일 때만 추가
+    // ('The Husband'→'husband' 같은 초일반 명사 1단어 변형의 오매칭 방지).
+    for (const a of [...aliases]) {
+        const m = a.k.match(/^(the|a|an)\s+(.+)$/);
+        if (m && m[2].includes(' ') && !seen.has(m[2])) {
+            seen.add(m[2]);
+            aliases.push({ k: m[2], d: a.d });
+        }
+    }
+    return aliases;
+}
 
 let shows = [];                       // [{ id, titles:{lang:title}, aliases:[{k(소문자), d(표시형)}], cast:[{pid,name,character}] }]
 let loadedAt = 0;
@@ -59,30 +88,12 @@ async function load() {
         if (!d.exists) continue;
         const x = d.data() || {};
         const titles = x.searchTitle || {};
-        const lowers = x.searchLower || {};
         // 별칭 = 12개 언어 제목(소문자) dedup. 표시형은 원 케이스 유지(프롬프트에 그대로 인용).
-        const seen = new Set();
-        const aliases = [];
-        for (const [lang, low] of Object.entries(lowers)) {
-            const k = String(low || '').trim().toLowerCase();
-            if (!k || seen.has(k)) continue;
-            // 너무 짧은 별칭은 오매칭 소음 — 한글 2자·기타 4자 미만 제외("동궁"은 통과, "IU"류 차단)
-            if (HANGUL_RE.test(k) ? k.length < 2 : k.length < 4) continue;
-            seen.add(k);
-            aliases.push({ k, d: titles[lang] || low });
-        }
-        // 관사 생략 변형(2026-08-05) — 'The Apartment Job'을 'Apartment Job'으로 쓴 라운지 글이
-        // 매칭을 빗나가 '아파트 취업'으로 직역된 사고. 남는 부분이 2단어 이상일 때만 추가
-        // ('The Husband'→'husband' 같은 초일반 명사 1단어 변형의 오매칭 방지).
-        for (const a of [...aliases]) {
-            const m = a.k.match(/^(the|a|an)\s+(.+)$/);
-            if (m && m[2].includes(' ') && !seen.has(m[2])) {
-                seen.add(m[2]);
-                aliases.push({ k: m[2], d: a.d });
-            }
-        }
+        // 최근작 풀은 편수가 적어 한글 2자까지 허용("동궁"은 통과, "IU"류 차단).
+        const aliases = buildAliases(titles, x.searchLower || {}, { minHangul: 2, minLatin: 4 });
         next.push({
             id: d.id,
+            recent: true,
             titles,
             aliases,
             cast: (x.meta?.credits?.cast || []).slice(0, CAST_PER_SHOW)
@@ -90,11 +101,28 @@ async function load() {
                 .map((c) => ({ pid: c.id, name: c.name, character: c.character || '' })),
         });
     }
+    // ── 카탈로그 풀 병합(2026-09-19) — 인기 상위 N편의 제목만(캐스트 없음) ──────
+    // 최근작 풀과 중복되는 id는 건너뛴다(최근작 쪽이 캐스트까지 있어 우선).
+    let catalog = 0;
+    try {
+        const idx = await titleGlossaryIndex.load();
+        const have = new Set(next.map((s2) => s2.id));
+        for (const row of idx.rows) {
+            if (have.has(row.i)) continue;
+            const aliases = buildAliases(row.t || {}, null, { minHangul: 3, minLatin: 6 });
+            if (!aliases.length) continue;
+            next.push({ id: row.i, recent: false, titles: row.t || {}, aliases, cast: [] });
+            catalog += 1;
+        }
+    } catch (e) {
+        console.warn('[txGlossary] 카탈로그 인덱스 로드 실패(최근작 풀만 사용):', e.message);
+    }
+
     shows = next;
     loadedAt = Date.now();
     // 인물 표기 선워밍(fire-and-forget) — 매칭 시 fetchPersonLite가 7일 메모 HIT하도록
     prewarmPersons(next).catch(() => { /* best-effort */ });
-    console.log(`[txGlossary] ${shows.length}편 로드 (스레드 ${ids.length}작품/30일, ${Date.now() - t0}ms)`);
+    console.log(`[txGlossary] ${shows.length}편 로드 (최근작 ${shows.length - catalog} + 카탈로그 ${catalog}, ${Date.now() - t0}ms)`);
     return shows;
 }
 
@@ -174,7 +202,7 @@ async function buildGlossaryLines({ titleHits, actorHits }, targetLang, targetNa
     for (const { show, alias } of titleHits) {
         const t = show.titles[targetLang] || show.titles.en || alias;
         const ko = show.titles.ko;
-        lines.push(`- The text mentions 「${alias}」 — this is the recently-airing Korean show${ko && ko !== alias ? ` 「${ko}」` : ''}. `
+        lines.push(`- The text mentions 「${alias}」 — this is ${show.recent ? 'the recently-airing' : 'a'} Korean show${ko && ko !== alias ? ` 「${ko}」` : ''}. `
             + `If (and only if) the mention refers to this show, render its title exactly as "${t}" — NEVER translate the title literally or invent a new translation. `
             + `This OVERRIDES every other rule about keeping titles unchanged.`);
     }
@@ -207,8 +235,29 @@ async function castContextLines(cast, targetLang) {
     ];
 }
 
+// ── 인물 페이지 scope용 — buildTranslationContext가 호출 (2026-09-19) ─────────
+// 인물 페이지(people/{personId}) UGC는 작품이 특정되지 않지만 **누구 이야기인지**는 확실하다.
+// 그 인물의 확정 표기를 주입해 번역문이 앱 크레딧 화면과 같은 이름을 쓰게 한다.
+// TMDB 1콜(7일 메모 캐시)이며 실패는 fail-open — personNames가 죽어도 번역은 진행된다.
+async function personContextLines(personId, targetLang, targetName) {
+    const pid = Number(personId);
+    if (!Number.isFinite(pid)) return [];
+    const lite = await fetchPersonLite(pid);
+    const original = lite?.name || null;
+    if (!original) return [];
+    const rendered = pickPersonName(lite, targetLang) || romanizeKorean(original) || original;
+    // fetchPersonLite는 {name, aka, trs}만 준다 — 직업(배우/감독) 구분 정보가 없으므로 뭉뚱그린다.
+    return [
+        `- The person being discussed on this page: the actor/director 「${original}」`
+        + `${rendered && rendered !== original ? ` — the established ${targetName} rendering is "${rendered}"` : ''}.`,
+        `- The text is about this person even when it only says "this actor", "he", "she" or a nickname. `
+        + `When it names them, use exactly the rendering above — never a different spelling and never a different real person. `
+        + `This OVERRIDES every other rule about keeping names unchanged.`,
+    ];
+}
+
 module.exports = {
-    ready, matchText, buildGlossaryLines, castContextLines,
+    ready, matchText, buildGlossaryLines, castContextLines, personContextLines,
     poolSize: () => shows.length,
     getShows: () => shows, // 스크립트용(purge-stale-tx-cache) — 풀 재구현 금지(이중 관리 함정)
 };
