@@ -15,7 +15,7 @@
 // users 본문 write: points는 "의도된 본문 라이브 필드"(CLAUDE.md §6-1 예외, communityPoints.js와 동일 근거).
 const express = require('express');
 const admin = require('firebase-admin');
-const { requireAuthAny } = require('../middleware/authAny');
+const { requireAuthAny, requireVerifiedEmail } = require('../middleware/authAny');
 const { rateLimit } = require('../middleware/rateLimit');
 const { kcultureDb } = require('../config/firebaseKculture');
 
@@ -41,7 +41,7 @@ async function getAddToMyCost() {
 const str = (v, n) => (typeof v === 'string' && v.trim() ? v.trim().slice(0, n) : null);
 const num = (v) => (v == null || v === '' ? null : Number.isFinite(Number(v)) ? Number(v) : null);
 
-router.post('/api/community/library/add', requireAuthAny, rateLimit('kc-lib-add', { perMinute: 20, perHour: 200 }), async (req, res) => {
+router.post('/api/community/library/add', requireAuthAny, requireVerifiedEmail, rateLimit('kc-lib-add', { perMinute: 20, perHour: 200 }), async (req, res) => {
     if (!kcultureDb) return res.status(503).json({ error: 'kculture Firestore not configured' });
     const tmdbId = String(req.body?.tmdbId ?? '').trim();
     if (!/^\d{1,12}$/.test(tmdbId)) return res.status(400).json({ error: 'bad_tmdb_id' });

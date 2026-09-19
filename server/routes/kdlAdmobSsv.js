@@ -22,12 +22,21 @@ const router = express.Router();
 const utcDateStr = () => new Date().toISOString().slice(0, 10);
 
 // 실계정 판정 — Firebase Auth 사용자의 providerData가 비어 있으면 익명. 지급은 드문 이벤트라 호출당 1회 조회 허용.
-async function isAnonymousUid(uid) {
-    if (!kcultureAuth) return false; // Auth 미구성(로컬) — 차단하지 않음
+// 지급 자격 판정 — getUser 1콜로 두 가지를 함께 본다(SSV 콜백에는 ID 토큰이 없다).
+//   'anonymous'  : 게스트(providerData 비어 있음) — 기존 정책 그대로 미지급.
+//   'unverified' : 이메일/비번 계정인데 메일 확인 전(2026-09-19) — 미지급.
+//                  소셜 계정은 대상 아님(Facebook은 emailVerified가 false로 오는 경우가 있어
+//                  password 자격증명 보유 여부로 좁힌다 — KCulture 클라·rules와 같은 규약).
+async function payoutBlockReason(uid) {
+    if (!kcultureAuth) return null; // Auth 미구성(로컬) — 차단하지 않음
     try {
         const u = await kcultureAuth.getUser(uid);
-        return !u.providerData || u.providerData.length === 0;
-    } catch { return true; } // 존재하지 않는 uid → 지급 불가 취급
+        const providers = u.providerData || [];
+        if (providers.length === 0) return 'anonymous';
+        const hasPassword = providers.some((p) => p.providerId === 'password');
+        if (hasPassword && !u.emailVerified) return 'unverified';
+        return null;
+    } catch { return 'anonymous'; } // 존재하지 않는 uid → 지급 불가 취급
 }
 
 async function applyReward({ txId, uid, meta }) {
@@ -86,7 +95,8 @@ router.get('/api/kdl/admob-ssv', async (req, res) => {
 
     if (isStale(q.timestamp)) { console.warn(`[KDL/AdMobSSV] stale tx=${txId}`); return res.status(200).send('stale'); }
     if (!uid) { console.warn(`[KDL/AdMobSSV] no user_id tx=${txId} — ssv.userId 미설정 클라`); return res.status(200).send('no_user'); }
-    if (await isAnonymousUid(uid)) { console.log(`[KDL/AdMobSSV] anonymous uid=${uid} tx=${txId} — skip`); return res.status(200).send('anonymous'); }
+    const blocked = await payoutBlockReason(uid);
+    if (blocked) { console.log(`[KDL/AdMobSSV] ${blocked} uid=${uid} tx=${txId} — skip`); return res.status(200).send(blocked); }
 
     try {
         const r = await applyReward({ txId, uid, meta: { adUnit: String(q.ad_unit || ''), adNetwork: String(q.ad_network || ''), rewardItem: String(q.reward_item || ''), customData: String(q.custom_data || '') } });

@@ -3,7 +3,7 @@
 // (…/translations/{lang}) → Render에 CACHE-HIT/MISS 로깅(TTS durable과 동일 구조).
 // requireAuthAny(kculture 토큰 허용). 기존 /api/translate(PronunFit 전용)와 별개.
 const express = require('express');
-const { requireAuthAny } = require('../middleware/authAny');
+const { requireAuthAny, requireVerifiedEmail } = require('../middleware/authAny');
 const { rateLimit } = require('../middleware/rateLimit');
 const { callGeminiText } = require('../utils/geminiCall');
 const { LANG_NAMES, txModelFor } = require('../config/langGuide');
@@ -151,7 +151,7 @@ const translatableChars = (s) => {
 // 프롬프트 공통 규칙 — 서식 토큰 보존 + 없는 내용 창작 금지(단건·배치 동일)
 const MARKUP_RULE = `   - Inline markup tokens in the text (>!spoiler!<, **bold**, _italic_, [text](url)) are formatting: keep each token exactly where it is and translate only the words inside it. If a token is empty (e.g. ">!!<"), keep it empty. Never add sentences, opinions or content that are not in the source text.`;
 
-router.post('/api/community/translate', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
+router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
     const { text, targetLang, maxChars, cachePath, scope, srcLang: srcLangRaw } = req.body || {};
     if (!text || !targetLang) return res.status(400).json({ error: 'missing fields' });
     if (text.length > 5000) return res.status(413).json({ error: 'too long (max 5000)' });
@@ -376,7 +376,7 @@ function parseFirstJsonObject(text) {
 }
 
 // ── 페이지 전체 번역 (게시글 + 댓글들을 한 번의 Gemini 호출로 묶음) ──
-router.post('/api/community/translate-batch', requireAuthAny, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
+router.post('/api/community/translate-batch', requireAuthAny, requireVerifiedEmail, rateLimit('community-translate', { perMinute: 30, perHour: 300 }), async (req, res) => {
     const { items, targetLang } = req.body || {};
     if (!Array.isArray(items) || !items.length || !targetLang) return res.status(400).json({ error: 'missing fields' });
     if (items.length > 60) return res.status(413).json({ error: 'too many items (max 60)' });
