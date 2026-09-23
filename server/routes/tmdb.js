@@ -590,8 +590,16 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
             .slice().sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0))
             .slice(0, 12).map((im) => ({ file_path: im.file_path, aspect_ratio: im.aspect_ratio || 0.667 }));
 
-        // ⑤ 헤더 배경 — TMDB 인물에는 backdrop이 없어 **대표작(인기순 첫 작품)의 backdrop**을 쓴다(작품 상세 헤더와 같은 16:9). 없으면 null.
-        const backdrop_path = works.find((w) => w.backdrop_path)?.backdrop_path || null;
+        // ⑤ 헤더 배경 — TMDB 인물에는 backdrop이 없어 **대표작의 backdrop**을 쓴다(작품 상세 헤더와 같은 16:9). 없으면 null.
+        //    대표작 = 예능·토크·뉴스(10764/10767/10763) 제외 + 평점순(표본 ≥20표만 — 1~2표 10점 방지). 2026-09-24:
+        //    종전 "인기순 첫 작품"은 배우가 출연한 예능(런닝맨 등)이 거의 항상 걸려 대표작 사진이 안 나왔다.
+        //    폴백: 비예능 인기순 → 전체 인기순(예능인은 예능 backdrop 그대로).
+        const NON_REP = new Set([10764, 10767, 10763]);
+        const withBd = works.filter((w) => w.backdrop_path);
+        const rep = withBd.filter((w) => !(w.genre_ids || []).some((g) => NON_REP.has(g)));
+        const rated = rep.filter((w) => (w.vote_count || 0) >= 20)
+            .sort((a, b) => (b.vote_average || 0) - (a.vote_average || 0) || (b.vote_count || 0) - (a.vote_count || 0));
+        const backdrop_path = (rated[0] || rep[0] || withBd[0])?.backdrop_path || null;
         const out = {
             id: data.id, name, biography, biographyLang,
             profile_path: data.profile_path, known_for_department: data.known_for_department,
