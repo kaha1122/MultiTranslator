@@ -9,6 +9,9 @@
 //   ② Dari 리뷰(posts where curator==true). **7일 신선도 상한** — 7일 안에 새 글이 없으면 그 슬롯은 보내지 않는다
 //   (종전 24h→7일→전체 폴백은 옛글을 하루 2번 영원히 재탕하는 구조라 폐기). 수신자 언어와 같은 글 우선, 없으면 랜덤
 //   (앱에 AI 번역이 있어 언어가 달라도 읽을 수 있다 — 2026-09-04). 같은 글은 기기당 1회(토큰 문서 `sogamSent`).
+// 2026-09-24 개정(사용자 결정): ③ **실사용자 리뷰**(페르소나·Dari가 아닌 posts, 작품 태그 있는 글)를 후보에 추가하고
+//   **최우선**으로 뽑는다(실사용자 → 페르소나·Dari 순, 각 단계 안에서 기존 24h/7일·같은 언어 우선 규칙 그대로).
+//   작성자 본인에게도 자기 글 알림을 보낸다(제외하지 않음 — "내 글이 알림으로 나간다"는 사실 자체가 동기 부여).
 // 멱등: 토큰 문서 `sogamLastSlot = 'YYYY-MM-DD-HH'`(현지 날짜·슬롯)로 같은 슬롯 재발송 차단(크론 재시도 안전).
 // 죽은 토큰은 kculturePush.pruneDeadTokens로 즉시 삭제.
 const admin = require('firebase-admin');
@@ -59,6 +62,18 @@ async function loadCandidates(nowMs = Date.now()) {
     }
     const c = await kcultureDb.collection('posts').where('curator', '==', true).limit(120).get();
     c.docs.forEach((d) => byId.set(d.id, toRow(d)));
+    // ③ 실사용자 리뷰 — 최근 7일 posts(단일 필드 범위 쿼리, 자동 인덱스). 페르소나·Dari는 위에서 이미 담겼으므로
+    //   여기서 새로 들어오는 글 중 작성자가 페르소나가 아니고 curator가 아닌 것만 real 표시. 알림 문구가
+    //   "「{작품}」의 리뷰"라 작품 태그(titleId) 없는 자유글은 제외.
+    const since = admin.firestore.Timestamp.fromMillis(nowMs - FRESH_MS);
+    const personaSet = new Set(uids);
+    const u = await kcultureDb.collection('posts').where('createdAt', '>=', since).limit(300).get();
+    u.docs.forEach((d) => {
+        if (byId.has(d.id)) return;
+        const r = toRow(d);
+        if (r.curator || personaSet.has(r.authorUid) || !r.titleId) return;
+        byId.set(d.id, { ...r, real: true });
+    });
     return [...byId.values()]
         .filter((r) => r.createdMs && nowMs - r.createdMs <= FRESH_MS)
         .sort((a, b) => b.createdMs - a.createdMs);
@@ -66,13 +81,18 @@ async function loadCandidates(nowMs = Date.now()) {
 // 하위 호환(테스트·다른 모듈 참조용) — 종전 이름
 const loadRecentSogam = loadCandidates;
 
-// 같은 언어 우선 → 랜덤. 풀: 24h → 7일. exclude(이 기기에 이미 보낸 postId)는 제외. 없으면 null(그 슬롯은 안 보냄).
-function pickPost(rows, lang, nowMs, rnd = Math.random, exclude = new Set()) {
+// 실사용자 리뷰 우선 → 페르소나·Dari. 각 단계 안에서 같은 언어 우선 → 랜덤, 풀: 24h → 7일.
+// exclude(이 기기에 이미 보낸 postId)는 제외. 없으면 null(그 슬롯은 안 보냄).
+function pickFrom(rows, lang, nowMs, rnd, exclude) {
     const fresh = rows.filter((r) => nowMs - r.createdMs <= FRESH_MS && !exclude.has(r.id));
     const day = fresh.filter((r) => nowMs - r.createdMs <= 24 * 3600e3);
     const pools = [day.filter((r) => r.lang === lang), day, fresh.filter((r) => r.lang === lang), fresh];
     for (const p of pools) if (p.length) return p[Math.floor(rnd() * p.length)];
     return null;
+}
+function pickPost(rows, lang, nowMs, rnd = Math.random, exclude = new Set()) {
+    return pickFrom(rows.filter((r) => r.real), lang, nowMs, rnd, exclude)
+        || pickFrom(rows.filter((r) => !r.real), lang, nowMs, rnd, exclude);
 }
 
 // 작품명 — 수신자 언어 제목(titles/{id}.searchTitle[lang]) → 원제(meta.original_title / post.titleOriginal) → 영문(post.titleName).
@@ -148,7 +168,7 @@ async function runSogamPushHourly(now = new Date(), { dryRun = false } = {}) {
         });
         await Promise.all(writes);
     }
-    console.log(`[SogamPush/KC] pool=${rows.length} candidates=${candidates} sent=${sent}/${messages.length} pruned=${pruned} dup=${dup} off=${off} optout=${optout} exhausted=${exhausted}`);
+    console.log(`[SogamPush/KC] pool=${rows.length} real=${rows.filter((r) => r.real).length} candidates=${candidates} sent=${sent}/${messages.length} pruned=${pruned} dup=${dup} off=${off} optout=${optout} exhausted=${exhausted}`);
     return { candidates, sent, total: messages.length, pruned, dup, off, optout, exhausted, pool: rows.length };
 }
 
