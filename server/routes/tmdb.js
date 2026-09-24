@@ -147,15 +147,29 @@ async function tmdbFetch(path, params = {}) {
     if (TMDB_KEY) usp.set('api_key', TMDB_KEY);
     const url = `${TMDB_BASE}${path}?${usp.toString()}`;
     const headers = TMDB_TOKEN ? { Authorization: `Bearer ${TMDB_TOKEN}` } : {};
-    const res = await fetch(url, { headers });
-    if (!res.ok) {
+    // 2026-09-24: 타임아웃 10s + 순간 장애(429·5xx·네트워크·타임아웃) 1회 재시도. 종전엔 타임아웃이 없어
+    // TMDB가 멈추면 클라 30s 타임아웃까지 매달렸다가 "불러오지 못함"(클라는 타임아웃을 재시도하지 않음).
+    for (let attempt = 0; ; attempt++) {
+        let res;
+        try {
+            res = await fetch(url, { headers, signal: AbortSignal.timeout(10000) });
+        } catch (e) {
+            if (attempt === 0) { await new Promise((r) => setTimeout(r, 500)); continue; }
+            throw new Error(`TMDB fetch failed: ${e.name === 'TimeoutError' ? 'timeout' : e.message}`);
+        }
+        if (res.ok) return res.json();
+        if (attempt === 0 && (res.status === 429 || res.status >= 500)) { await new Promise((r) => setTimeout(r, 500)); continue; }
         const t = await res.text();
         throw new Error(`TMDB ${res.status}: ${t.slice(0, 200)}`);
     }
-    return res.json();
 }
 
-const TMDB_RL = { perMinute: 60, perHour: 1000 };
+// 2026-09-24: 60/min·1000/h → 300/min·5000/h. 버킷은 TMDB 라우트 전체 공유(uid, 로그인 전엔 IP)인데
+// 홈 1회 진입만으로 작품 상세 fan-out(On Air 카드 getTitle+getSeason ×5, Actor & Actress 후보 ×10, 활동 피드 포스터,
+// 큐레이션 discover 여러 개)이 수십 건이라, 홈 → 탐색으로 넘어가면 분당 60을 넘겨 429 → "Couldn't load content."
+// 로그인 전 요청은 IP 기준이라 통신사 CGNAT(여러 사용자가 한 IP)에서 더 쉽게 걸린다.
+// 응답은 서버 캐시 경유라 비용이 거의 없고, 이 한도는 스크립트 남용 차단용일 뿐이다.
+const TMDB_RL = { perMinute: 300, perHour: 5000 };
 
 // ── discover: 한국 콘텐츠 (최신/장르/랭킹/인기 모두 이 엔드포인트로) ──
 router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
