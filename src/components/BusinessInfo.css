@@ -1,0 +1,30 @@
+/* 사업자 정보 — 약관 화면·웹 포인트 구매 창 공용 */
+.biz-info {
+  margin: 6px 0 0;
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  column-gap: 12px;
+  row-gap: 2px;
+  font-size: 0.8rem;
+  line-height: 1.6;
+}
+.biz-info-row {
+  display: contents;
+}
+.biz-info dt {
+  margin: 0;
+  color: #475569;
+  font-weight: 600;
+}
+.biz-info dd {
+  margin: 0;
+  color: #64748b;
+  word-break: keep-all;
+}
+.biz-info-compact {
+  margin: 0;
+  font-size: 0.68rem;
+  line-height: 1.6;
+  color: #94a3b8;
+  word-break: keep-all;
+}

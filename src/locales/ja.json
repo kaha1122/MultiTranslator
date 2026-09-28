@@ -1259,7 +1259,21 @@
     "contactPhone": "電話番号",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "対応時間",
-    "contactResponseValue": "営業日基準1〜2日"
+    "contactResponseValue": "営業日基準1〜2日",
+    "termsS6Sub5": "ボーナスポイント（単発購入）",
+    "termsS6Sub5Item1": "ボーナスポイントは決済後すぐにアカウントに付与され、有効期限はありません。",
+    "termsS6Sub5Item2": "決済後7日以内で、ポイントを一切使用していない場合は全額返金されます。",
+    "termsS6Sub5Item3": "ポイントを一部でも使用した場合は返金できません。アプリストア（Google Play・App Store）で購入したポイントの返金は各ストアのポリシーに従います。",
+    "bizTitle": "事業者情報",
+    "bizName": "商号",
+    "bizCeo": "代表者",
+    "bizRegNo": "事業者登録番号",
+    "bizAddress": "住所",
+    "bizPhone": "電話",
+    "bizEmail": "メール",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "カメラでテキストを読み取る",
@@ -1440,5 +1454,23 @@
     "reviewSub": "目標スコアに届かなかった文",
     "getAppTitle": "モバイルアプリで学習を続ける",
     "getAppBody": "同じアカウントでログインすると進捗がそのまま引き継がれます。"
+  },
+  "webPoints": {
+    "title": "ボーナスポイント購入",
+    "desc": "発音評価・AI会話・リスニングなどの学習機能に使うポイントです。",
+    "product": "ボーナスポイント {n}pt",
+    "noticeInstant": "決済後すぐにアカウントに付与されます。",
+    "noticeNoExpiry": "有効期限はありません。",
+    "noticeRefund": "決済後7日以内で、ポイントを一切使用していない場合は全額返金されます。一部でも使用した場合は返金できません。",
+    "termsLink": "利用規約（返金規定）を見る",
+    "payBtn": "{price} を支払う",
+    "comingSoon": "決済は準備中です。まもなくご利用いただけます。",
+    "guestDesc": "ポイントの購入は無料アカウント作成後にご利用いただけます。",
+    "processing": "決済を確認中...",
+    "success": "{n}ポイントが付与されました！",
+    "fail": "決済が完了しませんでした。もう一度お試しください。",
+    "loadError": "決済情報を読み込めませんでした。しばらくしてからお試しください。",
+    "testBadge": "テスト決済",
+    "bizTitle": "販売者情報"
   }
 }

@@ -1265,7 +1265,21 @@
     "contactPhone": "Phone",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Response Time",
-    "contactResponseValue": "1-2 business days"
+    "contactResponseValue": "1-2 business days",
+    "termsS6Sub5": "Bonus points (one-time purchase)",
+    "termsS6Sub5Item1": "Bonus points are added to your account immediately after payment and do not expire.",
+    "termsS6Sub5Item2": "A full refund is available within 7 days of payment if none of the points have been used.",
+    "termsS6Sub5Item3": "No refund is available once any points have been used. Refunds for points bought through an app store (Google Play, App Store) follow that store's policy.",
+    "bizTitle": "Business information",
+    "bizName": "Company",
+    "bizCeo": "Representative",
+    "bizRegNo": "Business registration no.",
+    "bizAddress": "Address",
+    "bizPhone": "Phone",
+    "bizEmail": "Email",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Read Text with Camera",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Sentences below your target score",
     "getAppTitle": "Keep learning on mobile",
     "getAppBody": "Sign in with the same account and your progress carries over."
+  },
+  "webPoints": {
+    "title": "Buy bonus points",
+    "desc": "Points for learning features such as pronunciation scoring, AI conversation and listening.",
+    "product": "{n} bonus points",
+    "noticeInstant": "Points are added to your account right after payment.",
+    "noticeNoExpiry": "Points do not expire.",
+    "noticeRefund": "Full refund within 7 days of payment if no points have been used. No refund once any points are used.",
+    "termsLink": "Terms of Service (refund policy)",
+    "payBtn": "Pay {price}",
+    "comingSoon": "Payments are coming soon.",
+    "guestDesc": "Create a free account to buy points.",
+    "processing": "Confirming payment...",
+    "success": "{n} points added!",
+    "fail": "The payment was not completed. Please try again.",
+    "loadError": "Could not load payment info. Please try again later.",
+    "testBadge": "Test payment",
+    "bizTitle": "Seller information"
   }
 }

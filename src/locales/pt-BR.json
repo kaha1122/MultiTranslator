@@ -1259,7 +1259,21 @@
     "contactPhone": "Telefone",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Tempo de Resposta",
-    "contactResponseValue": "1-2 dias úteis"
+    "contactResponseValue": "1-2 dias úteis",
+    "termsS6Sub5": "Pontos bônus (compra avulsa)",
+    "termsS6Sub5Item1": "Os pontos bônus são creditados na conta imediatamente após o pagamento e não expiram.",
+    "termsS6Sub5Item2": "Reembolso integral em até 7 dias após o pagamento, se nenhum ponto tiver sido usado.",
+    "termsS6Sub5Item3": "Não há reembolso após o uso de qualquer ponto. O reembolso de pontos comprados em uma loja de apps (Google Play, App Store) segue a política dessa loja.",
+    "bizTitle": "Informações da empresa",
+    "bizName": "Empresa",
+    "bizCeo": "Representante",
+    "bizRegNo": "N.º de registro",
+    "bizAddress": "Endereço",
+    "bizPhone": "Telefone",
+    "bizEmail": "E-mail",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Ler texto com câmera",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Frases abaixo da sua pontuação-alvo",
     "getAppTitle": "Continue aprendendo no celular",
     "getAppBody": "Entre com a mesma conta e seu progresso continua."
+  },
+  "webPoints": {
+    "title": "Comprar pontos bônus",
+    "desc": "Pontos para recursos de estudo como avaliação de pronúncia, conversa com IA e escuta.",
+    "product": "{n} pontos bônus",
+    "noticeInstant": "Os pontos são creditados na conta logo após o pagamento.",
+    "noticeNoExpiry": "Os pontos não expiram.",
+    "noticeRefund": "Reembolso integral em até 7 dias se nenhum ponto tiver sido usado. Sem reembolso após o uso de qualquer ponto.",
+    "termsLink": "Termos de uso (reembolso)",
+    "payBtn": "Pagar {price}",
+    "comingSoon": "Pagamentos em breve.",
+    "guestDesc": "Crie uma conta gratuita para comprar pontos.",
+    "processing": "Confirmando o pagamento...",
+    "success": "{n} pontos creditados!",
+    "fail": "O pagamento não foi concluído. Tente novamente.",
+    "loadError": "Não foi possível carregar as informações de pagamento. Tente mais tarde.",
+    "testBadge": "Pagamento de teste",
+    "bizTitle": "Informações do vendedor"
   }
 }

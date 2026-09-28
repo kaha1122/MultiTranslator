@@ -1259,7 +1259,21 @@
     "contactPhone": "Teléfono",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Tiempo de respuesta",
-    "contactResponseValue": "1-2 días hábiles"
+    "contactResponseValue": "1-2 días hábiles",
+    "termsS6Sub5": "Puntos bonus (compra única)",
+    "termsS6Sub5Item1": "Los puntos bonus se añaden a la cuenta inmediatamente después del pago y no caducan.",
+    "termsS6Sub5Item2": "Se reembolsa el importe total dentro de los 7 días posteriores al pago si no se ha usado ningún punto.",
+    "termsS6Sub5Item3": "No hay reembolso una vez usado cualquier punto. Los reembolsos de puntos comprados en una tienda de aplicaciones (Google Play, App Store) siguen la política de esa tienda.",
+    "bizTitle": "Información de la empresa",
+    "bizName": "Empresa",
+    "bizCeo": "Representante",
+    "bizRegNo": "N.º de registro",
+    "bizAddress": "Dirección",
+    "bizPhone": "Teléfono",
+    "bizEmail": "Correo",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Leer texto con cámara",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Frases por debajo de tu puntuación objetivo",
     "getAppTitle": "Sigue aprendiendo en el móvil",
     "getAppBody": "Inicia sesión con la misma cuenta y conservarás tu progreso."
+  },
+  "webPoints": {
+    "title": "Comprar puntos bonus",
+    "desc": "Puntos para funciones de aprendizaje como evaluación de pronunciación, conversación con IA y escucha.",
+    "product": "{n} puntos bonus",
+    "noticeInstant": "Los puntos se añaden a tu cuenta justo después del pago.",
+    "noticeNoExpiry": "Los puntos no caducan.",
+    "noticeRefund": "Reembolso total en 7 días si no se ha usado ningún punto. Sin reembolso una vez usado cualquier punto.",
+    "termsLink": "Términos del servicio (reembolsos)",
+    "payBtn": "Pagar {price}",
+    "comingSoon": "Los pagos estarán disponibles pronto.",
+    "guestDesc": "Crea una cuenta gratuita para comprar puntos.",
+    "processing": "Confirmando el pago...",
+    "success": "¡{n} puntos añadidos!",
+    "fail": "El pago no se completó. Inténtalo de nuevo.",
+    "loadError": "No se pudo cargar la información de pago. Inténtalo más tarde.",
+    "testBadge": "Pago de prueba",
+    "bizTitle": "Información del vendedor"
   }
 }

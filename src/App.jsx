@@ -73,6 +73,7 @@ import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
 import { useIsDesktopWeb } from './hooks/useIsDesktopWeb';
 import DesktopRightPanel from './components/DesktopRightPanel';
+import WebPointsModal, { WEB_POINTS_RETURN_PARAM } from './components/WebPointsModal';
 import './DesktopLayout.css';
 import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
 import { ADS_ENABLED, AD_TOPUP_POINT_THRESHOLD } from './config/ads';
@@ -553,6 +554,42 @@ function App() {
       setPaymentToast('fail');
       setTimeout(() => setPaymentToast(''), 3000);
     }
+  }, []);
+
+  // 웹 포인트 구매(토스) 결제창 복귀 처리 (2026-09-28) — successUrl ?points=success&paymentKey&orderId&amount.
+  //   서버 /api/points/toss/confirm이 주문·소유자·금액을 대조한 뒤 승인·멱등 적립한다(새로고침 재호출도 안전).
+  //   복귀 직후엔 Firebase 세션 복원 전일 수 있어 authStateReady를 기다린 뒤 토큰을 싣는다.
+  const [showWebPoints, setShowWebPoints] = useState(false);
+  React.useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const result = params.get(WEB_POINTS_RETURN_PARAM);
+    if (!result) return;
+    const paymentKey = params.get('paymentKey');
+    const orderId = params.get('orderId');
+    const amount = Number(params.get('amount'));
+    const code = params.get('code');
+    window.history.replaceState({}, '', window.location.pathname);
+    const lang = localStorage.getItem('sourceLang') || 'en';
+    if (result === 'fail') {
+      if (code !== 'PAY_PROCESS_CANCELED') alert(getT(lang, 'webPoints.fail'));
+      return;
+    }
+    if (result !== 'success' || !paymentKey || !orderId || !Number.isFinite(amount)) return;
+    (async () => {
+      try { await auth.authStateReady?.(); } catch { /* 세션 복원 실패 → 아래 요청이 401 → 실패 안내 */ }
+      try {
+        const r = await authFetch(`${SERVER_URL_FOR_BILLING}/api/points/toss/confirm`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ paymentKey, orderId, amount }),
+        });
+        const j = await r.json().catch(() => ({}));
+        if (r.ok && j.success) alert((getT(lang, 'webPoints.success') || '').replace('{n}', Number(j.points || 0).toLocaleString()));
+        else alert(getT(lang, 'webPoints.fail'));
+      } catch {
+        alert(getT(lang, 'webPoints.fail'));
+      }
+    })();
   }, []);
 
   // ── PWA 홈 화면 설치 유도 배너 상태 ──────────────────────────────────────
@@ -4568,13 +4605,23 @@ function App() {
                         🎁 {getT(sourceLang, 'bonus.label') || 'Bonus'} {bonusPoints}pt
                       </span>
                     </div>
-                    {/* "전면광고 제거" 혜택은 AdMob(네이티브) 전용 — 웹에는 전면광고가 없어 문구 숨김 */}
-                    {Capacitor.isNativePlatform() && (
-                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                        {getT(sourceLang, 'bonus.noInterstitialAd') || 'No interstitial ad'}
-                      </div>
-                    )}
+                    {/* "전면광고 제거" 문구 삭제(2026-09-28) — 포인트 보유와 무관하게 TTS 광고 안내 경로로 전면광고가
+                        나오므로(bumpTtsPoint) 앱에서도 사실이 아니었다. 6/7 폐지된 옛 시스템의 흔적. */}
                   </div>
+                )}
+
+                {/* 웹 보너스포인트 구매 (Trial) — 앱은 위 인앱결제 섹션을 쓴다 */}
+                {!Capacitor.isNativePlatform() && tier === 'trial' && (
+                  <button
+                    onClick={() => { setSidebarOpen(false); setShowWebPoints(true); }}
+                    style={{
+                      width: '100%', display: 'block', padding: '10px 12px', marginBottom: '6px',
+                      borderRadius: '12px', background: 'linear-gradient(135deg, #eff6ff, #dbeafe)',
+                      border: '1px solid #bfdbfe', cursor: 'pointer', textAlign: 'left',
+                      fontSize: '0.82rem', fontWeight: 700, color: '#1e40af',
+                    }}>
+                    🪙 {getT(sourceLang, 'reward.buyBonus') || '보너스포인트 (구매) +1000'}
+                  </button>
                 )}
 
                 {/* 친구 추천 — 핑크 그라데이션 + +100pt 뱃지 + 부제목 (Pro/Premium 카드 스타일 패턴) */}
@@ -4610,8 +4657,9 @@ function App() {
                   </div>
                 </button>
 
-                {/* 리뷰 보상 — 오렌지 그라데이션 + +100pt 뱃지 (iOS는 Apple 5.6.1 정책상 비노출) */}
-                {Capacitor.getPlatform() !== 'ios' && (
+                {/* 리뷰 보상 — 오렌지 그라데이션 + +100pt 뱃지. Android 앱 전용
+                    (iOS는 Apple 5.6.1 정책상 비노출, 웹은 Play 스토어 후기 대상이 아니라 비노출 — 2026-09-28) */}
+                {Capacitor.getPlatform() === 'android' && (
                   <button
                     onClick={() => {
                       setSidebarOpen(false);
@@ -5949,6 +5997,7 @@ function App() {
           onCharge={ADS_ENABLED && !bonusAdPointsEnough ? handleRewardedAd : null}
           rewardAdLoading={rewardAdLoading}
           onBuyPoints={handleBuyPoints}
+          onBuyWebPoints={() => { setShowTrialLimitModal(false); setShowWebPoints(true); }}
           buyingPoints={buyingPoints}
           pointsPriceString={pointsPriceString}
           pronLimit={effectivePronLimit}
@@ -5957,11 +6006,23 @@ function App() {
             setShowTrialLimitModal(false);
             if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReferralModal(true);
           }}
-          onReview={Capacitor.getPlatform() !== 'ios' ? () => {
+          onReview={Capacitor.getPlatform() === 'android' ? () => {
             setShowTrialLimitModal(false);
             if (user?.isAnonymous) setShowAnonGateModal(true); else setShowReviewBonusModal(true);
           } : null}
           reviewBonusClaimed={reviewBonusClaimed}
+        />
+      )}
+
+      {/* 웹 보너스포인트 구매 창 (Toss 국내 / PayPal 해외) — 웹 전용 */}
+      {showWebPoints && !Capacitor.isNativePlatform() && (
+        <WebPointsModal
+          sourceLang={sourceLang}
+          user={user}
+          profile={profile}
+          onClose={() => setShowWebPoints(false)}
+          onCreateAccount={() => { setShowWebPoints(false); setShowAccountUpgrade(true); }}
+          onOpenTerms={() => { setShowWebPoints(false); window.history.pushState({}, '', '/terms'); setViewMode('terms'); }}
         />
       )}
 

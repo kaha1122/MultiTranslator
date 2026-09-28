@@ -1259,7 +1259,21 @@
     "contactPhone": "Téléphone",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Temps de réponse",
-    "contactResponseValue": "1 à 2 jours ouvrables"
+    "contactResponseValue": "1 à 2 jours ouvrables",
+    "termsS6Sub5": "Points bonus (achat unique)",
+    "termsS6Sub5Item1": "Les points bonus sont crédités sur votre compte dès le paiement et n'expirent pas.",
+    "termsS6Sub5Item2": "Un remboursement intégral est possible dans les 7 jours suivant le paiement si aucun point n'a été utilisé.",
+    "termsS6Sub5Item3": "Aucun remboursement n'est possible dès qu'un point a été utilisé. Les points achetés via une boutique d'applications (Google Play, App Store) sont remboursés selon la politique de cette boutique.",
+    "bizTitle": "Informations sur l'entreprise",
+    "bizName": "Société",
+    "bizCeo": "Représentant",
+    "bizRegNo": "N° d'immatriculation",
+    "bizAddress": "Adresse",
+    "bizPhone": "Téléphone",
+    "bizEmail": "E-mail",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Lire le texte avec la caméra",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Phrases sous votre score cible",
     "getAppTitle": "Continuez sur mobile",
     "getAppBody": "Connectez-vous avec le même compte pour garder votre progression."
+  },
+  "webPoints": {
+    "title": "Acheter des points bonus",
+    "desc": "Des points pour les fonctions d'apprentissage : évaluation de la prononciation, conversation IA, écoute.",
+    "product": "{n} points bonus",
+    "noticeInstant": "Les points sont crédités sur votre compte dès le paiement.",
+    "noticeNoExpiry": "Les points n'expirent pas.",
+    "noticeRefund": "Remboursement intégral sous 7 jours si aucun point n'a été utilisé. Aucun remboursement dès qu'un point est utilisé.",
+    "termsLink": "Conditions d'utilisation (remboursement)",
+    "payBtn": "Payer {price}",
+    "comingSoon": "Le paiement sera bientôt disponible.",
+    "guestDesc": "Créez un compte gratuit pour acheter des points.",
+    "processing": "Confirmation du paiement...",
+    "success": "{n} points crédités !",
+    "fail": "Le paiement n'a pas abouti. Veuillez réessayer.",
+    "loadError": "Impossible de charger les informations de paiement. Réessayez plus tard.",
+    "testBadge": "Paiement test",
+    "bizTitle": "Informations vendeur"
   }
 }

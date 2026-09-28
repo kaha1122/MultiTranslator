@@ -1259,7 +1259,21 @@
     "contactPhone": "电话",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "响应时间",
-    "contactResponseValue": "工作日1-2天"
+    "contactResponseValue": "工作日1-2天",
+    "termsS6Sub5": "奖励积分（单次购买）",
+    "termsS6Sub5Item1": "奖励积分在付款后立即发放到账户，且没有有效期限制。",
+    "termsS6Sub5Item2": "付款后 7 天内且未使用任何积分的，可全额退款。",
+    "termsS6Sub5Item3": "已使用部分积分的不予退款。通过应用商店（Google Play、App Store）购买的积分，其退款遵循各商店政策。",
+    "bizTitle": "经营者信息",
+    "bizName": "商号",
+    "bizCeo": "代表人",
+    "bizRegNo": "营业执照号",
+    "bizAddress": "地址",
+    "bizPhone": "电话",
+    "bizEmail": "邮箱",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "用相机读取文字",
@@ -1440,5 +1454,23 @@
     "reviewSub": "未达到目标分数的句子",
     "getAppTitle": "在手机应用上继续学习",
     "getAppBody": "使用同一账号登录，学习进度会同步保留。"
+  },
+  "webPoints": {
+    "title": "购买奖励积分",
+    "desc": "用于发音评测、AI 对话、听力等学习功能的积分。",
+    "product": "奖励积分 {n}pt",
+    "noticeInstant": "付款后立即发放到您的账户。",
+    "noticeNoExpiry": "积分没有有效期限制。",
+    "noticeRefund": "付款后 7 天内且未使用任何积分，可全额退款。一旦使用部分积分则不予退款。",
+    "termsLink": "查看服务条款（退款规定）",
+    "payBtn": "支付 {price}",
+    "comingSoon": "支付功能即将上线。",
+    "guestDesc": "创建免费账户后即可购买积分。",
+    "processing": "正在确认付款...",
+    "success": "已发放 {n} 积分！",
+    "fail": "付款未完成，请重试。",
+    "loadError": "无法加载付款信息，请稍后再试。",
+    "testBadge": "测试支付",
+    "bizTitle": "卖家信息"
   }
 }

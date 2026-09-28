@@ -19,7 +19,7 @@ const colorizePlan = (text) =>
 const TrialLimitModal = ({
     sourceLang, pronCount, freeTalkCount = 0, listenCount = 0,
     onClose, onUpgrade, reason = 'cap', bonusPoints = 0, onCharge, rewardAdLoading = false,
-    onBuyPoints, buyingPoints = false, pointsPriceString = '',
+    onBuyPoints, onBuyWebPoints, buyingPoints = false, pointsPriceString = '',
     pronLimit, onPronAllowanceAd, capFeature = '',
     onReferral, onReview, reviewBonusClaimed = false,
 }) => {
@@ -191,6 +191,19 @@ const TrialLimitModal = ({
                                     fontWeight: 700, color: '#1e40af', fontSize: '0.9rem',
                                 }}>
                                 🪙 {(t('reward.buyBonus') || '보너스포인트 (구매) +1000')} · {buyingPoints ? (t('reward.buying') || '구매 처리 중...') : pointsPriceString}
+                            </button>
+                        )}
+                        {/* 웹 보너스포인트 구매 (Toss/PayPal) — 가격·가용 여부는 구매 창이 서버에서 받아 표시 */}
+                        {!isNative && typeof onBuyWebPoints === 'function' && (
+                            <button
+                                onClick={() => onBuyWebPoints()}
+                                style={{
+                                    width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px',
+                                    padding: '12px', marginBottom: '10px', borderRadius: '12px',
+                                    background: 'linear-gradient(135deg, #eff6ff, #dbeafe)', border: '1px solid #bfdbfe',
+                                    cursor: 'pointer', fontWeight: 700, color: '#1e40af', fontSize: '0.9rem',
+                                }}>
+                                🪙 {t('reward.buyBonus') || '보너스포인트 (구매) +1000'}
                             </button>
                         )}
                         {rewardAdLoading && (

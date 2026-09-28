@@ -1259,7 +1259,21 @@
     "contactPhone": "Telefon",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Antwortzeit",
-    "contactResponseValue": "1-2 Werktage"
+    "contactResponseValue": "1-2 Werktage",
+    "termsS6Sub5": "Bonuspunkte (Einmalkauf)",
+    "termsS6Sub5Item1": "Bonuspunkte werden direkt nach der Zahlung gutgeschrieben und verfallen nicht.",
+    "termsS6Sub5Item2": "Innerhalb von 7 Tagen nach der Zahlung erfolgt eine volle Erstattung, sofern keine Punkte verwendet wurden.",
+    "termsS6Sub5Item3": "Sobald Punkte verwendet wurden, ist keine Erstattung möglich. Für Punkte aus einem App-Store (Google Play, App Store) gelten dessen Erstattungsrichtlinien.",
+    "bizTitle": "Unternehmensangaben",
+    "bizName": "Firma",
+    "bizCeo": "Vertreter",
+    "bizRegNo": "Handelsregisternr.",
+    "bizAddress": "Adresse",
+    "bizPhone": "Telefon",
+    "bizEmail": "E-Mail",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Text mit Kamera lesen",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Sätze unter deinem Zielwert",
     "getAppTitle": "Mobil weiterlernen",
     "getAppBody": "Melde dich mit demselben Konto an – dein Fortschritt bleibt erhalten."
+  },
+  "webPoints": {
+    "title": "Bonuspunkte kaufen",
+    "desc": "Punkte für Lernfunktionen wie Ausspracheanalyse, KI-Gespräche und Hörübungen.",
+    "product": "{n} Bonuspunkte",
+    "noticeInstant": "Die Punkte werden direkt nach der Zahlung gutgeschrieben.",
+    "noticeNoExpiry": "Die Punkte verfallen nicht.",
+    "noticeRefund": "Volle Erstattung innerhalb von 7 Tagen, wenn keine Punkte verwendet wurden. Keine Erstattung, sobald Punkte verwendet wurden.",
+    "termsLink": "Nutzungsbedingungen (Erstattung)",
+    "payBtn": "{price} bezahlen",
+    "comingSoon": "Die Zahlung ist bald verfügbar.",
+    "guestDesc": "Erstelle ein kostenloses Konto, um Punkte zu kaufen.",
+    "processing": "Zahlung wird bestätigt...",
+    "success": "{n} Punkte gutgeschrieben!",
+    "fail": "Die Zahlung wurde nicht abgeschlossen. Bitte versuche es erneut.",
+    "loadError": "Zahlungsinformationen konnten nicht geladen werden. Bitte später erneut versuchen.",
+    "testBadge": "Testzahlung",
+    "bizTitle": "Verkäuferinformationen"
   }
 }

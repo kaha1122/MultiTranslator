@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { ArrowLeft, Mail, Shield, FileText } from 'lucide-react';
 import { getT } from '../../utils/i18n';
+import BusinessInfo from '../BusinessInfo';
 import './LegalPages.css';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -213,6 +214,14 @@ export function TermsOfServicePage({ onBack, sourceLang = 'ko' }) {
                     <li>{t('termsS6Sub4Item2')}</li>
                 </ul>
 
+                {/* 보너스포인트 일회성 구매 환불 (2026-09-28 — 웹 Toss/PayPal 포인트 구매 도입) */}
+                <h3>{t('termsS6Sub5')}</h3>
+                <ul>
+                    <li>{t('termsS6Sub5Item1')}</li>
+                    <li>{t('termsS6Sub5Item2')}</li>
+                    <li>{t('termsS6Sub5Item3')}</li>
+                </ul>
+
                 <p>{t('termsS6RefundContact').replace('{email}', '')}
                     <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </p>
@@ -224,6 +233,8 @@ export function TermsOfServicePage({ onBack, sourceLang = 'ko' }) {
                     {t('termsS7Desc')}{' '}
                     <a href={`mailto:${EMAIL}`}>{EMAIL}</a>
                 </p>
+                <h3>{t('bizTitle')}</h3>
+                <BusinessInfo sourceLang={sourceLang} />
             </section>
         </LegalLayout>
     );

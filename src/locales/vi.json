@@ -1259,7 +1259,21 @@
     "contactPhone": "Điện thoại",
     "contactPhoneValue": "+82 50-6754-5465",
     "contactResponseTime": "Thời gian phản hồi",
-    "contactResponseValue": "1-2 ngày làm việc"
+    "contactResponseValue": "1-2 ngày làm việc",
+    "termsS6Sub5": "Điểm thưởng (mua một lần)",
+    "termsS6Sub5Item1": "Điểm thưởng được cộng vào tài khoản ngay sau khi thanh toán và không có thời hạn sử dụng.",
+    "termsS6Sub5Item2": "Hoàn tiền toàn bộ trong vòng 7 ngày kể từ khi thanh toán nếu chưa sử dụng điểm nào.",
+    "termsS6Sub5Item3": "Không hoàn tiền khi đã sử dụng bất kỳ điểm nào. Việc hoàn tiền điểm mua qua cửa hàng ứng dụng (Google Play, App Store) tuân theo chính sách của cửa hàng đó.",
+    "bizTitle": "Thông tin doanh nghiệp",
+    "bizName": "Tên công ty",
+    "bizCeo": "Người đại diện",
+    "bizRegNo": "Mã số đăng ký kinh doanh",
+    "bizAddress": "Địa chỉ",
+    "bizPhone": "Điện thoại",
+    "bizEmail": "Email",
+    "bizNameVal": "AriGems",
+    "bizCeoVal": "Seungwoo Ha",
+    "bizAddressVal": "Gulpo-2Ro 83, Gimpo-si, Gyeonggi-do, South Korea"
   },
   "cameraOCR": {
     "title": "Đọc văn bản bằng camera",
@@ -1440,5 +1454,23 @@
     "reviewSub": "Các câu chưa đạt điểm mục tiêu",
     "getAppTitle": "Tiếp tục học trên ứng dụng di động",
     "getAppBody": "Đăng nhập cùng tài khoản để giữ nguyên tiến độ."
+  },
+  "webPoints": {
+    "title": "Mua điểm thưởng",
+    "desc": "Điểm dùng cho các tính năng học như chấm phát âm, hội thoại AI và luyện nghe.",
+    "product": "{n} điểm thưởng",
+    "noticeInstant": "Điểm được cộng vào tài khoản ngay sau khi thanh toán.",
+    "noticeNoExpiry": "Điểm không có thời hạn sử dụng.",
+    "noticeRefund": "Hoàn tiền toàn bộ trong vòng 7 ngày nếu chưa dùng điểm nào. Không hoàn tiền khi đã dùng bất kỳ điểm nào.",
+    "termsLink": "Xem Điều khoản (chính sách hoàn tiền)",
+    "payBtn": "Thanh toán {price}",
+    "comingSoon": "Tính năng thanh toán sắp ra mắt.",
+    "guestDesc": "Hãy tạo tài khoản miễn phí để mua điểm.",
+    "processing": "Đang xác nhận thanh toán...",
+    "success": "Đã cộng {n} điểm!",
+    "fail": "Thanh toán chưa hoàn tất. Vui lòng thử lại.",
+    "loadError": "Không tải được thông tin thanh toán. Vui lòng thử lại sau.",
+    "testBadge": "Thanh toán thử",
+    "bizTitle": "Thông tin người bán"
   }
 }

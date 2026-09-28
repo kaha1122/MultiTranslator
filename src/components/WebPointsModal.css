@@ -1,0 +1,127 @@
+/* 웹 보너스포인트 구매 창 — 정적 스타일만(애니메이션 없음) */
+.wpm-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-modal, 1000);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  background: var(--modal-overlay-bg, rgba(15, 23, 42, 0.55));
+}
+.wpm-card {
+  position: relative;
+  width: 100%;
+  max-width: 400px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 24px 22px 18px;
+  border-radius: var(--modal-radius, 20px);
+  background: #ffffff;
+  box-shadow: var(--modal-shadow, 0 20px 50px rgba(0, 0, 0, 0.2));
+}
+.wpm-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  border-radius: 50%;
+  background: #f1f5f9;
+  color: #64748b;
+}
+.wpm-close:hover { background: #e2e8f0; border-color: transparent; }
+.wpm-title {
+  margin: 0 0 6px;
+  font-size: 1.15rem;
+  font-weight: 800;
+  color: #0f172a;
+}
+.wpm-desc {
+  margin: 0 0 16px;
+  font-size: 0.85rem;
+  color: #64748b;
+  line-height: 1.5;
+}
+.wpm-product {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  border: 1px solid #bfdbfe;
+  background: linear-gradient(135deg, #eff6ff, #dbeafe);
+  margin-bottom: 12px;
+}
+.wpm-product-icon { color: #1d4ed8; flex-shrink: 0; }
+.wpm-product-name { flex: 1; font-weight: 800; color: #1e3a8a; font-size: 0.98rem; }
+.wpm-product-price { font-weight: 800; color: #1e40af; font-size: 1.05rem; }
+.wpm-notices {
+  margin: 0 0 6px;
+  padding-left: 18px;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: #475569;
+}
+.wpm-terms-link {
+  display: inline-block;
+  margin: 0 0 14px;
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 0.76rem;
+  font-weight: 600;
+  color: var(--brand-accent, #6366f1);
+  text-decoration: underline;
+}
+.wpm-terms-link:hover { border-color: transparent; }
+.wpm-pay-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 13px;
+  border: none;
+  border-radius: 12px;
+  background: var(--brand-primary, #00a884);
+  color: #ffffff;
+  font-weight: 800;
+  font-size: 0.95rem;
+}
+.wpm-pay-btn:hover:not(:disabled) { background: var(--brand-primary-hover, #00997a); border-color: transparent; }
+.wpm-pay-btn:disabled { background: #cbd5e1; color: #475569; cursor: default; }
+.wpm-test-badge {
+  font-size: 0.66rem;
+  font-weight: 800;
+  padding: 2px 7px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+}
+.wpm-test-badge--block { display: inline-block; margin-bottom: 8px; }
+.wpm-paypal { min-height: 50px; }
+.wpm-msg {
+  margin: 10px 0 0;
+  font-size: 0.82rem;
+  color: #64748b;
+  text-align: center;
+}
+.wpm-msg--ok { color: #15803d; font-weight: 700; }
+.wpm-msg--err { color: #dc2626; }
+.wpm-biz {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #f1f5f9;
+}
+.wpm-biz-title {
+  margin: 0 0 4px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: #94a3b8;
+}
