@@ -73,7 +73,6 @@ import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
 import { useIsDesktopWeb } from './hooks/useIsDesktopWeb';
 import DesktopRightPanel from './components/DesktopRightPanel';
-import StoreBadges from './components/StoreBadges';
 import './DesktopLayout.css';
 import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
 import { ADS_ENABLED, AD_TOPUP_POINT_THRESHOLD } from './config/ads';
@@ -4301,13 +4300,15 @@ function App() {
         <>
           {!isDesktopWeb && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
           <div className={isDesktopWeb ? 'sidebar sidebar--docked' : 'sidebar sidebar-enter'}>
-            {/* 드로어 상단: 로고 + 닫기 */}
-            <div className="sidebar-header">
-              <p className="sidebar-logo">PronunFit</p>
-              <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>
-                <X size={20} />
-              </button>
-            </div>
+            {/* 드로어 상단: 로고 + 닫기 — 데스크톱 고정 사이드바는 본문 헤더 로고와 중복이라 생략 */}
+            {!isDesktopWeb && (
+              <div className="sidebar-header">
+                <p className="sidebar-logo">PronunFit</p>
+                <button className="sidebar-close-btn" onClick={() => setSidebarOpen(false)}>
+                  <X size={20} />
+                </button>
+              </div>
+            )}
 
             {/* 유저 정보 */}
             {user?.isAnonymous ? (
@@ -4675,13 +4676,6 @@ function App() {
               )}
 
               <div className="sidebar-divider" />
-
-              {/* 데스크톱 웹: 모바일 앱 다운로드 배지 */}
-              {isDesktopWeb && (
-                <div className="sidebar-store">
-                  <StoreBadges />
-                </div>
-              )}
 
               {/* 법적 정보 */}
               <div className="sidebar-legal-section">

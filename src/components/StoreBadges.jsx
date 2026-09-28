@@ -1,4 +1,4 @@
-// ── 앱 스토어 다운로드 배지 (데스크톱 웹 사이드바·우측 패널 공용) ────────────────
+// ── 앱 스토어 다운로드 배지 (데스크톱 웹 우측 패널) ────────────────────────────
 // 배지 문구는 스토어 공식 표기(영문)를 그대로 쓴다 — 번역하지 않음.
 const APP_STORE_URL = 'https://apps.apple.com/app/pronunfit/id6761342764';
 const PLAY_STORE_URL = 'https://play.google.com/store/apps/details?id=com.arigems.pronunfit';

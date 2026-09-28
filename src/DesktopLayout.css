@@ -34,18 +34,10 @@ html.desktop-web .sidebar.sidebar--docked {
   border-left: 1px solid #e2e8f0;
   border-right: 1px solid #e2e8f0;
 }
-html.desktop-web .sidebar--docked .sidebar-close-btn {
-  display: none;
-}
-/* 스토어 배지는 사이드바 하단에 고정 — 메뉴가 길어도 항상 보이게 */
-html.desktop-web .sidebar--docked .sidebar-store {
-  position: sticky;
-  bottom: 0;
-  z-index: 1;
-  margin: 0 -0.6rem;
-  padding: 12px 14px;
-  background: #ffffff;
-  border-top: 1px solid #f1f5f9;
+/* 로고 헤더는 JSX에서 생략(본문 헤더와 중복). 첫 블록이 화면 최상단에 붙지 않게 여백만 둔다.
+ * 스토어 배지는 우측 패널에만 둔다(2026-09-28 staging 검토 — 좌우 중복 제거). */
+html.desktop-web .sidebar.sidebar--docked {
+  padding-top: 12px;
 }
 
 /* ── 우측 패널: 1280px 이상에서만 ── */

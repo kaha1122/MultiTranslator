@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Volume2, Mic, Square } from 'lucide-react';
+import { Volume2, Mic, Square, X } from 'lucide-react';
+import { Capacitor } from '@capacitor/core';
 import { getT } from '../utils/i18n';
 import { getOnboardingPhrase } from '../config/onboardingPhrases';
 import { useAudioRecorder } from '../hooks/useAudioRecorder';
@@ -26,6 +27,15 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
 
   // 결과 단계는 state가 아니라 채점 결과 유무에서 파생 (setState-in-effect 회피)
   const effectivePhase = assessmentResult ? 'result' : phase;
+
+  // [웹 전용 탈출구 2026-09-28] 웹은 마이크 입력 장치·브라우저 권한 설정이 제각각이라
+  //   "음성이 감지되지 않았습니다"로 온보딩이 막힌다. 한 번 시도해 실패하면 우상단 X로 건너뛸 수 있게 한다.
+  //   재시도 중(errorMsg 초기화)에도 X가 사라지지 않도록 실패 여부를 래치(렌더 중 파생 state 갱신 패턴).
+  //   네이티브는 종전대로 스킵 없음(마이크 거부 시 탈출구만).
+  const isWeb = !Capacitor.isNativePlatform();
+  const [failedOnce, setFailedOnce] = useState(false);
+  if (isWeb && errorMsg && !micDenied && !failedOnce) setFailedOnce(true);
+  const showWebSkip = isWeb && failedOnce && effectivePhase === 'speak' && !isRecording && !isAnalyzing;
 
   // 채점 결과 도착 시: iOS viewport 복구 + 점수 효과음(실 학습과 동일 — 목표 이상 성공음/미만 알림음).
   //   결과 1회 도착에만 발동(assessmentResult 변경 시). 온보딩 무과금이라 효과음은 로컬 사운드.
@@ -101,6 +111,17 @@ export default function OnboardingPronChallenge({ sourceLang, targetLang, onSpea
 
   return (
     <div className="onb-pron">
+      {showWebSkip && (
+        <button
+          type="button"
+          className="onb-web-skip-x"
+          onClick={onSkip}
+          aria-label={t('onboarding.firstPron.continue')}
+          title={t('onboarding.firstPron.continue')}
+        >
+          <X size={20} />
+        </button>
+      )}
       <h2 className="onb-title">
         {phase === 'listen' ? t('onboarding.firstPron.listenTitle') : t('onboarding.firstPron.speakTitle')}
       </h2>
