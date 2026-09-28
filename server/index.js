@@ -29,6 +29,7 @@ app.use(require('./routes/listening'));
 app.use(require('./routes/ocr'));
 app.use(require('./routes/translate'));
 app.use(require('./routes/webhook'));
+app.use(require('./routes/pointsWeb')); // PronunFit 웹 포인트 일회성 구매 — Toss(국내)·PayPal(해외), 심사 전 게이트 (2026-09-28)
 app.use(require('./routes/referral'));
 app.use(require('./routes/reviewBonus'));
 app.use(require('./routes/adReward'));

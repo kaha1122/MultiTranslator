@@ -5,6 +5,7 @@ const { admin, adminDb } = require('../config/firebase');
 const { requireAuth } = require('../middleware/auth');
 const { sendSubscriptionPush } = require('../utils/sendPush');
 const { grantBonusPoints } = require('../utils/bonusPoints');
+const { handleTossPointsWebhook } = require('./pointsWeb');
 
 // 2026-06-11 fail-closed: 웹훅/외부 비밀이 미설정이면 prod에서 조용히 무방비가 되던
 // 설계 반전 — 비밀 없으면 503 거부. 로컬 개발은 ALLOW_INSECURE_WEBHOOKS=1 로만 우회.
@@ -249,6 +250,13 @@ router.post('/api/toss-webhook', verifyTossWebhook, async (req, res) => {
             case 'PAYMENT_STATUS_CHANGED': {
                 const { status, customerKey, orderId, cancels, totalAmount } = data;
                 console.log(`[TossWebhook] PAYMENT status=${status}, orderId=${orderId}, customerKey=${customerKey}`);
+
+                // 웹 포인트 일회성 주문(pfpt_) — 아래 구독 로직(무료 강등·빌링키 폐기)을 타면 안 된다(2026-09-28).
+                //   포인트 환불 하나로 유료 구독자가 강등되는 사고를 막기 위해 가장 먼저 분기한다.
+                if (typeof orderId === 'string' && orderId.startsWith('pfpt_')) {
+                    await handleTossPointsWebhook(data);
+                    break;
+                }
 
                 // customerKey 또는 orderId로 유저 조회
                 let userRef, userDoc;
