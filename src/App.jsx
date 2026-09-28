@@ -4568,9 +4568,12 @@ function App() {
                         🎁 {getT(sourceLang, 'bonus.label') || 'Bonus'} {bonusPoints}pt
                       </span>
                     </div>
-                    <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-                      {getT(sourceLang, 'bonus.noInterstitialAd') || 'No interstitial ad'}
-                    </div>
+                    {/* "전면광고 제거" 혜택은 AdMob(네이티브) 전용 — 웹에는 전면광고가 없어 문구 숨김 */}
+                    {Capacitor.isNativePlatform() && (
+                      <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
+                        {getT(sourceLang, 'bonus.noInterstitialAd') || 'No interstitial ad'}
+                      </div>
+                    )}
                   </div>
                 )}
 
@@ -5881,6 +5884,11 @@ function App() {
           viewMode={viewMode}
           streakCurrent={streakCurrent}
           streakLongest={streakLongest}
+          totalAchievedDays={totalAchievedDays}
+          nextMilestone={nextMilestone}
+          nextReward={nextReward}
+          daysToNext={daysToNext}
+          earnedMilestones={earnedMilestones}
           todayCount={todayCount}
           dailyGoal={dailyGoal}
           weeklyData={weeklyData}

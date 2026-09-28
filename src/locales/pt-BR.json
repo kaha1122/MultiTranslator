@@ -1434,12 +1434,10 @@
     "shortAd": "Ver anúncio curto"
   },
   "desktop": {
-    "progressTitle": "Meu progresso",
-    "bestStreak": "Recorde: {n} dias",
+    "weekActivity": "Atividade da semana",
     "todayGoal": "Meta de hoje",
     "reviewTitle": "Praticar de novo",
     "reviewSub": "Frases abaixo da sua pontuação-alvo",
-    "reviewEmpty": "Nada para revisar agora.",
     "getAppTitle": "Continue aprendendo no celular",
     "getAppBody": "Entre com a mesma conta e seu progresso continua."
   }

@@ -1434,12 +1434,10 @@
     "shortAd": "短い広告を見る"
   },
   "desktop": {
-    "progressTitle": "学習状況",
-    "bestStreak": "最長 {n}日",
+    "weekActivity": "今週の活動",
     "todayGoal": "今日の目標",
     "reviewTitle": "発音をもう一度練習",
     "reviewSub": "目標スコアに届かなかった文",
-    "reviewEmpty": "今は練習し直す文がありません。",
     "getAppTitle": "モバイルアプリで学習を続ける",
     "getAppBody": "同じアカウントでログインすると進捗がそのまま引き継がれます。"
   }

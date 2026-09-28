@@ -1434,12 +1434,10 @@
     "shortAd": "Xem quảng cáo ngắn"
   },
   "desktop": {
-    "progressTitle": "Tiến độ học",
-    "bestStreak": "Dài nhất: {n} ngày",
+    "weekActivity": "Hoạt động tuần này",
     "todayGoal": "Mục tiêu hôm nay",
     "reviewTitle": "Luyện phát âm lại",
     "reviewSub": "Các câu chưa đạt điểm mục tiêu",
-    "reviewEmpty": "Hiện chưa có câu nào cần luyện lại.",
     "getAppTitle": "Tiếp tục học trên ứng dụng di động",
     "getAppBody": "Đăng nhập cùng tài khoản để giữ nguyên tiến độ."
   }

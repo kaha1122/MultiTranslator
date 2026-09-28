@@ -1434,12 +1434,10 @@
     "shortAd": "Kurze Anzeige ansehen"
   },
   "desktop": {
-    "progressTitle": "Mein Fortschritt",
-    "bestStreak": "Rekord: {n} Tage",
+    "weekActivity": "Wochenaktivität",
     "todayGoal": "Tagesziel",
     "reviewTitle": "Erneut üben",
     "reviewSub": "Sätze unter deinem Zielwert",
-    "reviewEmpty": "Gerade gibt es nichts zu wiederholen.",
     "getAppTitle": "Mobil weiterlernen",
     "getAppBody": "Melde dich mit demselben Konto an – dein Fortschritt bleibt erhalten."
   }

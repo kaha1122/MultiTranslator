@@ -1434,12 +1434,10 @@
     "shortAd": "Watch short ad"
   },
   "desktop": {
-    "progressTitle": "My progress",
-    "bestStreak": "Best: {n} days",
+    "weekActivity": "Weekly activity",
     "todayGoal": "Today's goal",
     "reviewTitle": "Practice again",
     "reviewSub": "Sentences below your target score",
-    "reviewEmpty": "Nothing to review right now.",
     "getAppTitle": "Keep learning on mobile",
     "getAppBody": "Sign in with the same account and your progress carries over."
   }

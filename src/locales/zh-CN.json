@@ -1434,12 +1434,10 @@
     "shortAd": "观看短广告"
   },
   "desktop": {
-    "progressTitle": "学习进度",
-    "bestStreak": "最长 {n} 天",
+    "weekActivity": "本周活动",
     "todayGoal": "今日目标",
     "reviewTitle": "再次练习发音",
     "reviewSub": "未达到目标分数的句子",
-    "reviewEmpty": "目前没有需要重新练习的句子。",
     "getAppTitle": "在手机应用上继续学习",
     "getAppBody": "使用同一账号登录，学习进度会同步保留。"
   }

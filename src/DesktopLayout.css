@@ -5,7 +5,7 @@
  * 가운데 본문(.app-container)은 항상 화면 정중앙(560px)에 둔다. 모달·토스트 등
  * left:50% 기준 fixed 요소가 본문과 어긋나지 않게 하기 위함.
  *   1024~1279px : 좌측 사이드바(216px) + 본문
- *   1280px 이상 : 좌측 사이드바(248px) + 본문 + 우측 패널(300px)
+ *   1280px 이상 : 좌측 사이드바(248px) + 본문 + 우측 패널(320px)
  * 애니메이션 없음 (정적 레이아웃만).
  */
 
@@ -56,7 +56,7 @@ html.desktop-web .sidebar.sidebar--docked {
     top: 0;
     bottom: 0;
     left: calc(50% + 280px + 24px);
-    width: 300px;
+    width: 320px; /* StreakHero 마일스톤 4칸이 들어가는 최소 폭 */
   }
 }
 
