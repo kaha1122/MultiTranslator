@@ -22,6 +22,7 @@ const toTmdbLang = (l) => LANG_MAP[l] || l || 'en-US';
 
 // 앱 메인 콘텐츠 언어 — 'ko' 하드코딩 금지, 반드시 이 상수 사용(server/config/contentLang.js).
 const { PRIMARY_CONTENT_LANG } = require('../config/contentLang');
+const { isForeignIncluded } = require('../config/catalogForeignInclude');
 // 사전번역 제목 조회용 kculture Firestore(있을 때만 — service account 없으면 null → 폴백은 TMDB만).
 const { kcultureDb } = require('../config/firebaseKculture');
 // 숨김 작품(성인 에로물) 필터 — TMDB의 include_adult는 한국 소프트코어물을 성인물로 분류하지 않아
@@ -470,9 +471,11 @@ router.get('/api/tmdb/search', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
         const key = `search:${lang}:${page}:${qLower}`;
         let data = getCache(key);
         if (!data) { data = await tmdbFetch('/search/multi', { language: lang, query: q, page: String(page), include_adult: 'false' }); setCache(key, data, 10 * 60 * 1000); }
-        // tv/movie는 메인 콘텐츠 언어 원작만, person은 모두 유지
+        // tv/movie는 메인 콘텐츠 언어 원작 + 포함 결정된 해외 원어 작품(catalogForeignInclude), person은 모두 유지
         let results = (data.results || []).filter((r) =>
-            (r.media_type === 'tv' || r.media_type === 'movie') ? r.original_language === PRIMARY_CONTENT_LANG : r.media_type === 'person'
+            (r.media_type === 'tv' || r.media_type === 'movie')
+                ? (r.original_language === PRIMARY_CONTENT_LANG || isForeignIncluded(r.media_type, r.id))
+                : r.media_type === 'person'
         );
         // en-US 검색 결과(제목·인물이름 영어 폴백 공용) — 필요할 때만 1회, 10분 캐시.
         const fetchEnResults = async () => {
@@ -537,7 +540,7 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
         const credits = [...(data.combined_credits?.cast || []), ...(data.combined_credits?.crew || [])];
         const seen = new Set();
         let works = credits
-            .filter((c) => c.original_language === PRIMARY_CONTENT_LANG && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
+            .filter((c) => (c.original_language === PRIMARY_CONTENT_LANG || isForeignIncluded(c.media_type, c.id)) && c.poster_path && (c.media_type === 'tv' || c.media_type === 'movie'))
             .filter((c) => { const k = `${c.media_type}-${c.id}`; if (seen.has(k)) return false; seen.add(k); return true; })
             .sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
 
