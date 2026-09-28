@@ -365,11 +365,20 @@ async function processTitle(media, id, { force = false } = {}) {
         : enOv ? { code: 'en', langName: 'English', text: enOv } : null;
 
     // ② 조립 — 제목: 원제(ko) / 검증 통과한 공식 제목(그 외). 줄거리: ko·en은 확보분.
+    // 해외 원어 작품(catalogForeignInclude — 한일 공동제작 등, 2026-09-28): 원제는 ko가 아니다.
+    //   ko 자리 = TMDB 공식 ko 제목(한글일 때), 원어 자리 = 원제. 종전엔 ko에 일본어 원제가,
+    //   ja에 영어 폴백이 들어갔다(305551 메리 베리 러브 실사고).
+    const origLang = baseLang(detail.original_language || PRIMARY_CONTENT_LANG);
+    const foreignOrig = origLang !== baseLang(PRIMARY_CONTENT_LANG);
     const out = {};
     for (const t of TARGETS) {
         const rec = tmdbRecord(trs, t);
         let title = '', tSrc = null;
-        if (t.code === PRIMARY_CODE) { title = origTitle; tSrc = 'orig'; }
+        if (t.code === PRIMARY_CODE) {
+            const primaryName = foreignOrig ? norm(rec?.title || rec?.name) : '';
+            if (primaryName && (!PRIMARY_SCRIPT || PRIMARY_SCRIPT.test(primaryName))) { title = primaryName; tSrc = 'official'; }
+            else { title = origTitle; tSrc = 'orig'; }
+        } else if (foreignOrig && baseLang(t.code) === origLang) { title = origTitle; tSrc = 'orig'; }
         else {
             const cand = norm(rec?.title || rec?.name);
             // 엄격 검증: 오염·줄거리형·길이. 통과한 공식 제목은 검색 자산이라 Gemini보다 우선.
