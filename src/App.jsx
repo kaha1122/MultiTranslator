@@ -71,6 +71,10 @@ import TtsAdPromptModal from './components/TtsAdPromptModal';
 import { useDailyProgress, getToday } from './hooks/useDailyProgress';
 import { useTopicProgress } from './hooks/useTopicProgress';
 import { useStreak } from './hooks/useStreak';
+import { useIsDesktopWeb } from './hooks/useIsDesktopWeb';
+import DesktopRightPanel from './components/DesktopRightPanel';
+import StoreBadges from './components/StoreBadges';
+import './DesktopLayout.css';
 import { useAdMob, AD_UNITS, IS_TESTING, showInterstitialAd } from './hooks/useAdMob';
 import { ADS_ENABLED, AD_TOPUP_POINT_THRESHOLD } from './config/ads';
 import { resetIOSViewport } from './utils/resetIOSViewport';
@@ -1399,6 +1403,8 @@ function App() {
 
   // 좌측 드로어(햄버거 메뉴) 상태 — useEffect보다 앞에 선언 (TDZ 방지)
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  // 데스크톱 웹(웹 + 1024px↑): 드로어를 고정 사이드바로 펼치고 하단 탭바 대신 사용. 네이티브는 항상 false.
+  const isDesktopWeb = useIsDesktopWeb();
   const [qaMenuOpen, setQaMenuOpen] = useState(false); // Q&A 서브메뉴 펼침 상태
 
   // showExitToast 변경 시 ref 동기화
@@ -4290,11 +4296,11 @@ function App() {
         </div>
       )}
 
-      {/* 좌측 슬라이드 드로어 */}
-      {sidebarOpen && (
+      {/* 좌측 슬라이드 드로어 — 데스크톱 웹에서는 오버레이 없이 고정 사이드바(sidebar--docked) */}
+      {(sidebarOpen || isDesktopWeb) && (
         <>
-          <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />
-          <div className="sidebar sidebar-enter">
+          {!isDesktopWeb && <div className="sidebar-overlay" onClick={() => setSidebarOpen(false)} />}
+          <div className={isDesktopWeb ? 'sidebar sidebar--docked' : 'sidebar sidebar-enter'}>
             {/* 드로어 상단: 로고 + 닫기 */}
             <div className="sidebar-header">
               <p className="sidebar-logo">PronunFit</p>
@@ -4669,6 +4675,13 @@ function App() {
               )}
 
               <div className="sidebar-divider" />
+
+              {/* 데스크톱 웹: 모바일 앱 다운로드 배지 */}
+              {isDesktopWeb && (
+                <div className="sidebar-store">
+                  <StoreBadges />
+                </div>
+              )}
 
               {/* 법적 정보 */}
               <div className="sidebar-legal-section">
@@ -5781,7 +5794,7 @@ function App() {
           Chrome / Edge 계열 브라우저가 설치 가능 상태라고 판단해야 뜹니다.
           iOS Safari는 이 팝업이 지원되지 않아 자동으로 안 뜹니다.
       ──────────────────────────────────────────────────────────────────── */}
-      {showInstallBanner && !Capacitor.isNativePlatform() && (
+      {showInstallBanner && !Capacitor.isNativePlatform() && !isDesktopWeb && (
         <div style={{
           position: 'fixed',
           bottom: '80px',   // 하단 네비게이션 바 위에 위치
@@ -5866,8 +5879,28 @@ function App() {
 
       {/* 하단 고정 nav 제거됨 — 좌측 햄버거 드로어로 대체 */}
 
-      {/* 하단 탭 바로가기 nav (도트 인디케이터 대체) */}
-      {TAB_ORDER.includes(viewMode) && (
+      {/* 데스크톱 웹 우측 패널 (1280px↑에서만 표시 — DesktopLayout.css) */}
+      {isDesktopWeb && (
+        <DesktopRightPanel
+          user={user}
+          sourceLang={sourceLang}
+          viewMode={viewMode}
+          streakCurrent={streakCurrent}
+          streakLongest={streakLongest}
+          todayCount={todayCount}
+          dailyGoal={dailyGoal}
+          weeklyData={weeklyData}
+          languageGoals={languageGoals}
+          onOpenCard={(cardId) => {
+            setFocusCardId(cardId);
+            setLibraryBackTo(null);
+            setViewMode('library');
+          }}
+        />
+      )}
+
+      {/* 하단 탭 바로가기 nav (도트 인디케이터 대체) — 데스크톱 웹은 고정 사이드바가 대체 */}
+      {TAB_ORDER.includes(viewMode) && !isDesktopWeb && (
         <nav className="tab-nav" aria-label="primary">
           {TAB_ORDER.map((tab) => {
             const s = TAB_STYLE[tab];

@@ -1432,5 +1432,15 @@
     "body": "Vous avez profité de beaucoup d'écoute gratuite. Regardez une courte pub pour la garder gratuite.",
     "longAd": "Voir une longue pub (+20 points)",
     "shortAd": "Voir une courte pub"
+  },
+  "desktop": {
+    "progressTitle": "Ma progression",
+    "bestStreak": "Record : {n} jours",
+    "todayGoal": "Objectif du jour",
+    "reviewTitle": "Pratiquer à nouveau",
+    "reviewSub": "Phrases sous votre score cible",
+    "reviewEmpty": "Rien à revoir pour le moment.",
+    "getAppTitle": "Continuez sur mobile",
+    "getAppBody": "Connectez-vous avec le même compte pour garder votre progression."
   }
 }

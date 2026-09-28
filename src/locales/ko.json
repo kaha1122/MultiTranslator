@@ -1432,5 +1432,15 @@
     "body": "무료 듣기를 충분히 즐기셨어요. 무료로 계속 이용하시려면 잠깐 광고를 시청해 주세요.",
     "longAd": "긴 광고 보기 (+20 포인트)",
     "shortAd": "짧은 광고 보기"
+  },
+  "desktop": {
+    "progressTitle": "학습 현황",
+    "bestStreak": "최장 {n}일",
+    "todayGoal": "오늘 목표",
+    "reviewTitle": "발음 다시 연습하기",
+    "reviewSub": "목표 점수에 못 미친 문장",
+    "reviewEmpty": "지금 다시 연습할 문장이 없어요.",
+    "getAppTitle": "모바일 앱으로 이어서 학습",
+    "getAppBody": "같은 계정으로 로그인하면 진도가 그대로 이어져요."
   }
 }

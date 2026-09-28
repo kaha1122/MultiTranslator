@@ -1432,5 +1432,15 @@
     "body": "You've enjoyed a lot of free listening. Please watch a short ad to keep it free.",
     "longAd": "Watch long ad  (+20 points)",
     "shortAd": "Watch short ad"
+  },
+  "desktop": {
+    "progressTitle": "My progress",
+    "bestStreak": "Best: {n} days",
+    "todayGoal": "Today's goal",
+    "reviewTitle": "Practice again",
+    "reviewSub": "Sentences below your target score",
+    "reviewEmpty": "Nothing to review right now.",
+    "getAppTitle": "Keep learning on mobile",
+    "getAppBody": "Sign in with the same account and your progress carries over."
   }
 }

@@ -1,0 +1,106 @@
+/* ── 데스크톱 웹 3단 레이아웃 (2026-09-28) ───────────────────────────────────
+ * 모든 규칙은 html.desktop-web 하위 — useIsDesktopWeb()가 "웹 + 폭 1024px 이상"에서만
+ * 붙이므로 네이티브 앱(태블릿 포함)과 모바일 웹에는 영향이 없다.
+ *
+ * 가운데 본문(.app-container)은 항상 화면 정중앙(560px)에 둔다. 모달·토스트 등
+ * left:50% 기준 fixed 요소가 본문과 어긋나지 않게 하기 위함.
+ *   1024~1279px : 좌측 사이드바(216px) + 본문
+ *   1280px 이상 : 좌측 사이드바(248px) + 본문 + 우측 패널(300px)
+ * 애니메이션 없음 (정적 레이아웃만).
+ */
+
+html.desktop-web body {
+  background: #eef2f6;
+}
+
+html.desktop-web .app-container {
+  max-width: 560px;
+  /* 하단 탭바를 렌더하지 않으므로 탭바 몫의 여백 제거 */
+  padding-bottom: 0;
+  box-shadow: 0 0 0 1px #e2e8f0;
+}
+
+/* 햄버거는 공간만 유지(로고 정중앙 대칭) — 메뉴는 고정 사이드바가 대신한다 */
+html.desktop-web .hamburger-btn {
+  visibility: hidden;
+}
+
+/* ── 좌측 고정 사이드바 (기존 드로어 재사용) ── */
+html.desktop-web .sidebar.sidebar--docked {
+  left: calc(50% - 280px - 16px - 216px);
+  width: 216px;
+  z-index: 50;
+  box-shadow: none;
+  border-left: 1px solid #e2e8f0;
+  border-right: 1px solid #e2e8f0;
+}
+html.desktop-web .sidebar--docked .sidebar-close-btn {
+  display: none;
+}
+/* 스토어 배지는 사이드바 하단에 고정 — 메뉴가 길어도 항상 보이게 */
+html.desktop-web .sidebar--docked .sidebar-store {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin: 0 -0.6rem;
+  padding: 12px 14px;
+  background: #ffffff;
+  border-top: 1px solid #f1f5f9;
+}
+
+/* ── 우측 패널: 1280px 이상에서만 ── */
+.desktop-right-panel {
+  display: none;
+}
+
+@media (min-width: 1280px) {
+  html.desktop-web .sidebar.sidebar--docked {
+    left: calc(50% - 280px - 24px - 248px);
+    width: 248px;
+  }
+  html.desktop-web .desktop-right-panel {
+    display: flex;
+    position: fixed;
+    top: 0;
+    bottom: 0;
+    left: calc(50% + 280px + 24px);
+    width: 300px;
+  }
+}
+
+/* ── 스토어 배지 ── */
+.store-badges {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.store-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 180px;
+  padding: 7px 12px;
+  border-radius: 10px;
+  background: #0f172a;
+  border: 1px solid #334155;
+  color: #ffffff;
+  text-decoration: none;
+  font-weight: 700;
+  transition: background 0.15s;
+}
+.store-badge:hover {
+  background: #1e293b;
+  color: #ffffff;
+}
+.store-badge-text {
+  display: flex;
+  flex-direction: column;
+  font-size: 0.86rem;
+  line-height: 1.15;
+}
+.store-badge-text small {
+  font-size: 0.6rem;
+  font-weight: 500;
+  opacity: 0.85;
+}
