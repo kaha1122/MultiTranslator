@@ -26,14 +26,18 @@ router.post('/api/toss-confirm-billing', requireAuth, async (req, res) => {
     // 이전엔 결제금액은 planId, 부여 tier/months는 body 값을 그대로 써서
     // "pro 가격으로 premium 3개월" 조작이 가능했음.
     const PLAN_CONFIG = {
-        pro_1:         { tier: 'pro',     months: 1, amount: 4990,  orderName: 'PronunFit Pro 1개월' },
-        pro_3:         { tier: 'pro',     months: 3, amount: 13990, orderName: 'PronunFit Pro 3개월' },
+        // ⚠ 금액은 클라 표시가(UpgradeModal.jsx PLAN_CONFIGS_KRW/USD)·스토어 가격과 반드시 같아야 한다.
+        //   2026-05-19 Pro 인상(₩4,990→₩9,000 / $3.49→$5.99) 때 클라만 고쳐 4개월 넘게 어긋나 있었다
+        //   (화면 ₩9,000 · 실제 청구 ₩4,990 — 2026-09-30 토스 테스트 결제에서 발견). 가격을 바꿀 때는
+        //   여기 + 아래 갱신용 AMOUNTS + 클라 PLAN_CONFIGS + 스토어(Play/App Store) 네 곳을 함께 고친다.
+        pro_1:         { tier: 'pro',     months: 1, amount: 9000,  orderName: 'PronunFit Pro 1개월' },
+        pro_3:         { tier: 'pro',     months: 3, amount: 22000, orderName: 'PronunFit Pro 3개월' },
         premium_1:     { tier: 'premium', months: 1, amount: 16990, orderName: 'PronunFit Premium 1개월' },
         premium_3:     { tier: 'premium', months: 3, amount: 35000, orderName: 'PronunFit Premium 3개월' },
-        pro:           { tier: 'pro',     months: 1, amount: 4990,  orderName: 'PronunFit Pro' },
+        pro:           { tier: 'pro',     months: 1, amount: 9000,  orderName: 'PronunFit Pro' },
         premium:       { tier: 'premium', months: 1, amount: 16990, orderName: 'PronunFit Premium' },
-        pro_1_usd:     { tier: 'pro',     months: 1, amount: 349,  orderName: 'PronunFit Pro 1 Month' },
-        pro_3_usd:     { tier: 'pro',     months: 3, amount: 899,  orderName: 'PronunFit Pro 3 Months' },
+        pro_1_usd:     { tier: 'pro',     months: 1, amount: 599,  orderName: 'PronunFit Pro 1 Month' },
+        pro_3_usd:     { tier: 'pro',     months: 3, amount: 1499, orderName: 'PronunFit Pro 3 Months' },
         premium_1_usd: { tier: 'premium', months: 1, amount: 1099, orderName: 'PronunFit Premium 1 Month' },
         premium_3_usd: { tier: 'premium', months: 3, amount: 2499, orderName: 'PronunFit Premium 3 Months' },
     };
@@ -321,8 +325,9 @@ router.post('/api/check-subscription', requireAuth, async (req, res) => {
 router.post('/api/cron/renew-subscriptions', requireCronAuth, async (req, res) => {
     if (!adminDb) return res.status(500).json({ error: 'Firestore not initialized' });
 
+    // ⚠ 위 PLAN_CONFIG(첫 결제)와 같은 값을 유지할 것 — 갱신만 옛 가격으로 남으면 발견이 늦다.
     const AMOUNTS = {
-        pro_1: 4990, pro_3: 13990,
+        pro_1: 9000, pro_3: 22000,
         premium_1: 16990, premium_3: 35000,
     };
     const ORDER_NAMES = {
