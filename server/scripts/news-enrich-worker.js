@@ -145,18 +145,22 @@ function siteDomain(u) {
 // <img src>가 플레이스홀더뿐인 SSR 페이지(실측 filmpro.ru)는 HTML 전체의 이미지 URL을 훑는다.
 // 호출자는 후보를 순서대로 imageLoadable로 확인해 첫 통과분을 쓴다(핫링크 정책은 매체마다 달라서).
 async function scrapePage(url) {
-    const out = { og: null, candidates: [] };
+    // status: 실패 진단용 요약(예: "403cf→403cf", "timeout") — 이미지 미확보 시 로그에 찍힌다(2026-10-01)
+    const out = { og: null, candidates: [], status: '' };
+    const tag = (r) => `${r.status}${r.headers.get('cf-mitigated') ? 'cf' : ''}`;
     let html;
     try {
         let res = await fetch(url, { headers: { 'User-Agent': UA }, signal: AbortSignal.timeout(6000) });
+        out.status = tag(res);
         if (res.status === 403) {
             // UA 기반 WAF(버전 블록리스트 등) — 모바일 UA로 1회 재시도(2026-09-12 altselection.ouest-france.fr)
             try { await res.body?.cancel(); } catch { /* 무시 */ }
             res = await fetch(url, { headers: { 'User-Agent': BROWSER_UA }, signal: AbortSignal.timeout(6000) });
+            out.status += `→${tag(res)}`;
         }
         if (!res.ok) return out;
         html = (await res.text()).slice(0, 400000); // 본문 이미지까지 보려면 og 스캔(200K)보다 넉넉히
-    } catch { return out; }
+    } catch (e) { out.status += (out.status ? '→' : '') + (e.name === 'TimeoutError' ? 'timeout' : `err:${e.cause?.code || e.message}`); return out; }
     const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
     out.og = og && og[1].startsWith('http') ? decodeEntities(og[1]) : null;
@@ -308,23 +312,32 @@ const BROWSER_UA = 'Mozilla/5.0 (Linux; Android 15; SM-S931B) AppleWebKit/537.36
 const isGoogleCdn = (u) => /^https:\/\/(encrypted-tbn\d\.gstatic\.com|lh\d\.googleusercontent\.com)\//.test(String(u || ''));
 // minBytes: 본문 후보용 최소 크기(Content-Length가 있을 때만 판정) — 로고·아이콘류는 수 KB라
 // 사진(수십 KB~)과 갈린다. og:image 검증은 종전대로 0(크기 무관).
+// 마지막 imageLoadable 실패 사유(진단 로그용, 2026-10-01) — 반환형을 바꾸지 않으려고 모듈 변수로 둔다
+let lastImgFail = '';
 async function imageLoadable(url, minBytes = 0) {
+    lastImgFail = '';
     try {
         const res = await fetch(url, {
             headers: { 'User-Agent': BROWSER_UA, Accept: 'image/avif,image/webp,image/apng,image/*,*/*;q=0.8' },
             signal: AbortSignal.timeout(6000),
         });
         try { await res.body?.cancel(); } catch { /* 본문 불필요 — 상태·타입만 */ }
-        if (!res.ok || !/^image\//i.test(res.headers.get('content-type') || '')) return false;
+        const type = res.headers.get('content-type') || '';
+        if (!res.ok || !/^image\//i.test(type)) {
+            lastImgFail = `${res.status}${res.headers.get('cf-mitigated') ? 'cf' : ''} ${type.split(';')[0] || '-'}`;
+            return false;
+        }
         // CORP same-origin/same-site(2026-09-11 thestandard.co 실측): 서버는 200을 주지만 브라우저가
         // 크로스사이트 <img>를 차단(ERR_BLOCKED_BY_RESPONSE). fetch 응답에는 헤더가 그대로 오므로 여기서 판정.
         if (/^same-(origin|site)$/i.test((res.headers.get('cross-origin-resource-policy') || '').trim())) {
             try { corpHostsSeen.add(new URL(url).hostname); } catch { /* 무시 */ }
+            lastImgFail = 'CORP';
             return false;
         }
         const len = parseInt(res.headers.get('content-length') || '0', 10);
-        return !(minBytes && len && len < minBytes);
-    } catch { return false; }
+        if (minBytes && len && len < minBytes) { lastImgFail = `small ${len}B`; return false; }
+        return true;
+    } catch (e) { lastImgFail = e.name === 'TimeoutError' ? 'timeout' : `err:${e.cause?.code || e.message}`; return false; }
 }
 const ARTICLE_IMG_MIN_BYTES = 15000;
 
@@ -454,8 +467,11 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             // imgV 검증은 프로토콜 무관이라 통과해버림) → https 승격 후 아래 검증으로 확인,
             // 승격이 안 먹는 CDN이면 검증 실패 → 구글 썸네일 교체.
             if (img && img.startsWith('http://')) img = `https://${img.slice(7)}`;
+            let ogFail = img ? '' : 'none'; // 진단 로그용 og 실패 사유
+            if (img && unusable(img)) ogFail = 'unusable';
             if (img && !unusable(img) && !isGoogleCdn(img) && !(await imageLoadable(img))) {
-                console.log(`  [${lang}] img unloadable on device: ${String(img).slice(0, 70)}`);
+                ogFail = lastImgFail;
+                console.log(`  [${lang}] img unloadable on device (${lastImgFail}): ${String(img).slice(0, 70)}`);
                 img = null; // 실기기에서 깨지는 URL — 본문 이미지·구글 썸네일 교체 대상
             }
             if (unusable(img)) {
@@ -483,6 +499,14 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             // CORP 호스트 이미지는 폴백을 못 구했어도 절대 뜨지 않으므로 유지 대신 비운다(카드 제외).
             // ⚠ 가변 차단(flaky)의 "원본 유지"와 구분 — 저 쪽은 IP·시점에 따라 뜰 수도 있다.
             if (img && isCorpHost(img)) img = null;
+            if (!img) {
+                // 이미지 미확보 진단(2026-10-01 papodedorama — 가정용 IP에선 og 정상인데 러너에선 무이미지,
+                // 종전엔 실패가 무로그라 원인 구분 불가). page=원문 상태, og=og 실패 사유, cand=본문 후보 수.
+                let host = '';
+                try { host = new URL(url).hostname; } catch { /* 무시 */ }
+                console.log(`  [${lang}] no image: ${host} | page ${page?.status || 'skip'} | og ${ogFail} | cand ${page?.candidates.length ?? 0}`
+                    + (page?.candidates.length ? ` (last ${lastImgFail})` : ''));
+            }
             if (img) {
                 patch = { ...(patch || { srcUrl: key }), imgV: 1 };
                 if (img !== it.image) patch.image = img;
