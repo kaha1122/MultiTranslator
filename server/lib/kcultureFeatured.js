@@ -1,18 +1,23 @@
 // ── K-DramaAnyLang 홈 Dari 존 featured 자동 선정 (2026-09-04 사용자 결정) ──
-// 매일 KST 05시(시간별 reengagement cron에 체이닝) 6장 = 방영분 3 + 선공개 3.
-//   · 방영분: 작품별 최신 스레드 중 커버 회차 마지막 방영일이 최근 3일 이내 → 3장 미달이면 7일 → 14일로 창 확장.
-//             전편 일괄 공개작(회차 ≥6, 방영일 전부 동일)은 항상 14일 창(몰아보기 기간).
+// 매일 KST 05시(시간별 reengagement cron에 체이닝) 6장.
+// 🔄 **2026-10-03 사용자 결정 — 방영분 우선 충원으로 변경**(종전 "방영분 3 + 선공개 3" 고정 분할 폐지):
+//     "방영중 숫자를 먼저 채우고 그다음에 선공개로 3개까지 채운다."
+//   · 방영분: 작품별 최신 스레드 중 커버 회차 마지막 방영일이 최근 3일 이내 → **3장**(AIRED_WINDOW_MIN) 미달이면
+//             7일 → 14일로 창 확장. 전편 일괄 공개작(회차 ≥6, 방영일 전부 동일)은 항상 14일 창(몰아보기 기간).
+//             **상한은 TOTAL(6)** — 방영 중인 작품이 많으면 6장을 전부 가져갈 수 있다.
 //   · 선공개: pre 스레드 중 같은 시즌 회차 스레드가 아직 없는 것. D-7 이내(premiereDate) 우선, 부족하면 나머지에서.
-//   · 한쪽이 부족하면 다른 쪽으로 채워 6장 유지. 대상은 config/kc_featured.targetIds(월간 글로벌 OTT 목록) 안에서만
+//             **남는 자리만 채우고 상한은 PRE_MAX(3)** — 종전의 교차 보충(선공개가 6장까지 번지던 동작)은 폐지.
+//   · ⚠ 방영분이 적고 선공개도 3장이면 featured가 6장 미만일 수 있다 — 빈 자리는 클라(selectPointers ②)가
+//     최신순으로 채우므로 캐러셀은 6장을 유지한다. 대상은 config/kc_featured.targetIds(월간 글로벌 OTT 목록) 안에서만
 //     (비어 있으면 전체). featuredPin=true 포인터는 자리를 유지하고 배치가 건너뛴다(수동 고정).
 //   · 랜덤은 날짜 시드 → 같은 날 재실행은 같은 결과(멱등). 킬 스위치 config/kc_featured.autoEnabled(false면 정지).
 // 쓰는 필드: curation_threads/{id}.featured(1~6, 낮을수록 앞 — 클라 selectPointers 정렬) / featuredPin / premiereDate(pre).
 const { kcultureDb } = require('../config/firebaseKculture');
 const admin = require('firebase-admin');
 
-const SLOTS_AIRED = 3;
-const SLOTS_PRE = 3;
-const TOTAL = SLOTS_AIRED + SLOTS_PRE;
+const TOTAL = 6;              // 홈 Dari 캐러셀 슬롯 수(실질 상한)
+const PRE_MAX = 3;            // 선공개 상한 — "선공개로 3개까지"(2026-10-03 사용자 결정)
+const AIRED_WINDOW_MIN = 3;   // 방영분 창 확장 기준: 이 수를 못 채우면 3→7→14일로 넓힌다(선정 상한이 아니다)
 const WINDOWS = [3, 7, 14];
 const BATCH_WINDOW = 14;
 const PRE_PRIORITY_DAYS = 7;
@@ -81,22 +86,21 @@ function selectFeatured(all, today, targetIds = []) {
     for (const w of WINDOWS) {
         windowUsed = w;
         aired = airedAll.filter((x) => dayDiff(today, x.last) <= (x.batch ? BATCH_WINDOW : w)).map((x) => x.p);
-        if (aired.length >= SLOTS_AIRED) break;
+        if (aired.length >= AIRED_WINDOW_MIN) break;
     }
 
     const rng = seededRng(`kc-featured:${today}`);
     const pinPre = pinned.filter((p) => p.pre), pinAired = pinned.filter((p) => !p.pre);
-    let selPre = pinPre.concat(shuffle(preNear, rng), shuffle(preFar, rng)).slice(0, Math.max(SLOTS_PRE, pinPre.length));
-    let selAired = pinAired.concat(shuffle(aired, rng)).slice(0, Math.max(SLOTS_AIRED, pinAired.length));
-    // 교차 보충 — 한쪽이 부족하면 다른 쪽 잔여 후보로 6장 채움
-    const restPre = pinPre.concat(shuffle(preNear, rng), shuffle(preFar, rng)).filter((p) => !selPre.includes(p));
-    const restAired = shuffle(aired, rng).filter((p) => !selAired.includes(p));
-    while (selPre.length + selAired.length < TOTAL && (restPre.length || restAired.length)) {
-        if (selAired.length < SLOTS_AIRED || !restPre.length) { if (restAired.length) { selAired.push(restAired.shift()); continue; } }
-        if (restPre.length) selPre.push(restPre.shift()); else if (restAired.length) selAired.push(restAired.shift());
-    }
-    const ordered = selAired.concat(selPre).slice(0, TOTAL); // 1~3 방영분, 4~6 선공개(클라는 세션 셔플)
-    return { ordered, windowUsed, counts: { preCandidates: preAll.length, preNear: preNear.length, airedCandidates: aired.length, airedAll: airedAll.length, pinned: pinned.length } };
+    // ① 핀이 자리를 먼저 보장받고 ② 남는 자리를 **방영분으로 채우고** ③ 그래도 남으면 선공개로 PRE_MAX까지.
+    //    핀은 상한 밖이다(수동 고정이 자동 규칙을 이긴다). 핀된 pre는 PRE_MAX 예산을 소비한다.
+    const freeSlots = Math.max(0, TOTAL - pinned.length);
+    const pickAired = shuffle(aired, rng).slice(0, freeSlots);
+    const preRoom = Math.min(PRE_MAX - pinPre.length, freeSlots - pickAired.length);
+    const pickPre = shuffle(preNear, rng).concat(shuffle(preFar, rng)).slice(0, Math.max(0, preRoom));
+    const selAired = pinAired.concat(pickAired);
+    const selPre = pinPre.concat(pickPre);
+    const ordered = selAired.concat(selPre); // 방영분 먼저, 그 다음 선공개(표시 순서는 클라가 세션 셔플)
+    return { ordered, windowUsed, counts: { preCandidates: preAll.length, preNear: preNear.length, airedCandidates: aired.length, airedAll: airedAll.length, pinned: pinned.length, preMax: PRE_MAX, preRoom: Math.max(0, preRoom), slotsUsed: ordered.length } };
 }
 
 async function runFeaturedDaily(now = new Date(), { dryRun = false, force = false } = {}) {
