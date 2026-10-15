@@ -183,6 +183,23 @@ const GUIDE_LANGS = ['ko', 'en', 'ja', 'zh-CN', 'th', 'vi', 'id', 'ar', 'ru', 'd
 const GUIDE_REQUIRED = ['summary', 'relLine', 'titleWord', 'titleMeaning', 'chart'];
 const guideAutopublish = () => String(process.env.GUIDE_AUTOPUBLISH || '').toLowerCase() !== 'off';
 
+function guideTypeErrors(t) {
+    const errs = [];
+    const str = (v, p, opt = true) => { if (v == null ? !opt : typeof v !== 'string') errs.push(`${p}: 문자열이어야 함`); };
+    for (const k of ['summary', 'relLine', 'titleWord', 'titleMeaning', 'context', 'runtime', 'original', 'asOf', 'endingType', 'ending']) str(t[k], k);
+    (t.badges || []).forEach((b, i) => str(b, `badges[${i}]`, false));
+    (t.points || []).forEach((p, i) => str(p && p.text, `points[${i}].text`, false));
+    (t.crew || []).forEach((c, i) => str(c && c.alsoWork, `crew[${i}].alsoWork`));
+    if (t.quote) { str(t.quote.text, 'quote.text'); str(t.quote.speaker, 'quote.speaker'); }
+    const c = t.chart;
+    if (c && typeof c === 'object') {
+        for (const k of ['leadLink', 'topLink', 'unit', 'targetLink', 'target', 'legend']) str(c[k], `chart.${k}`);
+        const nodes = [...(c.leads || []), ...(c.top ? [c.top] : []), ...(c.members || []), ...(c.groups || []).flatMap((x) => (x && x.members) || [])];
+        nodes.forEach((n, i) => { if (!n || typeof n !== 'object') errs.push(`chart.node[${i}]: 인물 객체 아님`); else for (const k of ['name', 'actor', 'role', 'rel', 'tag']) str(n[k], `chart.node[${i}].${k}`); });
+    }
+    return errs;
+}
+
 function validateGuide(g) {
     const errs = [];
     if (!g || typeof g !== 'object') return ['guide 객체 필요'];
@@ -198,6 +215,9 @@ function validateGuide(g) {
         for (const k of GUIDE_REQUIRED) if (!t[k]) errs.push(`${l}.${k}: 비어 있음`);
         // UGC 번역 사고(2026-09-05)와 같은 이중 가드 — 서식만 남고 내용이 없는 필드를 막는다
         if (t.summary && String(t.summary).replace(/[\s\p{P}\p{S}]/gu, '').length < 20) errs.push(`${l}.summary: 본문이 비어 있음`);
+        // 화면이 텍스트로 출력하는 필드에 객체가 들어가면 상세 페이지가 통째로 죽는다(2026-10-16 닥터X — chart.target 객체).
+        // 앱 1.4.24 번들은 target을 문자열로만 그린다 → 문자열 강제. 나머지 표시 필드도 문자열/null만.
+        for (const e of guideTypeErrors(t)) errs.push(`${l}.${e}`);
     }
     const extra = Object.keys(i18n).filter((l) => !GUIDE_LANGS.includes(l));
     if (extra.length) errs.push(`알 수 없는 언어: ${extra.join(',')}`);
