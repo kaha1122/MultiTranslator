@@ -170,4 +170,91 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
     }
 });
 
+// ── 작품 가이드 게시 (2026-10-16 — 클라우드 자동 배치용) ─────────────────────
+// POST /api/curation/guide  { op: 'publish' | 'unpublish' | 'status', guide?, titleId?, dryRun? }
+//   publish   = KCulture scripts/publish-guide.mjs --apply 와 같은 문서를 원자적으로 쓴다:
+//               titles/{id}/guide/{lang} ×14 · titles/{id}/guide/_meta · guide_index/all.titles.{id}
+//               자동 관문(guide-check + guide-qa)을 통과한 편만 오므로 verified:true·verifiedBy:'auto'로 기록한다.
+//   unpublish = 위 문서를 지우고 인덱스에서 뺀다(사고 시 되돌리기).
+//   status    = titleId 없으면 { autopublish }(배치 사전 점검), 있으면 인덱스 항목·언어 문서 수(부작용 없음).
+// 정지 스위치: env GUIDE_AUTOPUBLISH=off → publish 423 · status autopublish:false(배치가 작성 전에 멈춘다).
+// Firestore 변경은 배포를 일으키지 않는다 — 호출자가 KCulture content/guides/published.json을 커밋·푸시해 재빌드한다.
+const GUIDE_LANGS = ['ko', 'en', 'ja', 'zh-CN', 'th', 'vi', 'id', 'ar', 'ru', 'de', 'fr', 'es', 'pt-BR', 'it'];
+const GUIDE_REQUIRED = ['summary', 'relLine', 'titleWord', 'titleMeaning', 'chart'];
+const guideAutopublish = () => String(process.env.GUIDE_AUTOPUBLISH || '').toLowerCase() !== 'off';
+
+function validateGuide(g) {
+    const errs = [];
+    if (!g || typeof g !== 'object') return ['guide 객체 필요'];
+    if (!posInt(g.titleId)) errs.push('titleId: 양의 정수');
+    if (!['tv', 'movie'].includes(g.media)) errs.push("media: 'tv' | 'movie'");
+    if (!g.slug || !/^[a-z0-9-]+$/.test(g.slug)) errs.push('slug: 소문자·숫자·하이픈');
+    if (!g.template) errs.push('template 없음');
+    if (!g.facts || typeof g.facts !== 'object') errs.push('facts 없음');
+    const i18n = g.i18n || {};
+    for (const l of GUIDE_LANGS) {
+        const t = i18n[l];
+        if (!t) { errs.push(`${l}: 언어 없음`); continue; }
+        for (const k of GUIDE_REQUIRED) if (!t[k]) errs.push(`${l}.${k}: 비어 있음`);
+        // UGC 번역 사고(2026-09-05)와 같은 이중 가드 — 서식만 남고 내용이 없는 필드를 막는다
+        if (t.summary && String(t.summary).replace(/[\s\p{P}\p{S}]/gu, '').length < 20) errs.push(`${l}.summary: 본문이 비어 있음`);
+    }
+    const extra = Object.keys(i18n).filter((l) => !GUIDE_LANGS.includes(l));
+    if (extra.length) errs.push(`알 수 없는 언어: ${extra.join(',')}`);
+    return errs;
+}
+
+router.post('/api/curation/guide', requireCurationAuth, async (req, res) => {
+    const b = req.body || {};
+    try {
+        if (!kcultureDb) return res.status(503).json({ error: 'kcultureDb 없음' });
+        const op = String(b.op || '');
+        const indexRef = kcultureDb.doc('guide_index/all');
+
+        if (op === 'status') {
+            const id = String(posInt(b.titleId) || '');
+            if (!id) return res.json({ ok: true, autopublish: guideAutopublish() });
+            const [idx, docs] = await Promise.all([indexRef.get(), kcultureDb.collection(`titles/${id}/guide`).get()]);
+            return res.json({ ok: true, autopublish: guideAutopublish(), titleId: id, index: idx.exists ? (idx.data().titles || {})[id] || null : null, docs: docs.size });
+        }
+
+        if (op === 'publish') {
+            if (!guideAutopublish()) return res.status(423).json({ error: 'GUIDE_AUTOPUBLISH=off — 가이드 게시 정지 중' });
+            const g = b.guide;
+            const errs = validateGuide(g);
+            if (errs.length) return res.status(422).json({ error: '검증 실패', errors: errs.slice(0, 30) });
+            const id = String(g.titleId);
+            const now = new Date().toISOString();
+            const common = { titleId: Number(g.titleId), media: g.media, template: g.template, asOf: g.asOf || null, verified: true, verifiedBy: 'auto', publishedAt: now };
+            const entry = { langs: GUIDE_LANGS, verified: true, slug: g.slug, asOf: g.asOf || null, publishedAt: now };
+            if (b.dryRun) return res.json({ ok: true, dryRun: true, titleId: id, langs: GUIDE_LANGS.length, entry });
+            const batch = kcultureDb.batch();
+            for (const l of GUIDE_LANGS) batch.set(kcultureDb.doc(`titles/${id}/guide/${l}`), { ...common, lang: l, ...g.i18n[l] });
+            batch.set(kcultureDb.doc(`titles/${id}/guide/_meta`), { ...common, slug: g.slug, langs: GUIDE_LANGS, facts: g.facts || null, sources: g.sources || [] });
+            batch.set(indexRef, { titles: { [id]: entry }, updatedAt: now }, { merge: true });
+            await batch.commit();
+            console.log(`[Curation] guide publish ${g.slug} (titles/${id}/guide) 14개 언어`);
+            return res.json({ ok: true, titleId: id, slug: g.slug, entry });
+        }
+
+        if (op === 'unpublish') {
+            const id = String(posInt(b.titleId) || '');
+            if (!id) return res.status(400).json({ error: 'titleId 필요' });
+            const docs = await kcultureDb.collection(`titles/${id}/guide`).get();
+            if (b.dryRun) return res.json({ ok: true, dryRun: true, titleId: id, docs: docs.size });
+            const batch = kcultureDb.batch();
+            docs.forEach((d) => batch.delete(d.ref));
+            batch.set(indexRef, { titles: { [id]: admin.firestore.FieldValue.delete() }, updatedAt: new Date().toISOString() }, { merge: true });
+            await batch.commit();
+            console.log(`[Curation] guide unpublish titles/${id}/guide (${docs.size}건)`);
+            return res.json({ ok: true, titleId: id, deleted: docs.size });
+        }
+
+        return res.status(400).json({ error: "op: 'publish' | 'unpublish' | 'status'" });
+    } catch (e) {
+        console.error(`[Curation] guide FAIL op=${b.op}:`, e.message);
+        res.status(500).json({ error: e.message });
+    }
+});
+
 module.exports = router;
