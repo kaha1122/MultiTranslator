@@ -233,8 +233,15 @@ async function castContext(cast, targetLang) {
     if (!top.length) return { lines: [], actors: [] };
     const actors = await Promise.all(top.map(async (c) => {
         const rendered = await renderName(c.id, c.name, targetLang);
-        const forms = [...new Set([c.name, rendered, romanizeKorean(c.name)].filter(Boolean))];
-        return { name: c.name, rendered, character: c.character || null, forms };
+        const lite = await fetchPersonLite(c.id).catch(() => null);
+        // srcForms(넓게) = 원문이 이 배우를 어떤 표기로든 불렀는가 — TMDB 전 언어 표기·별칭 포함.
+        //   좁으면 영어 원문의 "Park Seo-joon" → ko "박서준" 같은 정상 번역이 치환으로 오탐된다(10/18 캐시 스캔 351건 대부분).
+        // outForms(엄격) = 번역문에 배우 이름이 새로 나타났는가 — 성+이름 형태만("Rain" 같은 별칭은 brain 등에 오탐).
+        const all = [c.name, rendered, romanizeKorean(c.name), lite?.name, ...(lite?.aka || []), ...Object.values(lite?.trs || {})]
+            .filter((s) => typeof s === 'string' && s.trim());
+        const srcForms = [...new Set(all)];
+        const outForms = [...new Set([c.name, rendered, romanizeKorean(c.name), lite?.trs?.en, lite?.name].filter(isFullNameForm))];
+        return { name: c.name, rendered, character: c.character || null, srcForms, outForms };
     }));
     const parts = actors.map(({ name, rendered, character }) => {
         const actor = rendered && rendered !== name ? `${name} = "${rendered}"` : `"${name}"`;
@@ -256,13 +263,18 @@ async function castContextLines(cast, targetLang) {
 // 원문이 우리 목록 밖 표기(예: 일본어 원문의 가타카나 배우명)로 배우를 부른 경우 오탐이 날 수 있으나,
 // 오탐 비용은 재시도 1회·캐시 생략뿐이다. @returns 의심 배우 배열(없으면 [])
 const nameKey = (s) => String(s || '').toLowerCase().replace(/[\s\-·・.'’]/g, '');
+// 번역문 검사용 표기 — 라틴 문자는 두 단어 이상(성+이름), 그 외 문자는 2자 이상
+function isFullNameForm(s) {
+    if (typeof s !== 'string' || !s.trim()) return false;
+    return /^[\p{Script=Latin}\s\-.'’]+$/u.test(s) ? /\S[\s-]+\S/.test(s.trim()) : nameKey(s).length >= 2;
+}
 function castSwapSuspect(source, translated, actors) {
     if (!actors?.length || !translated) return [];
     const src = nameKey(source);
     const out = nameKey(translated);
-    return actors.filter(({ forms }) => {
-        const keys = forms.map(nameKey).filter((k) => k.length >= 2);
-        return !keys.some((k) => src.includes(k)) && keys.some((k) => out.includes(k));
+    return actors.filter(({ srcForms = [], outForms = [] }) => {
+        const inSrc = srcForms.map(nameKey).some((k) => k.length >= 2 && src.includes(k));
+        return !inSrc && outForms.map(nameKey).some((k) => k.length >= 2 && out.includes(k));
     });
 }
 

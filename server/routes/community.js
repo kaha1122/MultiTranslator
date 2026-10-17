@@ -254,7 +254,9 @@ router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, ra
         else answerMode = true;
     }
     // 배역→배우 치환 가드(2026-10-18 실사고: "Lee Mi-do sama Han Tae-seung" → "Ahn Eun-jin and Lee Joo-ahn").
-    // 원문에 없는 배우 이름이 번역문에 나오면 1회 재시도(temperature 0 + 치환 쌍 명시). 재시도 후에도 남으면 캐시 안 함.
+    // 원문에 없는 배우 이름이 번역문에 나오면 1회 재시도(temperature 0 + 치환 쌍 명시). 재시도 후에도 남으면 로그 !S만 남기고
+    // 캐시는 한다 — 원문이 우리 목록 밖 표기(아랍 문자 음차·中文 朴炳恩·철자 변형 Lee Joo-an)로 배우를 부른 정상 글이
+    // 대부분이라, 캐시를 막으면 열 때마다 재번역(과금 반복)된다(10/18 캐시 스캔 66건 중 다수).
     let castSwap = false;
     const swapped = r.error ? [] : txGlossary.castSwapSuspect(text, txOutText(r.text), ctx.castActors);
     if (swapped.length) {
@@ -370,10 +372,9 @@ function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, 
     // 캐시에 저장(다음 사람·재조회 재사용) — fire-and-forget(속도 #2, 2026-08-02): 응답을 저장 완료에
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     // 답변 모드 의심(answerMode)이면 캐시하지 않는다 — 오출력이 다음 독자에게 고착되는 것을 막는다(2026-09-09).
-    // 배역→배우 치환 의심(castSwap)도 같은 이유로 캐시하지 않는다(2026-10-18).
-    if (cacheDoc && !answerMode && !castSwap) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
+    if (cacheDoc && !answerMode) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
     // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
-    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}${castSwap ? '!S' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함), !S=배역→배우 치환 잔존(캐시 안 함)
+    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}${castSwap ? '!S' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함), !S=재시도 후에도 원문에 없는 배우명 잔존(캐시는 함 — 오탐 다수)
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     return res.json({ translated });
 }
