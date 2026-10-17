@@ -113,6 +113,7 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                 : `a casual message in the app's daily free-chat lounge (it may reference any show)`;
         }
         const lines = [];
+        let castActors = [];
         if (location) lines.push(`- Where this text appears: ${location}.`);
         if (titleId) {
             const [t] = await kcultureDb.getAll(kcultureDb.doc(`titles/${titleId}`), { fieldMask: ['searchTitle', 'meta.credits.cast'] });
@@ -130,7 +131,9 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
             }
             // 캐스트 표(L4) — 배우 확정 표기(personNames)·배역. 실패해도 나머지 컨텍스트는 유지.
             try {
-                lines.push(...await txGlossary.castContextLines(data.meta?.credits?.cast, targetLang));
+                const cc = await txGlossary.castContext(data.meta?.credits?.cast, targetLang);
+                lines.push(...cc.lines);
+                castActors = cc.actors; // 배역→배우 치환 사후 검사용(라우트 castSwapSuspect, 2026-10-18)
             } catch { /* fail-open */ }
         }
         if (personId) {
@@ -139,8 +142,8 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                 lines.push(...await txGlossary.personContextLines(personId, targetLang, targetName));
             } catch { /* fail-open */ }
         }
-        return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId };
-    } catch { return { lines: [], titleId: null }; }
+        return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId, castActors };
+    } catch { return { lines: [], titleId: null, castActors: [] }; }
 }
 
 // ── 번역할 글자가 없는 텍스트 가드 (2026-09-05 실사고) ──────────────────────────────
@@ -250,8 +253,38 @@ router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, ra
         if (!r2.error) { Object.assign(r, r2); answerMode = looksLikeAnswer(r2.text); }
         else answerMode = true;
     }
-    return finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode });
+    // 배역→배우 치환 가드(2026-10-18 실사고: "Lee Mi-do sama Han Tae-seung" → "Ahn Eun-jin and Lee Joo-ahn").
+    // 원문에 없는 배우 이름이 번역문에 나오면 1회 재시도(temperature 0 + 치환 쌍 명시). 재시도 후에도 남으면 캐시 안 함.
+    let castSwap = false;
+    const swapped = r.error ? [] : txGlossary.castSwapSuspect(text, txOutText(r.text), ctx.castActors);
+    if (swapped.length) {
+        console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} → CAST-SWAP 의심(${swapped.map((a) => a.name).join(',')}) — 재시도`);
+        const r3 = await callGeminiText(`${prompt}${castSwapWarning(swapped, targetName)}`, GEMINI_API_KEY, {
+            label: 'community-translate-retry',
+            model: txModelFor(targetLang, KDL_TX_MODEL),
+            genConfig: { temperature: 0, topP: 0.9, responseMimeType: 'application/json' },
+        });
+        if (!r3.error) { Object.assign(r, r3); castSwap = txGlossary.castSwapSuspect(text, txOutText(r3.text), ctx.castActors).length > 0; }
+        else castSwap = true;
+    }
+    return finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode, castSwap });
 });
+
+// 치환 재시도용 경고문 — 라우트와 scripts/test-tx-character-names.js가 같은 문구를 쓴다
+function castSwapWarning(swapped, targetName) {
+    const pairs = swapped.map((a) => (a.character
+        ? `"${a.rendered || a.name}" is the ACTOR who plays the character "${a.character}"`
+        : `"${a.rendered || a.name}" is a real actor`)).join('; ');
+    return `\n\nWARNING: your previous output replaced a CHARACTER name with a real ACTOR's name that the writer never wrote (${pairs}). Keep every name as the writer wrote it — a character stays that character (transliterate the character's own name by its sound if needed). Output only the faithful ${targetName} translation.`;
+}
+
+// 모델 응답(JSON 또는 원문)에서 번역문만 — 사후 검사용
+function txOutText(raw) {
+    if (!raw) return '';
+    let p = null;
+    try { p = JSON.parse(raw); } catch { p = parseFirstJsonObject(raw); }
+    return (p && typeof p.translated === 'string') ? p.translated : String(raw);
+}
 
 // 답변 모드 시그니처 — 모델이 APP_NATURE_LINE에서 베껴 쓰는 "앱 설명" 문구(12언어 대표형). 원문에 이런 문구가
 // 실제로 있을 수도 있으므로 판정은 재시도·캐시 차단에만 쓰고 응답을 막지는 않는다.
@@ -316,7 +349,7 @@ function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLi
 }
 
 // 단건 라우트 후반부(응답 파싱·same 판정·스크럽·캐시 저장·로그) — 위 라우트에서만 호출
-function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode = false }) {
+function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode = false, castSwap = false }) {
     // 여기 도달 = 캐시 MISS(또는 무캐시) → Gemini 실호출(과금). (TTS의 [AzureTTS] MISS 대응)
     if (r.error) {
         console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
@@ -337,9 +370,10 @@ function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, 
     // 캐시에 저장(다음 사람·재조회 재사용) — fire-and-forget(속도 #2, 2026-08-02): 응답을 저장 완료에
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     // 답변 모드 의심(answerMode)이면 캐시하지 않는다 — 오출력이 다음 독자에게 고착되는 것을 막는다(2026-09-09).
-    if (cacheDoc && !answerMode) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
+    // 배역→배우 치환 의심(castSwap)도 같은 이유로 캐시하지 않는다(2026-10-18).
+    if (cacheDoc && !answerMode && !castSwap) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
     // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
-    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함)
+    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}${castSwap ? '!S' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함), !S=배역→배우 치환 잔존(캐시 안 함)
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     return res.json({ translated });
 }
@@ -502,4 +536,4 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
 
 module.exports = router;
 // 회귀 테스트(scripts/test-vi-toneless.js)용 — 실제 프롬프트·컨텍스트·모델을 그대로 재현
-module.exports._tx = { buildTxPrompt, buildTranslationContext, KDL_TX_MODEL, APP_NATURE_LINE, langName, looksLikeAnswer };
+module.exports._tx = { buildTxPrompt, buildTranslationContext, KDL_TX_MODEL, APP_NATURE_LINE, langName, looksLikeAnswer, castSwapWarning, txOutText };

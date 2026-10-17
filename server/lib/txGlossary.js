@@ -221,18 +221,49 @@ async function buildGlossaryLines({ titleHits, actorHits }, targetLang, targetNa
 // "부장님이 미쳤다" 같은 이름 없는 지칭은 문자열 매칭으로 못 잡지만, 캐스트 표가 있으면
 // Gemini가 배역·성별을 알고 옮긴다(대명사 정확도 포함). 표기는 pickPersonName —
 // 최근 풀 작품은 선워밍돼 메모 HIT, 그 외 작품은 첫 요청에 TMDB 병렬 1RTT(무과금·7일 메모).
-async function castContextLines(cast, targetLang) {
+// ⚠ 2026-10-18 실사고: 종전 문구 "refers to their characters … use the renderings above"(+OVERRIDES)를 모델이
+//   "배역을 배우 표기로 바꿔라"로 읽어, 인니어 "Lee Mi-do sama Han Tae-seung"(너 말고 다른 연애)이
+//   EN "Ahn Eun-jin and Lee Joo-ahn"으로 나갔다. 배역(극중 인물)과 배우(실존 인물)를 별개 행으로 분리하고,
+//   "글쓴이가 쓴 이름 그대로"를 최우선 규칙으로 둔다. 비라틴 타깃(ja)은 표에 놓인 배우 가타카나를 배역 음차로
+//   집어오는 경향이 남아 → castActors(배우 표기 목록)를 함께 돌려주고 라우트가 castSwapSuspect로 사후 검사한다.
+//   회귀: scripts/test-tx-character-names.js
+// @returns { lines, actors } — actors: [{ forms: [원명·현지 표기·로마자], name, rendered, character }]
+async function castContext(cast, targetLang) {
     const top = (cast || []).filter((c) => c?.id && c?.name).slice(0, 6);
-    if (!top.length) return [];
-    const parts = await Promise.all(top.map(async (c) => {
+    if (!top.length) return { lines: [], actors: [] };
+    const actors = await Promise.all(top.map(async (c) => {
         const rendered = await renderName(c.id, c.name, targetLang);
-        const nm = rendered && rendered !== c.name ? `${c.name} = "${rendered}"` : `"${c.name}"`;
-        return c.character ? `${nm} (plays ${c.character})` : nm;
+        const forms = [...new Set([c.name, rendered, romanizeKorean(c.name)].filter(Boolean))];
+        return { name: c.name, rendered, character: c.character || null, forms };
     }));
-    return [
-        `- Main cast: ${parts.join(' · ')}.`,
-        `- When the text mentions these actors, or refers to their characters even indirectly (by role, job title, or nickname), use the renderings above consistently — never a different spelling, never a different real person. Keep the characters' Latin-script names as given in Latin-script targets; otherwise transliterate them consistently. This OVERRIDES every other rule about keeping names unchanged.`,
+    const parts = actors.map(({ name, rendered, character }) => {
+        const actor = rendered && rendered !== name ? `${name} = "${rendered}"` : `"${name}"`;
+        return character ? `CHARACTER "${character}" (played by the actor ${actor})` : `actor ${actor}`;
+    });
+    const lines = [
+        `- Main cast — fictional CHARACTERS and the real ACTORS who play them: ${parts.join(' · ')}.`,
+        `- CHARACTER names and ACTOR names are different names, NOT interchangeable. Write exactly the kind of name the writer wrote: a character name stays that character's name, an actor name stays that actor's name. NEVER replace a character's name with the actor's name or vice versa — a character named in the text must appear under that same character name in the translation, never as the actor who plays them.`,
+        `- The quoted actor renderings are ONLY for when the writer names the ACTOR. For CHARACTER names: in Latin-script targets keep the writer's Latin-script spelling; in non-Latin-script targets (Korean, Japanese, Chinese, Thai, Arabic, Russian, Hindi …) transliterate the CHARACTER's own name by its own sound into the target script (Korean: the character's Hangul name; Japanese: katakana of the character's name) — never leave it in Latin letters, and never reuse the actor's rendering for it.`,
+        `- When the text refers to someone only indirectly (by role, job title, nickname or pronoun), use this table only to understand who is meant (e.g. gender) — do NOT insert a name the writer did not write.`,
     ];
+    return { lines, actors };
+}
+async function castContextLines(cast, targetLang) {
+    return (await castContext(cast, targetLang)).lines;
+}
+
+// 배역→배우 치환 사후 검사(2026-10-18) — 원문에 어떤 표기로도 없는 배우 이름이 번역문에 나타나면 치환 의심.
+// 원문이 우리 목록 밖 표기(예: 일본어 원문의 가타카나 배우명)로 배우를 부른 경우 오탐이 날 수 있으나,
+// 오탐 비용은 재시도 1회·캐시 생략뿐이다. @returns 의심 배우 배열(없으면 [])
+const nameKey = (s) => String(s || '').toLowerCase().replace(/[\s\-·・.'’]/g, '');
+function castSwapSuspect(source, translated, actors) {
+    if (!actors?.length || !translated) return [];
+    const src = nameKey(source);
+    const out = nameKey(translated);
+    return actors.filter(({ forms }) => {
+        const keys = forms.map(nameKey).filter((k) => k.length >= 2);
+        return !keys.some((k) => src.includes(k)) && keys.some((k) => out.includes(k));
+    });
 }
 
 // ── 인물 페이지 scope용 — buildTranslationContext가 호출 (2026-09-19) ─────────
@@ -257,7 +288,7 @@ async function personContextLines(personId, targetLang, targetName) {
 }
 
 module.exports = {
-    ready, matchText, buildGlossaryLines, castContextLines, personContextLines,
+    ready, matchText, buildGlossaryLines, castContextLines, castContext, castSwapSuspect, personContextLines,
     poolSize: () => shows.length,
     getShows: () => shows, // 스크립트용(purge-stale-tx-cache) — 풀 재구현 금지(이중 관리 함정)
 };
