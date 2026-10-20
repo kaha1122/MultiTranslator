@@ -18,6 +18,7 @@
 //   --clip <videoId>    선공개 클립 유튜브 영상 id(11자) — 스레드 화면 썸네일+온디맨드 재생(2026-08-19, DECISIONS.md §11).
 //                       신규 게시 시 저장, **기존 스레드에 주면 클립만 소급 주입**(발제·번역 무변경 — Gemini 미호출).
 //   --clip-ep <N>       클립 대상 회차(라벨 "EP N" 표시용, 선택)
+// 가이드 연동: 새 회차 스레드 개설 시 KCulture content/guides/from-threads.json 에 기록(env KCULTURE_DIR, 기본 C:/Kculture).
 // 멱등: 같은 스레드(doc id dari_s{season}e{maxEp})가 이미 있으면 skip하고 기존 문서를 출력.
 const path = require('path');
 const fs = require('fs');
@@ -73,6 +74,25 @@ const t0 = Date.now();
     if (r.info) { console.log('정보 블록 :'); console.log(JSON.stringify(r.info, null, 2)); }
     if (r.seededLangs) console.log(`번역 시드 : ${r.seededLangs.join(', ')}`);
     console.log('─'.repeat(60));
+    // 작품 가이드 패스트레인(2026-10-21): 새 회차 스레드를 열면 KCulture 가이드 배치가 다음 슬롯에 그 작품을 먼저 쓰도록
+    // content/guides/from-threads.json 에 기록한다. 선공개(--pre)·백필·기존 스레드 작업(skip/rehook/clip)은 제외.
+    // 기록 실패는 개설 결과에 영향 없음 — 경고만 출력. 커밋·푸시는 호출자(dari-thread)가 계획서와 함께 한다.
+    if (!r.skipped && !r.dryRun && !r.rehooked && !r.clipped && !pre && !backdate) recordGuideLane(r);
     console.log(`[dari-publish] DONE in ${Math.round((Date.now() - t0) / 1000)}s`);
     process.exit(0);
 })().catch((e) => { console.error('[dari-publish] FAIL', e); process.exit(1); });
+
+function recordGuideLane(r) {
+    const dir = path.join(process.env.KCULTURE_DIR || 'C:/Kculture', 'content', 'guides');
+    const file = path.join(dir, 'from-threads.json');
+    try {
+        if (!fs.existsSync(dir)) { console.warn(`[dari-publish] 가이드 패스트레인 기록 생략 — ${dir} 없음(KCULTURE_DIR 확인)`); return; }
+        const j = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { items: [] };
+        const id = String(tmdbId);
+        const prev = j.items.find((x) => x.id === id);
+        const entry = { id, media: isMovie ? 'movie' : 'tv', name: String(r.title || '').replace(/\s*\[[^\]]*\]\s*$/, '') || id, tid: r.tid, openedAt: new Date().toISOString() };
+        if (prev) Object.assign(prev, entry); else j.items.push(entry);
+        fs.writeFileSync(file, JSON.stringify(j, null, 1) + '\n');
+        console.log(`[dari-publish] 가이드 패스트레인 기록: ${id} → ${file} (커밋·푸시 필요)`);
+    } catch (e) { console.warn('[dari-publish] 가이드 패스트레인 기록 실패:', e.message); }
+}
