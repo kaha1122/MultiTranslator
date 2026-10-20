@@ -183,6 +183,10 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         const page = Math.min(parseInt(req.query.page, 10) || 1, 500);
         // days: 최근 N일 내 출시작만(홈 "최신 hot"용). 0/미지정=무제한. 상한 60(과도한 범위 방지).
         const days = Math.min(Math.max(parseInt(req.query.days, 10) || 0, 0), 60);
+        // ahead: 앞으로 N일 내 첫 공개작만(스레드 배치 §1 ③ 미래 창용). days와 반대 방향, 동시 지정 시 days 우선. 상한 60.
+        //   2026-10-20 추가: 클라우드 배치는 TMDB 원본 키가 없어 미공개 OTT 신작(꿀알바·푸른길)을 공개 전에 못 봤다.
+        //   tv는 first_air_date 기준이라 새 시즌은 안 잡힌다(시즌제는 days의 air_date 창이 방영 후 포착).
+        const ahead = days ? 0 : Math.min(Math.max(parseInt(req.query.ahead, 10) || 0, 0), 60);
         const params = {
             language: lang,
             sort_by: sort,
@@ -208,9 +212,13 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         if (sort.startsWith('vote_average')) { if (kind !== 'variety') params['vote_count.gte'] = '200'; }
         // 인기순 무명 이상치 제거: 최소 누적 평점수 하한. 예능은 TMDB 누적 평점이 희소 → 하한 완화(행 비는 것 방지).
         // 단 days(최근 N일) 창에선 신작이 아직 누적 평점이 적어 하한을 적용하면 거의 다 걸러짐 → 하한 미적용.
-        else if (sort.startsWith('popularity') && !days) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
+        else if (sort.startsWith('popularity') && !days && !ahead) params['vote_count.gte'] = kind === 'variety' ? '30' : '200';
         const dateField = media === 'tv' ? 'first_air_date' : 'primary_release_date';
-        if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date') || days) {
+        if (ahead) {
+            // 미공개작 창 [today, today+ahead]. 미공개작은 평점이 0이라 위의 하한도 미적용.
+            params[`${dateField}.gte`] = new Date().toISOString().slice(0, 10);
+            params[`${dateField}.lte`] = new Date(Date.now() + ahead * 86400000).toISOString().slice(0, 10);
+        } else if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date') || days) {
             const today = new Date().toISOString().slice(0, 10);
             // days 창(홈 hot)은 tv에선 에피소드 방영일(air_date) 기준 — 첫 방영 N일이 지나도 방영 진행중이면 포함.
             // (first_air_date 창은 방영 3주차 화제작이 탈락하는 결함 — "김부장" 사례, 2026-07-13 사용자 결정)
