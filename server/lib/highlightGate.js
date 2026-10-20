@@ -62,6 +62,20 @@ const OFFICIAL_CHANNELS = [
   // KCulture .claude/shared/clip-pipeline.md §2). 「너에게 다이브」(316197) 회차 예고편이 이 채널에만 올라와
   // channel_not_allowlisted로 전량 차단되고 있었다. oEmbed author_name 표시명 그대로(핸들 아님).
   '너에게 다이브',
+  // Disney+ 지역 채널 — 2026-10-20 추가(사용자 결정: KCulture .claude/shared/clip-pipeline.md §2 「회차별 편성이 아닌 채널은
+  //   넣지 않는다」의 예외 신설). 발견 경위: 「메리 베리 러브」(305551)는 **일본 드라마**(original_language ja, Nippon TV,
+  //   한일 공동제작)인데 allowlist의 Disney 계열이 'Disney Plus Korea' 1개뿐이라, 한국 채널이 올리지 않는 이 작품의
+  //   공식 클립을 **8일 연속 0건**으로 오판했다(실제로는 JP·ID·SG·TH·PH 5개 지역 채널이 보유).
+  // ⚠ 이 채널들은 **작품 단위 영상만** 올린다(予告編·ハイライト映像·Main Trailer). Disney+ 플랫폼 구조에 회차별 공식
+  //   영상이 애초에 없으므로, 작품 단위 영상이 스레드 썸네일·클립 역할을 대신하고 회차 귀속은 clipEp 하위로 둔다.
+  // ✅ 하이라이트 오귀속 위험 없음 — 이 채널들의 영상은 100~150초대이고 collectHighlights의 길이 게이트가
+  //   DUR_MIN 240초이므로 회차 하이라이트(hls)로는 **구조적으로 저장될 수 없다**(캔버스엔과 같은 안전 속성).
+  // 전부 oEmbed author_name 실측값 그대로 + author_url 정본 확인(핸들 추측 금지 — @ntv_drama는 존재하지 않는 핸들이었다).
+  'ディズニープラス',      // @DisneyPlusJP           — 메리베리 801lPiNx5y4·c3WNau7FlGU / 311648·307106·279246 예고 보유
+  'Disney+ Indonesia',   // @disneyplus_indonesia   — 주력 시장. 메리베리 QYlzKVaFxTM(Highlight)·b-fT5MDmU0Y / 279246 cK0de-lMQrg
+  'Disney+ Singapore',   // @disneyplussg
+  'Disney+ Thailand',    // @DisneyPlusThailand
+  'Disney+ Philippines', // @disneyplusphilippines
 ];
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
