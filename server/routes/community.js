@@ -515,8 +515,15 @@ router.post('/api/community/notify', requireAuthAny, rateLimit('community-notify
             actorName: String(actorName || 'User').slice(0, 80),
             actorPhoto: actorPhoto ? String(actorPhoto).slice(0, 1000) : null,
             postId: postId ? String(postId).slice(0, 64) : null,       // 이동 대상: 리뷰(게시글) 상세
-            titleId: (titleId !== undefined && titleId !== null && titleId !== '') ? Number(titleId) : null, // 이동 대상: 작품 상세
-            media: media === 'movie' ? 'movie' : (media === 'tv' ? 'tv' : null),
+            // 이동 대상: 작품 상세 — 인물 UGC는 클라가 tmdbId 자리로 'person:{id}'(ugcRoot.js)를 보낸다 →
+            // titleId=인물 id + media='person'으로 정규화(활동 피드와 같은 규약). 종전엔 Number('person:..')=NaN 저장
+            // → 알림 탭/푸시가 /title/tv/NaN으로 깨졌다(2026-10-22). 숫자 아닌 값은 null.
+            ...(() => {
+                const m = typeof titleId === 'string' ? /^person:(\d+)$/.exec(titleId) : null;
+                if (m) return { titleId: Number(m[1]), media: 'person' };
+                const n = (titleId !== undefined && titleId !== null && titleId !== '') ? Number(titleId) : NaN;
+                return { titleId: Number.isFinite(n) ? n : null, media: media === 'movie' ? 'movie' : (media === 'tv' ? 'tv' : null) };
+            })(),
             dayId: (typeof dayId === 'string' && /^\d{8}$/.test(dayId)) ? dayId : null, // 이동 대상: 라운지 날짜 방(lounge_threads doc id = YYYYMMDD)
             // 이동 앵커(r:{uid}|d:{cid}[:{rid}]|c:{cid}[:{rid}]|l:{mid}[:{rid}]) — 알림 탭 시 해당 댓글/평가로 스크롤(클라 notifRoute·푸시 notifUrl 공용).
             anchor: (typeof anchor === 'string' && /^[rdcl]:[A-Za-z0-9_-]{1,128}(:[A-Za-z0-9_-]{1,128})?$/.test(anchor)) ? anchor : null,

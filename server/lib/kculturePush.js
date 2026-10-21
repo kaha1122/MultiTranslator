@@ -30,6 +30,7 @@ function notifUrl({ kind, postId, titleId, media, dayId, anchor }) {
     const q = anchor ? `?anchor=${anchor}` : '';
     if (POST_KINDS.has(kind) && postId) return `/#/community/post/${postId}${q}`;
     if (kind === 'lounge_reply' && dayId) return `/#/lounge/${dayId}${q}`; // 라운지 답글(2026-09-11) — 클라 notifRoute와 동일
+    if (titleId != null && media === 'person') return `/#/person/${titleId}${q}`; // 인물 한줄평·코멘트(2026-10-22)
     if (titleId != null) return `/#/title/${media || 'tv'}/${titleId}${q}`;
     return '/#/notifications';
 }
