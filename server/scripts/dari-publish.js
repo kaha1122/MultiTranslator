@@ -18,7 +18,7 @@
 //   --clip <videoId>    선공개 클립 유튜브 영상 id(11자) — 스레드 화면 썸네일+온디맨드 재생(2026-08-19, DECISIONS.md §11).
 //                       신규 게시 시 저장, **기존 스레드에 주면 클립만 소급 주입**(발제·번역 무변경 — Gemini 미호출).
 //   --clip-ep <N>       클립 대상 회차(라벨 "EP N" 표시용, 선택)
-// 가이드 연동: 새 회차 스레드 개설 시 KCulture content/guides/from-threads.json 에 기록(env KCULTURE_DIR, 기본 C:/Kculture).
+// 가이드 연동: 새 회차 스레드 개설 시 KCulture content/guides/from-threads.json 에 기록(env KCULTURE_DIR, 없으면 C:/Kculture·D:/KCulture·서버 리포 형제 폴더 순으로 탐색).
 // 멱등: 같은 스레드(doc id dari_s{season}e{maxEp})가 이미 있으면 skip하고 기존 문서를 출력.
 const path = require('path');
 const fs = require('fs');
@@ -83,10 +83,13 @@ const t0 = Date.now();
 })().catch((e) => { console.error('[dari-publish] FAIL', e); process.exit(1); });
 
 function recordGuideLane(r) {
-    const dir = path.join(process.env.KCULTURE_DIR || 'C:/Kculture', 'content', 'guides');
+    // PC마다 KCulture 위치가 다르다(repo-sync.md 경로표: 노트북 C:\Kculture · 데스크톱 D:\KCulture) — 2026-10-21 데스크톱 누락 보정
+    const roots = process.env.KCULTURE_DIR ? [process.env.KCULTURE_DIR]
+        : ['C:/Kculture', 'D:/KCulture', path.join(__dirname, '..', '..', '..', 'KCulture'), path.join(__dirname, '..', '..', '..', 'Kculture')];
+    const dir = roots.map((r) => path.join(r, 'content', 'guides')).find((d) => fs.existsSync(d));
+    if (!dir) { console.warn(`[dari-publish] 가이드 패스트레인 기록 생략 — KCulture 리포를 못 찾음(${roots.join(' · ')}). KCULTURE_DIR 지정`); return; }
     const file = path.join(dir, 'from-threads.json');
     try {
-        if (!fs.existsSync(dir)) { console.warn(`[dari-publish] 가이드 패스트레인 기록 생략 — ${dir} 없음(KCULTURE_DIR 확인)`); return; }
         const j = fs.existsSync(file) ? JSON.parse(fs.readFileSync(file, 'utf8')) : { items: [] };
         const id = String(tmdbId);
         const prev = j.items.find((x) => x.id === id);
