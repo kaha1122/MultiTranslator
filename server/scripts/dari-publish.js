@@ -75,9 +75,9 @@ const t0 = Date.now();
     if (r.seededLangs) console.log(`번역 시드 : ${r.seededLangs.join(', ')}`);
     console.log('─'.repeat(60));
     // 작품 가이드 패스트레인(2026-10-21): 새 회차 스레드를 열면 KCulture 가이드 배치가 다음 슬롯에 그 작품을 먼저 쓰도록
-    // content/guides/from-threads.json 에 기록한다. 선공개(--pre)·백필·기존 스레드 작업(skip/rehook/clip)은 제외.
-    // 기록 실패는 개설 결과에 영향 없음 — 경고만 출력. 커밋·푸시는 호출자(dari-thread)가 계획서와 함께 한다.
-    if (!r.skipped && !r.dryRun && !r.rehooked && !r.clipped && !pre && !backdate) recordGuideLane(r);
+    // content/guides/from-threads.json 에 기록한다. 백필·기존 스레드 작업(skip/rehook/clip)은 제외. 선공개(--pre)도 기록(2026-10-23 사용자 지시).
+    // 기록 실패는 개설 결과에 영향 없음 — 경고만 출력. 클라우드 HTTP 개설분은 KCulture guide-auto pick이 curation_threads에서 직접 합친다.
+    if (!r.skipped && !r.dryRun && !r.rehooked && !r.clipped && !backdate) recordGuideLane(r);
     console.log(`[dari-publish] DONE in ${Math.round((Date.now() - t0) / 1000)}s`);
     process.exit(0);
 })().catch((e) => { console.error('[dari-publish] FAIL', e); process.exit(1); });
