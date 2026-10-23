@@ -1,5 +1,14 @@
 // ── K-DramaAnyLang 홈 Dari 존 featured 자동 선정 (2026-09-04 사용자 결정) ──
-// 매일 KST 05시(시간별 reengagement cron에 체이닝) 6장.
+// 매일 KST 09시(시간별 reengagement cron에 체이닝) 6장.
+// 🔄 **2026-10-23 사용자 결정 — 선정 시각 05시 → 09시**:
+//   선정이 **스레드 개설 배치(클라우드 루틴, KST 07:3x)보다 앞서** 돌아 **그날 연 스레드를 구조적으로 못 봤다.**
+//   두 잡은 서로를 모르고, 05시는 reengagement 체이닝 슬롯에서 온 임의값이라 상대 순서가 설계된 적이 없다.
+//   실측(2026-10-23): 닥터X `293610_s1e6` 생성 07:41:28 KST — 05시 배치보다 2h41m 늦어 후보 풀에 부재.
+//   동시에 구 스레드 `_s1e4`는 마지막 방영 10/17로 창(3일)을 벗어나 **그날 밤 방영하는 작품이 하루 종일 홈에서 빠졌다.**
+//   → 09시로 옮기면 그날 개설분이 같은 날 후보에 들어온다(Render Cron `pronunfit-reengagement-push`는 `0 * * * *` 매시 정각이라 발화 보장).
+//   ⚠ featured 선정은 **푸시 발송과 무관**하다 — 같은 시간별 트리거에 fire-and-forget으로 얹혀만 있다(reengagement.js ③).
+//     따라서 시각 변경이 재방문·소감 푸시에 영향을 주지 않는다.
+//   ⚠ 부작용: 후보 풀이 커지므로 방영 중 작품이 많은 날은 **선공개(PRE_MAX)가 밀린다** — 「방영분 우선 충원」의 설계상 귀결.
 // 🔄 **2026-10-03 사용자 결정 — 방영분 우선 충원으로 변경**(종전 "방영분 3 + 선공개 3" 고정 분할 폐지):
 //     "방영중 숫자를 먼저 채우고 그다음에 선공개로 3개까지 채운다."
 //   · 방영분: 작품별 최신 스레드 중 커버 회차 마지막 방영일이 최근 3일 이내 → **3장**(AIRED_WINDOW_MIN) 미달이면
@@ -21,7 +30,8 @@ const AIRED_WINDOW_MIN = 3;   // 방영분 창 확장 기준: 이 수를 못 채
 const WINDOWS = [3, 7, 14];
 const BATCH_WINDOW = 14;
 const PRE_PRIORITY_DAYS = 7;
-const DEFAULT_RUN_HOUR_KST = 5;
+const DEFAULT_RUN_HOUR_KST = 9;   // 2026-10-23: 05 → 09 (스레드 개설 배치 07:3x 이후로 이동 — 상단 주석)
+                                  // config/kc_featured.runHourKst 가 저장돼 있으면 그 값이 이긴다(현재 미저장 = 이 기본값이 유효).
 
 function kstParts(now) {
     const k = new Date(now.getTime() + 9 * 3600e3);

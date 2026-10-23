@@ -711,7 +711,9 @@ router.post('/api/cron/reengagement-push', requireCronAuth, async (req, res) => 
             require('../lib/kculturePushProbe').runPushProbeHourly(now, { dryRun })
                 .then((r) => { if (r && r.candidates) console.log('[cron/reengagement] kc-push-probe:', JSON.stringify(r)); })
                 .catch((e) => console.warn('[cron/reengagement] kc-push-probe fail:', e?.message));
-            // ③ 홈 Dari featured 자동 선정(2026-09-04): KST 05시 1회, 방영분 3 + 선공개 3 (lib/kcultureFeatured.js). dryRun이면 쓰기 없음.
+            // ③ 홈 Dari featured 자동 선정(2026-09-04): **KST 09시** 1회, 방영분 우선 충원 + 선공개 최대 3 (lib/kcultureFeatured.js). dryRun이면 쓰기 없음.
+            //    시각은 2026-10-23에 05시 → 09시로 이동(스레드 개설 배치 07:3x 이후여야 그날 연 스레드가 후보에 든다 — 그 파일 상단 주석).
+            //    푸시 발송과 무관한 fire-and-forget 체이닝이므로 시각 변경이 ①②에 영향을 주지 않는다.
             require('../lib/kcultureFeatured').runFeaturedDaily(now, { dryRun })
                 .then((r) => { if (r && !r.skipped) console.log('[cron/reengagement] kc-featured:', JSON.stringify(r.featured?.map((f) => f.id))); })
                 .catch((e) => console.warn('[cron/reengagement] kc-featured fail:', e?.message));
