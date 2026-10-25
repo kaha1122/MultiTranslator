@@ -321,6 +321,38 @@ router.get('/api/tmdb/genres', optionalAuthAny, rateLimit('tmdb', TMDB_RL), asyn
 });
 
 // ── 상세 (credits/images/videos/watch providers/translations append) ──
+// ── 낡은 meta 가로 이미지 자가 치유 (2026-10-25) ────────────────────────────────
+// titles/{id}.meta는 캐시 시점의 TMDB 스냅샷이라, 그때 이미지가 없던 신작은 TMDB에 이미지가 올라온 뒤에도
+// meta.backdrop_path가 null로 남는다(19,496편 중 8,870편 null — 대부분은 TMDB에도 없음, 일부가 이 경우).
+// 그러면 웹 미들웨어의 공유 카드가 세로 포스터로 떨어져 중앙 크롭에 이지러진다(100일의 거짓말 293607).
+// 라이브 조회(캐시 미스)에서 가로 이미지를 받았는데 저장본이 비어 있으면 그 자리만 채운다.
+// 비어 있을 때만 쓴다 — 사람이 고른 공유 카드는 별도 루트 필드 og_backdrop_path(KCulture middleware.js)라 건드리지 않음.
+// 프로세스당 작품 1회만 확인(읽기 1건), 실패는 무시(fail-open).
+const backdropChecked = new Set();
+async function healStaleBackdrop(id, data) {
+    const bp = data?.backdrop_path;
+    if (!bp || backdropChecked.has(id)) return;
+    backdropChecked.add(id);
+    if (backdropChecked.size > 50000) backdropChecked.clear();
+    try {
+        const ref = kcultureDb.collection('titles').doc(String(id));
+        const snap = await ref.get();
+        const meta = snap.exists ? snap.get('meta') : null;
+        if (!meta || meta.backdrop_path) return; // meta 없는 작품은 백필 몫, 이미 있으면 그대로
+        const upd = { 'meta.backdrop_path': bp, backdropHealedAt: new Date().toISOString() };
+        if (!(meta.images?.backdrops || []).length && data.images?.backdrops?.length) {
+            upd['meta.images.backdrops'] = data.images.backdrops.slice(0, 15).map((x) => ({
+                file_path: x.file_path, iso_639_1: x.iso_639_1 || null, vote_average: x.vote_average || 0,
+                aspect_ratio: x.aspect_ratio, width: x.width, height: x.height,
+            })); // tmdbMetaBackfill.trimImages와 같은 모양·캡
+        }
+        await ref.update(upd);
+        console.log(`[tmdb/title] meta backdrop 치유 ${id} → ${bp}`);
+    } catch (e) {
+        console.warn('[tmdb/title] backdrop 치유 실패(무시):', id, e.message);
+    }
+}
+
 router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
         const media = req.params.media === 'movie' ? 'movie' : 'tv';
@@ -390,6 +422,7 @@ router.get('/api/tmdb/title/:media/:id', optionalAuthAny, rateLimit('tmdb', TMDB
                 await resolveCreditNames([cast, crew, data.created_by], clientLang);
             } catch (e) { /* 해석 실패 → 기존 이름 유지(fail-open) */ }
             setCache(key, data, 6 * 60 * 60 * 1000);
+            healStaleBackdrop(id, data); // fire-and-forget — 응답을 기다리게 하지 않음
         }
         res.json(data);
     } catch (e) {
