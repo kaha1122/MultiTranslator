@@ -76,6 +76,24 @@ const OFFICIAL_CHANNELS = [
   'Disney+ Singapore',   // @disneyplussg
   'Disney+ Thailand',    // @DisneyPlusThailand
   'Disney+ Philippines', // @disneyplusphilippines
+  // Viu 지역 채널 — 2026-10-28 추가(사용자 승인). 발견 경위: 「유일무이 로맨스」(313738)는 한국 밖에서 **Viu 오리지널**인데
+  //   allowlist에 Viu가 **0건**이어서 clip-scout가 공식 티저 7건을 전부 channel_not_allowlisted로 떨어뜨렸다
+  //   (selected=0 → KCulture .claude/agents/dari-thread.md §3-0 「클립 없이 개설 금지」로 11/02 선공개 스레드가 3일간 막혀 있었다).
+  // 전부 oEmbed author_name 실측값 그대로 + author_url 정본 확인(핸들 추측 금지 — 핸들과 표시명의 대소문자가 서로 다르다).
+  // ⚠ **Disney+ 지역 채널과 성격이 다르다 — 이 채널들은 회차별 영상을 올린다**('PREVIEW: Episode 4' · '#BayanganDendam : EPISOD 2').
+  //   그래서 위 Disney+ 블록의 「길이 게이트가 구조적으로 막아 준다」는 안전 속성에만 기대지 말 것. 실제 방어선은 3겹이다:
+  //   ① collectHighlights.epMatch 는 **한국어 'N화/N회' 또는 'EP.N'만** 읽는다 → 영어 'Episode 4'는 애초에 회차 귀속이 안 된다
+  //   ② 작품명 일치(normShow) → 타 작품 오귀속 차단
+  //   ③ 길이 게이트 240~1800초 → 짧은 티저(30~90초)와 풀 회차(30분+)를 양쪽에서 배제
+  //   🚨 **EXCLUDE_RE(선공개|예고|티저|메이킹…)는 한국어 전용이라 영어 'Teaser/PREVIEW/Trailer'를 걸러내지 못한다.**
+  //   따라서 '4~30분 길이 + 작품명 일치 + EP.N 표기'를 동시에 만족하는 영어·태국어·말레이어 예고 모음이 올라오면
+  //   hls 오귀속이 가능하다(현재 그런 실물은 관측되지 않았다). 하이라이트 오귀속이 보이면 이 블록을 재검토할 것.
+  'Viu Indonesia',       // @viuindonesiaofficial — 주력 시장. 313738 t94OC3VpQsA(Teaser 1)·7Pt_AVa45zs(Teaser 2)·8qk0sXqeQsE(커피트럭 Q&A)
+  'Viu Singapore',       // @ViuSingapore        — 313738 DT9AMG2BKy4(Catch on Viu 9 Nov)·F_Pa3STQCPU
+  'Viu Philippines',     // @ViuPhilippines      — 313738 Ui7-Z7APGMY(Meet Mui). 회차 예고도 올린다('PREVIEW: Episode N')
+  'Viu Thailand',        // @viuthailand         — 313738 UMFuODk9fZ8(Teaser 2 태국어 자막). 'ตัวอย่าง EP.1' 형태로 EP.N 표기를 쓴다
+  // ⚠ 미등재(2026-10-28 oEmbed 검증은 끝났으나 이번 승인 범위 밖): 'Viu Malaysia'(@ViuMalaysia) · 'Viu MENA'(@VIUMena).
+  //   334517(밑도 끝도 없이, 너다)이 Viu MY·PH 보유작이라 그 작품이 대상으로 편입되면 'Viu Malaysia'가 필요해진다.
 ];
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
