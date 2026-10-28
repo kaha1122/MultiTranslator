@@ -66,7 +66,20 @@ app.get('/api/kdl/bw', (req, res) => {
 app.get('/api/kdl/official-channels', (req, res) => {
     const { OFFICIAL_CHANNELS } = require('./lib/highlightGate');
     res.set('Cache-Control', 'public, max-age=3600');
-    res.json({ channels: OFFICIAL_CHANNELS, count: OFFICIAL_CHANNELS.length, source: 'server/lib/highlightGate.js' });
+    res.json({ channels: OFFICIAL_CHANNELS, count: OFFICIAL_CHANNELS.length, source: 'server/config/channels.json (names+aliases)' });
+});
+// 공식 채널 전체 레코드(public — 채널명·ID·시장·종류, 비밀 없음). SSOT = server/config/channels.json.
+// KCulture scripts/lib/channels.mjs 가 이걸 받아 스레드 대상 판정·클립 게이트·티저 워치·반응 조사에 같이 쓴다(2026-10-28 통합).
+// version = 파일 내용 해시 — 소비자가 로컬 사본과 드리프트를 검사할 때 쓴다.
+app.get('/api/kdl/channels', (req, res) => {
+  try {
+    const { CHANNELS, EXCLUDED, CHANNELS_VERSION } = require('./lib/highlightGate');
+    const { updatedAt } = require('./config/channels.json');
+    res.set('Cache-Control', 'public, max-age=300');
+    res.json({ version: CHANNELS_VERSION, updatedAt, count: CHANNELS.length, channels: CHANNELS, excluded: EXCLUDED, source: 'server/config/channels.json' });
+  } catch (e) {
+    res.status(500).json({ error: e.message });
+  }
 });
 
 // 세션 시작 로그 — 클라가 앱 실행/로그인 직후(프로필 로드 후) 세션당 1회 호출.

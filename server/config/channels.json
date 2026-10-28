@@ -1,0 +1,1076 @@
+{
+  "_doc": "공식 유튜브 채널 SSOT — 클립 게이트(highlightGate) · 스레드 대상 판정(thread-eligibility) · 티저 워치(teaser-watch) · 반응 조사(reaction-research)가 전부 이 파일 하나를 읽는다. 추가는 oEmbed author_name 실측값 그대로(KCulture `node scripts/lib/channels.mjs --resolve <@handle|UC…>` 가 레코드를 찍어 준다). name=게이트 키(정규화 완전 일치), aliases=종전 표기 호환, episodic=회차별 영상 게시 여부(hls 안전성), titleId=작품 전용 채널, watch=티저 워치 순회(depth 생략=기본).",
+  "version": 1,
+  "updatedAt": "2026-10-28",
+  "channels": [
+    {
+      "name": "SBS 스브스 Drama",
+      "kind": "broadcaster",
+      "platform": "SBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UC6erIDuvbOaAO-OT5rB2Xew",
+      "watch": {},
+      "handle": "@SBSdrama.official",
+      "verified": "2026-10-28",
+      "evidence": [
+        "yHdORHiR4t8"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "SBS Catch",
+      "kind": "broadcaster",
+      "platform": "SBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UC3re3ueOE_6VZK85zlEUWFA",
+      "watch": {},
+      "handle": "@SBSCatch",
+      "verified": "2026-10-28",
+      "evidence": [
+        "D5fsTFmyqKQ"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "SBS",
+      "kind": "broadcaster",
+      "platform": "SBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "SBS NOW 스브스나우"
+      ],
+      "channelId": "UCcOYEm78CpaZQvPE6LtoSeA",
+      "handle": "@SBSNOW",
+      "verified": "2026-10-28",
+      "evidence": [
+        "F1zM8AoQCO8"
+      ],
+      "note": "2026-10-28 실측 — @SBSNOW 채널의 author_name이 「SBS 」(끝 공백)로 바뀌어 있음. 정규화로 「SBS」와 일치. 종전 「SBS NOW 스브스나우」 별칭 유지",
+      "added": "legacy"
+    },
+    {
+      "name": "tvN DRAMA",
+      "kind": "broadcaster",
+      "platform": "tvN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UC9w-h_ciMmX64TcLRcb1xPg",
+      "watch": {
+        "depth": 200
+      },
+      "handle": "@tvNDRAMA_official",
+      "verified": "2026-10-28",
+      "evidence": [
+        "SVEFF5esPsg"
+      ],
+      "note": "하루 30편 — 티저 워치 깊게(200)",
+      "added": "legacy"
+    },
+    {
+      "name": "tvN",
+      "kind": "broadcaster",
+      "platform": "tvN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "note": "⚠ 검색 후보 UCaVaCaiG6qRzDiJDuEGKOhQ의 author_name=「TVN Chile」가 이름과 불일치 — 미등재",
+      "added": "legacy",
+      "verified": null
+    },
+    {
+      "name": "tvN D ENT",
+      "kind": "broadcaster",
+      "platform": "tvN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCsRIHt5FkbGc6cQtCxt-ufA",
+      "handle": "@tvNDENT",
+      "verified": "2026-10-28",
+      "evidence": [
+        "Ksnbcdkj2eM"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "디글 :Diggle",
+      "kind": "broadcaster",
+      "platform": "tvN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCWYzc_p0GgfCepIWDHGFmEg",
+      "handle": "@Diggle",
+      "verified": "2026-10-28",
+      "evidence": [
+        "rtcLk6fbWdg"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "디글 클래식 :Diggle Classic",
+      "kind": "broadcaster",
+      "platform": "tvN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCRMA_Nb5VF-YoWApSVeXPVA",
+      "handle": "@DiggleClassic",
+      "verified": "2026-10-28",
+      "evidence": [
+        "aDD_JwAi3Hw"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "TVING 티빙",
+      "kind": "ott-kr",
+      "platform": "TVING",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "TVING",
+        "티빙"
+      ],
+      "channelId": "UCNIiH_4ArJNd_cDZApZ7AFg",
+      "watch": {},
+      "handle": "@TVING_official",
+      "verified": "2026-10-28",
+      "evidence": [
+        "rfNdsvr50BQ"
+      ],
+      "note": "2026-09-09 클라우드 실측 — author_name은 영문+한글 한 덩어리. aliases는 종전 표기 호환",
+      "added": "legacy"
+    },
+    {
+      "name": "MBC DRAMA",
+      "kind": "broadcaster",
+      "platform": "MBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UCBAEVMr0li9YYF8IwZHfusw",
+      "watch": {},
+      "handle": "@MBCDrama",
+      "verified": "2026-10-28",
+      "evidence": [
+        "alPwrAXZdfY"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "드파밍",
+      "kind": "broadcaster",
+      "platform": "MBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "MBC 드라마 파밍",
+        "드라마 파밍"
+      ],
+      "channelId": "UCpvkqYCqk2huuMcJsEuiY5g",
+      "handle": "@drama_farming",
+      "verified": "2026-10-28",
+      "evidence": [
+        "EoO7p9tf4yE"
+      ],
+      "note": "2026-10-28 실측 — author_name 정본은 「드파밍」. 회차 하이라이트(다음 날)",
+      "added": "legacy"
+    },
+    {
+      "name": "MBCentertainment",
+      "kind": "broadcaster",
+      "platform": "MBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCiBr0bK06imaMbLc8sAEz0A",
+      "handle": "@MBCentertainment",
+      "verified": "2026-10-28",
+      "evidence": [
+        "ocorLnHBups"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "KBS Drama",
+      "kind": "broadcaster",
+      "platform": "KBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UChpjIaEgwtDZtmWEkzFulSA",
+      "watch": {},
+      "handle": "@KBSdrama",
+      "verified": "2026-10-28",
+      "evidence": [
+        "21QdfVSzqj0"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "KBS Drama Classic",
+      "kind": "broadcaster",
+      "platform": "KBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "KBS 드라마 클래식 : KBS Drama Classic"
+      ],
+      "channelId": "UCn0nlepACCBD6rxj-GUwn5A",
+      "handle": "@kbsdramaclassic",
+      "verified": "2026-10-28",
+      "evidence": [
+        "-9uvhxiRwLA"
+      ],
+      "note": "2026-08-28 실측 — author_name에 한글 접두어 없음. 구작 회차 요약본",
+      "added": "legacy"
+    },
+    {
+      "name": "KBS WORLD TV",
+      "kind": "broadcaster",
+      "platform": "KBS",
+      "market": "KR",
+      "langs": [
+        "ko",
+        "en"
+      ],
+      "episodic": true,
+      "channelId": "UC5BMQOsAB8hKUyHu9KI6yig",
+      "handle": "@kbsworldtv",
+      "verified": "2026-10-28",
+      "evidence": [
+        "E6Vi2AcFnn8"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "KBS 한국방송",
+      "kind": "broadcaster",
+      "platform": "KBS",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UC3m0s5XAQydCtbLHc8j1Uog",
+      "handle": "@1004KBS",
+      "verified": "2026-10-28",
+      "evidence": [
+        "ed-tpi8gPK8"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "JTBC Drama",
+      "kind": "broadcaster",
+      "platform": "JTBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UCkbJc8jMcTXwhtmN5VMwfXg",
+      "watch": {},
+      "handle": "@JTBCdrama",
+      "verified": "2026-10-28",
+      "evidence": [
+        "ndDKq8ac31E"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "JTBC",
+      "kind": "broadcaster",
+      "platform": "JTBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "added": "legacy",
+      "verified": null
+    },
+    {
+      "name": "JTBC Voyage",
+      "kind": "broadcaster",
+      "platform": "JTBC",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCF3UEVPt5zZTlBVJwDG317g",
+      "handle": "@JTBCvoyage",
+      "verified": "2026-10-28",
+      "evidence": [
+        "I_Y6euzrG20"
+      ],
+      "note": "⚠ 묶음 편성 채널(DRAMA Voyage=드라마봐야지와 별개) — 회차 클립 1순위 아님",
+      "added": "legacy"
+    },
+    {
+      "name": "ENA 이엔에이",
+      "kind": "broadcaster",
+      "platform": "ENA",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UCAP8OK0GHFbnL5OkY3j04Xw",
+      "watch": {},
+      "handle": "@channel_ena",
+      "verified": "2026-10-28",
+      "evidence": [
+        "4AhV_fTBwB4"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "ENA DRAMA",
+      "kind": "broadcaster",
+      "platform": "ENA",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UCw0ZKmxFBc9donV317twWeA",
+      "watch": {},
+      "handle": "@enadrama",
+      "verified": "2026-10-28",
+      "evidence": [
+        "1eKMIhrhxes"
+      ],
+      "note": "연애박사(307106) 회차 하이라이트·선공개",
+      "added": "legacy"
+    },
+    {
+      "name": "Genie TV 지니 TV",
+      "kind": "ott-kr",
+      "platform": "Genie TV",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "지니 TV"
+      ],
+      "added": "legacy",
+      "verified": null
+    },
+    {
+      "name": "play 채널A",
+      "kind": "broadcaster",
+      "platform": "채널A",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "채널A"
+      ],
+      "channelId": "UCaZS_XwAu1yBMNoQDD1mR7g",
+      "watch": {},
+      "handle": "@play-channelA",
+      "verified": "2026-10-28",
+      "evidence": [
+        "HMOESBtTgOk"
+      ],
+      "note": "2026-10-28 통합 시 발견 — 게이트엔 「채널A」만 있어 이 채널(티저 워치 순회 대상)의 클립이 전부 channel_not_allowlisted였다(9월 이월 「play 채널A 결측」)",
+      "added": "2026-10-28"
+    },
+    {
+      "name": "채널에이드: 채널A Drama & Enjoy",
+      "kind": "broadcaster",
+      "platform": "채널A",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "채널A 드라마"
+      ],
+      "channelId": "UCB-ogYCX9Me8nP9gEGpMjUg",
+      "handle": "@channelA-ade",
+      "verified": "2026-10-28",
+      "evidence": [
+        "aCoQ_B4Bmwo"
+      ],
+      "note": "2026-10-28 실측 — 채널A 드라마 공식 채널의 author_name 정본",
+      "added": "legacy"
+    },
+    {
+      "name": "Channel A",
+      "kind": "broadcaster",
+      "platform": "채널A",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "added": "legacy",
+      "verified": null
+    },
+    {
+      "name": "MBN Entertainment",
+      "kind": "broadcaster",
+      "platform": "MBN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "MBN"
+      ],
+      "channelId": "UCYyLIlOJyqkAFKlVjzX5img",
+      "watch": {},
+      "handle": "@MBN_Entertainment",
+      "verified": "2026-10-28",
+      "evidence": [
+        "ZHob2BH9c1k"
+      ],
+      "note": "2026-10-28 통합 시 발견 — 게이트엔 「MBN」만 있어 정규화 불일치",
+      "added": "2026-10-28"
+    },
+    {
+      "name": "MBN Drama",
+      "kind": "broadcaster",
+      "platform": "MBN",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "MBN 드라마"
+      ],
+      "channelId": "UCLqecwv-NjFSJ4gNwUunhTA",
+      "handle": "@Drama_MBN",
+      "verified": "2026-10-28",
+      "evidence": [
+        "FD-zkPfsJgk"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "쿠팡플레이 Coupang Play",
+      "kind": "ott-kr",
+      "platform": "쿠팡플레이",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "쿠팡플레이",
+        "Coupang Play 쿠팡플레이"
+      ],
+      "channelId": "UCjn-VbcIkAeXQKCmLJV8YwQ",
+      "watch": {},
+      "handle": "@CoupangPlay",
+      "verified": "2026-10-28",
+      "evidence": [
+        "3q5njxFE0g8"
+      ],
+      "note": "회차별 선공개 없음 — N화 예고편·하이라이트(공개 다음 날 20:00)",
+      "added": "legacy"
+    },
+    {
+      "name": "wavve 웨이브",
+      "kind": "ott-kr",
+      "platform": "wavve",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "Wavve",
+        "웨이브"
+      ],
+      "channelId": "UCym5538xAEEppbridXozfgw",
+      "watch": {},
+      "handle": "@wavve",
+      "verified": "2026-10-28",
+      "evidence": [
+        "UqEaljgoAy0"
+      ],
+      "note": "2026-08-28 실측 — 영문+한글 한 덩어리",
+      "added": "legacy"
+    },
+    {
+      "name": "Netflix Korea 넷플릭스 코리아",
+      "kind": "ott-kr",
+      "platform": "Netflix",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCiEEF51uRAeZeCo8CJFhGWw",
+      "watch": {},
+      "handle": "@NetflixKorea",
+      "verified": "2026-10-28",
+      "evidence": [
+        "jZ86jV4H59o"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Disney Plus Korea 디즈니 플러스 코리아",
+      "kind": "ott-kr",
+      "platform": "Disney+",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCtdz9LWNNQKUg4Xpma_40Ug",
+      "watch": {},
+      "handle": "@DisneyPlusKR",
+      "verified": "2026-10-28",
+      "evidence": [
+        "cle5dSjQkkM"
+      ],
+      "note": "한국 채널만 있으면 §0-1 보조 근거 미달(한국 단독 라이선스와 구분 불가)",
+      "added": "legacy"
+    },
+    {
+      "name": "CanvasN",
+      "kind": "production",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "aliases": [
+        "캔버스엔"
+      ],
+      "channelId": "UCbAllU3-srpjDRaSpr1-NQQ",
+      "handle": "@canvasn",
+      "verified": "2026-10-28",
+      "evidence": [
+        "aXZlhnjcDUU"
+      ],
+      "note": "2026-10-28 실측 — author_name이 「캔버스엔」→「CanvasN」으로 바뀜(별칭 유지). 「그래, 이혼하자」(276470) 제작사. KBS Drama엔 없는 회차 예고를 이 채널만 올림. 30~40초라 하이라이트 길이 게이트 밖",
+      "added": "legacy"
+    },
+    {
+      "name": "스튜디오지니",
+      "kind": "production",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "channelId": "UCXmRJfZ3atLVLDiO5Ufycvw",
+      "watch": {},
+      "handle": "@Studio_Genie",
+      "verified": "2026-10-28",
+      "evidence": [
+        "tGaIdNjIUCE"
+      ],
+      "note": "KT Studio Genie(지니 TV 오리지널 제작사). 연애박사 무드티저를 Disney+·ENA보다 하루 먼저 게시(2026-08-31). 「EP.N-1/N-2」 부분 클립 + 「EP.09~10」 범위 묶음 제목을 씀 → collectHighlights.isBundle이 EP.N~M 범위를 묶음으로 인식(2026-10-28). 2026-10-28 사용자 결정: 주요 소스, 포함 확정",
+      "added": "legacy"
+    },
+    {
+      "name": "Warner Bros. Korea",
+      "kind": "distributor",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UC8AD5KHdsFzp8qoJvS4YSYg",
+      "watch": {},
+      "handle": "@WarnerbrosKorea",
+      "verified": "2026-10-28",
+      "evidence": [
+        "_9F2bDoimVM"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "롯데엔터테인먼트",
+      "kind": "distributor",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCC2F35lZ0drUeMJOATXde2g",
+      "watch": {},
+      "handle": "@lotteent",
+      "verified": "2026-10-28",
+      "evidence": [
+        "1aFJz5tmR3M"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "CJ ENM Movie",
+      "kind": "distributor",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCRV0Gb4i99Aj9UiqCE8xlvw",
+      "watch": {},
+      "handle": "@CJENMMOVIE",
+      "verified": "2026-10-28",
+      "evidence": [
+        "rRY8eiZc0Z8"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "MDS스피어",
+      "kind": "distributor",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "aliases": [
+        "플레이그램"
+      ],
+      "channelId": "UCV994zRWIvy-V8CPcnZYyqg",
+      "watch": {},
+      "handle": "@mdssphere",
+      "verified": "2026-10-28",
+      "evidence": [
+        "NxhWXrFMMdM"
+      ],
+      "note": "2026-10-28 통합 시 발견 — 「플레이그램」이 채널명을 MDS스피어로 바꿔 게이트가 이 채널 클립을 전부 거부하고 있었다",
+      "added": "2026-10-28"
+    },
+    {
+      "name": "hivemedia_corp",
+      "kind": "distributor",
+      "platform": null,
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": false,
+      "channelId": "UCceZ46Ev9_PJ1BfFEBt4qDQ",
+      "watch": {},
+      "handle": "@hivemediacorp",
+      "verified": "2026-10-28",
+      "evidence": [
+        "J12tRg7AQa4"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "너에게 다이브",
+      "kind": "title-official",
+      "platform": "채널A",
+      "market": "KR",
+      "langs": [
+        "ko"
+      ],
+      "episodic": true,
+      "titleId": 316197,
+      "channelId": "UCYcg1Cp6nielILU_2wCVUrg",
+      "handle": "@DiveIntoU2026",
+      "verified": "2026-10-28",
+      "evidence": [
+        "4_7_XVE1nlI"
+      ],
+      "note": "2026-09-30 사용자 결정(작품 전용 공식 채널도 등재). 회차 예고편이 이 채널에만 올라옴",
+      "added": "legacy"
+    },
+    {
+      "name": "ディズニープラス",
+      "kind": "ott-regional",
+      "platform": "Disney+",
+      "market": "JP",
+      "langs": [
+        "ja"
+      ],
+      "episodic": false,
+      "channelId": "UCm9iPGnmMYtZkNQ3IoBIPIA",
+      "handle": "@DisneyPlusJP",
+      "verified": "2026-10-28",
+      "evidence": [
+        "xY9t3HzPpvk"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Disney+ Indonesia",
+      "kind": "ott-regional",
+      "platform": "Disney+",
+      "market": "ID",
+      "langs": [
+        "id"
+      ],
+      "episodic": false,
+      "channelId": "UCI_c_ZmYt6CtFJo4jOQVhiw",
+      "handle": "@disneyplus_indonesia",
+      "verified": "2026-10-28",
+      "evidence": [
+        "eo19QPv-F7Q"
+      ],
+      "note": "주력 시장. 메리베리 QYlzKVaFxTM(Highlight) / 재혼 황후 cK0de-lMQrg",
+      "added": "legacy"
+    },
+    {
+      "name": "Disney+ Singapore",
+      "kind": "ott-regional",
+      "platform": "Disney+",
+      "market": "SG",
+      "langs": [
+        "en"
+      ],
+      "episodic": false,
+      "channelId": "UCmO0uNLXEUKDo2abZILC_cg",
+      "handle": "@disneyplussg",
+      "verified": "2026-10-28",
+      "evidence": [
+        "Mf5I3KiTsFQ"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Disney+ Thailand",
+      "kind": "ott-regional",
+      "platform": "Disney+",
+      "market": "TH",
+      "langs": [
+        "th"
+      ],
+      "episodic": false,
+      "channelId": "UCfj271v-4sRDLORnbwvQP9A",
+      "handle": "@DisneyPlusThailand",
+      "verified": "2026-10-28",
+      "evidence": [
+        "dZoLHwQt8ug"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Disney+ Philippines",
+      "kind": "ott-regional",
+      "platform": "Disney+",
+      "market": "PH",
+      "langs": [
+        "en",
+        "tl"
+      ],
+      "episodic": false,
+      "channelId": "UCQqQFoECALeV09T7z4nrGZg",
+      "handle": "@disneyplusphilippines",
+      "verified": "2026-10-28",
+      "evidence": [
+        "0R6A_AV1VQc"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Viu Indonesia",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "ID",
+      "langs": [
+        "id"
+      ],
+      "episodic": true,
+      "channelId": "UClngvUWJ5jz2PQJQlNb0fFw",
+      "handle": "@viuindonesiaofficial",
+      "verified": "2026-10-28",
+      "evidence": [
+        "t94OC3VpQsA"
+      ],
+      "note": "주력 시장. 유일무이 로맨스(313738) 티저 3건. 댓글은 0건(홍보 채널 — 반응 소스로 약함)",
+      "added": "legacy"
+    },
+    {
+      "name": "Viu Singapore",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "SG",
+      "langs": [
+        "en"
+      ],
+      "episodic": true,
+      "channelId": "UC0RFMDHmTVtsquuswRCU_GA",
+      "handle": "@ViuSingapore",
+      "verified": "2026-10-28",
+      "evidence": [
+        "DT9AMG2BKy4"
+      ],
+      "added": "legacy"
+    },
+    {
+      "name": "Viu Philippines",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "PH",
+      "langs": [
+        "en",
+        "tl"
+      ],
+      "episodic": true,
+      "channelId": "UCDm78Amdc7gF6ogsqE_sgPQ",
+      "handle": "@ViuPhilippines",
+      "verified": "2026-10-28",
+      "evidence": [
+        "Ui7-Z7APGMY"
+      ],
+      "note": "「PREVIEW: Episode N」 회차 예고 게시",
+      "added": "legacy"
+    },
+    {
+      "name": "Viu Thailand",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "TH",
+      "langs": [
+        "th"
+      ],
+      "episodic": true,
+      "channelId": "UCPdXHv7DKjHqYK7ZOBbNNZQ",
+      "handle": "@viuthailand",
+      "verified": "2026-10-28",
+      "evidence": [
+        "UMFuODk9fZ8"
+      ],
+      "note": "「ตัวอย่าง EP.1」 형태로 EP.N 표기",
+      "added": "legacy"
+    },
+    {
+      "name": "Viu Malaysia",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "MY",
+      "langs": [
+        "ms",
+        "en"
+      ],
+      "episodic": true,
+      "channelId": "UCHCwqz2P5b8MMCx1z8N96fg",
+      "handle": "@ViuMalaysia",
+      "verified": "2026-10-28",
+      "evidence": [
+        "DOV0uZwFfes"
+      ],
+      "note": "334517(밑도 끝도 없이, 너다) 보유",
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Viu MENA",
+      "kind": "ott-regional",
+      "platform": "Viu",
+      "market": "MENA",
+      "langs": [
+        "ar"
+      ],
+      "episodic": true,
+      "channelId": "UChGvroNE37UqCK3HYXQTS3g",
+      "handle": "@VIUMena",
+      "verified": "2026-10-28",
+      "evidence": [
+        "7LdDzVS7Rmk"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Netflix",
+      "kind": "ott-regional",
+      "platform": "Netflix",
+      "market": "GLOBAL",
+      "langs": [
+        "en"
+      ],
+      "episodic": false,
+      "channelId": "UCWOA1ZGywLbqmigxE4Qlvuw",
+      "handle": "@Netflix",
+      "verified": "2026-10-28",
+      "evidence": [
+        "P8G5Y25W3eA"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Netflix K-Content",
+      "kind": "ott-regional",
+      "platform": "Netflix",
+      "market": "GLOBAL",
+      "langs": [
+        "en"
+      ],
+      "episodic": false,
+      "channelId": "UCpiCK8c6PBktcxq7Az_t4RQ",
+      "watch": {},
+      "handle": "@netflixkcontent",
+      "verified": "2026-10-28",
+      "evidence": [
+        "t2Q61rDoheU"
+      ],
+      "note": "해외 반응(영어) 1차 소스 — 댓글 수백 건 실측(2026-10-28)",
+      "added": "legacy"
+    },
+    {
+      "name": "Netflix Indonesia",
+      "kind": "ott-regional",
+      "platform": "Netflix",
+      "market": "ID",
+      "langs": [
+        "id"
+      ],
+      "episodic": false,
+      "channelId": "UC5E0wgsW3JyQEP-DLkGwI2Q",
+      "handle": "@NetflixIndonesia",
+      "verified": "2026-10-28",
+      "evidence": [
+        "xJFOob4qLm0"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Netflix Brasil",
+      "kind": "ott-regional",
+      "platform": "Netflix",
+      "market": "BR",
+      "langs": [
+        "pt"
+      ],
+      "episodic": false,
+      "channelId": "UCc1l5mTmAv2GC_PXrBpqyKQ",
+      "handle": "@NetflixBrasil",
+      "verified": "2026-10-28",
+      "evidence": [
+        "AHuv8f2UeRg"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Netflix MENA",
+      "kind": "ott-regional",
+      "platform": "Netflix",
+      "market": "MENA",
+      "langs": [
+        "ar"
+      ],
+      "episodic": false,
+      "channelId": "UCjX3CVVmXkH9k8ilVaNn5MQ",
+      "handle": "@NetflixMENA",
+      "verified": "2026-10-28",
+      "evidence": [
+        "KvVQYb-ynlg"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Viki",
+      "kind": "ott-regional",
+      "platform": "Viki",
+      "market": "GLOBAL",
+      "langs": [
+        "en"
+      ],
+      "episodic": false,
+      "channelId": "UCHHcLN7zghF-whwdjQ8mavQ",
+      "handle": "@VIKI",
+      "verified": "2026-10-28",
+      "evidence": [
+        "omsnOFWUJYA"
+      ],
+      "added": "2026-10-28"
+    },
+    {
+      "name": "Viki Global TV",
+      "kind": "ott-regional",
+      "platform": "Viki",
+      "market": "GLOBAL",
+      "langs": [
+        "en"
+      ],
+      "episodic": false,
+      "channelId": "UCqra4Lzndm4H0LB-zwOqbxQ",
+      "handle": "@VikiGlobalTV",
+      "verified": "2026-10-28",
+      "evidence": [
+        "xCBMuV6c2xo"
+      ],
+      "added": "2026-10-28"
+    }
+  ],
+  "excluded": [
+    {
+      "name": "ENA",
+      "reason": "2026-10-28 통합 검증 — 유튜브 채널 검색에서 이 이름의 1순위가 비공식 채널(author_name 「ena」 @minamikara3)이고 정규화하면 「ENA」와 완전 일치해 게이트를 통과한다. 실제 공식 채널은 「ENA 이엔에이」·「ENA DRAMA」로 별도 등재돼 있어 손실 없음",
+      "date": "2026-10-28",
+      "evidence": [
+        "mlUFk7mFatk"
+      ]
+    },
+    {
+      "name": "SBS Drama",
+      "reason": "2026-10-28 통합 검증 — 이 이름의 채널 1순위가 자동 생성 핸들(@user-nn9rr7vh3w, UCO-wyCktz3P47969rG_1u4w)이라 비공식으로 판단. 공식은 「SBS 스브스 Drama」(@SBSdrama.official). 공식임이 확인되면 재등재",
+      "date": "2026-10-28",
+      "evidence": [
+        "A9F3Se4hPyo"
+      ]
+    },
+    {
+      "name": "DRAMA Voyage",
+      "handle": "@DRAMAVoyage",
+      "reason": "JTBC 공식 「드라마봐야지」 — 설명문이 「아파트 - 1,2,3,4회」처럼 여러 회차 묶음이라 단일 회차 귀속 불가(epMatch가 4회 단독으로 오인). 2026-08-28",
+      "date": "2026-08-28"
+    }
+  ]
+}

@@ -7,100 +7,35 @@
 // 사용처: scripts/set-title-highlight.js(단건), scripts/find-title-highlights.js(수집),
 //         scripts/verify-title-highlights.js(사후 검증).
 
-// 공식 채널 allowlist — oEmbed author_name 과 "정규화 후 완전 일치"로 비교.
-// (부분 일치는 "tvN DRAMA 명장면"류 팬 채널 오인 위험 → 완전 일치만.)
-// 새 공식 채널을 발견하면 여기 한 줄 추가한다(에이전트 절차: 공식 여부 확인 후 추가).
-// ⚠ 공식이어도 **회차별 편성이 아닌 채널은 넣지 않는다**(2026-08-28 검토) — 단일 회차 귀속이
-//   불가해 오귀속만 만든다. 제외 확정분:
-//   · 'DRAMA Voyage'(@DRAMAVoyage, JTBC 공식 "드라마봐야지") — 설명문이 "아파트 - 1,2,3,4회"처럼
-//     여러 회차 묶음. 제목엔 회차가 없고 설명문 "1,2,3,4회"는 epMatch가 4회 단독으로 오인한다.
-//   · '스튜디오지니'(@Studio_Genie, KT 제작사 공식) — "EP.N-1/N-2" 부분 클립 + "EP.09~10" 범위
-//     묶음(BUNDLE_RE가 화/회 없는 'EP.09~10' 형태를 못 잡음)이라 최장 정렬 시 묶음이 1순위가 된다.
-//     같은 작품은 'ENA DRAMA'가 회차별 풀 하이라이트를 올리므로 손실도 없다.
-const OFFICIAL_CHANNELS = [
-  // SBS
-  'SBS 스브스 Drama', 'SBS Catch', 'SBS', 'SBS NOW 스브스나우', 'SBS Drama',
-  // tvN / CJ ENM
-  'tvN DRAMA', 'tvN', 'tvN D ENT', '디글 :Diggle', '디글 클래식 :Diggle Classic', 'TVING', '티빙',
-  'TVING 티빙', // @TVING_official 의 실제 oEmbed author_name (2026-09-09 클라우드 루틴 실측 — 'TVING'·'티빙'만으론 완전 일치 실패)
-  // MBC
-  'MBCdrama', 'MBC 드라마 파밍', '드라마 파밍', '드파밍', 'MBCentertainment',
-  // KBS
-  // ⚠ 'KBS Drama Classic' — oEmbed author_name 실측값은 한글 접두어가 **없다**(2026-08-28 파일럿).
-  //    'KBS 드라마 클래식 : KBS Drama Classic'만 있던 탓에 정규화 완전 일치에 걸려 구작 회차 클립이
-  //    전부 비공식으로 떨어졌다(풀하우스 E5~E16 실측). 표기 변형은 둘 다 남긴다.
-  'KBS Drama', 'KBS Drama Classic', 'KBS 드라마 클래식 : KBS Drama Classic', 'KBS WORLD TV', 'KBS한국방송',
-  // JTBC
-  'JTBC Drama', 'JTBC', 'JTBC Voyage',
-  // 기타 채널·플랫폼
-  'ENA', 'ENA DRAMA', 'ENA 이엔에이', '지니 TV', 'Genie TV 지니 TV', '채널A', '채널A 드라마', 'Channel A',
-  'MBN', 'MBN 드라마', '쿠팡플레이', 'Coupang Play 쿠팡플레이', '쿠팡플레이 Coupang Play',
-  // ⚠ 'wavve 웨이브' — oEmbed author_name 실측값은 **영문+한글이 한 덩어리**다(2026-08-28).
-  //    'Wavve'와 '웨이브'를 따로 넣어 두면 정규화 완전 일치에 걸려 전부 비공식으로 떨어진다
-  //    (약한영웅 Class 1 실측: 1~4화 하이라이트가 존재하는데 8회 전량 "공식 채널 후보 없음").
-  //    → 채널을 추가할 땐 반드시 oEmbed author_name 을 그대로 넣을 것. 세 번째 같은 사고다
-  //    (DRAMA Voyage / KBS Drama Classic / wavve 웨이브).
-  'Netflix Korea 넷플릭스 코리아', 'Netflix K-Content', 'wavve 웨이브', 'Wavve', '웨이브',
-  // 공개 전 티저(upcoming-research) 실측 author_name — 2026-08-30 첫 실행(재혼 황후 CDhtpYWNEuk / 인턴 dtpyrKDJPRg)
-  'Disney Plus Korea 디즈니 플러스 코리아', 'Warner Bros. Korea',
-  // 제작사 공식 채널 — 방송사 채널이 회차 클립을 올리지 않아 제작사가 직접 올리는 경우(2026-09-01 추가).
-  // '캔버스엔'(Canvas N) = 「그래, 이혼하자」(276470) 제작사. 회차 예고를 이 채널만 올리며
-  // (KBS Drama 채널엔 없다), 제목이 "[N화 예고] … ＜그래, 이혼하자＞ 9월 2일 밤 11시 방송" 형태라
-  // 회차 단일 귀속이 명확하다(§13의 제외 사유인 묶음 편성이 아니다). oEmbed author_name 실측값 그대로.
-  // ⚠ 이 채널이 올리는 것은 30~40초 예고라 하이라이트 길이 게이트(4~30분)에 애초에 걸리지 않는다 —
-  //   find-title-highlights가 예고를 하이라이트로 오인할 위험은 없다.
-  '캔버스엔',
-  // 영화 배급사·제작사 공식 채널 — 2026-09-01 추가(upcoming-scout 첫 정기 실행에서 구조적 공백 발견:
-  // 추석 개봉작 4편이 화제성이 아니라 allowlist 부재로 전량 탈락했다). 전부 oEmbed author_name 실측 일치 확인.
-  // 영화는 회차 개념이 없어 하이라이트 회차 오귀속 위험이 없다.
-  '롯데엔터테인먼트', 'CJ ENM Movie', '플레이그램', 'hivemedia_corp',
-  // '스튜디오지니'(KT Studio Genie, 지니 TV 오리지널 제작사, UCXmRJfZ3atLVLDiO5Ufycvw) — 2026-09-02 추가.
-  // 「연애박사」 무드티저 2편을 Disney Plus Korea·ENA DRAMA보다 하루 먼저(08-31) 올려 teaser-watch가 하루 늦게 잡았다.
-  // oEmbed author_name 실측값 '스튜디오지니' 그대로. 제작사 채널이라 회차 클립도 올릴 수 있다 — 하이라이트 오귀속이 보이면 재검토.
-  '스튜디오지니',
-  // '너에게 다이브'(작품 전용 공식 채널, 핸들 @DiveIntoU2026) — 2026-09-30 추가(사용자 결정: 작품 전용 공식 채널도 등재,
-  // KCulture .claude/shared/clip-pipeline.md §2). 「너에게 다이브」(316197) 회차 예고편이 이 채널에만 올라와
-  // channel_not_allowlisted로 전량 차단되고 있었다. oEmbed author_name 표시명 그대로(핸들 아님).
-  '너에게 다이브',
-  // Disney+ 지역 채널 — 2026-10-20 추가(사용자 결정: KCulture .claude/shared/clip-pipeline.md §2 「회차별 편성이 아닌 채널은
-  //   넣지 않는다」의 예외 신설). 발견 경위: 「메리 베리 러브」(305551)는 **일본 드라마**(original_language ja, Nippon TV,
-  //   한일 공동제작)인데 allowlist의 Disney 계열이 'Disney Plus Korea' 1개뿐이라, 한국 채널이 올리지 않는 이 작품의
-  //   공식 클립을 **8일 연속 0건**으로 오판했다(실제로는 JP·ID·SG·TH·PH 5개 지역 채널이 보유).
-  // ⚠ 이 채널들은 **작품 단위 영상만** 올린다(予告編·ハイライト映像·Main Trailer). Disney+ 플랫폼 구조에 회차별 공식
-  //   영상이 애초에 없으므로, 작품 단위 영상이 스레드 썸네일·클립 역할을 대신하고 회차 귀속은 clipEp 하위로 둔다.
-  // ✅ 하이라이트 오귀속 위험 없음 — 이 채널들의 영상은 100~150초대이고 collectHighlights의 길이 게이트가
-  //   DUR_MIN 240초이므로 회차 하이라이트(hls)로는 **구조적으로 저장될 수 없다**(캔버스엔과 같은 안전 속성).
-  // 전부 oEmbed author_name 실측값 그대로 + author_url 정본 확인(핸들 추측 금지 — @ntv_drama는 존재하지 않는 핸들이었다).
-  'ディズニープラス',      // @DisneyPlusJP           — 메리베리 801lPiNx5y4·c3WNau7FlGU / 311648·307106·279246 예고 보유
-  'Disney+ Indonesia',   // @disneyplus_indonesia   — 주력 시장. 메리베리 QYlzKVaFxTM(Highlight)·b-fT5MDmU0Y / 279246 cK0de-lMQrg
-  'Disney+ Singapore',   // @disneyplussg
-  'Disney+ Thailand',    // @DisneyPlusThailand
-  'Disney+ Philippines', // @disneyplusphilippines
-  // Viu 지역 채널 — 2026-10-28 추가(사용자 승인). 발견 경위: 「유일무이 로맨스」(313738)는 한국 밖에서 **Viu 오리지널**인데
-  //   allowlist에 Viu가 **0건**이어서 clip-scout가 공식 티저 7건을 전부 channel_not_allowlisted로 떨어뜨렸다
-  //   (selected=0 → KCulture .claude/agents/dari-thread.md §3-0 「클립 없이 개설 금지」로 11/02 선공개 스레드가 3일간 막혀 있었다).
-  // 전부 oEmbed author_name 실측값 그대로 + author_url 정본 확인(핸들 추측 금지 — 핸들과 표시명의 대소문자가 서로 다르다).
-  // ⚠ **Disney+ 지역 채널과 성격이 다르다 — 이 채널들은 회차별 영상을 올린다**('PREVIEW: Episode 4' · '#BayanganDendam : EPISOD 2').
-  //   그래서 위 Disney+ 블록의 「길이 게이트가 구조적으로 막아 준다」는 안전 속성에만 기대지 말 것. 실제 방어선은 3겹이다:
-  //   ① collectHighlights.epMatch 는 **한국어 'N화/N회' 또는 'EP.N'만** 읽는다 → 영어 'Episode 4'는 애초에 회차 귀속이 안 된다
-  //   ② 작품명 일치(normShow) → 타 작품 오귀속 차단
-  //   ③ 길이 게이트 240~1800초 → 짧은 티저(30~90초)와 풀 회차(30분+)를 양쪽에서 배제
-  //   🚨 **EXCLUDE_RE(선공개|예고|티저|메이킹…)는 한국어 전용이라 영어 'Teaser/PREVIEW/Trailer'를 걸러내지 못한다.**
-  //   따라서 '4~30분 길이 + 작품명 일치 + EP.N 표기'를 동시에 만족하는 영어·태국어·말레이어 예고 모음이 올라오면
-  //   hls 오귀속이 가능하다(현재 그런 실물은 관측되지 않았다). 하이라이트 오귀속이 보이면 이 블록을 재검토할 것.
-  'Viu Indonesia',       // @viuindonesiaofficial — 주력 시장. 313738 t94OC3VpQsA(Teaser 1)·7Pt_AVa45zs(Teaser 2)·8qk0sXqeQsE(커피트럭 Q&A)
-  'Viu Singapore',       // @ViuSingapore        — 313738 DT9AMG2BKy4(Catch on Viu 9 Nov)·F_Pa3STQCPU
-  'Viu Philippines',     // @ViuPhilippines      — 313738 Ui7-Z7APGMY(Meet Mui). 회차 예고도 올린다('PREVIEW: Episode N')
-  'Viu Thailand',        // @viuthailand         — 313738 UMFuODk9fZ8(Teaser 2 태국어 자막). 'ตัวอย่าง EP.1' 형태로 EP.N 표기를 쓴다
-  // ⚠ 미등재(2026-10-28 oEmbed 검증은 끝났으나 이번 승인 범위 밖): 'Viu Malaysia'(@ViuMalaysia) · 'Viu MENA'(@VIUMena).
-  //   334517(밑도 끝도 없이, 너다)이 Viu MY·PH 보유작이라 그 작품이 대상으로 편입되면 'Viu Malaysia'가 필요해진다.
-];
+// 공식 채널 SSOT = ../config/channels.json (2026-10-28 통합 — 종전 이 파일의 OFFICIAL_CHANNELS 배열 +
+//   KCulture scripts/thread-eligibility.mjs OTT_CHANNEL_REGION + scripts/teaser-watch.mjs CHANNELS 세 목록을 하나로).
+//   게이트 키 = name + aliases, oEmbed author_name 과 "정규화 후 완전 일치"(부분 일치는 "tvN DRAMA 명장면"류 팬 채널 오인 위험).
+//   채널 추가 절차: KCulture `node scripts/lib/channels.mjs --resolve <@handle|UC…>` 로 author_name·channelId를 실측해 레코드를
+//   받아 channels.json 에 붙이고 `node scripts/channels-verify.js` 통과 후 커밋(main push = 배포). 이름을 손으로 적지 말 것 —
+//   표기가 다르면 전부 비공식으로 떨어진다(3연속 실사고: DRAMA Voyage / KBS Drama Classic / wavve 웨이브, 2026-10-28 통합 검증에서
+//   추가 발견: play 채널A·MBN Entertainment·플레이그램→MDS스피어 개명).
+//   ⚠ 회차별 편성이 아닌 채널의 묶음 영상은 단일 회차 귀속이 불가하다 → 레코드의 episodic:false 로 표시하고, 제외가 필요한 채널은
+//   excluded 절에 사유와 함께 둔다(DRAMA Voyage). Disney+ 지역 채널처럼 플랫폼 구조상 회차별 영상이 없는 경우는 작품 단위 영상이
+//   스레드 클립 역할을 대신한다(2026-10-20 예외) — 길이 게이트(collectHighlights DUR_MIN 240초)가 hls 저장을 구조적으로 막는다.
+//   Viu 지역 채널은 회차별 영상을 올리므로 그 안전 속성에 기대지 말 것(2026-10-28, channels.json 각 레코드 note 참조).
+const crypto = require('crypto');
+const CHANNEL_DATA = require('../config/channels.json');
+const CHANNELS = CHANNEL_DATA.channels;
+const EXCLUDED = CHANNEL_DATA.excluded || [];
+const CHANNELS_VERSION = crypto.createHash('sha1').update(JSON.stringify(CHANNEL_DATA)).digest('hex').slice(0, 10);
+const OFFICIAL_CHANNELS = CHANNELS.flatMap((c) => [c.name, ...(c.aliases || [])]);
 
 const norm = (s) => String(s || '').toLowerCase().replace(/[\s:·,._-]+/g, '');
 const NORM_SET = new Set(OFFICIAL_CHANNELS.map(norm));
+const BY_NORM = new Map();
+for (const c of CHANNELS) for (const k of [c.name, ...(c.aliases || [])]) BY_NORM.set(norm(k), c);
 
 function isOfficialChannel(name) {
   return NORM_SET.has(norm(name));
+}
+// 채널 레코드 조회(name 또는 alias) — kind·platform·market·episodic·titleId 를 쓰는 소비자용
+function channelByName(name) {
+  return BY_NORM.get(norm(name)) || null;
 }
 
 // oEmbed 조회 — status 200이면 존재+임베드 가능. title/author_name은 게이트·메타 저장에 사용.
@@ -138,4 +73,4 @@ async function saveHighlight(db, { titleId, season, ep, videoId, meta }) {
   return key;
 }
 
-module.exports = { OFFICIAL_CHANNELS, isOfficialChannel, fetchOembed, gateHighlight, saveHighlight };
+module.exports = { OFFICIAL_CHANNELS, CHANNELS, EXCLUDED, CHANNELS_VERSION, isOfficialChannel, channelByName, fetchOembed, gateHighlight, saveHighlight };

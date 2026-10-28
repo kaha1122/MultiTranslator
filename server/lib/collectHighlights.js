@@ -61,6 +61,15 @@ const DUR_MIN = 240, DUR_MAX = 1800; // 회차 요약본 길이대(4~30분) — 
 //   BUNDLE_RE(회차 범위)와 길이 상한(30분)이 이미 걸러낸다.
 const EXCLUDE_RE = /선공개|예고|티저|메이킹|비하인드|인터뷰|전편|풀버전|스페셜|OST|쇼츠|shorts/i;
 const BUNDLE_RE = /\d+\s*[-~〜]\s*\d+\s*(?:화|회)/; // "1-2회" 묶음 — 단일 회차 귀속 불가
+// "EP.09~10" · "Eps. 7-8" · "Ep. 5-6" — 화/회 없는 영문 EP 범위 묶음(스튜디오지니·ENA 메이킹 실측, 2026-10-28).
+//   ⚠ "EP.09-1"(= 9화 1부 — 부분 클립)과 구분해야 한다 → 두 번째 숫자가 첫 번째보다 **클 때만** 범위로 본다.
+const EP_RANGE_RE = /\bEPS?\.?\s*0?(\d{1,3})\s*[-~〜]\s*(?:EPS?\.?\s*)?0?(\d{1,3})(?![0-9])/i;
+function isBundle(text) {
+  const t = String(text || '');
+  if (BUNDLE_RE.test(t)) return true;
+  const m = t.match(EP_RANGE_RE);
+  return !!(m && Number(m[2]) > Number(m[1]));
+}
 
 // ── yt-dlp ──────────────────────────────────────────────────────────────────
 const YTDLP_FALLBACK = path.join(process.env.LOCALAPPDATA || '', 'Microsoft', 'WinGet', 'Links', 'yt-dlp.exe');
@@ -114,7 +123,7 @@ function claimedEps(text) {
 // 회차 귀속 — "N화"/"N회"/"EP N" 단일 표기(다른 숫자 회차 표기 동반 시 실패)
 function epMatch(text, ep) {
   if (!text) return false;
-  if (BUNDLE_RE.test(text)) return false;
+  if (isBundle(text)) return false;
   const re = new RegExp(`(?:^|[^0-9])${ep}\\s*(?:화|회)(?![0-9])|EP\\.?\\s*0?${ep}(?![0-9])`, 'i');
   if (!re.test(text)) return false;
   const others = claimedEps(text).filter((n) => n !== ep);
@@ -202,7 +211,7 @@ async function collectForTitle(db, { titleId, season = 1, dry = false, force = f
 
       // 기본 필터(길이·제외어·업로드일) — 채널 무관 공통
       viable = cands.filter((v) => v.duration >= DUR_MIN && v.duration <= DUR_MAX
-        && !EXCLUDE_RE.test(v.title) && !BUNDLE_RE.test(v.title)
+        && !EXCLUDE_RE.test(v.title) && !isBundle(v.title)
         && (!v.upload || !airMin || Number(v.upload) >= airMin));
 
       // 공식 채널 + 작품명 대조 + 회차 귀속(제목 → 설명문) → 자동 저장 후보
@@ -298,5 +307,5 @@ module.exports = {
   collectForTitle, collectQuietly, writeCandidateReport,
   SKIP_TITLES, SKIP_NETWORKS, blockedNetwork,
   // 테스트·재사용용 내부 헬퍼
-  epMatch, claimedEps, normText,
+  epMatch, claimedEps, normText, isBundle,
 };
