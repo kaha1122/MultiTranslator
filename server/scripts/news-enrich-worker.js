@@ -285,8 +285,10 @@ const isLogoImage = (u) => /logo|profile|favicon|default[_.-]|-fb\./i.test(Strin
 //   · 2026-09-01 브로드밴드 — 같은 조건 전부 200, 단 Referer: https://localhost(Capacitor
 //     origin)는 403. 같은 시각 SKT 모바일 기기에선 로드 실패 → 파비콘 폴백 강등(실스크린샷).
 //   → 조건이 IP 평판·시점에 따라 바뀌는 WAF. 이 도메인들은 gstatic(핫링크 변수 없음)으로 교체.
+//   · 2026-10-31 sinaimg.cn(웨이보, 알리윤 CDN) — 한국 엣지(kr7)에서 브라우저 UA는 Referer 유무와 무관하게
+//     403(x-ban), curl UA 200. GH Actions(미국) 검증은 통과해 imgV로 저장 → 한국 기기에선 웨이보 로고 폴백.
 // 폴백을 못 구한 런에서는 원본을 유지하고 다음 런에 재시도한다(로고 유지 원칙과 동일).
-const FLAKY_IMAGE_HOSTS = /(^|\.)kinoafisha\.info$/i;
+const FLAKY_IMAGE_HOSTS = /(^|\.)(kinoafisha\.info|sinaimg\.cn)$/i;
 const isFlakyHost = (u) => { try { return FLAKY_IMAGE_HOSTS.test(new URL(String(u || '')).hostname); } catch { return false; } };
 
 // ── CORP 차단 호스트 — 확정 불가(가변 아님) (2026-09-11 thestandard.co 실측) ──────────
