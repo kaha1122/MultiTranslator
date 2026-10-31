@@ -720,6 +720,46 @@ router.get('/api/tmdb/person/:id/latest-profile', rateLimit('tmdb', TMDB_RL), as
     }
 });
 
+// ── 인물 공유 카드 이미지 1200×630(2026-10-31) ──
+// 스레드·페북은 카드 틀이 가로(1.91:1) 고정이라 세로 프로필을 og:image로 주면 가운데를 잘라 얼굴만 확대된다(정수리·턱 잘림).
+// → 같은 사진을 흐리게 깐 가로 배경 위에 **세로 사진 전체**를 가운데 배치. 합성은 서버에 이미 있는 ffmpeg(새 의존성 없음).
+// 경로에 file_path를 넣는다 — 최신 사진이 바뀌면 URL도 바뀌어 플랫폼 캐시에 묶이지 않음. 대상은 TMDB 이미지뿐.
+const ogCardCache = new Map(); // file → Buffer, 상한 200
+router.get('/api/tmdb/person-card/:file', rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    const m = /^([A-Za-z0-9]{10,64})\.jpg$/.exec(String(req.params.file));
+    if (!m) return res.status(400).end();
+    try {
+        let buf = ogCardCache.get(m[1]);
+        if (!buf) {
+            const src = await fetch(`https://image.tmdb.org/t/p/h632/${m[1]}.jpg`, { signal: AbortSignal.timeout(8000) });
+            if (!src.ok) return res.status(404).end();
+            const input = Buffer.from(await src.arrayBuffer());
+            const { spawn } = require('child_process');
+            const ff = spawn(require('@ffmpeg-installer/ffmpeg').path, [
+                '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-i', 'pipe:0',
+                '-filter_complex', '[0:v]split[a][b];[a]scale=1200:630:force_original_aspect_ratio=increase,crop=1200:630,gblur=sigma=40,eq=brightness=-0.18[bg];[b]scale=-2:630[fg];[bg][fg]overlay=(W-w)/2:0,format=yuvj420p',
+                '-frames:v', '1', '-q:v', '3', '-f', 'image2pipe', '-c:v', 'mjpeg', 'pipe:1',
+            ]);
+            const chunks = [];
+            let err = '';
+            ff.stdout.on('data', (c) => chunks.push(c));
+            ff.stderr.on('data', (c) => { err += c; });
+            ff.stdin.on('error', () => {});
+            ff.stdin.end(input);
+            await new Promise((ok, ng) => { ff.on('error', ng); ff.on('close', (code) => (code === 0 ? ok() : ng(new Error(`ffmpeg ${code}: ${err.slice(0, 200)}`)))); });
+            buf = Buffer.concat(chunks);
+            ogCardCache.set(m[1], buf);
+            if (ogCardCache.size > 200) ogCardCache.delete(ogCardCache.keys().next().value);
+        }
+        res.set('Content-Type', 'image/jpeg');
+        res.set('Cache-Control', 'public, max-age=604800, immutable');
+        res.send(buf);
+    } catch (e) {
+        console.error('[tmdb/person-card]', e.message);
+        res.status(502).end();
+    }
+});
+
 // ── 컬렉션 검색 (영화 프랜차이즈/시리즈) ──
 router.get('/api/tmdb/search-collection', optionalAuthAny, rateLimit('tmdb', TMDB_RL), async (req, res) => {
     try {
