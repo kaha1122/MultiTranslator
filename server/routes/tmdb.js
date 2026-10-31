@@ -566,12 +566,22 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
     try {
         const id = String(req.params.id).replace(/\D/g, '');
         if (!id) return res.status(400).json({ error: 'bad id' });
-        const clientLang = String(req.query.lang || 'en');
-        const lang = toTmdbLang(req.query.lang);
+        res.json(await getPersonOut(id, req.query.lang));
+    } catch (e) {
+        console.error('[tmdb/person]', e.message);
+        res.status(502).json({ error: 'tmdb_failed' });
+    }
+});
+
+// 인물 응답 본체 — 위 라우트와 인물 공유 카드(person-card)가 공용(2026-10-31 함수로 분리).
+async function getPersonOut(id, qLang) {
+    {
+        const clientLang = String(qLang || 'en');
+        const lang = toTmdbLang(qLang);
         // 최종 응답 캐시(현지화 후) — 재요청 시 Firestore·en 조회까지 생략.
         const outKey = `personout:${id}:${lang}`;
         const cachedOut = getCache(outKey);
-        if (cachedOut) return res.json(cachedOut);
+        if (cachedOut) return cachedOut;
 
         const key = `person:${id}:${lang}`;
         let data = getCache(key);
@@ -664,12 +674,9 @@ router.get('/api/tmdb/person/:id', optionalAuthAny, rateLimit('tmdb', TMDB_RL), 
             backdrop_path, images, works,
         };
         setCache(outKey, out, 6 * 60 * 60 * 1000);
-        res.json(out);
-    } catch (e) {
-        console.error('[tmdb/person]', e.message);
-        res.status(502).json({ error: 'tmdb_failed' });
+        return out;
     }
-});
+}
 
 // ── 인물 최신 프로필 사진(2026-10-31, 인물 공유 카드 og:image 전용) ──
 // TMDB 프로필 이미지에는 업로드 시각이 없다. images 목록은 vote_average 내림차순이고 동률(대개 0표)끼리만 업로드 오름차순이라
@@ -720,36 +727,134 @@ router.get('/api/tmdb/person/:id/latest-profile', rateLimit('tmdb', TMDB_RL), as
     }
 });
 
-// ── 인물 공유 카드 이미지 1200×630(2026-10-31) ──
-// 스레드·페북은 카드 틀이 가로(1.91:1) 고정이라 세로 프로필을 og:image로 주면 가운데를 잘라 얼굴만 확대된다(정수리·턱 잘림).
-// → 같은 사진을 흐리게 깐 가로 배경 위에 **세로 사진 전체**를 가운데 배치. 합성은 서버에 이미 있는 ffmpeg(새 의존성 없음).
-// 경로에 file_path를 넣는다 — 최신 사진이 바뀌면 URL도 바뀌어 플랫폼 캐시에 묶이지 않음. 대상은 TMDB 이미지뿐.
-const ogCardCache = new Map(); // file → Buffer, 상한 200
-router.get('/api/tmdb/person-card/:file', rateLimit('tmdb', TMDB_RL), async (req, res) => {
-    const m = /^([A-Za-z0-9]{10,64})\.jpg$/.exec(String(req.params.file));
-    if (!m) return res.status(400).end();
+// ── 인물 공유 카드 이미지 1200×630(2026-10-31, 이름 카드) ──
+// 스레드·페북은 카드 틀이 가로(1.91:1) 고정 → 세로 프로필을 그대로 주면 얼굴만 잘려 확대되고, 16:9 출연작 장면은 드라마 홍보물처럼 보였다.
+// 구성: 왼쪽 최신 프로필 사진(세로 전체) | 오른쪽 어두운 패널 — 이름(뷰어 언어 → 영어 → RR, getPersonOut과 같은 규칙),
+// 영어 이름(현지 표기와 다를 때만), 대표작 2편(예능·토크·뉴스 제외 평가 수 순, 뷰어 언어 제목), 앱 아이콘 + 도메인.
+// 폰트: Google Fonts css2 `text=` 서브셋(카드에 들어갈 글자만, 수 KB)을 요청마다 받아 등록하고 그린 뒤 해제 — 14언어 폰트를 리포에 싣지 않는다.
+// 경로에 인물·언어·사진 파일을 넣는다(사진이 바뀌면 URL이 바뀜). 이름 변경은 middleware가 ?v=로 반영.
+const CARD_LANGS = new Set(['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR', 'id', 'ar', 'it', 'th']);
+const CARD_NON_REP = new Set([10764, 10767, 10763]);
+const cardCache = new Map(); // key → Buffer, 상한 300
+let cardLogo; // undefined = 미시도, null = 실패
+let cardSeq = 0;
+
+async function cardFonts(text, lang) {
+    const fams = ['Noto Sans'];
+    const han = /[一-鿿]/.test(text);
+    if (/[가-힯㄰-㆏]/.test(text)) fams.push('Noto Sans KR');
+    if (/[぀-ヿ]/.test(text) || (lang === 'ja' && han)) fams.push('Noto Sans JP');
+    if (han) fams.push(lang === 'ja' ? 'Noto Sans JP' : lang === 'ko' ? 'Noto Sans KR' : 'Noto Sans SC');
+    if (/[฀-๿]/.test(text)) fams.push('Noto Sans Thai');
+    if (/[؀-ۿ]/.test(text)) fams.push('Noto Sans Arabic');
+    const uniq = [...new Set(fams)];
+    if (lang === 'zh-CN') uniq.sort((a, b) => (b === 'Noto Sans SC') - (a === 'Noto Sans SC')); // 한자 자형: zh는 SC 우선
+    const { GlobalFonts } = require('@napi-rs/canvas');
+    const keys = [];
+    const names = { 400: [], 700: [] };
+    await Promise.all(uniq.map(async (fam, order) => {
+        const css = await fetch(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(fam)}:wght@400;700&text=${encodeURIComponent(text)}`, { signal: AbortSignal.timeout(6000) })
+            .then((r) => (r.ok ? r.text() : '')).catch(() => '');
+        for (const blk of css.split('@font-face').slice(1)) {
+            const w = /font-weight:\s*(\d+)/.exec(blk)?.[1];
+            const url = /url\(([^)]+)\)/.exec(blk)?.[1];
+            if (!url || !names[w]) continue;
+            const ab = await fetch(url, { signal: AbortSignal.timeout(6000) }).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+            if (!ab) continue;
+            const alias = `pc${++cardSeq}`;
+            const key = GlobalFonts.register(Buffer.from(ab), alias);
+            if (key) { keys.push(key); names[w][order] = alias; }
+        }
+    }));
+    const list = (w) => names[w].filter(Boolean).map((n) => `"${n}"`).join(', ') || 'sans-serif';
+    return { regular: list(400), bold: list(700), release: () => GlobalFonts.removeBatch(keys) };
+}
+
+async function renderPersonCard(id, lang, file) {
+    const { createCanvas, loadImage } = require('@napi-rs/canvas');
+    const [p, en, src] = await Promise.all([
+        getPersonOut(id, lang),
+        lang === 'en' ? null : getPersonOut(id, 'en').catch(() => null),
+        fetch(`https://image.tmdb.org/t/p/h632/${file}.jpg`, { signal: AbortSignal.timeout(8000) }).then((r) => (r.ok ? r.arrayBuffer() : null)),
+    ]);
+    if (!src || !p?.name) return null;
+    if (cardLogo === undefined) {
+        cardLogo = await fetch('https://www.kdramaanylang.com/A_Icon512X512.png', { signal: AbortSignal.timeout(5000) })
+            .then((r) => (r.ok ? r.arrayBuffer() : null)).then((b) => (b ? loadImage(Buffer.from(b)) : null)).catch(() => null);
+    }
+    const name = p.name;
+    const sub = en?.name && en.name !== name ? en.name : null;
+    const works = (p.works || []).filter((w) => !(w.genre_ids || []).some((g) => CARD_NON_REP.has(g)))
+        .sort((a, b) => (b.vote_count || 0) - (a.vote_count || 0)).slice(0, 2).map((w) => w.title || w.name).filter(Boolean);
+    const worksLine = works.join(' · ');
+    const DOMAIN = 'kdramaanylang.com';
+    const fonts = await cardFonts([name, sub, worksLine, DOMAIN, '…'].filter(Boolean).join(''), lang);
     try {
-        let buf = ogCardCache.get(m[1]);
+        const photo = await loadImage(Buffer.from(src));
+        const W = 1200, H = 630;
+        const c = createCanvas(W, H), g = c.getContext('2d');
+        g.fillStyle = '#111114'; g.fillRect(0, 0, W, H);
+        // 세로 사진 전체를 높이에 맞춤(가로로 넓은 사진은 520px에서 가운데 크롭)
+        const pw = Math.min(Math.round(photo.width * H / photo.height), 520);
+        const sw = Math.round(pw * photo.height / H);
+        g.drawImage(photo, Math.round((photo.width - sw) / 2), 0, sw, photo.height, 0, 0, pw, H);
+        g.fillStyle = '#ff4d6d'; g.fillRect(pw, 0, 6, H);
+        const x = pw + 64, maxW = W - x - 56;
+        const rtl = (s) => /[؀-ۿ]/.test(s);
+        const put = (s, y) => {
+            if (!rtl(s)) return g.fillText(s, x, y);
+            g.direction = 'rtl'; g.textAlign = 'right'; g.fillText(s, x + maxW, y);
+            g.direction = 'ltr'; g.textAlign = 'left';
+        };
+        const fit = (s) => { // 넘치면 말줄임
+            if (g.measureText(s).width <= maxW) return s;
+            let t = s;
+            while (t.length > 1 && g.measureText(t + '…').width > maxW) t = t.slice(0, -1);
+            return t.trimEnd() + '…';
+        };
+        // 이름 — 88px에서 52px까지 줄이고, 그래도 넘치면 두 줄(공백 기준)
+        let size = 88;
+        g.font = `${size}px ${fonts.bold}`;
+        while (g.measureText(name).width > maxW && size > 52) { size -= 4; g.font = `${size}px ${fonts.bold}`; }
+        let lines = [name];
+        if (g.measureText(name).width > maxW && name.includes(' ')) {
+            const ws = name.split(' ');
+            let cut = 1;
+            for (let i = 1; i < ws.length; i++) if (g.measureText(ws.slice(0, i).join(' ')).width <= maxW) cut = i;
+            lines = [ws.slice(0, cut).join(' '), ws.slice(cut).join(' ')];
+        }
+        const lh = Math.round(size * 1.15);
+        const blockH = lines.length * lh + (sub ? 56 : 0) + (worksLine ? 104 : 0);
+        let y = Math.max(size + 40, Math.round((H - 100 - blockH) / 2 + size));
+        g.fillStyle = '#ffffff';
+        lines.forEach((ln, i) => put(fit(ln), y + i * lh));
+        y += (lines.length - 1) * lh;
+        if (sub) { g.font = `36px ${fonts.regular}`; g.fillStyle = '#a0a0ab'; y += 56; put(fit(sub), y); }
+        if (worksLine) {
+            y += 52; g.fillStyle = '#ff4d6d'; g.fillRect(rtl(worksLine) ? x + maxW - 56 : x, y, 56, 4);
+            g.font = `30px ${fonts.regular}`; g.fillStyle = '#d4d4dc'; y += 52; put(fit(worksLine), y);
+        }
+        if (cardLogo) g.drawImage(cardLogo, x, H - 56 - 44, 44, 44);
+        g.font = `26px ${fonts.regular}`; g.fillStyle = '#8a8a95'; g.fillText(DOMAIN, x + (cardLogo ? 58 : 0), H - 56 - 12);
+        return c.encode('jpeg', 88);
+    } finally {
+        fonts.release();
+    }
+}
+
+router.get('/api/tmdb/person-card/:id/:lang/:file', rateLimit('tmdb', TMDB_RL), async (req, res) => {
+    const id = String(req.params.id).replace(/\D/g, '');
+    const lang = String(req.params.lang);
+    const m = /^([A-Za-z0-9]{10,64})\.jpg$/.exec(String(req.params.file));
+    if (!id || !m || !CARD_LANGS.has(lang)) return res.status(400).end();
+    try {
+        const key = `${id}:${lang}:${m[1]}:${String(req.query.v || '').slice(0, 16)}`;
+        let buf = cardCache.get(key);
         if (!buf) {
-            const src = await fetch(`https://image.tmdb.org/t/p/h632/${m[1]}.jpg`, { signal: AbortSignal.timeout(8000) });
-            if (!src.ok) return res.status(404).end();
-            const input = Buffer.from(await src.arrayBuffer());
-            const { spawn } = require('child_process');
-            const ff = spawn(require('@ffmpeg-installer/ffmpeg').path, [
-                '-hide_banner', '-loglevel', 'error', '-f', 'image2pipe', '-i', 'pipe:0',
-                '-filter_complex', '[0:v]split[a][b];[a]scale=1200:630:force_original_aspect_ratio=increase,crop=1200:630,gblur=sigma=40,eq=brightness=-0.18[bg];[b]scale=-2:630[fg];[bg][fg]overlay=(W-w)/2:0,format=yuvj420p',
-                '-frames:v', '1', '-q:v', '3', '-f', 'image2pipe', '-c:v', 'mjpeg', 'pipe:1',
-            ]);
-            const chunks = [];
-            let err = '';
-            ff.stdout.on('data', (c) => chunks.push(c));
-            ff.stderr.on('data', (c) => { err += c; });
-            ff.stdin.on('error', () => {});
-            ff.stdin.end(input);
-            await new Promise((ok, ng) => { ff.on('error', ng); ff.on('close', (code) => (code === 0 ? ok() : ng(new Error(`ffmpeg ${code}: ${err.slice(0, 200)}`)))); });
-            buf = Buffer.concat(chunks);
-            ogCardCache.set(m[1], buf);
-            if (ogCardCache.size > 200) ogCardCache.delete(ogCardCache.keys().next().value);
+            buf = await renderPersonCard(id, lang, m[1]);
+            if (!buf) return res.status(404).end();
+            cardCache.set(key, buf);
+            if (cardCache.size > 300) cardCache.delete(cardCache.keys().next().value);
         }
         res.set('Content-Type', 'image/jpeg');
         res.set('Cache-Control', 'public, max-age=604800, immutable');
