@@ -703,14 +703,22 @@ async function cardFonts(text, lang) {
     const { GlobalFonts } = require('@napi-rs/canvas');
     const keys = [];
     const names = { 400: [], 700: [] };
+    // 2026-10-31: 폰트 요청 일시 실패로 한글이 통째로 빠진 카드(이름 없음·대표작 자리에 '·'만)가 그려져 7일 immutable 캐시된 사고
+    // → 요청마다 1회 재시도, 그래도 빠진 폰트가 있으면 complete=false(호출측이 카드를 만들지 않고 캐시 안 되는 502).
+    const get = async (url, as) => {
+        for (let i = 0; i < 2; i++) {
+            const v = await fetch(url, { signal: AbortSignal.timeout(6000) }).then((r) => (r.ok ? r[as]() : null)).catch(() => null);
+            if (v) return v;
+        }
+        return null;
+    };
     await Promise.all(uniq.map(async (fam, order) => {
-        const css = await fetch(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(fam)}:wght@400;700&text=${encodeURIComponent(text)}`, { signal: AbortSignal.timeout(6000) })
-            .then((r) => (r.ok ? r.text() : '')).catch(() => '');
+        const css = await get(`https://fonts.googleapis.com/css2?family=${encodeURIComponent(fam)}:wght@400;700&text=${encodeURIComponent(text)}`, 'text') || '';
         for (const blk of css.split('@font-face').slice(1)) {
             const w = /font-weight:\s*(\d+)/.exec(blk)?.[1];
             const url = /url\(([^)]+)\)/.exec(blk)?.[1];
             if (!url || !names[w]) continue;
-            const ab = await fetch(url, { signal: AbortSignal.timeout(6000) }).then((r) => (r.ok ? r.arrayBuffer() : null)).catch(() => null);
+            const ab = await get(url, 'arrayBuffer');
             if (!ab) continue;
             const alias = `pc${++cardSeq}`;
             const key = GlobalFonts.register(Buffer.from(ab), alias);
@@ -718,7 +726,8 @@ async function cardFonts(text, lang) {
         }
     }));
     const list = (w) => names[w].filter(Boolean).map((n) => `"${n}"`).join(', ') || 'sans-serif';
-    return { regular: list(400), bold: list(700), release: () => GlobalFonts.removeBatch(keys) };
+    const complete = uniq.every((_, i) => names[400][i] && names[700][i]);
+    return { regular: list(400), bold: list(700), complete, release: () => GlobalFonts.removeBatch(keys) };
 }
 
 async function renderPersonCard(id, lang, file) {
@@ -740,6 +749,7 @@ async function renderPersonCard(id, lang, file) {
     const worksLine = works.join(' · ');
     const DOMAIN = 'kdramaanylang.com';
     const fonts = await cardFonts([name, sub, worksLine, DOMAIN, '…'].filter(Boolean).join(''), lang);
+    if (!fonts.complete) { fonts.release(); throw new Error('card fonts unavailable'); } // 글자 빠진 카드를 캐시하느니 502(no-store) → 플랫폼 재시도
     try {
         const photo = await loadImage(Buffer.from(src));
         const W = 1200, H = 630;
@@ -811,6 +821,7 @@ router.get('/api/tmdb/person-card/:id/:lang/:file', rateLimit('tmdb', TMDB_RL), 
         res.send(buf);
     } catch (e) {
         console.error('[tmdb/person-card]', e.message);
+        res.set('Cache-Control', 'no-store');
         res.status(502).end();
     }
 });
