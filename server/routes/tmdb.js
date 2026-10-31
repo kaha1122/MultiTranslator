@@ -678,61 +678,12 @@ async function getPersonOut(id, qLang) {
     }
 }
 
-// ── 인물 최신 프로필 사진(2026-10-31, 인물 공유 카드 og:image 전용) ──
-// TMDB 프로필 이미지에는 업로드 시각이 없다. images 목록은 vote_average 내림차순이고 동률(대개 0표)끼리만 업로드 오름차순이라
-// 표를 받은 새 사진이 앞에 오면 목록 순서로는 최신을 알 수 없다 → **변경 이력 /person/{id}/changes**(14일 창, 1년 전까지 보존 확인)의
-// images "added" 중 아직 남아 있는 가장 늦은 사진을 쓴다. 최근 창부터 4개씩 병렬로 거슬러 올라가 찾으면 멈춤(최대 26창 ≈ 1년).
-// 1년 안에 업로드가 없으면: 0표 묶음의 마지막(= 0표 중 최신) → 전부 표가 있으면 대표 프로필(profile_path).
-// 호출처는 middleware의 SNS 미리보기 봇 분기뿐(화면 경로 아님) — 24h 캐시.
-router.get('/api/tmdb/person/:id/latest-profile', rateLimit('tmdb', TMDB_RL), async (req, res) => {
-    try {
-        const id = String(req.params.id).replace(/\D/g, '');
-        if (!id) return res.status(400).json({ error: 'bad id' });
-        const key = `personlatest:${id}`;
-        const cached = getCache(key);
-        if (cached) return res.json(cached);
-
-        const [imgs, person] = await Promise.all([
-            tmdbFetch(`/person/${id}/images`),
-            tmdbFetch(`/person/${id}`),
-        ]);
-        const profiles = imgs.profiles || [];
-        const alive = new Set(profiles.map((p) => p.file_path));
-        const DAY = 24 * 60 * 60 * 1000;
-        const ymd = (t) => new Date(t).toISOString().slice(0, 10);
-        let found = null;
-        for (let w = 0; w < 26 && !found && alive.size; w += 4) {
-            const wins = [];
-            for (let i = w; i < Math.min(w + 4, 26); i++) {
-                const end = Date.now() - i * 14 * DAY;
-                wins.push(tmdbFetch(`/person/${id}/changes`, { start_date: ymd(end - 13 * DAY), end_date: ymd(end) }).catch(() => null));
-            }
-            for (const ch of await Promise.all(wins)) { // 최근 창부터
-                const added = (ch?.changes || []).filter((c) => c.key === 'images').flatMap((c) => c.items || [])
-                    .filter((it) => it.action === 'added' && alive.has(it.value?.profile?.file_path))
-                    .sort((a, b) => String(b.time).localeCompare(String(a.time)));
-                if (added.length) { found = { latest_profile_path: added[0].value.profile.file_path, source: 'changes', uploaded_at: added[0].time }; break; }
-            }
-        }
-        if (!found) {
-            const unvoted = profiles.filter((p) => !(p.vote_count > 0));
-            const pick = unvoted.length ? unvoted[unvoted.length - 1].file_path : person.profile_path || null;
-            found = { latest_profile_path: pick, source: unvoted.length ? 'order' : 'primary' };
-        }
-        setCache(key, found, 24 * 60 * 60 * 1000);
-        res.json(found);
-    } catch (e) {
-        console.error('[tmdb/person/latest-profile]', e.message);
-        res.status(502).json({ error: 'tmdb_failed' });
-    }
-});
-
 // ── 인물 공유 카드 이미지 1200×630(2026-10-31, 이름 카드) ──
 // 스레드·페북은 카드 틀이 가로(1.91:1) 고정 → 세로 프로필을 그대로 주면 얼굴만 잘려 확대되고, 16:9 출연작 장면은 드라마 홍보물처럼 보였다.
-// 구성: 왼쪽 최신 프로필 사진(세로 전체) | 오른쪽 어두운 패널 — 이름(뷰어 언어 → 영어 → RR, getPersonOut과 같은 규칙),
+// 구성: 왼쪽 대표 프로필 사진(세로 전체) | 오른쪽 어두운 패널 — 이름(뷰어 언어 → 영어 → RR, getPersonOut과 같은 규칙),
 // 영어 이름(현지 표기와 다를 때만), 대표작 2편(예능·토크·뉴스 제외 평가 수 순, 뷰어 언어 제목), 앱 아이콘 + 도메인.
 // 폰트: Google Fonts css2 `text=` 서브셋(카드에 들어갈 글자만, 수 KB)을 요청마다 받아 등록하고 그린 뒤 해제 — 14언어 폰트를 리포에 싣지 않는다.
-// 경로에 인물·언어·사진 파일을 넣는다(사진이 바뀌면 URL이 바뀜). 이름 변경은 middleware가 ?v=로 반영.
+// 경로에 인물·언어·사진 파일을 넣는다(대표 사진이 바뀌면 URL이 바뀜). 이름 변경은 middleware가 ?v=로 반영.
 const CARD_LANGS = new Set(['ko', 'en', 'ja', 'zh-CN', 'vi', 'fr', 'de', 'es', 'ru', 'pt-BR', 'id', 'ar', 'it', 'th']);
 const CARD_NON_REP = new Set([10764, 10767, 10763]);
 const cardCache = new Map(); // key → Buffer, 상한 300
