@@ -798,7 +798,6 @@ async function renderPersonCard(id, lang, file) {
         const pw = Math.min(Math.round(photo.width * H / photo.height), 520);
         const sw = Math.round(pw * photo.height / H);
         g.drawImage(photo, Math.round((photo.width - sw) / 2), 0, sw, photo.height, 0, 0, pw, H);
-        g.fillStyle = '#ff4d6d'; g.fillRect(pw, 0, 6, H);
         const x = pw + 64, maxW = W - x - 56;
         const rtl = (s) => /[؀-ۿ]/.test(s);
         const put = (s, y) => {
