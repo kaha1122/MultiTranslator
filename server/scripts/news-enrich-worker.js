@@ -163,7 +163,11 @@ async function scrapePage(url) {
     } catch (e) { out.status += (out.status ? '→' : '') + (e.name === 'TimeoutError' ? 'timeout' : `err:${e.cause?.code || e.message}`); return out; }
     const og = html.match(/<meta[^>]+(?:property|name)=["']og:image["'][^>]+content=["']([^"']+)["']/i)
         || html.match(/<meta[^>]+content=["']([^"']+)["'][^>]+(?:property|name)=["']og:image["']/i);
-    out.og = og && og[1].startsWith('http') ? decodeEntities(og[1]) : null;
+    // 상대 URL 해석(2026-11-01 westca.com — og가 `//img2.westca.com/...` 프로토콜 생략형이라 버려지고
+    // 사이드바의 다른 기사 썸네일이 본문 후보로 채택됐다). '//'·'/'로 시작하면 기사 URL 기준으로 절대화.
+    const abs = (u) => { try { return new URL(decodeEntities(u), url).href; } catch { return null; } };
+    out.og = og ? abs(og[1]) : null;
+    if (out.og && !/^https?:\/\//i.test(out.og)) out.og = null;
 
     const site = siteDomain(url);
     // 사이트 브랜드 이미지 배제: 파일명이 사이트명을 담고 있으면(실측 md-eksperiment.org/img/eksperiment.png —
@@ -186,7 +190,8 @@ async function scrapePage(url) {
     // ① <img> 태그 — 속성 문맥으로 아바타·아이콘 배제
     for (const m of html.matchAll(/<img\b[^>]*>/gi)) {
         const tag = m[0];
-        const src = tag.match(/\b(?:data-src|data-lazy-src|src)=["']([^"']+)["']/i)?.[1];
+        const rawSrc = tag.match(/\b(?:data-src|data-lazy-src|src)=["']([^"']+)["']/i)?.[1];
+        const src = rawSrc && rawSrc.startsWith('//') ? `https:${rawSrc}` : rawSrc;
         if (!src || !/^https?:\/\//i.test(src)) continue;
         const w = parseInt(tag.match(/\bwidth=["']?(\d+)/i)?.[1] || '0', 10);
         const h = parseInt(tag.match(/\bheight=["']?(\d+)/i)?.[1] || '0', 10);
@@ -457,7 +462,10 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
             if (upgrading) upgrades += 1;
             // 여기 도달: 이미지 없음 / 미검증·로고·생성카드·엔티티·http·중복 저장분 / 방금 디코드된 신규 / gstatic 승격
             const cleanStored = it.image && !isLogoImage(it.image) && !isGeneratedOg(it.image) && !isGoogleCdn(it.image)
-                && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image);
+                && !isDupImage(it.image, true) && !/&#|&amp;/.test(it.image)
+                // http:// 저장분은 원문부터 다시 — 과거 본문 후보 경로가 https 승격 없이 저장한 것(westca
+                // 사이드바 썸네일)이라 저장값을 승격만 하면 엉뚱한 사진이 그대로 남는다.
+                && !it.image.startsWith('http://');
             // redecoded(잘린 URL 복구분)는 저장 이미지가 **그 버그 때문에** 강등된 구글 썸네일이므로
             // 신뢰하지 않고 원문에서 다시 긁는다. 실패하면 아래 폴백이 다시 구글 썸네일로 되돌린다.
             let page = null;
@@ -480,7 +488,9 @@ const ARTICLE_IMG_MIN_BYTES = 15000;
                 // ① 본문 실이미지 후보 — og가 생성 카드/로고/부재일 때 기사 안의 첫 로드 가능 사진.
                 //    (og 스크레이프 자체가 봇월 403이면 페이지도 못 읽어 후보 0 → ②로.)
                 if (!page) page = await scrapePage(url);
-                for (const c of page.candidates) {
+                for (const raw of page.candidates) {
+                    // 본문 후보도 og처럼 https 승격 — http 그대로 저장하면 앱에서 mixed content 차단 → 파비콘 강등
+                    const c = raw.startsWith('http://') ? `https://${raw.slice(7)}` : raw;
                     if (unusable(c)) continue;
                     if (await imageLoadable(c, ARTICLE_IMG_MIN_BYTES)) { img = c; console.log(`  [${lang}] article image ← ${c.slice(0, 70)}`); break; }
                 }
