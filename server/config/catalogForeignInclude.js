@@ -6,6 +6,8 @@
 // 추가할 때는 LEDGER(KCulture content/upcoming/LEDGER.md)에 결정 기록을 같이 남긴다.
 const FOREIGN_INCLUDE = new Set([
     'tv:305551', // 메리 베리 러브 — Disney+ 한일 공동제작(원어 ja), 2026-10-07 공개. 2026-09-28 사용자 포함 결정
+    'tv:320513', // 키드냅 게임 — 채널A·후지TV·Disney+ 한일홍 공동제작(원어 ja, 이준기·사카구치 켄타로), 2026-10-06 공개.
+                 //   2026-11-01 사용자 포함 결정. 9/17 스카우트가 이미지 없는 중복 스텁 334293에 매칭했던 것 교체(334293은 제외)
 ]);
 
 const isForeignIncluded = (media, id) => FOREIGN_INCLUDE.has(`${media}:${Number(id)}`);
