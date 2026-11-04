@@ -33,6 +33,7 @@ const { LANG_NAMES } = require('../config/langGuide'); // ISO → 정식 언어�
 const { cacheTitleMeta } = require('./tmdbMetaBackfill'); // 신작의 meta(출연·연도…)도 함께 채움
 // 사람이 삭제 판정한 작품의 재유입 차단 — discover 열거는 지운 id를 다음 실행에서 그대로 다시 물어온다.
 const excluded = require('./excludedTitles');
+const { isSpamTitle } = require('./spamTitle'); // TMDB 제목 훼손(광고 문구) 차단 — 2026-11-05 학교 2013
 // 신작 성인물 자동 판정 — 규칙은 scripts/flag-adult-titles.js와 **같은 모듈을 공유**한다(복제 금지).
 const adultRules = require('./adultRules');
 // 규칙이 못 잡는 완곡어 제목을 문맥으로 판정(신작 전용, 작품당 1회). 실패 시 규칙 결과 유지.
@@ -68,6 +69,7 @@ function validTitle(code, s, ...overviews) {
     const t = norm(s);
     if (!t || t.length > 80 || /\n/.test(String(s))) return false;
     if (titleTainted(code, t)) return false;
+    if (isSpamTitle(t)) return false; // TMDB 훼손 제목 — 46596 zh-CN에 저장됐던 사고(2026-11-05)
     // 25자 초과인데 어느 줄거리의 접두와 일치 → 제목이 아니라 줄거리 조각이다.
     // (짧은 제목이 우연히 줄거리 첫 단어와 겹치는 오탐을 25자 하한으로 방지)
     if (t.length > 25) {
@@ -338,6 +340,8 @@ async function processTitle(media, id, { force = false } = {}) {
 
     // 카탈로그 전제(2026-07-28 재정비): 원제 보유작만 남겼다. 원제가 없으면 침묵 생성하지 말고 드러낸다.
     if (!origTitle) throw new Error(`원제 없음 — ${media}/${id}`);
+    // 원제가 훼손(광고 문구)이면 카탈로그를 덮어쓰지 않는다 — 기존 문서의 정상 원제를 지킨다(2026-11-05).
+    if (isSpamTitle(origTitle)) throw new Error(`원제 훼손 의심(스팸) — ${media}/${id}: ${origTitle.slice(0, 60)}`);
 
     // ko 줄거리 — 원어 요청 응답 → 없으면 translations 원어 레코드. **원어 문자가 없으면 불신**
     // (ko 자리에 영어가 박힌 오염 레코드 실재 → 그런 건 소스로 쓰지 않고 en 피벗으로 넘어간다).

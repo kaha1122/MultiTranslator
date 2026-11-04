@@ -142,6 +142,60 @@ function setCache(k, v, ttlMs) {
     if (cache.size > 1000) cache.delete(cache.keys().next().value);
 }
 
+// ── TMDB 제목 훼손(스팸) 치환 (2026-11-05) ──────────────────────────────────
+// 「학교 2013」(tv:46596) 원제가 광고 문구로 훼손돼 ko·zh-CN 상세·인물 필모에 그대로 나간 사고 대응.
+// 모든 TMDB 응답(상세·검색·discover·인물 필모)이 tmdbFetch를 거치므로 여기서 한 번에 막는다(캐시 저장 전).
+// 치환값: 우리 카탈로그 titles/{id}(훼손 전에 저장된 정상 제목) → 같은 객체의 다른 정상 필드 → 빈 문자열.
+// 판정 기준은 lib/spamTitle.js(보수적). 인물·회차 객체는 대상이 아니다.
+const { isSpamTitle } = require('../lib/spamTitle');
+const LANG_BACK = Object.fromEntries(Object.entries(LANG_MAP).map(([k, v]) => [v, k]));
+const spamCatalogMemo = new Map(); // id → { exp, st, orig }
+async function catalogTitleFor(id) {
+    const hit = spamCatalogMemo.get(id);
+    if (hit && hit.exp > Date.now()) return hit;
+    let st = {}, orig = '';
+    try {
+        if (kcultureDb) {
+            const d = (await kcultureDb.doc(`titles/${id}`).get()).data() || {};
+            st = d.searchTitle || {};
+            orig = d.meta?.original_title || d.meta?.original_name || d.meta?.title || st[PRIMARY_CONTENT_LANG] || '';
+        }
+    } catch (e) { /* 조회 실패 → 다른 필드 폴백 */ }
+    const v = { exp: Date.now() + 6 * 60 * 60 * 1000, st, orig };
+    spamCatalogMemo.set(id, v);
+    return v;
+}
+const isTitleObj = (o) => o.id && o.media_type !== 'person' && !('profile_path' in o) && !('known_for_department' in o)
+    && ('first_air_date' in o || 'release_date' in o || 'original_name' in o || 'original_title' in o || o.media_type === 'tv' || o.media_type === 'movie');
+async function scrubSpamTitles(data, language) {
+    const hits = [];
+    const walk = (o) => {
+        if (!o || typeof o !== 'object') return;
+        if (Array.isArray(o)) { o.forEach(walk); return; }
+        if (isTitleObj(o)) {
+            for (const k of ['name', 'title', 'original_name', 'original_title']) {
+                if (typeof o[k] === 'string' && isSpamTitle(o[k])) hits.push([o, k]);
+            }
+        }
+        for (const v of Object.values(o)) if (v && typeof v === 'object') walk(v);
+    };
+    walk(data);
+    if (!hits.length) return data;
+    const code = LANG_BACK[language] || String(language || 'en').split('-')[0];
+    const clean = (s) => (s && !isSpamTitle(s) ? s : '');
+    for (const [o, k] of hits) {
+        const cat = await catalogTitleFor(o.id);
+        const isOrig = k.startsWith('original_');
+        const sibling = ['name', 'title', 'original_name', 'original_title'].map((x) => clean(o[x])).find(Boolean) || '';
+        const fixed = isOrig
+            ? clean(cat.orig) || sibling
+            : clean(cat.st[code]) || clean(cat.st.en) || clean(cat.orig) || sibling;
+        console.warn(`[tmdb] 훼손 제목 치환 id=${o.id} ${k} lang=${code}: "${String(o[k]).slice(0, 40)}" → "${fixed}"`);
+        o[k] = fixed;
+    }
+    return data;
+}
+
 async function tmdbFetch(path, params = {}) {
     if (!TMDB_KEY && !TMDB_TOKEN) throw new Error('TMDB key not configured');
     const usp = new URLSearchParams(params);
@@ -158,7 +212,7 @@ async function tmdbFetch(path, params = {}) {
             if (attempt === 0) { await new Promise((r) => setTimeout(r, 500)); continue; }
             throw new Error(`TMDB fetch failed: ${e.name === 'TimeoutError' ? 'timeout' : e.message}`);
         }
-        if (res.ok) return res.json();
+        if (res.ok) return scrubSpamTitles(await res.json(), params.language);
         if (attempt === 0 && (res.status === 429 || res.status >= 500)) { await new Promise((r) => setTimeout(r, 500)); continue; }
         const t = await res.text();
         throw new Error(`TMDB ${res.status}: ${t.slice(0, 200)}`);
@@ -894,3 +948,4 @@ router.get('/api/tmdb/collection/:id', optionalAuthAny, rateLimit('tmdb', TMDB_R
 //       클라이언트가 추출/캐시하고, 없으면 영어로 폴백한다(비용 0). Gemini는 커뮤니티 UGC 번역에만 사용.
 
 module.exports = router;
+module.exports._scrubSpamTitles = scrubSpamTitles; // 테스트용(scripts/test-spam-title.js)
