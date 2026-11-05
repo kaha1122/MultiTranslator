@@ -61,15 +61,16 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
                 const mClip = b.clip ? { videoId: String(b.clip), ep: posInt(b.clipEp) || undefined } : null;
                 const mBody = typeof b.body === 'string' && b.body.trim() ? b.body.trim() : null;
                 if (mBody && mBody.length > 6000) return res.status(400).json({ error: 'body가 6,000자를 넘습니다(브리핑은 2,000~4,000자 권장)' });
-                if (b.rebody) return res.status(400).json({ error: '영화 스레드는 rebody를 지원하지 않습니다(회차 스레드 전용)' });
+                if (b.rebody && !mBody) return res.status(400).json({ error: 'rebody는 body가 필요합니다' });
                 const mr = await createMovieThread({
                     tmdbId: Number(b.tmdbId),
                     dryRun: !!b.dryRun,
                     backdate: b.backdate || null,
                     clip: mClip,
                     bodyOverride: mBody,
+                    rebody: !!b.rebody,
                 });
-                console.log(`[Curation] movie_thread tmdbId=${b.tmdbId}${mClip ? ` clip=${mClip.videoId}` : ''}${mBody ? ' BODY' : ''} → ${mr.skipped ? 'SKIP(존재)' : mr.dryRun ? 'DRY' : 'OK'} ${mr.path}`);
+                console.log(`[Curation] movie_thread tmdbId=${b.tmdbId}${mClip ? ` clip=${mClip.videoId}` : ''}${mBody ? ' BODY' : ''}${b.rebody ? ' REBODY' : ''} → ${mr.skipped ? 'SKIP(존재)' : mr.rebodied ? 'REBODY' : mr.clipped ? 'CLIP' : mr.dryRun ? 'DRY' : 'OK'} ${mr.path}`);
                 return res.json({ ok: true, result: mr });
             }
             const episodes = Array.isArray(b.episodes) ? b.episodes.map(Number) : [];

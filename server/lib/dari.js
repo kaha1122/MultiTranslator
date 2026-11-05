@@ -588,17 +588,51 @@ async function refreshSiblingPrevThreads(titleId) {
 //   이 함수도 clip·body를 받지 않아 **로컬 CLI로도** 준비된 클립·브리핑을 붙일 수 없었다.
 // 🚫 titles/{id}/media/clips 미러는 하지 않는다 — 키가 `s{season}e{ep}`라 회차가 없는 영화에선 의미가 없고
 //   (앱 상세의 '에피소드' 탭 자체가 영화에 없다) `s1e1`로 박으면 존재하지 않는 회차를 만들어낸다.
-async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip = null, bodyOverride = null }) {
+async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip = null, bodyOverride = null, rebody = false }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
     const tid = 'dari_movie';
     const docPath = `titles/${id}/discussion/${tid}`;
     const threadRef = kcultureDb.doc(docPath);
+    const pointerRef = kcultureDb.doc(`curation_threads/${id}_movie`);
+    // 형식 오류는 여기서 즉시 실패(회차 스레드와 동일). ep는 버린다 — 클라 ThreadScreen은 clip.ep가 없으면
+    // 라벨을 '선공개 클립'으로만 쓰므로(ep가 있으면 'N화 ·'가 붙어 영화에서 거짓이 된다) 이것이 올바른 모양이다.
+    const normalizedClip = normClip(clip);
+    const clipData = normalizedClip ? { videoId: normalizedClip.videoId } : null;
+    // bodyOverride(정보 브리핑)가 있으면 Gemini 발제를 건너뛴다(회차 스레드 bodyOverride와 동일 규약).
+    const overrideBody = bodyOverride ? withSignature(bodyOverride) : null;
 
     if (!dryRun) {
         const existing = await threadRef.get();
         if (existing.exists) {
+            // 🆕 rebody(2026-11-06) — 기존 영화 스레드의 발제 본문 교체 + 번역 재시드. 제목·댓글·공감은 그대로.
+            // 왜 필요한가: §3-4가 「상단 클립을 범주·채널로 지목」하게 하므로 **클립을 바꾸면 본문이 조용히 틀려진다**
+            // (§2 「클립 교체는 2단 작업」). 회차 스레드에는 이 수단이 있었는데 영화엔 없어, 개설 당일에 바로 막혔다.
+            if (rebody && overrideBody) {
+                const { detail } = await fetchMovieInfo(id);
+                const showName = detail.title || detail.original_title || `#${id}`;
+                const translated = await translateBodyMulti(overrideBody, SEED_LANGS, {
+                    en: showName, original: detail.original_title || null, originalLang: detail.original_language || null,
+                });
+                const b = kcultureDb.batch();
+                b.set(threadRef, { body: overrideBody, ...(clipData ? { clip: clipData } : {}) }, { merge: true });
+                if (clipData) b.set(pointerRef, { clip: clipData }, { merge: true });
+                seedTranslations(b, docPath, overrideBody, translated);
+                await b.commit();
+                console.log(`[Dari] 영화 rebody 완료: ${docPath} (번역 재시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
+                return { rebodied: true, tid, path: docPath, title: existing.data().title, body: overrideBody, ...(clipData ? { clip: clipData } : {}), seededLangs: ['en', ...Object.keys(translated)] };
+            }
+            // 🆕 클립 소급 주입·교체(2026-11-06) — 발제·번역 무변경. 회차 스레드 `--clip` 소급 주입의 영화판.
+            // 🚫 미러(titles/{id}/media/clips)는 하지 않는다 — 키가 s{season}e{ep}라 회차 없는 영화엔 무의미.
+            if (clipData) {
+                const b = kcultureDb.batch();
+                b.set(threadRef, { clip: clipData }, { merge: true });
+                b.set(pointerRef, { clip: clipData }, { merge: true });
+                await b.commit();
+                console.log(`[Dari] 기존 영화 스레드에 클립 주입: ${docPath} ← ${clipData.videoId}`);
+                return { ...existing.data(), clipped: true, tid, path: docPath, clip: clipData };
+            }
             console.log(`[Dari] 영화 스레드 이미 존재 → skip: ${docPath}`);
             return { skipped: true, tid, path: docPath, ...existing.data() };
         }
@@ -607,14 +641,8 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip
     const uid = await ensureDariAccount();
     const { detail, info } = await fetchMovieInfo(id);
     const showName = detail.title || detail.original_title || `#${id}`;
-    // 형식 오류는 여기서 즉시 실패(회차 스레드와 동일). ep는 버린다 — 클라 ThreadScreen은 clip.ep가 없으면
-    // 라벨을 '선공개 클립'으로만 쓰므로(ep가 있으면 'N화 ·'가 붙어 영화에서 거짓이 된다) 이것이 올바른 모양이다.
-    const normalizedClip = normClip(clip);
-    const clipData = normalizedClip ? { videoId: normalizedClip.videoId } : null;
 
-    // 발제 — bodyOverride(정보 브리핑)가 있으면 Gemini를 건너뛴다(회차 스레드 bodyOverride와 동일 규약).
-    const overrideBody = bodyOverride ? withSignature(bodyOverride) : null;
-    // 없을 때만 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
+    // 발제 — overrideBody가 없을 때만 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
     if (!overrideBody && !GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const prompt = [
         `You are Dari, the AI curator of KdramaAnyLang — a warm, thoughtful host of a multilingual K-drama community.`,
@@ -679,7 +707,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip
         createdAt: now,
     });
     seedTranslations(batch, docPath, body, translated);
-    batch.set(kcultureDb.doc(`curation_threads/${id}_movie`), {
+    batch.set(pointerRef, {
         titleId: id, media: 'movie', episode: 0, episodes: [], tid,
         title, titleName: showName, posterPath: detail.poster_path || null,
         ...(clipData ? { clip: clipData } : {}),
