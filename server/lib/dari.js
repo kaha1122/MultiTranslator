@@ -582,7 +582,13 @@ async function refreshSiblingPrevThreads(titleId) {
 
 // ── 영화 토론 스레드 게시(2026-08-04) — 회차 없는 전편형. tid='dari_movie', 포인터 id={id}_movie ──
 // 클라 호환: episode 0·episodes [] → 회차 라벨·방영일 미표시, 코멘트는 episode 0(작품 상세와 동일 풀).
-async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
+// 🆕 clip·bodyOverride(2026-11-06 사용자 승인) — 영화 스레드도 회차 스레드와 같은 자산을 갖는다:
+//   §3-0 필수 클립(없으면 미완성품) + §3-4 정보 브리핑 발제(영화엔 '오늘 방영분'이 없어 Gemini 회차 발제가 걸 곳이 없다).
+//   계기: 「가능한 사랑」(1483525, Netflix 전세계 11/06)을 클라우드 배치가 열지 못했다 — 라우트에 영화 분기가 없었고
+//   이 함수도 clip·body를 받지 않아 **로컬 CLI로도** 준비된 클립·브리핑을 붙일 수 없었다.
+// 🚫 titles/{id}/media/clips 미러는 하지 않는다 — 키가 `s{season}e{ep}`라 회차가 없는 영화에선 의미가 없고
+//   (앱 상세의 '에피소드' 탭 자체가 영화에 없다) `s1e1`로 박으면 존재하지 않는 회차를 만들어낸다.
+async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip = null, bodyOverride = null }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
@@ -601,9 +607,15 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
     const uid = await ensureDariAccount();
     const { detail, info } = await fetchMovieInfo(id);
     const showName = detail.title || detail.original_title || `#${id}`;
+    // 형식 오류는 여기서 즉시 실패(회차 스레드와 동일). ep는 버린다 — 클라 ThreadScreen은 clip.ep가 없으면
+    // 라벨을 '선공개 클립'으로만 쓰므로(ep가 있으면 'N화 ·'가 붙어 영화에서 거짓이 된다) 이것이 올바른 모양이다.
+    const normalizedClip = normClip(clip);
+    const clipData = normalizedClip ? { videoId: normalizedClip.videoId } : null;
 
-    // 발제 — 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
-    if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
+    // 발제 — bodyOverride(정보 브리핑)가 있으면 Gemini를 건너뛴다(회차 스레드 bodyOverride와 동일 규약).
+    const overrideBody = bodyOverride ? withSignature(bodyOverride) : null;
+    // 없을 때만 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
+    if (!overrideBody && !GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const prompt = [
         `You are Dari, the AI curator of KdramaAnyLang — a warm, thoughtful host of a multilingual K-drama community.`,
         `Write a short discussion-thread opener (in English) for a Korean FILM.`,
@@ -624,8 +636,8 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
         `Return ONLY one JSON object, no markdown:`,
         `  {"title": "${showName}", "body": "<the opener>"}`,
     ].join('\n');
-    let body = '';
-    for (let attempt = 0; attempt < 2; attempt++) {
+    let body = overrideBody || '';
+    for (let attempt = 0; attempt < 2 && !body; attempt++) {
         const r = await callGeminiText(prompt, GEMINI_API_KEY, {
             label: 'dari-movie-thread',
             genConfig: { temperature: 0.3, topP: 0.9, responseMimeType: 'application/json' },
@@ -640,7 +652,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
 
     if (dryRun) {
         console.log(`[Dari] dry-run — 쓰기 없음: ${docPath}`);
-        return { dryRun: true, tid, path: docPath, uid, title, body, info };
+        return { dryRun: true, tid, path: docPath, uid, title, body, info, ...(clipData ? { clip: clipData } : {}) };
     }
 
     const translated = await translateBodyMulti(body, SEED_LANGS, {
@@ -663,17 +675,19 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null }) {
         episodes: [],
         info,
         prevThreads: [],
+        ...(clipData ? { clip: clipData } : {}),
         createdAt: now,
     });
     seedTranslations(batch, docPath, body, translated);
     batch.set(kcultureDb.doc(`curation_threads/${id}_movie`), {
         titleId: id, media: 'movie', episode: 0, episodes: [], tid,
         title, titleName: showName, posterPath: detail.poster_path || null,
+        ...(clipData ? { clip: clipData } : {}),
         lang: 'en', createdAt: now,
     });
     await batch.commit();
     console.log(`[Dari] 영화 스레드 게시 완료: ${docPath} (번역 시드 ${Object.keys(translated).length}/${SEED_LANGS.length})`);
-    return { tid, path: docPath, uid, title, body, info, seededLangs: ['en', ...Object.keys(translated)] };
+    return { tid, path: docPath, uid, title, body, info, ...(clipData ? { clip: clipData } : {}), seededLangs: ['en', ...Object.keys(translated)] };
 }
 
 // backdate: 'auto'(커버 마지막 회차 방영일) | 'YYYY-MM-DD' | null — 과거분 백필 시 최신순 정렬이

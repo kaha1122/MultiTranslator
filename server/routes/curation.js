@@ -22,7 +22,7 @@
 const express = require('express');
 const crypto = require('crypto');
 const admin = require('firebase-admin');
-const { ensureDariAccount, createEpisodeThread, createReviewPost } = require('../lib/dari');
+const { ensureDariAccount, createEpisodeThread, createMovieThread, createReviewPost } = require('../lib/dari');
 const { kcultureDb } = require('../config/firebaseKculture');
 const { runFeaturedDaily, getFeaturedConfig } = require('../lib/kcultureFeatured');
 
@@ -53,6 +53,25 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
         // ── 회차 토론 스레드 / 선공개 스레드 ────────────────────────────────
         if (b.type === 'episode_thread') {
             await ensureDariAccount();
+            // 🆕 영화 스레드(2026-11-06) — CLI `--movie`와 같은 모양. 회차가 없으므로 episodes 검증 앞에서 갈라진다.
+            // body(정보 브리핑)·clip은 선택이지만 운영 규칙(§3-0 클립 필수 / 영화는 §3-4 브리핑 승계)상 둘 다 준다.
+            // 종전에는 이 분기가 없어 `{movie:true}`가 episodes 검증에 걸려 400이었고(문서는 지원한다고 적혀 있었다),
+            // `episodes:[1]` 우회는 /tv/{id}를 쳐서 TMDB 404였다 — 즉 영화는 어떤 payload로도 열 수 없었다.
+            if (b.movie || b.media === 'movie') {   // 지원 모양: {type:'episode_thread', movie:true, tmdbId, clip, clipEp?, body}
+                const mClip = b.clip ? { videoId: String(b.clip), ep: posInt(b.clipEp) || undefined } : null;
+                const mBody = typeof b.body === 'string' && b.body.trim() ? b.body.trim() : null;
+                if (mBody && mBody.length > 6000) return res.status(400).json({ error: 'body가 6,000자를 넘습니다(브리핑은 2,000~4,000자 권장)' });
+                if (b.rebody) return res.status(400).json({ error: '영화 스레드는 rebody를 지원하지 않습니다(회차 스레드 전용)' });
+                const mr = await createMovieThread({
+                    tmdbId: Number(b.tmdbId),
+                    dryRun: !!b.dryRun,
+                    backdate: b.backdate || null,
+                    clip: mClip,
+                    bodyOverride: mBody,
+                });
+                console.log(`[Curation] movie_thread tmdbId=${b.tmdbId}${mClip ? ` clip=${mClip.videoId}` : ''}${mBody ? ' BODY' : ''} → ${mr.skipped ? 'SKIP(존재)' : mr.dryRun ? 'DRY' : 'OK'} ${mr.path}`);
+                return res.json({ ok: true, result: mr });
+            }
             const episodes = Array.isArray(b.episodes) ? b.episodes.map(Number) : [];
             const season = posInt(b.season) || 1;
             // CLI --clip <videoId> --clip-ep <N> 과 같은 모양. clipEp 없으면 lib가 상한 회차로 귀속한다.

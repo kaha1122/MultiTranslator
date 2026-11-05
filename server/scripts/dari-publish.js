@@ -53,7 +53,7 @@ if (pre && !bodyOverride) { console.error('--pre 는 --body-file 이 필요합�
 
 if (!Number.isInteger(tmdbId) || (!isMovie && !pre && !episodes.length)) {
     console.error('사용법: node scripts/dari-publish.js --title <tmdbId> --episodes 5,6 [--season 1] [--dry] [--reseed]');
-    console.error('  영화: node scripts/dari-publish.js --title <tmdbId> --movie [--dry] [--backdate YYYY-MM-DD]');
+    console.error('  영화: node scripts/dari-publish.js --title <tmdbId> --movie --clip <videoId> [--body-file <브리핑>] [--dry] [--backdate YYYY-MM-DD]');
     process.exit(1);
 }
 
@@ -63,7 +63,7 @@ const t0 = Date.now();
     const uid = await ensureDariAccount();
     console.log(`[dari-publish] Dari uid=${uid}`);
     const r = isMovie
-        ? await createMovieThread({ tmdbId, dryRun, backdate })
+        ? await createMovieThread({ tmdbId, dryRun, backdate, clip, bodyOverride })
         : await createEpisodeThread({ tmdbId, season, episodes, dryRun, reseed, backdate, hook, rehook, clip, bodyOverride, rebody, pre });
     console.log('─'.repeat(60));
     console.log(`문서 경로 : ${r.path}${r.skipped ? '  (이미 존재 — skip)' : r.dryRun ? '  (dry-run — 미기록)' : r.rehooked ? '  (rehook — 발제 교체·재시드 완료)' : r.clipped ? '  (기존 스레드 — 클립만 주입)' : ''}`);
