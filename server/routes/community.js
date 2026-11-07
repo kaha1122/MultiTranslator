@@ -33,18 +33,40 @@ const NO_ANSWER_RULE = `   - The TEXT is a message one user wrote to other users
 // ISO 코드 → 정식 언어명(Gemini가 코드보다 명칭에 훨씬 정확). 지역코드는 베이스로 폴백.
 const langName = (code) => LANG_NAMES[code] || LANG_NAMES[String(code || '').split('-')[0]] || code;
 
-// ── 세션 시작 로그 (K-DramaAnyLang) — PronunFit /api/session-start(index.js) 대응 ──
-// 클라가 로그인/프로필 로드 직후 세션당 1회(UID당) 호출. 로그 전용, DB write 0
-// → users 본문 write로 인한 onSnapshot 재렌더와 무관. 컨텍스트는 클라 profile에서 받고 IP만 서버 해석.
-// 프리픽스 [SessionStart/KC]로 PronunFit 로그와 구분(같은 Render 콘솔 공유).
+// ── 세션 시작 (K-DramaAnyLang) — PronunFit /api/session-start(index.js) 대응 ──
+// 클라가 프로필 로드 직후 UID당·KST 하루 1회 호출(2026-11-07부터 게스트 포함).
+//   ① 로그: 정식 계정만 [SessionStart/KC] 한 줄(게스트까지 찍으면 Render 로그 폭주 — 예전 제외 사유 유지).
+//   ② Firestore: users/{uid}/days/{YYYY-MM-DD(KST)} 하루 1문서 upsert — 일별 활성자(DAU)·플랫폼·버전·국가의
+//      유일한 출처(users 본문엔 마지막 활동 시각이 없다). tools/user-report(일일 사용자 리포트)가 collectionGroup('days')로 읽는다.
+//      users 본문은 건드리지 않으므로 클라 onSnapshot 재렌더와 무관. 응답 먼저 보내고 best-effort로 쓴다.
+//      국가는 클라 profile.country(로그인 계정만 IP 지오 1회 저장) — 게스트는 null이라 tz·locale로 지역을 본다(외부 IP 조회 안 함).
+const DAYS_FIELDS = ['platform', 'ver', 'lang', 'locale', 'tz', 'country', 'city'];
+const kstDayKey = (d = new Date()) => new Intl.DateTimeFormat('sv-SE', { timeZone: 'Asia/Seoul' }).format(d); // YYYY-MM-DD
 router.post('/api/community/session-start', requireAuthAny, rateLimit('kc-session-start', { perMinute: 10, perHour: 120 }), (req, res) => {
     if (!req.uid) return res.status(401).json({ error: 'unauthorized' });
     const xForwardedFor = req.headers['x-forwarded-for'] || '';
     const clientIp = xForwardedFor.split(',')[0]?.trim() || req.ip;
     const b = req.body || {};
     const f = (v) => (v == null || v === '' ? '?' : String(v).slice(0, 40));
-    console.log(`[SessionStart/KC] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=${b.isAnonymous ? 'Y' : 'n'} platform=${f(b.platform)} ver=${f(b.appVersion)} lang=${f(b.lang)} locale=${f(b.locale)} tz=${f(b.timezone)} country=${f(b.country)} city=${f(b.city)} ip=${clientIp}`);
+    const anon = !!b.isAnonymous;
+    if (!anon) console.log(`[SessionStart/KC] uid=${req.uid} new=${b.isNew ? 'Y' : 'n'} anon=n platform=${f(b.platform)} ver=${f(b.appVersion)} lang=${f(b.lang)} locale=${f(b.locale)} tz=${f(b.timezone)} country=${f(b.country)} city=${f(b.city)} ip=${clientIp}`);
     res.json({ ok: true });
+
+    if (!kcultureDb) return;
+    const s = (v) => (v == null || v === '' ? null : String(v).slice(0, 60));
+    const day = kstDayKey();
+    const { FieldValue } = require('firebase-admin').firestore;
+    const doc = {
+        day, uid: req.uid, anon,
+        platform: s(b.platform), ver: s(b.appVersion), lang: s(b.lang), locale: s(b.locale),
+        tz: s(b.timezone), country: s(b.country), city: s(b.city),
+        last: FieldValue.serverTimestamp(), n: FieldValue.increment(1),
+    };
+    for (const k of DAYS_FIELDS) if (doc[k] == null) delete doc[k]; // 없는 값은 쓰지 않아 이전 호출의 값이 남는다
+    const ref = kcultureDb.collection('users').doc(req.uid).collection('days').doc(day);
+    ref.create({ ...doc, n: 1, first: FieldValue.serverTimestamp(), ...(b.isNew ? { signup: true } : {}) })
+        .catch((e) => (e && e.code === 6 /* ALREADY_EXISTS */ ? ref.set(doc, { merge: true }) : Promise.reject(e)))
+        .catch((e) => console.warn('[SessionStart/KC] days write failed:', e.message));
 });
 
 // ── 클라이언트 에러 리포트 (K-DramaAnyLang) — ErrorBoundary가 크래시를 보고(원격 디버깅) ──
