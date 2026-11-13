@@ -9,6 +9,14 @@
 //   ⚠ featured 선정은 **푸시 발송과 무관**하다 — 같은 시간별 트리거에 fire-and-forget으로 얹혀만 있다(reengagement.js ③).
 //     따라서 시각 변경이 재방문·소감 푸시에 영향을 주지 않는다.
 //   ⚠ 부작용: 후보 풀이 커지므로 방영 중 작품이 많은 날은 **선공개(PRE_MAX)가 밀린다** — 「방영분 우선 충원」의 설계상 귀결.
+// 🔄 **2026-11-13 사용자 결정 — 선정은 무작위가 아니다(오늘 개설분 → 최근 방영순)**:
+//   종전 구현은 후보가 6편을 넘으면 날짜 시드 **무작위 추첨**이었다 — "무작위"는 원래 **슬라이드 순서**에만 쓰기로 한 것을
+//   선정 자체로 오해한 것(사용자 정정). 실측 11/13: 후보 10편 중 오늘 방영·오늘 개설한 닥터X [EP 11-12]가 떨어지고
+//   14일 전 일괄 공개작이 1번에 걸렸다. 새 규칙:
+//   ① **오늘(KST) 개설된 스레드**가 먼저 — 회차 스레드와 선공개 스레드를 같은 조건으로(오늘 연 선공개도 방영분에 밀리지 않는다).
+//   ② 남는 자리는 방영분 후보를 **마지막 방영일이 최근인 순**(같으면 개설 최신순)으로.
+//   ③ 그래도 남으면 선공개를 첫 방송이 가까운 순으로 — 선공개 합계 상한 PRE_MAX(3)는 유지.
+//   순서 무작위는 클라가 세션마다 섞는다(KCulture src/lib/curation.js ③) — 서버 featured 번호는 선정 우선순위일 뿐.
 // 🔄 **2026-10-03 사용자 결정 — 방영분 우선 충원으로 변경**(종전 "방영분 3 + 선공개 3" 고정 분할 폐지):
 //     "방영중 숫자를 먼저 채우고 그다음에 선공개로 3개까지 채운다."
 //   · 방영분: 작품별 최신 스레드 중 커버 회차 마지막 방영일이 최근 3일 이내 → **3장**(AIRED_WINDOW_MIN) 미달이면
@@ -19,7 +27,7 @@
 //   · ⚠ 방영분이 적고 선공개도 3장이면 featured가 6장 미만일 수 있다 — 빈 자리는 클라(selectPointers ②)가
 //     최신순으로 채우므로 캐러셀은 6장을 유지한다. 대상은 config/kc_featured.targetIds(월간 글로벌 OTT 목록) 안에서만
 //     (비어 있으면 전체). featuredPin=true 포인터는 자리를 유지하고 배치가 건너뛴다(수동 고정).
-//   · 랜덤은 날짜 시드 → 같은 날 재실행은 같은 결과(멱등). 킬 스위치 config/kc_featured.autoEnabled(false면 정지).
+//   · 선정은 결정적 → 같은 날 재실행은 같은 결과(멱등). 킬 스위치 config/kc_featured.autoEnabled(false면 정지).
 // 쓰는 필드: curation_threads/{id}.featured(1~6, 낮을수록 앞 — 클라 selectPointers 정렬) / featuredPin / premiereDate(pre).
 const { kcultureDb } = require('../config/firebaseKculture');
 const admin = require('firebase-admin');
@@ -31,7 +39,7 @@ const WINDOWS = [3, 7, 14];
 const BATCH_WINDOW = 14;
 const PRE_PRIORITY_DAYS = 7;
 const DEFAULT_RUN_HOUR_KST = 9;   // 2026-10-23: 05 → 09 (스레드 개설 배치 07:3x 이후로 이동 — 상단 주석)
-                                  // config/kc_featured.runHourKst 가 저장돼 있으면 그 값이 이긴다(현재 미저장 = 이 기본값이 유효).
+                                  // config/kc_featured.runHourKst 가 저장돼 있으면 그 값이 이긴다(2026-11-13 현재 저장값 8).
 
 function kstParts(now) {
     const k = new Date(now.getTime() + 9 * 3600e3);
@@ -40,14 +48,7 @@ function kstParts(now) {
 function dayDiff(a, b) { // a,b 'YYYY-MM-DD' → a - b (일)
     return Math.round((Date.parse(`${a}T00:00:00Z`) - Date.parse(`${b}T00:00:00Z`)) / 86400e3);
 }
-// mulberry32 — 날짜 문자열 시드
-function seededRng(seed) {
-    let h = 1779033703 ^ seed.length;
-    for (let i = 0; i < seed.length; i++) { h = Math.imul(h ^ seed.charCodeAt(i), 3432918353); h = (h << 13) | (h >>> 19); }
-    let a = (h >>> 0) || 1;
-    return () => { a |= 0; a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
-}
-function shuffle(arr, rng) { const a = arr.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(rng() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+const kstDateOf = (t) => (t ? new Date(t + 9 * 3600e3).toISOString().slice(0, 10) : null);
 const seasonOf = (tid) => Number(String(tid || '').match(/^dari_s(\d+)/)?.[1] || 1);
 const ms = (ts) => (ts?.toMillis?.() ? ts.toMillis() : (typeof ts === 'number' ? ts : Date.parse(ts) || 0));
 // 커버 회차 중 **이미 방영된** 마지막 회차의 방영일(오늘 포함). [EP 11-12]에서 11화만 방영됐어도 11화 날짜로 후보가 된다.
@@ -99,18 +100,29 @@ function selectFeatured(all, today, targetIds = []) {
         if (aired.length >= AIRED_WINDOW_MIN) break;
     }
 
-    const rng = seededRng(`kc-featured:${today}`);
+    // ── 선정(2026-11-13): 핀 → 오늘 개설분 → 방영분 최근 방영순 → 선공개 첫 방송 임박순 ──
     const pinPre = pinned.filter((p) => p.pre), pinAired = pinned.filter((p) => !p.pre);
-    // ① 핀이 자리를 먼저 보장받고 ② 남는 자리를 **방영분으로 채우고** ③ 그래도 남으면 선공개로 PRE_MAX까지.
-    //    핀은 상한 밖이다(수동 고정이 자동 규칙을 이긴다). 핀된 pre는 PRE_MAX 예산을 소비한다.
     const freeSlots = Math.max(0, TOTAL - pinned.length);
-    const pickAired = shuffle(aired, rng).slice(0, freeSlots);
-    const preRoom = Math.min(PRE_MAX - pinPre.length, freeSlots - pickAired.length);
-    const pickPre = shuffle(preNear, rng).concat(shuffle(preFar, rng)).slice(0, Math.max(0, preRoom));
-    const selAired = pinAired.concat(pickAired);
-    const selPre = pinPre.concat(pickPre);
-    const ordered = selAired.concat(selPre); // 방영분 먼저, 그 다음 선공개(표시 순서는 클라가 세션 셔플)
-    return { ordered, windowUsed, counts: { preCandidates: preAll.length, preNear: preNear.length, airedCandidates: aired.length, airedAll: airedAll.length, pinned: pinned.length, preMax: PRE_MAX, preRoom: Math.max(0, preRoom), slotsUsed: ordered.length } };
+    const openedToday = (p) => kstDateOf(ms(p.createdAt)) === today;
+    const lastOf = new Map(airedAll.map((x) => [x.p.id, x.last]));
+    // 방영분 순위: 마지막 방영일 최근순 → 개설 최신순
+    const byRecentAir = (x, y) => String(lastOf.get(y.id) || '').localeCompare(String(lastOf.get(x.id) || '')) || (ms(y.createdAt) - ms(x.createdAt));
+    // 선공개 순위: 첫 방송 임박순(날짜 없는 것은 뒤) → 개설 최신순
+    const byNearPremiere = (x, y) => String(x.premiereDate || '9999').localeCompare(String(y.premiereDate || '9999')) || (ms(y.createdAt) - ms(x.createdAt));
+    // ① 오늘 개설분 — 회차 스레드는 작품별 최신 스레드이면 방영 전이어도 포함(오늘 열었다 = 오늘의 화제), 선공개는 preAll 조건 그대로.
+    const todayAired = [...latest.values()].filter(openedToday).sort(byRecentAir);
+    const preBudget = Math.max(0, PRE_MAX - pinPre.length);
+    const todayPre = preAll.filter(openedToday).sort(byNearPremiere).slice(0, preBudget);
+    const todayPick = todayAired.concat(todayPre).slice(0, freeSlots);
+    const todayIds = new Set(todayPick.map((p) => p.id));
+    // ② 방영분 최근 방영순
+    const restAired = aired.filter((p) => !todayIds.has(p.id)).sort(byRecentAir).slice(0, Math.max(0, freeSlots - todayPick.length));
+    // ③ 선공개 — 남는 자리, 합계 PRE_MAX까지
+    const preUsed = todayPick.filter((p) => p.pre).length;
+    const preRoom = Math.min(preBudget - preUsed, freeSlots - todayPick.length - restAired.length);
+    const restPre = preAll.filter((p) => !todayIds.has(p.id)).sort(byNearPremiere).slice(0, Math.max(0, preRoom));
+    const ordered = pinAired.concat(pinPre, todayPick, restAired, restPre);
+    return { ordered, windowUsed, counts: { preCandidates: preAll.length, preNear: preNear.length, airedCandidates: aired.length, airedAll: airedAll.length, pinned: pinned.length, preMax: PRE_MAX, preRoom: Math.max(0, preRoom), openedToday: todayPick.length, slotsUsed: ordered.length } };
 }
 
 async function runFeaturedDaily(now = new Date(), { dryRun = false, force = false } = {}) {
