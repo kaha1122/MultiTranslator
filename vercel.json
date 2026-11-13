@@ -1,4 +1,6 @@
 {
+    "ignoreCommand": "bash scripts/vercel-ignore.sh",
+    "installCommand": "PUPPETEER_SKIP_DOWNLOAD=1 npm install",
     "rewrites": [
         {
             "source": "/privacy",
