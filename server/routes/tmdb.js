@@ -241,6 +241,10 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         //   2026-10-20 추가: 클라우드 배치는 TMDB 원본 키가 없어 미공개 OTT 신작(꿀알바·푸른길)을 공개 전에 못 봤다.
         //   tv는 first_air_date 기준이라 새 시즌은 안 잡힌다(시즌제는 days의 air_date 창이 방영 후 포착).
         const ahead = days ? 0 : Math.min(Math.max(parseInt(req.query.ahead, 10) || 0, 0), 60);
+        // by=air: ahead 창을 tv에서 에피소드 방영일(air_date) 기준으로 본다 — 새 시즌 첫 방송을 방영 전에 잡는 용도.
+        //   2026-11-15 추가: 굿파트너2(243761, 시즌1 first_air_date 2024-07-12)가 first_air_date 창에 원리상 안 잡혀
+        //   선공개 스레드 D-7을 놓쳤다. 방영 중 작품의 예정 회차도 함께 나오므로 호출 측이 next_episode_to_air(E1·시즌≥2)로 거른다.
+        const aheadByAir = !!ahead && media === 'tv' && req.query.by === 'air';
         const params = {
             language: lang,
             sort_by: sort,
@@ -270,8 +274,9 @@ router.get('/api/tmdb/discover', optionalAuthAny, rateLimit('tmdb', TMDB_RL), as
         const dateField = media === 'tv' ? 'first_air_date' : 'primary_release_date';
         if (ahead) {
             // 미공개작 창 [today, today+ahead]. 미공개작은 평점이 0이라 위의 하한도 미적용.
-            params[`${dateField}.gte`] = new Date().toISOString().slice(0, 10);
-            params[`${dateField}.lte`] = new Date(Date.now() + ahead * 86400000).toISOString().slice(0, 10);
+            const aheadField = aheadByAir ? 'air_date' : dateField;
+            params[`${aheadField}.gte`] = new Date().toISOString().slice(0, 10);
+            params[`${aheadField}.lte`] = new Date(Date.now() + ahead * 86400000).toISOString().slice(0, 10);
         } else if (sort.startsWith('first_air_date') || sort.startsWith('primary_release_date') || days) {
             const today = new Date().toISOString().slice(0, 10);
             // days 창(홈 hot)은 tv에선 에피소드 방영일(air_date) 기준 — 첫 방영 N일이 지나도 방영 진행중이면 포함.
