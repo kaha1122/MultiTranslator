@@ -332,7 +332,14 @@ function epLabel(episodes) {
     return sorted.length > 1 ? `EP ${sorted[0]}-${sorted[sorted.length - 1]}` : `EP ${sorted[0]}`;
 }
 
+// 🛑 2026-11-16 사용자 결정 — 스레드 발제는 Claude(Opus)가 집필해 body로 넘긴다(KCulture dari-thread.md §3-6).
+// Gemini 발제는 폐지: body 없이 신규 스레드/rehook이 들어오면 조용히 Gemini로 폴백하지 않고 실패시킨다.
+// 비상 복귀용 스위치만 남긴다 — Render env DARI_ALLOW_GEMINI_COPY=1.
+const ALLOW_GEMINI_COPY = process.env.DARI_ALLOW_GEMINI_COPY === '1';
+const NO_GEMINI_COPY_MSG = 'Gemini 발제 폐지(2026-11-16) — 본문(body / --body-file)을 Claude가 써서 넘겨야 합니다 (dari-thread.md §3-6)';
+
 async function generateThreadCopy({ showName, genres, synopsis, episodes, hook = null }) {
+    if (!ALLOW_GEMINI_COPY) throw new Error(NO_GEMINI_COPY_MSG);
     if (!GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const expectedTitle = `${showName} [${epLabel(episodes)}]`;
     const prompt = [
@@ -643,6 +650,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip
     const showName = detail.title || detail.original_title || `#${id}`;
 
     // 발제 — overrideBody가 없을 때만 회차 프롬프트의 영화 변형(스포일러 금지·질문 사다리 동일, 회차 언급 없음)
+    if (!overrideBody && !ALLOW_GEMINI_COPY) throw new Error(NO_GEMINI_COPY_MSG);
     if (!overrideBody && !GEMINI_API_KEY) throw new Error('GEMINI_API_KEY not set');
     const prompt = [
         `You are Dari, the AI curator of KdramaAnyLang — a warm, thoughtful host of a multilingual K-drama community.`,
