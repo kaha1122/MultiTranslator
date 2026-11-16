@@ -595,7 +595,39 @@ async function refreshSiblingPrevThreads(titleId) {
 //   이 함수도 clip·body를 받지 않아 **로컬 CLI로도** 준비된 클립·브리핑을 붙일 수 없었다.
 // 🚫 titles/{id}/media/clips 미러는 하지 않는다 — 키가 `s{season}e{ep}`라 회차가 없는 영화에선 의미가 없고
 //   (앱 상세의 '에피소드' 탭 자체가 영화에 없다) `s1e1`로 박으면 존재하지 않는 회차를 만들어낸다.
-async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip = null, bodyOverride = null, rebody = false }) {
+// 🆕 2026-11-16 B안 — 스레드 본문도 가이드처럼 **언어별 직접 집필분(bodies)** 을 받는다(dari-thread.md §3-6).
+// 받은 언어는 번역 호출 없이 그대로 시드(꼬리 2줄·음역 스크럽은 리뷰 직접 경로와 동일), **빠진 언어만** Gemini 번역으로 채워
+// 14/14를 유지한다(사용자 승인: 집필 실패 언어의 안전망). 반환 direct/fallback은 보고용.
+function normBodies(bodies) {
+    if (!bodies || typeof bodies !== 'object') return null;
+    const out = {};
+    for (const [k, v] of Object.entries(bodies)) if (typeof v === 'string' && v.trim()) out[k] = v.trim();
+    return Object.keys(out).length ? out : null;
+}
+async function seedBodies(body, bodies, showTitles) {
+    const nb = normBodies(bodies);
+    if (!nb) {
+        const translated = await translateBodyMulti(body, SEED_LANGS, showTitles);
+        return { translated, direct: [], fallback: Object.keys(translated) };
+    }
+    const { hasSig, hasNote } = splitTail(body);
+    const translated = {}; const direct = [];
+    for (const code of SEED_LANGS) {
+        if (code === 'en') { translated.en = body; direct.push('en'); continue; }
+        if (nb[code]) { translated[code] = applyFixedTail(nb[code], code, hasSig, hasNote); direct.push(code); }
+    }
+    const missing = SEED_LANGS.filter((c) => !translated[c]);
+    let fallback = [];
+    if (missing.length) {
+        const tx = await translateBodyMulti(body, missing, showTitles);
+        Object.assign(translated, tx);
+        fallback = Object.keys(tx);
+    }
+    console.log(`[Dari] 본문 시드 — 직접 집필 ${direct.length}개 [${direct.join(',')}]${fallback.length ? ` · Gemini 보충 ${fallback.length}개 [${fallback.join(',')}]` : ''}`);
+    return { translated, direct, fallback };
+}
+
+async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip = null, bodyOverride = null, bodies = null, rebody = false }) {
     if (!kcultureDb) throw new Error('kcultureDb 없음 — KCULTURE_SERVICE_ACCOUNT_BASE64 환경변수 필요');
     const id = Number(tmdbId);
     if (!Number.isInteger(id) || id < 1) throw new Error('tmdbId: 양의 정수 필요');
@@ -619,7 +651,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip
             if (rebody && overrideBody) {
                 const { detail } = await fetchMovieInfo(id);
                 const showName = detail.title || detail.original_title || `#${id}`;
-                const translated = await translateBodyMulti(overrideBody, SEED_LANGS, {
+                const { translated } = await seedBodies(overrideBody, bodies, {
                     en: showName, original: detail.original_title || null, originalLang: detail.original_language || null,
                 });
                 const b = kcultureDb.batch();
@@ -691,7 +723,7 @@ async function createMovieThread({ tmdbId, dryRun = false, backdate = null, clip
         return { dryRun: true, tid, path: docPath, uid, title, body, info, ...(clipData ? { clip: clipData } : {}) };
     }
 
-    const translated = await translateBodyMulti(body, SEED_LANGS, {
+    const { translated } = await seedBodies(body, overrideBody ? bodies : null, {
         en: showName, original: detail.original_title || null, originalLang: detail.original_language || null,
     });
 
@@ -736,7 +768,7 @@ function withSignature(text) {
 
 // pre(2026-09-04 사용자 결정): **선공개 스레드**는 회차 스레드와 분리한다 — tid `dari_s{S}pre`, episode 0, episodes [],
 // 제목 "{작품명} [Pre-release]"(클라가 뷰어 언어 라벨 [선공개]로 조립), 본문은 Dari 정보 브리핑(bodyOverride). 첫 방송일에 [EP 1-2]를 정규 개설한다.
-async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null, bodyOverride = null, rebody = false, pre = false }) {
+async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = false, reseed = false, backdate = null, hook = null, rehook = false, clip = null, bodyOverride = null, bodies = null, rebody = false, pre = false }) {
     if (pre) episodes = []; // 선공개: 회차 없음
     else if (!Array.isArray(episodes) || !episodes.length || episodes.some((n) => !Number.isInteger(n) || n < 1)) {
         throw new Error('episodes: 1 이상의 정수 배열 필요 (예: [5,6])');
@@ -766,7 +798,7 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
                 const body = (rebody && bodyOverride)
                     ? withSignature(bodyOverride)
                     : (await generateThreadCopy({ showName, genres: info.genres, synopsis: info.synopsis, episodes, hook })).body;
-                const translated = await translateBodyMulti(body, SEED_LANGS, {
+                const { translated } = await seedBodies(body, (rebody && bodyOverride) ? bodies : null, {
                     en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
                 });
                 const b = kcultureDb.batch();
@@ -850,8 +882,8 @@ async function createEpisodeThread({ tmdbId, season = 1, episodes, dryRun = fals
             .map((d) => ({ tid: d.tid, episode: d.episode || 0, title: d.title || '' }));
     } catch (e) { console.warn(`[Dari] prevThreads 조회 실패(무시): ${e.message}`); }
 
-    // 번역 시드 (Gemini 1회 묶음) — 실패해도 게시는 진행(독자 요청 시 서버가 채움)
-    const translated = await translateBodyMulti(body, SEED_LANGS, {
+    // 번역 시드 — 언어별 직접 집필분(bodies)이 있으면 그대로, 빠진 언어만 Gemini 보충(2026-11-16 B안)
+    const { translated } = await seedBodies(body, bodyOverride ? bodies : null, {
         en: showName, original: detail.original_name || null, originalLang: detail.original_language || null,
     });
 

@@ -12,7 +12,7 @@
 //   빠졌고, 리뷰는 v1(Gemini 번역)만 받아 14개 언어 직접 집필분(v2)을 게시할 수 없었다.
 //
 //   type
-//     episode_thread  createEpisodeThread 전 옵션 통과 (clip·clipEp·pre·body·rebody·hook·rehook·reseed·backdate)
+//     episode_thread  createEpisodeThread 전 옵션 통과 (clip·clipEp·pre·body·bodies·rebody·hook·rehook·reseed·backdate)
 //     review          v1 — title/body → Gemini 시드 (종전 그대로)
 //     review_v2       bodies/titles/glossary — 14개 언어 직접 집필, Gemini 미호출
 //   ⚠ review·review_v2는 **작품당 1편 가드**가 있다(2026-09-16 중복 게시 사고) — 같은 (titleId, media)의
@@ -57,6 +57,9 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
             // body(정보 브리핑)·clip은 선택이지만 운영 규칙(§3-0 클립 필수 / 영화는 §3-4 브리핑 승계)상 둘 다 준다.
             // 종전에는 이 분기가 없어 `{movie:true}`가 episodes 검증에 걸려 400이었고(문서는 지원한다고 적혀 있었다),
             // `episodes:[1]` 우회는 /tv/{id}를 쳐서 TMDB 404였다 — 즉 영화는 어떤 payload로도 열 수 없었다.
+            // 🆕 bodies(2026-11-16 B안): {lang: 본문} 언어별 직접 집필분 — body(영어 원문)와 함께만 의미가 있다. 빠진 언어는 Gemini 보충.
+            const tBodies = (b.bodies && typeof b.bodies === 'object' && !Array.isArray(b.bodies)) ? b.bodies : null;
+            if (tBodies && Object.values(tBodies).some((v) => typeof v !== 'string' || v.length > 8000)) return res.status(400).json({ error: 'bodies 값은 8,000자 이하 문자열이어야 합니다' });
             if (b.movie || b.media === 'movie') {   // 지원 모양: {type:'episode_thread', movie:true, tmdbId, clip, clipEp?, body}
                 const mClip = b.clip ? { videoId: String(b.clip), ep: posInt(b.clipEp) || undefined } : null;
                 const mBody = typeof b.body === 'string' && b.body.trim() ? b.body.trim() : null;
@@ -68,6 +71,7 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
                     backdate: b.backdate || null,
                     clip: mClip,
                     bodyOverride: mBody,
+                    bodies: tBodies,
                     rebody: !!b.rebody,
                 });
                 console.log(`[Curation] movie_thread tmdbId=${b.tmdbId}${mClip ? ` clip=${mClip.videoId}` : ''}${mBody ? ' BODY' : ''}${b.rebody ? ' REBODY' : ''} → ${mr.skipped ? 'SKIP(존재)' : mr.rebodied ? 'REBODY' : mr.clipped ? 'CLIP' : mr.dryRun ? 'DRY' : 'OK'} ${mr.path}`);
@@ -93,6 +97,7 @@ router.post('/api/curation/publish', requireCurationAuth, async (req, res) => {
                 rehook: !!b.rehook,
                 clip,
                 bodyOverride,
+                bodies: tBodies,
                 rebody: !!b.rebody,
                 pre: !!b.pre,
             });
