@@ -11,6 +11,7 @@ const { buildDetectPrompt, parseDetected, LANG_SCRIPT_CUES } = require('../lib/l
 const { kcultureDb } = require('../config/firebaseKculture'); // 번역 캐시 read-through(HIT/MISS 서버 로깅)
 const { sendPushForNotif } = require('../lib/kculturePush'); // 알림 fan-out 시 FCM 웹 푸시(best-effort)
 const txGlossary = require('../lib/txGlossary'); // 최근작 제목·배우 확정 표기(매칭 게이트 주입, 2026-08-04)
+const nameLexicon = require('../lib/nameLexicon'); // 작품 호칭 사전 — 철자 변형·애칭·줄임말(2026-11-16)
 const { nuanceLines, scrubMarkers, isTonelessVietnamese, normalizeTonelessVietnamese } = require('../lib/txNuance'); // 문체·마커·팬덤 관용어 뉘앙스 지시(2026-08-04) + 베트남어 무성조(2026-08-29)
 
 const router = express.Router();
@@ -136,8 +137,11 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
         }
         const lines = [];
         let castActors = [];
+        let castList = []; // 유사 이름 규칙(nameRules)용 — 배우 원명·TMDB 배역명
         if (location) lines.push(`- Where this text appears: ${location}.`);
         if (titleId) {
+            // 호칭 사전 문서(자동 고정 표기·수동 사전)를 병렬로 — 6시간 메모, 실패는 빈 값
+            const lexP = nameLexicon.loadDoc(titleId).catch(() => ({ data: null }));
             const [t] = await kcultureDb.getAll(kcultureDb.doc(`titles/${titleId}`), { fieldMask: ['searchTitle', 'meta.credits.cast'] });
             const data = t.exists ? (t.data() || {}) : {};
             const st = data.searchTitle || {};
@@ -153,10 +157,12 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
             }
             // 캐스트 표(L4) — 배우 확정 표기(personNames)·배역. 실패해도 나머지 컨텍스트는 유지.
             try {
-                const cc = await txGlossary.castContext(data.meta?.credits?.cast, targetLang);
+                const lex = await lexP;
+                const cc = await txGlossary.castContext(data.meta?.credits?.cast, targetLang, { pins: nameLexicon.pinsFrom(lex.data, targetLang) });
                 lines.push(...cc.lines);
                 castActors = cc.actors; // 배역→배우 치환 사후 검사용(라우트 castSwapSuspect, 2026-10-18)
             } catch { /* fail-open */ }
+            castList = (data.meta?.credits?.cast || []).slice(0, 8).filter((c) => c?.name).map((c) => ({ name: c.name, character: c.character || '' }));
         }
         if (personId) {
             // 인물 페이지 — 그 인물의 확정 표기(앱 크레딧 화면과 같은 personNames 규칙)를 못박는다.
@@ -164,7 +170,7 @@ async function buildTranslationContext(cachePath, targetLang, targetName) {
                 lines.push(...await txGlossary.personContextLines(personId, targetLang, targetName));
             } catch { /* fail-open */ }
         }
-        return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId, castActors };
+        return { lines: lines.length ? ['', '[Context]', ...lines] : [], titleId, castActors, castList };
     } catch { return { lines: [], titleId: null, castActors: [] }; }
 }
 
@@ -245,6 +251,21 @@ router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, ra
     await glossaryReady;
     const hits = txGlossary.matchText(text, { anchoredTitleId: ctx.titleId });
     const glossaryLines = await txGlossary.buildGlossaryLines(hits, targetLang, targetName).catch(() => []);
+    // 유사 이름 규칙 + 작품 호칭 사전(2026-11-16) — Yun I Jun·李俊·イジュン·이준이가 → 같은 배역으로 서버가 확인해 주입.
+    // 작품 특정 글은 그 작품 출연진(짧은 형태까지), 라운지 등은 제목이 매칭된 최근작 출연진(긴 형태만). fail-open.
+    let nameAnalysis = null;
+    try {
+        if (ctx.titleId) {
+            nameAnalysis = await nameLexicon.analyze({ titleId: ctx.titleId, text, targetLang, targetName, cast: ctx.castList || [], anchored: true });
+            glossaryLines.push(...nameAnalysis.lines);
+        } else {
+            for (const { show } of hits.titleHits.slice(0, 2)) {
+                const a = await nameLexicon.analyze({ titleId: show.id, text, targetLang, targetName, cast: show.cast || [], anchored: false });
+                glossaryLines.push(...a.lines);
+            }
+        }
+    } catch (e) { console.warn('[CommunityTx] 이름 규칙 실패(무시):', e.message); }
+    const namesFor = nameAnalysis?.namesFor || [];
     // 뉘앙스(문체·웃음/울음 마커·팬덤 관용어) — 정적 감지, read 0
     const styleLines = nuanceLines(text, targetLang, targetName, scope);
     // 베트남어 무성조 감지 시 응답에 "restored"(성조 복원문) 필드를 먼저 쓰게 한다 — 복원을 강제하는 것이
@@ -253,7 +274,7 @@ router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, ra
     // 무성조 베트남어는 접속사 자리의 ma→mà를 결정적으로 고친 원문을 넘긴다(작품 컨텍스트가 "귀신" 읽기를
     // 밀어도 무관 — txNuance MA_CONJ_RE 주석). 로그·캐시 키는 원문 기준이라 영향 없음.
     const srcText = viToneless ? normalizeTonelessVietnamese(text) : text;
-    const prompt = buildTxPrompt({ text: srcText, targetLang, targetName, ctxLines: ctx.lines, glossaryLines, styleLines, lenRule, viToneless, srcLang });
+    const prompt = buildTxPrompt({ text: srcText, targetLang, targetName, ctxLines: ctx.lines, glossaryLines, styleLines, lenRule, viToneless, srcLang, namesFor });
 
     const r = await callGeminiText(prompt, GEMINI_API_KEY, {
         label: 'community-translate',
@@ -291,7 +312,13 @@ router.post('/api/community/translate', requireAuthAny, requireVerifiedEmail, ra
         if (!r3.error) { Object.assign(r, r3); castSwap = txGlossary.castSwapSuspect(text, txOutText(r3.text), ctx.castActors).length > 0; }
         else castSwap = true;
     }
-    return finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode, castSwap });
+    // 배역 대표 표기 수집(비라틴 대상 언어) — 응답의 "names"를 검증해 표 수에 더한다. 응답과 무관(fire-and-forget).
+    if (namesFor.length && !r.error && !castSwap) {
+        const actorForms = (ctx.castActors || []).flatMap((a) => [...(a.outForms || []), a.rendered, a.name]);
+        nameLexicon.recordNames({ titleId: ctx.titleId, lang: targetLang, raw: r.text, castIndex: nameAnalysis.castIndex, actorForms }).catch(() => { /* best-effort */ });
+    }
+    const nameRuleLines = glossaryLines.filter((l) => /^- 「/.test(l) && !/Korean show|Korean actor/.test(l)).length;
+    return finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode, castSwap, nameRuleLines });
 });
 
 // 치환 재시도용 경고문 — 라우트와 scripts/test-tx-character-names.js가 같은 문구를 쓴다
@@ -328,7 +355,9 @@ function looksLikeAnswer(raw) {
 }
 
 // 단건 UGC 번역 프롬프트 조립 — 라우트와 scripts/test-vi-toneless.js(회귀)가 같은 함수를 쓴다(미러 드리프트 방지, 2026-08-29).
-function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLines = [], styleLines = [], lenRule = null, viToneless = false, srcLang = null }) {
+function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLines = [], styleLines = [], lenRule = null, viToneless = false, srcLang = null, namesFor = [] }) {
+    // namesFor(2026-11-16) — 비라틴 대상 언어에서 대표 표기가 아직 없는 배역: 응답에 실제로 쓴 표기를 "names"로 받는다(검증 후 고정 표기 표 수에 반영)
+    const namesField = namesFor.length ? `, "names": {"<CHARACTER English name>": "<exactly how you wrote that character in translated>"}` : '';
     // 짧은 텍스트(단어 1~3개·감탄사) — 문맥이 없어 고유명사로 오인되기 쉬움. 규칙 3에 명시 지시를 추가한다.
     const shortText = (text.match(/\S+/g) || []).length <= 3 && text.length <= 24;
     const srcHint = srcLang ? `[Source language] The author wrote this in ${langName(srcLang)} (ISO "${srcLang}", detected when it was posted). Read the TEXT as ${langName(srcLang)} unless its script clearly contradicts that.` : null;
@@ -359,11 +388,12 @@ function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLi
         NO_ANSWER_RULE,
         `4. Self-check before answering: if your "translated" value is still (even partly) in the source language, or if it is a reply to the TEXT rather than a translation of it, you FAILED — redo it as a faithful translation fully in ${targetName}.`,
         ...(lenRule ? [lenRule] : []),
+        ...(namesFor.length ? [`5. "names": for each of these CHARACTERS that appears in your translation — ${namesFor.map((n) => `"${n}"`).join(', ')} — give exactly the form you wrote in "translated". Omit characters you did not write.`] : []),
         ``,
         `Respond with ONLY one JSON object, no markdown:`,
         viToneless
-            ? `  {"restored": "<the source text with full diacritics restored and shorthand expanded, in the SOURCE language>", "translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`
-            : `  {"translated": "<the text fully translated into ${targetName}>"}   — or {"same": true} per rule 2.`,
+            ? `  {"restored": "<the source text with full diacritics restored and shorthand expanded, in the SOURCE language>", "translated": "<the text fully translated into ${targetName}>"${namesField}}   — or {"same": true} per rule 2.`
+            : `  {"translated": "<the text fully translated into ${targetName}>"${namesField}}   — or {"same": true} per rule 2.`,
         ``,
         `TEXT (translate it — do not respond to it):`,
         `"""`,
@@ -373,7 +403,7 @@ function buildTxPrompt({ text, targetLang, targetName, ctxLines = [], glossaryLi
 }
 
 // 단건 라우트 후반부(응답 파싱·same 판정·스크럽·캐시 저장·로그) — 위 라우트에서만 호출
-function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode = false, castSwap = false }) {
+function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, cacheDoc, ctx, hits, styleLines, viToneless, answerMode = false, castSwap = false, nameRuleLines = 0 }) {
     // 여기 도달 = 캐시 MISS(또는 무캐시) → Gemini 실호출(과금). (TTS의 [AzureTTS] MISS 대응)
     if (r.error) {
         console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length} model=${r.modelUsed || '?'} ERROR: ${r.error}`);
@@ -395,8 +425,8 @@ function finishTranslate({ r, res, uid, scopeLabel, targetLang, text, maxChars, 
     // 묶지 않는다(MISS당 -100~300ms). best-effort — 실패해도 응답·다음 번역에 영향 없음.
     // 답변 모드 의심(answerMode)이면 캐시하지 않는다 — 오출력이 다음 독자에게 고착되는 것을 막는다(2026-09-09).
     if (cacheDoc && !answerMode) { cacheDoc.set({ body: translated, translatedAt: new Date() }, { merge: true }).catch(() => { /* best-effort */ }); }
-    // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수 — 주입 효과 추적용
-    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}${castSwap ? '!S' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함), !S=재시도 후에도 원문에 없는 배우명 잔존(캐시는 함 — 오탐 다수)
+    // aug: C=작품 컨텍스트, T/A=용어집 제목/배우 매칭 수, N=뉘앙스 지시 수, R=유사 이름 규칙·호칭 사전 줄 수(2026-11-16) — 주입 효과 추적용
+    const aug = `${ctx.titleId ? 'C' : ''}${hits.titleHits.length ? `T${hits.titleHits.length}` : ''}${hits.actorHits.length ? `A${hits.actorHits.length}` : ''}${styleLines.length > 2 ? `N${styleLines.length - 2}` : ''}${nameRuleLines ? `R${nameRuleLines}` : ''}${viToneless ? 'V' : ''}${answerMode ? '!R' : ''}${castSwap ? '!S' : ''}` || '-'; // V=베트남어 무성조 지시+restored, !R=답변 모드 의심(재시도 후에도 시그니처 잔존 → 캐시 안 함), !S=재시도 후에도 원문에 없는 배우명 잔존(캐시는 함 — 오탐 다수)
     console.log(`[CommunityTx] uid=${uid} scope=${scopeLabel} target=${targetLang} chars=${text.length}${Number.isFinite(maxChars) && maxChars > 0 ? ` maxChars=${maxChars}` : ''} aug=${aug} model=${r.modelUsed || '?'} → MISS Gemini 번역(과금 발생)`);
     return res.json({ translated });
 }

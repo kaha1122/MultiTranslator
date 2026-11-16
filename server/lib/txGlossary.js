@@ -24,6 +24,7 @@
 const { kcultureDb } = require('../config/firebaseKculture');
 const { fetchPersonLite, pickPersonName, romanizeKorean } = require('./personNames');
 const titleGlossaryIndex = require('./titleGlossaryIndex');
+const nameRules = require('./nameRules'); // 작품명 변형(띄어쓰기·줄임말·연음·초성·머리글자, 2026-11-16)
 
 const TTL = 24 * 60 * 60 * 1000;     // 24시간 — 카탈로그 인덱스를 cron-daily가 하루 1회 재생성하므로
                                       //   그보다 자주 돌 이유가 없다(2026-09-19 사용자 결정).
@@ -91,11 +92,14 @@ async function load() {
         // 별칭 = 12개 언어 제목(소문자) dedup. 표시형은 원 케이스 유지(프롬프트에 그대로 인용).
         // 최근작 풀은 편수가 적어 한글 2자까지 허용("동궁"은 통과, "IU"류 차단).
         const aliases = buildAliases(titles, x.searchLower || {}, { minHangul: 2, minLatin: 4 });
+        // 규칙 생성 변형(최근작만 — 카탈로그 수천 편에 줄임말을 만들면 충돌한다). strong(3자 이상·초성 4자·머리글자 3자)만.
+        const variants = nameRules.titleVariants(titles).filter((v) => v.strong && !aliases.some((a) => a.k === v.k));
         next.push({
             id: d.id,
             recent: true,
             titles,
             aliases,
+            variants,
             cast: (x.meta?.credits?.cast || []).slice(0, CAST_PER_SHOW)
                 .filter((c) => c?.id && c?.name)
                 .map((c) => ({ pid: c.id, name: c.name, character: c.character || '' })),
@@ -160,11 +164,14 @@ function matchText(text, { anchoredTitleId = null } = {}) {
 
     const titleHits = [];
     const contextIds = new Set(anchored ? [anchored] : []);
+    const tlNoSpace = tl.replace(/\s+/g, '');
     for (const s of shows) {
         const hit = s.aliases.find((a) => tl.includes(a.k));
-        if (!hit) continue;
+        // 정식 제목이 없으면 규칙 변형(나의유죄인간·유죄인간·배커짓·ㄴㅇㅇㅈㅇㄱ·LID) — 원문에 적힌 형태를 alias로 넘긴다
+        const v = hit ? null : (s.variants || []).find((x) => nameRules.matchTitleVariant(x, String(text), tlNoSpace));
+        if (!hit && !v) continue;
         contextIds.add(s.id);
-        if (s.id !== anchored) titleHits.push({ show: s, alias: hit.d });
+        if (s.id !== anchored) titleHits.push({ show: s, alias: hit ? hit.d : (v.kind === 'acronym' ? v.k.toUpperCase() : v.k), variant: v ? v.kind : null });
     }
 
     const actorHits = [];
@@ -199,10 +206,10 @@ async function renderName(pid, name, targetLang) {
 async function buildGlossaryLines({ titleHits, actorHits }, targetLang, targetName) {
     if (!titleHits.length && !actorHits.length) return [];
     const lines = ['', '[Name glossary — verified proper nouns detected in this text]'];
-    for (const { show, alias } of titleHits) {
+    for (const { show, alias, variant } of titleHits) {
         const t = show.titles[targetLang] || show.titles.en || alias;
         const ko = show.titles.ko;
-        lines.push(`- The text mentions 「${alias}」 — this is ${show.recent ? 'the recently-airing' : 'a'} Korean show${ko && ko !== alias ? ` 「${ko}」` : ''}. `
+        lines.push(`- The text mentions 「${alias}」 — ${variant ? `a viewer abbreviation/spelling of ` : ''}this is ${show.recent ? 'the recently-airing' : 'a'} Korean show${ko && ko !== alias ? ` 「${ko}」` : ''}. `
             + `If (and only if) the mention refers to this show, render its title exactly as "${t}" — NEVER translate the title literally or invent a new translation. `
             + `This OVERRIDES every other rule about keeping titles unchanged.`);
     }
@@ -228,7 +235,8 @@ async function buildGlossaryLines({ titleHits, actorHits }, targetLang, targetNa
 //   집어오는 경향이 남아 → castActors(배우 표기 목록)를 함께 돌려주고 라우트가 castSwapSuspect로 사후 검사한다.
 //   회귀: scripts/test-tx-character-names.js
 // @returns { lines, actors } — actors: [{ forms: [원명·현지 표기·로마자], name, rendered, character }]
-async function castContext(cast, targetLang) {
+// opts.pins — nameLexicon 자동 고정 표기 {charKey: 값}(비라틴 대상 언어의 배역 대표 표기, 2026-11-16)
+async function castContext(cast, targetLang, { pins = null } = {}) {
     const top = (cast || []).filter((c) => c?.id && c?.name).slice(0, 6);
     if (!top.length) return { lines: [], actors: [] };
     const actors = await Promise.all(top.map(async (c) => {
@@ -243,14 +251,19 @@ async function castContext(cast, targetLang) {
         const outForms = [...new Set([c.name, rendered, romanizeKorean(c.name), lite?.trs?.en, lite?.name].filter(isFullNameForm))];
         return { name: c.name, rendered, character: c.character || null, srcForms, outForms };
     }));
+    const nonLatin = /^(ko|ja|zh|th|ar|ru|hi)/.test(targetLang);
+    const ck = (en) => String(en || '').toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
     const parts = actors.map(({ name, rendered, character }) => {
         const actor = rendered && rendered !== name ? `${name} = "${rendered}"` : `"${name}"`;
-        return character ? `CHARACTER "${character}" (played by the actor ${actor})` : `actor ${actor}`;
+        // 대표 표기(2026-11-16) — 비라틴은 자동 고정값이 있을 때만(번역 결과에서 반복 확인된 표기), 라틴은 TMDB 영문 그대로
+        const pinned = nonLatin && character ? pins?.[ck(character)] : null;
+        return character ? `CHARACTER "${character}"${pinned ? ` [write it as "${pinned}"]` : ''} (played by the actor ${actor})` : `actor ${actor}`;
     });
     const lines = [
         `- Main cast — fictional CHARACTERS and the real ACTORS who play them: ${parts.join(' · ')}.`,
         `- CHARACTER names and ACTOR names are different names, NOT interchangeable. Write exactly the kind of name the writer wrote: a character name stays that character's name, an actor name stays that actor's name. NEVER replace a character's name with the actor's name or vice versa — a character named in the text must appear under that same character name in the translation, never as the actor who plays them.`,
         `- The quoted actor renderings are ONLY for when the writer names the ACTOR. For CHARACTER names: in Latin-script targets keep the writer's Latin-script spelling; in non-Latin-script targets (Korean, Japanese, Chinese, Thai, Arabic, Russian, Hindi …) transliterate the CHARACTER's own name by its own sound into the target script (Korean: the character's Hangul name; Japanese: katakana of the character's name) — never leave it in Latin letters, and never reuse the actor's rendering for it.`,
+        `- Viewers spell character names in many ways — romanization variants (Yun I Jun / Yijoon / Yoon Yi-jun), typos, katakana or Cyrillic transliterations, Chinese characters chosen by sound, or the given name only. If a name in the text SOUNDS like a CHARACTER in this table, it is that character: write it with that character's rendering${nonLatin ? ' (the bracketed form when given)' : ' (the table spelling)'}, keeping given-name-only if the writer used only the given name.`,
         `- When the text refers to someone only indirectly (by role, job title, nickname or pronoun), use this table only to understand who is meant (e.g. gender) — do NOT insert a name the writer did not write.`,
     ];
     return { lines, actors };
