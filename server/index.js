@@ -44,6 +44,7 @@ app.use(require('./routes/communityPoints')); // [신규] K-DramaAnyLang 포인�
 app.use(require('./routes/communitySub')); // [신규] K-DramaAnyLang Pro 연간 구독 — RC 웹훅·confirm-iap·토스/PayPal 단건 (requireAuthAny, 2026-09-16)
 app.use(require('./routes/kdlAdmobSsv')); // [신규] K-DramaAnyLang AdMob 보상형 SSV 콜백 — 지급 권위(10pt·일5회·잔액<10) (2026-09-16)
 app.use(require('./routes/libraryAdd')); // [신규] K-DramaAnyLang Add to MY 작품당 1회 포인트 차감 트랜잭션 (requireAuthAny, 2026-09-13)
+app.use(require('./routes/cardCharge')); // [신규] K-DramaAnyLang 카드 만들기 — 장당 차감·게스트 1장 한도·카드 이력(card_stats) (requireAuthAny, 2026-11-22)
 app.use(require('./routes/restoreCredential')); // [신규] K-DramaAnyLang Zero-Tap 로그인 복원 토큰 (kculture 전용 인증 + 비인증 redeem)
 app.use(require('./routes/news')); // [신규] K-DramaAnyLang K-뉴스 (public read + requireCronAuth refresh)
 app.use(require('./routes/curation')); // [신규] K-DramaAnyLang Dari AI 큐레이터 게시 (x-curation-secret, fail-closed)
