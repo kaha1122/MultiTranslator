@@ -48,6 +48,7 @@ app.use(require('./routes/cardCharge')); // [신규] K-DramaAnyLang 카드 만�
 app.use(require('./routes/restoreCredential')); // [신규] K-DramaAnyLang Zero-Tap 로그인 복원 토큰 (kculture 전용 인증 + 비인증 redeem)
 app.use(require('./routes/news')); // [신규] K-DramaAnyLang K-뉴스 (public read + requireCronAuth refresh)
 app.use(require('./routes/curation')); // [신규] K-DramaAnyLang Dari AI 큐레이터 게시 (x-curation-secret, fail-closed)
+app.use(require('./routes/diagYtdlp')); // [임시 진단 2026-11-23] Render에서 yt-dlp 구간 받기 시험 (requireCronAuth) — 시험 후 삭제
 app.use(require('./routes/cronLounge')); // [신규] K-DramaAnyLang Dari's Lounge 일일 발행 (requireCronAuth, 결정적 — Gemini 0)
 
 // [신규] 서버 잠 깨우기용(Warm-up) 가벼운 API
